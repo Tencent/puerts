@@ -1,0 +1,3 @@
+[submodule "unreal/Puerts/ThirdParty"]
+	path = unreal/Puerts/ThirdParty
+	url = https://github.com/chexiongsheng/puerts_thirdparty.git
