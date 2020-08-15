@@ -1,0 +1,696 @@
+﻿/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
+#include "JSEngine.h"
+#include "V8Utils.h"
+
+using puerts::JSEngine;
+using puerts::FValue;
+using puerts::FResultInfo;
+using puerts::JSFunction;
+using puerts::FV8Utils;
+using puerts::FLifeCycleInfo;
+using puerts::JsValueType;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+V8_EXPORT v8::Isolate *CreateJSEngine()
+{
+    auto JsEngine = new JSEngine();
+    return JsEngine->MainIsolate;
+}
+
+V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    delete JsEngine;
+}
+
+V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, CSharpFunctionCallback Callback, int64_t Data)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->SetGlobalFunction(Name, Callback, Data);
+}
+
+V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    if (JsEngine->Eval(Code, Path))
+    {
+        return &(JsEngine->ResultInfo);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+V8_EXPORT int RegisterClass(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->RegisterClass(FullName, BaseTypeId, Constructor, Destructor, Data, 0);
+}
+
+V8_EXPORT int RegisterStruct(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->RegisterClass(FullName, BaseTypeId, Constructor, Destructor, Data, Size);
+}
+
+V8_EXPORT bool RegisterFunction(v8::Isolate *Isolate, int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->RegisterFunction(ClassID, Name, IsStatic, Callback, Data);
+}
+
+V8_EXPORT bool RegisterProperty(v8::Isolate *Isolate, int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->RegisterProperty(ClassID, Name, IsStatic, Getter, GetterData, Setter, SetterData);
+}
+
+V8_EXPORT const char* GetLastExceptionInfo(v8::Isolate *Isolate, int *Length)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    *Length = static_cast<int>(strlen(JsEngine->LastExceptionInfo.c_str()));
+    return JsEngine->LastExceptionInfo.c_str();
+}
+
+V8_EXPORT void LowMemoryNotification(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->LowMemoryNotification();
+}
+
+V8_EXPORT void SetGeneralDestructor(v8::Isolate *Isolate, CSharpDestructorCallback GeneralDestructor)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->GeneralDestructor = GeneralDestructor;
+}
+
+//-------------------------- begin js call cs --------------------------
+V8_EXPORT const v8::Value *GetArgumentValue(const v8::FunctionCallbackInfo<v8::Value>& Info, int Index)
+{
+    return *Info[Index];
+}
+
+V8_EXPORT JsValueType GetJsValueType(v8::Isolate* Isolate, const v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        if (Value->IsObject())
+        {
+            auto Context = Isolate->GetCurrentContext();
+            auto Outer = Value->ToObject(Context).ToLocalChecked();
+            auto MaybeValue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value"));
+            if (MaybeValue.IsEmpty())
+            {
+                return puerts::NullOrUndefined;
+            }
+            auto Realvalue = MaybeValue.ToLocalChecked();
+            return GetJsValueType(Isolate, *Realvalue, false);
+        }
+        else
+        {
+            return puerts::NullOrUndefined;
+        }
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        return FV8Utils::GetType(Context, Value);
+    }
+}
+
+V8_EXPORT JsValueType GetArgumentType(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int Index, bool IsOut)
+{
+    return GetJsValueType(Isolate, *Info[Index], IsOut);
+}
+
+V8_EXPORT double GetNumberFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetNumberFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        return Value->NumberValue(Context).ToChecked();
+    }
+}
+
+V8_EXPORT void SetNumberToOutValue(v8::Isolate* Isolate, v8::Value *Value, double Number)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), v8::Number::New(Isolate, Number));
+    }
+}
+
+V8_EXPORT double GetDateFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetDateFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        return v8::Date::Cast(Value)->ValueOf();
+    }
+}
+
+V8_EXPORT void SetDateToOutValue(v8::Isolate* Isolate, v8::Value *Value, double Date)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), v8::Date::New(Context, Date).ToLocalChecked());
+    }
+}
+
+V8_EXPORT const char *GetStringFromValue(v8::Isolate* Isolate, v8::Value *Value, int *Length, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetStringFromValue(Isolate, *Realvalue, Length, false);
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        JsEngine->StrBuffer = *(v8::String::Utf8Value(Isolate, Value->ToString(Context).ToLocalChecked()));
+        *Length = static_cast<int>(JsEngine->StrBuffer.length());
+        
+        return JsEngine->StrBuffer.c_str();
+    }
+}
+
+V8_EXPORT void SetStringToOutValue(v8::Isolate* Isolate, v8::Value *Value, const char *Str)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), FV8Utils::V8String(Isolate, Str));
+    }
+}
+
+V8_EXPORT bool GetBooleanFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetBooleanFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        return Value->BooleanValue(Isolate);
+    }
+}
+
+V8_EXPORT void SetBooleanToOutValue(v8::Isolate* Isolate, v8::Value *Value, bool B)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), v8::Boolean::New(Isolate, B));
+    }
+}
+
+V8_EXPORT int64_t GetBigIntFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetBigIntFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        return Value->ToBigInt(Context).ToLocalChecked()->Int64Value();
+    }
+}
+
+V8_EXPORT void SetBigIntToOutValue(v8::Isolate* Isolate, v8::Value *Value, int64_t BigInt)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), v8::BigInt::New(Isolate, BigInt));
+    }
+}
+
+V8_EXPORT void *GetObjectFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetObjectFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        return FV8Utils::GetPoninter(Context, Value);
+    }
+}
+
+V8_EXPORT int GetTypeIdFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetTypeIdFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        if (Value->IsFunction())
+        {
+            auto Context = Isolate->GetCurrentContext();
+            auto Function = v8::Local<v8::Function>::Cast(Value->ToObject(Context).ToLocalChecked());
+            auto MaybeValue = Function->Get(Context, FV8Utils::V8String(Isolate, "$cid"));
+            if (MaybeValue.IsEmpty()) return -1;
+            auto Value = MaybeValue.ToLocalChecked();
+            if (!Value->IsInt32()) return -1;
+            return Value->Int32Value(Context).ToChecked();
+        }
+        else
+        {
+            auto Context = Isolate->GetCurrentContext();
+            auto LifeCycleInfo = static_cast<FLifeCycleInfo *>(FV8Utils::GetPoninter(Context, Value, 1));
+            return LifeCycleInfo ? LifeCycleInfo->ClassID : -1;
+        }
+    }
+}
+
+V8_EXPORT void SetObjectToOutValue(v8::Isolate* Isolate, v8::Value *Value, int ClassID, void* Ptr)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr));
+    }
+}
+
+V8_EXPORT void SetNullToOutValue(v8::Isolate* Isolate, v8::Value *Value)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), v8::Null(Isolate));
+    }
+}
+
+V8_EXPORT JSFunction *GetFunctionFromValue(v8::Isolate* Isolate, v8::Value *Value, bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetFunctionFromValue(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Function = v8::Local<v8::Function>::Cast(Value->ToObject(Context).ToLocalChecked());
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        return JsEngine->CreateJSFunction(Isolate, Context, Function);
+    }
+}
+
+V8_EXPORT void ReleaseJSFunction(v8::Isolate* Isolate, JSFunction *Function)
+{
+    if (Isolate && Function)
+    {
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        JsEngine->ReleaseJSFunction(Function);
+    }
+}
+
+V8_EXPORT void ThrowException(v8::Isolate* Isolate, const char * Message)
+{
+    FV8Utils::ThrowException(Isolate, Message);
+}
+
+V8_EXPORT void ReturnClass(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ClassID)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    Info.GetReturnValue().Set(JsEngine->GetClassConstructor(ClassID));
+}
+
+V8_EXPORT void ReturnObject(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ClassID, void* Ptr)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    Info.GetReturnValue().Set(JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr));
+}
+
+V8_EXPORT void ReturnNumber(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, double Number)
+{
+    Info.GetReturnValue().Set(Number);
+}
+
+V8_EXPORT void ReturnString(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, const char* String)
+{
+    Info.GetReturnValue().Set(FV8Utils::V8String(Isolate, String));
+}
+
+V8_EXPORT void ReturnBigInt(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int64_t BigInt)
+{
+    Info.GetReturnValue().Set(v8::BigInt::New(Isolate, BigInt));
+}
+
+V8_EXPORT void ReturnBoolean(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, bool Bool)
+{
+    Info.GetReturnValue().Set(Bool);
+}
+
+V8_EXPORT void ReturnDate(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, double Date)
+{
+    Info.GetReturnValue().Set(v8::Date::New(Isolate->GetCurrentContext(), Date).ToLocalChecked());
+}
+
+V8_EXPORT void ReturnNull(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    Info.GetReturnValue().SetNull();
+}
+
+//V8_EXPORT void ReturnFunction(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, JSFunction *Function)
+//{
+//    Info.GetReturnValue().Set(Function->GFunction.Get(Isolate));
+//}
+
+//-------------------------- end js call cs --------------------------
+
+//-------------------------- bengin cs call js --------------------------
+
+V8_EXPORT void PushNullForJSFunction(JSFunction *Function)
+{
+    FValue Value;
+    Value.Type = puerts::NullOrUndefined;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushDateForJSFunction(JSFunction *Function, double DateValue)
+{
+    FValue Value;
+    Value.Type = puerts::Date;
+    Value.Number = DateValue;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushBooleanForJSFunction(JSFunction *Function, bool B)
+{
+    FValue Value;
+    Value.Type = puerts::Boolean;
+    Value.Boolean = B;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushBigIntForJSFunction(JSFunction *Function, int64_t V)
+{
+    FValue Value;
+    Value.Type = puerts::BigInt;
+    Value.BigInt = V;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushStringForJSFunction(JSFunction *Function, const char* S)
+{
+    FValue Value;
+    Value.Type = puerts::String;
+    Value.Str = S;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushNumberForJSFunction(JSFunction *Function, double D)
+{
+    FValue Value;
+    Value.Type = puerts::Number;
+    Value.Number = D;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* Ptr)
+{
+    FValue Value;
+    Value.Type = puerts::NativeObject;
+    Value.ObjectInfo.ClassID = ClassID;
+    Value.ObjectInfo.ObjectPtr = Ptr;
+    Function->Arguments.push_back(Value);
+}
+
+//V8_EXPORT void PushJSFunctionForJSFunction(JSFunction *F, JSFunction *V)
+//{
+//    FValue Value;
+//    Value.Type = Function;
+//    Value.FunctionPtr = V;
+//    F->Arguments.push_back(Value);
+//}
+
+V8_EXPORT FResultInfo *InvokeJSFunction(JSFunction *Function, bool HasResult)
+{
+    if (Function->Invoke(HasResult))
+    {
+        return &(Function->ResultInfo);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+V8_EXPORT JsValueType GetResultType(FResultInfo *ResultInfo)
+{
+    if (ResultInfo->Result.IsEmpty())
+    {
+        return puerts::NullOrUndefined;
+    }
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+    return FV8Utils::GetType(Context, *Result);
+}
+
+V8_EXPORT double GetNumberFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    return Result->NumberValue(Context).ToChecked();
+}
+
+V8_EXPORT double GetDateFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    return v8::Date::Cast(*Result)->ValueOf();
+}
+
+V8_EXPORT const char *GetStringFromResult(FResultInfo *ResultInfo, int *Length)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    //auto Utf8Str = v8::String::Utf8Value(Isolate, Function->Result.Get(Function->Isolate));
+    JsEngine->StrBuffer = *(v8::String::Utf8Value(Isolate, ResultInfo->Result.Get(Isolate)));
+    *Length = static_cast<int>(JsEngine->StrBuffer.length());
+
+    return JsEngine->StrBuffer.c_str();
+}
+
+V8_EXPORT bool GetBooleanFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    return Result->BooleanValue(Isolate);
+}
+
+V8_EXPORT int64_t GetBigIntFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    return Result->ToBigInt(Context).ToLocalChecked()->Int64Value();
+}
+
+V8_EXPORT void *GetObjectFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    return FV8Utils::GetPoninter(Context, Result);
+}
+
+V8_EXPORT int GetTypeIdFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    auto LifeCycleInfo = static_cast<FLifeCycleInfo *>(FV8Utils::GetPoninter(Context, Result, 1));
+    return LifeCycleInfo ? LifeCycleInfo->ClassID : -1;
+}
+
+V8_EXPORT JSFunction *GetFunctionFromResult(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    auto V8Function = v8::Local<v8::Function>::Cast(Result->ToObject(Context).ToLocalChecked());
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->CreateJSFunction(Isolate, Context, V8Function);
+}
+
+V8_EXPORT void ResetResult(FResultInfo *ResultInfo)
+{
+    ResultInfo->Result.Reset();
+}
+
+V8_EXPORT const char* GetFunctionLastExceptionInfo(JSFunction *Function, int *Length)
+{
+    *Length = static_cast<int>(strlen(Function->LastExceptionInfo.c_str()));
+    return Function->LastExceptionInfo.c_str();
+}
+
+//-------------------------- end cs call js --------------------------
+
+
+//-------------------------- begin indexed property --------------------------
+V8_EXPORT bool RegisterIndexedProperty(v8::Isolate *Isolate, int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->RegisterIndexedProperty(ClassID, Getter, Setter, Data);
+}
+
+V8_EXPORT void PropertyReturnObject(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int ClassID, void* Ptr)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    Info.GetReturnValue().Set(JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr));
+}
+
+V8_EXPORT void PropertyReturnNumber(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Number)
+{
+    Info.GetReturnValue().Set(Number);
+}
+
+V8_EXPORT void PropertyReturnString(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, const char* String)
+{
+    Info.GetReturnValue().Set(FV8Utils::V8String(Isolate, String));
+}
+
+V8_EXPORT void PropertyReturnBigInt(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int64_t BigInt)
+{
+    Info.GetReturnValue().Set(v8::BigInt::New(Isolate, BigInt));
+}
+
+V8_EXPORT void PropertyReturnBoolean(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, bool Bool)
+{
+    Info.GetReturnValue().Set(Bool);
+}
+
+V8_EXPORT void PropertyReturnDate(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Date)
+{
+    Info.GetReturnValue().Set(v8::Date::New(Isolate->GetCurrentContext(), Date).ToLocalChecked());
+}
+
+V8_EXPORT void PropertyReturnNull(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info)
+{
+    Info.GetReturnValue().SetNull();
+}
+
+//-------------------------- end indexed property --------------------------
+
+
+//-------------------------- begin debug --------------------------
+
+V8_EXPORT void CreateInspector(v8::Isolate *Isolate, int32_t Port)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->CreateInspector(Port);
+}
+
+V8_EXPORT void DestroyInspector(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->DestroyInspector();
+}
+
+V8_EXPORT void InspectorTick(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->InspectorTick();
+}
+
+//-------------------------- end debug --------------------------
+
+#ifdef __cplusplus
+}
+#endif
