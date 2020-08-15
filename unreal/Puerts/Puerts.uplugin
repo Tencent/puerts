@@ -1,0 +1,34 @@
+{
+  "FileVersion": 3,
+  "FriendlyName": "puer.ts",
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyVersion": "1.0",
+  "Description": "Javascript Runtime for unreal engine",
+  "Category": "Programming",
+  "CreatedBy": "Tencent Corporation",
+  "CreatedByURL": "https://github.com/Tencent",
+  "EnabledByDefault": true,
+  "MarketplaceURL" : "",
+  "CanContainContent": true,
+  "CanBeUsedWithUnrealHeaderTool" : false,
+  "Modules": [
+    {
+      "Name": "JsEnv",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
+    },
+    {
+      "Name": "DeclarationGenerator",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "ReactUMG",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+	  "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
+    }
+  ]
+}
