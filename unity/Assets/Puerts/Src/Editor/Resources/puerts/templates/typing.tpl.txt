@@ -1,0 +1,46 @@
+{{
+function parameterDef(pinfo) {
+    return (pinfo.IsParams ? ("..." + pinfo.Name) : pinfo.Name) + ": " + pinfo.TypeName;
+}
+function typeKeyword(type) {
+    if (type.IsDelegate) {
+        return 'type';
+    } else if (type.IsInterface) {
+        return 'interface';
+    } else if (type.IsEnum) {
+        return 'enum';
+    } else {
+        return 'class'
+    }
+}
+
+function typeDeclaration(type, level1) {
+    var result = type.Name;
+    if (type.IsGenericTypeDefinition) {
+        result += "<" + Array.prototype.join.call(type.GenericParameters, ',') + ">";
+    }
+    if (level1 && type.BaseType) {
+        result += " extends " + typeDeclaration(type.BaseType);
+    }
+    if(!level1 && type.Namespace) {
+        result = type.Namespace + "." + result;
+    }
+    return result;
+}
+}}
+declare module 'csharp' {
+    interface $Ref<T> {}
+    
+    {{=it.TaskDef}}
+    
+    {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
+        {{~ns.Types :type}}{{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
+        var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
+            {{~type.Properties :property}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};
+            {{~}}{{~type.Methods :method}}public {{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
+            {{~}}
+        }{{}}}
+        {{~}}
+    {{?ns.Name}}}{{?}}
+    {{~}}
+}

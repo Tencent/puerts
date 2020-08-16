@@ -1,0 +1,101 @@
+/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+ * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+ */
+
+var global = global || (function () { return this; }());
+(function (global) {
+    "use strict";
+
+    function createTypeProxy(namespace) {
+        return new Proxy(Object.create(null), {
+            get: function(cache, name) {
+                if (!(name in cache)) {
+                    let fullName = namespace ? (namespace + '.' + name) : name;
+                    if (/\$\d+$/.test(name)) {
+                        let genericTypeInfo = new Map();
+                        genericTypeInfo.set('$name', fullName.replace('$', '`'));
+                        cache[name] = genericTypeInfo;
+                    } else {
+                        let cls = puerts.loadType(fullName);
+                        if (cls) {
+                            cache[name] = cls
+                            let parentPrototype = Object.getPrototypeOf(cls.prototype);
+                            if (parentPrototype) {
+                                Object.setPrototypeOf(cls, parentPrototype.constructor);//v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
+                            }
+                            //console.log(fullName + ' is a class');
+                        } else {
+                            cache[name] = createTypeProxy(fullName);
+                            //console.log(fullName + ' is a namespace');
+                        }
+                    }
+                }
+                return cache[name];
+            }
+        });
+    }
+    
+    let csharpModule = createTypeProxy(undefined);
+    puerts.registerBuildinModule('csharp', csharpModule);
+    
+    csharpModule.System.Object.prototype.toString = csharpModule.System.Object.prototype.ToString;
+    
+    function ref(x) {
+        return {value:x};
+    }
+
+    function unref(r) {
+        return r.value;
+    }
+    
+    function setref(x, val) {
+        x.value = val;
+    }
+    
+    function taskToPromise(task) {
+        return new Promise((resolve, reject) => {
+            task.GetAwaiter().OnCompleted(() => {
+                let t = task;
+                task = undefined;
+                if (t.IsFaulted) {
+                    if (t.Exception) {
+                        if (t.Exception.InnerException) {
+                            reject(t.Exception.InnerException.Message);
+                        } else {
+                            reject(t.Exception.Message);
+                        }
+                    } else {
+                        reject("unknow exception!");
+                    }
+                } else {
+                    resolve(t.Result);
+                }
+            });
+        });
+    }
+    
+    function makeGeneric(genericTypeInfo, ...genericArgs) {
+        let p = genericTypeInfo;
+        for (var i = 0; i < genericArgs.length; i++) {
+            let genericArg = genericArgs[i];
+            if (!p.get(genericArg)) {
+                p.set(genericArg, new Map());
+            }
+            p = p.get(genericArg);
+        }
+        if (!p.get('$type')) {
+            p.set('$type', puerts.loadType(genericTypeInfo.get('$name'), ...genericArgs));
+        }
+        return p.get('$type');
+    }
+    
+    puerts.$ref = ref;
+    puerts.$unref = unref;
+    puerts.$set = setref;
+    puerts.$promise = taskToPromise;
+    puerts.$generic = makeGeneric;
+
+}(global));
