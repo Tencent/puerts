@@ -56,7 +56,6 @@ set ( PUERTS_INC
     Inc/JSEngine.h
     Inc/V8Utils.h
     Inc/JSFunction.h
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
 )
 
 set ( PUERTS_SRC
@@ -64,8 +63,12 @@ set ( PUERTS_SRC
     Src/Log.cpp
     Src/JSEngine.cpp
     Src/JSFunction.cpp
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
+
+if ( NOT IOS)
+    list (APPEND PUERTS_INC ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h)
+    list (APPEND PUERTS_SRC ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp)
+endif ( )
 
 macro(source_group_by_dir proj_dir source_files)
     if(MSVC OR APPLE)
