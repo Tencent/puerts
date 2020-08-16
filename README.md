@@ -53,6 +53,11 @@ console.log(actor.GetName());
 console.log(actor.K2_GetActorLocation().ToString());
 ```
 
+## 调试
+
+* [unreal](doc/vscode_debug_unreal.md)
+* [unity](doc/vscode_debug_unity.md)
+
 ## 支持的引擎，平台
 
 ### 引擎

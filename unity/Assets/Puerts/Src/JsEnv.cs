@@ -285,7 +285,7 @@ namespace Puerts
             PuertsDLL.LowMemoryNotification(isolate);
         }
 
-        public void InspectorTick()
+        public void Tick()
         {
             PuertsDLL.InspectorTick(isolate);
         }
