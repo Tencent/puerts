@@ -1,14 +1,6 @@
 # puerts for unreal
 
-[puerts](https://git.code.oa.com/puerts/puerts)方案的Unreal版本
-
-## 安装
-
-需要下载&安装[git-lfs](https://git-lfs.github.com/)，然后执行`git lfs install`启用git lfs
-
-* cd PathToYourProject/Plugins/
-* git clone http://git.code.oa.com/puerts/unrealplugin.git Puerts
-* git lfs pull
+puerts方案的Unreal版本
 
 ## 特点
 
@@ -52,7 +44,4 @@
 
 ### 基于静态代码的Binding
 
-## 链接
-
-demo工程：https://git.code.oa.com/puerts/unrealdemo
-
+待测试
