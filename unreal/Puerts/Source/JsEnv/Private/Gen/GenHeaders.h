@@ -63,5 +63,4 @@
 #include "GameFramework/Volume.h"
 #include "GameFramework/WorldSettings.h"
 
-#include "AutoGenTest.h"
 #include "SimpleClass.h"

@@ -8,7 +8,6 @@
 #include "StructWrapper.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
-#include "JSClassRegister.h"
 
 namespace puerts
 {
