@@ -72,6 +72,11 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * 任意.net环境
 
+## 详细信息
+
+* [unreal](unity/README.md)
+* [unity](unreal/README.md)
+
 ## 示例
 
 * [unreal demo](https://github.com/chexiongsheng/puerts_unreal_demo)
