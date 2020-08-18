@@ -15,6 +15,84 @@
 
 namespace puerts
 {
+
+FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR *Name)
+{
+    static UPackage *CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
+    return FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name);
+}
+
+template< class T >
+struct TScriptStructTraits
+{
+    static UScriptStruct* Get() { return T::StaticStruct(); }
+};
+
+template<> struct  TScriptStructTraits<FVector>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FVector>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FVector2D>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FVector2D>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FVector4>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FVector4>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FRotator>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FRotator>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FQuat>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FQuat>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FTransform>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FTransform>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FLinearColor>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FLinearColor>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FColor>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FColor>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FGuid>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FGuid>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FBox2D>
+{
+    static UScriptStruct* Get() { return TBaseStructure<FBox2D>::Get(); }
+};
+
+template<> struct TScriptStructTraits<FIntPoint>
+{
+    static UScriptStruct* Get() { return GetScriptStructInCoreUObject(TEXT("IntPoint")); }
+};
+
+template<> struct TScriptStructTraits<FIntVector>
+{
+    static UScriptStruct* Get() { return GetScriptStructInCoreUObject(TEXT("IntVector")); }
+};
+
+template<> struct TScriptStructTraits<FPlane>
+{
+    static UScriptStruct* Get() { return GetScriptStructInCoreUObject(TEXT("Plane")); }
+};
+
 class JSENV_API DataTransfer
 {
 public:
@@ -46,6 +124,20 @@ public:
 
     static v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer);
 
+    template<typename T>
+    static v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void *Ptr, bool PassByPointer)
+    {
+        return FindOrAddStruct(Isolate, Context, TScriptStructTraits<T>::Get(), Ptr, PassByPointer);
+    }
+
+    static v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer);
+
+    template<typename T>
+    static bool IsInstanceOf(v8::Isolate* Isolate, v8::Local<v8::Object> JsObject)
+    {
+        return IsInstanceOf(Isolate, TScriptStructTraits<T>::Get(), JsObject);
+    }
+
     static bool IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject);
 
     static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
@@ -55,5 +147,7 @@ public:
     static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
 
     static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
+
+    static void ThrowException(v8::Isolate* Isolate, const char * Message);
 };
 }

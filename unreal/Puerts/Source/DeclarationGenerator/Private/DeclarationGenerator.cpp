@@ -512,6 +512,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
 
 void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
 {
+#include "ExcludeStructs.h"
     FStringBuffer StringBuffer {"", ""};
     StringBuffer << "class " << SafeName(Struct->GetName());
     

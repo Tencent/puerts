@@ -6,7 +6,6 @@
 #include "Containers/Array.h"
 #include "DisplayDebugHelpers.h"
 #include "Matinee/MatineeActor.h"
-#include "Interfaces/ITargetPlatform.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/ActorChannel.h"
 #include "Engine/NetConnection.h"

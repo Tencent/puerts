@@ -16,6 +16,11 @@ namespace puerts
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddCData(Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
     }
 
+    v8::Local<v8::Value> DataTransfer::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer)
+    {
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
+    }
+
     bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject)
     {
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject);
@@ -53,5 +58,10 @@ namespace puerts
 
         v8::Local<v8::Value> ObjectValueKey = v8::String::NewFromUtf8(Isolate, "value", v8::NewStringType::kNormal).ToLocalChecked();
         auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, ObjectValueKey, Value);
+    }
+
+    void DataTransfer::ThrowException(v8::Isolate* Isolate, const char * Message)
+    {
+        FV8Utils::ThrowException(Isolate, Message);
     }
 }
