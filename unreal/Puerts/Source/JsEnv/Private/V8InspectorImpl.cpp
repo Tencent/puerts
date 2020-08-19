@@ -18,7 +18,11 @@
 #define PLATFORM_WINDOWS 0
 #if defined(__APPLE__)
 #include "TargetConditionals.h"
-#define PLATFORM_MAC TARGET_OS_MAC
+#if TARGET_OS_IPHONE
+#define PLATFORM_MAC 0
+#else 
+#define PLATFORM_MAC 1
+#endif
 #else
 #define PLATFORM_MAC 0
 #endif
