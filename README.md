@@ -74,8 +74,8 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## 详细信息
 
-* [unreal](unity/README.md)
-* [unity](unreal/README.md)
+* [unreal](unreal/README.md)
+* [unity](unity/README.md)
 
 ## 示例
 
