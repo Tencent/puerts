@@ -65,12 +65,12 @@ namespace Puerts
             GeneralGetterManager = new GeneralGetterManager(this);
             GeneralSetterManager = new GeneralSetterManager(this);
 
-            PuertsDLL.SetGeneralDestructor(isolate, StatiCallbacks.GeneralDestructor);
+            PuertsDLL.SetGeneralDestructor(isolate, StaticCallbacks.GeneralDestructor);
 
             TypeRegister.InitArrayTypeId(isolate);
 
-            PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StatiCallbacks.JsEnvCallbackWrap, AddCallback(LoadType));
-            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StatiCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StaticCallbacks.JsEnvCallbackWrap, AddCallback(LoadType));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
             var autoRegister = Type.GetType("PuertsStaticWrap.AutoStaticCodeRegister", false);
             if (autoRegister != null)
