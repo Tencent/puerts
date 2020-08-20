@@ -83,3 +83,6 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
 
+## 技术支持
+
+QQ群：942696334
