@@ -490,7 +490,15 @@ namespace Puerts.Editor
 
             if (genTypeSet.Contains(type) && !type.IsEnum && type.BaseType != null && type != typeof(object) && !result.IsDelegate && !result.IsInterface)
             {
-                result.BaseType = ToTsTypeGenInfo(type.BaseType, genTypeSet);
+                result.BaseType = new TsTypeGenInfo()
+                {
+                    Name = type.BaseType.IsGenericType ? GetTsTypeName(type.BaseType): type.BaseType.Name.Replace('`', '$'),
+                    Namespace = type.BaseType.Namespace
+                };
+                if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)
+                {
+                    result.BaseType.Name = result.BaseType.Name.Substring(type.BaseType.Namespace.Length + 1);
+                }
             }
 
             if (type.IsEnum)
