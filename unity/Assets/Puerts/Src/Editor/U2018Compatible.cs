@@ -41,6 +41,10 @@ public class U2018Compatible
                 }
             }
         }
+        if (memberInfo.DeclaringType.ToString() == "System.Type" && memberInfo.Name == "IsSZArray")
+        {
+            return true;
+        }
         return false;
     }
 #endif

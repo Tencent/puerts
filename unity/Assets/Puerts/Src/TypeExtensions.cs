@@ -172,6 +172,8 @@ namespace Puerts
                 return "string";
             else if (type == typeof(void))
                 return "void";
+            else if (type.IsArray)
+                return GetFriendlyName(type.GetElementType()) + "[]";
             else if (type.IsNested)
             {
                 if (type.DeclaringType.IsGenericTypeDefinition)

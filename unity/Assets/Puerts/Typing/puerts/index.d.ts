@@ -1,5 +1,5 @@
 declare module "puerts" {
-    import {$Ref, $Task} from "csharp"
+    import {$Ref, $Task, System} from "csharp"
     
     function $ref<T>(x? : T) : $Ref<T>;
     
@@ -7,9 +7,11 @@ declare module "puerts" {
     
     function $set<T>(x: $Ref<T>, val:T) : void;
 
-    function $promise<T>(x: $Task<T>) : Promise<T>
+    function $promise<T>(x: $Task<T>) : Promise<T>;
     
-    function $generic<T extends new (...args:any[]) => any> (genericType :T, ...genericArguments: (new (...args:any[]) => any)[]) : T
+    function $generic<T extends new (...args:any[]) => any> (genericType :T, ...genericArguments: (new (...args:any[]) => any)[]) : T;
+    
+    function $typeof(x : new (...args:any[]) => any) : System.Type;
 }
 
 declare function require(name: string): any;

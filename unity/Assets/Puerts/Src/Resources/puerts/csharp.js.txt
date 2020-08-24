@@ -92,10 +92,17 @@ var global = global || (function () { return this; }());
         return p.get('$type');
     }
     
+    function getType(cls) {
+        if (cls.__p_innerTypeCache) return cls.__p_innerTypeCache;
+        cls.__p_innerTypeCache = cls.__p_innerType;
+        return cls.__p_innerTypeCache;
+    }
+    
     puerts.$ref = ref;
     puerts.$unref = unref;
     puerts.$set = setref;
     puerts.$promise = taskToPromise;
     puerts.$generic = makeGeneric;
+    puerts.$typeof = getType;
 
 }(global));

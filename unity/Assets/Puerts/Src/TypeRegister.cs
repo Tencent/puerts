@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -24,7 +24,7 @@ namespace Puerts
             assemblies.Add(Assembly.GetExecutingAssembly());
             var assembliesUsorted = AppDomain.CurrentDomain.GetAssemblies();
 #endif
-            AddAssemblieByName(assembliesUsorted, "mscorlib,"); //ÎªÁËÈÃÕâ¼¸¸ö³ÌÐò¼¯ÅÅÇ°Ãæ
+            AddAssemblieByName(assembliesUsorted, "mscorlib,"); //ä¸ºäº†è®©è¿™å‡ ä¸ªç¨‹åºé›†æŽ’å‰é¢
             AddAssemblieByName(assembliesUsorted, "System,");
             AddAssemblieByName(assembliesUsorted, "System.Core,");
             foreach (Assembly assembly in assembliesUsorted)
@@ -441,6 +441,12 @@ namespace Puerts
 
                 PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, field.Name, field.IsStatic, callbackWrap, getterData, setter, setterData);
             }
+
+            var translateFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(typeof(Type));
+            PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, "__p_innerType", true, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen) =>
+            {
+                translateFunc(isolate1, NativeValueApi.SetValueToResult, info, type);
+            }), null, 0);
 
             return typeId;
         }
