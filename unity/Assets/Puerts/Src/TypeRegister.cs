@@ -83,7 +83,7 @@ namespace Puerts
         {
             arrayTypeId = PuertsDLL.RegisterClass(jsEnv.isolate, GetTypeId(isolate, typeof(Array)), "__puerts.Array", null, null, 0);
             PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "length", false, callbackWrap, jsEnv.AddCallback(ArrayLength), null, 0);
-            PuertsDLL.RegisterIndexedProperty(jsEnv.isolate, arrayTypeId, StatiCallbacks.IndexedGetterWrap, StatiCallbacks.IndexedSetterWrap, Utils.TwoIntToLong(jsEnv.Idx, 0));
+            PuertsDLL.RegisterIndexedProperty(jsEnv.isolate, arrayTypeId, StaticCallbacks.IndexedGetterWrap, StaticCallbacks.IndexedSetterWrap, Utils.TwoIntToLong(jsEnv.Idx, 0));
         }
 
         void AddAssemblieByName(IEnumerable<Assembly> assembliesUsorted, string name)
@@ -175,9 +175,9 @@ namespace Puerts
             return null;
         }
 
-        private readonly V8FunctionCallback callbackWrap = new V8FunctionCallback(StatiCallbacks.JsEnvCallbackWrap);
+        private readonly V8FunctionCallback callbackWrap = new V8FunctionCallback(StaticCallbacks.JsEnvCallbackWrap);
 
-        private readonly V8ConstructorCallback constructorWrap = new V8ConstructorCallback(StatiCallbacks.ConstructorWrap);
+        private readonly V8ConstructorCallback constructorWrap = new V8ConstructorCallback(StaticCallbacks.ConstructorWrap);
 
         private readonly Dictionary<Type, int> typeIdMap = new Dictionary<Type, int>();
 
