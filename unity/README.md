@@ -1,7 +1,5 @@
 # puerts for unity
 
-[puerts](https://git.code.oa.com/puerts/puerts)方案的Unity版本
-
 ## 突破点
 
 * 带静态类型检查的脚本
