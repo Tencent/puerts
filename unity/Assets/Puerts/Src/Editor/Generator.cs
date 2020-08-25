@@ -456,7 +456,7 @@ namespace Puerts.Editor
 
             if (result.IsDelegate)
             {
-                if (type == typeof(Delegate))
+                if (type == typeof(Delegate) || type == typeof(System.MulticastDelegate))
                 {
                     result.DelegateDef = "(...args:any[]) => any";
                 }
