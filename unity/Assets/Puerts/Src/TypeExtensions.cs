@@ -142,6 +142,20 @@ namespace Puerts
             return type.IsValueType() && !type.IsEnum() && !type.IsPrimitive();
         }
 
+        static string GetNameWithoutNamespace(Type type)
+        {
+            if (type.IsGenericType)
+            {
+                var genericArgumentNames = type.GetGenericArguments()
+                    .Select(x => GetFriendlyName(x)).ToArray();
+                return type.Name.Split('`')[0] + "<" + string.Join(", ", genericArgumentNames) + ">";
+            }
+            else
+            {
+                return type.Name;
+            }
+        }
+
         public static string GetFriendlyName(this Type type)
         {
             if (type == typeof(int))
@@ -184,7 +198,7 @@ namespace Puerts
                 }
                 else
                 {
-                    return GetFriendlyName(type.DeclaringType) + '.' + type.Name;
+                    return GetFriendlyName(type.DeclaringType) + '.' + GetNameWithoutNamespace(type);
                 }
             }
             else if (type.IsGenericType)
