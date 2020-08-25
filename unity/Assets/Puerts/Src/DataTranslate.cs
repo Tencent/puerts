@@ -478,7 +478,7 @@ namespace Puerts
                     }
                     else
                     {
-                        int typeId = typeRegister.GetTypeId(isolate, type);
+                        int typeId = typeRegister.GetTypeId(isolate, obj.GetType());
                         int objectId = objectPool.AddBoxedValueType(obj);
                         setValueApi.SetObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
@@ -494,7 +494,7 @@ namespace Puerts
                     }
                     else
                     {
-                        int typeId = typeRegister.GetTypeId(isolate, type);
+                        int typeId = typeRegister.GetTypeId(isolate, obj.GetType());
                         int objectId = objectPool.FindOrAddObject(obj);
                         setValueApi.SetObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
