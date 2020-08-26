@@ -9,7 +9,7 @@ using System;
 
 namespace Puerts
 {
-    static class Utils
+    public static class Utils
     {
         public static long TwoIntToLong(int a, int b)
         {
