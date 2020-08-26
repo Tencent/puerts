@@ -264,7 +264,7 @@ namespace Puerts.Editor
                 Name = type.GetFriendlyName(),
                 Methods = methodGroups.Select(m => ToMethodGenInfo(m)).ToArray(),
                 IsValueType = type.IsValueType,
-                Constructor = constructors.Count > 0 ? ToMethodGenInfo(constructors) : null,
+                Constructor = (!type.IsAbstract && constructors.Count > 0) ? ToMethodGenInfo(constructors) : null,
                 Properties = type.GetProperties(Flags)
                     .Where(m => !isFiltered(m))
                     .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
@@ -432,7 +432,7 @@ namespace Puerts.Editor
             var result = new TsTypeGenInfo()
             {
                 Name = type.Name.Replace('`', '$'),
-                Methods = genTypeSet.Contains(type) ? type.GetConstructors(Flags).Where(m => !isFiltered(m)).Cast<MethodBase>()
+                Methods = genTypeSet.Contains(type) ? (type.IsAbstract ? new MethodBase[] { } : type.GetConstructors(Flags).Where(m => !isFiltered(m)).Cast<MethodBase>())
                     .Concat(type.GetMethods(Flags)
                         .Where(m => !isFiltered(m) && !IsGetterOrSetter(m) && !m.IsGenericMethodDefinition)
                         .Cast<MethodBase>())
