@@ -1,4 +1,4 @@
-![Logo](./pic/logo.png)
+![Logo](./pic/puerts_logo.png)
 
 ## What？
 
