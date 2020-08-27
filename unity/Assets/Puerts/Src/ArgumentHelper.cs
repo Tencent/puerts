@@ -218,4 +218,12 @@ namespace Puerts
             StaticTranslate<T>.Set(jsEnvIdx, isolate, NativeValueApi.SetValueToByRefArgument, value, val);
         }
     }
+
+    public struct ResultHelper
+    {
+        public static void Set<T>(int jsEnvIdx, IntPtr isolate, IntPtr info, T result)
+        {
+            StaticTranslate<T>.Set(jsEnvIdx, isolate, NativeValueApi.SetValueToResult, info, result);
+        }
+    }
 }

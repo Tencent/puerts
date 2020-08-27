@@ -78,7 +78,7 @@ function setReturn(typeInfo) {
     } else if (typeInfo.IsEnum) {
         return fixReturn[typeInfo.UnderlyingTypeName].replace('result', `(${typeInfo.UnderlyingTypeName})result`);
     } else {
-        return `Puerts.StaticTranslate<${typeName}>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)`;
+        return `Puerts.ResultHelper.Set((int)data, isolate, info, result)`;
     }
 }
 function operatorCall(methodName, argCount, typeInfo) {
