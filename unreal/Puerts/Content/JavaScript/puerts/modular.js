@@ -66,7 +66,7 @@ var global = global || (function () { return this; }());
         let localModuleCache = Object.create(null);
         function require(moduleName) {
             moduleName = normalize(moduleName);
-            if (moduleName in localModuleCache) return localModuleCache[moduleName];
+            if (moduleName in localModuleCache) return localModuleCache[moduleName].exports;
             if (moduleName in buildinModule) return buildinModule[moduleName];
             let nativeModule = findModule(moduleName);
             if (nativeModule) {
@@ -82,7 +82,7 @@ var global = global || (function () { return this; }());
             let key = fullPath;
             if (key in moduleCache) {
                 localModuleCache[moduleName] = moduleCache[key];
-                return localModuleCache[moduleName];
+                return localModuleCache[moduleName].exports;
             }
             let m = {"exports":{}};
             localModuleCache[moduleName] = m;
@@ -92,13 +92,14 @@ var global = global || (function () { return this; }());
                 let packageConfigure = JSON.parse(script);
                 let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
                 let tmpRequire = genRequire(fullDirInJs);
-                m = tmpRequire(packageConfigure.main);
+                let r = tmpRequire(packageConfigure.main);
+                tmpModuleStorage[sid] = undefined;
+                return r;
             } else {
-                m = executeModule(fullPath, script, debugPath, sid);
+                executeModule(fullPath, script, debugPath, sid);
+                tmpModuleStorage[sid] = undefined;
+                return m.exports;
             }
-            tmpModuleStorage[sid] = undefined;
-            
-            return m;
         }
 
         return require;
