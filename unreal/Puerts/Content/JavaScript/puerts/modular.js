@@ -31,15 +31,32 @@ var global = global || (function () { return this; }());
     
     let findModule = global.__tgjsFindModule;
     global.__tgjsFindModule = undefined;
+    
+    let tmpModuleStorage = [];
+    
+    function addModule(m) {
+        for (var i = 0; i < tmpModuleStorage.length; i++) {
+            if (!tmpModuleStorage[i]) {
+                tmpModuleStorage[i] = m;
+                return i;
+            }
+        }
+        return tmpModuleStorage.push(m) - 1;
+    }
+    
+    function getModuleBySID(id) {
+        return tmpModuleStorage[id];
+    }
 
     let moduleCache = Object.create(null);
     let buildinModule = Object.create(null);
-    function executeModule(fullPath, script, debugPath) {
+    function executeModule(fullPath, script, debugPath, sid) {
+        sid = (typeof sid == 'undefined') ? 0 : sid;
         let fullPathInJs = fullPath.replace(/\\/g, '\\\\');
         let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
         let executeScript = "(function() { var __filename = '"
             + fullPathInJs + "', __dirname = '"
-            + fullDirInJs + "', exports ={}, module =  { exports : exports, filename : __filename }; (function (exports, require, console, prompt) { "
+            + fullDirInJs + "', module = puerts.getModuleBySID(" + sid + "), exports = module.exports; module.filename = __filename ; (function (exports, require, console, prompt) { "
             + script + "\n})(exports, puerts.genRequire('"
             + fullDirInJs + "'), puerts.console); return module.exports})()";
         return evalScript(executeScript, debugPath);
@@ -67,17 +84,20 @@ var global = global || (function () { return this; }());
                 localModuleCache[moduleName] = moduleCache[key];
                 return localModuleCache[moduleName];
             }
-            let m
+            let m = {"exports":{}};
+            localModuleCache[moduleName] = m;
+            moduleCache[key] = m;
+            let sid = addModule(m);
             if (fullPath.endsWith("package.json")) {
                 let packageConfigure = JSON.parse(script);
                 let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
                 let tmpRequire = genRequire(fullDirInJs);
                 m = tmpRequire(packageConfigure.main);
             } else {
-                m = executeModule(fullPath, script, debugPath);
+                m = executeModule(fullPath, script, debugPath, sid);
             }
-            localModuleCache[moduleName] = m;
-            moduleCache[key] = m;
+            tmpModuleStorage[sid] = undefined;
+            
             return m;
         }
 
@@ -91,6 +111,8 @@ var global = global || (function () { return this; }());
     registerBuildinModule("puerts", puerts)
 
     puerts.genRequire = genRequire;
+    
+    puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;
 
