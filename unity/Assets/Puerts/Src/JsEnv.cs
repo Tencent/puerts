@@ -7,10 +7,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Puerts
 {
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
+
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
 
     public class JsEnv : IDisposable
@@ -52,6 +55,7 @@ namespace Puerts
                         break;
                     }
                 }
+
                 if (Idx == -1)
                 {
                     Idx = jsEnvs.Count;
@@ -69,14 +73,19 @@ namespace Puerts
 
             TypeRegister.InitArrayTypeId(isolate);
 
-            PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StaticCallbacks.JsEnvCallbackWrap, AddCallback(LoadType));
-            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StaticCallbacks.JsEnvCallbackWrap,
+                AddCallback(LoadType));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap,
+                AddCallback(GetLoader));
+
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsSetTimeout", StaticCallbacks.JsEnvCallbackWrap,
+                AddCallback(SetTimeout));
 
             var autoRegister = Type.GetType("PuertsStaticWrap.AutoStaticCodeRegister", false);
             if (autoRegister != null)
             {
                 var methodInfoOfRegister = autoRegister.GetMethod("Register");
-                methodInfoOfRegister.Invoke(null, new object[] { this });
+                methodInfoOfRegister.Invoke(null, new object[] {this});
             }
 
             if (port != -1)
@@ -89,6 +98,7 @@ namespace Puerts
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
+            ExecuteFile("puerts/timer.js");
         }
 
         void ExecuteFile(string filename)
@@ -109,6 +119,7 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
                 throw new Exception(exceptionInfo);
             }
+
             PuertsDLL.ResetResult(resultInfo);
         }
 
@@ -120,7 +131,9 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
                 throw new Exception(exceptionInfo);
             }
-            TResult result = StaticTranslate<TResult>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
+
+            TResult result =
+                StaticTranslate<TResult>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
             PuertsDLL.ResetResult(resultInfo);
             return result;
         }
@@ -185,9 +198,54 @@ namespace Puerts
 
         public int Index
         {
-            get
+            get { return Idx; }
+        }
+
+        void SetTimeout(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
             {
-                return Idx;
+                if (paramLen != 2)
+                {
+                    return;
+                }
+
+                IntPtr fn = IntPtr.Zero;
+                var value1 = PuertsDLL.GetArgumentValue(info, 0);
+                if (PuertsDLL.GetJsValueType(isolate, value1, false) == JsValueType.Function)
+                {
+                    fn = PuertsDLL.GetFunctionFromValue(isolate, value1, false);
+                    if (fn == IntPtr.Zero)
+                    {
+                        return;
+                    }
+                }
+
+
+                long time = -1;
+                var value2 = PuertsDLL.GetArgumentValue(info, 1);
+                if (PuertsDLL.GetJsValueType(isolate, value2, false) == JsValueType.Number)
+                {
+                    time = Convert.ToInt64(PuertsDLL.GetNumberFromValue(isolate, value2, false));
+                }
+
+                System.Timers.Timer t = new System.Timers.Timer(time);
+                t.Elapsed += (a, b) =>
+                {
+                    PuertsDLL.InvokeJSFunction(fn, false);
+                    var error = PuertsDLL.GetFunctionLastExceptionInfo(fn);
+                    if (!String.IsNullOrWhiteSpace(error))
+                    {
+                        Debug.LogError(error);
+                    }
+                };
+                t.AutoReset = false;
+                t.Enabled = true;
+            }
+            catch (Exception e)
+            {
+                PuertsDLL.ThrowException(isolate,
+                    "setTimeOut throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
 
@@ -205,9 +263,9 @@ namespace Puerts
                     {
                         type = maybeType;
                     }
-                    else if (maybeType != null 
-                        && maybeType.IsGenericTypeDefinition
-                        && maybeType.GetGenericArguments().Length == (paramLen - 1)) //泛型
+                    else if (maybeType != null
+                             && maybeType.IsGenericTypeDefinition
+                             && maybeType.GetGenericArguments().Length == (paramLen - 1)) //泛型
                     {
                         var genericArguments = new Type[paramLen - 1];
                         for (int i = 1; i < paramLen; i++)
@@ -218,20 +276,24 @@ namespace Puerts
                             if (argTypeId == -1) return;
                             genericArguments[i - 1] = TypeRegister.GetType(argTypeId);
                         }
+
                         type = maybeType.MakeGenericType(genericArguments);
                         //UnityEngine.Debug.Log(type);
                     }
                 }
+
                 if (type == null)
                 {
                     return;
                 }
+
                 int typeId = TypeRegister.GetTypeId(isolate, type);
                 PuertsDLL.ReturnClass(isolate, info, typeId);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                PuertsDLL.ThrowException(isolate, "loadClass throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                PuertsDLL.ThrowException(isolate,
+                    "loadClass throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
 

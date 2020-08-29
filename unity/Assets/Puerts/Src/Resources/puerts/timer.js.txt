@@ -1,0 +1,48 @@
+﻿/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+ * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+ */
+
+var global = global || (function () {
+    return this;
+}());
+(function (global) {
+    "use strict";
+    let ids = new Set();
+    let next = 0;
+    global.setTimeout = (fn, time, ...arg) => {
+        if (time<0)
+            return -1;
+        let id = next++;
+        ids.add(id);
+        global.__tgjsSetTimeout(()=>{
+            if(ids.has(id)){
+                fn(arg);
+                ids = ids.delete(id)
+            }
+        },time);
+        return id;
+    };
+    global.setInterval = (fn, time, ...arg) => {
+        let t = 10;
+        if (time!=null && time>10)
+            t = time;
+        let id = next++;
+        ids.add(id);
+        let cfn = ()=>{
+            if(ids.has(id)){
+                fn(arg);
+                global.__tgjsSetTimeout(cfn,t);
+            }
+        };
+        global.__tgjsSetTimeout(cfn,t);
+        return id;
+    };
+    global.clearInterval = (id)=>{
+        ids = ids.delete(id)
+    }
+    global.clearTimeout = global.clearInterval;
+    puerts.console = console;
+}(global));
