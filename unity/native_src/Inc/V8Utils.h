@@ -32,6 +32,7 @@ enum JsValueType
     Function        = 256,
     Date            = 512,
     Unknow          = 1024,
+    ArrayBuffer     = 2048
 };
 
 class FV8Utils

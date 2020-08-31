@@ -332,6 +332,47 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError);
+        
+        
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PropertyReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetArrayBufferToOutValue(IntPtr isolate, IntPtr value, Byte[] bytes, int length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PushArrayBufferForJSFunction(IntPtr function, byte[] bytes, int length);
+
+        public static Byte[] GetArrayListFromResult(IntPtr resultInfo)
+        {
+            int strlen;
+            IntPtr str = GetStringFromResult(resultInfo,out strlen);
+            string str2 = GetStringFromNative(str, strlen);
+            string[] str3 =  str2.Split(',');
+            Byte[] b = new Byte[str3.Length];
+            for(int i =0; i < str3.Length;i++)
+            {
+                b[i] = (Byte) int.Parse(str3[i]);
+            }
+
+            return b;
+        }
+        
+                
+        public static Byte[] GetArrayBufferFromValue(IntPtr isolate, IntPtr value, bool isByRef)
+        {
+            int strlen;
+            IntPtr str = GetStringFromValue(isolate, value, out strlen, isByRef);
+            string str2 = GetStringFromNative(str, strlen);
+            string[] str3 =  str2.Split(',');
+            Byte[] b = new Byte[str3.Length];
+            for(int i =0; i < str3.Length;i++)
+            {
+                b[i] = (Byte) int.Parse(str3[i]);
+            }
+
+            return b;
+        }
     }
 }
 

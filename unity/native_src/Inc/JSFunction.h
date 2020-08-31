@@ -33,7 +33,11 @@ struct FValue
             void *ObjectPtr;
             int ClassID;
         } ObjectInfo;
-        
+        struct
+        {
+            unsigned char *Bytes;
+            int Length;
+        } ArrayBuffer;
         class JSFunction *FunctionPtr;
     };
 };

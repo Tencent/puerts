@@ -359,6 +359,17 @@ V8_EXPORT void ReleaseJSFunction(v8::Isolate* Isolate, JSFunction *Function)
     }
 }
 
+V8_EXPORT void SetArrayBufferToOutValue(v8::Isolate* Isolate, v8::Value *Value, unsigned char *Bytes, int Length)
+{
+    if (Value->IsObject())
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        v8::Handle<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(Isolate,Bytes,Length);
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"),ab);
+    }
+}
+
 V8_EXPORT void ThrowException(v8::Isolate* Isolate, const char * Message)
 {
     FV8Utils::ThrowException(Isolate, Message);
@@ -399,6 +410,12 @@ V8_EXPORT void ReturnBoolean(v8::Isolate* Isolate, const v8::FunctionCallbackInf
 V8_EXPORT void ReturnDate(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, double Date)
 {
     Info.GetReturnValue().Set(v8::Date::New(Isolate->GetCurrentContext(), Date).ToLocalChecked());
+}
+
+V8_EXPORT void ReturnArrayBuffer(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, unsigned char *Bytes, int Length)
+{
+    v8::Handle<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(Isolate, Bytes, Length);
+    Info.GetReturnValue().Set(ab);
 }
 
 V8_EXPORT void ReturnNull(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -443,6 +460,15 @@ V8_EXPORT void PushBigIntForJSFunction(JSFunction *Function, int64_t V)
     FValue Value;
     Value.Type = puerts::BigInt;
     Value.BigInt = V;
+    Function->Arguments.push_back(Value);
+}
+
+V8_EXPORT void PushArrayBufferForJSFunction(JSFunction *Function, unsigned char * Bytes,int Length)
+{
+    FValue Value;
+    Value.Type = puerts::ArrayBuffer;
+    Value.ArrayBuffer.Length = Length;
+    Value.ArrayBuffer.Bytes = Bytes;
     Function->Arguments.push_back(Value);
 }
 
@@ -654,6 +680,11 @@ V8_EXPORT void PropertyReturnBigInt(v8::Isolate* Isolate, const v8::PropertyCall
 V8_EXPORT void PropertyReturnBoolean(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, bool Bool)
 {
     Info.GetReturnValue().Set(Bool);
+}
+
+V8_EXPORT void PropertyReturnArrayBuffer(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, unsigned char* Bytes, int Length)
+{
+    Info.GetReturnValue().Set(v8::ArrayBuffer::New(Isolate,Bytes,Length));
 }
 
 V8_EXPORT void PropertyReturnDate(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Date)

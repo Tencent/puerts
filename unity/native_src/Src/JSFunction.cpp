@@ -38,7 +38,8 @@ namespace puerts
             return Value.FunctionPtr->GFunction.Get(Isolate);
         case Boolean:
             return v8::Boolean::New(Isolate, Value.Boolean);
-     
+        case ArrayBuffer:
+            return v8::ArrayBuffer::New(Isolate,Value.ArrayBuffer.Bytes,Value.ArrayBuffer.Length);
         default:
             return v8::Undefined(Isolate);
         }
