@@ -7,11 +7,13 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Puerts
 {
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
+    public delegate void TickHandler(double deltaTime);
 
     public class JsEnv : IDisposable
     {
@@ -69,6 +71,7 @@ namespace Puerts
 
             TypeRegister.InitArrayTypeId(isolate);
 
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsRegisterTickHandler", StaticCallbacks.JsEnvCallbackWrap, AddCallback(RegisterTickHandler));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StaticCallbacks.JsEnvCallbackWrap, AddCallback(LoadType));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
@@ -89,6 +92,7 @@ namespace Puerts
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
+            ExecuteFile("puerts/timer.js");
         }
 
         void ExecuteFile(string filename)
@@ -191,6 +195,48 @@ namespace Puerts
             }
         }
 
+        private TickHandler tickHandler; 
+        
+        void RegisterTickHandler(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                if (paramLen != 1)
+                {
+                    return;
+                }
+
+                IntPtr fn = IntPtr.Zero;
+                var value1 = PuertsDLL.GetArgumentValue(info, 0);
+                if (PuertsDLL.GetJsValueType(isolate, value1, false) == JsValueType.Function)
+                {
+                    fn = PuertsDLL.GetFunctionFromValue(isolate, value1, false);
+                    if (fn == IntPtr.Zero)
+                    {
+                        return;
+                    }
+
+                    tickHandler += (deltaTime) =>
+                    {
+                        PuertsDLL.PushNumberForJSFunction(fn, deltaTime);
+                        IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
+                        if (resultInfo==IntPtr.Zero)
+                        {
+                            var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
+                            throw new Exception(exceptionInfo);
+                        }
+                    };
+
+                }
+            }
+            catch (Exception e)
+            {
+                PuertsDLL.ThrowException(isolate,
+                    "registerTickHandler throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
+            
+        }
+        
         void LoadType(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
         {
             try
@@ -288,6 +334,7 @@ namespace Puerts
         public void Tick()
         {
             PuertsDLL.InspectorTick(isolate);
+            tickHandler?.Invoke(Time.deltaTime);
         }
 
         /*[MonoPInvokeCallback(typeof(LogCallback))]

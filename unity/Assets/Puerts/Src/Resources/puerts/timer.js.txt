@@ -1,0 +1,85 @@
+﻿/*
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+ * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+ */
+
+var global = global || (function () {
+    return this;
+}());
+(function (global) {
+    "use strict";
+    let global_time = 0;
+    const pending_timers = new Map();
+    const processing_timers = new Map();
+    const removing_timers = new Set();
+    let next = 0;
+
+    global.__tgjsRegisterTickHandler((deltaTime) => {
+        global_time += deltaTime * 1000;
+        timerUpdate();
+    })
+    global.__tgjsRegisterTickHandler = undefined;
+    
+    function timerUpdate(){
+        const now  = global_time;
+        for (const [id, timer] of pending_timers) {
+            processing_timers.set(id, timer);
+        }
+        pending_timers.clear();
+
+        for (const id of removing_timers) {
+            processing_timers.delete(id);
+        }
+        removing_timers.clear();
+
+        for (const [id, timer] of processing_timers) {
+            if (timer.next_time <= now) {
+                timer.handler();
+                if (timer.oneshot) {
+                    removing_timers.add(id);
+                } else {
+                    timer.next_time = now + timer.timeout;
+                }
+            }
+        }
+    }
+    
+    global.setTimeout = (fn, time, ...arg) => {
+        if (typeof fn !== 'function'){
+            throw new Error(`Callback must be a function. Received ${typeof fn}`)
+        }
+        let t = 0
+        if (time > 0)
+            t = time;
+        pending_timers.set(++next, {
+            next_time: t + global_time,
+            handler: fn.bind(arg),
+            oneshot: true
+        });
+        return next;
+    };
+    
+    global.setInterval = (fn, time, ...arg) => {
+        if (typeof fn !== 'function'){
+            throw new Error(`Callback must be a function. Received ${typeof fn}`)
+        }
+        let t = 10;
+        if (time != null && time > 10)
+            t = time;
+        pending_timers.set(++next, {
+            next_time: t + global_time,
+            handler: fn.bind(arg),
+            oneshot: false,
+            timeout: time
+        });
+        return next;
+    };
+    
+    global.clearInterval = (id) => {
+        removing_timers.add(id);
+    }
+    
+    global.clearTimeout = global.clearInterval;
+}(global));
