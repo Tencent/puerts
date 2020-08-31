@@ -5,7 +5,7 @@
     2 (after 3000ms)
 `)
 let i0 = setTimeout(()=>console.log(0),2000);
-setTimeout(()=>{clearTimeout(i0)},1000);
+setTimeout(()=>clearTimeout(i0),1000);
 
 let i1 = setTimeout(()=>console.log(1),1000);
 setTimeout(()=>clearTimeout(i1),2000);
