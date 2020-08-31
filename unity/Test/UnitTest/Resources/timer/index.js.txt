@@ -1,0 +1,14 @@
+﻿console.log(`
+    you can see:
+    1 (after 1000ms),
+    2 (after 1500ms),
+    2 (after 3000ms)
+`)
+let i0 = setTimeout(()=>console.log(0),2000);
+setTimeout(()=>{clearTimeout(i0)},1000);
+
+let i1 = setTimeout(()=>console.log(1),1000);
+setTimeout(()=>clearTimeout(i1),2000);
+
+let i2 = setInterval(()=>console.log(2),1500);
+setTimeout(()=>clearInterval(i2),3500)
