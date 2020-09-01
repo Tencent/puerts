@@ -7,7 +7,11 @@ artifacts:
 
 before_build:
   - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
-  - cd unity\general\vs2013
+  - md unity\general\Bin
+  - cd unity\native_src
+  - make_win64.bat
+  - copy /Y build64\Release\puerts.dll ..\general\Bin
+  - cd ..\general\vs2013
   - nuget restore Puerts.sln
   - nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
   
