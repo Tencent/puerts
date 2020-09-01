@@ -5,6 +5,10 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if PUERTS_GENERAL
+using System.IO;
+#endif
+
 namespace Puerts
 {
     public interface ILoader
@@ -28,17 +32,26 @@ namespace Puerts
 
         public bool FileExists(string filepath)
         {
+#if PUERTS_GENERAL
+            return File.Exists(Path.Combine(root, filepath));
+#else
             return UnityEngine.Resources.Load(filepath) != null;
+#endif
         }
 
         public string ReadFile(string filepath, out string debugpath)
         {
+#if PUERTS_GENERAL
+            debugpath = Path.Combine(root, filepath);
+            return File.ReadAllText(debugpath);
+#else
             UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(filepath);
             debugpath = System.IO.Path.Combine(root, filepath);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             debugpath = debugpath.Replace("/", "\\");
 #endif
             return file == null ? null : file.text;
+#endif
         }
     }
 }

@@ -99,6 +99,10 @@ namespace Puerts
                 var context = loader.ReadFile(filename, out debugPath);
                 Eval(context, debugPath);
             }
+            else
+            {
+                throw new InvalidProgramException("can not find " + filename);
+            }
         }
 
         public void Eval(string chunk, string chunkName = "chunk")
