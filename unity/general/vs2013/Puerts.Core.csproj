@@ -67,9 +67,6 @@
     <Compile Include="..\..\Assets\Puerts\Src\PuertsDLL.cs">
       <Link>Assets\Puerts\Src\PuertsDLL.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\StatiCallbacks.cs">
-      <Link>Assets\Puerts\Src\StatiCallbacks.cs</Link>
-    </Compile>
     <Compile Include="..\..\Assets\Puerts\Src\StaticCallbacks.cs">
       <Link>Assets\Puerts\Src\StaticCallbacks.cs</Link>
     </Compile>
