@@ -9,7 +9,10 @@ before_build:
   - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
   - md unity\general\Bin
   - cd unity\native_src
-  - make_win64.bat
+  - mkdir build64 & pushd build64
+  - cmake -G "Visual Studio 14 2015 Win64" ..
+  - popd
+  - cmake --build build64 --config Release
   - copy /Y build64\Release\puerts.dll ..\general\Bin
   - cd ..\general\vs2013
   - nuget restore Puerts.sln
