@@ -49,11 +49,5 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(100, ret);
         }
-
-        [Test]
-        public void FailTest()
-        {
-            Assert.AreEqual(100, 1);
-        }
     }
 }

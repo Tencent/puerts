@@ -1,5 +1,7 @@
 ![Logo](./pic/puerts_logo.png)
 
+[![Build status](https://ci.appveyor.com/api/projects/status/github/Tencent/puerts?branch=master&svg=true)](https://ci.appveyor.com/project/chexiongsheng/puerts)
+
 ## What？
 
 puerts是游戏引擎下的TypeScript编程解决方案

@@ -1,6 +1,0 @@
-os: windows
-language: csharp
-script:
-  - cd unity\native_src
-  - make_win64.bat
-  - cp build64\Release\puerts.dll ..\general\Bin
