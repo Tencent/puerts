@@ -12,7 +12,6 @@ namespace Puerts
 {
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
-    public delegate void TickHandler();
 
     public class JsEnv : IDisposable
     {
@@ -198,7 +197,7 @@ namespace Puerts
             }
         }
 
-        private TickHandler tickHandler; 
+        private List<IntPtr> tickHandler = new List<IntPtr>(); 
         
         void RegisterTickHandler(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
         {
@@ -218,15 +217,7 @@ namespace Puerts
                     {
                         return;
                     }
-                    tickHandler += () =>
-                    {
-                        IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
-                        if (resultInfo==IntPtr.Zero)
-                        {
-                            var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
-                            throw new Exception(exceptionInfo);
-                        }
-                    };
+                    tickHandler.Add(fn);
 
                 }
             }
@@ -335,7 +326,23 @@ namespace Puerts
         public void Tick()
         {
             PuertsDLL.InspectorTick(isolate);
-            tickHandler?.Invoke();
+            tickHandler.ForEach(fn =>
+            {
+                try
+                {
+                    IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
+                    if (resultInfo==IntPtr.Zero)
+                    {
+                        var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
+                        throw new Exception(exceptionInfo);
+                    }
+                }
+                catch (Exception e)
+                {
+                    PuertsDLL.ThrowException(isolate, "tick update throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                }
+
+            });
         }
 
         /*[MonoPInvokeCallback(typeof(LogCallback))]
