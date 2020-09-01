@@ -149,6 +149,24 @@ V8_EXPORT double GetNumberFromValue(v8::Isolate* Isolate, v8::Value *Value, bool
     }
 }
 
+V8_EXPORT const char* GetArrayBufferFromValue(v8::Isolate* Isolate, v8::Value *Value, int *Length,bool IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return GetArrayBufferFromValue(Isolate, *Realvalue,Length, false);
+    }
+    else
+    {
+
+        auto ab = v8::ArrayBuffer::Cast(Value);
+        *Length = ab->ByteLength();
+        return static_cast<char*>(ab->GetContents().Data());
+    }
+}
+
 V8_EXPORT void SetNumberToOutValue(v8::Isolate* Isolate, v8::Value *Value, double Number)
 {
     if (Value->IsObject())
@@ -570,6 +588,18 @@ V8_EXPORT const char *GetStringFromResult(FResultInfo *ResultInfo, int *Length)
     *Length = static_cast<int>(JsEngine->StrBuffer.length());
 
     return JsEngine->StrBuffer.c_str();
+}
+
+V8_EXPORT const char *GetArrayBufferFromResult(FResultInfo *ResultInfo, int *Length)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto ab = v8::Local<v8::ArrayBuffer>::Cast(ResultInfo->Result.Get(Isolate));
+    *Length = ab->ByteLength();
+    return static_cast<char *>(ab->GetContents().Data());
 }
 
 V8_EXPORT bool GetBooleanFromResult(FResultInfo *ResultInfo)

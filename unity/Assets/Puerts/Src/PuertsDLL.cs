@@ -8,6 +8,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using UnityEngine;
 
 namespace Puerts
 {
@@ -342,37 +343,40 @@ namespace Puerts
         public static extern void SetArrayBufferToOutValue(IntPtr isolate, IntPtr value, Byte[] bytes, int length);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushArrayBufferForJSFunction(IntPtr function, byte[] bytes, int length);
-
-        public static Byte[] GetArrayListFromResult(IntPtr resultInfo)
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
+        
+        private static byte[] GetArrayBufferFromNative(IntPtr ab, int strlen)
         {
-            int strlen;
-            IntPtr str = GetStringFromResult(resultInfo,out strlen);
-            string str2 = GetStringFromNative(str, strlen);
-            string[] str3 =  str2.Split(',');
-            Byte[] b = new Byte[str3.Length];
-            for(int i =0; i < str3.Length;i++)
+            if (ab != IntPtr.Zero)
             {
-                b[i] = (Byte) int.Parse(str3[i]);
+                int len = strlen;
+                byte[] buffer = new byte[len];
+                Marshal.Copy(ab, buffer, 0, len);
+                return buffer;
             }
-
-            return b;
+            else
+            {
+                return null;
+            }
         }
         
-                
-        public static Byte[] GetArrayBufferFromValue(IntPtr isolate, IntPtr value, bool isByRef)
+        public static byte[] GetArrayBufferFromValue(IntPtr isolate, IntPtr value, bool isByRef)
         {
             int strlen;
-            IntPtr str = GetStringFromValue(isolate, value, out strlen, isByRef);
-            string str2 = GetStringFromNative(str, strlen);
-            string[] str3 =  str2.Split(',');
-            Byte[] b = new Byte[str3.Length];
-            for(int i =0; i < str3.Length;i++)
-            {
-                b[i] = (Byte) int.Parse(str3[i]);
-            }
-
-            return b;
+            IntPtr str = GetArrayBufferFromValue(isolate, value, out strlen, isByRef);
+            return GetArrayBufferFromNative(str, strlen);
         }
+        
+        public static byte[] GetArrayBufferFromResult(IntPtr isolate, IntPtr value, bool isByRef)
+        {
+            int strlen;
+            IntPtr str = GetArrayBufferFromResult( value, out strlen);
+            return GetArrayBufferFromNative(str, strlen);
+        }
+
     }
 }
 
