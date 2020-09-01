@@ -102,17 +102,19 @@ var global = global || (function () {
         while (true) {
             const time = timers.peek();
             if (time && time.next_time <= now) {
+
                 if(removing_timers.has(time.id)){
                     removing_timers.delete(time.id)
                 }
                 else {
+
                     time.handler(time.args);
+                    if (time.timeout) {
+                        time.next_time = now + time.timeout;
+                        timers.push(time);
+                    }
                 }
                 timers.pop();
-                if (time.timeout) {
-                    time.next_time = now + time.timeout;
-                    timers.push(time);
-                }
             } else {
                 break;
             }
@@ -147,8 +149,9 @@ var global = global || (function () {
             next_time: t + global_time,
             handler: fn,
             args: arg,
-            timeout: time
+            timeout: t
         });
+
         return next;
     };
 
