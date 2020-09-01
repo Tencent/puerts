@@ -125,7 +125,7 @@ public:
 
     v8::Isolate* MainIsolate;
 
-    std::string StrBuffer;
+    std::vector<char> StrBuffer;
 
     FResultInfo ResultInfo;
 

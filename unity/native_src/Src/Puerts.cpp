@@ -197,10 +197,13 @@ V8_EXPORT const char *GetStringFromValue(v8::Isolate* Isolate, v8::Value *Value,
     {
         auto Context = Isolate->GetCurrentContext();
         auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        JsEngine->StrBuffer = *(v8::String::Utf8Value(Isolate, Value->ToString(Context).ToLocalChecked()));
-        *Length = static_cast<int>(JsEngine->StrBuffer.length());
+        v8::Local<v8::String> Str;
+        if (!Value->ToString(Context).ToLocal(&Str)) return nullptr;
+        *Length = Str->Utf8Length(Isolate);
+        if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.reserve(*Length + 1);
+        Str->WriteUtf8(Isolate, JsEngine->StrBuffer.data());
         
-        return JsEngine->StrBuffer.c_str();
+        return JsEngine->StrBuffer.data();
     }
 }
 
@@ -539,11 +542,13 @@ V8_EXPORT const char *GetStringFromResult(FResultInfo *ResultInfo, int *Length)
     v8::Context::Scope ContextScope(Context);
 
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    //auto Utf8Str = v8::String::Utf8Value(Isolate, Function->Result.Get(Function->Isolate));
-    JsEngine->StrBuffer = *(v8::String::Utf8Value(Isolate, ResultInfo->Result.Get(Isolate)));
-    *Length = static_cast<int>(JsEngine->StrBuffer.length());
+    v8::Local<v8::String> Str;
+    if (!ResultInfo->Result.Get(Isolate)->ToString(Context).ToLocal(&Str)) return nullptr;
+    *Length = Str->Utf8Length(Isolate);
+    if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.reserve(*Length + 1);
+    Str->WriteUtf8(Isolate, JsEngine->StrBuffer.data());
 
-    return JsEngine->StrBuffer.c_str();
+    return JsEngine->StrBuffer.data();
 }
 
 V8_EXPORT bool GetBooleanFromResult(FResultInfo *ResultInfo)
