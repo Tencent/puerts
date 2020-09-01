@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7FF5AB8C-EBAA-2482-749F-1E59E0531B86}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Puerts.Core</RootNamespace>
+    <AssemblyName>Puerts.Core</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Lib\</OutputPath>
+    <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Core\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>_DEBUG;DEBUG;TRACE;;PUERTS_GENERAL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Lib\</OutputPath>
+    <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.Core\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>;PUERTS_GENERAL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Assets\Puerts\Src\ArgumentHelper.cs">
+      <Link>Assets\Puerts\Src\ArgumentHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\DataTranslate.cs">
+      <Link>Assets\Puerts\Src\DataTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\GenericDelegate.cs">
+      <Link>Assets\Puerts\Src\GenericDelegate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\JsEnv.cs">
+      <Link>Assets\Puerts\Src\JsEnv.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\Loader.cs">
+      <Link>Assets\Puerts\Src\Loader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\MethodReflection.cs">
+      <Link>Assets\Puerts\Src\MethodReflection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\NativeValueApiGeneric.cs">
+      <Link>Assets\Puerts\Src\NativeValueApiGeneric.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\ObjectPool.cs">
+      <Link>Assets\Puerts\Src\ObjectPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\PuertsDLL.cs">
+      <Link>Assets\Puerts\Src\PuertsDLL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\StatiCallbacks.cs">
+      <Link>Assets\Puerts\Src\StatiCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\StaticCallbacks.cs">
+      <Link>Assets\Puerts\Src\StaticCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\StaticTranslate.cs">
+      <Link>Assets\Puerts\Src\StaticTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\StaticWrapRegister.cs">
+      <Link>Assets\Puerts\Src\StaticWrapRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\TypeExtensions.cs">
+      <Link>Assets\Puerts\Src\TypeExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\TypeRegister.cs">
+      <Link>Assets\Puerts\Src\TypeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\Utils.cs">
+      <Link>Assets\Puerts\Src\Utils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
