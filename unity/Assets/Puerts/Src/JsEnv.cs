@@ -13,7 +13,7 @@ namespace Puerts
 {
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
-    public delegate void TickHandler(double deltaTime);
+    public delegate void TickHandler();
 
     public class JsEnv : IDisposable
     {
@@ -219,10 +219,8 @@ namespace Puerts
                     {
                         return;
                     }
-
-                    tickHandler += (deltaTime) =>
+                    tickHandler += () =>
                     {
-                        PuertsDLL.PushNumberForJSFunction(fn, deltaTime);
                         IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
                         if (resultInfo==IntPtr.Zero)
                         {
@@ -338,7 +336,7 @@ namespace Puerts
         public void Tick()
         {
             PuertsDLL.InspectorTick(isolate);
-            tickHandler?.Invoke(Time.deltaTime);
+            tickHandler?.Invoke();
         }
 
         /*[MonoPInvokeCallback(typeof(LogCallback))]
