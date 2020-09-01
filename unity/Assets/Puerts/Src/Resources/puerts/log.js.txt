@@ -10,6 +10,8 @@ var global = global || (function () { return this; }());
     "use strict";
 
     let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
+    
+    if (!UnityEngine_Debug) return;
 
     var console = {}
 
