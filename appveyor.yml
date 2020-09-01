@@ -1,5 +1,7 @@
 version: 1.0.{build}
-os: Windows Server 2012 R2
+
+image:
+  - Visual Studio 2017
 
 configuration: Release
 
@@ -11,7 +13,7 @@ before_build:
   - cd unity\native_src
   - mkdir build64
   - cd build64
-  - cmake -G "Visual Studio 14 2015 Win64" ..
+  - cmake -G "Visual Studio 15 2017 Win64" ..
   - cd ..
   - cmake --build build64 --config Release
   - copy /Y build64\Release\puerts.dll ..\general\Bin
