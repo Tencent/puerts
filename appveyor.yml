@@ -1,0 +1,18 @@
+version: 1.0.{build}
+os: Windows Server 2012 R2
+
+configuration: Release
+
+artifacts:
+
+before_build:
+  - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
+  - cd unity\general\vs2013
+  - nuget restore Puerts.sln
+  - nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
+  
+build_script:
+  - msbuild Puerts.sln
+  
+after_build:
+
