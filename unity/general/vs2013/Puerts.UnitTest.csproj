@@ -50,6 +50,9 @@
     <Compile Include="..\Src\UnitTest\TestClass.cs">
       <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\TimerTest.cs">
+      <Link>Src\UnitTest\TimerTest.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\UnitTest.cs">
       <Link>Src\UnitTest\UnitTest.cs</Link>
     </Compile>

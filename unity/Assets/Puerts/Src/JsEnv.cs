@@ -328,18 +328,11 @@ namespace Puerts
             PuertsDLL.InspectorTick(isolate);
             tickHandler.ForEach(fn =>
             {
-                try
+                IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
+                if (resultInfo==IntPtr.Zero)
                 {
-                    IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
-                    if (resultInfo==IntPtr.Zero)
-                    {
-                        var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
-                        throw new Exception(exceptionInfo);
-                    }
-                }
-                catch (Exception e)
-                {
-                    PuertsDLL.ThrowException(isolate, "tick update throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                    var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
+                    throw new Exception(exceptionInfo);
                 }
 
             });
