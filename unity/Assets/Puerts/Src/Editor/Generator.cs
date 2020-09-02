@@ -561,11 +561,22 @@ namespace Puerts.Editor
 
         static void AddRefType(HashSet<Type> refTypes, Type type)
         {
+            if (refTypes.Contains(type)) return;
             if (type.IsGenericType)
             {
                 foreach (var gt in type.GetGenericArguments())
                 {
                     AddRefType(refTypes, gt);
+                }
+            }
+
+            if (IsDelegate(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
+            {
+                MethodInfo delegateMethod = type.GetMethod("Invoke");
+                AddRefType(refTypes, delegateMethod.ReturnType);
+                foreach (var pinfo in delegateMethod.GetParameters())
+                {
+                    AddRefType(refTypes, pinfo.ParameterType);
                 }
             }
 
