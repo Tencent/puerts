@@ -1,1 +1,4 @@
 *.meta
+/general/Bin
+/general/Lib
+/general/vs2013/*/
