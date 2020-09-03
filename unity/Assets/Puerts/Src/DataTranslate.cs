@@ -46,6 +46,7 @@ namespace Puerts
             generalGetterMap[typeof(bool)] = BooleanTranslator;
             generalGetterMap[typeof(string)] = StringTranslator;
             generalGetterMap[typeof(DateTime)] = DateTranslator;
+            generalGetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
             generalGetterMap[typeof(object)] = AnyTranslator;
             //special type
             //translatorMap[typeof(LuaTable)] = getLuaTable;
@@ -124,6 +125,11 @@ namespace Puerts
             return (new DateTime(1970, 1, 1)).AddMilliseconds(ticks);
         }
 
+        private static object ArrayBufferTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        {
+            return getValueApi.GetArrayBuffer(isolate, value, isByRef);
+        }
+
         internal object AnyTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var type = getValueApi.GetJsValueType(isolate, value, isByRef);
@@ -135,6 +141,8 @@ namespace Puerts
                     return getValueApi.GetBoolean(isolate, value, isByRef);
                 case JsValueType.Date:
                     return DateTranslator(isolate, getValueApi, value, isByRef);
+                case JsValueType.ArrayBuffer:
+                    return getValueApi.GetArrayBuffer(isolate, value, isByRef);
                 //case JsValueType.Function:
                 //case JsValueType.JsObject:
                 case JsValueType.NativeObject:
@@ -307,6 +315,10 @@ namespace Puerts
             {
                 mash = JsValueType.Date;
             }
+            else if (type == typeof(ArrayBuffer))
+            {
+                mash = JsValueType.ArrayBuffer;
+            }
             else if (!type.IsAbstract() && typeof(Delegate).IsAssignableFrom(type))
             {
                 mash = JsValueType.Function | JsValueType.NativeObject | JsValueType.NullOrUndefined;
@@ -358,6 +370,7 @@ namespace Puerts
             generalSetterMap[typeof(bool)] = BooleanTranslator;
             generalSetterMap[typeof(string)] = StringTranslator;
             generalSetterMap[typeof(DateTime)] = DateTranslator;
+            generalSetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
             generalSetterMap[typeof(void)] = VoidTranslator;
             generalSetterMap[typeof(object)] = AnyTranslator;
         }
@@ -442,6 +455,11 @@ namespace Puerts
         {
             DateTime date = (DateTime)obj;
             setValueApi.SetDate(isolate, holder, (date - new DateTime(1970, 1, 1)).TotalMilliseconds);
+        }
+
+        private static void ArrayBufferTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        {
+            setValueApi.SetArrayBuffer(isolate, holder, (ArrayBuffer)obj);
         }
 
         internal void AnyTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)

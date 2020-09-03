@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -179,6 +179,16 @@ namespace Puerts
             return (new DateTime(1970, 1, 1)).AddMilliseconds(ticks);
         }
 
+        public static void PushArrayBuffer(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, ArrayBuffer arrayBuffer)
+        {
+            setValueApi.SetArrayBuffer(isolate, holder, arrayBuffer);
+        }
+
+        public static ArrayBuffer GetArrayBuffer(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr holder, bool isByRef)
+        {
+            return getValueApi.GetArrayBuffer(isolate, holder, isByRef);
+        }
+
         internal static void Init()
         {
             StaticTranslate<char>.ReplaceDefault(PushChar, GetChar);
@@ -194,6 +204,7 @@ namespace Puerts
             StaticTranslate<float>.ReplaceDefault(PushFloat, GetFloat);
             StaticTranslate<string>.ReplaceDefault(PushString, GetString);
             StaticTranslate<DateTime>.ReplaceDefault(PushDateTime, GetDateTime);
+            StaticTranslate<ArrayBuffer>.ReplaceDefault(PushArrayBuffer, GetArrayBuffer);
         }
     }
 }

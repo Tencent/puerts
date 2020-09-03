@@ -31,7 +31,8 @@ enum JsValueType
     Array           = 128,
     Function        = 256,
     Date            = 512,
-    Unknow          = 1024,
+    ArrayBuffer     = 1024,
+    Unknow          = 2048,
 };
 
 class FV8Utils
@@ -179,6 +180,10 @@ public:
         else if (Value->IsDate())
         {
             return Date;
+        }
+        else if (Value->IsArrayBufferView())
+        {
+            return ArrayBuffer;
         }
         else if (Value->IsObject())
         {

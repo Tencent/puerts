@@ -49,5 +49,33 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(100, ret);
         }
+
+        [Test]
+        public void ArrayBuffer()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let obj = new CS.Puerts.UnitTest.ArrayBufferTest();
+                let ab = obj.AB;
+                //CS.System.Console.WriteLine(ab.constructor.toString());
+                let uint8Array = new Uint8Array(ab);
+                if (obj.Sum(uint8Array) != 6) {
+                    throw new Error('sum of c# ab')
+                }
+                let u8a = new Uint8Array(2);
+                u8a[0] = 123;
+                u8a[1] = 101;
+                if (obj.Sum(u8a) != 224) {
+                    throw new Error('sum of js ab')
+                }
+                uint8Array.length;
+            ");
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual(3, ret);
+        }
     }
 }

@@ -50,8 +50,9 @@ namespace Puerts
         Array = 128,
         Function = 256,
         Date = 512,
-        Unknow = 1024,
-        Any = NullOrUndefined | BigInt | Number | String | Boolean | NativeObject | Array | Function | Date,
+        ArrayBuffer = 1024,
+        Unknow = 2048,
+        Any = NullOrUndefined | BigInt | Number | String | Boolean | NativeObject | Array | Function | Date | ArrayBuffer,
     };
 
     public class PuertsDLL
@@ -61,6 +62,9 @@ namespace Puerts
 #else
         const string DLLNAME = "puerts";
 #endif
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetLibVersion();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngine();
@@ -332,6 +336,19 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PropertyReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetArrayBufferToOutValue(IntPtr isolate, IntPtr value, Byte[] bytes, int length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PushArrayBufferForJSFunction(IntPtr function, byte[] bytes, int length);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
     }
 }
 

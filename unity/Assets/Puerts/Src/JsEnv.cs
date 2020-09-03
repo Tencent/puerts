@@ -37,6 +37,12 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort = -1)
         {
+            const int libVersionExpect = 1;
+            int libVersion = PuertsDLL.GetLibVersion();
+            if (libVersion != libVersionExpect)
+            {
+                throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
+            }
             //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
             isolate = PuertsDLL.CreateJSEngine();

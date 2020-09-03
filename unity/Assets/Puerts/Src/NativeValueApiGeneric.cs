@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -9,6 +9,25 @@ using System;
 
 namespace Puerts
 {
+    public class ArrayBuffer
+    {
+        public byte[] Bytes;
+
+        public ArrayBuffer(byte[] bytes)
+        {
+            Bytes = bytes;
+        }
+
+        public ArrayBuffer(IntPtr ptr, int length)
+        {
+            if (ptr != IntPtr.Zero)
+            {
+                Bytes = new byte[length];
+                System.Runtime.InteropServices.Marshal.Copy(ptr, Bytes, 0, length);
+            }
+        }
+    }
+
     public static class NativeValueApi
     {
         public static IGetValueFromJs GetValueFromArgument = new GetValueFromArgumentImpl();
@@ -39,6 +58,8 @@ namespace Puerts
         void SetDate(IntPtr isolate, IntPtr holder, double date);
 
         void SetNull(IntPtr isolate, IntPtr holder);
+
+        void SetArrayBuffer(IntPtr isolate, IntPtr holder, ArrayBuffer arrayBuffer);
     }
 
     public interface IGetValueFromJs
@@ -60,6 +81,8 @@ namespace Puerts
         int GetTypeId(IntPtr isolate, IntPtr holder, bool isByRef);
 
         IntPtr GetFunction(IntPtr isolate, IntPtr holder, bool isByRef);
+
+        ArrayBuffer GetArrayBuffer(IntPtr isolate, IntPtr holder, bool isByRef);
     }
 
     public class GetValueFromResultImpl : IGetValueFromJs
@@ -107,6 +130,13 @@ namespace Puerts
         public string GetString(IntPtr isolate, IntPtr holder, bool isByRef)
         {
             return PuertsDLL.GetStringFromResult(holder);
+        }
+
+        public ArrayBuffer GetArrayBuffer(IntPtr isolate, IntPtr holder, bool isByRef)
+        {
+            int length;
+            var ptr = PuertsDLL.GetArrayBufferFromResult(holder, out length);
+            return new ArrayBuffer(ptr, length);
         }
     }
 
@@ -156,10 +186,29 @@ namespace Puerts
         {
             return PuertsDLL.GetStringFromValue(isolate, holder, isByRef);
         }
+
+        public ArrayBuffer GetArrayBuffer(IntPtr isolate, IntPtr holder, bool isByRef)
+        {
+            int length;
+            var ptr = PuertsDLL.GetArrayBufferFromValue(isolate, holder, out length, isByRef);
+            return new ArrayBuffer(ptr, length);
+        }
     }
 
     public class SetValueToIndexResultImpl : ISetValueToJs
     {
+        public void SetArrayBuffer(IntPtr isolate, IntPtr holder, ArrayBuffer arrayBuffer)
+        {
+            if (arrayBuffer == null || arrayBuffer.Bytes == null)
+            {
+                PuertsDLL.PropertyReturnArrayBuffer(isolate, holder, null, 0);
+            }
+            else
+            {
+                PuertsDLL.PropertyReturnArrayBuffer(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+            }
+        }
+
         public void SetBigInt(IntPtr isolate, IntPtr holder, long number)
         {
             PuertsDLL.PropertyReturnBigInt(isolate, holder, number);
@@ -198,6 +247,18 @@ namespace Puerts
 
     public class SetValueToResultImpl : ISetValueToJs
     {
+        public void SetArrayBuffer(IntPtr isolate, IntPtr holder, ArrayBuffer arrayBuffer)
+        {
+            if (arrayBuffer == null || arrayBuffer.Bytes == null)
+            {
+                PuertsDLL.ReturnArrayBuffer(isolate, holder, null, 0);
+            }
+            else
+            {
+                PuertsDLL.ReturnArrayBuffer(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+            }
+        }
+
         public void SetBigInt(IntPtr isolate, IntPtr holder, long number)
         {
             PuertsDLL.ReturnBigInt(isolate, holder, number);
@@ -236,6 +297,18 @@ namespace Puerts
 
     public class SetValueToByRefArgumentImpl : ISetValueToJs
     {
+        public void SetArrayBuffer(IntPtr isolate, IntPtr holder, ArrayBuffer arrayBuffer)
+        {
+            if (arrayBuffer == null || arrayBuffer.Bytes == null)
+            {
+                PuertsDLL.SetArrayBufferToOutValue(isolate, holder, null, 0);
+            }
+            else
+            {
+                PuertsDLL.SetArrayBufferToOutValue(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+            }
+        }
+
         public void SetBigInt(IntPtr isolate, IntPtr holder, long number)
         {
             PuertsDLL.SetBigIntToOutValue(isolate, holder, number);
@@ -275,6 +348,18 @@ namespace Puerts
 
     public class SetValueToArgumentImpl : ISetValueToJs
     {
+        public void SetArrayBuffer(IntPtr isolate, IntPtr holder, ArrayBuffer arrayBuffer)
+        {
+            if (arrayBuffer == null || arrayBuffer.Bytes == null)
+            {
+                PuertsDLL.PushArrayBufferForJSFunction(holder, null, 0);
+            }
+            else
+            {
+                PuertsDLL.PushArrayBufferForJSFunction(holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+            }
+        }
+
         public void SetBigInt(IntPtr isolate, IntPtr holder, long number)
         {
             PuertsDLL.PushBigIntForJSFunction(holder, number);
