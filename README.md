@@ -28,7 +28,11 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
     - unreal engine: 拷贝puerts/unreal下的Puerts目录到您项目的Plugins目录下，可以参考[unreal demo](https://github.com/chexiongsheng/puerts_unreal_demo)
     
-    - unity： 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下，可以参考[unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
+    - unity
+    
+        + 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下，可以参考[unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
+        
+        + 自行编译各平台的Plugins或者下载release
 
 ## 编程样例
 
