@@ -32,7 +32,7 @@ namespace Puerts.UnitTest
         {
             SetTimeoutTestNum = 0;
             var jsEnv = new JsEnv(new TxtLoader());
-
+            jsEnv.Tick();
             jsEnv.Eval(@"
                 const CS = require('csharp');
                 let obj = CS.Puerts.UnitTest.Timer;
@@ -65,6 +65,7 @@ namespace Puerts.UnitTest
         {
             SetIntervalTestNum = 0;
             var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Tick();
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
@@ -88,6 +89,7 @@ namespace Puerts.UnitTest
         public void SetIntervalTest2()
         {
             var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Tick();
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
@@ -113,6 +115,7 @@ namespace Puerts.UnitTest
         public void TimerTest2()
         {
             var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Tick();
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
@@ -144,6 +147,7 @@ namespace Puerts.UnitTest
         public void TimerTest3()
         {
             var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Tick();
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
@@ -175,6 +179,7 @@ namespace Puerts.UnitTest
         public void TimerTest4()
         {
             var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Tick();
 
             jsEnv.Eval(@"
                 const CS = require('csharp');

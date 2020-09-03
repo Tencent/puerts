@@ -96,7 +96,7 @@ namespace Puerts
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
-            ExecuteFile("puerts/timer.js");
+            ExecuteFile("puerts/noImplement.js");
         }
 
         void ExecuteFile(string filename)
@@ -329,9 +329,15 @@ namespace Puerts
             PuertsDLL.LowMemoryNotification(isolate);
         }
 
+        private bool isTick = false;
         public void Tick()
         {
             PuertsDLL.InspectorTick(isolate);
+            if (!isTick)
+            {
+                ExecuteFile("puerts/timer.js");
+                isTick = true;
+            }
             tickHandler.ForEach(fn =>
             {
                 IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
