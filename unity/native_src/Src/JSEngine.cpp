@@ -508,11 +508,12 @@ namespace puerts
         }
     }
 
-    void JSEngine::InspectorTick()
+    bool JSEngine::InspectorTick()
     {
         if (Inspector != nullptr)
         {
-            Inspector->Tick();
+            return Inspector->Tick();
         }
+        return true;
     }
 }

@@ -688,10 +688,10 @@ V8_EXPORT void DestroyInspector(v8::Isolate *Isolate)
     JsEngine->DestroyInspector();
 }
 
-V8_EXPORT void InspectorTick(v8::Isolate *Isolate)
+V8_EXPORT bool InspectorTick(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->InspectorTick();
+    return JsEngine->InspectorTick();
 }
 
 //-------------------------- end debug --------------------------

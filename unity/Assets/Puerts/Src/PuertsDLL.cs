@@ -328,7 +328,7 @@ namespace Puerts
         public static extern void DestroyInspector(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void InspectorTick(IntPtr isolate);
+        public static extern bool InspectorTick(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError);

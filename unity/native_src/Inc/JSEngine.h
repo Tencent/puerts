@@ -121,7 +121,7 @@ public:
 
     void DestroyInspector();
 
-    void InspectorTick();
+    bool InspectorTick();
 
     v8::Isolate* MainIsolate;
 

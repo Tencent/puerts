@@ -35,7 +35,7 @@ namespace Puerts
         {
         }
 
-        public JsEnv(ILoader loader, int port = -1)
+        public JsEnv(ILoader loader, int debugPort = -1)
         {
             //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
@@ -80,9 +80,9 @@ namespace Puerts
                 methodInfoOfRegister.Invoke(null, new object[] { this });
             }
 
-            if (port != -1)
+            if (debugPort != -1)
             {
-                PuertsDLL.CreateInspector(isolate, port);
+                PuertsDLL.CreateInspector(isolate, debugPort);
             }
 
             ExecuteFile("puerts/init.js");
@@ -336,6 +336,11 @@ namespace Puerts
                 }
 
             });
+        }
+
+        public void WaitDebugger()
+        {
+            while (!PuertsDLL.InspectorTick(isolate)) { }
         }
 
         /*[MonoPInvokeCallback(typeof(LogCallback))]
