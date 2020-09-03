@@ -26,7 +26,7 @@ public:
 class JSENV_API DefaultJSModuleLoader : public IJSModuleLoader
 {
 public:
-    explicit DefaultJSModuleLoader(const FString &SR) : ScriptRoot(SR){}
+    explicit DefaultJSModuleLoader(const FString &InScriptRoot) : ScriptRoot(InScriptRoot){}
 
 	bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath) override;
 

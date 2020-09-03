@@ -16,7 +16,7 @@ class V8Inspector
 public:
     virtual void Close() = 0;
 
-    virtual void Tick() = 0;
+    virtual bool Tick() = 0;
 
     virtual ~V8Inspector() {}
 };

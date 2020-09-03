@@ -1,7 +1,22 @@
 ## vscode debug指引
 
-* 编辑TGameJsUnrealDemo\Plugins\Puerts\Content\JavaScript\puerts\first_run.js，打开被注释的“createInspector(8080)”
-    - 8080是连接的端口，和vscode工程目录下的.vscode\launch.json保持一致
+* 创建FJsEnv传入调试端口
+
+~~~cpp
+//8080是调试端口
+GameScript = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), 8080);
+~~~
+
+* 如果希望阻塞等待调试器链接
+
+~~~cpp
+GameScript = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), 8080);
+GameScript->WaitDebugger();
+
+//...
+
+GameScript->Start("QuickStart", Arguments);
+~~~
 
 * vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”
 

@@ -29,6 +29,8 @@ public:
 
     virtual void LowMemoryNotification() = 0;
 
+    virtual void WaitDebugger() = 0;
+
     virtual ~IJsEnv() {}
 };
 
@@ -37,11 +39,13 @@ class JSENV_API FJsEnv// : public TSharedFromThis<FJsEnv> // only a wrapper
 public:
     explicit FJsEnv(const FString &ScriptRoot = TEXT("JavaScript"));
 
-    FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger);
+    FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort);
 
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments = TArray<TPair<FString, UObject*>>());
 
     void LowMemoryNotification();
+
+    void WaitDebugger();
 
 private:
     std::unique_ptr<IJsEnv> GameScript;

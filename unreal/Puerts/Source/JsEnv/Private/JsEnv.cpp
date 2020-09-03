@@ -63,13 +63,18 @@ class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectD
 public:
     explicit FJsEnvImpl(const FString &ScriptRoot);
 
-    FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger);
+    FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int Port);
 
     ~FJsEnvImpl() override;
 
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments) override;
 
     void LowMemoryNotification() override;
+
+    void WaitDebugger() override
+    {
+        while(Inspector && !Inspector->Tick()){}
+    }
 
 public:
     void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) override;
@@ -181,10 +186,6 @@ private:
     void SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
-    void CreateInspector(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
-    void DestroyInspector(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -390,9 +391,9 @@ FJsEnv::FJsEnv(const FString &ScriptRoot)
     GameScript = std::make_unique<FJsEnvImpl>(ScriptRoot);
 }
 
-FJsEnv::FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger)
+FJsEnv::FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort)
 {
-    GameScript = std::make_unique<FJsEnvImpl>(std::move(InModuleLoader), InLogger);
+    GameScript = std::make_unique<FJsEnvImpl>(std::move(InModuleLoader), InLogger, InDebugPort);
 }
 
 void FJsEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments)
@@ -405,11 +406,16 @@ void FJsEnv::LowMemoryNotification()
     GameScript->LowMemoryNotification();
 }
 
-FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>())
+void FJsEnv::WaitDebugger()
+{
+    GameScript->WaitDebugger();
+}
+
+FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1)
 {
 }
 
-FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger)
+FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -556,18 +562,6 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->ClearInterval(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
-    Global->Set(Context, FV8Utils::ToV8String(Isolate, "createInspector"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        Self->CreateInspector(Info);
-    }, This)->GetFunction(Context).ToLocalChecked()).Check();
-
-    Global->Set(Context, FV8Utils::ToV8String(Isolate, "destroyInspector"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        Self->DestroyInspector(Info);
-    }, This)->GetFunction(Context).ToLocalChecked()).Check();
-
     Global->Set(Context, FV8Utils::ToV8String(Isolate, "dumpStatisticsLog"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
@@ -594,6 +588,11 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     DynamicInvoker->Parent = this;
 
     InitExtensionMethodsMap();
+
+    if (InDebugPort >= 0)
+    {
+        Inspector = CreateV8Inspector(InDebugPort, &Context);
+    }
 
     ExecuteModule("puerts/first_run.js");
     ExecuteModule("puerts/polyfill.js");
@@ -2104,51 +2103,6 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CHECK_V8_ARGS(Function, Int32);
 
     SetFTickerDelegate(Info, true);
-}
-
-void FJsEnvImpl::CreateInspector(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    CHECK_V8_ARGS(Int32 );
-
-    if (Inspector != nullptr)
-    {
-        Info.GetReturnValue().Set(v8::Boolean::New(Isolate, false));
-    }
-    else
-    {
-        auto PortMaybeLocal = Info[0]->Int32Value(Context);
-        if (PortMaybeLocal.IsNothing())
-        {
-            Info.GetReturnValue().Set(v8::Boolean::New(Isolate, false));
-            return;
-        }
-        int32_t Port = 0;
-        bool Ret = PortMaybeLocal.To(&Port);
-
-        Inspector = CreateV8Inspector(Port, &Context);
-        Info.GetReturnValue().Set(v8::Boolean::New(Isolate, (Inspector != nullptr)));
-    }
-}
-
-void FJsEnvImpl::DestroyInspector(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    if (Inspector != nullptr)
-    {
-        delete Inspector;
-        Inspector = nullptr;
-    }
 }
 
 void FJsEnvImpl::RequestJitModuleMethod(const v8::FunctionCallbackInfo<v8::Value>& Info)
