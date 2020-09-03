@@ -15,6 +15,24 @@ void Update()
 }
 ```
 
+* 阻塞等待调试器链接
+  - 调试器通过websocket连接，期间有TCP的握手，websocket握手，建立连接后，调试器和V8还会交换些信息，整个过程大概几百毫秒
+  - 在这几百毫秒内执行的脚本将无法断点，如果你想断点这些代码，可以用puerts的阻塞等待调试器连接功能
+
+```csharp
+void Start()
+{
+    jsEnv = new JsEnv(new DefaultLoader("E:/puerts_unity_demo/TsProj/output/"), 8080);
+    jsEnv.WaitDebugger();
+    jsEnv.Eval("require('QuickStart')");
+}
+
+void Update()
+{
+    jsEnv.Tick();
+}
+```
+
 * vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”
 
 

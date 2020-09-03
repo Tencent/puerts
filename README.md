@@ -1,6 +1,10 @@
 ![Logo](./pic/puerts_logo.png)
 
+[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
+[![release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 [![Build status](https://ci.appveyor.com/api/projects/status/github/Tencent/puerts?branch=master&svg=true)](https://ci.appveyor.com/project/chexiongsheng/puerts)
+
 
 ## What？
 
@@ -32,7 +36,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
     
         + 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下，可以参考[unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
         
-        + 自行编译各平台的Plugins或者下载release
+        + Plugins要单独下载[releases](https://github.com/Tencent/puerts/releases)，或者自行编译
 
 ## 编程样例
 
