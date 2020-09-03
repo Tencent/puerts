@@ -51,7 +51,6 @@ namespace puerts
 
     static void Free(char* Data)
     {
-        PLog(Log, "free array: %p", Data);
         ::free(Data);
     }
 
@@ -65,7 +64,6 @@ namespace puerts
             ::memcpy(Data, Ptr, Size);
         }
 
-        PLog(Log, "malloc array: %p", Data);
         v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Data, Size);
         new ObjectLifeCycleTrace(Isolate, Ab, Free, static_cast<char*>(Data));
         return Ab;
