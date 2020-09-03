@@ -100,6 +100,7 @@ namespace Puerts.Editor
             public bool IsStatic;
             public OverloadGenInfo[][] OverloadGroups;
             public bool HasOverloads;
+            public int OverloadCount;
         }
 
         static string ToCode(JsValueType ExpectJsType)
@@ -204,6 +205,7 @@ namespace Puerts.Editor
                 Name = overloads[0].Name,
                 IsStatic = overloads[0].IsStatic,
                 HasOverloads = overloads.Count > 1,
+                OverloadCount = overloads.Count,
                 OverloadGroups = overloads.Select(o => ToOverloadGenInfo(o)).GroupBy(m => m.ParameterInfos.Length).Select(lst => lst.ToArray()).ToArray()
             };
             return result;
@@ -540,7 +542,7 @@ namespace Puerts.Editor
         {
             if (mb == null) return false;
             ObsoleteAttribute oa = mb.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute;
-            if (oa != null && oa.IsError)
+            if (oa != null/* && oa.IsError*/) //希望只过滤掉Error类别过时方法可以把oa.IsError加上
             {
                 return true;
             }

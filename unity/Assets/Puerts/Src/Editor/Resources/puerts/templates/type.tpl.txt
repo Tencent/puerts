@@ -136,7 +136,7 @@ namespace PuertsStaticWrap
                     }{{~}}
                 }
                 {{~}}{{?}}
-                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=it.Name}} constructor");
+                {{?!it.Constructor || (it.Constructor.OverloadCount != 1)}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=it.Name}} constructor");{{?}}
             }
             catch (Exception e)
             {
