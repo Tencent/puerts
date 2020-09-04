@@ -284,11 +284,23 @@ V8_EXPORT const char* GetArrayBufferFromValue(v8::Isolate* Isolate, v8::Value *V
     }
     else
     {
-        if (!Value->IsArrayBufferView()) return nullptr;
-        v8::ArrayBufferView  * BuffView = v8::ArrayBufferView::Cast(Value);
-        *Length = BuffView->ByteLength();
-        auto ABC = BuffView->Buffer()->GetContents();
-        return static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+        if (Value->IsArrayBufferView())
+        {
+            v8::ArrayBufferView * BuffView = v8::ArrayBufferView::Cast(Value);
+            *Length = static_cast<int>(BuffView->ByteLength());
+            auto ABC = BuffView->Buffer()->GetContents();
+            return static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+        }
+        else if (Value->IsArrayBuffer())
+        {
+            auto Ab = v8::ArrayBuffer::Cast(Value);
+            *Length = static_cast<int>(Ab->ByteLength());
+            return static_cast<char*>(Ab->GetContents().Data());
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 }
 
@@ -634,11 +646,23 @@ V8_EXPORT const char *GetArrayBufferFromResult(FResultInfo *ResultInfo, int *Len
     v8::Context::Scope ContextScope(Context);
 
     auto Value = ResultInfo->Result.Get(Isolate);
-    if (!Value->IsArrayBufferView()) return nullptr;
-    v8::Local<v8::ArrayBufferView>  BuffView = Value.As<v8::ArrayBufferView>();
-    *Length = BuffView->ByteLength();
-    auto ABC = BuffView->Buffer()->GetContents();
-    return static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+    if (Value->IsArrayBufferView())
+    {
+        v8::Local<v8::ArrayBufferView>  BuffView = Value.As<v8::ArrayBufferView>();
+        *Length = static_cast<int>(BuffView->ByteLength());
+        auto ABC = BuffView->Buffer()->GetContents();
+        return static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+    }
+    else if (Value->IsArrayBuffer())
+    {
+        auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
+        *Length = static_cast<int>(Ab->ByteLength());
+        return static_cast<char*>(Ab->GetContents().Data());
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 V8_EXPORT void *GetObjectFromResult(FResultInfo *ResultInfo)

@@ -60,6 +60,9 @@ namespace Puerts.UnitTest
                 let obj = new CS.Puerts.UnitTest.ArrayBufferTest();
                 let ab = obj.AB;
                 //CS.System.Console.WriteLine(ab.constructor.toString());
+                if (obj.Sum(ab) != 6) {
+                    throw new Error('sum of c# ab')
+                }
                 let uint8Array = new Uint8Array(ab);
                 if (obj.Sum(uint8Array) != 6) {
                     throw new Error('sum of c# ab')

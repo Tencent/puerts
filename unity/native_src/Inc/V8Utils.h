@@ -181,7 +181,7 @@ public:
         {
             return Date;
         }
-        else if (Value->IsArrayBufferView())
+        else if (Value->IsArrayBufferView() || Value->IsArrayBuffer())
         {
             return ArrayBuffer;
         }
