@@ -80,5 +80,21 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(3, ret);
         }
+
+        [Test]
+        public void NestTypeTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let obj = new CS.Puerts.UnitTest.DerivedClass.Inner();
+                obj.Add(obj.A, 1);
+            ");
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual(101, ret);
+        }
     }
 }

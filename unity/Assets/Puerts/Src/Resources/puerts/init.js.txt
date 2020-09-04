@@ -13,6 +13,8 @@ var global = global || (function () { return this; }());
     
     puerts.loadType = global.__tgjsLoadType;
     global.__tgjsLoadType = undefined;
+    puerts.getNestedTypes = global.__tgjsGetNestedTypes;
+    global.__tgjsGetNestedTypes = undefined;
     
     puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
         return eval(script);
