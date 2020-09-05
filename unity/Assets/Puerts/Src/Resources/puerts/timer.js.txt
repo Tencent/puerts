@@ -92,7 +92,7 @@ var global = global || (function () {
     let next = 0;
     let UnityEngine_Time = puerts.loadType('UnityEngine.Time');
     global.__tgjsRegisterTickHandler(() => {
-        global_time += UnityEngine_Time.deltaTime * 1000;
+        global_time = Date.now();
         timerUpdate();
     })
     global.__tgjsRegisterTickHandler = undefined;
