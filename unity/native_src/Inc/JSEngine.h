@@ -97,7 +97,7 @@ public:
 
     bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
 
-    bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData);
+    bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
 
     bool RegisterIndexedProperty(int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data);
 

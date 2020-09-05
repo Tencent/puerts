@@ -133,7 +133,7 @@ namespace Puerts
         public static extern bool RegisterFunction(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback callback, long data);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback getter, long getterData, V8FunctionCallback setter, long setterData);
+        public static extern bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback getter, long getterData, V8FunctionCallback setter, long setterData, bool dontDelete);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RegisterIndexedProperty(IntPtr isolate, int classID, V8IndexedGetterCallback getter, V8IndexedSetterCallback setter, long data);

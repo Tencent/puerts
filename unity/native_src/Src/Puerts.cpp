@@ -22,7 +22,7 @@ extern "C" {
 
 V8_EXPORT int GetLibVersion()
 {
-    return 1;
+    return 2;
 }
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
@@ -74,10 +74,10 @@ V8_EXPORT bool RegisterFunction(v8::Isolate *Isolate, int ClassID, const char *N
     return JsEngine->RegisterFunction(ClassID, Name, IsStatic, Callback, Data);
 }
 
-V8_EXPORT bool RegisterProperty(v8::Isolate *Isolate, int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData)
+V8_EXPORT bool RegisterProperty(v8::Isolate *Isolate, int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    return JsEngine->RegisterProperty(ClassID, Name, IsStatic, Getter, GetterData, Setter, SetterData);
+    return JsEngine->RegisterProperty(ClassID, Name, IsStatic, Getter, GetterData, Setter, SetterData, DontDelete);
 }
 
 V8_EXPORT const char* GetLastExceptionInfo(v8::Isolate *Isolate, int *Length)

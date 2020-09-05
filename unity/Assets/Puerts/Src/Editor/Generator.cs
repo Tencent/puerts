@@ -591,7 +591,7 @@ namespace Puerts.Editor
                 baseType = baseType.BaseType;
             }
             type = GetRawType(type);
-            if (type.IsGenericParameter || type.IsPointer) return;
+            if (type.IsGenericParameter) return;
             refTypes.Add(type);
         }
 

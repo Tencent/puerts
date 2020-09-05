@@ -16,6 +16,18 @@ var global = global || (function () { return this; }());
             if (parentPrototype) {
                 Object.setPrototypeOf(cls, parentPrototype.constructor);//v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
             }
+
+            for(var key in cls) {
+                let desc = Object.getOwnPropertyDescriptor(cls, key);
+                if (desc && desc.configurable && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
+                    Object.defineProperty(cls, key, {
+                        value: cls[key],
+                        writable: false,
+                        configurable: false
+                    });
+                }
+            }
+
             let nestedTypes = puerts.getNestedTypes(csType);
             if (nestedTypes) {
                 for(var i = 0; i < nestedTypes.Length; i++) {

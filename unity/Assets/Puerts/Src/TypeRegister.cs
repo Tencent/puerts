@@ -82,7 +82,7 @@ namespace Puerts
         internal void InitArrayTypeId(IntPtr isolate)
         {
             arrayTypeId = PuertsDLL.RegisterClass(jsEnv.isolate, GetTypeId(isolate, typeof(Array)), "__puerts.Array", null, null, 0);
-            PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "length", false, callbackWrap, jsEnv.AddCallback(ArrayLength), null, 0);
+            PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "length", false, callbackWrap, jsEnv.AddCallback(ArrayLength), null, 0, true);
             PuertsDLL.RegisterIndexedProperty(jsEnv.isolate, arrayTypeId, StaticCallbacks.IndexedGetterWrap, StaticCallbacks.IndexedSetterWrap, Utils.TwoIntToLong(jsEnv.Idx, 0));
         }
 
@@ -358,6 +358,18 @@ namespace Puerts
                 baseTypeId = GetTypeId(isolate, type.BaseType);
             }
 
+            var fields = type.GetFields(flag);
+
+            HashSet<string> readonlyStaticFields = new HashSet<string>();
+
+            foreach (var field in fields)
+            {
+                if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                {
+                    readonlyStaticFields.Add(field.Name);
+                }
+            }
+
             int typeId = -1;
             if (registerInfo == null)
             {
@@ -382,7 +394,7 @@ namespace Puerts
 
                 foreach (var kv in registerInfo.Properties)
                 {
-                    PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, kv.Value.IsStatic, kv.Value.Getter, jsEnv.Idx, kv.Value.Setter, jsEnv.Idx);
+                    PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, kv.Value.IsStatic, kv.Value.Getter, jsEnv.Idx, kv.Value.Setter, jsEnv.Idx, !readonlyStaticFields.Contains(kv.Key));
                 }
             }
             
@@ -419,10 +431,10 @@ namespace Puerts
                     setterData = jsEnv.AddCallback(methodReflectionWrap.Invoke);
                     isStatic = kv.Value.Setter.IsStatic;
                 }
-                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, isStatic, getter, getterData, setter, setterData);
+                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, isStatic, getter, getterData, setter, setterData, true);
             }
 
-            foreach(var field in type.GetFields(flag))
+            foreach(var field in fields)
             {
                 if (registerInfo != null && registerInfo.Properties.ContainsKey(field.Name))
                 {
@@ -439,14 +451,14 @@ namespace Puerts
                     setterData = jsEnv.AddCallback(GenFieldSetter(type, field));
                 }
 
-                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, field.Name, field.IsStatic, callbackWrap, getterData, setter, setterData);
+                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, field.Name, field.IsStatic, callbackWrap, getterData, setter, setterData, !readonlyStaticFields.Contains(field.Name));
             }
 
             var translateFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(typeof(Type));
             PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, "__p_innerType", true, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen) =>
             {
                 translateFunc(isolate1, NativeValueApi.SetValueToResult, info, type);
-            }), null, 0);
+            }), null, 0, true);
 
             return typeId;
         }

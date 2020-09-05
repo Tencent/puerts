@@ -414,7 +414,7 @@ namespace puerts
         return true;
     }
 
-    bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData)
+    bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete)
     {
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -424,7 +424,12 @@ namespace puerts
 
         if (ClassID >= Templates.size()) return false;
 
-        auto Attr = (Setter == nullptr) ? (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly) : v8::DontDelete;
+        auto Attr = (Setter == nullptr) ? v8::ReadOnly : v8::None;
+
+        if (DontDelete)
+        {
+            Attr = (v8::PropertyAttribute)(Attr | v8::DontDelete);
+        }
 
         if (IsStatic)
         {
