@@ -7,18 +7,21 @@
 
 using NUnit.Framework;
 
-namespace UnityEngine
-{
-    public class Time
-    {
-        public static double deltaTime = 0.1;
-    }
-}
-
 namespace Puerts.UnitTest
 {
+    class Timer
+    {
+        private int now = 0;
+
+        public int Now()
+        {
+            now += 100;
+            return now;
+        }
+    }
+    
     [TestFixture]
-    public class Timer
+    public class TimerTest
     {
         [OneTimeSetUp]
         public static void Init()
@@ -26,7 +29,6 @@ namespace Puerts.UnitTest
         }
 
         public static int SetTimeoutTestNum;
-
         [Test]
         public void SetTimeoutTest()
         {
@@ -35,7 +37,9 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj = CS.Puerts.UnitTest.Timer;
+                let timer = new CS.Puerts.UnitTest.Timer();
+                Date.now = ()=>timer.Now();
+                let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 setTimeout(()=>{obj.SetTimeoutTestNum = ++i;},4000);
             ");
@@ -50,7 +54,7 @@ namespace Puerts.UnitTest
                 {
                     Assert.AreEqual(1, SetTimeoutTestNum);
                 }
-
+                
                 jsEnv.Tick();
             }
 
@@ -68,7 +72,9 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj = CS.Puerts.UnitTest.Timer;
+                let timer = new CS.Puerts.UnitTest.Timer();
+                Date.now = ()=>timer.Now();
+                let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 setInterval(()=>{obj.SetIntervalTestNum = ++i;},1000);
             ");
@@ -91,7 +97,9 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj = CS.Puerts.UnitTest.Timer;
+                let timer = new CS.Puerts.UnitTest.Timer();
+                Date.now = ()=>timer.Now();
+                let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 let j = 0;
                 setInterval(()=>{obj.SetInterval2TestNum1 = ++i;},1000);
@@ -116,7 +124,9 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj = CS.Puerts.UnitTest.Timer;
+                let timer = new CS.Puerts.UnitTest.Timer();
+                Date.now = ()=>timer.Now();
+                let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 let id = setInterval(()=>{obj.TimerTest2Num = ++i;},500);
                 setTimeout(()=>{clearInterval(id);},2000);
@@ -147,7 +157,9 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj = CS.Puerts.UnitTest.Timer;
+                let timer = new CS.Puerts.UnitTest.Timer();
+                Date.now = ()=>timer.Now();
+                let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 let id = setInterval(()=>{obj.TimerTest3Num = ++i;},500);
                 setTimeout(()=>{clearInterval(id);},2000);
@@ -178,7 +190,9 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj = CS.Puerts.UnitTest.Timer;
+                let timer = new CS.Puerts.UnitTest.Timer();
+                Date.now = ()=>timer.Now();
+                let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 let id = setInterval(()=>{obj.TimerTest4Num = ++i;},500);
                 setTimeout(()=>{clearInterval(id);},200);
