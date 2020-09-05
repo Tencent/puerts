@@ -90,9 +90,8 @@ var global = global || (function () {
     const removing_timers = new Set();
     const timers = new PriorityQueue([], (a, b) => a.next_time - b.next_time);
     let next = 0;
-    let UnityEngine_Time = puerts.loadType('UnityEngine.Time');
     global.__tgjsRegisterTickHandler(() => {
-        global_time += UnityEngine_Time.deltaTime * 1000;
+        global_time = Date.now();
         timerUpdate();
     })
     global.__tgjsRegisterTickHandler = undefined;
