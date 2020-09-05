@@ -47,6 +47,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Src\UnitTest\ArrayBufferTest.cs">
+      <Link>Src\UnitTest\ArrayBufferTest.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\TestClass.cs">
       <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>

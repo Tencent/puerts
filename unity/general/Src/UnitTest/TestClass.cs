@@ -30,24 +30,5 @@ namespace Puerts.UnitTest
             }
         }
     }
-
-    public class ArrayBufferTest
-    {
-        public ArrayBuffer AB;
-
-        public ArrayBufferTest()
-        {
-            AB = new ArrayBuffer(new byte[] { 1, 2, 3 });
-        }
-
-        public int Sum(ArrayBuffer ab)
-        {
-            int sum = 0;
-            foreach(var b in ab.Bytes)
-            {
-                sum += b;
-            }
-            return sum;
-        }
-    }
+    
 }
