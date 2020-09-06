@@ -20,11 +20,15 @@ var global = global || (function () { return this; }());
             for(var key in cls) {
                 let desc = Object.getOwnPropertyDescriptor(cls, key);
                 if (desc && desc.configurable && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
+                    let val = cls[key];
                     Object.defineProperty(cls, key, {
-                        value: cls[key],
+                        value: val,
                         writable: false,
                         configurable: false
                     });
+                    if (cls.__p_isEnum && (typeof val) == 'number') {
+                        cls[val] = key;
+                    }
                 }
             }
 

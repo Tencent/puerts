@@ -50,5 +50,11 @@ namespace Puerts
             Utils.LongToTwoInt(data, out jsEnvIdx, out callbackIdx);
             JsEnv.jsEnvs[jsEnvIdx].TypeRegister.ArraySet(isolate, info, self, index, value);
         }
+
+        [MonoPInvokeCallback(typeof(V8FunctionCallback))]
+        internal static void ReturnTrue(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        {
+            PuertsDLL.ReturnBoolean(isolate, info, true);
+        }
     }
 }

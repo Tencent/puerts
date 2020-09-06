@@ -177,6 +177,8 @@ namespace Puerts
 
         private readonly V8FunctionCallback callbackWrap = new V8FunctionCallback(StaticCallbacks.JsEnvCallbackWrap);
 
+        private readonly V8FunctionCallback returnTrue = new V8FunctionCallback(StaticCallbacks.ReturnTrue);
+
         private readonly V8ConstructorCallback constructorWrap = new V8ConstructorCallback(StaticCallbacks.ConstructorWrap);
 
         private readonly Dictionary<Type, int> typeIdMap = new Dictionary<Type, int>();
@@ -459,6 +461,11 @@ namespace Puerts
             {
                 translateFunc(isolate1, NativeValueApi.SetValueToResult, info, type);
             }), null, 0, true);
+
+            if (type.IsEnum)
+            {
+                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, "__p_isEnum", true, returnTrue, 0, null, 0, false);
+            }
 
             return typeId;
         }
