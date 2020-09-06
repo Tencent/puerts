@@ -571,7 +571,7 @@ namespace Puerts.Editor
 
         static void AddRefType(HashSet<Type> refTypes, Type type)
         {
-            if (refTypes.Contains(type)) return;
+            if (refTypes.Contains(type) || type.IsPointer) return;
             if (type.IsGenericType)
             {
                 foreach (var gt in type.GetGenericArguments())
