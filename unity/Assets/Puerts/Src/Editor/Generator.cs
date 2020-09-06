@@ -549,6 +549,10 @@ namespace Puerts.Editor
                 return true;
             }
 
+            if (mb is FieldInfo && (mb as FieldInfo).FieldType.IsPointer) return true;
+            if (mb is PropertyInfo && (mb as PropertyInfo).PropertyType.IsPointer) return true;
+            if (mb is MethodInfo && (mb as MethodInfo).ReturnType.IsPointer) return true;
+
             if (filters != null && filters.Count > 0)
             {
                 foreach (var filter in filters)
@@ -559,6 +563,8 @@ namespace Puerts.Editor
                     }
                 }
             }
+
+            if (mb is MethodBase && (mb as MethodBase).GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer)) return true;
 
             return false;
         }
