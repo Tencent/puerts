@@ -68,6 +68,11 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [unreal](doc/unreal/vscode_debug.md)
 * [unity](doc/unity/vscode_debug.md)
 
+## 常见问题
+
+* [unreal faq](doc/unreal/faq.md)
+* [unity faq](doc/unity/faq.md)
+
 ## 支持的引擎，平台
 
 ### 引擎
