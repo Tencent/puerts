@@ -571,8 +571,12 @@ namespace Puerts.Editor
 
         static void AddRefType(HashSet<Type> refTypes, Type type)
         {
-            if (refTypes.Contains(type) || type.IsPointer) return;
-            refTypes.Add(type);
+            var rawType = GetRawType(type);
+            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
+            if (!rawType.IsGenericParameter)
+            {
+                refTypes.Add(rawType);
+            }
             if (type.IsGenericType)
             {
                 foreach (var gt in type.GetGenericArguments())
@@ -597,8 +601,7 @@ namespace Puerts.Editor
                 AddRefType(refTypes, baseType);
                 baseType = baseType.BaseType;
             }
-            type = GetRawType(type);
-            if (type.IsGenericParameter) return;
+            
         }
 
         public class TypingGenInfo
