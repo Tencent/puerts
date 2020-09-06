@@ -510,7 +510,7 @@ namespace Puerts.Editor
                 result.IsEnum = true;
                 var KeyValues = type.GetFields(BindingFlags.Static | BindingFlags.Public)
                     .Where(f => f.Name != "value__")
-                    .Select(f => f.Name + " = " + Convert.ToInt32(f.GetValue(null))).ToArray();
+                    .Select(f => f.Name + " = " + Convert.ChangeType(f.GetValue(null), type.GetEnumUnderlyingType())).ToArray();
                 result.EnumKeyValues = string.Join(", ", KeyValues);
             }
 
