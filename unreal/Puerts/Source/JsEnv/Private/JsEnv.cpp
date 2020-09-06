@@ -1860,6 +1860,11 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         return;
     }
 
+#if UE_BUILD_DEBUG || UE_BUILD_DEVELOPMENT
+    if (!DebugPath.IsEmpty())
+        OutPath = DebugPath;
+#endif
+
     FString Script;
     FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
 
