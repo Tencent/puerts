@@ -279,15 +279,23 @@ namespace Puerts
         {
             if (argumentsLen == 1)
             {
-                var arg0 = PuertsDLL.GetArgumentValue(info, 0);
-                var arg0type = NativeValueApi.GetValueFromArgument.GetJsValueType(isolate, arg0, false);
-                if (arg0type == JsValueType.Function || arg0type == JsValueType.NativeObject )
+                try
                 {
-                    object obj = translateFunc(isolate, NativeValueApi.GetValueFromArgument, arg0, false);
-                    if (obj != null)
+                    var arg0 = PuertsDLL.GetArgumentValue(info, 0);
+                    var arg0type = NativeValueApi.GetValueFromArgument.GetJsValueType(isolate, arg0, false);
+                    if (arg0type == JsValueType.Function || arg0type == JsValueType.NativeObject)
                     {
-                        return obj;
+                        object obj = translateFunc(isolate, NativeValueApi.GetValueFromArgument, arg0, false);
+                        if (obj != null)
+                        {
+                            return obj;
+                        }
                     }
+                }
+                catch(Exception e)
+                {
+                    PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                    return null;
                 }
             }
             PuertsDLL.ThrowException(isolate, "invalid arguments to constructor of " + delegateType.GetFriendlyName());
