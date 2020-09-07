@@ -426,5 +426,13 @@ namespace Puerts
                 disposed = true;
             }
         }
+
+        public void CheckLiveness()
+        {
+            if (disposed)
+            {
+                throw new InvalidOperationException("JsEnv had disposed!");
+            }
+        }
     }
 }

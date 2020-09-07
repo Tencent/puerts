@@ -293,6 +293,7 @@ namespace Puerts
 
         public void Action()
         {
+            jsEnv.CheckLiveness();
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
             if (resultInfo == IntPtr.Zero)
             {
@@ -303,6 +304,7 @@ namespace Puerts
 
         public void Action<T1>(T1 p1)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
             if (resultInfo == IntPtr.Zero)
@@ -314,6 +316,7 @@ namespace Puerts
 
         public void Action<T1, T2>(T1 p1, T2 p2) 
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
@@ -326,6 +329,7 @@ namespace Puerts
 
         public void Action<T1, T2, T3>(T1 p1, T2 p2, T3 p3)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
@@ -339,6 +343,7 @@ namespace Puerts
 
         public void Action<T1, T2, T3, T4>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
@@ -353,6 +358,7 @@ namespace Puerts
 
         public TResult Func<TResult>()
         {
+            jsEnv.CheckLiveness();
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
             if (resultInfo == IntPtr.Zero)
             {
@@ -366,6 +372,7 @@ namespace Puerts
 
         public TResult Func<T1, TResult>(T1 p1)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
             if (resultInfo == IntPtr.Zero)
@@ -380,6 +387,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, TResult>(T1 p1, T2 p2)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
@@ -395,6 +403,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, T3, TResult>(T1 p1, T2 p2, T3 p3)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
@@ -411,6 +420,7 @@ namespace Puerts
 
         public TResult Func<T1, T2, T3, T4, TResult>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+            jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
