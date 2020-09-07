@@ -107,6 +107,7 @@ namespace Puerts
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
             ExecuteFile("puerts/timer.js");
+            ExecuteFile("puerts/polyfill.js");
         }
 
         void ExecuteFile(string filename)

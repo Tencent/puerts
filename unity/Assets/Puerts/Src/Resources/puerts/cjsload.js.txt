@@ -33,11 +33,10 @@ var global = global || (function () { return this; }());
         if (loader.FileExists(searchPath)) {
             return searchPath;
         }
-        if (dir.startsWith("node_modules")) {
-            searchPath = pathNormalize(dir + '/node_modules/' + requiredModule);
-            if (loader.FileExists(searchPath)) {
-                return searchPath;
-            }
+        
+        searchPath = pathNormalize(dir + '/node_modules/' + requiredModule);
+        if (loader.FileExists(searchPath)) {
+            return searchPath;
         }
     }
     
@@ -62,9 +61,10 @@ var global = global || (function () { return this; }());
     function searchModule(dir, requiredModule) {
         var result = searchModuleInDir(dir, requiredModule);
         if (result) return result;
-        if (dir != "" && requiredModule.indexOf('/') == -1 && !requiredModule.endsWith(".js")) {
+        if (dir != "" && !requiredModule.endsWith(".js")) {
             let pathFrags = dir.split('/');
             pathFrags.pop();
+            pathFrags.unshift('');
             while (pathFrags.length > 0) {
                 if (pathFrags[pathFrags.length - 1] != "node_modules") {
                     result = searchModuleInDir(pathFrags.join("/"), requiredModule);
