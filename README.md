@@ -77,7 +77,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ### 引擎
 
-* unreal engine 4.22 ~ 4.25
+* unreal engine 4.22 ~ 4.24
 
 * unity 5 ~ 2019
 
