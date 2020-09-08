@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace Puerts
 {
-    //target²Îjs¶ÔÏó¾²Ä¬×ª»»µ½c#¶ÔÏóÊ±ÓĞÓÃ
+    //targetå‚jså¯¹è±¡é™é»˜è½¬æ¢åˆ°c#å¯¹è±¡æ—¶æœ‰ç”¨
     public delegate object GeneralGetter(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef);
 
     public class GeneralGetterManager
@@ -147,10 +147,13 @@ namespace Puerts
                 //case JsValueType.JsObject:
                 case JsValueType.NativeObject:
                     var typeId = getValueApi.GetTypeId(isolate, value, isByRef);
-                    var objType = typeRegister.GetType(typeId);
-                    if (objType != typeof(object) && generalGetterMap.ContainsKey(objType))
+                    if (!typeRegister.IsArray(typeId))
                     {
-                        return generalGetterMap[objType](isolate, getValueApi, value, isByRef);
+                        var objType = typeRegister.GetType(typeId);
+                        if (objType != typeof(object) && generalGetterMap.ContainsKey(objType))
+                        {
+                            return generalGetterMap[objType](isolate, getValueApi, value, isByRef);
+                        }
                     }
                     var objPtr = getValueApi.GetObject(isolate, value, isByRef);
                     return objectPool.Get(objPtr.ToInt32());
@@ -278,7 +281,7 @@ namespace Puerts
             { typeof(double), JsValueType.Number },
             { typeof(char), JsValueType.Number },
             { typeof(float), JsValueType.Number },
-            //{ typeof(decimal), JsValueType.Number }, TODO: °Ñdecimal by value ´«µİµ½js
+            //{ typeof(decimal), JsValueType.Number }, TODO: æŠŠdecimal by value ä¼ é€’åˆ°js
             { typeof(bool), JsValueType.Boolean },
             { typeof(string), JsValueType.String | JsValueType.NullOrUndefined },
             { typeof(object), JsValueType.Any}
@@ -309,7 +312,7 @@ namespace Puerts
             }
             else if (type.IsArray)
             {
-                mash = JsValueType.Array;
+                mash = JsValueType.NativeObject | JsValueType.NullOrUndefined;
             }
             else if (type == typeof(DateTime))
             {
@@ -325,7 +328,7 @@ namespace Puerts
             }
             else if (type.IsValueType())
             {
-                mash = JsValueType.NativeObject/* | JsValueType.JsObject*/; //TODO: Ö§³Öjs¶ÔÏóµ½C#¶ÔÏó¾²Ä¬×ª»»
+                mash = JsValueType.NativeObject/* | JsValueType.JsObject*/; //TODO: æ”¯æŒjså¯¹è±¡åˆ°C#å¯¹è±¡é™é»˜è½¬æ¢
             }
             else
             {
