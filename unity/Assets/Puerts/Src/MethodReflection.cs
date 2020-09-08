@@ -70,10 +70,10 @@ namespace Puerts
 
         private GeneralSetter[] byRefValueSetFuncs = null;
 
-        public Parameters(ParameterInfo[] parameterInfos, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager)
+        public Parameters(ParameterInfo[] parameterInfos, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager,int Length = -1)
         {
             this.generalGetterManager = generalGetterManager;
-            length = parameterInfos.Length;
+            length = Length < 0? parameterInfos.Length: Length;
             typeMasks = new JsValueType[parameterInfos.Length];
             types = new Type[parameterInfos.Length];
             args = new object[parameterInfos.Length];
@@ -111,10 +111,6 @@ namespace Puerts
                 {
                     return false;
                 }
-            }
-            else if (callInfo.Length != length)
-            {
-                return false;
             }
 
             for (int i = 0; i < callInfo.Length; i++)
@@ -160,7 +156,11 @@ namespace Puerts
         {
             for (int i = 0; i < length; i++)
             {
-                if(hasParamArray && i == length - 1)
+                if (i >= callInfo.Length)
+                {
+                    args[i] = Type.Missing;
+                }
+                else if(hasParamArray && i == length - 1)
                 {
                     Array paramArray = Array.CreateInstance(types[length - 1], callInfo.Length + 1 - length);
                     var translateFunc = argsTranslateFuncs[i];

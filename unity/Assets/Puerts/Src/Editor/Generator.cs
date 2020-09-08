@@ -346,6 +346,8 @@ namespace Puerts.Editor
             public bool IsByRef;
             public string TypeName;
             public bool IsParams;
+            public bool IsOptional;
+
         }
 
         // #lizard forgives
@@ -411,6 +413,7 @@ namespace Puerts.Editor
                 IsByRef = parameterInfo.ParameterType.IsByRef,
                 TypeName = GetTsTypeName(parameterInfo.ParameterType),
                 IsParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false),
+                IsOptional = parameterInfo.IsOptional
             };
         }
 
