@@ -444,7 +444,7 @@ namespace Puerts.Editor
                 Properties = genTypeSet.Contains(type) ? type.GetFields(Flags).Where(m => !isFiltered(m))
                     .Select(f => new TsPropertyGenInfo() { Name = f.Name, TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
                     .Concat(
-                        type.GetProperties(Flags).Where(m => !isFiltered(m))
+                        type.GetProperties(Flags).Where(m => m.Name != "Item").Where(m => !isFiltered(m))
                         .Select(p => new TsPropertyGenInfo() { Name = p.Name, TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p)}))
                     .ToArray() : new TsPropertyGenInfo[] { },
                 IsGenericTypeDefinition = type.IsGenericTypeDefinition,
