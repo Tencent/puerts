@@ -58,6 +58,36 @@ const operatorMap = {
     op_Increment: '++',
     op_Decrement: '--',
 };
+let csharpKeywords = {};
+[
+    "abstract", "as", "base", "bool",
+    "break", "byte", "case", "catch",
+    "char", "checked", "class", "const",
+    "continue", "decimal", "default", "delegate",
+    "do", "double", "else", "enum",
+    "event", "explicit", "extern", "false",
+    "finally", "fixed", "float", "for",
+    "foreach", "goto", "if", "implicit",
+    "in", "int", "interface",
+    "internal", "is", "lock", "long",
+    "namespace", "new", "null", "object",
+    "operator", "out", "override",
+    "params", "private", "protected", "public",
+    "readonly", "ref", "return", "sbyte",
+    "sealed", "short", "sizeof", "stackalloc",
+    "static", "string", "struct", "switch",
+    "this", "throw", "true", "try",
+    "typeof", "uint", "ulong", "unchecked",
+    "unsafe", "ushort", "using", "virtual",
+    "void", "volatile", "while"
+].forEach(keywold => {
+    csharpKeywords[keywold] = '@' + keywold;
+});
+
+function UnK(identifier) {
+    return csharpKeywords[identifier] || identifier
+}
+
 function getArgument(typeInfo, argHelper, idx) {
     let typeName = typeInfo.TypeName;
     let isByRef = typeInfo.IsByRef ? "true" : "false";
@@ -163,7 +193,7 @@ namespace PuertsStaticWrap
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:"obj"}}.{{=method.Name}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
+                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:"obj"}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
@@ -186,8 +216,8 @@ namespace PuertsStaticWrap
         {
             try
             {
-                {{?!property.IsStatic}}{{=it.Name}} obj = {{=getSelf(it)}};{{?}}
-                var result = {{=property.IsStatic?it.Name:"obj"}}.{{=property.Name}};
+                {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
+                var result = {{=property.IsStatic?it.Name:"obj"}}.{{=UnK(property.Name)}};
                 {{=setReturn(property)}};
             }
             catch (Exception e)
@@ -201,9 +231,9 @@ namespace PuertsStaticWrap
         {
             try
             {
-                {{?!property.IsStatic}}{{=it.Name}} obj = {{=getSelf(it)}};{{?}}
+                {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                {{=property.IsStatic?it.Name:"obj"}}.{{=property.Name}} = {{=getArgument(property, 'argHelper')}};
+                {{=property.IsStatic?it.Name:"obj"}}.{{=UnK(property.Name)}} = {{=getArgument(property, 'argHelper')}};
             }
             catch (Exception e)
             {
