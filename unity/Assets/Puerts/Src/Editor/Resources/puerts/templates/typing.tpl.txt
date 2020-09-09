@@ -1,6 +1,6 @@
 {{
 function parameterDef(pinfo) {
-    return (pinfo.IsParams ? ("..." + pinfo.Name) : pinfo.Name) + ": " + pinfo.TypeName;
+    return (pinfo.IsParams ? ("..." + pinfo.Name) : pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + pinfo.TypeName;
 }
 function typeKeyword(type) {
     if (type.IsDelegate) {
