@@ -11,6 +11,7 @@
 #define USING_UE 0
 #endif
 
+#if !USING_UE
 #if !defined(PLATFORM_WINDOWS) || defined(PLATFORM_MAC)
 #if defined(_WIN32)
 #define PLATFORM_WINDOWS 1
@@ -25,6 +26,7 @@
 #endif
 #else
 #define PLATFORM_MAC 0
+#endif
 #endif
 #endif
 #endif
