@@ -503,6 +503,11 @@ namespace Puerts
             return typeId;
         }
 
+        public bool IsArray(int typeId)
+        {
+            return typeId == arrayTypeId;
+        }
+
         public int GetTypeId(IntPtr isolate, Type type)
         {
             bool isFirst;

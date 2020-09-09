@@ -80,6 +80,8 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
+            //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
+#if !DISABLE_AUTO_REGISTER
             const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.AutoStaticCodeRegister";
             var autoRegister = Type.GetType(AutoStaticCodeRegisterClassName, false);
             if (autoRegister == null)
@@ -95,6 +97,7 @@ namespace Puerts
                 var methodInfoOfRegister = autoRegister.GetMethod("Register");
                 methodInfoOfRegister.Invoke(null, new object[] { this });
             }
+#endif
 
             if (debugPort != -1)
             {
