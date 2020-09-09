@@ -20,7 +20,7 @@
     <OutputPath>..\Lib\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Core\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>_DEBUG;DEBUG;TRACE;;PUERTS_GENERAL</DefineConstants>
+    <DefineConstants>_DEBUG;DEBUG;TRACE;;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -31,7 +31,7 @@
     <OutputPath>..\Lib\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.Core\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>;PUERTS_GENERAL</DefineConstants>
+    <DefineConstants>;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>

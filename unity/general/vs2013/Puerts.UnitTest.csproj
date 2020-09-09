@@ -34,8 +34,7 @@
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -50,6 +49,9 @@
     <Compile Include="..\Src\UnitTest\ArrayBufferTest.cs">
       <Link>Src\UnitTest\ArrayBufferTest.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\OptionalParametersTest.cs">
+      <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\TestClass.cs">
       <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>
@@ -58,6 +60,12 @@
     </Compile>
     <Compile Include="..\Src\UnitTest\UnitTest.cs">
       <Link>Src\UnitTest\UnitTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\warp\AutoStaticCodeRegister.cs">
+      <Link>Src\UnitTest\warp\AutoStaticCodeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\warp\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
+      <Link>Src\UnitTest\warp\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

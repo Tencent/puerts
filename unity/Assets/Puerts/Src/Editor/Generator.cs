@@ -200,19 +200,32 @@ namespace Puerts.Editor
 
         static MethodGenInfo ToMethodGenInfo(List<MethodBase> overloads)
         {
+            var ret = new List<OverloadGenInfo>();
+            foreach (var iBase in overloads)
+            {
+                ret.AddRange(ToOverloadGenInfo(iBase));
+            }
             var result = new MethodGenInfo()
             {
                 Name = overloads[0].Name,
                 IsStatic = overloads[0].IsStatic,
-                HasOverloads = overloads.Count > 1,
-                OverloadCount = overloads.Count,
-                OverloadGroups = overloads.Select(o => ToOverloadGenInfo(o)).GroupBy(m => m.ParameterInfos.Length).Select(lst => lst.ToArray()).ToArray()
+                HasOverloads = ret.Count > 1,
+                OverloadCount = ret.Count,
+                OverloadGroups = ret.GroupBy(m => m.ParameterInfos.Length).Select(lst => lst.ToArray()).ToArray()
             };
             return result;
         }
-
-        static OverloadGenInfo ToOverloadGenInfo(MethodBase methodBase)
+        
+        static object HasValue(ParameterInfo parameter)
         {
+            if (!parameter.IsOptional)
+                return null;
+            return parameter.DefaultValue;
+        }
+        
+        static List<OverloadGenInfo> ToOverloadGenInfo(MethodBase methodBase)
+        {
+            List<OverloadGenInfo> ret = new List<OverloadGenInfo>();
             OverloadGenInfo result = null;
             if (methodBase is MethodInfo)
             {
@@ -224,6 +237,29 @@ namespace Puerts.Editor
                     IsVoid = methodInfo.ReturnType == typeof(void)
                 };
                 FillEnumInfo(result, methodInfo.ReturnType);
+                result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
+                ret.Add(result);
+                var ps = methodInfo.GetParameters();
+                for (int i = ps.Length - 1; i >= 0; i--)
+                {
+                    var value = HasValue(ps[i]);
+                    if (value!=null)
+                    {
+                        result = new OverloadGenInfo()
+                        {
+                            ParameterInfos = methodInfo.GetParameters().Select(info => ToParameterGenInfo(info)).Take(i).ToArray(),
+                            TypeName = methodInfo.ReturnType.GetFriendlyName(),
+                            IsVoid = methodInfo.ReturnType == typeof(void)
+                        };
+                        FillEnumInfo(result, methodInfo.ReturnType);
+                        result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
+                        ret.Add(result);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
             else if (methodBase is ConstructorInfo)
             {
@@ -234,15 +270,35 @@ namespace Puerts.Editor
                     TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                     IsVoid = false
                 };
+                result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
+                ret.Add(result);
+                var ps = constructorInfo.GetParameters();
+                for (int i = ps.Length - 1; i >= 0; i--)
+                {
+                    var value = HasValue(ps[i]);
+                    if (value!=null)
+                    {
+                        result = new OverloadGenInfo()
+                        {
+                            ParameterInfos = constructorInfo.GetParameters().Select(info => ToParameterGenInfo(info)).Take(i).ToArray(),
+                            TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
+                            IsVoid = false
+                        };
+                        result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
+                        ret.Add(result);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
             else
             {
                 throw new NotSupportedException();
             }
 
-            result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
-
-            return result;
+            return ret;
         }
 
         static TypeGenInfo ToTypeGenInfo(Type type)
@@ -290,6 +346,8 @@ namespace Puerts.Editor
             public bool IsByRef;
             public string TypeName;
             public bool IsParams;
+            public bool IsOptional;
+
         }
 
         // #lizard forgives
@@ -355,6 +413,7 @@ namespace Puerts.Editor
                 IsByRef = parameterInfo.ParameterType.IsByRef,
                 TypeName = GetTsTypeName(parameterInfo.ParameterType),
                 IsParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false),
+                IsOptional = parameterInfo.IsOptional
             };
         }
 
