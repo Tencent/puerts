@@ -103,7 +103,7 @@ namespace Puerts
             }
         }
 
-        public bool IsMatch(CallInfo callInfo)//TODO: 先不支持默认值
+        public bool IsMatch(CallInfo callInfo)
         {
             if (hasParamArray)
             {
@@ -112,7 +112,11 @@ namespace Puerts
                     return false;
                 }
             }
-
+            else if (callInfo.Length > length)
+            {
+                return false;
+            }
+            
             for (int i = 0; i < callInfo.Length; i++)
             {
                 if (i < length)
