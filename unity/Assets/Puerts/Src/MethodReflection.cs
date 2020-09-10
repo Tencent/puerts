@@ -58,6 +58,8 @@ namespace Puerts
 
         private JsValueType[] typeMasks = null;
 
+        private int beginOptional = 0;
+        
         private Type[] types = null;
 
         private object[] args = null;
@@ -70,10 +72,10 @@ namespace Puerts
 
         private GeneralSetter[] byRefValueSetFuncs = null;
 
-        public Parameters(ParameterInfo[] parameterInfos, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager,int Length = -1)
+        public Parameters(ParameterInfo[] parameterInfos, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager,int length = -1)
         {
             this.generalGetterManager = generalGetterManager;
-            length = Length < 0? parameterInfos.Length: Length;
+            this.length = parameterInfos.Length;
             typeMasks = new JsValueType[parameterInfos.Length];
             types = new Type[parameterInfos.Length];
             args = new object[parameterInfos.Length];
@@ -81,7 +83,7 @@ namespace Puerts
             byRefValueSetFuncs = new GeneralSetter[parameterInfos.Length];
             byRef = new bool[parameterInfos.Length];
             isOut = new bool[parameterInfos.Length];
-
+            beginOptional = this.length + 1;
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 var parameterInfo = parameterInfos[i];
@@ -100,6 +102,10 @@ namespace Puerts
                     byRefValueSetFuncs[i] = generalSetterManager.GetTranslateFunc(parameterType.GetElementType());
                 }
                 isOut[i] = parameterType.IsByRef && parameterInfo.IsOut && !parameterInfo.IsIn;
+                if (parameterInfo.IsOptional)
+                {
+                    beginOptional = i;
+                }
             }
         }
 
@@ -116,7 +122,11 @@ namespace Puerts
             {
                 return false;
             }
-            
+            else if (callInfo.Length < beginOptional - 1)
+            {
+                return false;
+            }
+
             for (int i = 0; i < callInfo.Length; i++)
             {
                 if (i < length)

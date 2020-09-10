@@ -28,6 +28,21 @@ namespace Puerts.UnitTest
         {
             return -1;
         }
+        
+        public int Test3(string i,int b)
+        {
+            return 0;
+        }
+        
+        public int Test4(string i,int b,int c = 0)
+        {
+            return 0;
+        }
+        
+        public int Test5(string i, int j ,params bool[] k)
+        {
+            return -1;
+        }
     }
 
     [TestFixture]
@@ -112,20 +127,99 @@ namespace Puerts.UnitTest
             Assert.AreEqual(0, ret);
             jsEnv.Dispose();
         }
-        //有问题先注释
-        /*[Test]
+        [Test]
         public void WarpTest7()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                temp.Test5('1', 1, false,false,false);
+            ");
+            Assert.AreEqual(-1, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void WarpTest8()
         {
             var jsEnv = new JsEnv(new TxtLoader());
             PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
-                temp.Test2('1', 1, false,false,false);
+                temp.Test5('1', 1, false);
             ");
             Assert.AreEqual(-1, ret);
             jsEnv.Dispose();
+        }
+        
+        //行为不一致
+        /*[Test]
+        public void WarpTest9()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test3('1');}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(1, ret);
+            jsEnv.Dispose();
         }*/
+        
+        [Test]
+        public void WarpTest10()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test3('1',1);}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(0, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void WarpTest11()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test4('1');}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(1, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void WarpTest12()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test4('1',1);}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(0, ret);
+            jsEnv.Dispose();
+        }
         
         [Test]
         public void ReflectTest1()
@@ -209,7 +303,7 @@ namespace Puerts.UnitTest
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
-                temp.Test2('1', 1, false,false,false);
+                temp.Test5('1', 1, false,false,false);
             ");
             Assert.AreEqual(-1, ret);
             jsEnv.Dispose();
@@ -222,9 +316,69 @@ namespace Puerts.UnitTest
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
-                temp.Test2('1', 1, false);
+                temp.Test5('1', 1, false);
             ");
             Assert.AreEqual(-1, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void ReflectTest9()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test3('1');}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(1, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void ReflectTest10()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test3('1',1);}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(0, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void ReflectTest11()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test4('1');}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(1, ret);
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void ReflectTest12()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                let ret = 0;                
+                try{temp.Test4('1',1);}catch(e){ret = 1;}
+                ret;
+            ");
+            Assert.AreEqual(0, ret);
             jsEnv.Dispose();
         }
     }
