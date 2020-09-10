@@ -158,7 +158,6 @@ namespace PuertsStaticWrap
             }
         }
         
-<<<<<<< HEAD
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         private static void M_Test2(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -234,8 +233,6 @@ namespace PuertsStaticWrap
             }
         }
         
-=======
->>>>>>> up/master
         
         
         
@@ -249,10 +246,7 @@ namespace PuertsStaticWrap
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
                 {
                     { new Puerts.MethodKey {Name = "Test", IsStatic = false},  M_Test },
-<<<<<<< HEAD
                     { new Puerts.MethodKey {Name = "Test2", IsStatic = false},  M_Test2 },
-=======
->>>>>>> up/master
                     
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
