@@ -102,7 +102,7 @@ namespace Puerts
                     byRefValueSetFuncs[i] = generalSetterManager.GetTranslateFunc(parameterType.GetElementType());
                 }
                 isOut[i] = parameterType.IsByRef && parameterInfo.IsOut && !parameterInfo.IsIn;
-                if (parameterInfo.IsOptional)
+                if (beginOptional == this.length + 1 && parameterInfo.IsOptional)
                 {
                     beginOptional = i;
                 }

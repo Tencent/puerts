@@ -34,7 +34,7 @@ namespace Puerts.UnitTest
             return 0;
         }
         
-        public int Test4(string i,int b,int c = 0)
+        public int Test4(string i,int b,int c = 0, int d = 1)
         {
             return 0;
         }
