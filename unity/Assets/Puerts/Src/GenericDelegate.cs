@@ -264,7 +264,7 @@ namespace Puerts
     }
 
     //泛型适配器
-    internal class GenericDelegate
+    public class GenericDelegate
     {
         private readonly JsEnv jsEnv;
         private IntPtr nativeJsFuncPtr;

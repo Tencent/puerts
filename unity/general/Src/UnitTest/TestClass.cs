@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+using NUnit.Framework;
+
 namespace Puerts.UnitTest
 {
     public class BaseClass
@@ -35,5 +37,23 @@ namespace Puerts.UnitTest
             return str == null;
         }
     }
-    
+
+    public class JsObjectTest
+    {
+        public GenericDelegate Getter;
+
+        public GenericDelegate Setter;
+
+        public void SetSomeData()
+        {
+            Setter.Action("a", 1);
+            Setter.Action("b.a", "aabbcc");
+        }
+
+        public void GetSomeData()
+        {
+            Assert.AreEqual(1, Getter.Func<string, int>("a"));
+            Assert.AreEqual("aabbcc", Getter.Func<string, string>("b.a"));
+        }
+    }
 }

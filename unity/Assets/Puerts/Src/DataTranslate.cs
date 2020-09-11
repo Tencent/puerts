@@ -19,6 +19,8 @@ namespace Puerts
 
         private TypeRegister typeRegister;
 
+        private readonly JsEnv jsEnv;
+
         private Dictionary<Type, GeneralGetter> generalGetterMap = new Dictionary<Type, GeneralGetter>();
 
         private Dictionary<Type, GeneralGetter> nullableTypeGeneralGetterMap = new Dictionary<Type, GeneralGetter>();
@@ -27,6 +29,7 @@ namespace Puerts
 
         internal GeneralGetterManager(JsEnv jsEnv)
         {
+            this.jsEnv = jsEnv;
             objectPool = jsEnv.objectPool;
             typeRegister = jsEnv.TypeRegister;
             genericDelegateFactory = new GenericDelegateFactory(jsEnv);
@@ -47,6 +50,7 @@ namespace Puerts
             generalGetterMap[typeof(string)] = StringTranslator;
             generalGetterMap[typeof(DateTime)] = DateTranslator;
             generalGetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
+            generalGetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
             generalGetterMap[typeof(object)] = AnyTranslator;
             //special type
             //translatorMap[typeof(LuaTable)] = getLuaTable;
@@ -128,6 +132,20 @@ namespace Puerts
         private static object ArrayBufferTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             return getValueApi.GetArrayBuffer(isolate, value, isByRef);
+        }
+
+        private object GenericDelegateTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        {
+            var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
+            if (jsValueType == JsValueType.Function)
+            {
+                var nativePtr = getValueApi.GetFunction(isolate, value, isByRef);
+                return new GenericDelegate(nativePtr, jsEnv);
+            }
+            else
+            {
+                return AnyTranslator(isolate, getValueApi, value, isByRef);
+            }
         }
 
         internal object AnyTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
@@ -321,6 +339,10 @@ namespace Puerts
             else if (type == typeof(ArrayBuffer))
             {
                 mash = JsValueType.ArrayBuffer;
+            }
+            else if (type == typeof(GenericDelegate))
+            {
+                mash = JsValueType.Function | JsValueType.NativeObject | JsValueType.NullOrUndefined;
             }
             else if (!type.IsAbstract() && typeof(Delegate).IsAssignableFrom(type))
             {
