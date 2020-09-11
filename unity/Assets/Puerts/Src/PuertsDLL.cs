@@ -79,10 +79,9 @@ namespace Puerts
         {
             if (str != IntPtr.Zero)
             {
-#if XLUA_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-                int len = strlen.ToInt32();
-                byte[] buffer = new byte[len];
-                Marshal.Copy(str, buffer, 0, len);
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+                byte[] buffer = new byte[strlen];
+                Marshal.Copy(str, buffer, 0, strlen);
                 return Encoding.UTF8.GetString(buffer);
 #else
                 string ret = Marshal.PtrToStringAnsi(str, strlen);
@@ -224,7 +223,13 @@ namespace Puerts
         public static extern void SetNullToOutValue(IntPtr isolate, IntPtr value);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ThrowException(IntPtr isolate, string message);
+        public static extern void ThrowException(IntPtr isolate, byte[] message);
+
+        public static void ThrowException(IntPtr isolate, string message)
+        {
+            var bytes = Encoding.UTF8.GetBytes(message);
+            ThrowException(isolate, bytes);
+        }
 
         //begin cs call js
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
