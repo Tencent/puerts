@@ -66,7 +66,22 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(101, ret);
         }
-        
+
+        [Test]
+        public void NullString()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            bool ret = jsEnv.Eval<bool>(@"
+                const CS = require('csharp');
+                let obj = new CS.Puerts.UnitTest.DerivedClass();
+                obj.IsStringNull(null);
+            ");
+
+            jsEnv.Dispose();
+
+            Assert.True(ret);
+        }
     }
 }
 

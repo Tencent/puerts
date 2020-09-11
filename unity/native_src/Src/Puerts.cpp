@@ -200,6 +200,11 @@ V8_EXPORT const char *GetStringFromValue(v8::Isolate* Isolate, v8::Value *Value,
     }
     else
     {
+        if (Value->IsNullOrUndefined())
+        {
+            *Length = 0;
+            return nullptr;
+        }
         auto Context = Isolate->GetCurrentContext();
         auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
         v8::Local<v8::String> Str;
@@ -605,7 +610,12 @@ V8_EXPORT const char *GetStringFromResult(FResultInfo *ResultInfo, int *Length)
 
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     v8::Local<v8::String> Str;
-    if (!ResultInfo->Result.Get(Isolate)->ToString(Context).ToLocal(&Str)) return nullptr;
+    auto Result = ResultInfo->Result.Get(Isolate);
+    if (Result->IsNullOrUndefined() || !Result->ToString(Context).ToLocal(&Str))
+    {
+        *Length = 0;
+        return nullptr;
+    }
     *Length = Str->Utf8Length(Isolate);
     if (JsEngine->StrBuffer.size() < *Length + 1) JsEngine->StrBuffer.reserve(*Length + 1);
     Str->WriteUtf8(Isolate, JsEngine->StrBuffer.data());

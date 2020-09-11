@@ -29,6 +29,11 @@ namespace Puerts.UnitTest
                 return a + b;
             }
         }
+
+        public bool IsStringNull(string str)
+        {
+            return str == null;
+        }
     }
     
 }
