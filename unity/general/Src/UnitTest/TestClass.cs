@@ -56,4 +56,31 @@ namespace Puerts.UnitTest
             Assert.AreEqual("aabbcc", Getter.Func<string, string>("b.a"));
         }
     }
+
+    public class ArrayTest
+    {
+        public int[] a0 = new int[] { 7, 8, 9 };
+
+        public float[] a1 = new float[] { 7, 8, 9 };
+
+        public double[] a2 = new double[] { 7, 8, 9 };
+
+        public long[] a3 = new long[] { 7, 8, 9 };
+
+        public ulong[] a4 = new ulong[] { 7, 8, 9 };
+
+        public sbyte[] a5 = new sbyte[] { 7, 8, 9 };
+
+        public short[] a6 = new short[] { 7, 8, 9 };
+
+        public ushort[] a7 = new ushort[] { 7, 8, 9 };
+
+        public char[] a8 = new char[] { (char)7, (char)8, (char)9 };
+
+        public uint[] a9 = new uint[] { 7, 8, 9 };
+
+        public bool[] ab = new bool[] { true, false, true, false };
+
+        public string[] astr = new string[] { "hello", "john" };
+    }
 }

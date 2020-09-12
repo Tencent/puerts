@@ -125,6 +125,46 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(101, ret);
         }
+
+        [Test]
+        public void Array()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            var ret = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let obj = new CS.Puerts.UnitTest.ArrayTest();
+                let sum = 0;
+                for (var i = 0; i < 10; i++) {
+                    for (var j = 0; j < obj['a' + i].length; j++) {
+                        sum += Number(obj['a' + i][j]);
+                    }
+                }
+                for (var i = 0; i < obj.astr.length; i++) {
+                    sum += obj.astr[i];
+                }
+                for (var i = 0; i < obj.ab.length; i++) {
+                    sum += obj.ab[i];
+                }
+                let sum2 = 0;
+                for (var i = 0; i < 10; i++) {
+                    for (var j = 0; j < obj['a' + i].length; j++) {
+                        obj['a' + i][j] += obj['a' + i][j];
+                    }
+                }
+                for (var i = 0; i < 10; i++) {
+                    for (var j = 0; j < obj['a' + i].length; j++) {
+                        sum2 += Number(obj['a' + i][j]);
+                    }
+                }
+                //CS.System.Console.WriteLine('sum = ' + sum2 );
+                sum + sum2;
+            ");
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual("240hellojohntruefalsetruefalse480", ret);
+        }
     }
 }
 
