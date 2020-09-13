@@ -170,14 +170,12 @@ namespace Puerts.UnitTest
         public void Long()
         {
             Assert.Catch(() => {
-                using (var jsEnv1 = new JsEnv(new TxtLoader()))
-                {
-                    jsEnv1.Eval(@"
-                        const CS = require('csharp');
-                        let obj = new CS.Puerts.UnitTest.DerivedClass();
-                        obj.Long(1);
-                    ");
-                }
+                var jsEnv1 = new JsEnv(new TxtLoader());
+                jsEnv1.Eval(@"
+                    const CS = require('csharp');
+                    let obj = new CS.Puerts.UnitTest.DerivedClass();
+                    obj.Long(1);
+                ");
             });
 
             var jsEnv = new JsEnv(new TxtLoader());
@@ -190,10 +188,8 @@ namespace Puerts.UnitTest
 
             Assert.Catch(() =>
             {
-                using (var jsEnv2 = new JsEnv(new TxtLoader()))
-                {
-                    jsEnv2.Eval<long>("1");
-                }
+                var jsEnv2 = new JsEnv(new TxtLoader());
+                jsEnv2.Eval<long>("1");
             });
 
             jsEnv.Dispose();
