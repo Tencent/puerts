@@ -22,7 +22,7 @@ extern "C" {
 
 V8_EXPORT int GetLibVersion()
 {
-    return 3;
+    return 5;
 }
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
@@ -249,6 +249,22 @@ V8_EXPORT void SetBooleanToOutValue(v8::Isolate* Isolate, v8::Value *Value, int 
         auto Context = Isolate->GetCurrentContext();
         auto Outer = Value->ToObject(Context).ToLocalChecked();
         auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), v8::Boolean::New(Isolate, B));
+    }
+}
+
+V8_EXPORT int ValueIsBigInt(v8::Isolate* Isolate, v8::Value *Value, int IsOut)
+{
+    if (IsOut)
+    {
+        auto Context = Isolate->GetCurrentContext();
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
+        return ValueIsBigInt(Isolate, *Realvalue, false);
+    }
+    else
+    {
+        auto Context = Isolate->GetCurrentContext();
+        return Value->IsBigInt() ? 1 : 0;
     }
 }
 
@@ -633,6 +649,18 @@ V8_EXPORT int GetBooleanFromResult(FResultInfo *ResultInfo)
     auto Result = ResultInfo->Result.Get(Isolate);
 
     return Result->BooleanValue(Isolate) ? 1 : 0;
+}
+
+V8_EXPORT int ResultIsBigInt(FResultInfo *ResultInfo)
+{
+    v8::Isolate* Isolate = ResultInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto Result = ResultInfo->Result.Get(Isolate);
+
+    return Result->IsBigInt() ? 1 : 0;
 }
 
 V8_EXPORT int64_t GetBigIntFromResult(FResultInfo *ResultInfo)

@@ -123,7 +123,7 @@ namespace Puerts
 
         public long GetInt64(bool isByRef)
         {
-            return PuertsDLL.GetBigIntFromValue(isolate, value, isByRef);
+            return PuertsDLL.GetBigIntFromValueChecked(isolate, value, isByRef);
         }
 
         public void SetByRefValue(long val)
@@ -133,7 +133,7 @@ namespace Puerts
 
         public ulong GetUInt64(bool isByRef)
         {
-            return (ulong)PuertsDLL.GetBigIntFromValue(isolate, value, isByRef);
+            return (ulong)PuertsDLL.GetBigIntFromValueChecked(isolate, value, isByRef);
         }
 
         public void SetByRefValue(ulong val)

@@ -199,7 +199,19 @@ namespace Puerts
         public static extern bool GetBooleanFromValue(IntPtr isolate, IntPtr value, bool isByRef);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool ValueIsBigInt(IntPtr isolate, IntPtr value, bool isByRef);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern long GetBigIntFromValue(IntPtr isolate, IntPtr value, bool isByRef);
+
+        public static long GetBigIntFromValueChecked(IntPtr isolate, IntPtr value, bool isByRef)
+        {
+            if (!ValueIsBigInt(isolate, value, isByRef))
+            {
+                throw new InvalidOperationException("expect a bigint");
+            }
+            return GetBigIntFromValue(isolate, value, isByRef);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetObjectFromValue(IntPtr isolate, IntPtr value, bool isByRef);
@@ -302,7 +314,19 @@ namespace Puerts
         public static extern bool GetBooleanFromResult(IntPtr resultInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool ResultIsBigInt(IntPtr resultInfo);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern long GetBigIntFromResult(IntPtr resultInfo);
+
+        public static long GetBigIntFromResultCheck(IntPtr resultInfo)
+        {
+            if (!ResultIsBigInt(resultInfo))
+            {
+                throw new InvalidOperationException("expect a bigint");
+            }
+            return GetBigIntFromResult(resultInfo);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetObjectFromResult(IntPtr resultInfo);

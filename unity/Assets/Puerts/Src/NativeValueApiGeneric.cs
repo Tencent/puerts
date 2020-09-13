@@ -89,7 +89,7 @@ namespace Puerts
     {
         public long GetBigInt(IntPtr isolate, IntPtr holder, bool isByRef)
         {
-            return PuertsDLL.GetBigIntFromResult(holder);
+            return PuertsDLL.GetBigIntFromResultCheck(holder);
         }
 
         public bool GetBoolean(IntPtr isolate, IntPtr holder, bool isByRef)
@@ -144,7 +144,7 @@ namespace Puerts
     {
         public long GetBigInt(IntPtr isolate, IntPtr holder, bool isByRef)
         {
-            return PuertsDLL.GetBigIntFromValue(isolate, holder, isByRef);
+            return PuertsDLL.GetBigIntFromValueChecked(isolate, holder, isByRef);
         }
 
         public bool GetBoolean(IntPtr isolate, IntPtr holder, bool isByRef)

@@ -165,6 +165,39 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual("240hellojohntruefalsetruefalse480", ret);
         }
+
+        [Test]
+        public void Long()
+        {
+            Assert.Catch(() => {
+                using (var jsEnv1 = new JsEnv(new TxtLoader()))
+                {
+                    jsEnv1.Eval(@"
+                        const CS = require('csharp');
+                        let obj = new CS.Puerts.UnitTest.DerivedClass();
+                        obj.Long(1);
+                    ");
+                }
+            });
+
+            var jsEnv = new JsEnv(new TxtLoader());
+            var ret = jsEnv.Eval<long>(@"
+                    const CS = require('csharp');
+                    let obj = new CS.Puerts.UnitTest.DerivedClass();
+                    obj.Long(1n);
+                ");
+            Assert.AreEqual((long)1, ret);
+
+            Assert.Catch(() =>
+            {
+                using (var jsEnv2 = new JsEnv(new TxtLoader()))
+                {
+                    jsEnv2.Eval<long>("1");
+                }
+            });
+
+            jsEnv.Dispose();
+        }
     }
 }
 

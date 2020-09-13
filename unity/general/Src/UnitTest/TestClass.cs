@@ -36,6 +36,11 @@ namespace Puerts.UnitTest
         {
             return str == null;
         }
+
+        public long Long(long l)
+        {
+            return l;
+        }
     }
 
     public class JsObjectTest

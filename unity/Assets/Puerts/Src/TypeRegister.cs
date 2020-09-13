@@ -173,12 +173,12 @@ namespace Puerts
             else if (type == typeof(long[]) && jsType == JsValueType.BigInt)
             {
                 long[] array = obj as long[];
-                array[index] = PuertsDLL.GetBigIntFromValue(isolate, value, false);
+                array[index] = PuertsDLL.GetBigIntFromValueChecked(isolate, value, false);
             }
             else if (type == typeof(ulong[]) && jsType == JsValueType.BigInt)
             {
                 ulong[] array = obj as ulong[];
-                array[index] = (ulong)PuertsDLL.GetBigIntFromValue(isolate, value, false);
+                array[index] = (ulong)PuertsDLL.GetBigIntFromValueChecked(isolate, value, false);
             }
             else if (type == typeof(sbyte[]) && jsType == JsValueType.Number)
             {
