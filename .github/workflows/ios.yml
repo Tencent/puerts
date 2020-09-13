@@ -1,0 +1,23 @@
+name: ios-build
+
+on: 
+  push:
+    paths: 
+      - unity/native_src/**
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cd unity/native_src
+          chmod 777 make_ios.sh
+          ./make_ios.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/iOS/**/*
+          name: Puerts-ios

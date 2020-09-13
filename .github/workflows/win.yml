@@ -1,4 +1,4 @@
-name: Windows
+name: win-build
 
 on: 
   push:
@@ -26,4 +26,4 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         path: ./unity/native_src/build64/Release/puerts.dll
-        name: Puerts-Windows
+        name: Puerts-win
