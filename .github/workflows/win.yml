@@ -1,0 +1,29 @@
+name: win-build
+
+on: 
+  push:
+    paths: 
+      - unity/native_src/**
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Insatll MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Build
+      run: |
+        cd unity\native_src
+        mkdir build64
+        cd build64
+        cmake -G "Visual Studio 16 2019" ..
+        cd ..
+        cmake --build build64 --config Release
+    - name: Upload
+      uses: actions/upload-artifact@v1
+      with:
+        path: ./unity/native_src/build64/Release/puerts.dll
+        name: Puerts-win
