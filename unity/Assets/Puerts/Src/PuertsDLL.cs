@@ -119,7 +119,16 @@ namespace Puerts
 
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr Eval(IntPtr isolate, string code, string path);
+        public static extern IntPtr Eval(IntPtr isolate, byte[] code, string path);
+
+        public static IntPtr Eval(IntPtr isolate, string code, string path)
+        {
+            if (code == null)
+            {
+                throw new InvalidProgramException("eval null string");
+            }
+            return Eval(isolate, Encoding.UTF8.GetBytes(code), path);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, V8ConstructorCallback constructor, V8DestructorCallback destructor, long data);

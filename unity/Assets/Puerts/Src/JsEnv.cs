@@ -119,6 +119,10 @@ namespace Puerts
             {
                 string debugPath;
                 var context = loader.ReadFile(filename, out debugPath);
+                if (context == null)
+                {
+                    throw new InvalidProgramException("can not find " + filename);
+                }
                 Eval(context, debugPath);
             }
             else
