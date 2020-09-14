@@ -11,6 +11,7 @@
 #include "StructWrapper.h"
 #include "ContainerWrapper.h"
 #include "Engine/UserDefinedStruct.h"
+#include "ExtensionMethods.h"
 
 namespace puerts
 {
@@ -391,7 +392,28 @@ public:
 
     void JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPoninter(Context, Value);
+        FArrayBuffer ArrayBuffer;
+        void * Ptr = nullptr;
+        if (Value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
+            auto ABC = BuffView->Buffer()->GetContents();
+            ArrayBuffer.Data = static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+            ArrayBuffer.Length = BuffView->ByteLength();
+            Ptr = &ArrayBuffer;
+        }
+        else if (Value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
+            ArrayBuffer.Data = Ab->GetContents().Data();
+            ArrayBuffer.Length = Ab->ByteLength();
+            Ptr = &ArrayBuffer;
+        }
+        else
+        {
+            Ptr = FV8Utils::GetPoninter(Context, Value);
+        }
+
         if (Ptr)
         {
             StructProperty->CopySingleValue(ValuePtr, Ptr);

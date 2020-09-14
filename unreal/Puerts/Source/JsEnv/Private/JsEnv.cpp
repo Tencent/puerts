@@ -15,7 +15,6 @@
 #include "V8Utils.h"
 #include "Engine/Engine.h"
 #include "ObjectMapper.h"
-#include "ExtensionMethods.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
 #include "JitScript.h"
@@ -944,6 +943,13 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer)
 {
     check(Ptr);//must not null
+
+    if (ScriptStruct == FArrayBuffer::StaticStruct())
+    {
+        FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+        return Ab;
+    }
 
     if (!PassByPointer)
     {

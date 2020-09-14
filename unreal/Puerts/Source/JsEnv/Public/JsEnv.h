@@ -19,6 +19,7 @@
 #include "ObjectRetainer.h"
 #include "JSEngine.h"
 #include "JSModuleLoader.h"
+#include "ExtensionMethods.h"
 
 namespace puerts
 {

@@ -275,7 +275,10 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-        AddToGen.Add(StructProperty->Struct);
+        if (StructProperty->Struct->GetName() != "ArrayBuffer")
+        {
+            AddToGen.Add(StructProperty->Struct);
+        }
         StringBuffer << SafeName(StructProperty->Struct->GetName());
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
