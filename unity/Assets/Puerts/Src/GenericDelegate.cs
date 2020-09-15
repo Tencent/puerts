@@ -285,14 +285,23 @@ namespace Puerts
 
         ~GenericDelegate() 
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             if (jsEnv.isolate != IntPtr.Zero)
             {
                 PuertsDLL.ReleaseJSFunction(jsEnv.isolate, nativeJsFuncPtr);
             }
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void Action()
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
             if (resultInfo == IntPtr.Zero)
@@ -300,10 +309,16 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
                 throw new Exception(exceptionInfo);
             }
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void Action<T1>(T1 p1)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
@@ -312,10 +327,16 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
                 throw new Exception(exceptionInfo);
             }
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void Action<T1, T2>(T1 p1, T2 p2) 
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
@@ -325,10 +346,16 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
                 throw new Exception(exceptionInfo);
             }
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void Action<T1, T2, T3>(T1 p1, T2 p2, T3 p3)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
@@ -339,10 +366,16 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
                 throw new Exception(exceptionInfo);
             }
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public void Action<T1, T2, T3, T4>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
@@ -354,10 +387,16 @@ namespace Puerts
                 string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
                 throw new Exception(exceptionInfo);
             }
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public TResult Func<TResult>()
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
             if (resultInfo == IntPtr.Zero)
@@ -368,10 +407,16 @@ namespace Puerts
             TResult result = StaticTranslate<TResult>.Get(jsEnv.Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
             PuertsDLL.ResetResult(resultInfo);
             return result;
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public TResult Func<T1, TResult>(T1 p1)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
@@ -383,10 +428,16 @@ namespace Puerts
             TResult result = StaticTranslate<TResult>.Get(jsEnv.Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
             PuertsDLL.ResetResult(resultInfo);
             return result;
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public TResult Func<T1, T2, TResult>(T1 p1, T2 p2)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
@@ -399,10 +450,16 @@ namespace Puerts
             TResult result = StaticTranslate<TResult>.Get(jsEnv.Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
             PuertsDLL.ResetResult(resultInfo);
             return result;
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public TResult Func<T1, T2, T3, TResult>(T1 p1, T2 p2, T3 p3)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
@@ -416,10 +473,16 @@ namespace Puerts
             TResult result = StaticTranslate<TResult>.Get(jsEnv.Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
             PuertsDLL.ResetResult(resultInfo);
             return result;
+#if THREAD_SAFE
+            }
+#endif
         }
 
         public TResult Func<T1, T2, T3, T4, TResult>(T1 p1, T2 p2, T3 p3, T4 p4)
         {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
             jsEnv.CheckLiveness();
             StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
@@ -434,6 +497,9 @@ namespace Puerts
             TResult result = StaticTranslate<TResult>.Get(jsEnv.Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
             PuertsDLL.ResetResult(resultInfo);
             return result;
+#if THREAD_SAFE
+            }
+#endif
         }
     }
 }
