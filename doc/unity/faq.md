@@ -38,6 +38,9 @@ System.Text.Encoding.UTF8.GetBytes("你好");
 
 ## maOS10.15以上,启动unity的时候提示puerts.bundle损坏,移动到废纸篓
 
-sudo xattr -r -d com.apple.quarantine puerts.bundle
+执行
 
+~~~bash
+sudo xattr -r -d com.apple.quarantine puerts.bundle
+~~~
 
