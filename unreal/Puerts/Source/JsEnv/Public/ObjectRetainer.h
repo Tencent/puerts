@@ -26,11 +26,6 @@ public:
     ~FObjectRetainer();
 
 private:
-    struct ObjectInfo
-    {
-        int32 Refcount;
-    };
-
     TSet<UObject*> RetainedObjects;
 
 };
