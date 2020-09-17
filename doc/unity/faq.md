@@ -36,6 +36,8 @@ System.Text.Encoding.UTF8.GetBytes("你好");
 
 * 参数含ref，out的修饰，目前尚未支持，解决办法：填写issues来提需求
 
+## maOS10.15以上,启动unity的时候提示puerts.bundle损坏,移动到废纸篓
 
+sudo xattr -r -d com.apple.quarantine puerts.bundle
 
 
