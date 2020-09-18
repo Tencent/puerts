@@ -174,6 +174,15 @@ static PropertyMacro* DuplicateProperty(
 void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker)
 {
     UJSGeneratedFunction* Function = NewObject<UJSGeneratedFunction>(Class, Super->GetFName(), RF_Public);
+
+    for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::IncludeInterfaces); It; ++It)
+    {
+        if (*It == Function)
+        {
+            return;
+        }
+    }
+
     Function->ReturnValueOffset = MAX_uint16;
     Function->FirstPropertyToInit = NULL;
     Function->Script.Add(EX_EndFunctionParms);
