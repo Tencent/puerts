@@ -22,7 +22,7 @@ extern "C" {
 
 V8_EXPORT int GetLibVersion()
 {
-    return 5;
+    return 6;
 }
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
