@@ -133,25 +133,25 @@ elseif ( ANDROID )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
         target_link_libraries(puerts
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libinspector.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libv8_external_snapshot.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libv8_base.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libv8_libbase.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libv8_libplatform.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libv8_libsampler.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/libv8_external_snapshot.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libinspector.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_external_snapshot.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_base.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_libbase.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_libplatform.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_libsampler.a
+            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_external_snapshot.a
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
     else ( )
         target_link_libraries(puerts
-            ${ThirdParty}/Library/V8/Android/arm64-release/libinspector.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/libv8_external_snapshot.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/libv8_base.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/libv8_libbase.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/libv8_libplatform.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/libv8_libsampler.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/libv8_external_snapshot.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libinspector.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_external_snapshot.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_base.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_libbase.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_libplatform.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_libsampler.a
+            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_external_snapshot.a
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
