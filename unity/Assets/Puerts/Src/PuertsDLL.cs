@@ -22,19 +22,34 @@ namespace Puerts
     }
 #pragma warning restore 414
 
-    //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate void V8FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data);
 
-    //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate IntPtr V8ConstructorCallback(IntPtr isolate, IntPtr info, int paramLen, long data);
 
-    //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate void V8DestructorCallback(IntPtr self, long data);
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate void V8IndexedGetterCallback(IntPtr isolate, IntPtr info, IntPtr self, uint index, long data);
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate void V8IndexedSetterCallback(IntPtr isolate, IntPtr info, IntPtr self, uint index, IntPtr value, long data);
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate void LogCallback(string content);
 
     [Flags]
@@ -73,7 +88,16 @@ namespace Puerts
         public static extern void DestroyJSEngine(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetGlobalFunction(IntPtr isolate, string name, V8FunctionCallback v8FunctionCallback, long data);
+        public static extern void SetGlobalFunction(IntPtr isolate, string name, IntPtr v8FunctionCallback, long data);
+
+        public static void SetGlobalFunction(IntPtr isolate, string name, V8FunctionCallback v8FunctionCallback, long data)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(v8FunctionCallback);
+#endif
+            IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
+            SetGlobalFunction(isolate, name, fn, data);
+        }
 
         private static string GetStringFromNative(IntPtr str, int strlen)
         {
@@ -115,8 +139,16 @@ namespace Puerts
         public static extern void LowMemoryNotification(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetGeneralDestructor(IntPtr isolate, V8DestructorCallback generalDestructor);
+        public static extern void SetGeneralDestructor(IntPtr isolate, IntPtr generalDestructor);
 
+        public static void SetGeneralDestructor(IntPtr isolate, V8DestructorCallback generalDestructor)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(generalDestructor);
+#endif
+            IntPtr fn = generalDestructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(generalDestructor);
+            SetGeneralDestructor(isolate, fn);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr Eval(IntPtr isolate, string code, string path);
@@ -131,20 +163,78 @@ namespace Puerts
         }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, V8ConstructorCallback constructor, V8DestructorCallback destructor, long data);
+        public static extern int RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, IntPtr constructor, IntPtr destructor, long data);
+
+        public static int RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, V8ConstructorCallback constructor, V8DestructorCallback destructor, long data)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(constructor);
+            GCHandle.Alloc(destructor);
+#endif
+            IntPtr fn1 = constructor == null ? IntPtr.Zero: Marshal.GetFunctionPointerForDelegate(constructor);
+            IntPtr fn2 = destructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(destructor);
+
+            return RegisterClass(isolate, BaseTypeId, fullName, fn1, fn2, data);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int RegisterStruct(IntPtr isolate, int BaseTypeId, string fullName, V8ConstructorCallback constructor, V8DestructorCallback destructor, long data, int size);
+        public static extern int RegisterStruct(IntPtr isolate, int BaseTypeId, string fullName, IntPtr constructor, IntPtr destructor, long data, int size);
+
+        public static int RegisterStruct(IntPtr isolate, int BaseTypeId, string fullName, V8ConstructorCallback constructor, V8DestructorCallback destructor, long data, int size)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(constructor);
+            GCHandle.Alloc(destructor);
+#endif
+            IntPtr fn1 = constructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(constructor);
+            IntPtr fn2 = destructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(destructor);
+
+            return RegisterStruct(isolate, BaseTypeId, fullName, fn1, fn2, data, size);
+        }
 
         //切记注册的回调不能抛C#异常，必须先catch，然后转js异常
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterFunction(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback callback, long data);
+        public static extern bool RegisterFunction(IntPtr isolate, int classID, string name, bool isStatic, IntPtr callback, long data);
+
+        public static bool RegisterFunction(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback callback, long data)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(callback);
+#endif
+            IntPtr fn = callback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
+
+            return RegisterFunction(isolate, classID, name, isStatic, fn, data);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback getter, long getterData, V8FunctionCallback setter, long setterData, bool dontDelete);
+        public static extern bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, IntPtr getter, long getterData, IntPtr setter, long setterData, bool dontDelete);
+
+        public static bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, V8FunctionCallback getter, long getterData, V8FunctionCallback setter, long setterData, bool dontDelete)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(getter);
+            GCHandle.Alloc(setter);
+#endif
+            IntPtr fn1 = getter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(getter);
+            IntPtr fn2 = setter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(setter);
+
+            return RegisterProperty(isolate, classID, name, isStatic, fn1, getterData, fn2, setterData, dontDelete);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterIndexedProperty(IntPtr isolate, int classID, V8IndexedGetterCallback getter, V8IndexedSetterCallback setter, long data);
+        public static extern bool RegisterIndexedProperty(IntPtr isolate, int classID, IntPtr getter, IntPtr setter, long data);
+
+        public static bool RegisterIndexedProperty(IntPtr isolate, int classID, V8IndexedGetterCallback getter, V8IndexedSetterCallback setter, long data)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(getter);
+            GCHandle.Alloc(setter);
+#endif
+            IntPtr fn1 = getter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(getter);
+            IntPtr fn2 = setter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(setter);
+
+            return RegisterIndexedProperty(isolate, classID, fn1, fn2, data);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnClass(IntPtr isolate, IntPtr info, int classID);
@@ -373,7 +463,21 @@ namespace Puerts
         public static extern bool InspectorTick(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError);
+        public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);
+
+        public static void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(log);
+            GCHandle.Alloc(logWarning);
+            GCHandle.Alloc(logError);
+#endif
+            IntPtr fn1 = log == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(log);
+            IntPtr fn2 = logWarning == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(logWarning);
+            IntPtr fn3 = logError == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(logError);
+
+            SetLogCallback(fn1, fn2, fn3);
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
