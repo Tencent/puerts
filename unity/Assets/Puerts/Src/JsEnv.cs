@@ -226,6 +226,12 @@ namespace Puerts
             GeneralGetterManager.RegisterGetter(type, getter);
             GeneralSetterManager.RegisterSetter(type, setter);
         }
+        
+        //use by BlittableCopy
+        public int GetTypeId(Type type)
+        {
+            return TypeRegister.GetTypeId(isolate, type);
+        }
 
         public int Index
         {
