@@ -30,11 +30,19 @@
 #include "Blob/Win64/NativesBlob.h"
 #include "Blob/Win64/SnapshotBlob.h"
 #elif PLATFORM_ANDROID_ARM
-#include "Blob/Android/armv7a/NativesBlob.h"
-#include "Blob/Android/armv7a/SnapshotBlob.h"
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 25
+#include "Blob/Android/armv7a/8.4.371.19/SnapshotBlob.h"
+#elif ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25
+#include "Blob/Android/armv7a/7.4.288/NativesBlob.h"
+#include "Blob/Android/armv7a/7.4.288/SnapshotBlob.h"
+#endif
 #elif PLATFORM_ANDROID_ARM64
-#include "Blob/Android/arm64/NativesBlob.h"
-#include "Blob/Android/arm64/SnapshotBlob.h"
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 25
+#include "Blob/Android/arm64/8.4.371.19/SnapshotBlob.h"
+#elif ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25
+#include "Blob/Android/arm64/7.4.288/NativesBlob.h"
+#include "Blob/Android/arm64/7.4.288/SnapshotBlob.h"
+#endif
 #elif PLATFORM_IOS
 #include "Blob/iOS/arm64/NativesBlob.h"
 #include "Blob/iOS/arm64/SnapshotBlob.h"
@@ -118,20 +126,22 @@ private:
     V8Inspector* Inspector;
 
     std::shared_ptr<ILogger> Logger;
-
-    std::shared_ptr<v8::StartupData> NativesBlob;
-
-    std::shared_ptr<v8::StartupData> SnapshotBlob;
 };
 
 V8JSEnv::V8JSEnv(): Inspector(nullptr)
 {
+#if !PLATFORM_ANDROID || \
+    (PLATFORM_ANDROID && ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25)
+    std::shared_ptr<v8::StartupData> NativesBlob;
     if (!NativesBlob)
     {
         NativesBlob = std::make_shared<v8::StartupData>();
         NativesBlob->data = (const char *)NativesBlobCode;
         NativesBlob->raw_size = sizeof(NativesBlobCode);
     }
+    v8::V8::SetNativesDataBlob(NativesBlob.get());
+#endif
+    std::shared_ptr<v8::StartupData> SnapshotBlob;
     if (!SnapshotBlob)
     {
         SnapshotBlob = std::make_shared<v8::StartupData>();
@@ -140,7 +150,6 @@ V8JSEnv::V8JSEnv(): Inspector(nullptr)
     }
 
     // 初始化Isolate和DefaultContext
-    v8::V8::SetNativesDataBlob(NativesBlob.get());
     v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
 
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
