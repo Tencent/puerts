@@ -57,57 +57,57 @@ namespace Puerts
             if (type == typeof(int[]))
             {
                 int[] array = obj as int[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(float[]))
             {
                 float[] array = obj as float[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(double[]))
             {
                 double[] array = obj as double[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(bool[]))
             {
                 bool[] array = obj as bool[];
-                PuertsDLL.PropertyReturnBoolean(isolate, info, array[index]);
+                PuertsDLL.ReturnBoolean(isolate, info, array[index]);
             }
             else if (type == typeof(long[]))
             {
                 long[] array = obj as long[];
-                PuertsDLL.PropertyReturnBigInt(isolate, info, array[index]);
+                PuertsDLL.ReturnBigInt(isolate, info, array[index]);
             }
             else if (type == typeof(ulong[]))
             {
                 ulong[] array = obj as ulong[];
-                PuertsDLL.PropertyReturnBigInt(isolate, info, (long)array[index]);
+                PuertsDLL.ReturnBigInt(isolate, info, (long)array[index]);
             }
             else if (type == typeof(sbyte[]))
             {
                 sbyte[] array = obj as sbyte[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(short[]))
             {
                 short[] array = obj as short[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(ushort[]))
             {
                 ushort[] array = obj as ushort[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(char[]))
             {
                 char[] array = obj as char[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(uint[]))
             {
                 uint[] array = obj as uint[];
-                PuertsDLL.PropertyReturnNumber(isolate, info, array[index]);
+                PuertsDLL.ReturnNumber(isolate, info, array[index]);
             }
             else if (type == typeof(string[]))
             {
@@ -115,11 +115,11 @@ namespace Puerts
                 string str = array[index];
                 if (str == null)
                 {
-                    PuertsDLL.PropertyReturnNull(isolate, info);
+                    PuertsDLL.ReturnNull(isolate, info);
                 }
                 else
                 {
-                    PuertsDLL.PropertyReturnString(isolate, info, str);
+                    PuertsDLL.ReturnString(isolate, info, str);
                 }
             }
             else
@@ -128,22 +128,7 @@ namespace Puerts
             }
             return hited;
         }
-
-        internal void ArrayGet(IntPtr isolate, IntPtr info, IntPtr self, uint index)
-        {
-            try
-            {
-                Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
-                if (FastArrayGet(isolate, info, self, array, index)) return;
-                var transalteFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(array.GetType().GetElementType());
-                transalteFunc(isolate, NativeValueApi.SetValueToIndexResult, info, array.GetValue((int)index));
-            }
-            catch (Exception e)
-            {
-                PuertsDLL.ThrowException(isolate, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-
+        
         bool FastArraySet(IntPtr isolate, IntPtr info, IntPtr self, object obj, uint index, IntPtr value)
         {
             bool hited = true;
@@ -221,29 +206,45 @@ namespace Puerts
             }
             return hited;
         }
-
-        internal void ArraySet(IntPtr isolate, IntPtr info, IntPtr self, uint index, IntPtr value)
-        {
-            try
-            {
-                Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
-                if (FastArraySet(isolate, info, self, array, index, value)) return;
-                var transalteFunc = jsEnv.GeneralGetterManager.GetTranslateFunc(array.GetType().GetElementType());
-                var val = transalteFunc(isolate, NativeValueApi.GetValueFromArgument, value, false);
-                array.SetValue(val, (int)index);
-            }
-            catch (Exception e)
-            {
-                PuertsDLL.ThrowException(isolate, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-
+        
         private int arrayTypeId = -1;
         internal void InitArrayTypeId(IntPtr isolate)
         {
             arrayTypeId = PuertsDLL.RegisterClass(jsEnv.isolate, GetTypeId(isolate, typeof(Array)), "__puerts.Array", null, null, 0);
-            PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "length", false, callbackWrap, jsEnv.AddCallback(ArrayLength), null, 0, true);
-            PuertsDLL.RegisterIndexedProperty(jsEnv.isolate, arrayTypeId, StaticCallbacks.IndexedGetterWrap, StaticCallbacks.IndexedSetterWrap, Utils.TwoIntToLong(jsEnv.Idx, 0));
+            PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "Length", false, callbackWrap, jsEnv.AddCallback(ArrayLength), null, 0, true);
+
+            PuertsDLL.RegisterFunction(jsEnv.isolate, arrayTypeId, "get_Item", false, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen)=>
+            {
+                try
+                {
+                    Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
+                    uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
+                    if (FastArrayGet(isolate1, info, self, array, index)) return;
+                    var transalteFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(array.GetType().GetElementType());
+                    transalteFunc(isolate1, NativeValueApi.SetValueToResult, info, array.GetValue((int)index));
+                }
+                catch (Exception e)
+                {
+                    PuertsDLL.ThrowException(isolate1, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                }
+            }));
+
+            PuertsDLL.RegisterFunction(jsEnv.isolate, arrayTypeId, "set_Item", false, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen) =>
+            {
+                try
+                {
+                    Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
+                    uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
+                    var val = PuertsDLL.GetArgumentValue(info, 1);
+                    if (FastArraySet(isolate1, info, self, array, index, val)) return;
+                    var transalteFunc = jsEnv.GeneralGetterManager.GetTranslateFunc(array.GetType().GetElementType());
+                    array.SetValue(transalteFunc(isolate1, NativeValueApi.GetValueFromArgument, val, false), index);
+                }
+                catch (Exception e)
+                {
+                    PuertsDLL.ThrowException(isolate1, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                }
+            }));
         }
 
         void AddAssemblieByName(IEnumerable<Assembly> assembliesUsorted, string name)

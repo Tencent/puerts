@@ -31,6 +31,14 @@ function typeDeclaration(type, level1) {
 declare module 'csharp' {
     interface $Ref<T> {}
     
+    namespace System {
+        interface Array$1<T> extends System.Array {
+            get_Item(index: number):T;
+            
+            set_Item(index: number, value: T):void;
+        }
+    }
+    
     {{=it.TaskDef}}
     
     {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}

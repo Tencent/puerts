@@ -139,25 +139,25 @@ namespace Puerts.UnitTest
                 let obj = new CS.Puerts.UnitTest.ArrayTest();
                 let sum = 0;
                 for (var i = 0; i < 10; i++) {
-                    for (var j = 0; j < obj['a' + i].length; j++) {
-                        sum += Number(obj['a' + i][j]);
+                    for (var j = 0; j < obj['a' + i].Length; j++) {
+                        sum += Number(obj['a' + i].get_Item(j));
                     }
                 }
-                for (var i = 0; i < obj.astr.length; i++) {
-                    sum += obj.astr[i];
+                for (var i = 0; i < obj.astr.Length; i++) {
+                    sum += obj.astr.get_Item(i);
                 }
-                for (var i = 0; i < obj.ab.length; i++) {
-                    sum += obj.ab[i];
+                for (var i = 0; i < obj.ab.Length; i++) {
+                    sum += obj.ab.get_Item(i);
                 }
                 let sum2 = 0;
                 for (var i = 0; i < 10; i++) {
-                    for (var j = 0; j < obj['a' + i].length; j++) {
-                        obj['a' + i][j] += obj['a' + i][j];
+                    for (var j = 0; j < obj['a' + i].Length; j++) {
+                        obj['a' + i].set_Item(j, obj['a' + i].get_Item(j) + obj['a' + i].get_Item(j));
                     }
                 }
                 for (var i = 0; i < 10; i++) {
-                    for (var j = 0; j < obj['a' + i].length; j++) {
-                        sum2 += Number(obj['a' + i][j]);
+                    for (var j = 0; j < obj['a' + i].Length; j++) {
+                        sum2 += Number(obj['a' + i].get_Item(j));
                     }
                 }
                 //CS.System.Console.WriteLine('sum = ' + sum2 );

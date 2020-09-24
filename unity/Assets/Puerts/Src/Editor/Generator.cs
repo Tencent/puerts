@@ -351,7 +351,7 @@ namespace Puerts.Editor
         }
 
         // #lizard forgives
-        static string GetTsTypeName(Type type)
+        static string GetTsTypeName(Type type, bool isParams = false)
         {
             if (type == typeof(int))
                 return "number";
@@ -390,7 +390,7 @@ namespace Puerts.Editor
             else if (type.IsByRef)
                 return "$Ref<" + GetTsTypeName(type.GetElementType()) + ">";
             else if (type.IsArray)
-                return GetTsTypeName(type.GetElementType()) + "[]";
+                return isParams ? (GetTsTypeName(type.GetElementType()) + "[]") : ("System.Array$1<" + GetTsTypeName(type.GetElementType()) + ">");
             else if (type.IsGenericType)
             {
                 var fullName = type.FullName == null ? type.ToString() : type.FullName;
@@ -407,12 +407,13 @@ namespace Puerts.Editor
 
         static TsParameterGenInfo ToTsParameterGenInfo(ParameterInfo parameterInfo)
         {
+            var isParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false);
             return new TsParameterGenInfo()
             {
                 Name = parameterInfo.Name,
                 IsByRef = parameterInfo.ParameterType.IsByRef,
-                TypeName = GetTsTypeName(parameterInfo.ParameterType),
-                IsParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false),
+                TypeName = GetTsTypeName(parameterInfo.ParameterType, isParams),
+                IsParams = isParams,
                 IsOptional = parameterInfo.IsOptional
             };
         }

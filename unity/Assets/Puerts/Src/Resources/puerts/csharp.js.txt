@@ -35,7 +35,7 @@ var global = global || (function () { return this; }());
             let nestedTypes = puerts.getNestedTypes(csType);
             if (nestedTypes) {
                 for(var i = 0; i < nestedTypes.Length; i++) {
-                    let ntype = nestedTypes[i];
+                    let ntype = nestedTypes.get_Item(i);
                     cls[ntype.Name] = csTypeToClass(ntype);
                 }
             }
