@@ -677,7 +677,7 @@ namespace Puerts.Editor
 
             HashSet<Type> refTypes = new HashSet<Type>();
 
-            foreach(var type in types)
+            foreach (var type in types)
             {
                 AddRefType(refTypes, type);
                 var defType = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
@@ -703,6 +703,8 @@ namespace Puerts.Editor
                     }
                 }
             }
+
+            if (!genTypeSet.Contains(typeof(Array)) && !refTypes.Contains(typeof(Array))) AddRefType(refTypes, typeof(Array));
 
             return new TypingGenInfo()
             {
