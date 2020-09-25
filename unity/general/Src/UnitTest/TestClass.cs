@@ -6,12 +6,60 @@
 */
 
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public struct S
+    {
+        int age;
+        string name;
+        public int Age
+        {
+            get
+            {
+                return age;
+            }
+            set
+            {
+                age = value;
+            }
+        }
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+            set
+            {
+                name = value;
+            }
+        }
+        public S(int i, string j) : this()
+        {
+            Age = i;
+            Name = j;
+        }
+        public string TestParamObj(DerivedClass obj)
+        {
+            obj.baseIntField = 111;
+            return obj.TestVirt(Age, Name);
+        }
+    }
     public class BaseClass
     {
-
+        public int baseIntField = 10;
+        public static string baseStringField = " base-static-field ";
+        public virtual string TestVirt(int a, string str)
+        {
+            return str + a;
+        }
+        public virtual string TestBaseVirt()
+        {
+            return "base print" + baseStringField;
+        }
     }
 
     public class DerivedClass : BaseClass
@@ -20,7 +68,16 @@ namespace Puerts.UnitTest
         {
             return x;
         }
+        public override string TestVirt(int a, string str)
+        {
+            return str + a * 10 + " " + baseIntField;
+        }
 
+        public override string TestBaseVirt()
+        {
+            baseStringField = " fixed-base-static-field ";
+            return base.TestBaseVirt();
+        }
 
         public class Inner
         {
@@ -29,6 +86,10 @@ namespace Puerts.UnitTest
             public int Add(int a, int b)
             {
                 return a + b;
+            }
+            public static void Sub(int a, int b, out int c)
+            {
+                c = a - b;
             }
         }
 
@@ -40,6 +101,133 @@ namespace Puerts.UnitTest
         public long Long(long l)
         {
             return l;
+        }
+        public string PrintStruct(S s)
+        {
+            s.Age = 20;
+            return ("name : " + s.Name + " , age : " + s.Age);
+        }
+
+        public string PrintStructRef(ref S s)
+        {
+            s.Age = 20;
+            return ("name : " + s.Name + " , age : " + s.Age);
+        }
+
+
+        public int Adds(int a, int b)
+        {
+            return (a + b);
+        }
+        public string Adds(string a, string b)
+        {
+            return (a + b);
+        }
+
+        public int TestList(List<int> list)
+        {
+            int sum = 0;
+            foreach (var i in list)
+            {
+                sum += i;
+            }
+            return sum;
+        }
+
+        public string TryCatchFinally(bool bThrow, ref bool t, ref bool c, ref bool f, ref bool e)
+        {
+            string s = "";
+            try
+            {
+                if (bThrow)
+                {
+                    throw new Exception();
+                }
+                s += "t";
+                t = true;
+            }
+            catch
+            {
+                s += "c";
+                c = true;
+            }
+            finally
+            {
+                s += "f";
+                f = true;
+            }
+            s += "e";
+            e = true;
+            return s;
+        }
+
+        public string CatchByNextLevel(out bool f1, out bool f2, out bool f3)
+        {
+            string res = "";
+            f1 = f2 = f3 = false;
+            try
+            {
+                res += "try";
+                try
+                {
+                    res += "-try";
+                    throw new Exception();
+                }
+                finally
+                {
+                    res += "-finally";
+                    f1 = true;
+                }
+            }
+            catch
+            {
+                res += "-catch";
+                f2 = true;
+            }
+            finally
+            {
+                res += "-finally";
+                f3 = true;
+            }
+            return res;
+        }
+
+        public int TestListRange(List<int> l, int i)
+        {
+            return l[i];
+        }
+
+        public string TestDefaultParam(int i = 1, string s = "str")
+        {
+            return i + s;
+        }
+    }
+
+    public delegate string MyCallBack(string str);
+
+    public class EventTest
+    {
+        public MyCallBack myCallBack;
+        public event MyCallBack myEvent;
+        public static event MyCallBack myStaticEvent;
+
+        public string Trigger()
+        {
+            string res = "start ";
+            if (myCallBack != null)
+            {
+                res += myCallBack(" delegate ");
+            }
+            if (myEvent != null)
+            {
+                res += myCallBack(" event ");
+            }
+            if (myStaticEvent != null)
+            {
+                res += myCallBack(" static-event ");
+            }
+            res += " end";
+            return res;
         }
     }
 
@@ -87,5 +275,59 @@ namespace Puerts.UnitTest
         public bool[] ab = new bool[] { true, false, true, false };
 
         public string[] astr = new string[] { "hello", "john" };
+    }
+
+    public abstract class Abs
+    {
+        public int age = 23;
+        public abstract void TestRef(ref string name, out string res);
+    }
+
+    public class C : Abs
+    {
+        public override void TestRef(ref string name, out string res)
+        {
+            res = name + age;
+            name = "anna";
+        }
+    }
+
+    interface IA
+    {
+        bool running { get; }
+
+        string TestObj(BaseClass obj, int a, string b);
+
+        string TestArr(char[] arr);
+    }
+
+
+    public class ISubA : IA
+    {
+
+        public char[] a8 = new char[] { (char)(7 + '0'), (char)(8 + '0'), (char)(9 + '0') };
+        public bool running
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public string TestObj(BaseClass obj, int a, string b)
+        {
+            return obj.TestVirt(a, b);
+        }
+
+        public string TestArr(char[] arr)
+        {
+            string sum = "";
+            for (int i = 0; i < arr.Length; i++)
+            {
+                sum += arr[i];
+            }
+            return sum;
+        }
+
     }
 }
