@@ -93,7 +93,7 @@ namespace Puerts
                     parameterType = parameterType.GetElementType();
                     hasParamArray = true;
                 }
-                types[i] = parameterType;
+                types[i] = parameterType.IsByRef ? parameterType.GetElementType() : parameterType;
                 typeMasks[i] = GeneralGetterManager.GetJsTypeMask(parameterType);
                 argsTranslateFuncs[i] = generalGetterManager.GetTranslateFunc(parameterType);
                 byRef[i] = parameterType.IsByRef;
@@ -153,7 +153,7 @@ namespace Puerts
                     {
                         if (callInfo.Values[i] == null)
                         {
-                            callInfo.Values[i] = generalGetterManager.AnyTranslator(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], false);
+                            callInfo.Values[i] = generalGetterManager.AnyTranslator(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], byRef[i]);
                         }
                         if (!types[i].IsAssignableFrom(callInfo.Values[i].GetType()))
                         {
