@@ -18,25 +18,30 @@ var global = global || (function () { return this; }());
     }
     global.__tgjsLog = undefined;
 
+    const console_org = global.console;
     var console = {}
 
     function log(level, args) {
         tgjsLog(level, Array.prototype.map.call(args, x => x === null? "null": x === undefined ? 'undefined' : x.toString()).join(','));
     }
 
-    console.log = function(msg) {
+    console.log = function() {
+        console_org.log.apply(null, Array.prototype.slice.call(arguments));
         log(0, arguments);
     }
 
-    console.info = function(msg) {
+    console.info = function() {
+        console_org.info.apply(null, Array.prototype.slice.call(arguments));
         log(1, arguments);
     }
 
-    console.warn = function(msg) {
+    console.warn = function() {
+        console_org.warn.apply(null, Array.prototype.slice.call(arguments));
         log(2, arguments);
     }
 
-    console.error = function(msg) {
+    console.error = function() {
+        console_org.error.apply(null, Array.prototype.slice.call(arguments));
         log(3, arguments);
     }
 

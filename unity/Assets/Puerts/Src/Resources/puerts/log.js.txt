@@ -13,25 +13,30 @@ var global = global || (function () { return this; }());
     
     if (!UnityEngine_Debug) return;
 
+    const console_org = global.console;
     var console = {}
 
     function toString(args) {
         return Array.prototype.map.call(args, x => x === null? "null": x === undefined ? 'undefined' : x.toString()).join(',');
     }
 
-    console.log = function(msg) {
+    console.log = function() {
+        console_org.log.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.Log(toString(arguments));
     }
 
-    console.info = function(msg) {
+    console.info = function() {
+        console_org.info.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.Log(toString(arguments));
     }
 
-    console.warn = function(msg) {
+    console.warn = function() {
+        console_org.warn.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.LogWarning(toString(arguments));
     }
 
-    console.error = function(msg) {
+    console.error = function() {
+        console_org.error.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.LogError(toString(arguments));
     }
 
