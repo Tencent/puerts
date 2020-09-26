@@ -201,6 +201,11 @@ namespace Puerts.UnitTest
         {
             return i + s;
         }
+
+        public int TestErrorParam(int i)
+        {
+            return i;
+        }
     }
 
     public delegate string MyCallBack(string str);
