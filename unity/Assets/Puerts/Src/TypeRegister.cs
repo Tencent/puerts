@@ -481,14 +481,26 @@ namespace Puerts
             for (int i = 0; i < methods.Length; ++i)
             {
                 MethodInfo method = methods[i];
-                if (method.IsConstructor || method.IsGenericMethodDefinition)
+                
+                MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+
+                if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
                 {
                     continue;
                 }
 
-                MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+                if (!method.IsConstructor && method.IsGenericMethodDefinition && Utils.IsSupportedMethod(method))
+                {
+                    var genericArguments = method.GetGenericArguments();
+                    var constraintedArgumentTypes = new Type[genericArguments.Length];
+                    for (var j = 0; j < genericArguments.Length; j++)
+                    {
+                        constraintedArgumentTypes[j] = genericArguments[j].BaseType;
+                    }
+                    method = method.MakeGenericMethod(constraintedArgumentTypes);
+                }
 
-                if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
+                if (method.IsConstructor || method.IsGenericMethodDefinition)
                 {
                     continue;
                 }
