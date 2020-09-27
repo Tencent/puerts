@@ -461,6 +461,20 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "1str");
         }
 
+
+        [Test]
+        public void ErrorParamTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int res = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let obj = new CS.Puerts.UnitTest.DerivedClass();
+                let res;
+                try { obj.TestErrorParam('1');} catch(e){res = -1};
+                res;
+            ");
+            Assert.AreEqual(res, -1);
+        }
     }
 }
 
