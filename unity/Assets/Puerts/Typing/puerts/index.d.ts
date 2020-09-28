@@ -12,6 +12,8 @@ declare module "puerts" {
     function $generic<T extends new (...args:any[]) => any> (genericType :T, ...genericArguments: (new (...args:any[]) => any)[]) : T;
     
     function $typeof(x : new (...args:any[]) => any) : System.Type;
+    
+    function $extension(c : Function, e: Function) : void;
 }
 
 declare function require(name: string): any;

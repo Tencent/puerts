@@ -314,6 +314,74 @@ namespace Puerts.Editor
             return ret;
         }
 
+        static bool isDefined(MemberInfo test, Type type)
+        {
+#if PUERTS_GENERAL
+            return test.GetCustomAttributes(false).Any(ca => ca.GetType().ToString() == type.ToString());
+#else
+            return test.IsDefined(type, false);
+#endif
+        }
+
+        static Dictionary<Type, HashSet<Type>> extensionTypes = null;
+
+        static bool IsClass(Type type)
+        {
+#if !UNITY_WSA || UNITY_EDITOR
+            return type.IsClass;
+#else
+            return type.GetTypeInfo().IsClass;
+#endif
+        }
+
+        static Type getExtendedType(MethodInfo method)
+        {
+            var type = method.GetParameters()[0].ParameterType;
+            if (!type.IsGenericParameter)
+                return type;
+            var parameterConstraints = type.GetGenericParameterConstraints();
+            if (parameterConstraints.Length == 0)
+            {
+                Debug.LogError(method + "," + method.DeclaringType);
+                throw new InvalidOperationException();
+            }
+
+            var firstParameterConstraint = parameterConstraints[0];
+            if (!IsClass(firstParameterConstraint))
+                throw new InvalidOperationException();
+            return firstParameterConstraint;
+        }
+
+        static Type[] GetExtensionTypes(Type checkType, HashSet<Type> genTypeSet)
+        {
+            if (extensionTypes == null)
+            {
+                var extensionMethods = from type in genTypeSet
+                                       from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                                       where isDefined(method, typeof(System.Runtime.CompilerServices.ExtensionAttribute)) && Utils.IsSupportedMethod(method)
+                                             select method;
+                extensionTypes = new Dictionary<Type, HashSet<Type>>();
+                foreach (var method in extensionMethods)
+                {
+                    HashSet<Type> extendTypes;
+                    var t = getExtendedType(method);
+                    if (!extensionTypes.TryGetValue(t, out extendTypes))
+                    {
+                        extendTypes = new HashSet<Type>();
+                        extensionTypes.Add(t, extendTypes);
+                    }
+                    var declaringType = method.DeclaringType;
+                    if (!extendTypes.Contains(declaringType)) extendTypes.Add(declaringType);
+                }
+            }
+            HashSet<Type> ret;
+            if (!extensionTypes.TryGetValue(checkType, out ret))
+            {
+                return new Type[] { };
+            }
+            return ret.ToArray();
+        }
+
         static TypeGenInfo ToTypeGenInfo(Type type)
         {
             var methodGroups = type.GetMethods(Flags).Where(m => !isFiltered(m))
@@ -473,6 +541,7 @@ namespace Puerts.Editor
             public TsTypeGenInfo BaseType;
             public bool IsEnum;
             public string EnumKeyValues;
+            public string[] ExtensionTypes;
         }
 
         public static bool IsGetterOrSetter(MethodInfo method)
@@ -524,6 +593,7 @@ namespace Puerts.Editor
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
                 IsInterface = type.IsInterface,
                 Namespace = type.Namespace,
+                ExtensionTypes = GetExtensionTypes(type, genTypeSet).Select(t => t.IsGenericType ? GetTsTypeName(t) : t.Name.Replace('`', '$')).ToArray()
             };
 
             if (result.IsGenericTypeDefinition)
