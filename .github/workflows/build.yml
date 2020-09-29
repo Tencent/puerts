@@ -6,7 +6,7 @@ on:
       - unity/native_src/**
 
 jobs:
-  andorid:
+  android:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
-        path: ./unity/Assets/Plugins/Android/libs/**/*
+        path: ./unity/Assets/Plugins/**/*
         name: Puerts-android
   ios:
     runs-on: macos-latest
@@ -44,7 +44,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
-          path: ./unity/Assets/Plugins/iOS/**/*
+          path: ./unity/Assets/Plugins/**/*
           name: Puerts-ios
   osx:
     runs-on: macos-latest
@@ -59,7 +59,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
-          path: ./unity/native_src/build_osx/Release/puerts.bundle/**/*
+          path: ./unity/Assets/Plugins/**/*
           name: Puerts-osx
   windows:
     runs-on: windows-latest
@@ -77,8 +77,34 @@ jobs:
         cmake -G "Visual Studio 16 2019" ..
         cd ..
         cmake --build build64 --config Release
+        mkdir -p ..\Assets\Plugins\x86_64\
+        copy .\build64\Release\puerts.dll ..\Assets\Plugins\x86_64\puerts.dll
     - name: Upload
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
-        path: ./unity/native_src/build64/Release/puerts.dll
+        path: ./unity/Assets/Plugins/**/*
         name: Puerts-win
+  pack:
+    runs-on: ubuntu-latest
+    needs: [windows, osx,ios,android]
+    steps:
+      - uses: actions/download-artifact@v1
+        with:
+          name: Puerts-win
+          path: artifact/
+      - uses: actions/download-artifact@v1
+        with:
+          name: Puerts-osx
+          path: artifact/
+      - uses: actions/download-artifact@v1
+        with:
+          name: Puerts-android
+          path: artifact/
+      - uses: actions/download-artifact@v1
+        with:
+          name: Puerts-ios
+          path: artifact/
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Puerts-all
+          path: artifact/**/*
