@@ -386,7 +386,7 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_nosnapshot.a"));
             
-            PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "macOS"), "libffi.a"));
+            //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "macOS"), "libffi.a"));
         }
         else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
@@ -434,10 +434,10 @@ public class JsEnv : ModuleRules
             PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "asio") });
         }
         
-        if (Target.Platform == UnrealTargetPlatform.Mac)
-        {
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "macOS") });
-        }
+        //if (Target.Platform == UnrealTargetPlatform.Mac)
+        //{
+        //    PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "macOS") });
+        //}
         //else if (Target.Platform == UnrealTargetPlatform.IOS)
         //{
         //    PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "iOS") });
