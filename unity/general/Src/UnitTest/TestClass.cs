@@ -206,6 +206,16 @@ namespace Puerts.UnitTest
         {
             return i;
         }
+
+        public int TestErrorParamStruct(S s)
+        {
+            return s.Age;
+        }
+
+        public bool TestErrorParamClass(ISubA obj)
+        {
+            return obj.running;
+        }
     }
 
     public delegate string MyCallBack(string str);
@@ -301,7 +311,11 @@ namespace Puerts.UnitTest
     {
         bool running { get; }
 
-        string TestObj(BaseClass obj, int a, string b);
+        string TestBaseObj(BaseClass obj, int a, string b);
+
+
+        string TestDerivedObj(DerivedClass obj, int a, string b);
+        
 
         string TestArr(char[] arr);
     }
@@ -319,7 +333,12 @@ namespace Puerts.UnitTest
             }
         }
 
-        public string TestObj(BaseClass obj, int a, string b)
+        public string TestBaseObj(BaseClass obj, int a, string b)
+        {
+            return obj.TestVirt(a, b);
+        }
+
+        public string TestDerivedObj(DerivedClass obj, int a, string b)
         {
             return obj.TestVirt(a, b);
         }
@@ -334,5 +353,24 @@ namespace Puerts.UnitTest
             return sum;
         }
 
+        public int TestArrInt(int[] array)
+        {
+            int sum = 0;
+            for (int i = 0; i < array.Length; i++)
+            {
+                sum += array[i];
+            }
+            return sum;
+        }
+
+        public string TestArrString(string[] arr)
+        {
+            string str = "";
+            for (int i = 0; i < arr.Length; i++)
+            {
+                str += arr[i];
+            }
+            return str;
+        }
     }
 }
