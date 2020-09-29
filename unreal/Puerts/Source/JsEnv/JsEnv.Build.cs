@@ -404,7 +404,7 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
             
-            PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
+            //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
         }
         string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
         string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
@@ -438,10 +438,10 @@ public class JsEnv : ModuleRules
         {
             PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "macOS") });
         }
-        else if (Target.Platform == UnrealTargetPlatform.IOS)
-        {
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "iOS") });
-        }
+        //else if (Target.Platform == UnrealTargetPlatform.IOS)
+        //{
+        //    PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "iOS") });
+        //}
     }
 
     private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)

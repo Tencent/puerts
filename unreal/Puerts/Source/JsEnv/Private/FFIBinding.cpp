@@ -6,7 +6,7 @@
 */
 
 #include "FFIBinding.h"
-#if PLATFORM_MAC || PLATFORM_IOS
+#if PLATFORM_MAC
 #include "JSClassRegister.h"
 #include "V8Utils.h"
 #include "ffi.h"
