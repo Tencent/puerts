@@ -458,6 +458,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
+            ReleasePendingJSFunctions();
             PuertsDLL.InspectorTick(isolate);
             tickHandler.ForEach(fn =>
             {
@@ -544,6 +545,30 @@ namespace Puerts
             if (disposed)
             {
                 throw new InvalidOperationException("JsEnv had disposed!");
+            }
+        }
+
+        Queue<IntPtr> jsFuncQueue = new Queue<IntPtr>();
+
+        internal void EnqueueJSFunction(IntPtr nativeJsFuncPtr)
+        {
+            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
+
+            lock (jsFuncQueue)
+            {
+                jsFuncQueue.Enqueue(nativeJsFuncPtr);
+            }
+        }
+
+        internal void ReleasePendingJSFunctions()
+        {
+            lock (jsFuncQueue)
+            {
+                while (jsFuncQueue.Count > 0)
+                {
+                    IntPtr nativeJsFuncPtr = jsFuncQueue.Dequeue();
+                    PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                }
             }
         }
     }
