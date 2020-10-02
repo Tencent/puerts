@@ -288,10 +288,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif
-            if (jsEnv.isolate != IntPtr.Zero)
-            {
-                PuertsDLL.ReleaseJSFunction(jsEnv.isolate, nativeJsFuncPtr);
-            }
+            jsEnv.EnqueueJSFunction(nativeJsFuncPtr);
 #if THREAD_SAFE
             }
 #endif
