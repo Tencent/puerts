@@ -11,26 +11,6 @@
 #define USING_UE 0
 #endif
 
-#if !USING_UE
-#if !defined(PLATFORM_WINDOWS) || defined(PLATFORM_MAC)
-#if defined(_WIN32)
-#define PLATFORM_WINDOWS 1
-#else
-#define PLATFORM_WINDOWS 0
-#if defined(__APPLE__)
-#include "TargetConditionals.h"
-#if TARGET_OS_IPHONE
-#define PLATFORM_MAC 0
-#else 
-#define PLATFORM_MAC 1
-#endif
-#else
-#define PLATFORM_MAC 0
-#endif
-#endif
-#endif
-#endif
-
 #if PLATFORM_WINDOWS || PLATFORM_MAC
 
 #include "V8InspectorImpl.h"
