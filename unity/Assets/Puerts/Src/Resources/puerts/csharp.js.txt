@@ -129,7 +129,7 @@ var global = global || (function () { return this; }());
     
     function bindThisToFirstArgument(func) {
         return function(...args) {
-            func.apply(null, [this, ...args]);
+            return func.apply(null, [this, ...args]);
         }
     }
     
