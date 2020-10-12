@@ -73,7 +73,7 @@ jobs:
     - name: Insatll MSVC
       uses: microsoft/setup-msbuild@v1.0.2
       with:
-        vs-version: '15.9.11'
+        vs-version: '[15.0,16.0)'
     - name: Build
       run: |
         cd unity\native_src
