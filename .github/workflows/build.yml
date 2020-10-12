@@ -78,7 +78,7 @@ jobs:
         cd unity\native_src
         mkdir build64
         cd build64
-        cmake -G "Visual Studio 15 2017" ..
+        cmake -G "Visual Studio 15 2017 Win64" ..
         cd ..
         cmake --build build64 --config Release
         mkdir -p ..\Assets\Plugins\x86_64\
