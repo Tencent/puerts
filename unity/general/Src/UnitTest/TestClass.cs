@@ -216,6 +216,31 @@ namespace Puerts.UnitTest
         {
             return obj.running;
         }
+
+        public int TestInt(int i)
+        {
+            return i;
+        }
+        public String TestString(String s)
+        {
+            s += "gyx";
+            return s;
+        }
+
+        public int TestStringLen(String s)
+        {
+            return s.Length;
+        }
+
+        public DateTime TestTime(DateTime time)
+        {
+            return time;
+        }
+
+        public ArrayBuffer TestArrayBuffer(ArrayBuffer array)
+        {
+            return array;
+        }
     }
 
     public delegate string MyCallBack(string str);
@@ -371,6 +396,42 @@ namespace Puerts.UnitTest
                 str += arr[i];
             }
             return str;
+        }
+    }
+
+    public class BaseClass1
+    {
+
+    }
+
+    public class DerivedClass1 : BaseClass1
+    {
+    }
+
+    public static class BaseClassExtension
+    {
+        public static int PrimitiveExtension(this BaseClass a)
+        {
+            return 111;
+        }
+        public static string PlainExtension(this BaseClass a)
+        {
+            return "PlainExtension";
+        }
+
+        public static T Extension<T>(this T a) where T : BaseClass
+        {
+            return a;
+        }
+
+        public static T Extension1<T>(this T a, string b) where T : BaseClass
+        {
+            return a;
+        }
+
+        public static string Extension2<T1, T2>(this T1 a, T2 b) where T1 : BaseClass where T2 : BaseClass1
+        {
+            return (string.Format("Extension2<{0},{1}>", typeof(T1), typeof(T2)));
         }
     }
 }
