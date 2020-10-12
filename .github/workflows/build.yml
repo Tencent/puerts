@@ -70,10 +70,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    #- name: Insatll MSVC
-    #  uses: microsoft/setup-msbuild@v1.0.2
-    #  with:
-    #    vs-version: '[15.9,15.10)'
+    - name: Insatll MSVC
+      uses: microsoft/setup-msbuild@v1.0.2
+
     - name: Build
       run: |
         cd unity\native_src
