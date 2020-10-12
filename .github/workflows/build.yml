@@ -110,5 +110,12 @@ jobs:
           path: artifact/
       - uses: actions/upload-artifact@v2
         with:
-          name: Puerts-all
+          name: Puerts_Unity_Plugins
           path: artifact/**/*
+      - uses: geekyeggo/delete-artifact@v1
+        with:
+          name: |
+            Puerts-win
+            Puerts-osx
+            Puerts-android
+            Puerts-ios
