@@ -88,7 +88,6 @@ jobs:
       with:
         path: ./unity/Assets/Plugins/**/*
         name: Puerts_Unity_Plugins
-
   autorelease:
     runs-on: ubuntu-latest
     needs: [windows,osx,ios,android]
