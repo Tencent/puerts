@@ -593,7 +593,9 @@ namespace Puerts.Editor
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
                 IsInterface = type.IsInterface,
                 Namespace = type.Namespace,
-                ExtensionTypes = GetExtensionTypes(type, genTypeSet).Select(t => t.IsGenericType ? GetTsTypeName(t) : t.Name.Replace('`', '$')).ToArray()
+                ExtensionTypes = GetExtensionTypes(type, genTypeSet).
+                    Select(t => t.IsGenericType ? GetTsTypeName(t) : 
+                        (String.IsNullOrEmpty(t.Namespace) ? "" : (t.Namespace+ ".")) + t.Name.Replace('`', '$')).ToArray()
             };
 
             if (result.IsGenericTypeDefinition)
