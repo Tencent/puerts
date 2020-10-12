@@ -96,8 +96,8 @@ jobs:
       - uses: actions/checkout@v2
       
       - name: Retrieve version
-          run: |
-            echo ::set-env name=TAG_NAME::$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')
+        run: |
+          echo ::set-env name=TAG_NAME::$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')
             
       - uses: actions/download-artifact@v1
         with:
