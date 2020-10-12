@@ -4,6 +4,9 @@ on:
   push:
     paths: 
       - unity/native_src/**
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+      - .github/workflows/build.yml
 
 jobs:
   android:
@@ -69,12 +72,14 @@ jobs:
 
     - name: Insatll MSVC
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: 15.0
     - name: Build
       run: |
         cd unity\native_src
         mkdir build64
         cd build64
-        cmake -G "Visual Studio 16 2019" ..
+        cmake -G "Visual Studio 15 2017" ..
         cd ..
         cmake --build build64 --config Release
         mkdir -p ..\Assets\Plugins\x86_64\
