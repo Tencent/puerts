@@ -8,6 +8,8 @@
 #include "JSEngine.h"
 #include "V8Utils.h"
 
+#define LIB_VERSION 6
+
 using puerts::JSEngine;
 using puerts::FValue;
 using puerts::FResultInfo;
@@ -22,7 +24,7 @@ extern "C" {
 
 V8_EXPORT int GetLibVersion()
 {
-    return 6;
+    return LIB_VERSION;
 }
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
