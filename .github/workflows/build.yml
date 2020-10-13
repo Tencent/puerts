@@ -113,7 +113,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: Plugins_v${{ env.TAG_NAME }}
           release_name: Plugins_v${{ env.TAG_NAME }}.tgz
           draft: false
           prerelease: false
