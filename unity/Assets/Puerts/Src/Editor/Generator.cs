@@ -573,13 +573,25 @@ namespace Puerts.Editor
             return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
         }
 
+        static MethodInfo[] GetMethodsForTsTypeGen(Type type, HashSet<Type> genTypeSet)
+        {
+            var declMethods = type.GetMethods(Flags)
+                .Where(m => m.GetBaseDefinition() == m || !genTypeSet.Contains(m.GetBaseDefinition().DeclaringType)).ToArray();
+
+            var methodNames = declMethods.Select(m => m.Name).ToArray();
+
+            return type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => genTypeSet.Contains(m.DeclaringType) && methodNames.Contains(m.Name))
+                .Concat(declMethods).Distinct().ToArray();
+        }
+
         public static TsTypeGenInfo ToTsTypeGenInfo(Type type, HashSet<Type> genTypeSet)
         {
             var result = new TsTypeGenInfo()
             {
                 Name = type.Name.Replace('`', '$'),
                 Methods = genTypeSet.Contains(type) ? (type.IsAbstract ? new MethodBase[] { } : type.GetConstructors(Flags).Where(m => !isFiltered(m)).Cast<MethodBase>())
-                    .Concat(type.GetMethods(Flags)
+                    .Concat(GetMethodsForTsTypeGen(type, genTypeSet)
                         .Where(m => !isFiltered(m) && !IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))
                         .Cast<MethodBase>())
                     .Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition)).ToArray() : new TsMethodGenInfo[] { },
