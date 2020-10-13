@@ -444,6 +444,8 @@ namespace Puerts.Editor
                 return "number";
             else if (type == typeof(sbyte))
                 return "number";
+            else if (type == typeof(char))
+                return "number";
             else if (type == typeof(ushort))
                 return "number";
             else if (type == typeof(bool))
