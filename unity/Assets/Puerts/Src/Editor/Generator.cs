@@ -731,17 +731,17 @@ namespace Puerts.Editor
         static void AddRefType(HashSet<Type> refTypes, Type type)
         {
             var rawType = GetRawType(type);
-            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
-            if (!rawType.IsGenericParameter)
-            {
-                refTypes.Add(rawType);
-            }
             if (type.IsGenericType)
             {
                 foreach (var gt in type.GetGenericArguments())
                 {
                     AddRefType(refTypes, gt);
                 }
+            }
+            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
+            if (!rawType.IsGenericParameter)
+            {
+                refTypes.Add(rawType);
             }
 
             if (IsDelegate(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
