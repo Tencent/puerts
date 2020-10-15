@@ -52,6 +52,8 @@ namespace Puerts.UnitTest
     {
         public int baseIntField = 10;
         public static string baseStringField = " base-static-field ";
+        public int[] baseArr = new int[3];
+
         public virtual string TestVirt(int a, string str)
         {
             return str + a;
@@ -59,6 +61,35 @@ namespace Puerts.UnitTest
         public virtual string TestBaseVirt()
         {
             return "base print" + baseStringField;
+        }
+
+        public static BaseClass operator +(BaseClass b1,BaseClass b2)
+        {
+            BaseClass b3 = new BaseClass();
+            b3.baseIntField = b1.baseIntField + b2.baseIntField;
+            return b3;
+        }
+
+        public static bool operator >=(BaseClass b1, BaseClass b2)
+        {
+            return b1.baseIntField >= b2.baseIntField;
+        }
+
+        public static bool operator <=(BaseClass b1, BaseClass b2)
+        {
+            return b1.baseIntField <= b2.baseIntField;
+        }
+
+        public int this[int i]
+        {
+            get
+            {
+                return baseArr[i];
+            }
+            set
+            {
+                baseArr[i] = value;
+            }
         }
     }
 
@@ -241,6 +272,12 @@ namespace Puerts.UnitTest
         {
             return array;
         }
+
+        public void OutRefFunc(IA x, out IA y, ref IA z)
+        {
+            y = new ISubA();
+            y.cmpTarget = 100;
+        }
     }
 
     public delegate string MyCallBack(string str);
@@ -332,9 +369,11 @@ namespace Puerts.UnitTest
         }
     }
 
-    interface IA
+    public interface IA
     {
         bool running { get; }
+
+        int cmpTarget { set; get; }
 
         string TestBaseObj(BaseClass obj, int a, string b);
 
@@ -357,6 +396,8 @@ namespace Puerts.UnitTest
                 return true;
             }
         }
+
+        public int cmpTarget { set; get; }
 
         public string TestBaseObj(BaseClass obj, int a, string b)
         {
