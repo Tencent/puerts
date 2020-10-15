@@ -96,7 +96,7 @@ jobs:
       
       - name: Retrieve version
         run: |
-          echo ::set-env name=TAG_NAME::$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')
+          echo "TAG_NAME=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')" >> $GITHUB_ENV
             
       - uses: actions/download-artifact@v1
         with:
