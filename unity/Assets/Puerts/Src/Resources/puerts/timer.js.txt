@@ -102,8 +102,11 @@ var global = global || (function () {
                     removing_timers.delete(time.id)
                 }
                 else {
-
-                    time.handler(time.args);
+                    try {
+                        time.handler(time.args);
+                    }catch (e) {
+                        console.error(`Timer id:${time.id} throw error!\n${e}`)
+                    }
                     if (time.timeout) {
                         time.next_time = now + time.timeout;
                         timers.push(time);
