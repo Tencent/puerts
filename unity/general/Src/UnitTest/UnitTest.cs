@@ -257,13 +257,17 @@ namespace Puerts.UnitTest
             var jsEnv = new JsEnv(new TxtLoader());
             string ret = jsEnv.Eval<string>(@"
                 const CS = require('csharp');
+                const PUERTS = require('puerts');
                 let iSubObj = new CS.Puerts.UnitTest.ISubA();
+                let iSubObj1 = PUERTS.$ref(new CS.Puerts.UnitTest.ISubA());
+                let iSubObj2 = PUERTS.$ref(new CS.Puerts.UnitTest.ISubA());
                 let deriveObj = new CS.Puerts.UnitTest.DerivedClass();
-                let res = iSubObj.TestDerivedObj(deriveObj,3,'gyx') + iSubObj.TestArr(iSubObj.a8) + iSubObj.running;
+                deriveObj.OutRefFunc(iSubObj,iSubObj1,iSubObj2);
+                let res = iSubObj.TestDerivedObj(deriveObj,3,'gyx') + iSubObj.TestArr(iSubObj.a8) + iSubObj.running + PUERTS.$unref(iSubObj1).cmpTarget;
                 res;
             ");
             jsEnv.Dispose();
-            Assert.AreEqual(ret, "gyx30 10789true");
+            Assert.AreEqual(ret, "gyx30 10789true100");
         }
 
         [Test]
@@ -876,7 +880,72 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
             Assert.AreEqual(res, "Extension2<Puerts.UnitTest.BaseClass,Puerts.UnitTest.BaseClass1>");
         }
-        
+
+        [Test]
+        public void MathTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var res = jsEnv.Eval<int>(@"
+                let res1 = Math.abs(-10);
+                let res2 = Math.sqrt(4)
+                res1 + res2;
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 12);
+        }
+
+
+        [Test]
+        public void OperatorAddTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var res = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let obj1 = new CS.Puerts.UnitTest.BaseClass();
+                let obj2 = new CS.Puerts.UnitTest.BaseClass();
+                obj1.baseIntField = 11;
+                obj2.baseIntField = 22;
+                let obj3 = CS.Puerts.UnitTest.BaseClass.op_Addition(obj1, obj2);
+                obj3.baseIntField;
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 33);
+        }
+
+        [Test]
+        public void OperatorGreaterThanOrEqualTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var res = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let obj1 = new CS.Puerts.UnitTest.BaseClass();
+                let obj2 = new CS.Puerts.UnitTest.BaseClass();
+                obj1.baseIntField = 11;
+                obj2.baseIntField = 22;
+                let flag = CS.Puerts.UnitTest.BaseClass.op_GreaterThanOrEqual(obj1, obj2);
+                let res = flag + '-';
+                flag = CS.Puerts.UnitTest.BaseClass.op_LessThanOrEqual(obj1, obj2);
+                res = res + flag;
+                res;
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, "false-true");
+        }
+
+        [Test]
+        public void ThisArrayTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var res = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let obj1 = new CS.Puerts.UnitTest.BaseClass();
+                obj1.set_Item(0,111);
+                obj1.set_Item(1,222);
+                obj1.get_Item(1);
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 222);
+        }
     }
 }
 
