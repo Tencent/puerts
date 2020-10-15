@@ -90,6 +90,7 @@ jobs:
         name: Puerts_Unity_Plugins
   autorelease:
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: [windows,osx,ios,android]
     steps:
       - uses: actions/checkout@v2
