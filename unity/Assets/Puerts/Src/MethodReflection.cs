@@ -172,22 +172,23 @@ namespace Puerts
             {
                 if(hasParamArray && i == length - 1)
                 {
-                    if (callInfo.Length + 1 - length > 0)
+                    int size = callInfo.Length + 1 - length;
+                    if (size < 0)
                     {
-                        Array paramArray = Array.CreateInstance(types[length - 1], callInfo.Length + 1 - length);
-                        var translateFunc = argsTranslateFuncs[i];
-                        for (int j = i; j < callInfo.Length; j++)
-                        {
-                            paramArray.SetValue(translateFunc(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[j], false), j - i); 
-                        }
-                        args[i] = paramArray;  
+                        size = 0;
                     }
-                    else
+
+                    Array paramArray = Array.CreateInstance(types[length - 1], size);
+                    var translateFunc = argsTranslateFuncs[i];
+                    for (int j = i; j < callInfo.Length; j++)
                     {
-                        Array paramArray = Array.CreateInstance(types[length - 1], 0);
-                        var translateFunc = argsTranslateFuncs[i];
-                        args[i] = paramArray;  
+                        paramArray.SetValue(
+                            translateFunc(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[j],
+                                false), j - i);
                     }
+
+                    args[i] = paramArray;
+                    
                 }
 				else if (i >= callInfo.Length && i >= beginOptional)
                 {
