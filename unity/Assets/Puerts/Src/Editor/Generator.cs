@@ -827,9 +827,9 @@ namespace Puerts.Editor
         public static void GenerateCode()
         {
             var start = DateTime.Now;
-            var saveTo = Application.dataPath + "/Gen/";
+            var saveTo = Configure.GetCodeOutputDirectory();
             Directory.CreateDirectory(saveTo);
-            Directory.CreateDirectory(saveTo + "Typing/csharp");
+            Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
             GenerateCode(saveTo);
             Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
             AssetDatabase.Refresh();
@@ -839,9 +839,9 @@ namespace Puerts.Editor
         public static void GenerateDTS()
         {
             var start = DateTime.Now;
-            var saveTo = Application.dataPath + "/Gen/";
+            var saveTo = Configure.GetCodeOutputDirectory();
             Directory.CreateDirectory(saveTo);
-            Directory.CreateDirectory(saveTo + "Typing/csharp");
+            Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
             GenerateCode(saveTo, true);
             Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
             AssetDatabase.Refresh();
@@ -850,7 +850,7 @@ namespace Puerts.Editor
         [MenuItem("puerts/Clear Generated Code", false, 2)]
         public static void ClearAll()
         {
-            var saveTo = Application.dataPath + "/Gen/";
+            var saveTo = Configure.GetCodeOutputDirectory();
             if (Directory.Exists(saveTo))
             {
                 Directory.Delete(saveTo, true);

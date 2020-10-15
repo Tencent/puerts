@@ -1,7 +1,7 @@
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
@@ -25,6 +25,12 @@ namespace Puerts
     public class ConfigureAttribute : Attribute
     {
 
+    }
+
+    //代码生成目录
+    [AttributeUsage(AttributeTargets.Property)]
+    public class CodeOutputDirectoryAttribute : Attribute
+    {
     }
 
     //要在ts/js里头调用，必须放在标记了Configure的类里
@@ -113,6 +119,33 @@ namespace Puerts
                 }
             }
             return filters;
+        }
+
+        public static string GetCodeOutputDirectory()
+        {
+            var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                        where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
+                        from type in assembly.GetTypes()
+                        where type.IsDefined(typeof(ConfigureAttribute), false)
+                        select type;
+            foreach(var type in types)
+            {
+
+                PropertyInfo[] props = type.GetProperties(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                foreach (PropertyInfo prop in props)
+                {
+                    object[] attrs = prop.GetCustomAttributes(true);
+                    foreach (object attr in attrs)
+                    {
+                        CodeOutputDirectoryAttribute outAttr = attr as CodeOutputDirectoryAttribute;
+                        if (outAttr != null)
+                        {
+                            return prop.GetValue(null, null) as string;
+                        }
+                    }
+                }
+            }
+            return UnityEngine.Application.dataPath + "/Gen/";
         }
     }
 }
