@@ -172,13 +172,9 @@ namespace Puerts
             {
                 if(hasParamArray && i == length - 1)
                 {
-                    int size = callInfo.Length + 1 - length;
-                    if (size < 0)
-                    {
-                        size = 0;
-                    }
-
-                    Array paramArray = Array.CreateInstance(types[length - 1], size);
+                    Array paramArray = Array.CreateInstance(types[length - 1],
+                        callInfo.Length  < length ? 0 : (callInfo.Length + 1 - length));
+                    
                     var translateFunc = argsTranslateFuncs[i];
                     for (int j = i; j < callInfo.Length; j++)
                     {
