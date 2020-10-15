@@ -43,6 +43,10 @@ namespace Puerts.UnitTest
         {
             return -1;
         }
+        public int Test6(int d, int i = 1, params string[] strs)
+        {
+            return i + d;
+        }
     }
 
     [TestFixture]
@@ -379,6 +383,20 @@ namespace Puerts.UnitTest
                 ret;
             ");
             Assert.AreEqual(0, ret);
+            jsEnv.Dispose();
+        }
+
+        [Test]
+        public void ReflectTest13()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();            
+                let ret = temp.Test6(1);
+                ret;
+            ");
+            Assert.AreEqual(2, ret);
             jsEnv.Dispose();
         }
     }
