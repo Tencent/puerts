@@ -143,7 +143,7 @@ namespace Puerts.UnitTest
                 let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 let id = setInterval(()=>{obj.TimerTest2Num = ++i;},500);
-                setTimeout(()=>{clearInterval(id);},2000);
+                setTimeout(()=>{clearInterval(id);},2100);
                 timer;
             ");
             for (int i = 0; i < 100; i++)
@@ -177,7 +177,7 @@ namespace Puerts.UnitTest
                 let obj = CS.Puerts.UnitTest.TimerTest;
                 let i = 0;
                 let id = setInterval(()=>{obj.TimerTest3Num = ++i;},500);
-                setTimeout(()=>{clearInterval(id);},2000);
+                setTimeout(()=>{clearInterval(id);},2100);
                 setTimeout(()=>{clearInterval(id);},2500);
                 timer;
             ");
