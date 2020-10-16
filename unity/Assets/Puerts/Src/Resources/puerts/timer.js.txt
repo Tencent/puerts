@@ -102,17 +102,13 @@ var global = global || (function () {
                     removing_timers.delete(time.id)
                 }
                 else {
-                    try {
-                        time.handler(time.args);
-                    }catch (e) {
-                        console.error(`Timer id:${time.id} throw error!\n${e}`)
-                    }
+                    timers.pop();
                     if (time.timeout) {
                         time.next_time = now + time.timeout;
                         timers.push(time);
                     }
+                    time.handler(time.args);
                 }
-                timers.pop();
             } else {
                 break;
             }
