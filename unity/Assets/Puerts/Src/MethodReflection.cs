@@ -111,7 +111,7 @@ namespace Puerts
 
         public bool IsMatch(CallInfo callInfo)
         {
-            if (hasParamArray)
+            if (hasParamArray && beginOptional > length)
             {
                 if (callInfo.Length < length - 1)
                 {
@@ -172,13 +172,19 @@ namespace Puerts
             {
                 if(hasParamArray && i == length - 1)
                 {
-                    Array paramArray = Array.CreateInstance(types[length - 1], callInfo.Length + 1 - length);
+                    Array paramArray = Array.CreateInstance(types[length - 1],
+                        callInfo.Length  < length ? 0 : (callInfo.Length + 1 - length));
+                    
                     var translateFunc = argsTranslateFuncs[i];
                     for (int j = i; j < callInfo.Length; j++)
                     {
-                        paramArray.SetValue(translateFunc(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[j], false), j - i); 
+                        paramArray.SetValue(
+                            translateFunc(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[j],
+                                false), j - i);
                     }
+
                     args[i] = paramArray;
+                    
                 }
 				else if (i >= callInfo.Length && i >= beginOptional)
                 {
