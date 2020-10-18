@@ -38,7 +38,7 @@ namespace Puerts
             catch {}
         }
 
-        [MonoPInvokeCallback(typeof(V8DestructorCallback))]
+        [MonoPInvokeCallback(typeof(V8ConstructorCallback))]
         internal static IntPtr ConstructorWrap(IntPtr isolate, IntPtr info, int paramLen, long data)
         {
             try
