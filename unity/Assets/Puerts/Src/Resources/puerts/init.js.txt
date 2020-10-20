@@ -12,12 +12,12 @@ var global = global || (function () { return this; }());
     let puerts = global.puerts = global.puerts || {};
     
     puerts.loadType = global.__tgjsLoadType;
-    global.__tgjsLoadType = undefined;
+    delete global.__tgjsLoadType;
     puerts.getNestedTypes = global.__tgjsGetNestedTypes;
-    global.__tgjsGetNestedTypes = undefined;
+    delete global.__tgjsGetNestedTypes;
     
     puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
         return eval(script);
     }
-    global.__tgjsEvalScript = undefined;
+    delete global.__tgjsEvalScript;
 }(global));

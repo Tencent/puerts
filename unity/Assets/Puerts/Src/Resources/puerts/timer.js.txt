@@ -90,7 +90,7 @@ var global = global || (function () {
     const timers = new PriorityQueue([], (a, b) => a.next_time - b.next_time);
     let next = 0;
     global.__tgjsRegisterTickHandler(timerUpdate)
-    global.__tgjsRegisterTickHandler = undefined;
+    delete global.__tgjsRegisterTickHandler;
 
     function timerUpdate() {
         const now = Date.now();

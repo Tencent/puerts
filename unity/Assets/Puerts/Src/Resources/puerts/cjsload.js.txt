@@ -10,7 +10,7 @@ var global = global || (function () { return this; }());
     "use strict";
 
     let loader = global.__tgjsGetLoader();
-    global.__tgjsGetLoader = undefined;
+    delete global.__tgjsGetLoader;
     
     function pathNormalize(path) {
         let reversePathFrags = path.split('/').reverse();
