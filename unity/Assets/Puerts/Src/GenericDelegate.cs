@@ -1,7 +1,7 @@
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
@@ -217,6 +217,15 @@ namespace Puerts
             }, typeof(T1), typeof(T2), typeof(T3), typeof(T4));
         }
 
+        public void RegisterAction<T1, T2, T3, T4, T5>()
+        {
+            ActionCreatorTree.Add((type, ptr) =>
+            {
+                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
+                return Delegate.CreateDelegate(type, genericDelegate, new Action<T1, T2, T3, T4, T5>(genericDelegate.Action<T1, T2, T3, T4, T5>).Method);
+            }, typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5));
+        }
+
         public void RegisterFunc<TResult>()
         {
             FuncCreatorTree.Add((type, ptr) =>
@@ -261,6 +270,15 @@ namespace Puerts
                 return Delegate.CreateDelegate(type, genericDelegate, new Func<T1, T2, T3, T4, TResult>(genericDelegate.Func<T1, T2, T3, T4, TResult>).Method);
             }, typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(TResult));
         }
+
+        public void RegisterFunc<T1, T2, T3, T4, T5, TResult>()
+        {
+            FuncCreatorTree.Add((type, ptr) =>
+            {
+                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
+                return Delegate.CreateDelegate(type, genericDelegate, new Func<T1, T2, T3, T4, T5, TResult>(genericDelegate.Func<T1, T2, T3, T4, T5, TResult>).Method);
+            }, typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(TResult));
+        }
     }
 
     //泛型适配器
@@ -283,7 +301,7 @@ namespace Puerts
             nativeJsFuncPtr = IntPtr.Zero;
         }
 
-        ~GenericDelegate() 
+        ~GenericDelegate()
         {
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -329,7 +347,7 @@ namespace Puerts
 #endif
         }
 
-        public void Action<T1, T2>(T1 p1, T2 p2) 
+        public void Action<T1, T2>(T1 p1, T2 p2)
         {
 #if THREAD_SAFE
             lock(jsEnv) {
@@ -378,6 +396,28 @@ namespace Puerts
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
             StaticTranslate<T4>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p4);
+            IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
+            if (resultInfo == IntPtr.Zero)
+            {
+                string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
+                throw new Exception(exceptionInfo);
+            }
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public void Action<T1, T2, T3, T4, T5>(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
+        {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
+            jsEnv.CheckLiveness();
+            StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
+            StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
+            StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
+            StaticTranslate<T4>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p4);
+            StaticTranslate<T5>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p5);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, false);
             if (resultInfo == IntPtr.Zero)
             {
@@ -485,6 +525,31 @@ namespace Puerts
             StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
             StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
             StaticTranslate<T4>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p4);
+            IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
+            if (resultInfo == IntPtr.Zero)
+            {
+                string exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(nativeJsFuncPtr);
+                throw new Exception(exceptionInfo);
+            }
+            TResult result = StaticTranslate<TResult>.Get(jsEnv.Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
+            PuertsDLL.ResetResult(resultInfo);
+            return result;
+#if THREAD_SAFE
+            }
+#endif
+        }
+
+        public TResult Func<T1, T2, T3, T4, T5, TResult>(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
+        {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
+            jsEnv.CheckLiveness();
+            StaticTranslate<T1>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p1);
+            StaticTranslate<T2>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p2);
+            StaticTranslate<T3>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p3);
+            StaticTranslate<T4>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p4);
+            StaticTranslate<T5>.Set(jsEnv.Idx, isolate, NativeValueApi.SetValueToArgument, nativeJsFuncPtr, p5);
             IntPtr resultInfo = PuertsDLL.InvokeJSFunction(nativeJsFuncPtr, true);
             if (resultInfo == IntPtr.Zero)
             {
