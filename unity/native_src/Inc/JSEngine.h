@@ -131,6 +131,13 @@ public:
 
     FResultInfo ResultInfo;
 
+    v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
+
+    V8_INLINE static JSEngine * Get(v8::Isolate* Isolate)
+    {
+        return FV8Utils::IsolateData<JSEngine>(Isolate);
+    }
+
 private:
     v8::Isolate::CreateParams CreateParams;
     

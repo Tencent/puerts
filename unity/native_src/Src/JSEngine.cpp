@@ -9,6 +9,7 @@
 #include "V8Utils.h"
 #include "Log.h"
 #include <memory>
+#include "PromiseRejectCallback.hpp"
 
 namespace puerts
 {
@@ -150,6 +151,9 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
+
+        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
+        Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
     }
 
     JSEngine::~JSEngine()
@@ -159,6 +163,8 @@ namespace puerts
             delete Inspector;
             Inspector = nullptr;
         }
+
+        JsPromiseRejectCallback.Reset();
 
         for (int i = 0; i < Templates.size(); ++i)
         {

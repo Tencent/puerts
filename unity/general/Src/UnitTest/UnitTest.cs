@@ -946,6 +946,46 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
             Assert.AreEqual(res, 222);
         }
+
+        [Test]
+        public void UnhandledRejectionHandle()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                const puerts = require('puerts');
+                global.catched = false;
+                puerts.on('unhandledRejection', function(reason) {
+                    global.catched = true;
+                });
+                new Promise((resolve, reject)=>{
+                    throw new Error('unhandled rejection');
+                });
+            ");
+            var res = jsEnv.Eval<bool>("global.catched");
+            jsEnv.Dispose();
+            Assert.True(res);
+        }
+
+        [Test]
+        public void UnhandledRejectionCancel()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                const puerts = require('puerts');
+                global.catched = false;
+                puerts.on('unhandledRejection', function(reason) {
+                    global.catched = true;
+                });
+                new Promise((resolve, reject)=>{
+                    throw new Error('unhandled rejection');
+                }).catch(error => {});
+            ");
+            var res = jsEnv.Eval<bool>("global.catched");
+            jsEnv.Dispose();
+            Assert.False(res);
+        }
     }
 }
 

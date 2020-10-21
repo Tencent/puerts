@@ -8,7 +8,7 @@
 #include "JSEngine.h"
 #include "V8Utils.h"
 
-#define LIB_VERSION 6
+#define LIB_VERSION 7
 
 using puerts::JSEngine;
 using puerts::FValue;

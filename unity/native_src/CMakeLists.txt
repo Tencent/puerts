@@ -57,6 +57,7 @@ set ( PUERTS_INC
     Inc/V8Utils.h
     Inc/JSFunction.h
     ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
 )
 
 set ( PUERTS_SRC
