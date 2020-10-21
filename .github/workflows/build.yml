@@ -6,7 +6,8 @@ on:
       - unity/native_src/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
-      - .github/workflows/build.yml
+      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+      #- .github/workflows/build.yml
   create:
 
 jobs:
