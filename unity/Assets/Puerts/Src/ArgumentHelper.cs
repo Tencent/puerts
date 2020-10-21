@@ -16,6 +16,7 @@ namespace Puerts
         private readonly IntPtr value;
         private readonly JsValueType valueType;
         private object obj;
+        private Type csType;
 
         public ArgumentHelper(int jsEnvIdx, IntPtr isolate, IntPtr info, int index)
         {
@@ -24,6 +25,7 @@ namespace Puerts
             value = PuertsDLL.GetArgumentValue(info, index);
             valueType = PuertsDLL.GetJsValueType(isolate, value, false);
             obj = null;
+            csType = null;
         }
 
         public bool IsMatch(JsValueType expectJsType, Type expectCsType, bool isByRef, bool isOut)
@@ -41,12 +43,27 @@ namespace Puerts
             }
             if (jsType == JsValueType.NativeObject)
             {
-                if (obj == null)
+                if (expectCsType.IsArray)
                 {
-                    obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.AnyTranslator(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
-                }
+                    if (obj == null)
+                    {
+                        obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.AnyTranslator(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
+                    }
 
-                return expectCsType != null && expectCsType.IsAssignableFrom(obj.GetType());
+                    return expectCsType != null && expectCsType.IsAssignableFrom(obj.GetType());
+                }
+                else
+                {
+                    if (csType == null)
+                    {
+                        var typeId = NativeValueApi.GetValueFromArgument.GetTypeId(isolate, value, isByRef);
+                        if (typeId >= 0)
+                        {
+                            csType = JsEnv.jsEnvs[jsEnvIdx].TypeRegister.GetType(typeId);
+                        }
+                    }
+                    return csType != null && expectCsType != null && expectCsType.IsAssignableFrom(csType);
+                }
             }
             return true;
         }
