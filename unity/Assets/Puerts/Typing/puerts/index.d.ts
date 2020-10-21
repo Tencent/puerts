@@ -14,6 +14,12 @@ declare module "puerts" {
     function $typeof(x : new (...args:any[]) => any) : System.Type;
     
     function $extension(c : Function, e: Function) : void;
+    
+    function on(eventType: string, listener: Function, prepend: boolean) : void;
+    
+    function off(eventType: string, listener: Function) : void;
+    
+    function emit(eventType: string, ...args:any[]) : boolean;
 }
 
 declare function require(name: string): any;
