@@ -15,7 +15,7 @@ declare module "puerts" {
     
     function $extension(c : Function, e: Function) : void;
     
-    function on(eventType: string, listener: Function, prepend: boolean) : void;
+    function on(eventType: string, listener: Function, prepend?: boolean) : void;
     
     function off(eventType: string, listener: Function) : void;
     
