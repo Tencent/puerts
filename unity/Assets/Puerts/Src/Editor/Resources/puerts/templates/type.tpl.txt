@@ -123,14 +123,19 @@ function operatorCall(methodName, argCount, typeInfo) {
 }
 
 function getSelf(type) {
-    if (type.IsValueType) {
+    if (it.BlittableCopy) {
+        return `(${type.Name}*)self`;
+    } else if (type.IsValueType) {
         return `(${type.Name})Puerts.Utils.GetSelf((int)data, self)`;
-    } else if (it.BlittableCopy) {
-        return `*(${type.Name}*)self`;
     } else {
         return `Puerts.Utils.GetSelf((int)data, self) as ${type.Name}`;
     }
 }
+
+function refSelf() {
+    return it.BlittableCopy ? "(*obj)" : "obj";
+}
+
 }}
 namespace PuertsStaticWrap
 {
@@ -193,7 +198,7 @@ namespace PuertsStaticWrap
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:"obj"}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
+                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:refSelf()}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
@@ -217,7 +222,7 @@ namespace PuertsStaticWrap
             try
             {
                 {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
-                var result = {{=property.IsStatic?it.Name:"obj"}}.{{=UnK(property.Name)}};
+                var result = {{=property.IsStatic?it.Name:refSelf()}}.{{=UnK(property.Name)}};
                 {{=setReturn(property)}};
             }
             catch (Exception e)
@@ -233,7 +238,7 @@ namespace PuertsStaticWrap
             {
                 {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                {{=property.IsStatic?it.Name:"obj"}}.{{=UnK(property.Name)}} = {{=getArgument(property, 'argHelper')}};
+                {{=property.IsStatic?it.Name:refSelf()}}.{{=UnK(property.Name)}} = {{=getArgument(property, 'argHelper')}};
             }
             catch (Exception e)
             {
@@ -253,7 +258,7 @@ namespace PuertsStaticWrap
                 if (keyHelper.IsMatch({{=indexInfo.IndexParameter.ExpectJsType}}, {{=indexInfo.IndexParameter.ExpectCsType}}, {{=indexInfo.IndexParameter.IsByRef}}, {{=indexInfo.IndexParameter.IsOut}}))
                 {
                     var key = {{=getArgument(indexInfo.IndexParameter, 'keyHelper')}};
-                    var result = obj[key];
+                    var result = {{=refSelf()}}[key];
                     {{=setReturn(indexInfo)}};
                     return;
                 }
@@ -277,7 +282,7 @@ namespace PuertsStaticWrap
                 if (keyHelper.IsMatch({{=indexInfo.IndexParameter.ExpectJsType}}, {{=indexInfo.IndexParameter.ExpectCsType}}, {{=indexInfo.IndexParameter.IsByRef}}, {{=indexInfo.IndexParameter.IsOut}}))
                 {
                     var key = {{=getArgument(indexInfo.IndexParameter, 'keyHelper')}};
-                    obj[key] = {{=getArgument(indexInfo, 'valueHelper')}};
+                    {{=refSelf()}}[key] = {{=getArgument(indexInfo, 'valueHelper')}};
                     return;
                 }
                 {{~}}
@@ -328,7 +333,7 @@ namespace PuertsStaticWrap
             {
                 {{?!eventInfo.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                {{=eventInfo.IsStatic?it.Name:"obj"}}.{{=eventInfo.Name}} += {{=getArgument(eventInfo, 'argHelper')}};
+                {{=eventInfo.IsStatic?it.Name:refSelf()}}.{{=eventInfo.Name}} += {{=getArgument(eventInfo, 'argHelper')}};
             }
             catch (Exception e)
             {
@@ -343,7 +348,7 @@ namespace PuertsStaticWrap
             {
                 {{?!eventInfo.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                {{=eventInfo.IsStatic?it.Name:"obj"}}.{{=eventInfo.Name}} -= {{=getArgument(eventInfo, 'argHelper')}};
+                {{=eventInfo.IsStatic?it.Name:refSelf()}}.{{=eventInfo.Name}} -= {{=getArgument(eventInfo, 'argHelper')}};
             }
             catch (Exception e)
             {
