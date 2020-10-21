@@ -24,6 +24,7 @@
 #include "JSWidgetGeneratedClass.h"
 #include "JSGeneratedFunction.h"
 #include "JSClassRegister.h"
+#include "PromiseRejectCallback.hpp"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -139,6 +140,13 @@ public:
     void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype);
 
     void InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM);
+
+    v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
+
+    V8_INLINE static FJsEnvImpl * Get(v8::Isolate* Isolate)
+    {
+        return static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Isolate));
+    }
 
 public:
 #if ENGINE_MINOR_VERSION > 22
@@ -546,6 +554,9 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->FindModule(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
+    Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
+    Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FJsEnvImpl>)->GetFunction(Context).ToLocalChecked()).Check();
+
     Global->Set(Context, FV8Utils::ToV8String(Isolate, "setTimeout"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
@@ -607,6 +618,8 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/log.js");
     ExecuteModule("puerts/modular.js");
     ExecuteModule("puerts/uelazyload.js");
+    ExecuteModule("puerts/events.js");
+    ExecuteModule("puerts/promises.js");
     ExecuteModule("puerts/argv.js");
     ExecuteModule("puerts/jit_stub.js");
 
@@ -626,6 +639,8 @@ FJsEnvImpl::~FJsEnvImpl()
         }
         PendingRequests.clear();
     }
+
+    JsPromiseRejectCallback.Reset();
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
     {

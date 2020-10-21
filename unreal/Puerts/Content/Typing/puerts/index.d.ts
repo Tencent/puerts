@@ -28,6 +28,12 @@ declare module "puerts" {
     function blueprint<T extends {
         new (...args:any[]): Object;
     }>(path:string): T;
+    
+    function on(eventType: string, listener: Function, prepend?: boolean) : void;
+    
+    function off(eventType: string, listener: Function) : void;
+    
+    function emit(eventType: string, ...args:any[]) : boolean;
 
     /*function getProperties(obj: Object, ...propNames:string[]): any;
     function getPropertiesAsync(obj: Object, ...propNames:string[]): Promise<any>;
