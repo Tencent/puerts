@@ -228,14 +228,7 @@ namespace Puerts.Editor
             };
             return result;
         }
-        
-        static object HasValue(ParameterInfo parameter)
-        {
-            if (!parameter.IsOptional)
-                return null;
-            return parameter.DefaultValue;
-        }
-        
+
         static List<OverloadGenInfo> ToOverloadGenInfo(MethodBase methodBase)
         {
             List<OverloadGenInfo> ret = new List<OverloadGenInfo>();
@@ -255,8 +248,7 @@ namespace Puerts.Editor
                 var ps = methodInfo.GetParameters();
                 for (int i = ps.Length - 1; i >= 0; i--)
                 {
-                    var value = HasValue(ps[i]);
-                    if (value!=null)
+                    if (ps[i].IsOptional)
                     {
                         result = new OverloadGenInfo()
                         {
@@ -288,8 +280,7 @@ namespace Puerts.Editor
                 var ps = constructorInfo.GetParameters();
                 for (int i = ps.Length - 1; i >= 0; i--)
                 {
-                    var value = HasValue(ps[i]);
-                    if (value!=null)
+                    if (ps[i].IsOptional)
                     {
                         result = new OverloadGenInfo()
                         {
