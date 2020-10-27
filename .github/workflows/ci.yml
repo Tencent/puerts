@@ -17,10 +17,10 @@ jobs:
           path: unity/native_src/
       - name: Build plugin
         run: |
+          md unity\general\Bin
           cd unity\native_src
           .\make_win64.bat
-          md ..\general\Bin
-          copy /Y build64\Release\puerts.dll ..\general\Bin
+          copy build64\Release\puerts.dll ..\general\Bin
       - name: Test
         run: |
           cd ..\general\vs2013

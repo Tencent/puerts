@@ -4,4 +4,3 @@ popd
 cmake --build build32 --config Release
 md ..\Assets\Plugins\x86
 copy build32\Release\puerts.dll ..\Assets\Plugins\x86
-pause
