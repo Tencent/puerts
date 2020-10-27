@@ -31,10 +31,6 @@ function typeDeclaration(type, level1) {
 declare module 'csharp' {
     interface $Ref<T> {}
     
-    type $Extension<T1, T2> = {
-        [P in keyof T2] : T2[P] extends (obj:T1, ...args: infer P) => infer R ? (...args: P) => R : never;
-    }
-    
     namespace System {
         interface Array$1<T> extends System.Array {
             get_Item(index: number):T;
@@ -51,9 +47,12 @@ declare module 'csharp' {
             {{~type.Properties :property}}{{?!type.IsInterface}}public {{?}}{{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};
             {{~}}{{~type.Methods :method}}{{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
-        }{{}}}{{~type.ExtensionTypes :extensionType}}
-        interface {{=type.Name}} extends $Extension<{{=type.Name}}, typeof {{=extensionType}}> {}
-        {{~}}
+        }{{}}}{{?type.ExtensionMethods.length > 0}}
+        interface {{=type.Name}} {
+            {{~type.ExtensionMethods :method}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
+            {{~}}
+        }
+        {{?}}
         {{~}}
     {{?ns.Name}}}{{?}}
     {{~}}

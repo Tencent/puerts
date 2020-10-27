@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace Puerts.Editor
 {
@@ -305,7 +306,7 @@ namespace Puerts.Editor
             return ret;
         }
 
-        static bool isDefined(MemberInfo test, Type type)
+        static bool isDefined(MethodBase test, Type type)
         {
 #if PUERTS_GENERAL
             return test.GetCustomAttributes(false).Any(ca => ca.GetType().ToString() == type.ToString());
@@ -314,7 +315,7 @@ namespace Puerts.Editor
 #endif
         }
 
-        static Dictionary<Type, HashSet<Type>> extensionTypes = null;
+        static Dictionary<Type, MethodInfo[]> extensionMethods = null;
 
         static bool IsClass(Type type)
         {
@@ -328,49 +329,24 @@ namespace Puerts.Editor
         static Type getExtendedType(MethodInfo method)
         {
             var type = method.GetParameters()[0].ParameterType;
-            if (!type.IsGenericParameter)
-                return type;
-            var parameterConstraints = type.GetGenericParameterConstraints();
-            if (parameterConstraints.Length == 0)
-            {
-                Debug.LogError(method + "," + method.DeclaringType);
-                throw new InvalidOperationException();
-            }
-
-            var firstParameterConstraint = parameterConstraints[0];
-            if (!IsClass(firstParameterConstraint))
-                throw new InvalidOperationException();
-            return firstParameterConstraint;
+            return type.IsGenericParameter ? type.BaseType : type;
         }
 
-        static Type[] GetExtensionTypes(Type checkType, HashSet<Type> genTypeSet)
+        static MethodInfo[] GetExtensionMethods(Type checkType, HashSet<Type> genTypeSet)
         {
-            if (extensionTypes == null)
+            if (extensionMethods == null)
             {
-                var extensionMethods = from type in genTypeSet
+                extensionMethods = (from type in genTypeSet
                                        from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                       where isDefined(method, typeof(System.Runtime.CompilerServices.ExtensionAttribute)) && Utils.IsSupportedMethod(method)
-                                             select method;
-                extensionTypes = new Dictionary<Type, HashSet<Type>>();
-                foreach (var method in extensionMethods)
-                {
-                    HashSet<Type> extendTypes;
-                    var t = getExtendedType(method);
-                    if (!extensionTypes.TryGetValue(t, out extendTypes))
-                    {
-                        extendTypes = new HashSet<Type>();
-                        extensionTypes.Add(t, extendTypes);
-                    }
-                    var declaringType = method.DeclaringType;
-                    if (!extendTypes.Contains(declaringType)) extendTypes.Add(declaringType);
-                }
+                                         where isDefined(method, typeof(ExtensionAttribute)) && Utils.IsSupportedMethod(method)
+                                         group method by getExtendedType(method)).ToDictionary(g =>g.Key, g=>g.ToArray());
             }
-            HashSet<Type> ret;
-            if (!extensionTypes.TryGetValue(checkType, out ret))
+            MethodInfo[] ret;
+            if (!extensionMethods.TryGetValue(checkType, out ret))
             {
-                return new Type[] { };
+                return new MethodInfo[] { };
             }
-            return ret.ToArray();
+            return ret;
         }
 
         static TypeGenInfo ToTypeGenInfo(Type type)
@@ -508,12 +484,14 @@ namespace Puerts.Editor
             public bool IsStatic;
         }
 
-        public static TsMethodGenInfo ToTsMethodGenInfo(MethodBase methodBase, bool isGenericTypeDefinition)
+        public static TsMethodGenInfo ToTsMethodGenInfo(MethodBase methodBase, bool isGenericTypeDefinition, bool skipExtentionMethodThis)
         {
             return new TsMethodGenInfo()
             {
                 Name = methodBase.IsConstructor ? "constructor" : methodBase.Name,
-                ParameterInfos = methodBase.GetParameters().Select(info => ToTsParameterGenInfo(info, isGenericTypeDefinition)).ToArray(),
+                ParameterInfos = methodBase.GetParameters()
+                    .Skip(skipExtentionMethodThis && isDefined(methodBase, typeof(ExtensionAttribute)) ? 1 : 0)
+                    .Select(info => ToTsParameterGenInfo(info, isGenericTypeDefinition)).ToArray(),
                 TypeName = methodBase.IsConstructor ? "" : GetTsTypeName(ToConstraintType((methodBase as MethodInfo).ReturnType, isGenericTypeDefinition)),
                 IsConstructor = methodBase.IsConstructor,
                 IsStatic = methodBase.IsStatic,
@@ -534,7 +512,7 @@ namespace Puerts.Editor
             public TsTypeGenInfo BaseType;
             public bool IsEnum;
             public string EnumKeyValues;
-            public string[] ExtensionTypes;
+            public TsMethodGenInfo[] ExtensionMethods;
         }
 
         public static bool IsGetterOrSetter(MethodInfo method)
@@ -587,7 +565,7 @@ namespace Puerts.Editor
                     .Concat(GetMethodsForTsTypeGen(type, genTypeSet)
                         .Where(m => !isFiltered(m) && !IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))
                         .Cast<MethodBase>())
-                    .Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition)).ToArray() : new TsMethodGenInfo[] { },
+                    .Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition, false)).ToArray() : new TsMethodGenInfo[] { },
                 Properties = genTypeSet.Contains(type) ? type.GetFields(Flags).Where(m => !isFiltered(m))
                     .Select(f => new TsPropertyGenInfo() { Name = f.Name, TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
                     .Concat(
@@ -598,9 +576,7 @@ namespace Puerts.Editor
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
                 IsInterface = type.IsInterface,
                 Namespace = type.Namespace,
-                ExtensionTypes = GetExtensionTypes(type, genTypeSet).
-                    Select(t => t.IsGenericType ? GetTsTypeName(t) : 
-                        (String.IsNullOrEmpty(t.Namespace) ? "" : (t.Namespace+ ".")) + t.Name.Replace('`', '$')).ToArray()
+                ExtensionMethods = GetExtensionMethods(type, genTypeSet).Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition, true)).ToArray()
             };
 
             if (result.IsGenericTypeDefinition)
