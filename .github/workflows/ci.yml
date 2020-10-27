@@ -1,7 +1,7 @@
 name: CI
 
 on: 
-  workflow_dispatch:
+  push:
 
 jobs:
   ci:
@@ -24,9 +24,10 @@ jobs:
           .\make_win64.bat
           copy build64\Release\puerts.dll ..\general\Bin
           dir ..\general\Bin
-      - name: Test
+      - name: UnitTest
         run: |
           cd unity\general\vs2013
           nuget restore Puerts.sln
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
-          msbuild Puerts.sln
+          msbuild /property:Configuration=Release Puerts.sln
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Lib/Puerts.UnitTest.dll
