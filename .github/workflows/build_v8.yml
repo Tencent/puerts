@@ -1,4 +1,4 @@
-name: Build V8
+name: build v8
 
 on: 
   workflow_dispatch:
