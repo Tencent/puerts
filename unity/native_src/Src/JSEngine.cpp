@@ -120,12 +120,6 @@ namespace puerts
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 #endif
 
-        if (!NativesBlob)
-        {
-            NativesBlob = std::make_unique<v8::StartupData>();
-            NativesBlob->data = (const char *)NativesBlobCode;
-            NativesBlob->raw_size = sizeof(NativesBlobCode);
-        }
         if (!SnapshotBlob)
         {
             SnapshotBlob = std::make_unique<v8::StartupData>();//TODO: 直接用局部变量就可以了吧？
@@ -134,7 +128,6 @@ namespace puerts
         }
 
         // 初始化Isolate和DefaultContext
-        v8::V8::SetNativesDataBlob(NativesBlob.get());
         v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
 
         CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();

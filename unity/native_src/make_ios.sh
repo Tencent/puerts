@@ -4,5 +4,5 @@ cd ..
 cmake --build build_ios --config Release
 mkdir -p ../Assets/Plugins/iOS/
 cp build_ios/Release-iphoneos/libpuerts.a ../Assets/Plugins/iOS/
-cp ../../unreal/Puerts/ThirdParty/Library/V8/iOS/arm64/*.a ../Assets/Plugins/iOS/
+cp v8/Lib/iOS/arm64/*.a ../Assets/Plugins/iOS/
 

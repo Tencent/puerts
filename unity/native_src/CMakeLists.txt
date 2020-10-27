@@ -7,10 +7,10 @@
 cmake_minimum_required(VERSION 2.8)
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID)
-	#set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT" CACHE STRING "")
-	#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd" CACHE STRING "")
-	#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT" CACHE STRING "")
-	#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd" CACHE STRING "")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT" CACHE STRING "")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd" CACHE STRING "")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT" CACHE STRING "")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd" CACHE STRING "")
 endif ()
 
 project(PuertsPlugin)
@@ -31,14 +31,11 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
 
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
+set(V8_ENGINE ${CMAKE_SOURCE_DIR}/v8)
+
+set(V8_INC ${V8_ENGINE}/Inc)
+
 set(ThirdParty ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
-
-if (ANDROID)
-    set(V8_INC ${ThirdParty}/Include/v8/7.4.288)
-else () 
-    set(V8_INC ${ThirdParty}/Include/v8/7.7.299)
-endif ()
-
 set(WEBSOCKET_INC ${ThirdParty}/Include/websocketpp)
 set(ASIO_INC ${ThirdParty}/Include/asio)
 
@@ -113,46 +110,34 @@ if ( WIN32 AND NOT CYGWIN )
 endif ( )
 
 if ( WIN32 )
-    target_link_libraries(puerts
-        ${ThirdParty}/Library/V8/Win64/encoding.lib
-        ${ThirdParty}/Library/V8/Win64/inspector.lib
-        ${ThirdParty}/Library/V8/Win64/inspector_string_conversions.lib
-        ${ThirdParty}/Library/V8/Win64/v8_base_without_compiler_0.lib
-        ${ThirdParty}/Library/V8/Win64/v8_base_without_compiler_1.lib
-        ${ThirdParty}/Library/V8/Win64/v8_compiler.lib
-        ${ThirdParty}/Library/V8/Win64/v8_external_snapshot.lib
-        ${ThirdParty}/Library/V8/Win64/v8_libbase.lib
-        ${ThirdParty}/Library/V8/Win64/v8_libplatform.lib
-        ${ThirdParty}/Library/V8/Win64/v8_libsampler.lib
-        winmm.lib
-        dbghelp.lib
-        shlwapi.lib
-    )
+    if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+        target_link_libraries(puerts
+            ${V8_ENGINE}/Lib/Win32/wee8.lib
+            winmm.lib
+            dbghelp.lib
+            shlwapi.lib
+        )
+    else ()
+        target_link_libraries(puerts
+            ${V8_ENGINE}/Lib/Win64/wee8.lib
+            winmm.lib
+            dbghelp.lib
+            shlwapi.lib
+        )
+    endif ()
     target_compile_definitions (puerts PRIVATE PLATFORM_WINDOWS)
 elseif ( ANDROID )
     find_library(log-lib log )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
         target_link_libraries(puerts
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libinspector.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_external_snapshot.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_base.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_libbase.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_libplatform.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_libsampler.a
-            ${ThirdParty}/Library/V8/Android/armv7a-release/7.4.288/libv8_external_snapshot.a
+            ${V8_ENGINE}/Lib/Android/armv7/libwee8.a
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
     else ( )
         target_link_libraries(puerts
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libinspector.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_external_snapshot.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_base.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_libbase.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_libplatform.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_libsampler.a
-            ${ThirdParty}/Library/V8/Android/arm64-release/7.4.288/libv8_external_snapshot.a
+            ${V8_ENGINE}/Lib/Android/arm64/libwee8.a
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
@@ -170,22 +155,7 @@ elseif ( APPLE )
         target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
     else ()
         target_link_libraries(puerts
-            ${ThirdParty}/Library/V8/macOS/libbindings.a
-            ${ThirdParty}/Library/V8/macOS/libencoding.a
-            ${ThirdParty}/Library/V8/macOS/libinspector.a
-            ${ThirdParty}/Library/V8/macOS/libinspector_string_conversions.a
-            ${ThirdParty}/Library/V8/macOS/libtorque_base.a
-            ${ThirdParty}/Library/V8/macOS/libtorque_generated_definitions.a
-            ${ThirdParty}/Library/V8/macOS/libtorque_generated_initializers.a
-            ${ThirdParty}/Library/V8/macOS/libv8_base_without_compiler.a
-            ${ThirdParty}/Library/V8/macOS/libv8_compiler.a
-            ${ThirdParty}/Library/V8/macOS/libv8_external_snapshot.a
-            ${ThirdParty}/Library/V8/macOS/libv8_init.a
-            ${ThirdParty}/Library/V8/macOS/libv8_initializers.a
-            ${ThirdParty}/Library/V8/macOS/libv8_libbase.a
-            ${ThirdParty}/Library/V8/macOS/libv8_libplatform.a
-            ${ThirdParty}/Library/V8/macOS/libv8_libsampler.a
-            ${ThirdParty}/Library/V8/macOS/libv8_nosnapshot.a
+            ${V8_ENGINE}/Lib/macOS/libwee8.a
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ( )

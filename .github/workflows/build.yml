@@ -14,15 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
       - name: Install NDK
         run: |
           cd ~
-          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r15c-linux-x86_64.zip
+          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          ANDROID_NDK_HOME=$(pwd)/android-ndk-r15c
+          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
+          ls ~/android-ndk-r21b
           cd unity/native_src
           chmod 777 make_android.sh
           ./make_android.sh
@@ -36,11 +43,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_ios.sh
-          ./make_ios.sh
+          sh ./make_ios.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -51,38 +63,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_osx.sh
-          ./make_osx.sh
+          sh ./make_osx.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Puerts_Unity_Plugins
   windows:
-    runs-on: windows-2016
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Insatll MSVC
-        uses: microsoft/setup-msbuild@v1.0.2
-      
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
       - name: Build
         run: |
           cd unity\native_src
-          mkdir build64
-          cd build64
-          cmake -G "Visual Studio 15 2017 Win64" ..
-          cd ..
-          cmake --build build64 --config Release
-          mkdir -p ..\Assets\Plugins\x86_64\
-          copy .\build64\Release\puerts.dll ..\Assets\Plugins\x86_64\puerts.dll
+          .\make_win64.bat
+          .\make_win32.bat
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Puerts_Unity_Plugins
-   

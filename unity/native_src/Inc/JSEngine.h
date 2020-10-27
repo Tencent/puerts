@@ -23,19 +23,20 @@
 #include "V8InspectorImpl.h"
 
 #if defined(PLATFORM_WINDOWS)
-#include "Blob/Win64/NativesBlob.h"
+
+#if _WIN64
 #include "Blob/Win64/SnapshotBlob.h"
+#else
+#include "Blob/Win32/SnapshotBlob.h"
+#endif
+
 #elif defined(PLATFORM_ANDROID_ARM)
-#include "Blob/Android/armv7a/NativesBlob.h"
 #include "Blob/Android/armv7a/SnapshotBlob.h"
 #elif defined(PLATFORM_ANDROID_ARM64)
-#include "Blob/Android/arm64/NativesBlob.h"
 #include "Blob/Android/arm64/SnapshotBlob.h"
 #elif defined(PLATFORM_MAC)
-#include "Blob/macOS/NativesBlob.h"
 #include "Blob/macOS/SnapshotBlob.h"
 #elif defined(PLATFORM_IOS)
-#include "Blob/iOS/arm64/NativesBlob.h"
 #include "Blob/iOS/arm64/SnapshotBlob.h"
 #endif
 
