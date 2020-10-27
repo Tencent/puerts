@@ -1,4 +1,4 @@
-name: Continuous integration
+name: CI
 
 on: 
   workflow_dispatch:
@@ -19,6 +19,7 @@ jobs:
         run: |
           cd unity\native_src
           .\make_win64.bat
+          md ..\general\Bin
           copy /Y build64\Release\puerts.dll ..\general\Bin
       - name: Test
         run: |
