@@ -16,7 +16,7 @@ namespace Puerts.UnitTest
     {
         private string root = Path.Combine(
             System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:\\\\", ""),
-            ".. /../Assets/Puerts/Src/Resources");
+            "../../Assets/Puerts/Src/Resources");
 
         public bool FileExists(string filepath)
         {

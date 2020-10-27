@@ -30,4 +30,4 @@ jobs:
           nuget restore Puerts.sln
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Lib/Puerts.UnitTest.dll
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
