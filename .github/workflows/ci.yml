@@ -27,4 +27,6 @@ jobs:
       - name: Test
         run: |
           cd unity\general\vs2013
+          nuget restore Puerts.sln
+          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild Puerts.sln
