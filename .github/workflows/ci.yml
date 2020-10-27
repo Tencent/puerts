@@ -1,0 +1,26 @@
+name: Continuous integration
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
+      - name: Build plugin
+        run: |
+          cd unity\native_src
+          .\make_win64.bat
+          copy /Y build64\Release\puerts.dll ..\general\Bin
+      - name: Test
+        run: |
+          cd ..\general\vs2013
+          msbuild Puerts.sln
