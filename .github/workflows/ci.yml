@@ -21,7 +21,8 @@ jobs:
           cd unity\native_src
           .\make_win64.bat
           copy build64\Release\puerts.dll ..\general\Bin
+          dir ..\general\Bin
       - name: Test
         run: |
-          cd ..\general\vs2013
+          cd unity\general\vs2013
           msbuild Puerts.sln
