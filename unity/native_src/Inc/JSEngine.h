@@ -26,11 +26,11 @@
 #include "Blob/Win64/NativesBlob.h"
 #include "Blob/Win64/SnapshotBlob.h"
 #elif defined(PLATFORM_ANDROID_ARM)
-#include "Blob/Android/armv7a/7.4.288/NativesBlob.h"
-#include "Blob/Android/armv7a/7.4.288/SnapshotBlob.h"
+#include "Blob/Android/armv7a/NativesBlob.h"
+#include "Blob/Android/armv7a/SnapshotBlob.h"
 #elif defined(PLATFORM_ANDROID_ARM64)
-#include "Blob/Android/arm64/7.4.288/NativesBlob.h"
-#include "Blob/Android/arm64/7.4.288/SnapshotBlob.h"
+#include "Blob/Android/arm64/NativesBlob.h"
+#include "Blob/Android/arm64/SnapshotBlob.h"
 #elif defined(PLATFORM_MAC)
 #include "Blob/macOS/NativesBlob.h"
 #include "Blob/macOS/SnapshotBlob.h"
