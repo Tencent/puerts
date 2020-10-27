@@ -1,0 +1,111 @@
+name: Build V8
+
+on: 
+  workflow_dispatch:
+
+env:
+  VERSION: 8.4.371.19
+
+jobs:
+  build_android_arm_v8:
+    name: Android (arm64-v8a)
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      run: |
+        cd $GITHUB_WORKSPACE
+        sh ./v8-build/android_armv8.sh ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: ~/v8/v8/output/**/*
+
+  build_android_arm_v7:
+    name: Android (armeabi-v7a)
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      run: |
+        cd $GITHUB_WORKSPACE
+        sh ./v8-build/android_armv7.sh ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: ~/v8/v8/output/**/*
+
+  build_windows:
+    name: Windows
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      shell: cmd
+      run: |
+        cd %GITHUB_WORKSPACE%
+        call .\v8-build\windows_64.cmd ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: v8/v8/output/**/*
+        
+  build_windows_md:
+    name: Windows-MD
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      shell: cmd
+      run: |
+        cd %GITHUB_WORKSPACE%
+        call .\v8-build\windows_64MD.cmd ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: v8/v8/output/**/*
+        
+  build_windows_32:
+    name: Windows-32
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      shell: cmd
+      run: |
+        cd %GITHUB_WORKSPACE%
+        call .\v8-build\windows_32.cmd ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: v8/v8/output/**/*
+          
+  build_macos:
+    name: macOS
+    runs-on: macos-10.15
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      run: |
+        cd $GITHUB_WORKSPACE
+        sh ./v8-build/macos.sh ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: ~/v8/v8/output/**/*
+
+  build_ios:
+    name: iOS
+    runs-on: macos-10.15
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      run: |
+        cd $GITHUB_WORKSPACE
+        sh ./v8-build/ios.sh ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: ~/v8/v8/output/**/*
+        
+
