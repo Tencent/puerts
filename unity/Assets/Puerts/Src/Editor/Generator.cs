@@ -359,6 +359,7 @@ namespace Puerts.Editor
                 .Where(p => p.GetIndexParameters().GetLength(0) == 1).Select(p => ToIndexGenInfo(p)).ToArray();
             var operatorGroups = type.GetMethods(Flags)
                 .Where(m => !isFiltered(m) && m.IsSpecialName && m.Name.StartsWith("op_") && m.IsStatic)
+                .Where(m => m.Name != "op_Explicit" && m.Name != "op_Implicit")
                 .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
                 .Select(i => i.Cast<MethodBase>().ToList());
 
