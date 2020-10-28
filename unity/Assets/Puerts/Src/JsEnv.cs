@@ -25,7 +25,7 @@ namespace Puerts
 
         private readonly ILoader loader;
 
-        internal static List<JsEnv> jsEnvs = new List<JsEnv>();
+        public static List<JsEnv> jsEnvs = new List<JsEnv>();
 
         internal IntPtr isolate;
 
