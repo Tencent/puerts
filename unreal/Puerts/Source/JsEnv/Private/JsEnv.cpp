@@ -33,29 +33,39 @@
 
 #include "V8InspectorImpl.h"
 
+#if V8_MAJOR_VERSION < 8
+
 #if PLATFORM_WINDOWS
 #include "Blob/Win64/NativesBlob.h"
 #include "Blob/Win64/SnapshotBlob.h"
 #elif PLATFORM_ANDROID_ARM
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 25
-#include "Blob/Android/armv7a/8.4.371.19/SnapshotBlob.h"
-#elif ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25
-#include "Blob/Android/armv7a/7.4.288/NativesBlob.h"
-#include "Blob/Android/armv7a/7.4.288/SnapshotBlob.h"
-#endif
+#include "Blob/Android/armv7a/NativesBlob.h"
+#include "Blob/Android/armv7a/SnapshotBlob.h"
 #elif PLATFORM_ANDROID_ARM64
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 25
-#include "Blob/Android/arm64/8.4.371.19/SnapshotBlob.h"
-#elif ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25
-#include "Blob/Android/arm64/7.4.288/NativesBlob.h"
-#include "Blob/Android/arm64/7.4.288/SnapshotBlob.h"
-#endif
+#include "Blob/Android/arm64/NativesBlob.h"
+#include "Blob/Android/arm64/SnapshotBlob.h"
 #elif PLATFORM_MAC
 #include "Blob/macOS/NativesBlob.h"
 #include "Blob/macOS/SnapshotBlob.h"
 #elif PLATFORM_IOS
 #include "Blob/iOS/arm64/NativesBlob.h"
 #include "Blob/iOS/arm64/SnapshotBlob.h"
+#endif
+
+#else
+
+#if PLATFORM_WINDOWS
+#include "Blob/Win64MD/SnapshotBlob.h"
+#elif PLATFORM_ANDROID_ARM
+#include "Blob/Android/armv7a/SnapshotBlob.h"
+#elif PLATFORM_ANDROID_ARM64
+#include "Blob/Android/arm64/SnapshotBlob.h"
+#elif PLATFORM_MAC
+#include "Blob/macOS/SnapshotBlob.h"
+#elif PLATFORM_IOS
+#include "Blob/iOS/arm64/SnapshotBlob.h"
+#endif
+
 #endif
 
 namespace puerts
@@ -445,8 +455,7 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
-#if !PLATFORM_ANDROID || \
-    (PLATFORM_ANDROID && ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25)
+#if V8_MAJOR_VERSION < 8
     std::unique_ptr<v8::StartupData> NativesBlob;
     if (!NativesBlob)
     {
