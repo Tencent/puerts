@@ -3,6 +3,9 @@ name: build v8
 on: 
   workflow_dispatch:
 
+#https://docs.google.com/document/d/1oFPHyNb_eXg6NzrE6xJDNPdJrHMZvx0LqsD6wpbd9vY/edit#heading=h.4tfb7x3beh2l
+#libwee8按设计只支持wasm，不支持js，但8.4.371.19版本尚未移除js功能，还能用，如果升级v8版本要注意
+#libmonolith会稳妥一些，但静态库大小会大些
 env:
   VERSION: 8.4.371.19
 
