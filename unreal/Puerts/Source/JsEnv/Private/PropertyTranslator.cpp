@@ -109,6 +109,11 @@ void FPropertyTranslator::DelegateGetter(v8::Local<v8::Name> Property, const v8:
 
     FPropertyTranslator* PropertyTranslator = reinterpret_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     auto Object = FV8Utils::GetUObject(Info.This());
+    if (!Object)
+    {
+        FV8Utils::ThrowException(Isolate, "invalid object");
+        return;
+    }
     auto DelegatePtr = PropertyTranslator->Property->ContainerPtrToValuePtr<void>(Object);
 
     Info.GetReturnValue().Set(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr));
