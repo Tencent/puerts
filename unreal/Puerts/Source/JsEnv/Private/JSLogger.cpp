@@ -7,28 +7,28 @@
 
 #include "JSLogger.h"
 
-DEFINE_LOG_CATEGORY_STATIC(TGameJS, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(Puerts, Log, All);
 
 namespace puerts
 {
     void FDefaultLogger::Log(const FString& Message) const
     {
-        UE_LOG(TGameJS, Log, TEXT("(0x%p) %s"), this, *Message);
+        UE_LOG(Puerts, Log, TEXT("(0x%p) %s"), this, *Message);
     }
 
     void FDefaultLogger::Info(const FString& Message) const
     {
-        UE_LOG(TGameJS, Display, TEXT("(0x%p) %s"), this, *Message);
+        UE_LOG(Puerts, Display, TEXT("(0x%p) %s"), this, *Message);
     }
 
     void FDefaultLogger::Warn(const FString& Message) const
     {
-        UE_LOG(TGameJS, Warning, TEXT("(0x%p) %s"), this, *Message);
+        UE_LOG(Puerts, Warning, TEXT("(0x%p) %s"), this, *Message);
     }
 
     void FDefaultLogger::Error(const FString& Message) const
     {
-        UE_LOG(TGameJS, Error, TEXT("(0x%p) %s"), this, *Message);
+        UE_LOG(Puerts, Error, TEXT("(0x%p) %s"), this, *Message);
     }
 
 }
