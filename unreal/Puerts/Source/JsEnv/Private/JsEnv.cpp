@@ -899,8 +899,11 @@ void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JS
 
 void FJsEnvImpl::UnBind(UClass *Class, UObject *UEObject)
 {
-    ObjectMap.erase(UEObject);
-    UserObjectRetainer.Release(UEObject);
+    if (ObjectMap.find(UEObject) != ObjectMap.end())
+    {
+        ObjectMap.erase(UEObject);
+        UserObjectRetainer.Release(UEObject);
+    }
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
@@ -1109,6 +1112,8 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         ClassToTemplateMap.erase(Struct);
         TypeReflectionMap.erase(Struct);
     }
+
+    UnBind(nullptr, (UObject*)ObjectBase);
 }
 
 void FJsEnvImpl::InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
