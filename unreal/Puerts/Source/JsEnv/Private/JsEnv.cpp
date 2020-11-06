@@ -190,12 +190,6 @@ private:
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(const JSClassDefinition* ClassDefinition);
 
-    void IncTypeRef(UStruct* Struct);
-
-    void DecClassRef(UStruct* Struct);
-
-    void DecScriptStructRef(UScriptStruct* ScriptStruct);
-
     FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
 
     void InitExtensionMethodsMap();
@@ -894,43 +888,6 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
-void FJsEnvImpl::IncTypeRef(UStruct* Struct)
-{
-    if (!Struct->IsNative())
-    {
-        ++TypeReflectionMap[Struct].second; //ref count
-    }
-}
-
-void FJsEnvImpl::DecClassRef(UStruct* Struct)
-{
-    if (!Struct->IsNative())
-    {
-        if (--TypeReflectionMap[Struct].second == 0)
-        {
-            //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
-            ClassToTemplateMap[Struct].Reset();
-            ClassToTemplateMap.erase(Struct);
-            TypeReflectionMap.erase(Struct);
-        }
-    }
-}
-
-void FJsEnvImpl::DecScriptStructRef(UScriptStruct* ScriptStruct)
-{
-    if (!ScriptStruct->IsNative())
-    {
-        if (--TypeReflectionMap[ScriptStruct].second == 0)
-        {
-            //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
-            ClassToTemplateMap[ScriptStruct].Reset();
-            ClassToTemplateMap.erase(ScriptStruct);
-            TypeReflectionMap.erase(ScriptStruct);
-            SysObjectRetainer.Release(ScriptStruct);
-        }
-    }
-}
-
 void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) // Just call in FClassReflection::Call, new a Object
 {
     UserObjectRetainer.Retain(UEObject);
@@ -938,14 +895,12 @@ void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JS
     FV8Utils::SetPointer(MainIsolate, JSObject, nullptr, 1);
     ObjectMap[UEObject] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
     ObjectMap[UEObject].SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
-    IncTypeRef(Class);
 }
 
 void FJsEnvImpl::UnBind(UClass *Class, UObject *UEObject)
 {
     ObjectMap.erase(UEObject);
     UserObjectRetainer.Release(UEObject);
-    DecClassRef(Class);
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
@@ -1128,12 +1083,12 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
     UnBind(Class, Object);
 }
 
-void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *Object, int32 Index)
+void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32 Index)
 {
-    auto Iter = GeneratedObjectMap.find(Object);
+    auto Iter = GeneratedObjectMap.find(ObjectBase);
     if (Iter != GeneratedObjectMap.end())
     {
-        //UE_LOG(LogTemp, Warning, TEXT("NotifyUObjectDeleted: %s(%p)"), *Object->GetClass()->GetName(), Object);
+        //UE_LOG(LogTemp, Warning, TEXT("NotifyUObjectDeleted: %s(%p)"), *ObjectBase->GetClass()->GetName(), Object);
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -1143,7 +1098,16 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *Object, int32 Ind
         auto JSObject = Iter->second.Get(Isolate)->ToObject(Context).ToLocalChecked();
         FV8Utils::SetPointer(Isolate, JSObject, nullptr, 0);
         FV8Utils::SetPointer(Isolate, JSObject, nullptr, 1);
-        GeneratedObjectMap.erase(Object);
+        GeneratedObjectMap.erase(ObjectBase);
+    }
+    
+    UStruct *Struct = (UStruct*)ObjectBase;
+    if (ClassToTemplateMap.find(Struct) != ClassToTemplateMap.end())
+    {
+        //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
+        ClassToTemplateMap[Struct].Reset();
+        ClassToTemplateMap.erase(Struct);
+        TypeReflectionMap.erase(Struct);
     }
 }
 
@@ -1437,7 +1401,6 @@ void FJsEnvImpl::BindStruct(UScriptStruct* ScriptStruct, void *Ptr, v8::Local<v8
         ScriptStructTypeMap[Ptr] = ScriptStruct;
         StructMap[Ptr].SetWeak<UScriptStruct>(ScriptStruct, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
-    //IncTypeRef(ScriptStruct);
 }
 
 static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefinition>& Data)
@@ -1465,7 +1428,6 @@ void FJsEnvImpl::UnBindStruct(UScriptStruct* ScriptStruct, void *Ptr)
 {
     ScriptStructTypeMap.erase(Ptr);
     StructMap.erase(Ptr);
-    //DecScriptStructRef(ScriptStruct);
 }
 
 void FJsEnvImpl::UnBindCData(JSClassDefinition* ClassDefinition, void *Ptr)
