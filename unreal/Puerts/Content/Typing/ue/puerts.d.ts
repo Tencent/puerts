@@ -8,7 +8,9 @@
 declare module "ue" {
     type ArgumentTypes<T> = T extends (... args: infer U ) => infer R ? U: never;
 
-    interface $Ref<T> {}
+    interface $Ref<T> {
+        value: T
+    }
     
     interface $CallbackID {}
     
