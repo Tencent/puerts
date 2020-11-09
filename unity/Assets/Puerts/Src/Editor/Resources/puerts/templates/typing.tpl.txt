@@ -1,6 +1,6 @@
 {{
 function parameterDef(pinfo) {
-    return (pinfo.IsParams ? ("..." + pinfo.Name) : pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + pinfo.TypeName;
+    return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + pinfo.TypeName;
 }
 function typeKeyword(type) {
     if (type.IsDelegate) {
@@ -29,7 +29,9 @@ function typeDeclaration(type, level1) {
 }
 }}
 declare module 'csharp' {
-    interface $Ref<T> {}
+    interface $Ref<T> {
+        value: T
+    }
     
     namespace System {
         interface Array$1<T> extends System.Array {
