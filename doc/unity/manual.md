@@ -5,7 +5,7 @@
 - git clone [https://github.com/Tencent/puerts.git](https://github.com/Tencent/puerts.git)
 - 拷贝插件到您项目
   - 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下
-  - Plugins要单独下载 [https://github.com/Tencent/puerts/actions](https://github.com/Tencent/puerts/actions)，找到替换本地puerts.dll 。
+  - Plugins要单独下载 [release](https://github.com/Tencent/puerts/releases)，解压后替换本地Plugins目录 。
 
 
 
@@ -47,20 +47,9 @@
 
   - **举例**
 
+    静态列表
+    
     ```c#
-    public class TestClass
-    {
-        public void print()
-        {
-            Debug.Log("print");
-        }
-    
-        public int add(int a,int b)
-        {
-            return a + b;
-        }
-    }
-    
     [Configure]
     public class ExamplesCfg
     {
@@ -71,24 +60,32 @@
             { 
                 return new List<Type>()
                 {
-                    typeof(TestClass),
+                    typeof(GameObject),
+                    typeof(Component),
                 };
             }
         }
     }
     ```
-
-    Assets/Gen下，就是生成的静态类。
-
-    ![image-20201012185921370](https://i.loli.net/2020/10/27/OB82qDYVUfIQP6S.png)
-
     
-
-    Asset/Gen/Typing/csharp/index.d.ts里，就是对在Binding下的所有类的所有函数的声明。
-
-    ![image-20201012190055518](https://i.loli.net/2020/10/27/KIk7HjfZwRTYlQF.png)
-
-  
+    动态列表
+    
+    ```c#
+    [Configure]
+    public class ExamplesCfg
+    {
+        [Binding]
+        static IEnumerable<Type> Bindings
+        {
+            get
+            { 
+                return (from type in Assembly.Load("Assembly-CSharp").GetTypes()
+                    where type.Namespace == "MyNamespace"
+                    select type);
+            }
+        }
+    }
+    ```
 
 - ##### Typing
 
@@ -111,10 +108,7 @@
         {
             get
             { 
-                return new List<Type>()
-                {
-                    typeof(TestClass),
-                };
+                //静态或动态列表
             }
         }
     }
@@ -126,7 +120,7 @@
 
   - **用途**
 
-    对Blittable值类型通过内存拷贝传递，需要开启unsafe编译选项。
+    对Blittable值类型通过内存拷贝传递，可避免值类型传递产生的GC，需要开启unsafe编译选项。
 
   - **用法**
 
@@ -213,29 +207,24 @@
     }
     ```
 
-    在index.d.ts中，就只有add，没有print（生成的静态类同样没有print）。
-
-    ![image-20201012150124671](https://i.loli.net/2020/10/27/mLCgScal5Z9vyuK.png)
-
-
 
 #### 3.ts调用c#函数
 
 - ##### 委托、事件，和c#的写法有区别，因为typescript不支持操作符重载
 
-  ```c#
-  namespace PuertsTest
-  {
-      public delegate void MyCallback(string msg);
-  
-      public class DerivedClass
-      {
-          public MyCallback MyCallback;
-          public event MyCallback MyEvent;
-          public static event MyCallback MyStaticEvent;
-      }
-  }
-  ```
+    ```c#
+    namespace PuertsTest
+    {
+        public delegate void MyCallback(string msg);
+    
+        public class DerivedClass
+        {
+            public MyCallback MyCallback;
+            public event MyCallback MyEvent;
+            public static event MyCallback MyStaticEvent;
+        }
+    }
+    ```
 
   - **委托**
 
@@ -480,73 +469,31 @@
 
 - ##### op_Addition，c#类中的operator+
 
-  ```c#
-  namespace PuertsTest
-  {
-      public class BaseClass
-      {
-      	public int baseIntField = 10;
-      	public static BaseClass operator +(BaseClass b1,BaseClass b2)
-          {
-              BaseClass b3 = new BaseClass();
-              b3.baseIntField = b1.baseIntField + b2.baseIntField;
-              return b3;
-          }
-      }
-  }
-  ```
-
-  ```typescript
-  import {PuertsTest} from 'csharp'
-  let obj1 = new PuertsTest.BaseClass();
-  let obj2 = new PuertsTest.BaseClass();
-  obj1.baseIntField = 11;
-  obj2.baseIntField = 22;
-  let obj3 = PuertsTest.BaseClass.op_Addition(obj1, obj2);
-  ```
+    ```c#
+    namespace PuertsTest
+    {
+        public class BaseClass
+        {
+        	public int baseIntField = 10;
+        	public static BaseClass operator +(BaseClass b1,BaseClass b2)
+            {
+                BaseClass b3 = new BaseClass();
+                b3.baseIntField = b1.baseIntField + b2.baseIntField;
+                return b3;
+            }
+        }
+    }
+    ```
+    
+    ```typescript
+    import {PuertsTest} from 'csharp'
+    let obj1 = new PuertsTest.BaseClass();
+    let obj2 = new PuertsTest.BaseClass();
+    obj1.baseIntField = 11;
+    obj2.baseIntField = 22;
+    let obj3 = PuertsTest.BaseClass.op_Addition(obj1, obj2);
+    ```
 
   
-
-#### 4.注意事项
-
-- int，float，double，在js/ts端传给c#做参数时，是区分不出来的，但是long是可以的，因为在js/ts侧，想要传long类型，在值后面必须加n；
-
-  ```c#
-  public class TestType
-  {
-      public void add(int a, int b)
-      {
-          Debug.Log("int add = " + (a + b));
-      }
-  
-      public void add(double a, double b)
-      {
-          Debug.Log("double add = " + (a + b));
-      }
-  
-      public void add(long a,long b)
-      {
-          Debug.Log("long add = " + (a + b));
-      }
-  }
-  ```
-
-  ```typescript
-  import {TestType} from 'csharp'
-  let obj = new TestType();
-  obj.add(300.2,200.4);
-  obj.add(300n,200n);//调用的是long为参数的add
-  ```
-
-  ![image-20201014112254520](https://i.loli.net/2020/10/27/QxD9Fwg8ovUnXLN.png)
-
-- 不支持在js/ts端调用c#泛型函数；
-
-  ```c#
-  public string F<T1, T2>(T1 a)
-  {
-  	return "1";
-  }
-  ```
 
   
