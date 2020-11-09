@@ -45,6 +45,10 @@ public class U2018Compatible
         {
             return true;
         }
+        if (memberInfo.DeclaringType.ToString() == "System.Threading.Tasks.Task" && memberInfo.Name == "IsCompletedSuccessfully")
+        {
+            return true;
+        }
         return false;
     }
 #endif
