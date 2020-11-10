@@ -1,0 +1,13 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 167e63503c..881c340c70 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -562,7 +562,7 @@ config("toolchain") {
+   visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
+   defines = []
+-  cflags = []
++  cflags = ["-Wno-error"]
+   ldflags = []
+ 
+   if (v8_current_cpu == "arm") {
