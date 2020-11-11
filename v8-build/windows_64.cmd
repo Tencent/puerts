@@ -35,3 +35,6 @@ md output\v8\Lib\Win64
 copy /Y out.gn\x64.release\obj\wee8.lib output\v8\Lib\Win64\
 md output\v8\Inc\Blob\Win64
 copy SnapshotBlob.h output\v8\Inc\Blob\Win64\
+
+echo =====[ Copy V8 header ]=====
+xcopy include output\v8\Inc\  /s/h/e/k/f/c

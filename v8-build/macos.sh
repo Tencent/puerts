@@ -39,6 +39,3 @@ mkdir -p output/v8/Lib/macOS
 cp out.gn/x64.release/obj/libwee8.a output/v8/Lib/macOS/
 mkdir -p output/v8/Inc/Blob/macOS
 cp SnapshotBlob.h output/v8/Inc/Blob/macOS/
-
-echo "=====[ Copy V8 header ]====="
-cp -r include/* output/v8/Inc/
