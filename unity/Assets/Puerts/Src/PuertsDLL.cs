@@ -245,8 +245,20 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnNumber(IntPtr isolate, IntPtr info, double number);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ReturnString(IntPtr isolate, IntPtr info, string str);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
+        public static extern void __ReturnString(IntPtr isolate, IntPtr info, string str);
+
+        public static void ReturnString(IntPtr isolate, IntPtr info, string str)
+        {
+            if (str == null)
+            {
+                ReturnNull(isolate, info);
+            }
+            else
+            {
+                __ReturnString(isolate, info, str);
+            }
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnBigInt(IntPtr isolate, IntPtr info, long number);
@@ -355,8 +367,20 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushBigIntForJSFunction(IntPtr function, long l);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PushStringForJSFunction(IntPtr function, string str);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PushStringForJSFunction")]
+        public static extern void __PushStringForJSFunction(IntPtr function, string str);
+
+        public static void PushStringForJSFunction(IntPtr function, string str)
+        {
+            if (str == null)
+            {
+                PushNullForJSFunction(function);
+            }
+            else
+            {
+                __PushStringForJSFunction(function, str);
+            }
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushNumberForJSFunction(IntPtr function, double d);
@@ -436,8 +460,20 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PropertyReturnNumber(IntPtr isolate, IntPtr info, double number);
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnString(IntPtr isolate, IntPtr info, string str);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PropertyReturnString")]
+        public static extern void __PropertyReturnString(IntPtr isolate, IntPtr info, string str);
+
+        public static void PropertyReturnString(IntPtr isolate, IntPtr info, string str)
+        {
+            if (str == null)
+            {
+                PropertyReturnNull(isolate, info);
+            }
+            else
+            {
+                __PropertyReturnString(isolate, info, str);
+            }
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PropertyReturnBigInt(IntPtr isolate, IntPtr info, long number);

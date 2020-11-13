@@ -466,14 +466,7 @@ namespace Puerts
 
         private static void StringTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            if (obj == null)
-            {
-                setValueApi.SetNull(isolate, holder);
-            }
-            else
-            {
-                setValueApi.SetString(isolate, holder, obj as string);
-            }
+            setValueApi.SetString(isolate, holder, obj as string);
         }
 
         private static void DateTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
