@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -473,6 +473,17 @@ namespace Puerts.UnitTest
         public static string Extension2<T1, T2>(this T1 a, T2 b) where T1 : BaseClass where T2 : BaseClass1
         {
             return (string.Format("Extension2<{0},{1}>", typeof(T1), typeof(T2)));
+        }
+    }
+
+    public class Reentrant
+    {
+        public Action Callback;
+
+        public bool Call(bool b)
+        {
+            if (b && Callback != null) Callback();
+            return true;
         }
     }
 }
