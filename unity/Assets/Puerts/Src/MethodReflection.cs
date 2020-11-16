@@ -11,31 +11,29 @@ using System.Reflection;
 
 namespace Puerts
 {
-    public class CallInfo
+    public struct CallInfo
     {
         public IntPtr Isolate;
         public IntPtr Info;
         public IntPtr Self;
-        public int Length = 0;
+        public int Length;
 
-        public JsValueType[] JsTypes = null;
+        public JsValueType[] JsTypes;
 
-        public object[] Values = null;
+        public object[] Values;
 
-        public IntPtr[] NativePtrs = null;
+        public IntPtr[] NativePtrs;
 
-        public void Init(IntPtr isolate, IntPtr info, IntPtr self, int len)
+        public CallInfo(IntPtr isolate, IntPtr info, IntPtr self, int len)
         {
             Isolate = isolate;
             Info = info;
             Self = self;
             Length = len;
-            if (JsTypes == null || JsTypes.Length < Length)
-            {
-                JsTypes = new JsValueType[Length];
-                Values = new object[Length];
-                NativePtrs = new IntPtr[Length];
-            }
+
+            JsTypes = new JsValueType[Length];
+            Values = new object[Length];
+            NativePtrs = new IntPtr[Length];
 
             for(int i = 0; i < Length; i++)
             {
@@ -43,7 +41,6 @@ namespace Puerts
                 NativePtrs[i] = nativeValuePtr;
                 var type = PuertsDLL.GetJsValueType(isolate, nativeValuePtr, false);
                 JsTypes[i] = type;
-                Values[i] = null;
             }
         }
     }
@@ -325,8 +322,6 @@ namespace Puerts
 
     public class MethodReflectionWrap
     {
-        private CallInfo callInfo = new CallInfo();
-
         private string name;
 
         private List<OverloadReflectionWrap> overloads;
@@ -341,7 +336,7 @@ namespace Puerts
         {
             try
             {
-                callInfo.Init(isolate, info, self, argumentsLen);
+                CallInfo callInfo = new CallInfo(isolate, info, self, argumentsLen);
                 for (int i = 0; i < overloads.Count; ++i)
                 {
                     var overload = overloads[i];
@@ -365,7 +360,7 @@ namespace Puerts
 
         public object Construct(IntPtr isolate, IntPtr info, int argumentsLen)
         {
-            callInfo.Init(isolate, info, IntPtr.Zero, argumentsLen);
+            CallInfo callInfo = new CallInfo(isolate, info, IntPtr.Zero, argumentsLen);
 
             try
             {
