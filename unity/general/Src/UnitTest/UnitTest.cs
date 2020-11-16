@@ -993,14 +993,13 @@ namespace Puerts.UnitTest
             var jsEnv = new JsEnv(new TxtLoader());
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let obj1 = new CS.Puerts.UnitTest.Reentrant();
-                let obj2 = new CS.Puerts.UnitTest.Reentrant();
+                let obj = new CS.Puerts.UnitTest.Reentrant();
                 function dosomething(){}
-                obj1.Callback = () => {
-                    obj2.Call(false);
+                obj.Callback = () => {
+                    obj.Call(false);
                     dosomething();// 注释这行，或者Call没返回值就没事
                 }
-                obj1.Call(true);
+                obj.Call(true);
                 
             ");
             jsEnv.Dispose();
