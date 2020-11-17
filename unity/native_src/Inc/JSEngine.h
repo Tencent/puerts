@@ -141,10 +141,6 @@ public:
 
 private:
     v8::Isolate::CreateParams CreateParams;
-    
-    std::unique_ptr<v8::StartupData> NativesBlob;
-
-    std::unique_ptr<v8::StartupData> SnapshotBlob;
 
     std::vector<FCallbackInfo*> CallbackInfos;
 
