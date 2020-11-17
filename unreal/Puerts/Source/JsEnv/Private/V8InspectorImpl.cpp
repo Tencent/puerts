@@ -20,9 +20,12 @@
 #include <locale> 
 #include <codecvt> 
 
+#pragma warning(push)
+#pragma warning( disable : 4251 )
 #include "v8.h"
 #include "v8-inspector.h"
 #include "libplatform/libplatform.h"
+#pragma warning(pop)
 
 #if PLATFORM_MAC
 #define ASIO_NO_TYPEID  // Mac下需避免使用RTTI功能
