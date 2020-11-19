@@ -29,10 +29,13 @@ function typeDeclaration(type, level1) {
 }
 
 function typeProperty(type, property, space) {
-    if (type.IsInterface || property.IsField) {
+    if (type.IsInterface) {
         return property.Name + ": " + property.TypeName;
     }
     let _static = property.IsStatic ? "static " : "";
+    if (property.IsField) {
+        return "public " + _static + property.Name + ": " + property.TypeName;
+    }
     let set = "public " + _static + "set " + property.Name + "(val: " + property.TypeName + ")";
     if (!property.HasGetter) {
         return set;
