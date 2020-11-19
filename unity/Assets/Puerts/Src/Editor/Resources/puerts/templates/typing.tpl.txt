@@ -27,6 +27,22 @@ function typeDeclaration(type, level1) {
     }
     return result;
 }
+
+function typeProperty(type, property, space) {
+    if (type.IsInterface || property.IsField) {
+        return property.Name + ": " + property.TypeName;
+    }
+    let _static = property.IsStatic ? "static " : "";
+    let set = "public " + _static + "set " + property.Name + "(val: " + property.TypeName + ")";
+    if (!property.HasGetter) {
+        return set;
+    }
+    let get = "public " + _static + "get " + property.Name + "(): " + property.TypeName;
+    if (!property.HasSetter) {
+        return get;
+    }
+    return get + ";\n" + (space ?? "") + set;
+}
 }}
 declare module 'csharp' {
     interface $Ref<T> {
@@ -46,7 +62,7 @@ declare module 'csharp' {
     {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
         {{~ns.Types :type}}{{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
         var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
-            {{~type.Properties :property}}{{?!type.IsInterface}}public {{?}}{{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};
+            {{~type.Properties :property}}{{=typeProperty(type, property, "\t\t\t\t")}};
             {{~}}{{~type.Methods :method}}{{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
         }{{}}}{{?type.ExtensionMethods.length > 0}}

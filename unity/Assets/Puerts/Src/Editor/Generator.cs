@@ -337,9 +337,9 @@ namespace Puerts.Editor
             if (extensionMethods == null)
             {
                 extensionMethods = (from type in genTypeSet
-                                       from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                         where isDefined(method, typeof(ExtensionAttribute)) && Utils.IsSupportedMethod(method)
-                                         group method by getExtendedType(method)).ToDictionary(g =>g.Key, g=>g.ToArray());
+                                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                                    where isDefined(method, typeof(ExtensionAttribute)) && Utils.IsSupportedMethod(method)
+                                    group method by getExtendedType(method)).ToDictionary(g => g.Key, g => g.ToArray());
             }
             MethodInfo[] ret;
             if (!extensionMethods.TryGetValue(checkType, out ret))
@@ -483,6 +483,9 @@ namespace Puerts.Editor
             public string Name;
             public string TypeName;
             public bool IsStatic;
+            public bool HasGetter;
+            public bool HasSetter;
+            public bool IsField;
         }
 
         public static TsMethodGenInfo ToTsMethodGenInfo(MethodBase methodBase, bool isGenericTypeDefinition, bool skipExtentionMethodThis)
@@ -568,10 +571,10 @@ namespace Puerts.Editor
                         .Cast<MethodBase>())
                     .Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition, false)).ToArray() : new TsMethodGenInfo[] { },
                 Properties = genTypeSet.Contains(type) ? type.GetFields(Flags).Where(m => !isFiltered(m))
-                    .Select(f => new TsPropertyGenInfo() { Name = f.Name, TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
+                    .Select(f => new TsPropertyGenInfo() { Name = f.Name, TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic, IsField = true })
                     .Concat(
                         type.GetProperties(Flags).Where(m => m.Name != "Item").Where(m => !isFiltered(m))
-                        .Select(p => new TsPropertyGenInfo() { Name = p.Name, TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p)}))
+                        .Select(p => new TsPropertyGenInfo() { Name = p.Name, TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p), HasGetter = p.GetMethod != null && p.GetMethod.IsPublic, HasSetter = p.SetMethod != null && p.SetMethod.IsPublic }))
                     .ToArray() : new TsPropertyGenInfo[] { },
                 IsGenericTypeDefinition = type.IsGenericTypeDefinition,
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
@@ -623,7 +626,7 @@ namespace Puerts.Editor
             {
                 result.BaseType = new TsTypeGenInfo()
                 {
-                    Name = type.BaseType.IsGenericType ? GetTsTypeName(type.BaseType): type.BaseType.Name.Replace('`', '$'),
+                    Name = type.BaseType.IsGenericType ? GetTsTypeName(type.BaseType) : type.BaseType.Name.Replace('`', '$'),
                     Namespace = type.BaseType.Namespace
                 };
                 if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)
@@ -712,7 +715,7 @@ namespace Puerts.Editor
                 refTypes.Add(rawType);
             }
 
-            if (IsDelegate(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
+            if (IsDelegate(type) && !type.IsGenericParameter && type != typeof(Delegate) && type != typeof(MulticastDelegate))
             {
                 MethodInfo delegateMethod = type.GetMethod("Invoke");
                 AddRefType(refTypes, delegateMethod.ReturnType);
@@ -728,7 +731,7 @@ namespace Puerts.Editor
                 AddRefType(refTypes, baseType);
                 baseType = baseType.BaseType;
             }
-            
+
         }
 
         public class TypingGenInfo
@@ -754,15 +757,15 @@ namespace Puerts.Editor
                     AddRefType(refTypes, field.FieldType);
                 }
 
-                foreach(var method in type.GetMethods(Flags))
+                foreach (var method in type.GetMethods(Flags))
                 {
                     AddRefType(refTypes, method.ReturnType);
-                    foreach(var pinfo in method.GetParameters())
+                    foreach (var pinfo in method.GetParameters())
                     {
                         AddRefType(refTypes, pinfo.ParameterType);
                     }
                 }
-                foreach(var constructor in type.GetConstructors())
+                foreach (var constructor in type.GetConstructors())
                 {
                     foreach (var pinfo in constructor.GetParameters())
                     {
@@ -836,7 +839,7 @@ namespace Puerts.Editor
                 "Puerts.TypingAttribute",
             });
 
-            var genTypes = configure["Puerts.BindingAttribute"].Select( kv => kv.Key)
+            var genTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
                 .Where(o => o is Type)
                 .Cast<Type>()
                 .Where(t => !t.IsGenericTypeDefinition);
