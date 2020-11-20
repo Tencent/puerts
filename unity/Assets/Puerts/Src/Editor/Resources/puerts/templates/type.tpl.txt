@@ -383,7 +383,7 @@ namespace PuertsStaticWrap
         unsafe private static {{=it.Name}} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             {{=it.Name}}* result = ({{=it.Name}}*)getValueApi.GetObject(isolate, value, isByRef);
-            return *result;
+            return result == null ? default({{=it.Name}}) : *result;
         }
 
         unsafe private static void StaticSetter(int jsEnvIdx, IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, {{=it.Name}} val)
