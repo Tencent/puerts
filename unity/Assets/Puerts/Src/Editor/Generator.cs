@@ -225,7 +225,7 @@ namespace Puerts.Editor
                 IsStatic = overloads[0].IsStatic,
                 HasOverloads = ret.Count > 1,
                 OverloadCount = ret.Count,
-                OverloadGroups = ret.GroupBy(m => m.ParameterInfos.Length).Select(lst => lst.ToArray()).ToArray()
+                OverloadGroups = ret.GroupBy(m => m.ParameterInfos.Length + (m.HasParams ? 0 : 9999)).Select(lst => lst.ToArray()).ToArray()
             };
             return result;
         }
@@ -233,33 +233,33 @@ namespace Puerts.Editor
         static List<OverloadGenInfo> ToOverloadGenInfo(MethodBase methodBase)
         {
             List<OverloadGenInfo> ret = new List<OverloadGenInfo>();
-            OverloadGenInfo result = null;
             if (methodBase is MethodInfo)
             {
                 var methodInfo = methodBase as MethodInfo;
-                result = new OverloadGenInfo()
+                OverloadGenInfo mainInfo = new OverloadGenInfo()
                 {
                     ParameterInfos = methodInfo.GetParameters().Select(info => ToParameterGenInfo(info)).ToArray(),
                     TypeName = RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                     IsVoid = methodInfo.ReturnType == typeof(void)
                 };
-                FillEnumInfo(result, methodInfo.ReturnType);
-                result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
-                ret.Add(result);
+                FillEnumInfo(mainInfo, methodInfo.ReturnType);
+                mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
+                ret.Add(mainInfo);
                 var ps = methodInfo.GetParameters();
                 for (int i = ps.Length - 1; i >= 0; i--)
                 {
+                    OverloadGenInfo optionalInfo = null;
                     if (ps[i].IsOptional)
                     {
-                        result = new OverloadGenInfo()
+                        optionalInfo = new OverloadGenInfo()
                         {
                             ParameterInfos = methodInfo.GetParameters().Select(info => ToParameterGenInfo(info)).Take(i).ToArray(),
                             TypeName = RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                             IsVoid = methodInfo.ReturnType == typeof(void)
                         };
-                        FillEnumInfo(result, methodInfo.ReturnType);
-                        result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
-                        ret.Add(result);
+                        FillEnumInfo(optionalInfo, methodInfo.ReturnType);
+                        optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
+                        ret.Add(optionalInfo);
                     }
                     else
                     {
@@ -270,27 +270,28 @@ namespace Puerts.Editor
             else if (methodBase is ConstructorInfo)
             {
                 var constructorInfo = methodBase as ConstructorInfo;
-                result = new OverloadGenInfo()
+                OverloadGenInfo mainInfo = new OverloadGenInfo()
                 {
                     ParameterInfos = constructorInfo.GetParameters().Select(info => ToParameterGenInfo(info)).ToArray(),
                     TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                     IsVoid = false
                 };
-                result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
-                ret.Add(result);
+                mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
+                ret.Add(mainInfo);
                 var ps = constructorInfo.GetParameters();
                 for (int i = ps.Length - 1; i >= 0; i--)
                 {
+                    OverloadGenInfo optionalInfo = null;
                     if (ps[i].IsOptional)
                     {
-                        result = new OverloadGenInfo()
+                        optionalInfo = new OverloadGenInfo()
                         {
                             ParameterInfos = constructorInfo.GetParameters().Select(info => ToParameterGenInfo(info)).Take(i).ToArray(),
                             TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                             IsVoid = false
                         };
-                        result.HasParams = result.ParameterInfos.Any(info => info.IsParams);
-                        ret.Add(result);
+                        optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
+                        ret.Add(optionalInfo);
                     }
                     else
                     {

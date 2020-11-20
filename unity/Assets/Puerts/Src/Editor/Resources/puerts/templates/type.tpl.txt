@@ -136,6 +136,11 @@ function refSelf() {
     return it.BlittableCopy ? "(*obj)" : "obj";
 }
 
+function paramLenCheck(group) {
+    let len = group[0].ParameterInfos.length;
+    return group[0].HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
+}
+
 }}
 namespace PuertsStaticWrap
 {
@@ -149,7 +154,7 @@ namespace PuertsStaticWrap
             try
             {
                 {{?it.Constructor}}{{~it.Constructor.OverloadGroups :overloadGroup}}
-                {{?it.Constructor.HasOverloads}}if (paramLen == {{=overloadGroup[0].ParameterInfos.length}}){{?}}
+                {{?it.Constructor.HasOverloads}}if ({{=paramLenCheck(overloadGroup)}}){{?}}
                 {
                     {{for(var i=0; i < overloadGroup[0].ParameterInfos.length; i++) {}}
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
@@ -187,7 +192,7 @@ namespace PuertsStaticWrap
             {
                 {{?!method.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 {{~method.OverloadGroups :overloadGroup}}
-                {{?method.HasOverloads}}if (paramLen == {{=overloadGroup[0].ParameterInfos.length}}){{?}}
+                {{?method.HasOverloads}}if ({{=paramLenCheck(overloadGroup)}}){{?}}
                 {
                     {{for(var i=0; i < overloadGroup[0].ParameterInfos.length; i++) {}}
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
@@ -299,7 +304,7 @@ namespace PuertsStaticWrap
             try
             {
                 {{~operator.OverloadGroups :overloadGroup}}
-                {{?operator.HasOverloads}}if (paramLen == {{=overloadGroup[0].ParameterInfos.length}}){{?}}
+                {{?operator.HasOverloads}}if ({{=paramLenCheck(overloadGroup)}}){{?}}
                 {
                     {{for(var i=0; i < overloadGroup[0].ParameterInfos.length; i++) {}}
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
