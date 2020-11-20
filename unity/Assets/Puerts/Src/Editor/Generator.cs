@@ -827,6 +827,51 @@ namespace Puerts.Editor
             }
         }
 
+        static Dictionary<Type, bool> blittableTypes = new Dictionary<Type, bool>()
+        {
+            { typeof(byte), true },
+            { typeof(sbyte), true },
+            { typeof(short), true },
+            { typeof(ushort), true },
+            { typeof(int), true },
+            { typeof(uint), true },
+            { typeof(long), true },
+            { typeof(ulong), true },
+            { typeof(float), true },
+            { typeof(double), true },
+            { typeof(IntPtr), true },
+            { typeof(UIntPtr), true },
+            { typeof(char), false },
+            { typeof(bool), false }
+        };
+
+        static bool isBlittableType(Type type)
+        {
+            if (type.IsValueType)
+            {
+                bool ret;
+                if (!blittableTypes.TryGetValue(type, out ret))
+                {
+                    ret = true;
+                    if (type.IsPrimitive) return false;
+                    foreach(var fieldInfo in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                    {
+                        if (!isBlittableType(fieldInfo.FieldType))
+                        {
+                            ret = false;
+                            break;
+                        }
+                    }
+                    blittableTypes[type] = ret;
+                }
+                return ret;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public static void GenerateCode(string saveTo, bool tsOnly = false)
         {
             filters = Configure.GetFilters();
@@ -844,7 +889,7 @@ namespace Puerts.Editor
             var blittableCopyTypes = new HashSet<Type>(configure["Puerts.BlittableCopyAttribute"].Select(kv => kv.Key)
                 .Where(o => o is Type)
                 .Cast<Type>()
-                .Where(t => t.IsValueType && !t.IsPrimitive)
+                .Where(t => !t.IsPrimitive && isBlittableType(t))
                 .Distinct());
 
             var tsTypes = configure["Puerts.TypingAttribute"].Select(kv => kv.Key)
