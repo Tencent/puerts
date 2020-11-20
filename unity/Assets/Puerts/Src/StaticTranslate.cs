@@ -26,7 +26,15 @@ namespace Puerts
 
         private static T DefaultGetResult(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return (T)JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetTranslateFunc(typeof(T))(isolate, getValueApi, value, isByRef);
+            object obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetTranslateFunc(typeof(T))(isolate, getValueApi, value, isByRef);
+            if (obj == null)
+            {
+                return default(T);
+            }
+            else
+            {
+                return (T)obj;
+            }
         }
 
         public static void ReplaceDefault(PushFunc pushFunc, GetFunc getFunc)
