@@ -46,7 +46,8 @@ declare module 'csharp' {
     {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
         {{~ns.Types :type}}{{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
         var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
-            {{~type.Properties :property}}{{?!type.IsInterface}}public {{?}}{{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};
+            {{~type.Properties :property}}{{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
+            {{?}}{{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=property.Name}}(value: {{=property.TypeName}});{{?}}{{?!property.HasSetter && !property.HasGetter}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?}}
             {{~}}{{~type.Methods :method}}{{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
         }{{}}}{{?type.ExtensionMethods.length > 0}}

@@ -484,6 +484,8 @@ namespace Puerts.Editor
             public string Name;
             public string TypeName;
             public bool IsStatic;
+            public bool HasGetter;
+            public bool HasSetter;
         }
 
         public static TsMethodGenInfo ToTsMethodGenInfo(MethodBase methodBase, bool isGenericTypeDefinition, bool skipExtentionMethodThis)
@@ -572,7 +574,7 @@ namespace Puerts.Editor
                     .Select(f => new TsPropertyGenInfo() { Name = f.Name, TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
                     .Concat(
                         type.GetProperties(Flags).Where(m => m.Name != "Item").Where(m => !isFiltered(m))
-                        .Select(p => new TsPropertyGenInfo() { Name = p.Name, TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p)}))
+                        .Select(p => new TsPropertyGenInfo() { Name = p.Name, TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p), HasGetter = p.GetMethod != null && p.GetMethod.IsPublic, HasSetter = p.SetMethod != null && p.SetMethod.IsPublic }))
                     .ToArray() : new TsPropertyGenInfo[] { },
                 IsGenericTypeDefinition = type.IsGenericTypeDefinition,
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
