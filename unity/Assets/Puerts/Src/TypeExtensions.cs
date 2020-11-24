@@ -187,7 +187,16 @@ namespace Puerts
             else if (type == typeof(void))
                 return "void";
             else if (type.IsArray)
-                return GetFriendlyName(type.GetElementType()) + "[]";
+            {
+                if (type.GetArrayRank() > 1)
+                {
+                    return GetFriendlyName(type.GetElementType()) + "["+ new String(',', type.GetArrayRank() - 1) + "]";
+                }
+                else
+                {
+                    return GetFriendlyName(type.GetElementType()) + "[]";
+                }
+            }
             else if (type.IsNested)
             {
                 if (type.DeclaringType.IsGenericTypeDefinition)
