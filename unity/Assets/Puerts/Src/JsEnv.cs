@@ -460,6 +460,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
+            CheckLiveness();
             ReleasePendingJSFunctions();
             PuertsDLL.InspectorTick(isolate);
             tickHandler.ForEach(fn =>
