@@ -779,9 +779,7 @@ std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *
     }
     else
     {
-        check(false);
+        return std::make_unique<DoNothingPropertyTranslator>(InProperty); //还没做支持的忽略掉加载错误好了，ts那本来对这种不支持的类型就不生成ts声明，忽略影响也不大
     }
-        
-    return nullptr;
 }
 }
