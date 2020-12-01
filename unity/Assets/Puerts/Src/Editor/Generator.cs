@@ -473,6 +473,7 @@ namespace Puerts.Editor
         public class TsMethodGenInfo
         {
             public string Name;
+            public string Document;
             public TsParameterGenInfo[] ParameterInfos;
             public string TypeName;
             public bool IsConstructor;
@@ -482,6 +483,7 @@ namespace Puerts.Editor
         public class TsPropertyGenInfo
         {
             public string Name;
+            public string Document;
             public string TypeName;
             public bool IsStatic;
             public bool HasGetter;
@@ -493,6 +495,7 @@ namespace Puerts.Editor
             return new TsMethodGenInfo()
             {
                 Name = methodBase.IsConstructor ? "constructor" : methodBase.Name,
+                Document = DocResolver.GetTsDocument(methodBase), 
                 ParameterInfos = methodBase.GetParameters()
                     .Skip(skipExtentionMethodThis && isDefined(methodBase, typeof(ExtensionAttribute)) ? 1 : 0)
                     .Select(info => ToTsParameterGenInfo(info, isGenericTypeDefinition)).ToArray(),
@@ -505,6 +508,7 @@ namespace Puerts.Editor
         public class TsTypeGenInfo
         {
             public string Name;
+            public string Document;
             public TsMethodGenInfo[] Methods;
             public TsPropertyGenInfo[] Properties;
             public bool IsGenericTypeDefinition;
@@ -565,16 +569,17 @@ namespace Puerts.Editor
             var result = new TsTypeGenInfo()
             {
                 Name = type.Name.Replace('`', '$'),
+                Document = DocResolver.GetTsDocument(type), 
                 Methods = genTypeSet.Contains(type) ? (type.IsAbstract ? new MethodBase[] { } : type.GetConstructors(Flags).Where(m => !isFiltered(m)).Cast<MethodBase>())
                     .Concat(GetMethodsForTsTypeGen(type, genTypeSet)
                         .Where(m => !isFiltered(m) && !IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))
                         .Cast<MethodBase>())
                     .Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition, false)).ToArray() : new TsMethodGenInfo[] { },
                 Properties = genTypeSet.Contains(type) ? type.GetFields(Flags).Where(m => !isFiltered(m))
-                    .Select(f => new TsPropertyGenInfo() { Name = f.Name, TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
+                    .Select(f => new TsPropertyGenInfo() { Name = f.Name, Document = DocResolver.GetTsDocument(f),  TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
                     .Concat(
                         type.GetProperties(Flags).Where(m => m.Name != "Item").Where(m => !isFiltered(m))
-                        .Select(p => new TsPropertyGenInfo() { Name = p.Name, TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p), HasGetter = p.GetMethod != null && p.GetMethod.IsPublic, HasSetter = p.SetMethod != null && p.SetMethod.IsPublic }))
+                        .Select(p => new TsPropertyGenInfo() { Name = p.Name, Document = DocResolver.GetTsDocument(p),  TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p), HasGetter = p.GetMethod != null && p.GetMethod.IsPublic, HasSetter = p.SetMethod != null && p.SetMethod.IsPublic }))
                     .ToArray() : new TsPropertyGenInfo[] { },
                 IsGenericTypeDefinition = type.IsGenericTypeDefinition,
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
@@ -627,6 +632,7 @@ namespace Puerts.Editor
                 result.BaseType = new TsTypeGenInfo()
                 {
                     Name = type.BaseType.IsGenericType ? GetTsTypeName(type.BaseType): type.BaseType.Name.Replace('`', '$'),
+                    Document = DocResolver.GetTsDocument(type.BaseType), 
                     Namespace = type.BaseType.Namespace
                 };
                 if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)

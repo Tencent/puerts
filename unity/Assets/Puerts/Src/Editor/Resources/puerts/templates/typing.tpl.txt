@@ -44,15 +44,20 @@ declare module 'csharp' {
     {{=it.TaskDef}}
     
     {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
-        {{~ns.Types :type}}{{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
+        {{~ns.Types :type}}{{=type.Document}}
+        {{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
         var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
-            {{~type.Properties :property}}{{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
+            {{~type.Properties :property}}{{=property.Document}}
+            {{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
             {{?}}{{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=property.Name}}(value: {{=property.TypeName}});{{?}}{{?!property.HasSetter && !property.HasGetter}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?}}
-            {{~}}{{~type.Methods :method}}{{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
+            {{~}}{{~type.Methods :method}}{{=method.Document}}
+            {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
         }{{}}}{{?type.ExtensionMethods.length > 0}}
+        {{=type.Document}}
         interface {{=type.Name}} {
-            {{~type.ExtensionMethods :method}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
+            {{~type.ExtensionMethods :method}}{{=method.Document}}
+            {{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
             {{~}}
         }
         {{?}}
