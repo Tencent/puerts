@@ -27,6 +27,15 @@ function typeDeclaration(type, level1) {
     }
     return result;
 }
+function indent(str, n) {
+    let lines = str.split(/[\n\r]/);
+    let newLines = [lines[0]];
+    let append = " ".repeat(n);
+    for(var i = 1; i < lines.length; i++) {
+        if (lines[i]) newLines.push(append + lines[i]);
+    }
+    return newLines.join('\n');
+}
 }}
 declare module 'csharp' {
     interface $Ref<T> {
@@ -44,19 +53,19 @@ declare module 'csharp' {
     {{=it.TaskDef}}
     
     {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
-        {{~ns.Types :type}}{{=type.Document}}
+        {{~ns.Types :type}}{{=indent(type.Document, 8)}}
         {{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
         var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
-            {{~type.Properties :property}}{{=property.Document}}
+            {{~type.Properties :property}}{{=indent(property.Document, 12)}}
             {{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
             {{?}}{{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=property.Name}}(value: {{=property.TypeName}});{{?}}{{?!property.HasSetter && !property.HasGetter}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?}}
-            {{~}}{{~type.Methods :method}}{{=method.Document}}
+            {{~}}{{~type.Methods :method}}{{=indent(method.Document, 12)}}
             {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
         }{{}}}{{?type.ExtensionMethods.length > 0}}
-        {{=type.Document}}
+        {{=indent(type.Document, 8)}}
         interface {{=type.Name}} {
-            {{~type.ExtensionMethods :method}}{{=method.Document}}
+            {{~type.ExtensionMethods :method}}{{=indent(method.Document, 12)}}
             {{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
             {{~}}
         }
