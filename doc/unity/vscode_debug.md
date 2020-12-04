@@ -15,9 +15,34 @@ void Update()
 }
 ```
 
-* 阻塞等待调试器链接
+* 等待调试器链接
   - 调试器通过websocket连接，期间有TCP的握手，websocket握手，建立连接后，调试器和V8还会交换些信息，整个过程大概几百毫秒
-  - 在这几百毫秒内执行的脚本将无法断点，如果你想断点这些代码，可以用puerts的阻塞等待调试器连接功能
+  - 在这几百毫秒内执行的脚本将无法断点，如果你想断点这些代码，可以用puerts的等待调试器连接功能
+  - 如果c#版本高于7.2（支持async），建议用异步等待，否则用同步阻塞等待
+  
+  
+** 异步等待例子 
+
+```csharp
+async void RunScript()
+{
+    jsEnv = new JsEnv(new DefaultLoader("E:/puerts_unity_demo/TsProj/output/"), 8080);
+    await jsEnv.WaitDebuggerAsync();
+    jsEnv.Eval("require('QuickStart')");
+}
+
+void Start()
+{
+    RunScript();
+}
+
+void Update()
+{
+    jsEnv.Tick();
+}
+```
+
+** 同步阻塞例子
 
 ```csharp
 void Start()
@@ -33,7 +58,7 @@ void Update()
 }
 ```
 
-* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”
+* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”（高版本vscode没有该选项，可以不设置）
 
 
 * 打开“ProjectSetting/Player”页面，把“Run In Background”勾选上
