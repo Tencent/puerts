@@ -41,6 +41,26 @@ public class U2018Compatible
                 }
             }
         }
+        if (memberInfo.DeclaringType.IsGenericType && memberInfo.DeclaringType.GetGenericTypeDefinition() == typeof(HashSet<>))
+        {
+            if (memberInfo.MemberType == MemberTypes.Constructor)
+            {
+                ConstructorInfo constructorInfo = memberInfo as ConstructorInfo;
+                var parameterInfos = constructorInfo.GetParameters();
+                if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(int))
+                {
+                    return true;
+                }
+            }
+            else if (memberInfo.MemberType == MemberTypes.Method)
+            {
+                var methodInfo = memberInfo as MethodInfo;
+                if (methodInfo.Name == "TryGetValue" && methodInfo.GetParameters().Length == 2)
+                {
+                    return true;
+                }
+            }
+        }
         if (memberInfo.DeclaringType.ToString() == "System.Type" && memberInfo.Name == "IsSZArray")
         {
             return true;
