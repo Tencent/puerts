@@ -1,4 +1,5 @@
 VERSION=$1
+[ -z "$GITHUB_WORKSPACE" ] && GITHUB_WORKSPACE="$( cd "$( dirname "$0" )" && pwd )"
 
 cd ~
 echo "=====[ Getting Depot Tools ]====="	
