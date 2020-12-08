@@ -503,7 +503,7 @@ namespace Puerts.Editor
                         return false;
                     for (int i = 0; i < this.ParameterInfos.Length; i++)
                     {
-                        if (!this.ParameterInfos[i].Equals(info))
+                        if (!this.ParameterInfos[i].Equals(info.ParameterInfos[i]))
                             return false;
                     }
                     return true;
