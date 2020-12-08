@@ -402,7 +402,7 @@ namespace Puerts.Editor
                 if (obj != null && obj is TsParameterGenInfo)
                 {
                     var info = (TsParameterGenInfo)obj;
-                    return this.Name != info.Name || this.TypeName != info.TypeName || this.IsByRef != info.IsByRef || this.IsParams != info.IsParams || this.IsOptional != info.IsOptional;
+                    return this.Name == info.Name && this.TypeName == info.TypeName && this.IsByRef != info.IsByRef && this.IsParams != info.IsParams && this.IsOptional != info.IsOptional;
                 }
                 return base.Equals(obj);
             }
