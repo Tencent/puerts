@@ -13,60 +13,12 @@
 
 namespace puerts
 {
-    typedef void(*FreeCallback)(char* Data);
-
-    class ObjectLifeCycleTrace
-    {
-    public:
-        inline ObjectLifeCycleTrace(v8::Isolate* InIsolate,
-            v8::Local<v8::Object> InObject,
-            FreeCallback InCallback,
-            char* InData)
-            : Persistent(InIsolate, InObject),
-            Callback(InCallback),
-            Data(InData)
-        {
-            Persistent.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
-            InIsolate->AdjustAmountOfExternalAllocatedMemory(sizeof(*this));
-        }
-    private:
-        static void WeakCallback(const v8::WeakCallbackInfo<ObjectLifeCycleTrace>& Info)
-        {
-            ObjectLifeCycleTrace* Self = Info.GetParameter();
-            Self->WeakCallback(Info.GetIsolate());
-            delete Self;
-        }
-
-        inline void WeakCallback(v8::Isolate* InIsolate)
-        {
-            Callback(Data);
-            int64_t ChangeInBytes = -static_cast<int64_t>(sizeof(*this));
-            InIsolate->AdjustAmountOfExternalAllocatedMemory(ChangeInBytes);
-        }
-
-    private:
-        v8::Global<v8::Object> Persistent;
-        FreeCallback const Callback;
-        char* const Data;
-    };
-
-    static void Free(char* Data)
-    {
-        ::free(Data);
-    }
-
     v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size, bool Copy)
     {
-        void *Data = Ptr;
-
-        if (Copy)
-        {
-            Data = ::malloc(Size);
-            ::memcpy(Data, Ptr, Size);
-        }
-
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Data, Size);
-        new ObjectLifeCycleTrace(Isolate, Ab, Free, static_cast<char*>(Data));
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
+        void* Buff = Ab->GetContents().Data();
+        ::memcpy(Buff, Ptr, Size);
+        if (!Copy) ::free(Ptr);
         return Ab;
     }
 
