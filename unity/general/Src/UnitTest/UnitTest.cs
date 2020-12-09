@@ -514,7 +514,7 @@ namespace Puerts.UnitTest
                     const CS = require('csharp');
                     let obj = new CS.Puerts.UnitTest.DerivedClass();
                     let iobj = new CS.Puerts.UnitTest.ISubA();
-                    obj.TestErrorParamClass(i);"
+                    obj.TestErrorParamClass(undefined);"
                 );
                 jsEnv.Dispose();
             });
