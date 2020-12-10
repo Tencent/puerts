@@ -106,9 +106,7 @@ public:
 
             // 输出调用栈信息
             v8::Local<v8::Value> StackTrace;
-            if (TryCatch.StackTrace(Context).ToLocal(&StackTrace) &&
-                StackTrace->IsString() &&
-                v8::Local<v8::String>::Cast(StackTrace)->Length() > 0)
+            if (TryCatch.StackTrace(Context).ToLocal(&StackTrace))
             {
                 v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
                 stm << std::endl << *StackTraceVal;
