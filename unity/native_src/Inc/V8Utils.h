@@ -81,7 +81,7 @@ public:
 
             // 输出 (filename):(line number): (message).
             std::ostringstream stm;
-            v8::String::Utf8Value FileName(Isolate, Message->GetScriptOrigin().ResourceName());
+            v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
             int LineNum = Message->GetLineNumber(Context).FromJust();
             stm << *FileName << ":" << LineNum << ": " << ExceptionStr;
 
