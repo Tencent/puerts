@@ -436,7 +436,7 @@ namespace puerts
         if (Iter == ObjectMap.end())//create and link
         {
             auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-            v8::Handle<v8::Value> Args[] = { BindTo };
+            v8::Local<v8::Value> Args[] = { BindTo };
             return Templates[ClassID].Get(Isolate)->GetFunction(Context).ToLocalChecked()->NewInstance(Context, 1, Args).ToLocalChecked();
         }
         else

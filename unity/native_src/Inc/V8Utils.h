@@ -93,11 +93,11 @@ public:
 
             // 输出波浪下划线
             std::string WavyUnderlineStr;
-            int Start = Message->GetStartColumn(Context).FromJust();
+            int Start = Message->GetStartColumn();
             for (int Index = 0; Index < Start; Index++) {
                 WavyUnderlineStr = WavyUnderlineStr.append(" ");
             }
-            int End = Message->GetEndColumn(Context).FromJust();
+            int End = Message->GetEndColumn();
             for (int Index = Start; Index < End; Index++) {
                 WavyUnderlineStr = WavyUnderlineStr.append("^");
             }
