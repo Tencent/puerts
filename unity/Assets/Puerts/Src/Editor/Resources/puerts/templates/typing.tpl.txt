@@ -62,7 +62,7 @@ declare module 'csharp' {
             {{~}}{{~type.Methods :method}}{{=indent(method.Document, 12)}}
             {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
-        }{{}}}{{?type.ExtensionMethods.length > 0}}
+        }{{}}}{{?type.ExtensionMethods.Length > 0}}
         {{=indent(type.Document, 8)}}
         interface {{=type.Name}} {
             {{~type.ExtensionMethods :method}}{{=indent(method.Document, 12)}}
