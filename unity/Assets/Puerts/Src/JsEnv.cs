@@ -40,7 +40,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort = -1)
         {
-            const int libVersionExpect = 7;
+            const int libVersionExpect = 8;
             int libVersion = PuertsDLL.GetLibVersion();
             if (libVersion != libVersionExpect)
             {

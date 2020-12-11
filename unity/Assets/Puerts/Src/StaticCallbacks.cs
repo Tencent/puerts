@@ -55,36 +55,6 @@ namespace Puerts
             }
         }
 
-        [MonoPInvokeCallback(typeof(V8IndexedGetterCallback))]
-        internal static void IndexedGetterWrap(IntPtr isolate, IntPtr info, IntPtr self, uint index, long data)
-        {
-            try
-            {
-                int jsEnvIdx, callbackIdx;
-                Utils.LongToTwoInt(data, out jsEnvIdx, out callbackIdx);
-                JsEnv.jsEnvs[jsEnvIdx].TypeRegister.ArrayGet(isolate, info, self, index);
-            }
-            catch (Exception e)
-            {
-                PuertsDLL.ThrowException(isolate, "IndexedGetterWrap c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(V8IndexedSetterCallback))]
-        internal static void IndexedSetterWrap(IntPtr isolate, IntPtr info, IntPtr self, uint index, IntPtr value, long data)
-        {
-            try
-            {
-                int jsEnvIdx, callbackIdx;
-                Utils.LongToTwoInt(data, out jsEnvIdx, out callbackIdx);
-                JsEnv.jsEnvs[jsEnvIdx].TypeRegister.ArraySet(isolate, info, self, index, value);
-            }
-            catch (Exception e)
-            {
-                PuertsDLL.ThrowException(isolate, "IndexedSetterWrap c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-
         [MonoPInvokeCallback(typeof(V8FunctionCallback))]
         internal static void ReturnTrue(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {

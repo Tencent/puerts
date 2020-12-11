@@ -40,16 +40,6 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate void V8IndexedGetterCallback(IntPtr isolate, IntPtr info, IntPtr self, uint index, long data);
-
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-#endif
-    public delegate void V8IndexedSetterCallback(IntPtr isolate, IntPtr info, IntPtr self, uint index, IntPtr value, long data);
-
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-#endif
     public delegate void LogCallback(string content);
 
     [Flags]
@@ -219,21 +209,6 @@ namespace Puerts
             IntPtr fn2 = setter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(setter);
 
             return RegisterProperty(isolate, classID, name, isStatic, fn1, getterData, fn2, setterData, dontDelete);
-        }
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RegisterIndexedProperty(IntPtr isolate, int classID, IntPtr getter, IntPtr setter, long data);
-
-        public static bool RegisterIndexedProperty(IntPtr isolate, int classID, V8IndexedGetterCallback getter, V8IndexedSetterCallback setter, long data)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            GCHandle.Alloc(getter);
-            GCHandle.Alloc(setter);
-#endif
-            IntPtr fn1 = getter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(getter);
-            IntPtr fn2 = setter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(setter);
-
-            return RegisterIndexedProperty(isolate, classID, fn1, fn2, data);
         }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -453,40 +428,6 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ResetResult(IntPtr resultInfo);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnObject(IntPtr isolate, IntPtr info, int classID, IntPtr self);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnNumber(IntPtr isolate, IntPtr info, double number);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PropertyReturnString")]
-        public static extern void __PropertyReturnString(IntPtr isolate, IntPtr info, string str);
-
-        public static void PropertyReturnString(IntPtr isolate, IntPtr info, string str)
-        {
-            if (str == null)
-            {
-                PropertyReturnNull(isolate, info);
-            }
-            else
-            {
-                __PropertyReturnString(isolate, info, str);
-            }
-        }
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnBigInt(IntPtr isolate, IntPtr info, long number);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnBoolean(IntPtr isolate, IntPtr info, bool b);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnDate(IntPtr isolate, IntPtr info, double date);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnNull(IntPtr isolate, IntPtr info);
-
         //end cs call js
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -517,8 +458,6 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void PropertyReturnArrayBuffer(IntPtr isolate, IntPtr info, byte[] bytes, int Length);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetArrayBufferToOutValue(IntPtr isolate, IntPtr value, Byte[] bytes, int length);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

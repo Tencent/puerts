@@ -8,7 +8,7 @@
 #include "JSEngine.h"
 #include "V8Utils.h"
 
-#define LIB_VERSION 7
+#define LIB_VERSION 8
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -758,58 +758,6 @@ V8_EXPORT const char* GetFunctionLastExceptionInfo(JSFunction *Function, int *Le
 }
 
 //-------------------------- end cs call js --------------------------
-
-
-//-------------------------- begin indexed property --------------------------
-V8_EXPORT int RegisterIndexedProperty(v8::Isolate *Isolate, int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    return JsEngine->RegisterIndexedProperty(ClassID, Getter, Setter, Data) ? 1 : 0;
-}
-
-V8_EXPORT void PropertyReturnObject(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int ClassID, void* Ptr)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    Info.GetReturnValue().Set(JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr));
-}
-
-V8_EXPORT void PropertyReturnNumber(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Number)
-{
-    Info.GetReturnValue().Set(Number);
-}
-
-V8_EXPORT void PropertyReturnString(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, const char* String)
-{
-    Info.GetReturnValue().Set(FV8Utils::V8String(Isolate, String));
-}
-
-V8_EXPORT void PropertyReturnBigInt(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int64_t BigInt)
-{
-    Info.GetReturnValue().Set(v8::BigInt::New(Isolate, BigInt));
-}
-
-V8_EXPORT void PropertyReturnArrayBuffer(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, unsigned char* Bytes, int Length)
-{
-    Info.GetReturnValue().Set(puerts::NewArrayBuffer(Isolate, Bytes, Length, true));
-}
-
-V8_EXPORT void PropertyReturnBoolean(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int Bool)
-{
-    Info.GetReturnValue().Set(Bool ? true : false);
-}
-
-V8_EXPORT void PropertyReturnDate(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Date)
-{
-    Info.GetReturnValue().Set(v8::Date::New(Isolate->GetCurrentContext(), Date).ToLocalChecked());
-}
-
-V8_EXPORT void PropertyReturnNull(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info)
-{
-    Info.GetReturnValue().SetNull();
-}
-
-//-------------------------- end indexed property --------------------------
-
 
 //-------------------------- begin debug --------------------------
 

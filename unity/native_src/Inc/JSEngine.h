@@ -46,10 +46,6 @@ typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::Funct
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
-typedef void(*CSharpIndexedGetterCallback)(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, void* Self, uint32_t Index, int64_t UserData);
-
-typedef void(*CSharpIndexedSetterCallback)(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, void* Self, uint32_t Index, v8::Value *Value, int64_t UserData);
-
 namespace puerts
 {
 struct FCallbackInfo
@@ -69,14 +65,6 @@ struct FLifeCycleInfo
     CSharpDestructorCallback Destructor;
     int64_t Data;
     int Size;
-};
-
-struct FIndexedInfo
-{
-    FIndexedInfo(CSharpIndexedGetterCallback InGetter, CSharpIndexedSetterCallback InSetter, int64_t InData): Getter(InGetter), Setter(InSetter), Data(InData){}
-    CSharpIndexedGetterCallback Getter;
-    CSharpIndexedSetterCallback Setter;
-    int64_t Data;
 };
 
 static std::unique_ptr<v8::Platform> GPlatform;
@@ -99,8 +87,6 @@ public:
     bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
 
     bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
-
-    bool RegisterIndexedProperty(int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data);
 
     v8::Local<v8::Value> GetClassConstructor(int ClassID);
 
@@ -145,8 +131,6 @@ private:
     std::vector<FCallbackInfo*> CallbackInfos;
 
     std::vector<FLifeCycleInfo*> LifeCycleInfos;
-
-    std::vector<FIndexedInfo*> IndexedInfos;
 
     std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
 

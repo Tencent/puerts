@@ -209,35 +209,6 @@ namespace Puerts
         
         private int arrayTypeId = -1;
 
-        internal void ArrayGet(IntPtr isolate, IntPtr info, IntPtr self, uint index)
-        {
-            try
-            {
-                Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
-                var transalteFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(array.GetType().GetElementType());
-                transalteFunc(isolate, NativeValueApi.SetValueToIndexResult, info, array.GetValue((int)index));
-            }
-            catch (Exception e)
-            {
-                PuertsDLL.ThrowException(isolate, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-
-        internal void ArraySet(IntPtr isolate, IntPtr info, IntPtr self, uint index, IntPtr value)
-        {
-            try
-            {
-                Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
-                var transalteFunc = jsEnv.GeneralGetterManager.GetTranslateFunc(array.GetType().GetElementType());
-                var val = transalteFunc(isolate, NativeValueApi.GetValueFromArgument, value, false);
-                array.SetValue(val, (int)index);
-            }
-            catch (Exception e)
-            {
-                PuertsDLL.ThrowException(isolate, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-
         internal void InitArrayTypeId(IntPtr isolate)
         {
             arrayTypeId = PuertsDLL.RegisterClass(jsEnv.isolate, GetTypeId(isolate, typeof(Array)), "__puerts.Array", null, null, 0);
@@ -276,10 +247,6 @@ namespace Puerts
                     PuertsDLL.ThrowException(isolate1, "array.get throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
                 }
             }));
-
-            //暂时兼容，否则生成代码的模版那里用不了
-            PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "length", false, callbackWrap, lengthFuncId, null, 0, true);
-            PuertsDLL.RegisterIndexedProperty(jsEnv.isolate, arrayTypeId, StaticCallbacks.IndexedGetterWrap, StaticCallbacks.IndexedSetterWrap, Utils.TwoIntToLong(jsEnv.Idx, 0));
         }
 
         void AddAssemblieByName(IEnumerable<Assembly> assembliesUsorted, string name)

@@ -158,11 +158,6 @@ namespace puerts
         {
             delete LifeCycleInfos[i];
         }
-
-        for (int i = 0; i < IndexedInfos.size(); ++i)
-        {
-            delete IndexedInfos[i];
-        }
     }
 
     JSFunction* JSEngine::CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction)
@@ -197,23 +192,6 @@ namespace puerts
         void* Ptr = CallbackInfo->IsStatic ? nullptr : FV8Utils::GetPoninter(Info.Holder());
 
         CallbackInfo->Callback(Isolate, Info, Ptr, Info.Length(), CallbackInfo->Data);
-    }
-
-    static void CSharpIndexedGetterWrap(uint32_t Index, const v8::PropertyCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        FIndexedInfo* IndexedInfo = reinterpret_cast<FIndexedInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        IndexedInfo->Getter(Isolate, Info, FV8Utils::GetPoninter(Info.This()), Index, IndexedInfo->Data);
-    }
-
-    static void CSharpIndexedSetterWrap(
-        uint32_t Index,
-        v8::Local<v8::Value> Value,
-        const v8::PropertyCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        FIndexedInfo* IndexedInfo = reinterpret_cast<FIndexedInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        IndexedInfo->Setter(Isolate, Info, FV8Utils::GetPoninter(Info.This()), Index, *Value, IndexedInfo->Data);
     }
 
     v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
@@ -388,27 +366,6 @@ namespace puerts
             Templates[ClassID].Get(Isolate)->PrototypeTemplate()->SetAccessorProperty(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Getter, GetterData)
                 , Setter == nullptr ? v8::Local<v8::FunctionTemplate>() : ToTemplate(Isolate, IsStatic, Setter, SetterData), Attr);
         }
-
-        return true;
-    }
-
-    bool JSEngine::RegisterIndexedProperty(int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        if (ClassID >= Templates.size()) return false;
-
-        auto Pos = IndexedInfos.size();
-        auto IndexedInfo = new FIndexedInfo(Getter, Setter, Data);
-        IndexedInfos.push_back(IndexedInfo);
-
-        Templates[ClassID].Get(Isolate)->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
-            CSharpIndexedGetterWrap, CSharpIndexedSetterWrap, nullptr, nullptr, nullptr, v8::External::New(Isolate, IndexedInfos[Pos]),
-            v8::PropertyHandlerFlags::kNonMasking));
 
         return true;
     }
