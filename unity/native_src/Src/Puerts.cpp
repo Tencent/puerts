@@ -6,6 +6,7 @@
 */
 
 #include "JSEngine.h"
+#include <cstring>
 #include "V8Utils.h"
 
 #define LIB_VERSION 8
