@@ -317,8 +317,9 @@ V8_EXPORT const char* GetArrayBufferFromValue(v8::Isolate* Isolate, v8::Value *V
         else if (Value->IsArrayBuffer())
         {
             auto Ab = v8::ArrayBuffer::Cast(Value);
-            *Length = static_cast<int>(Ab->ByteLength());
-            return static_cast<char*>(Ab->GetContents().Data());
+            auto ABC = Ab->GetContents();
+            *Length = static_cast<int>(ABC.ByteLength());
+            return static_cast<char*>(ABC.Data());
         }
         else
         {
@@ -696,8 +697,9 @@ V8_EXPORT const char *GetArrayBufferFromResult(FResultInfo *ResultInfo, int *Len
     else if (Value->IsArrayBuffer())
     {
         auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
-        *Length = static_cast<int>(Ab->ByteLength());
-        return static_cast<char*>(Ab->GetContents().Data());
+        auto ABC = Ab->GetContents();
+        *Length = static_cast<int>(ABC.ByteLength());
+        return static_cast<char*>(ABC.Data());
     }
     else
     {
