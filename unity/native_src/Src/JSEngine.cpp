@@ -88,6 +88,7 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
 
         v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+        v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(Isolate, Context);
         v8::Local<v8::Object> Global = Context->Global();
 
