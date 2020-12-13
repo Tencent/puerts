@@ -53,6 +53,7 @@ var global = global || (function () { return this; }());
             return searchModuleInDirWithExt(dir, requiredModule);
         } else {
             return searchModuleInDirWithExt(dir, requiredModule + ".js")
+                       || searchModuleInDirWithExt(dir, requiredModule + ".cjs")
                        || searchModuleInDirWithExt(dir, requiredModule + "/index.js")
                        || searchModuleInDirWithExt(dir, requiredModule + "/package.json");
         }
