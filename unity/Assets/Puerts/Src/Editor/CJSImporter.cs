@@ -1,6 +1,8 @@
 using System.IO;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
+
+using Puerts;
  
 [ScriptedImporter(1, "cjs")]
 public class CJSImporter : ScriptedImporter
@@ -10,5 +12,7 @@ public class CJSImporter : ScriptedImporter
         TextAsset subAsset = new TextAsset( File.ReadAllText( ctx.assetPath ) );
         ctx.AddObjectToAsset("text", subAsset);
         ctx.SetMainObject( subAsset );
+
+        JsEnv.ClearAllModuleCaches();
     }
 }
