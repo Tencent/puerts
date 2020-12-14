@@ -14,10 +14,18 @@ function typeKeyword(type) {
     }
 }
 
+function toJsArray(csArr) {
+    let arr = [];
+    for(var i = 0; i < csArr.Length; i++) {
+        arr.push(csArr.get_Item(i));
+    }
+    return arr;
+}
+
 function typeDeclaration(type, level1) {
     var result = type.Name;
     if (type.IsGenericTypeDefinition) {
-        result += "<" + Array.prototype.join.call(type.GenericParameters, ',') + ">";
+        result += "<" + Array.prototype.join.call(toJsArray(type.GenericParameters), ',') + ">";
     }
     if (level1 && type.BaseType) {
         result += " extends " + typeDeclaration(type.BaseType);
