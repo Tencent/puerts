@@ -49,6 +49,8 @@ jobs:
           workflow: build_v8.yml
           name: v8_bin
           path: unity/native_src/
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
@@ -69,6 +71,8 @@ jobs:
           workflow: build_v8.yml
           name: v8_bin
           path: unity/native_src/
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
