@@ -397,7 +397,23 @@ namespace Puerts.Editor
             public string TypeName;
             public bool IsParams;
             public bool IsOptional;
-
+            public override bool Equals(object obj)
+            {
+                if (obj != null && obj is TsParameterGenInfo)
+                {
+                    var info = (TsParameterGenInfo)obj;
+                    return this.Name == info.Name && this.TypeName == info.TypeName && this.IsByRef != info.IsByRef && this.IsParams != info.IsParams && this.IsOptional != info.IsOptional;
+                }
+                return base.Equals(obj);
+            }
+            public override int GetHashCode()
+            {
+                return base.GetHashCode();
+            }
+            public override string ToString()
+            {
+                return base.ToString();
+            }
         }
 
         // #lizard forgives
@@ -478,6 +494,30 @@ namespace Puerts.Editor
             public string TypeName;
             public bool IsConstructor;
             public bool IsStatic;
+            public override bool Equals(object obj)
+            {
+                if (obj != null && obj is TsMethodGenInfo)
+                {
+                    var info = (TsMethodGenInfo)obj;
+                    if (this.ParameterInfos.Length != info.ParameterInfos.Length || this.Name != info.Name || this.TypeName != info.TypeName || this.IsConstructor != info.IsConstructor || this.IsStatic != info.IsStatic)
+                        return false;
+                    for (int i = 0; i < this.ParameterInfos.Length; i++)
+                    {
+                        if (!this.ParameterInfos[i].Equals(info.ParameterInfos[i]))
+                            return false;
+                    }
+                    return true;
+                }
+                return base.Equals(obj);
+            }
+            public override int GetHashCode()
+            {
+                return base.GetHashCode();
+            }
+            public override string ToString()
+            {
+                return base.ToString();
+            }
         }
 
         public class TsPropertyGenInfo
@@ -521,6 +561,7 @@ namespace Puerts.Editor
             public bool IsEnum;
             public string EnumKeyValues;
             public TsMethodGenInfo[] ExtensionMethods;
+            public bool IsCheckOk = false;
         }
 
         public static bool IsGetterOrSetter(MethodInfo method)
@@ -747,6 +788,92 @@ namespace Puerts.Editor
             public string TaskDef;
         }
 
+        static TsMethodGenInfo[] GetMethodGenInfos(Dictionary<string, TsTypeGenInfo> tsGenTypeInfos, TsTypeGenInfo info, bool getBaseMethods)
+        {
+            var result = new List<TsMethodGenInfo>();
+            if (info.Methods != null) result.AddRange(info.Methods);
+            if (info.ExtensionMethods != null)
+            {
+                foreach (var m in info.ExtensionMethods)
+                {
+                    result.Add(new TsMethodGenInfo()
+                    {
+                        Name = m.Name,
+                        Document = m.Document,
+                        ParameterInfos = m.ParameterInfos,
+                        IsConstructor = m.IsConstructor,
+                        IsStatic = false,
+                    });
+                }
+            }
+            if (getBaseMethods && info.BaseType != null)
+            {
+                var baseInfo = info.BaseType;
+                var baseName = (!string.IsNullOrEmpty(baseInfo.Namespace) ? (baseInfo.Namespace + ".") : "") + baseInfo.Name;
+                if (tsGenTypeInfos.TryGetValue(baseName, out baseInfo))
+                {
+                    foreach (var m in GetMethodGenInfos(tsGenTypeInfos, baseInfo, true))
+                    {
+                        if (!result.Contains(m)) result.Add(m);
+                    }
+                }
+            }
+            return result.ToArray();
+        }
+        static Dictionary<string, List<TsMethodGenInfo>> SelectMethodGenInfos(Dictionary<string, TsTypeGenInfo> tsGenTypeInfos, TsTypeGenInfo info, bool getBaseMethods)
+        {
+            var result = new Dictionary<string, List<TsMethodGenInfo>>();
+            foreach (var m in GetMethodGenInfos(tsGenTypeInfos, info, getBaseMethods))
+            {
+                if (!result.ContainsKey(m.Name))
+                    result.Add(m.Name, new List<TsMethodGenInfo>());
+                result[m.Name].Add(m);
+            }
+            return result;
+        }
+        static void CheckMethodGenInfos(Dictionary<string, TsTypeGenInfo> tsGenTypeInfos, TsTypeGenInfo info)
+        {
+            if (info.IsCheckOk || info.BaseType == null)
+                return;
+
+            var baseInfo = info.BaseType;
+            var baseName = (!string.IsNullOrEmpty(baseInfo.Namespace) ? (baseInfo.Namespace + ".") : "") + baseInfo.Name;
+            if (tsGenTypeInfos.TryGetValue(baseName, out baseInfo) && info.Methods != null && baseInfo.Methods != null)
+            {
+                CheckMethodGenInfos(tsGenTypeInfos, baseInfo);
+
+                var methods1 = SelectMethodGenInfos(tsGenTypeInfos, baseInfo, true);
+                var methods2 = SelectMethodGenInfos(tsGenTypeInfos, info, false);
+
+                var select = new List<TsMethodGenInfo>(info.Methods);
+                foreach (var pair in methods1)
+                {
+                    var name = pair.Key;
+                    if (!methods2.ContainsKey(name))
+                        continue;
+                    var ms1 = pair.Value;
+                    var ms2 = methods2[name];
+                    if (ms2.Count == 0)
+                        continue;
+                    var diffms = new List<TsMethodGenInfo>();
+                    foreach (var m1 in ms1)
+                    {
+                        var diff = true;
+                        foreach (var m2 in ms2)
+                        {
+                            if (m1.Equals(m2)) { diff = false; break; }
+                        }
+                        if (diff) diffms.Add(m1);
+                    }
+                    if (ms2.Count + diffms.Count != ms1.Count)
+                    {
+                        select.AddRange(diffms);
+                    }
+                }
+                info.Methods = select.ToArray();
+            }
+            info.IsCheckOk = true;
+        }
         static TypingGenInfo ToTypingGenInfo(IEnumerable<Type> types)
         {
             HashSet<Type> genTypeSet = new HashSet<Type>();
@@ -782,9 +909,23 @@ namespace Puerts.Editor
 
             if (!genTypeSet.Contains(typeof(Array)) && !refTypes.Contains(typeof(Array))) AddRefType(refTypes, typeof(Array));
 
+            var tsTypeGenInfos = new Dictionary<string, TsTypeGenInfo>();
+            foreach (var t in refTypes.Distinct())
+            {
+                var info = ToTsTypeGenInfo(t, genTypeSet);
+                var name = (string.IsNullOrEmpty(info.Namespace) ? "" : (info.Namespace + ".")) + info.Name;
+                if (info.IsGenericTypeDefinition)
+                    name += "<" + string.Join(",", info.GenericParameters) + ">";
+                tsTypeGenInfos.Add(name, info);
+            }
+            foreach (var info in tsTypeGenInfos)
+            {
+                CheckMethodGenInfos(tsTypeGenInfos, info.Value);
+            }
+
             return new TypingGenInfo()
             {
-                NamespaceInfos = refTypes.Distinct().Select(t => ToTsTypeGenInfo(t, genTypeSet)).GroupBy(t => t.Namespace)
+                NamespaceInfos = tsTypeGenInfos.Values.GroupBy(t => t.Namespace)
                     .Select(g => new TsNamespaceGenInfo()
                     {
                         Name = g.Key,
