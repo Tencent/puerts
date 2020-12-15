@@ -20,7 +20,4 @@ var global = global || (function () { return this; }());
         return eval(script);
     }
     delete global.__tgjsEvalScript;
-
-    puerts.evalModule = global.__tgjsEvalModule;
-    delete global.__tgjsEvalModule;
 }(global));

@@ -52,50 +52,6 @@ namespace puerts
         Info.GetReturnValue().Set(Result.ToLocalChecked());
     }
 
-    static void EvalModuleWithPath(const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        // Input is 3-tuple: (code, path, arguments)
-        v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
-
-        if (Info.Length() != 3 || !Info[0]->IsString() || !Info[1]->IsString() || !Info[2]->IsArray())
-        {
-            FV8Utils::ThrowException(Isolate, "invalid argument for evalModule");
-            return;
-        }
-
-        v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
-        v8::Local<v8::String> Name = Info[1]->ToString(Context).ToLocalChecked();
-        v8::Local<v8::Array> Arguments = v8::Local<v8::Array>::Cast(Info[2]);
-
-        v8::ScriptOrigin Origin(Name);
-        v8::MaybeLocal<v8::Script> Script = v8::Script::Compile(Context, Source, &Origin);
-        if (Script.IsEmpty())
-        {
-            return;
-        }
-
-        v8::MaybeLocal<v8::Value> Wrapped = Script.ToLocalChecked()->Run(Context);
-        if (Wrapped.IsEmpty()) {
-            return;
-        }
-        v8::Handle<v8::Function> Fn = v8::Local<v8::Function>::Cast(Wrapped.ToLocalChecked()->ToObject(Context).ToLocalChecked());
-
-        std::vector<v8::Local<v8::Object>> ContextArgs;
-        if (!Arguments.IsEmpty()) {
-            for (uint32_t n = 0; n < Arguments->Length(); n++) {
-            v8::Local<v8::Value> Val;
-            if (!Arguments->Get(Context, n).ToLocal(&Val)) return;
-                ContextArgs.push_back(Val.As<v8::Object>());
-            }
-        }
-
-        Fn->Call(Context, Context->Global(), (int)ContextArgs.size(), (v8::Local<v8::Value> *)ContextArgs.data());
-    }
-
     JSEngine::JSEngine()
     {
         GeneralDestructor = nullptr;
@@ -136,7 +92,6 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
-        Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalModule"), v8::FunctionTemplate::New(Isolate, &EvalModuleWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();

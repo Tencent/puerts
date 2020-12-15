@@ -177,10 +177,11 @@ namespace Puerts
             Eval("global.clearModuleCache()");
         }
 
-        public static void ClearAllModuleCaches () {
+        public static void ClearAllModuleCaches () 
+        {
             lock (jsEnvs)
             {
-                foreach (JsEnv jsEnv in jsEnvs)
+                foreach (var jsEnv in jsEnvs)
                 {
                     jsEnv.ClearModuleCache();
                 }
