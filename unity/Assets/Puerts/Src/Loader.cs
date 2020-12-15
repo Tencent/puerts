@@ -30,7 +30,7 @@ namespace Puerts
             this.root = root;
         }
 
-        private string pathToUse(string filepath)
+        private string PathToUse(string filepath)
         {
             return filepath.EndsWith(".cjs") ? 
                 filepath.Substring(0, filepath.Length - 4) : 
@@ -42,7 +42,7 @@ namespace Puerts
 #if PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
 #else
-            string pathToUse = this.pathToUse(filepath);
+            string pathToUse = this.PathToUse(filepath);
             return UnityEngine.Resources.Load(pathToUse) != null;
 #endif
         }
@@ -53,7 +53,7 @@ namespace Puerts
             debugpath = Path.Combine(root, filepath);
             return File.ReadAllText(debugpath);
 #else
-            string pathToUse = this.pathToUse(filepath);
+            string pathToUse = this.PathToUse(filepath);
             UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(pathToUse);
             debugpath = System.IO.Path.Combine(root, filepath);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
