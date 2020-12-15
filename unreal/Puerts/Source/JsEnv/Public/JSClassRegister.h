@@ -9,7 +9,7 @@
 
 #include "CoreMinimal.h"
 
-#pragma warning(push, 0) 
+#pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
 
@@ -51,13 +51,17 @@ typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Co
 
 void JSENV_API RegisterClass(const JSClassDefinition &ClassDefinition);
 
-void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
+void JSENV_API RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
+
+void JSENV_API RegisterGlobalAddon(AddonRegisterFunc RegisterFunc);
 
 const JSClassDefinition* FindClassByID(const char* Name);
 
 const JSClassDefinition* FindClassByType(UStruct* Type);
 
 const JSClassDefinition* FindCDataClassByName(const FString& Name);
+
+void RegisterGlobalFunction(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 }
@@ -71,3 +75,11 @@ AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
         }\
     } _AutoRegisterFor##Name
 
+#define PUERTS_GLOBAL_MODULE(RegFunc) \
+    static struct FAutoRegisterGlobal \
+    { \
+        FAutoRegisterGlobal()\
+        {\
+            puerts::RegisterGlobalAddon((RegFunc));\
+        }\
+    } _AutoRegisterGlobal

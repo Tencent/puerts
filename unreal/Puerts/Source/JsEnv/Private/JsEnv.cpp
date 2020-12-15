@@ -26,7 +26,7 @@
 #include "JSClassRegister.h"
 #include "PromiseRejectCallback.hpp"
 
-#pragma warning(push, 0)  
+#pragma warning(push, 0)
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
@@ -610,6 +610,9 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     DynamicInvoker->Parent = this;
 
     InitExtensionMethodsMap();
+
+	//注入用户自定义全局函数,这里必须在Global第一次Set之后,否则会出错
+	RegisterGlobalFunction(Isolate, Context, Global);
 
     if (InDebugPort >= 0)
     {
@@ -1990,7 +1993,7 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     FString OutDebugPath;
     TArray<uint8> Data;
     try
-    { 
+    {
         LoadFile(RequiringDir, ModuleName, OutPath, OutDebugPath, Data);
     }
     catch (const JSError& Err)

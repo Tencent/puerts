@@ -21,6 +21,8 @@ public:
 
     void RegisterAddon(const FString&Name, AddonRegisterFunc RegisterFunc);
 
+	void RegisterGlobalAddon(AddonRegisterFunc RegisterFunc);
+
     const JSClassDefinition* FindClassByID(const char* Name);
 
     const JSClassDefinition* FindClassByType(UStruct* Type);
@@ -29,6 +31,7 @@ public:
 
     AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 
+	std::vector<AddonRegisterFunc> GlobalAddonRegisterInfos;
 private:
     std::map<const void*, JSClassDefinition> NameToClassDefinition;
     std::map<FString, JSClassDefinition> StructNameToClassDefinition;
@@ -64,6 +67,11 @@ void JSClassRegister::RegisterClass(const JSClassDefinition &ClassDefinition)
 void JSClassRegister::RegisterAddon(const FString& Name, AddonRegisterFunc RegisterFunc)
 {
     AddonRegisterInfos[Name] = RegisterFunc;
+}
+
+void JSClassRegister::RegisterGlobalAddon(AddonRegisterFunc RegisterFunc)
+{
+    GlobalAddonRegisterInfos.push_back(RegisterFunc);
 }
 
 const JSClassDefinition* JSClassRegister::FindClassByID(const char* Name)
@@ -136,6 +144,11 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
     GetJSClassRegister()->RegisterAddon(SN, RegisterFunc);
 }
 
+void JSENV_API RegisterGlobalAddon(AddonRegisterFunc RegisterFunc)
+{
+	GetJSClassRegister()->RegisterGlobalAddon(RegisterFunc);
+}
+
 const JSClassDefinition* FindClassByID(const char* Name)
 {
     return GetJSClassRegister()->FindClassByID(Name);
@@ -149,6 +162,14 @@ const JSClassDefinition* FindClassByType(UStruct* Type)
 const JSClassDefinition* FindCDataClassByName(const FString& Name)
 {
     return GetJSClassRegister()->FindCDataClassByName(Name);
+}
+
+void RegisterGlobalFunction(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports)
+{
+	for (auto &Addon : GetJSClassRegister()->GlobalAddonRegisterInfos)
+	{
+		Addon(Isolate, Context, Exports);
+	}
 }
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name)
