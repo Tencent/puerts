@@ -17,7 +17,6 @@
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
-#include "JitScript.h"
 #include "Async/Async.h"
 #include "JSGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
@@ -70,6 +69,15 @@
 
 namespace puerts
 {
+class JSError
+{
+public:
+    FString Message;
+
+    JSError() {}
+
+    explicit JSError(const FString& m) : Message(m) {}
+};
 
 static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
@@ -390,15 +398,6 @@ private:
     FDelegateHandle DelegateProxysCheckerHandler;
 
     V8Inspector* Inspector;
-
-private:
-    std::shared_ptr<FJitScript> JitScript;
-
-    uint64 AllocRequestId;
-
-    std::map<uint64, v8::UniquePersistent<v8::Function>> PendingRequests;
-
-    void RequestJitModuleMethod(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
 
 FJsEnv::FJsEnv(const FString &ScriptRoot)
@@ -539,12 +538,6 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->NewObjectByClass(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
-    Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsRequestJitModuleMethod"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        Self->RequestJitModuleMethod(Info);
-    }, This)->GetFunction(Context).ToLocalChecked()).Check();
-
     Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMakeUClass"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
@@ -632,17 +625,6 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
-    if (JitScript)
-    {
-        JitScript->Close();
-
-        for (auto Iter = PendingRequests.begin(); Iter != PendingRequests.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
-        PendingRequests.clear();
-    }
-
     JsPromiseRejectCallback.Reset();
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
@@ -2114,68 +2096,6 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CHECK_V8_ARGS(Function, Int32);
 
     SetFTickerDelegate(Info, true);
-}
-
-void FJsEnvImpl::RequestJitModuleMethod(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    if (!JitScript)
-    {
-        AllocRequestId = 0;
-        JitScript = std::make_unique<FJitScript>(std::make_unique<DefaultJSModuleLoader>(this->ModuleLoader->GetScriptRoot()), CreateJSEngine(), Logger);
-        JitScript->Start("puerts/jit_skeleton.js");
-    }
-
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    //Arg1 = module#method#args
-    CHECK_V8_ARGS(String, Function);
-
-    uint64 RequestId = AllocRequestId;
-    while (PendingRequests.find(RequestId) != PendingRequests.end())
-    {
-        ++RequestId;
-    }
-    AllocRequestId = RequestId + 1;
-
-    PendingRequests[RequestId] = v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(Info[1]));
-
-    JitScript->SendRquest("requestModuleMethod", FV8Utils::ToFString(Isolate, Info[0]), [this, RequestId](const FString& Rpy, const puerts::JSError* Err)
-    {
-        AsyncTask(ENamedThreads::GameThread, [=]()
-        {
-            if (PendingRequests.find(RequestId) == PendingRequests.end())
-            {
-                Logger->Error(FString::Printf(TEXT("can not find the callback for RequestId(%llu)"), RequestId));
-                return;
-            }
-
-            v8::Isolate::Scope IsolateScope1(MainIsolate);
-            v8::HandleScope HandleScope1(MainIsolate);
-            v8::Local<v8::Context> Context1 = DefaultContext.Get(MainIsolate);
-            v8::Context::Scope ContextScope1(Context1);
-
-            auto Callback = PendingRequests[RequestId].Get(MainIsolate);
-            PendingRequests[RequestId].Reset();
-            PendingRequests.erase(RequestId);
-
-            v8::Local<v8::Value> Args[2];
-            if (Err)
-            {
-                Args[0] = v8::Exception::Error(FV8Utils::ToV8String(MainIsolate, Err->Message));
-            }
-            else
-            {
-                Args[0] = v8::Undefined(MainIsolate);
-            }
-            Args[1] = FV8Utils::ToV8String(MainIsolate, Rpy);
-                
-            auto ReturnVal = Callback->Call(Context1, v8::Undefined(MainIsolate), 2, Args);
-        });
-    });
 }
 
 void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)

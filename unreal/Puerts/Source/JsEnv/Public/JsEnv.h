@@ -17,7 +17,7 @@
 #include "UObject/GCObject.h"
 #include "Containers/Ticker.h"
 #include "ObjectRetainer.h"
-#include "JSEngine.h"
+#include "JSLogger.h"
 #include "JSModuleLoader.h"
 #include "ExtensionMethods.h"
 
