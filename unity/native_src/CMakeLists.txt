@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID)
+if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT" CACHE STRING "")
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd" CACHE STRING "")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT" CACHE STRING "")
@@ -31,7 +31,14 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
 
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
-set(V8_ENGINE ${CMAKE_SOURCE_DIR}/v8)
+if ( JS_ENGINE STREQUAL "quickjs")
+set(LIB_FILE_NAME libquickjs.a)
+else()
+set(JS_ENGINE v8)
+set(LIB_FILE_NAME libwee8.a)
+endif()
+
+set(V8_ENGINE ${CMAKE_SOURCE_DIR}/${JS_ENGINE})
 
 set(V8_INC ${V8_ENGINE}/Inc)
 
@@ -109,21 +116,54 @@ if ( WIN32 AND NOT CYGWIN )
     target_compile_definitions (puerts PRIVATE BUILDING_V8_SHARED)
 endif ( )
 
-if ( WIN32 )
+if ( JS_ENGINE STREQUAL "quickjs")
+    target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
+endif ( )
+
+if (MSYS)
     if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Win32/wee8.lib
-            winmm.lib
-            dbghelp.lib
-            shlwapi.lib
+            ${V8_ENGINE}/Lib/Win32/${LIB_FILE_NAME}
         )
     else ()
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Win64/wee8.lib
-            winmm.lib
-            dbghelp.lib
-            shlwapi.lib
+            ${V8_ENGINE}/Lib/Win64/${LIB_FILE_NAME}
         )
+    endif ()
+    target_compile_definitions (puerts PRIVATE PLATFORM_WINDOWS)
+elseif ( WIN32 )
+    if ( JS_ENGINE STREQUAL "quickjs")
+        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win32/quickjs.dll.lib
+                winmm.lib
+                dbghelp.lib
+                shlwapi.lib
+            )
+        else ()
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win64/quickjs.dll.lib
+                winmm.lib
+                dbghelp.lib
+                shlwapi.lib
+            )
+        endif ()
+    else ()
+        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win32/wee8.lib
+                winmm.lib
+                dbghelp.lib
+                shlwapi.lib
+            )
+        else ()
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win64/wee8.lib
+                winmm.lib
+                dbghelp.lib
+                shlwapi.lib
+            )
+        endif ()
     endif ()
     target_compile_definitions (puerts PRIVATE PLATFORM_WINDOWS)
 elseif ( ANDROID )
@@ -131,13 +171,13 @@ elseif ( ANDROID )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Android/armv7/libwee8.a
+            ${V8_ENGINE}/Lib/Android/armv7/${LIB_FILE_NAME}
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
     else ( )
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Android/arm64/libwee8.a
+            ${V8_ENGINE}/Lib/Android/arm64/${LIB_FILE_NAME}
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
@@ -155,7 +195,7 @@ elseif ( APPLE )
         target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
     else ()
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/macOS/libwee8.a
+            ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ( )
