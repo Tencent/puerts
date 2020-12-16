@@ -16,8 +16,9 @@ var global = global || (function () { return this; }());
         return {fullPath: path, debugPath: debugPath, script: context}
     }
     
-    let tmpModuleStorage = [];
-    
+    let moduleCache = Object.create(null); // key to sid
+    let tmpModuleStorage = []; // sid to module
+
     function addModule(m) {
         for (var i = 0; i < tmpModuleStorage.length; i++) {
             if (!tmpModuleStorage[i]) {
@@ -32,18 +33,22 @@ var global = global || (function () { return this; }());
         return tmpModuleStorage[id];
     }
 
-    let moduleCache = Object.create(null);
     let buildinModule = Object.create(null);
     function executeModule(fullPath, script, debugPath, sid) {
         sid = (typeof sid == 'undefined') ? 0 : sid;
         let fullPathInJs = fullPath.replace(/\\/g, '\\\\');
         let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
-        let executeScript = "(function() { var __filename = '"
-            + fullPathInJs + "', __dirname = '"
-            + fullDirInJs + "', module = puerts.getModuleBySID(" + sid + "), exports = module.exports; module.filename = __filename ; (function (exports, require, console, prompt) { "
-            + script + "\n})(exports, puerts.genRequire('"
-            + fullDirInJs + "'), puerts.console); return module.exports})()";
-        return puerts.evalScript(executeScript, debugPath);
+        let exports = {};
+        let module = puerts.getModuleBySID(sid);
+        module.exports = exports;
+        let wrapped = puerts.evalScript(
+            // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
+            // to enable stepping through original source in-place.
+            "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
+            debugPath
+        )
+        wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
+        return module.exports;
     }
     
     function genRequire(requiringDir) {
@@ -75,6 +80,9 @@ var global = global || (function () { return this; }());
                 return m.exports;
             }
         }
+        require.clearModuleCache = () => {
+            localModuleCache = Object.create(null);
+        }
 
         return require;
     }
@@ -92,4 +100,11 @@ var global = global || (function () { return this; }());
     puerts.registerBuildinModule = registerBuildinModule;
     
     global.require = genRequire("");
+
+    function clearModuleCache () {
+        tmpModuleStorage = [];
+        moduleCache = Object.create(null);
+        global.require.clearModuleCache();
+    }
+    global.clearModuleCache = clearModuleCache;
 }(global));

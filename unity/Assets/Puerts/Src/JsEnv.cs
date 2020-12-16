@@ -172,6 +172,22 @@ namespace Puerts
 #endif
         }
 
+        public void ClearModuleCache ()
+        {
+            Eval("global.clearModuleCache()");
+        }
+
+        public static void ClearAllModuleCaches () 
+        {
+            lock (jsEnvs)
+            {
+                foreach (var jsEnv in jsEnvs)
+                {
+                    jsEnv.ClearModuleCache();
+                }
+            }
+        }
+
         public void AddLazyStaticWrapLoader(Type type, Func<TypeRegisterInfo> lazyStaticWrapLoader)
         {
 #if THREAD_SAFE
