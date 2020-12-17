@@ -44,3 +44,11 @@ System.Text.Encoding.UTF8.GetBytes("你好");
 sudo xattr -r -d com.apple.quarantine puerts.bundle
 ~~~
 
+## 生成代码打包手机版本时报方法（runInEditMode等等）找不到
+
+因为这些方法是编辑器独有的，可以通过filter过滤掉，filter使用参考[使用手册](manual.md)
+
+## 编辑器下运行正常，il2cpp打包后调用函数/访问属性失败
+
+unity默认会进行代码剪裁，简而言之unity发现某引擎api，系统api没有被业务c#使用，就不编译倒cpp。
+解决办法：1、对要调用的api生成wrap代码，这样c#里头就有了引用；2、通过link.xml告知unity别剪裁，link.xml的配置请参考unity官方文档。

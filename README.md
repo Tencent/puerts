@@ -74,6 +74,10 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [unreal faq](doc/unreal/faq.md)
 * [unity faq](doc/unity/faq.md)
 
+## 使用手册
+
+* [unity](doc/unity/manual.md)
+
 ## 支持的引擎，平台
 
 ### 引擎
