@@ -212,12 +212,24 @@ namespace Puerts.Editor
             return result;
         }
 
-        static MethodGenInfo ToMethodGenInfo(List<MethodBase> overloads)
+        static MethodGenInfo ToMethodGenInfo(Type type, bool isCtor, List<MethodBase> overloads)
         {
             var ret = new List<OverloadGenInfo>();
             foreach (var iBase in overloads)
             {
                 ret.AddRange(ToOverloadGenInfo(iBase));
+            }
+            if (type.IsValueType && isCtor)//值类型添加无参构造
+            {
+                if (!overloads.Exists(m => m.GetParameters().Length == 0))
+                {
+                    ret.Add(new OverloadGenInfo()
+                    {
+                        ParameterInfos = new ParameterGenInfo[] { },
+                        TypeName = type.GetFriendlyName(),
+                        IsVoid = false
+                    });
+                }
             }
             var result = new MethodGenInfo()
             {
@@ -370,9 +382,9 @@ namespace Puerts.Editor
             {
                 WrapClassName = GetWrapTypeName(type),
                 Name = type.GetFriendlyName(),
-                Methods = methodGroups.Select(m => ToMethodGenInfo(m)).ToArray(),
+                Methods = methodGroups.Select(m => ToMethodGenInfo(type, false, m)).ToArray(),
                 IsValueType = type.IsValueType,
-                Constructor = (!type.IsAbstract && constructors.Count > 0) ? ToMethodGenInfo(constructors) : null,
+                Constructor = (!type.IsAbstract && constructors.Count > 0) ? ToMethodGenInfo(type, true, constructors) : null,
                 Properties = type.GetProperties(Flags)
                     .Where(m => !isFiltered(m))
                     .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
@@ -380,7 +392,7 @@ namespace Puerts.Editor
                         type.GetFields(Flags).Where(m => !isFiltered(m)).Select(f => ToPropertyGenInfo(f))).ToArray(),
                 GetIndexs = indexs.Where(i => i.HasGetter).ToArray(),
                 SetIndexs = indexs.Where(i => i.HasSetter).ToArray(),
-                Operators = operatorGroups.Select(m => ToMethodGenInfo(m)).ToArray(),
+                Operators = operatorGroups.Select(m => ToMethodGenInfo(type, false, m)).ToArray(),
                 Events = type.GetEvents(Flags).Where(m => !isFiltered(m)).Select(e => ToEventGenInfo(e)).ToArray(),
             };
         }
