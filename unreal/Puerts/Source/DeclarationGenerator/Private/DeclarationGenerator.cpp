@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -19,6 +19,8 @@
 #include "LevelEditor.h"
 #include "GenDTSStyle.h"
 #include "GenDTSCommands.h"
+#include "NotificationManager.h"
+#include "SNotificationList.h"
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
@@ -827,7 +829,12 @@ private:
             FText::FromString(TEXT("ue.d.ts")),
             FText::FromString(TEXT("Content/Typing/ue"))
         );
-        FMessageDialog::Open(EAppMsgType::Ok, DialogText);
+        // FMessageDialog::Open(EAppMsgType::Ok, DialogText);
+        FNotificationInfo Info(DialogText);
+        Info.bFireAndForget = true;
+        Info.FadeInDuration = 0.0f;
+        Info.FadeOutDuration = 5.0f;
+        FSlateNotificationManager::Get().AddNotification(Info);
     }
 
 public:
