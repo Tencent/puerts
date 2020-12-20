@@ -54,12 +54,17 @@ var global = global || (function () { return this; }());
         sid = (typeof sid == 'undefined') ? 0 : sid;
         let fullPathInJs = fullPath.replace(/\\/g, '\\\\');
         let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
-        let executeScript = "(function() { var __filename = '"
-            + fullPathInJs + "', __dirname = '"
-            + fullDirInJs + "', module = puerts.getModuleBySID(" + sid + "), exports = module.exports; module.filename = __filename ; (function (exports, require, console, prompt) { "
-            + script + "\n})(exports, puerts.genRequire('"
-            + fullDirInJs + "'), puerts.console); return module.exports})()";
-        return evalScript(executeScript, debugPath);
+        let exports = {};
+        let module = puerts.getModuleBySID(sid);
+        module.exports = exports;
+        let wrapped = puerts.evalScript(
+            // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
+            // to enable stepping through original source in-place.
+            "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
+            debugPath
+        )
+        wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
+        return module.exports;
     }
     
     function genRequire(requiringDir) {
@@ -94,12 +99,12 @@ var global = global || (function () { return this; }());
                 let tmpRequire = genRequire(fullDirInJs);
                 let r = tmpRequire(packageConfigure.main);
                 tmpModuleStorage[sid] = undefined;
-                m.exports = r;
+                return r;
             } else {
                 executeModule(fullPath, script, debugPath, sid);
                 tmpModuleStorage[sid] = undefined;
+                return m.exports;
             }
-            return m.exports;
         }
 
         return require;
