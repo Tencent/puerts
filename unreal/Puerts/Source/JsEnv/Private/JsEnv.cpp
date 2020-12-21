@@ -2122,16 +2122,19 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     auto Class = UJSGeneratedClass::Create(ClassName, ParentUClass, DynamicInvoker, Isolate, Constructor, Prototype);
 
+    TSet<UFunction*> overrided;
+
     for (TFieldIterator<UFunction> It(ParentUClass, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::IncludeInterfaces); It; ++It)
     {
         UFunction *Function = *It;
-        if (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
+        if (!overrided.Contains(Function) && Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
         {
             auto MaybeValue = Methods->Get(Context, FV8Utils::ToV8String(Isolate, Function->GetName()));
             if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
             {
                 //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
                 UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker);
+                overrided.Add(Function);
             }
         }
     }
