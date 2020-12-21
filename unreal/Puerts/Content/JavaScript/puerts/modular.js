@@ -57,7 +57,7 @@ var global = global || (function () { return this; }());
         let exports = {};
         let module = puerts.getModuleBySID(sid);
         module.exports = exports;
-        let wrapped = puerts.evalScript(
+        let wrapped = evalScript(
             // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
             // to enable stepping through original source in-place.
             "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
