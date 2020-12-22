@@ -11,11 +11,29 @@
 
 namespace puerts
 {
-    JSFunction::JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction)
+    JSFunction::JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex)
     {
         ResultInfo.Isolate = InIsolate;
         ResultInfo.Context.Reset(InIsolate, InContext);
         GFunction.Reset(InIsolate, InFunction);
+        Index = InIndex;
+    }
+
+    JSFunction::~JSFunction()
+    {
+        v8::Isolate* Isolate = ResultInfo.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        auto Function = GFunction.Get(Isolate);
+
+        Function->Set(Context, FV8Utils::V8String(Isolate, FUNCTION_INDEX_KEY), v8::Undefined(Isolate));
+
+        GFunction.Reset();
+        ResultInfo.Result.Reset();
+        ResultInfo.Context.Reset();
     }
 
     static v8::Local<v8::Value> ToV8(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const FValue &Value)

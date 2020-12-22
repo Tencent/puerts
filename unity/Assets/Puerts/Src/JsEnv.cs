@@ -26,6 +26,8 @@ namespace Puerts
 
         internal readonly TypeRegister TypeRegister = null;
 
+        internal readonly GenericDelegateFactory genericDelegateFactory;
+
         private readonly ILoader loader;
 
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
@@ -40,7 +42,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort = -1)
         {
-            const int libVersionExpect = 8;
+            const int libVersionExpect = 9;
             int libVersion = PuertsDLL.GetLibVersion();
             if (libVersion != libVersionExpect)
             {
@@ -70,6 +72,7 @@ namespace Puerts
 
             objectPool = new ObjectPool();
             TypeRegister = new TypeRegister(this);
+            genericDelegateFactory = new GenericDelegateFactory(this);
 
             GeneralGetterManager = new GeneralGetterManager(this);
             GeneralSetterManager = new GeneralSetterManager(this);
@@ -254,6 +257,11 @@ namespace Puerts
             return TypeRegister.GetTypeId(isolate, type);
         }
 
+        internal GenericDelegate ToGenericDelegate(IntPtr ptr)
+        {
+            return genericDelegateFactory.ToGenericDelegate(ptr);
+        }
+
         public int Index
         {
             get
@@ -369,7 +377,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1>();
+            genericDelegateFactory.RegisterAction<T1>();
 #if THREAD_SAFE
             }
 #endif
@@ -380,7 +388,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1, T2>();
+            genericDelegateFactory.RegisterAction<T1, T2>();
 #if THREAD_SAFE
             }
 #endif
@@ -391,7 +399,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1, T2, T3>();
+            genericDelegateFactory.RegisterAction<T1, T2, T3>();
 #if THREAD_SAFE
             }
 #endif
@@ -402,7 +410,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1, T2, T3, T4>();
+            genericDelegateFactory.RegisterAction<T1, T2, T3, T4>();
 #if THREAD_SAFE
             }
 #endif
@@ -413,7 +421,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<TResult>();
+            genericDelegateFactory.RegisterFunc<TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -424,7 +432,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -435,7 +443,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, T2, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, T2, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -446,7 +454,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, T2, T3, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, T2, T3, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -457,7 +465,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, T2, T3, T4, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, T2, T3, T4, TResult>();
 #if THREAD_SAFE
             }
 #endif

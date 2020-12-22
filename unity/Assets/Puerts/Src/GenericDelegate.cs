@@ -102,6 +102,35 @@ namespace Puerts
             PrimitiveTypeTranslate.Init();
         }
 
+        Dictionary<IntPtr, WeakReference> nativePtrToGenericDelegate = new Dictionary<IntPtr, WeakReference>();
+
+        internal GenericDelegate ToGenericDelegate(IntPtr ptr)
+        {
+            WeakReference maybeOne;
+            if (nativePtrToGenericDelegate.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive)
+            {
+                return maybeOne.Target as GenericDelegate;
+            }
+            GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
+            nativePtrToGenericDelegate[ptr] = new WeakReference(genericDelegate);
+            return genericDelegate;
+        }
+
+        Delegate CreateDelegate(Type type, GenericDelegate genericDelegate, MethodInfo method)
+        {
+            Delegate ret;
+            if (genericDelegate.TryGetDelegate(type, out ret))
+            {
+                return ret;
+            }
+            else
+            {
+                ret = Delegate.CreateDelegate(type, genericDelegate, method);
+                genericDelegate.AddDelegate(type, ret);
+                return ret;
+            }
+        }
+
         internal Delegate Create(Type delegateType, IntPtr nativeJsFuncPtr)
         {
             Func<Type, IntPtr, Delegate> genericDelegateCreator;
@@ -128,7 +157,7 @@ namespace Puerts
                     {
                         //对无参无返回值特殊处理
                         var methodInfo = genericAction[0];
-                        genericDelegateCreator = (dt, ptr) => Delegate.CreateDelegate(dt, new GenericDelegate(ptr, jsEnv), methodInfo);
+                        genericDelegateCreator = (dt, ptr) => CreateDelegate(dt, ToGenericDelegate(ptr), methodInfo);
                     }
                     else
                     {
@@ -167,7 +196,7 @@ namespace Puerts
                         //实例化泛型方法
                         var methodInfo = genericMethodInfo.MakeGenericMethod(typeArgs);
                         //构造器
-                        genericDelegateCreator = (dt, ptr) => Delegate.CreateDelegate(dt, new GenericDelegate(ptr, jsEnv), methodInfo);
+                        genericDelegateCreator = (dt, ptr) => CreateDelegate(dt, ToGenericDelegate(ptr), methodInfo);
                     }
                 }
                 //缓存构造器，下次调用直接返回
@@ -185,8 +214,8 @@ namespace Puerts
         {
             ActionCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Action<T1>(genericDelegate.Action<T1>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Action<T1>(genericDelegate.Action<T1>).Method);
             }, typeof(T1));
         }
 
@@ -194,8 +223,8 @@ namespace Puerts
         {
             ActionCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Action<T1, T2>(genericDelegate.Action<T1, T2>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Action<T1, T2>(genericDelegate.Action<T1, T2>).Method);
             }, typeof(T1), typeof(T2));
         }
 
@@ -203,8 +232,8 @@ namespace Puerts
         {
             ActionCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Action<T1, T2, T3>(genericDelegate.Action<T1, T2, T3>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Action<T1, T2, T3>(genericDelegate.Action<T1, T2, T3>).Method);
             }, typeof(T1), typeof(T2), typeof(T3));
         }
 
@@ -212,8 +241,8 @@ namespace Puerts
         {
             ActionCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Action<T1, T2, T3, T4>(genericDelegate.Action<T1, T2, T3, T4>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Action<T1, T2, T3, T4>(genericDelegate.Action<T1, T2, T3, T4>).Method);
             }, typeof(T1), typeof(T2), typeof(T3), typeof(T4));
         }
 
@@ -221,8 +250,8 @@ namespace Puerts
         {
             FuncCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Func<TResult>(genericDelegate.Func<TResult>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Func<TResult>(genericDelegate.Func<TResult>).Method);
             }, typeof(TResult));
         }
 
@@ -230,8 +259,8 @@ namespace Puerts
         {
             FuncCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Func<T1, TResult>(genericDelegate.Func<T1, TResult>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Func<T1, TResult>(genericDelegate.Func<T1, TResult>).Method);
             }, typeof(T1), typeof(TResult));
         }
 
@@ -239,8 +268,8 @@ namespace Puerts
         {
             FuncCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Func<T1, T2, TResult>(genericDelegate.Func<T1, T2, TResult>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Func<T1, T2, TResult>(genericDelegate.Func<T1, T2, TResult>).Method);
             }, typeof(T1), typeof(T2), typeof(TResult));
         }
 
@@ -248,8 +277,8 @@ namespace Puerts
         {
             FuncCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Func<T1, T2, T3, TResult>(genericDelegate.Func<T1, T2, T3, TResult>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Func<T1, T2, T3, TResult>(genericDelegate.Func<T1, T2, T3, TResult>).Method);
             }, typeof(T1), typeof(T2), typeof(T3), typeof(TResult));
         }
 
@@ -257,8 +286,8 @@ namespace Puerts
         {
             FuncCreatorTree.Add((type, ptr) =>
             {
-                GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
-                return Delegate.CreateDelegate(type, genericDelegate, new Func<T1, T2, T3, T4, TResult>(genericDelegate.Func<T1, T2, T3, T4, TResult>).Method);
+                GenericDelegate genericDelegate = ToGenericDelegate(ptr);
+                return CreateDelegate(type, genericDelegate, new Func<T1, T2, T3, T4, TResult>(genericDelegate.Func<T1, T2, T3, T4, TResult>).Method);
             }, typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(TResult));
         }
     }
@@ -269,6 +298,10 @@ namespace Puerts
         private readonly JsEnv jsEnv;
         private IntPtr nativeJsFuncPtr;
         private IntPtr isolate;
+
+        private Type firstKey = null;
+        private Delegate firstValue = null;
+        private Dictionary<Type, Delegate> bindTo = null;
 
         internal GenericDelegate(IntPtr nativeJsFuncPtr, JsEnv jsEnv)
         {
@@ -292,6 +325,47 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
+        }
+
+        public bool TryGetDelegate(Type key, out Delegate value)
+        {
+            if (key == firstKey)
+            {
+                value = firstValue;
+                return true;
+            }
+            if (bindTo != null)
+            {
+                return bindTo.TryGetValue(key, out value);
+            }
+            value = null;
+            return false;
+        }
+
+        public void AddDelegate(Type key, Delegate value)
+        {
+            if (key == firstKey)
+            {
+                throw new ArgumentException("An element with the same key already exists in the dictionary.");
+            }
+
+            if (firstKey == null && bindTo == null) // nothing 
+            {
+                firstKey = key;
+                firstValue = value;
+            }
+            else if (firstKey != null && bindTo == null) // one key existed
+            {
+                bindTo = new Dictionary<Type, Delegate>();
+                bindTo.Add(firstKey, firstValue);
+                firstKey = null;
+                firstValue = null;
+                bindTo.Add(key, value);
+            }
+            else
+            {
+                bindTo.Add(key, value);
+            }
         }
 
         public void Action()

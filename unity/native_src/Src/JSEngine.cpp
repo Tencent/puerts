@@ -164,20 +164,34 @@ namespace puerts
     JSFunction* JSEngine::CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-        JSFunction* Function = new JSFunction(InIsolate, InContext, InFunction);
-        JSFunctions.insert(Function);
+        auto maybeId = InFunction->Get(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY));
+        if (!maybeId.IsEmpty()) {
+            auto id = maybeId.ToLocalChecked();
+            if (id->IsNumber()) {
+                int32_t index = id->Int32Value(InContext).ToChecked();
+                return JSFunctions[index];
+            }
+        }
+        JSFunction* Function = nullptr;
+        for (int i = 0; i < JSFunctions.size(); i++) {
+            if (!JSFunctions[i]) {
+                Function = new JSFunction(InIsolate, InContext, InFunction, i);
+                break;
+            }
+        }
+        if (!Function) {
+            Function = new JSFunction(InIsolate, InContext, InFunction, static_cast<int32_t>(JSFunctions.size()));
+            JSFunctions.push_back(Function);
+        }
+        InFunction->Set(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY), v8::Integer::New(InIsolate, Function->Index));
         return Function;
     }
 
     void JSEngine::ReleaseJSFunction(JSFunction* InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-        auto Iter = JSFunctions.find(InFunction);
-        if (Iter != JSFunctions.end())
-        {
-            JSFunctions.erase(Iter);
-            delete InFunction;
-        }
+        JSFunctions[InFunction->Index] = nullptr;
+        delete InFunction;
     }
 
     static void CSharpFunctionCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)

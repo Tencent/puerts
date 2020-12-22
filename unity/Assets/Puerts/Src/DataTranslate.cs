@@ -32,7 +32,7 @@ namespace Puerts
             this.jsEnv = jsEnv;
             objectPool = jsEnv.objectPool;
             typeRegister = jsEnv.TypeRegister;
-            genericDelegateFactory = new GenericDelegateFactory(jsEnv);
+            genericDelegateFactory = jsEnv.genericDelegateFactory;
 
             generalGetterMap[typeof(char)] = CharTranslator;
             generalGetterMap[typeof(sbyte)] = SbyteTranslator;
@@ -140,7 +140,7 @@ namespace Puerts
             if (jsValueType == JsValueType.Function)
             {
                 var nativePtr = getValueApi.GetFunction(isolate, value, isByRef);
-                return new GenericDelegate(nativePtr, jsEnv);
+                return jsEnv.ToGenericDelegate(nativePtr);
             }
             else
             {

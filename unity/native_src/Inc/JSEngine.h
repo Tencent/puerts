@@ -138,7 +138,7 @@ private:
 
     std::map<void*, v8::UniquePersistent<v8::Value>> ObjectMap;
 
-    std::set<JSFunction*> JSFunctions;
+    std::vector<JSFunction*> JSFunctions;
 
     std::mutex JSFunctionsMutex;
 
