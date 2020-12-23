@@ -116,6 +116,12 @@ namespace Puerts
             return genericDelegate;
         }
 
+        internal bool IsJsFunctionAlive(IntPtr ptr)
+        {
+            WeakReference maybeOne;
+            return nativePtrToGenericDelegate.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive;
+        }
+
         Delegate CreateDelegate(Type type, GenericDelegate genericDelegate, MethodInfo method)
         {
             Delegate ret;
@@ -321,7 +327,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif
-            jsEnv.EnqueueJSFunction(nativeJsFuncPtr);
+            jsEnv.addPenddingReleaseFunc(nativeJsFuncPtr);
 #if THREAD_SAFE
             }
 #endif

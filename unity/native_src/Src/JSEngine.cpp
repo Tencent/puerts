@@ -176,6 +176,7 @@ namespace puerts
         for (int i = 0; i < JSFunctions.size(); i++) {
             if (!JSFunctions[i]) {
                 Function = new JSFunction(InIsolate, InContext, InFunction, i);
+                JSFunctions[i] = Function;
                 break;
             }
         }

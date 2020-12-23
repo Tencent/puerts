@@ -597,26 +597,29 @@ namespace Puerts
             }
         }
 
-        Queue<IntPtr> jsFuncQueue = new Queue<IntPtr>();
+        Queue<IntPtr> pendingReleaseFuncs = new Queue<IntPtr>();
 
-        internal void EnqueueJSFunction(IntPtr nativeJsFuncPtr)
+        internal void addPenddingReleaseFunc(IntPtr nativeJsFuncPtr)
         {
             if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
 
-            lock (jsFuncQueue)
+            lock (pendingReleaseFuncs)
             {
-                jsFuncQueue.Enqueue(nativeJsFuncPtr);
+                pendingReleaseFuncs.Enqueue(nativeJsFuncPtr);
             }
         }
 
         internal void ReleasePendingJSFunctions()
         {
-            lock (jsFuncQueue)
+            lock (pendingReleaseFuncs)
             {
-                while (jsFuncQueue.Count > 0)
+                while (pendingReleaseFuncs.Count > 0)
                 {
-                    IntPtr nativeJsFuncPtr = jsFuncQueue.Dequeue();
-                    PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                    IntPtr nativeJsFuncPtr = pendingReleaseFuncs.Dequeue();
+                    if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
+                    {
+                        PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                    }
                 }
             }
         }
