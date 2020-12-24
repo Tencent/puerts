@@ -173,7 +173,18 @@ static PropertyMacro* DuplicateProperty(
 
 void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker)
 {
-    UJSGeneratedFunction* Function = NewObject<UJSGeneratedFunction>(Class, Super->GetFName(), RF_Public);
+    bool Replace = Super->GetOuter() == Class;
+    FName FunctionName = Super->GetFName();
+    if (Replace)
+    {
+        //UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
+        //同一Outer下的同名对象只能有一个...
+        Super->Rename(*FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT("__Removed")), Super->GetOuter(), REN_DontCreateRedirectors | REN_DoNotDirty);
+        //UE_LOG(LogTemp, Error, TEXT("rename to %s"), *Super->GetName());
+    }
+
+    //UE_LOG(LogTemp, Error, TEXT("new function name %s"), *FunctionName.ToString());
+    UJSGeneratedFunction* Function = NewObject<UJSGeneratedFunction>(Class, FunctionName, RF_Public);
 
     for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::IncludeInterfaces); It; ++It)
     {
@@ -187,7 +198,16 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
     Function->FirstPropertyToInit = NULL;
     Function->Script.Add(EX_EndFunctionParms);
 
-    Function->SetSuperStruct(Super);
+    if (!Replace)
+    {
+        //UE_LOG(LogTemp, Error, TEXT("new function %s"), *FunctionName.ToString());
+        Function->SetSuperStruct(Super);
+    }
+    else
+    {
+        //UE_LOG(LogTemp, Error, TEXT("replace function %s"), *FunctionName.ToString());
+        Function->SetSuperStruct(Super->GetSuperStruct());
+    }
 
 #if ENGINE_MINOR_VERSION >= 25
     FField** Storage = &Function->ChildProperties;
@@ -256,8 +276,27 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function);
 
-    Function->Next = Class->Children;
-    Class->Children = Function;
+    if (Replace)
+    {
+        Function->Next = Super->Next;
+        if (Class->Children == Super) // first one
+        {
+            Class->Children = Function;
+        }
+        else
+        {
+            auto P = Class->Children;
+            while (P && P->Next != Super) P = P->Next;
+            check(P);
+            P->Next = Function;
+        }
+        Class->RemoveFunctionFromFunctionMap(Super);
+    }
+    else
+    {
+        Function->Next = Class->Children;
+        Class->Children = Function;
+    }
     Class->AddFunctionToFunctionMap(Function, Function->GetFName());
 }
 

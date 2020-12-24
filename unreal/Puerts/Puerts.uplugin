@@ -29,6 +29,12 @@
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
 	  "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
+    },
+    {
+      "Name": "Puerts",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault",
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
     }
   ]
 }

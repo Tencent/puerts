@@ -118,6 +118,8 @@ var global = global || (function () { return this; }());
 
     puerts.genRequire = genRequire;
     
+    puerts.__require = genRequire("");
+    
     puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;

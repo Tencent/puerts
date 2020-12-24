@@ -32,6 +32,8 @@ public:
 
     virtual void WaitDebugger() = 0;
 
+    virtual void TryBindJs(const class UObjectBase *InObject) = 0;
+
     virtual ~IJsEnv() {}
 };
 
@@ -47,6 +49,8 @@ public:
     void LowMemoryNotification();
 
     void WaitDebugger();
+
+    void TryBindJs(const class UObjectBase *InObject);
 
 private:
     std::unique_ptr<IJsEnv> GameScript;
