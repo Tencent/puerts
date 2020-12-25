@@ -10,14 +10,14 @@
 #include "Async/Async.h"
 
 
-UReactWidget* UUMGManager::CreateReactWidget(UWorld* World)
+UReactWidget* UUMGManager::CreateReactWidget(UGameInstance* Instance)
 {
-    return ::CreateWidget<UReactWidget>(World);
+    return ::CreateWidget<UReactWidget>(Instance);
 }
 
-UUserWidget* UUMGManager::CreateWidget(UWorld *World, UClass *Class)
+UUserWidget* UUMGManager::CreateWidget(UGameInstance* Instance, UClass* Class)
 {
-    return ::CreateWidget<UUserWidget>(World, Class);
+    return ::CreateWidget<UUserWidget>(Instance, Class);
 }
 
 void UUMGManager::SynchronizeWidgetProperties(UWidget* Widget)

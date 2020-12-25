@@ -26,10 +26,10 @@ class REACTUMG_API UUMGManager : public UBlueprintFunctionLibrary
 public:
 
     UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Widget")
-    static UReactWidget* CreateReactWidget(UWorld* World);
+    static UReactWidget* CreateReactWidget(UGameInstance* Instance);
 
     UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Widget")
-    static UUserWidget* CreateWidget(UWorld* World, UClass* Class);
+    static UUserWidget* CreateWidget(UGameInstance* Instance, UClass* Class);
 
     UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Widget")
     static void SynchronizeWidgetProperties(UWidget* Widget);

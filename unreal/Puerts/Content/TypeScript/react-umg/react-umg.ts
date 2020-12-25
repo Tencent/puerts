@@ -9,7 +9,7 @@ import * as Reconciler from 'react-reconciler'
 import * as puerts from 'puerts'
 import * as UE from 'ue'
 
-let world: UE.World;
+let instance: UE.GameInstance;
 
 function deepEquals(x: any, y: any) {
     if ( x === y ) return true;
@@ -285,16 +285,16 @@ const reconciler = Reconciler(hostConfig)
 
 export const ReactUMG = {
     render: function(reactElement: React.ReactNode) {
-        if (world == undefined) {
-            throw new Error("init with World first!");
+        if (!instance) {
+            throw new Error("init with GameInstance first!");
         }
-        let root = new UEWidgetRoot(UE.UMGManager.CreateReactWidget(world));
+        let root = new UEWidgetRoot(UE.UMGManager.CreateReactWidget(instance));
         const container = reconciler.createContainer(root, false, false);
         reconciler.updateContainer(reactElement, container, null, null);
         return root;
     },
-    init: function(inWorld: UE.World) {
-        world = inWorld;
+    init: function(inInstance: UE.GameInstance) {
+        instance = inInstance;
     }
 }
 
