@@ -69,9 +69,9 @@ var global = global || (function () { return this; }());
     
     function genRequire(requiringDir) {
         let localModuleCache = Object.create(null);
-        function require(moduleName) {
+        function require(moduleName, forceReload) {
             moduleName = normalize(moduleName);
-            if (moduleName in localModuleCache) return localModuleCache[moduleName].exports;
+            if ((moduleName in localModuleCache) && !forceReload) return localModuleCache[moduleName].exports;
             if (moduleName in buildinModule) return buildinModule[moduleName];
             let nativeModule = findModule(moduleName);
             if (nativeModule) {
@@ -85,7 +85,7 @@ var global = global || (function () { return this; }());
             let debugPath = moduleInfo.substring(split + 1, split2);
             let script = moduleInfo.substring(split2 + 1);
             let key = fullPath;
-            if (key in moduleCache) {
+            if ((key in moduleCache) && !forceReload) {
                 localModuleCache[moduleName] = moduleCache[key];
                 return localModuleCache[moduleName].exports;
             }

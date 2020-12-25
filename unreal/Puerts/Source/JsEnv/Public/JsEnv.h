@@ -34,6 +34,8 @@ public:
 
     virtual void TryBindJs(const class UObjectBase *InObject) = 0;
 
+    virtual void ReloadModule(FName ModuleName) = 0;
+
     virtual ~IJsEnv() {}
 };
 
@@ -51,6 +53,9 @@ public:
     void WaitDebugger();
 
     void TryBindJs(const class UObjectBase *InObject);
+
+    //ModuleName等于NAME_None代表从新加载所有脚本
+    void ReloadModule(FName ModuleName);
 
 private:
     std::unique_ptr<IJsEnv> GameScript;

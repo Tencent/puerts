@@ -7,6 +7,9 @@
 
 #include "PuertsModule.h"
 #include "JsEnv.h"
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
 
 class FPuertsModule : public IPuertsModule, public FUObjectArray::FUObjectCreateListener, public FUObjectArray::FUObjectDeleteListener
 {
@@ -20,6 +23,10 @@ public:
 
 #if ENGINE_MINOR_VERSION > 22
     virtual void OnUObjectArrayShutdown() override;
+#endif
+
+#if WITH_EDITOR
+    void EndPIE(bool bIsSimulating);
 #endif
 
 private:
@@ -54,8 +61,22 @@ void FPuertsModule::OnUObjectArrayShutdown()
 }
 #endif
 
+#if WITH_EDITOR
+void FPuertsModule::EndPIE(bool bIsSimulating)
+{
+    if (Enabled)
+    {
+        //UE_LOG(LogTemp, Error, TEXT("Reload All Module "));
+        JsEnv->ReloadModule(NAME_None);
+    }
+}
+#endif
+
 void FPuertsModule::StartupModule()
 {
+#if WITH_EDITOR
+    FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+#endif
     if (Enabled)
     {
         JsEnv = MakeShared<puerts::FJsEnv>();

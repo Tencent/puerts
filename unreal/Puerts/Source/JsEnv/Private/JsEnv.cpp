@@ -105,6 +105,8 @@ public:
 
     virtual void TryBindJs(const class UObjectBase *InObject) override;
 
+    virtual void ReloadModule(FName ModuleName) override;
+
 public:
     void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) override;
 
@@ -388,8 +390,10 @@ private:
 
     struct BindInfo 
     {
+        FName BindTo;
         v8::UniquePersistent<v8::Object> Proto;
         v8::UniquePersistent<v8::Function> Ctor;
+        bool IsDirty;
     };
 
     std::map<UClass*, BindInfo> BindInfoMap;
@@ -443,6 +447,11 @@ void FJsEnv::WaitDebugger()
 void FJsEnv::TryBindJs(const class UObjectBase *InObject)
 {
     GameScript->TryBindJs(InObject);
+}
+
+void FJsEnv::ReloadModule(FName ModuleName)
+{
+    GameScript->ReloadModule(ModuleName);
 }
 
 FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1)
@@ -902,17 +911,16 @@ void FJsEnvImpl::LowMemoryNotification()
 
 const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 {
-    static FName ModuleNameField("_psmn");
     auto Iter = BindInfoMap.find(Class);
-    if (Iter == BindInfoMap.end())//create and link
+    if (Iter == BindInfoMap.end() || Iter->second.IsDirty)//create and link
     {
         //TODO: 用方法更省内存，或者是某个一个类一份的东西，但生成代码可能生成属性更简单些，后续看情况
-        auto Property = Class->FindPropertyByName(ModuleNameField);
-        if (auto StringProperty = CastFieldMacro<StrPropertyMacro>(Property))
+        UObject *DefaultObject = Class->GetDefaultObject();
+        auto BindTo = ITypeScriptObject::Execute_BindTo(Class->GetDefaultObject());
+;
+        if (BindTo != NAME_None)
         {
-            UObject *DefaultObject = Class->GetDefaultObject();
-            FString ModuleName = StringProperty->GetPropertyValue(StringProperty->ContainerPtrToValuePtr<void>(DefaultObject));
-            //UE_LOG(LogTemp, Error, TEXT("bind to , %s"), *ModuleName);
+            FString ModuleName = BindTo.ToString();
 
             auto Isolate = MainIsolate;
             v8::Isolate::Scope IsolateScope(Isolate);
@@ -923,9 +931,10 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 
             v8::TryCatch TryCatch(Isolate);
 
-            v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName) };
+            //强制刷新
+            v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName), v8::True(Isolate) };
 
-            auto MaybeRet = LocalRequire->Call(Context, v8::Undefined(Isolate), 1, Args);
+            auto MaybeRet = LocalRequire->Call(Context, v8::Undefined(Isolate), 2, Args);
 
             if (TryCatch.HasCaught())
             {
@@ -951,6 +960,8 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
                         BindInfo Info;
+                        Info.BindTo = BindTo;
+                        Info.IsDirty = false;
                         Info.Proto.Reset(Isolate, Proto);
 
                         v8::Local<v8::Value> VCtor;
@@ -969,7 +980,8 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                             UFunction *Function = *It;
                             auto FunctionFName = Function->GetFName();
                             auto V8Name = FV8Utils::ToV8String(Isolate, Function->GetName());
-                            if (!overrided.Contains(FunctionFName) && Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) && Proto->HasOwnProperty(Context, V8Name).ToChecked())
+                            if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
+                                (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) || Cast<UJSGeneratedFunction>(Function)))
                             {
                                 auto MaybeValue = Proto->Get(Context, V8Name);
                                 if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
@@ -990,7 +1002,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
         }
         else
         {
-            Logger->Error(FString::Printf(TEXT("not find module info for [%s]"), *Class->GetName()));
+            Logger->Warn(FString::Printf(TEXT("not find module info for [%s]"), *Class->GetName()));
             return nullptr;
         }
     }
@@ -998,6 +1010,22 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
     {
         //UE_LOG(LogTemp, Error, TEXT("found exist bindinfo for , %s"), *Class->GetName());
         return &Iter->second;
+    }
+}
+
+void FJsEnvImpl::ReloadModule(FName ModuleName)
+{
+    for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
+    {
+        if (ModuleName == NAME_None || ModuleName == Iter->second.BindTo)
+        {
+            Logger->Info(FString::Printf(TEXT("reload module [%s]"), *Iter->second.BindTo.ToString()));
+            Iter->second.IsDirty = true;
+            if (ModuleName != NAME_None)
+            {
+                break;
+            }
+        }
     }
 }
 
@@ -1017,7 +1045,10 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
             //if (GeneratedObjectMap.find(InObject) == GeneratedObjectMap.end())
             const BindInfo* Info = GetBindInfo(Class);
             //UE_LOG(LogTemp, Error, TEXT("GetBindInfo, %p"), Info);
-            Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
+            if (Info)
+            {
+                Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
+            }
         }
     }
 }
