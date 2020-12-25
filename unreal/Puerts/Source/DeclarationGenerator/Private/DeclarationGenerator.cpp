@@ -19,9 +19,9 @@
 #include "LevelEditor.h"
 #include "GenDTSStyle.h"
 #include "GenDTSCommands.h"
-#include "NotificationManager.h"
-#include "SNotificationList.h"
-#include "Misc/MessageDialog.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
+//#include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
 
