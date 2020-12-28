@@ -180,12 +180,17 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
         if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super)) //这种情况只需简单替换下js函数
         {
             //UE_LOG(LogTemp, Error, TEXT("js replace js fuction %s of %s"), *Super->GetName(), *Class->GetName());
+            if (MaybeJSFunction->JsFunction.IsEmpty())
+            {
+                MaybeJSFunction->DynamicInvoker = DynamicInvoker;
+                MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super);
+            }
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
             return;
         }
         //UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
         //同一Outer下的同名对象只能有一个...
-        Super->Rename(*FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT("__Removed")), Super->GetOuter(), REN_DontCreateRedirectors | REN_DoNotDirty);
+        Super->Rename(*FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT("__Removed")), Super->GetOuter(), REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
         //UE_LOG(LogTemp, Error, TEXT("rename to %s"), *Super->GetName());
     }
 
