@@ -99,12 +99,12 @@ var global = global || (function () { return this; }());
                 let tmpRequire = genRequire(fullDirInJs);
                 let r = tmpRequire(packageConfigure.main);
                 tmpModuleStorage[sid] = undefined;
-                return r;
+                m.exports = r;
             } else {
                 executeModule(fullPath, script, debugPath, sid);
                 tmpModuleStorage[sid] = undefined;
-                return m.exports;
             }
+            return m.exports;
         }
 
         return require;
