@@ -19,6 +19,7 @@ var global = global || (function () { return this; }());
     
     let UE = new Proxy(cache, {
         get: function(classWrapers, name) {
+            if (name === "toString") return () => "[UE Module]";
             if (name === "__esModule") return UE;//我们直接返回它,以便支持esm
             
             if (!(name in classWrapers)) {
@@ -32,6 +33,7 @@ var global = global || (function () { return this; }());
     
     let CPP = new Proxy(cache, {
         get: function(classWrapers, name) {
+            if (name === "toString") return () => "[cpp native Module]";
             if (name === "__esModule") return CPP;//我们直接返回它,以便支持esm
             
             if (!(name in classWrapers)) {
