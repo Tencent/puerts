@@ -1390,7 +1390,7 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 #if ENGINE_MINOR_VERSION >= 23
         if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
         {
-            FSparseDelegateStorage::AddUnique(DelegateProxy, NAME_Fire, MoveTemp(*(static_cast<FScriptDelegate*>(DelegatePtr))));
+            Iter->second.MulticastDelegateProperty->AddDelegate(MoveTemp(Delegate), Iter->second.Owner.Get(), DelegatePtr);
         }
         else
 #endif
@@ -1439,7 +1439,7 @@ bool FJsEnvImpl::RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>
 #if ENGINE_MINOR_VERSION >= 23
         if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
         {
-            FSparseDelegateStorage::Remove(DelegateProxy, NAME_Fire, *(static_cast<FScriptDelegate*>(DelegatePtr)));
+            Iter->second.MulticastDelegateProperty->RemoveDelegate(Delegate, Iter->second.Owner.Get(), DelegatePtr);
         }
         else
 #endif
@@ -1491,8 +1491,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 #if ENGINE_MINOR_VERSION >= 23
             if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
             {
-                auto DelegateProxy = Iter->second.Proxy;
-                FSparseDelegateStorage::Clear(DelegateProxy, NAME_Fire);
+                Iter->second.MulticastDelegateProperty->ClearDelegate(Iter->second.Owner.Get(), DelegatePtr);
             }
             else
 #endif
