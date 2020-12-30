@@ -1387,7 +1387,16 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     {
         //UE_LOG(LogTemp, Warning, TEXT("add to multicast delegate, proxy: %p to:%p"), DelegateProxy, DelegatePtr);
         Iter->second.Proxys.Add(DelegateProxy);
-        static_cast<FMulticastScriptDelegate*>(DelegatePtr)->AddUnique(Delegate);
+#if ENGINE_MINOR_VERSION >= 23
+        if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
+        {
+            FSparseDelegateStorage::AddUnique(DelegateProxy, NAME_Fire, MoveTemp(*(static_cast<FScriptDelegate*>(DelegatePtr))));
+        }
+        else
+#endif
+        {
+            static_cast<FMulticastScriptDelegate*>(DelegatePtr)->AddUnique(Delegate);
+        }
     }
     return true;
 }
@@ -1427,7 +1436,16 @@ bool FJsEnvImpl::RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>
 
         Delegate.BindUFunction(DelegateProxy, NAME_Fire);
 
-        static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
+#if ENGINE_MINOR_VERSION >= 23
+        if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
+        {
+            FSparseDelegateStorage::Remove(DelegateProxy, NAME_Fire, *(static_cast<FScriptDelegate*>(DelegatePtr)));
+        }
+        else
+#endif
+        {
+            static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
+        }
             
         auto ReturnVal = Map->Set(Context, JsFunction, v8::Undefined(Isolate));
 
@@ -1470,7 +1488,17 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     {
         if (Iter->second.Owner.IsValid())
         {
-            static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Clear();
+#if ENGINE_MINOR_VERSION >= 23
+            if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
+            {
+                auto DelegateProxy = Iter->second.Proxy;
+                FSparseDelegateStorage::Clear(DelegateProxy, NAME_Fire);
+            }
+            else
+#endif
+            {
+                static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Clear();
+            }
         }
 
         for (auto ProxyIter = Iter->second.Proxys.CreateIterator(); ProxyIter; ++ProxyIter)
