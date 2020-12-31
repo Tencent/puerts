@@ -11,37 +11,15 @@ using UnrealBuildTool;
 
 public class Puerts : ModuleRules {
     public Puerts(ReadOnlyTargetRules target) : base(target) {
-        PublicIncludePaths.AddRange(
-            new string[] {
-                "Programs/UnrealHeaderTool/Public",
-            }
-        );
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
-                "Core",
-                "CoreUObject",
-                "UMG",
-                "UnrealEd",
-                "LevelEditor",
-                "Engine",
-                "Slate",
-                "SlateCore",
-                "EditorStyle",
-                "InputCore",
-                "Projects",
-                "JsEnv",
+                "Core", "CoreUObject", "Engine", "InputCore", "Serialization", "OpenSSL","UMG","JsEnv",
             }
         );
-
-        if (Target.Platform == UnrealTargetPlatform.Win64 ||Target.Platform == UnrealTargetPlatform.Mac)
+        if (target.bBuildEditor == true)
         {
-            PublicDependencyModuleNames.AddRange(
-                new string[]
-                {
-                    "AssetRegistry"
-                }
-            );
+            PrivateDependencyModuleNames.Add("UnrealEd");
         }
 
         //PublicDefinitions.Add(string.Format("DECL_OUTPUT_PATH={0}", Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content", "Scripts"))));
