@@ -669,23 +669,6 @@ FJsEnvImpl::~FJsEnvImpl()
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
 
-    for (TObjectIterator<UClass> It; It; ++It)
-    {
-        UClass* Class = *It;
-        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
-        {
-            for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
-            {
-                UFunction *Function = *FIt;
-                if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
-                {
-                    JSGeneratedFunction->JsFunction.Reset();
-                    JSGeneratedFunction->DynamicInvoker.Reset();
-                }
-            }
-        }
-    }
-
     {
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -750,9 +733,19 @@ FJsEnvImpl::~FJsEnvImpl()
 
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
+            for (TFieldIterator<UFunction> FIt(Iter->first, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+            {
+                UFunction *Function = *FIt;
+                if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
+                {
+                    JSGeneratedFunction->JsFunction.Reset();
+                    JSGeneratedFunction->DynamicInvoker.Reset();
+                }
+            }
             Iter->second.Proto.Reset();
             Iter->second.Ctor.Reset();
         }
+        BindInfoMap.clear();
 
         for (auto& Pair : TickerDelegateHandleMap)
         {
