@@ -738,13 +738,16 @@ FJsEnvImpl::~FJsEnvImpl()
 
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
-            for (TFieldIterator<UFunction> FIt(Iter->first, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+            if (Iter->first->IsValidLowLevelFast() && !Iter->first->IsPendingKill())
             {
-                UFunction *Function = *FIt;
-                if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
+                for (TFieldIterator<UFunction> FIt(Iter->first, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
                 {
-                    JSGeneratedFunction->JsFunction.Reset();
-                    JSGeneratedFunction->DynamicInvoker.Reset();
+                    UFunction *Function = *FIt;
+                    if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
+                    {
+                        JSGeneratedFunction->JsFunction.Reset();
+                        JSGeneratedFunction->DynamicInvoker.Reset();
+                    }
                 }
             }
             Iter->second.Proto.Reset();
@@ -994,6 +997,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                             Info.Ctor.Reset(Isolate, VCtor.As<v8::Function>());
                         }
                         BindInfoMap[Class] = std::move(Info);
+                        SysObjectRetainer.Retain(Class);
 
                         //implement by js
                         TSet<FName> overrided;
