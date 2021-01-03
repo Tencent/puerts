@@ -11,7 +11,7 @@
 #define USING_UE 0
 #endif
 
-#if PLATFORM_WINDOWS || PLATFORM_MAC
+#if (PLATFORM_WINDOWS || PLATFORM_MAC || WITH_INSPECTOR) && !WITHOUT_INSPECTOR
 
 #include "V8InspectorImpl.h"
 

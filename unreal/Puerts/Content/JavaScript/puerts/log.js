@@ -46,4 +46,5 @@ var global = global || (function () { return this; }());
     }
 
     global.puerts.console = console;
+    global.console = console;
 }(global));

@@ -30,12 +30,20 @@ namespace Puerts
             this.root = root;
         }
 
+        private string PathToUse(string filepath)
+        {
+            return filepath.EndsWith(".cjs") ? 
+                filepath.Substring(0, filepath.Length - 4) : 
+                filepath;
+        }
+
         public bool FileExists(string filepath)
         {
 #if PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
 #else
-            return UnityEngine.Resources.Load(filepath) != null;
+            string pathToUse = this.PathToUse(filepath);
+            return UnityEngine.Resources.Load(pathToUse) != null;
 #endif
         }
 
@@ -45,7 +53,8 @@ namespace Puerts
             debugpath = Path.Combine(root, filepath);
             return File.ReadAllText(debugpath);
 #else
-            UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(filepath);
+            string pathToUse = this.PathToUse(filepath);
+            UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(pathToUse);
             debugpath = System.IO.Path.Combine(root, filepath);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             debugpath = debugpath.Replace("/", "\\");

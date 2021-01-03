@@ -17,6 +17,8 @@
 
 #include "V8Utils.h"
 
+#define FUNCTION_INDEX_KEY  "_psid"
+
 namespace puerts
 {
 struct FValue
@@ -55,14 +57,9 @@ struct FResultInfo
 class JSFunction
 {
 public:
-    JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction);
+    JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex);
 
-    ~JSFunction()
-    {
-        GFunction.Reset();
-        ResultInfo.Result.Reset();
-        ResultInfo.Context.Reset();
-    }
+    ~JSFunction();
 
     bool Invoke(bool HasResult);
 
@@ -73,5 +70,7 @@ public:
     std::string LastExceptionInfo;
 
     FResultInfo ResultInfo;
+
+    int32_t Index;
 };
 }

@@ -13,60 +13,12 @@
 
 namespace puerts
 {
-    typedef void(*FreeCallback)(char* Data);
-
-    class ObjectLifeCycleTrace
-    {
-    public:
-        inline ObjectLifeCycleTrace(v8::Isolate* InIsolate,
-            v8::Local<v8::Object> InObject,
-            FreeCallback InCallback,
-            char* InData)
-            : Persistent(InIsolate, InObject),
-            Callback(InCallback),
-            Data(InData)
-        {
-            Persistent.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
-            InIsolate->AdjustAmountOfExternalAllocatedMemory(sizeof(*this));
-        }
-    private:
-        static void WeakCallback(const v8::WeakCallbackInfo<ObjectLifeCycleTrace>& Info)
-        {
-            ObjectLifeCycleTrace* Self = Info.GetParameter();
-            Self->WeakCallback(Info.GetIsolate());
-            delete Self;
-        }
-
-        inline void WeakCallback(v8::Isolate* InIsolate)
-        {
-            Callback(Data);
-            int64_t ChangeInBytes = -static_cast<int64_t>(sizeof(*this));
-            InIsolate->AdjustAmountOfExternalAllocatedMemory(ChangeInBytes);
-        }
-
-    private:
-        v8::Global<v8::Object> Persistent;
-        FreeCallback const Callback;
-        char* const Data;
-    };
-
-    static void Free(char* Data)
-    {
-        ::free(Data);
-    }
-
     v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size, bool Copy)
     {
-        void *Data = Ptr;
-
-        if (Copy)
-        {
-            Data = ::malloc(Size);
-            ::memcpy(Data, Ptr, Size);
-        }
-
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Data, Size);
-        new ObjectLifeCycleTrace(Isolate, Ab, Free, static_cast<char*>(Data));
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
+        void* Buff = Ab->GetContents().Data();
+        ::memcpy(Buff, Ptr, Size);
+        if (!Copy) ::free(Ptr);
         return Ab;
     }
 
@@ -136,6 +88,7 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
 
         v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+        v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(Isolate, Context);
         v8::Local<v8::Object> Global = Context->Global();
 
@@ -206,30 +159,40 @@ namespace puerts
         {
             delete LifeCycleInfos[i];
         }
-
-        for (int i = 0; i < IndexedInfos.size(); ++i)
-        {
-            delete IndexedInfos[i];
-        }
     }
 
     JSFunction* JSEngine::CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-        JSFunction* Function = new JSFunction(InIsolate, InContext, InFunction);
-        JSFunctions.insert(Function);
+        auto maybeId = InFunction->Get(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY));
+        if (!maybeId.IsEmpty()) {
+            auto id = maybeId.ToLocalChecked();
+            if (id->IsNumber()) {
+                int32_t index = id->Int32Value(InContext).ToChecked();
+                return JSFunctions[index];
+            }
+        }
+        JSFunction* Function = nullptr;
+        for (int i = 0; i < JSFunctions.size(); i++) {
+            if (!JSFunctions[i]) {
+                Function = new JSFunction(InIsolate, InContext, InFunction, i);
+                JSFunctions[i] = Function;
+                break;
+            }
+        }
+        if (!Function) {
+            Function = new JSFunction(InIsolate, InContext, InFunction, static_cast<int32_t>(JSFunctions.size()));
+            JSFunctions.push_back(Function);
+        }
+        InFunction->Set(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY), v8::Integer::New(InIsolate, Function->Index));
         return Function;
     }
 
     void JSEngine::ReleaseJSFunction(JSFunction* InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-        auto Iter = JSFunctions.find(InFunction);
-        if (Iter != JSFunctions.end())
-        {
-            JSFunctions.erase(Iter);
-            delete InFunction;
-        }
+        JSFunctions[InFunction->Index] = nullptr;
+        delete InFunction;
     }
 
     static void CSharpFunctionCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -245,23 +208,6 @@ namespace puerts
         void* Ptr = CallbackInfo->IsStatic ? nullptr : FV8Utils::GetPoninter(Info.Holder());
 
         CallbackInfo->Callback(Isolate, Info, Ptr, Info.Length(), CallbackInfo->Data);
-    }
-
-    static void CSharpIndexedGetterWrap(uint32_t Index, const v8::PropertyCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        FIndexedInfo* IndexedInfo = reinterpret_cast<FIndexedInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        IndexedInfo->Getter(Isolate, Info, FV8Utils::GetPoninter(Info.This()), Index, IndexedInfo->Data);
-    }
-
-    static void CSharpIndexedSetterWrap(
-        uint32_t Index,
-        v8::Local<v8::Value> Value,
-        const v8::PropertyCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        FIndexedInfo* IndexedInfo = reinterpret_cast<FIndexedInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        IndexedInfo->Setter(Isolate, Info, FV8Utils::GetPoninter(Info.This()), Index, *Value, IndexedInfo->Data);
     }
 
     v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
@@ -440,27 +386,6 @@ namespace puerts
         return true;
     }
 
-    bool JSEngine::RegisterIndexedProperty(int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        if (ClassID >= Templates.size()) return false;
-
-        auto Pos = IndexedInfos.size();
-        auto IndexedInfo = new FIndexedInfo(Getter, Setter, Data);
-        IndexedInfos.push_back(IndexedInfo);
-
-        Templates[ClassID].Get(Isolate)->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
-            CSharpIndexedGetterWrap, CSharpIndexedSetterWrap, nullptr, nullptr, nullptr, v8::External::New(Isolate, IndexedInfos[Pos]),
-            v8::PropertyHandlerFlags::kNonMasking));
-
-        return true;
-    }
-
     v8::Local<v8::Value> JSEngine::GetClassConstructor(int ClassID)
     {
         v8::Isolate* Isolate = MainIsolate;
@@ -484,7 +409,7 @@ namespace puerts
         if (Iter == ObjectMap.end())//create and link
         {
             auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-            v8::Handle<v8::Value> Args[] = { BindTo };
+            v8::Local<v8::Value> Args[] = { BindTo };
             return Templates[ClassID].Get(Isolate)->GetFunction(Context).ToLocalChecked()->NewInstance(Context, 1, Args).ToLocalChecked();
         }
         else

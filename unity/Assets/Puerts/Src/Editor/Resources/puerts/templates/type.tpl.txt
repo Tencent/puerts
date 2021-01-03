@@ -137,8 +137,8 @@ function refSelf() {
 }
 
 function paramLenCheck(group) {
-    let len = group[0].ParameterInfos.length;
-    return group[0].HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
+    let len = group.get_Item(0).ParameterInfos.Length;
+    return group.get_Item(0).HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
 }
 
 }}
@@ -156,11 +156,11 @@ namespace PuertsStaticWrap
                 {{?it.Constructor}}{{~it.Constructor.OverloadGroups :overloadGroup}}
                 {{?it.Constructor.HasOverloads}}if ({{=paramLenCheck(overloadGroup)}}){{?}}
                 {
-                    {{for(var i=0; i < overloadGroup[0].ParameterInfos.length; i++) {}}
+                    {{for(var i=0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {}}
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?it.Constructor.HasOverloads && overload.ParameterInfos.length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?it.Constructor.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
@@ -194,11 +194,11 @@ namespace PuertsStaticWrap
                 {{~method.OverloadGroups :overloadGroup}}
                 {{?method.HasOverloads}}if ({{=paramLenCheck(overloadGroup)}}){{?}}
                 {
-                    {{for(var i=0; i < overloadGroup[0].ParameterInfos.length; i++) {}}
+                    {{for(var i=0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {}}
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?method.HasOverloads && overload.ParameterInfos.length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?method.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
@@ -251,7 +251,7 @@ namespace PuertsStaticWrap
             }
         }{{?}}
         {{~}}
-        {{?it.GetIndexs.length > 0}}
+        {{?it.GetIndexs.Length > 0}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy}}unsafe {{?}}private static void GetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -274,7 +274,7 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        {{?}}{{?it.SetIndexs.length > 0}}
+        {{?}}{{?it.SetIndexs.Length > 0}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy}}unsafe {{?}}private static void SetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -306,16 +306,16 @@ namespace PuertsStaticWrap
                 {{~operator.OverloadGroups :overloadGroup}}
                 {{?operator.HasOverloads}}if ({{=paramLenCheck(overloadGroup)}}){{?}}
                 {
-                    {{for(var i=0; i < overloadGroup[0].ParameterInfos.length; i++) {}}
+                    {{for(var i=0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {}}
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?operator.HasOverloads && overload.ParameterInfos.length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?operator.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        var result = {{=operatorCall(operator.Name, overload.ParameterInfos.length, overload)}};
+                        var result = {{=operatorCall(operator.Name, overload.ParameterInfos.Length, overload)}};
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
                         {{?operator.HasOverloads}}return;{{?}}
                     }{{~}}
@@ -370,8 +370,8 @@ namespace PuertsStaticWrap
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
                 {
                     {{~it.Methods :method}}{ new Puerts.MethodKey {Name = "{{=method.Name}}", IsStatic = {{=method.IsStatic}}},  {{=(method.IsStatic ? "F" : "M")}}_{{=method.Name}} },
-                    {{~}}{{?it.GetIndexs.length > 0}}{ new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, GetItem },
-                    {{?}}{{?it.SetIndexs.length > 0}}{ new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, SetItem},
+                    {{~}}{{?it.GetIndexs.Length > 0}}{ new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, GetItem },
+                    {{?}}{{?it.SetIndexs.Length > 0}}{ new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, SetItem},
                     {{?}}{{~it.Operators :operator}}{ new Puerts.MethodKey {Name = "{{=operator.Name}}", IsStatic = true}, O_{{=operator.Name}}},
                     {{~}}{{~it.Events :eventInfo}}{{?eventInfo.HasAdd}}{ new Puerts.MethodKey {Name = "add_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, A_{{=eventInfo.Name}}},
                     {{?}}{{?eventInfo.HasRemove}}{ new Puerts.MethodKey {Name = "remove_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, R_{{=eventInfo.Name}}},

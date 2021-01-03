@@ -34,8 +34,6 @@ namespace Puerts
 
         public static IGetValueFromJs GetValueFromResult = new GetValueFromResultImpl();
 
-        public static ISetValueToJs SetValueToIndexResult = new SetValueToIndexResultImpl();
-
         public static ISetValueToJs SetValueToResult = new SetValueToResultImpl();
 
         public static ISetValueToJs SetValueToByRefArgument = new SetValueToByRefArgumentImpl();
@@ -192,56 +190,6 @@ namespace Puerts
             int length;
             var ptr = PuertsDLL.GetArrayBufferFromValue(isolate, holder, out length, isByRef);
             return new ArrayBuffer(ptr, length);
-        }
-    }
-
-    public class SetValueToIndexResultImpl : ISetValueToJs
-    {
-        public void SetArrayBuffer(IntPtr isolate, IntPtr holder, ArrayBuffer arrayBuffer)
-        {
-            if (arrayBuffer == null || arrayBuffer.Bytes == null)
-            {
-                PuertsDLL.PropertyReturnArrayBuffer(isolate, holder, null, 0);
-            }
-            else
-            {
-                PuertsDLL.PropertyReturnArrayBuffer(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
-            }
-        }
-
-        public void SetBigInt(IntPtr isolate, IntPtr holder, long number)
-        {
-            PuertsDLL.PropertyReturnBigInt(isolate, holder, number);
-        }
-
-        public void SetBoolean(IntPtr isolate, IntPtr holder, bool b)
-        {
-            PuertsDLL.PropertyReturnBoolean(isolate, holder, b);
-        }
-
-        public void SetDate(IntPtr isolate, IntPtr holder, double date)
-        {
-            PuertsDLL.PropertyReturnDate(isolate, holder, date);
-        }
-
-        public void SetNull(IntPtr isolate, IntPtr holder)
-        {
-            PuertsDLL.PropertyReturnNull(isolate, holder);
-        }
-
-        public void SetNumber(IntPtr isolate, IntPtr holder, double number)
-        {
-            PuertsDLL.PropertyReturnNumber(isolate, holder, number);
-        }
-
-        public void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
-        {
-            PuertsDLL.PropertyReturnObject(isolate, holder, classID, self);
-        }
-
-        public void SetString(IntPtr isolate, IntPtr holder, string str)
-        {
-            PuertsDLL.PropertyReturnString(isolate, holder, str);
         }
     }
 

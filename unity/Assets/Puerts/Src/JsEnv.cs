@@ -26,6 +26,8 @@ namespace Puerts
 
         internal readonly TypeRegister TypeRegister = null;
 
+        internal readonly GenericDelegateFactory genericDelegateFactory;
+
         private readonly ILoader loader;
 
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
@@ -40,7 +42,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort = -1)
         {
-            const int libVersionExpect = 7;
+            const int libVersionExpect = 9;
             int libVersion = PuertsDLL.GetLibVersion();
             if (libVersion != libVersionExpect)
             {
@@ -70,6 +72,7 @@ namespace Puerts
 
             objectPool = new ObjectPool();
             TypeRegister = new TypeRegister(this);
+            genericDelegateFactory = new GenericDelegateFactory(this);
 
             GeneralGetterManager = new GeneralGetterManager(this);
             GeneralSetterManager = new GeneralSetterManager(this);
@@ -172,6 +175,22 @@ namespace Puerts
 #endif
         }
 
+        public void ClearModuleCache ()
+        {
+            Eval("global.clearModuleCache()");
+        }
+
+        public static void ClearAllModuleCaches () 
+        {
+            lock (jsEnvs)
+            {
+                foreach (var jsEnv in jsEnvs)
+                {
+                    jsEnv.ClearModuleCache();
+                }
+            }
+        }
+
         public void AddLazyStaticWrapLoader(Type type, Func<TypeRegisterInfo> lazyStaticWrapLoader)
         {
 #if THREAD_SAFE
@@ -236,6 +255,11 @@ namespace Puerts
         public int GetTypeId(Type type)
         {
             return TypeRegister.GetTypeId(isolate, type);
+        }
+
+        internal GenericDelegate ToGenericDelegate(IntPtr ptr)
+        {
+            return genericDelegateFactory.ToGenericDelegate(ptr);
         }
 
         public int Index
@@ -353,7 +377,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1>();
+            genericDelegateFactory.RegisterAction<T1>();
 #if THREAD_SAFE
             }
 #endif
@@ -364,7 +388,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1, T2>();
+            genericDelegateFactory.RegisterAction<T1, T2>();
 #if THREAD_SAFE
             }
 #endif
@@ -375,7 +399,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1, T2, T3>();
+            genericDelegateFactory.RegisterAction<T1, T2, T3>();
 #if THREAD_SAFE
             }
 #endif
@@ -386,7 +410,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterAction<T1, T2, T3, T4>();
+            genericDelegateFactory.RegisterAction<T1, T2, T3, T4>();
 #if THREAD_SAFE
             }
 #endif
@@ -397,7 +421,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<TResult>();
+            genericDelegateFactory.RegisterFunc<TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -408,7 +432,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -419,7 +443,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, T2, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, T2, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -430,7 +454,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, T2, T3, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, T2, T3, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -441,7 +465,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-            GeneralGetterManager.genericDelegateFactory.RegisterFunc<T1, T2, T3, T4, TResult>();
+            genericDelegateFactory.RegisterFunc<T1, T2, T3, T4, TResult>();
 #if THREAD_SAFE
             }
 #endif
@@ -573,26 +597,29 @@ namespace Puerts
             }
         }
 
-        Queue<IntPtr> jsFuncQueue = new Queue<IntPtr>();
+        Queue<IntPtr> pendingReleaseFuncs = new Queue<IntPtr>();
 
-        internal void EnqueueJSFunction(IntPtr nativeJsFuncPtr)
+        internal void addPenddingReleaseFunc(IntPtr nativeJsFuncPtr)
         {
             if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
 
-            lock (jsFuncQueue)
+            lock (pendingReleaseFuncs)
             {
-                jsFuncQueue.Enqueue(nativeJsFuncPtr);
+                pendingReleaseFuncs.Enqueue(nativeJsFuncPtr);
             }
         }
 
         internal void ReleasePendingJSFunctions()
         {
-            lock (jsFuncQueue)
+            lock (pendingReleaseFuncs)
             {
-                while (jsFuncQueue.Count > 0)
+                while (pendingReleaseFuncs.Count > 0)
                 {
-                    IntPtr nativeJsFuncPtr = jsFuncQueue.Dequeue();
-                    PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                    IntPtr nativeJsFuncPtr = pendingReleaseFuncs.Dequeue();
+                    if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
+                    {
+                        PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                    }
                 }
             }
         }

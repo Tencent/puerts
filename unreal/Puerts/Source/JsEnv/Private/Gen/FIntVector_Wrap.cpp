@@ -47,10 +47,8 @@
 static void* _FIntVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -133,10 +131,8 @@ static void* _FIntVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FIntVectorM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -163,10 +159,8 @@ static void FIntVectorM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FIntVectorM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -191,10 +185,8 @@ static void FIntVectorM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FIntVectorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -224,10 +216,8 @@ static void FIntVectorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FIntVectorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -257,10 +247,8 @@ static void FIntVectorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>&
 static void FIntVectorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -291,10 +279,8 @@ static void FIntVectorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FIntVectorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -325,10 +311,8 @@ static void FIntVectorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FIntVectorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -362,10 +346,8 @@ static void FIntVectorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FIntVectorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -399,10 +381,8 @@ static void FIntVectorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>
 static void FIntVectorM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -427,10 +407,8 @@ static void FIntVectorM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FIntVectorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -455,10 +433,8 @@ static void FIntVectorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FIntVectorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -483,10 +459,8 @@ static void FIntVectorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FIntVectorM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -511,10 +485,8 @@ static void FIntVectorM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FIntVectorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -539,10 +511,8 @@ static void FIntVectorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FIntVectorS_DivideAndRoundUp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -572,10 +542,8 @@ static void FIntVectorS_DivideAndRoundUp(const v8::FunctionCallbackInfo<v8::Valu
 static void FIntVectorS_Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -594,10 +562,8 @@ static void FIntVectorS_Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FIntVectorXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
 
@@ -607,10 +573,8 @@ static void _FIntVectorXGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
 static void _FIntVectorXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
 
@@ -619,10 +583,8 @@ static void _FIntVectorXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> 
 static void _FIntVectorYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
 
@@ -632,10 +594,8 @@ static void _FIntVectorYGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
 static void _FIntVectorYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
 
@@ -644,10 +604,8 @@ static void _FIntVectorYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> 
 static void _FIntVectorZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
 
@@ -657,10 +615,8 @@ static void _FIntVectorZGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
 static void _FIntVectorZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
 

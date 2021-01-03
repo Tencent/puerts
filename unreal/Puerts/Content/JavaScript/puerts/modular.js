@@ -54,19 +54,32 @@ var global = global || (function () { return this; }());
         sid = (typeof sid == 'undefined') ? 0 : sid;
         let fullPathInJs = fullPath.replace(/\\/g, '\\\\');
         let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
-        let executeScript = "(function() { var __filename = '"
-            + fullPathInJs + "', __dirname = '"
-            + fullDirInJs + "', module = puerts.getModuleBySID(" + sid + "), exports = module.exports; module.filename = __filename ; (function (exports, require, console, prompt) { "
-            + script + "\n})(exports, puerts.genRequire('"
-            + fullDirInJs + "'), puerts.console); return module.exports})()";
-        return evalScript(executeScript, debugPath);
+        let exports = {};
+        let module = puerts.getModuleBySID(sid);
+        module.exports = exports;
+        let wrapped = evalScript(
+            // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
+            // to enable stepping through original source in-place.
+            "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
+            debugPath
+        )
+        wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
+        return module.exports;
     }
     
     function genRequire(requiringDir) {
         let localModuleCache = Object.create(null);
         function require(moduleName) {
             moduleName = normalize(moduleName);
-            if (moduleName in localModuleCache) return localModuleCache[moduleName].exports;
+            let forceReload = false;
+            if ((moduleName in localModuleCache)) {
+                let m = localModuleCache[moduleName];
+                if (!m.__forceReload) {
+                    return localModuleCache[moduleName].exports;
+                } else {
+                    forceReload = true;
+                }
+            }
             if (moduleName in buildinModule) return buildinModule[moduleName];
             let nativeModule = findModule(moduleName);
             if (nativeModule) {
@@ -80,7 +93,7 @@ var global = global || (function () { return this; }());
             let debugPath = moduleInfo.substring(split + 1, split2);
             let script = moduleInfo.substring(split2 + 1);
             let key = fullPath;
-            if (key in moduleCache) {
+            if ((key in moduleCache) && !forceReload) {
                 localModuleCache[moduleName] = moduleCache[key];
                 return localModuleCache[moduleName].exports;
             }
@@ -109,9 +122,22 @@ var global = global || (function () { return this; }());
         buildinModule[name] = module;
     }
     
+    function reload(reloadModuleKey) {
+        for(var moduleKey in moduleCache) {
+            if (!reloadModuleKey || (reloadModuleKey === moduleKey)) {
+                moduleCache[moduleKey].__forceReload = true;
+                if (reloadModuleKey) break;
+            }
+        }
+    }
+    
     registerBuildinModule("puerts", puerts)
 
     puerts.genRequire = genRequire;
+    
+    puerts.__require = genRequire("");
+    
+    puerts.__reload = reload;
     
     puerts.getModuleBySID = getModuleBySID;
     

@@ -17,7 +17,6 @@
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
-#include "JitScript.h"
 #include "Async/Async.h"
 #include "JSGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
@@ -25,6 +24,7 @@
 #include "JSGeneratedFunction.h"
 #include "JSClassRegister.h"
 #include "PromiseRejectCallback.hpp"
+#include "TypeScriptObject.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -70,6 +70,15 @@
 
 namespace puerts
 {
+class JSError
+{
+public:
+    FString Message;
+
+    JSError() {}
+
+    explicit JSError(const FString& m) : Message(m) {}
+};
 
 static void PointerNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
@@ -93,6 +102,12 @@ public:
     {
         while(Inspector && !Inspector->Tick()){}
     }
+
+    virtual void TryBindJs(const class UObjectBase *InObject) override;
+
+    virtual void RebindJs() override;
+
+    virtual void ReloadModule(FName ModuleName) override;
 
 public:
     void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) override;
@@ -308,6 +323,10 @@ private:
 
     v8::Global<v8::Context> DefaultContext;
 
+    v8::Global<v8::Function> Require;
+
+    v8::Global<v8::Function> ReloadJs;
+
     std::map<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
 
     std::map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;
@@ -373,6 +392,18 @@ private:
         FJsEnvImpl *Parent;
     };
 
+    struct BindInfo 
+    {
+        FName BindTo;
+        v8::UniquePersistent<v8::Object> Proto;
+        v8::UniquePersistent<v8::Function> Ctor;
+        bool IsDirty;
+    };
+
+    std::map<UClass*, BindInfo> BindInfoMap;
+
+    const BindInfo * GetBindInfo(UClass* Class);
+
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
 
     TArray<UClass *> GeneratedClassList;
@@ -390,15 +421,6 @@ private:
     FDelegateHandle DelegateProxysCheckerHandler;
 
     V8Inspector* Inspector;
-
-private:
-    std::shared_ptr<FJitScript> JitScript;
-
-    uint64 AllocRequestId;
-
-    std::map<uint64, v8::UniquePersistent<v8::Function>> PendingRequests;
-
-    void RequestJitModuleMethod(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
 
 FJsEnv::FJsEnv(const FString &ScriptRoot)
@@ -424,6 +446,21 @@ void FJsEnv::LowMemoryNotification()
 void FJsEnv::WaitDebugger()
 {
     GameScript->WaitDebugger();
+}
+
+void FJsEnv::TryBindJs(const class UObjectBase *InObject)
+{
+    GameScript->TryBindJs(InObject);
+}
+
+void FJsEnv::RebindJs()
+{
+    GameScript->RebindJs();
+}
+
+void FJsEnv::ReloadModule(FName ModuleName)
+{
+    GameScript->ReloadModule(ModuleName);
 }
 
 FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1)
@@ -486,7 +523,8 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     Global->Set(Context, FV8Utils::InternalString(Isolate, "global"), Global)
         .Check();
 
-    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), v8::Object::New(Isolate))
+    v8::Local<v8::Object> Puerts = v8::Object::New(Isolate);
+    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), Puerts)
         .Check();
 
     auto This = v8::External::New(Isolate, this);
@@ -537,12 +575,6 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     {
         auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
         Self->NewObjectByClass(Info);
-    }, This)->GetFunction(Context).ToLocalChecked()).Check();
-
-    Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsRequestJitModuleMethod"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        Self->RequestJitModuleMethod(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
     Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMakeUClass"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -626,26 +658,22 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/argv.js");
     ExecuteModule("puerts/jit_stub.js");
 
+    Require.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
+
+    ReloadJs.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(TBaseDelegate<bool, float>::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
-    if (JitScript)
-    {
-        JitScript->Close();
-
-        for (auto Iter = PendingRequests.begin(); Iter != PendingRequests.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
-        PendingRequests.clear();
-    }
-
+    Require.Reset();
+    ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
+
     {
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -707,6 +735,25 @@ FJsEnvImpl::~FJsEnvImpl()
                 (*ProxyIter)->JsFunction.Reset();
             }
         }
+
+        for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
+        {
+            if (Iter->first->IsValidLowLevelFast() && !Iter->first->IsPendingKill())
+            {
+                for (TFieldIterator<UFunction> FIt(Iter->first, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+                {
+                    UFunction *Function = *FIt;
+                    if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
+                    {
+                        JSGeneratedFunction->JsFunction.Reset();
+                        JSGeneratedFunction->DynamicInvoker.Reset();
+                    }
+                }
+            }
+            Iter->second.Proto.Reset();
+            Iter->second.Ctor.Reset();
+        }
+        BindInfoMap.clear();
 
         for (auto& Pair : TickerDelegateHandleMap)
         {
@@ -886,6 +933,194 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
 void FJsEnvImpl::LowMemoryNotification()
 {
     MainIsolate->LowMemoryNotification();
+}
+
+//！！结果只能临时使用，否则Map增加容量时这个地址可能会无效
+const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
+{
+    auto Iter = BindInfoMap.find(Class);
+    if (Iter == BindInfoMap.end() || Iter->second.IsDirty)//create and link
+    {
+        //TODO: 用方法更省内存，或者是某个一个类一份的东西，但生成代码可能生成属性更简单些，后续看情况
+        UObject *DefaultObject = Class->GetDefaultObject();
+        auto BindTo = ITypeScriptObject::Execute_BindTo(Class->GetDefaultObject());
+;
+        if (BindTo != NAME_None)
+        {
+            FString ModuleName = BindTo.ToString();
+
+            auto Isolate = MainIsolate;
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            auto Context = DefaultContext.Get(Isolate);
+            v8::Context::Scope ContextScope(Context);
+            auto LocalRequire = Require.Get(Isolate);
+
+            v8::TryCatch TryCatch(Isolate);
+
+            v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName)};
+
+            auto MaybeRet = LocalRequire->Call(Context, v8::Undefined(Isolate), 1, Args);
+
+            if (TryCatch.HasCaught())
+            {
+                Logger->Error(FString::Printf(TEXT("load module [%s] exception %s"), *ModuleName, *GetExecutionException(Isolate, &TryCatch)));
+                return nullptr;
+            }
+
+            if (!MaybeRet.IsEmpty())
+            {
+                auto Ret = MaybeRet.ToLocalChecked().As<v8::Object>();
+
+                auto MaybeFunc = Ret->Get(Context, FV8Utils::ToV8String(Isolate, "default"));
+                v8::Local<v8::Value> Val;
+                if (MaybeFunc.ToLocal(&Val) && Val->IsFunction())
+                {
+                    auto Func = Val.As<v8::Function>();
+                    v8::Local<v8::Value> VProto;
+                    //UE_LOG(LogTemp, Error, TEXT("found function for , %s"), *ModuleName);
+
+                    if (Func->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VProto) && VProto->IsObject())
+                    {
+                        //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
+                        v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
+
+                        BindInfo Info;
+                        Info.BindTo = BindTo;
+                        Info.IsDirty = false;
+                        Info.Proto.Reset(Isolate, Proto);
+
+                        v8::Local<v8::Value> VCtor;
+                        if (Proto->Get(Context, FV8Utils::ToV8String(Isolate, "Constructor")).ToLocal(&VCtor) && VCtor->IsFunction())
+                        {
+                            //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
+                            Info.Ctor.Reset(Isolate, VCtor.As<v8::Function>());
+                        }
+                        BindInfoMap[Class] = std::move(Info);
+                        SysObjectRetainer.Retain(Class);
+
+                        //implement by js
+                        TSet<FName> overrided;
+
+                        for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::IncludeInterfaces); It; ++It)
+                        {
+                            UFunction *Function = *It;
+                            auto FunctionFName = Function->GetFName();
+                            auto V8Name = FV8Utils::ToV8String(Isolate, Function->GetName());
+                            if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
+                                (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) || Cast<UJSGeneratedFunction>(Function)))
+                            {
+                                auto MaybeValue = Proto->Get(Context, V8Name);
+                                if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
+                                {
+                                    //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
+                                    UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker);
+                                    overrided.Add(FunctionFName);
+                                }
+                            }
+                        }
+
+                        return &BindInfoMap[Class];
+                    }
+                }
+            }
+            Logger->Error(FString::Printf(TEXT("module [%s] invalid"), *ModuleName));
+            return nullptr;
+        }
+        else
+        {
+            Logger->Warn(FString::Printf(TEXT("not find module info for [%s]"), *Class->GetName()));
+            return nullptr;
+        }
+    }
+    else
+    {
+        //UE_LOG(LogTemp, Error, TEXT("found exist bindinfo for , %s"), *Class->GetName());
+        return &Iter->second;
+    }
+}
+
+void FJsEnvImpl::ReloadModule(FName ModuleName)
+{
+    for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
+    {
+        if (ModuleName == NAME_None || ModuleName == Iter->second.BindTo)
+        {
+            Logger->Info(FString::Printf(TEXT("reload module [%s]"), *Iter->second.BindTo.ToString()));
+            Iter->second.IsDirty = true;
+            if (ModuleName != NAME_None)
+            {
+                break;
+            }
+        }
+    }
+
+    auto Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = DefaultContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto LocalReloadJs = ReloadJs.Get(Isolate);
+
+    v8::TryCatch TryCatch(Isolate);
+
+    v8::Local<v8::Value > Args[1];
+
+    if (ModuleName == NAME_None) 
+    {
+        Args[0] = v8::Undefined(Isolate);
+    }
+    else 
+    {
+        Args[0] = FV8Utils::ToV8String(Isolate, ModuleName);
+    }
+
+    auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 1, Args);
+
+    if (TryCatch.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("reload module exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+    }
+}
+
+void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
+{
+    UObjectBaseUtility *Object = (UObjectBaseUtility*)InObject;
+    if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+    {
+        check(!Object->IsPendingKill());//
+        UClass *Class = InObject->GetClass();
+        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        {
+            //if (GeneratedObjectMap.find(InObject) == GeneratedObjectMap.end())
+            const BindInfo* Info = GetBindInfo(Class);
+            //UE_LOG(LogTemp, Error, TEXT("GetBindInfo, %p"), Info);
+            if (Info)
+            {
+                Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
+            }
+        }
+    }
+}
+
+void FJsEnvImpl::RebindJs()
+{
+    for (TObjectIterator<UClass> It; It; ++It)
+    {
+        UClass* Class = *It;
+        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        {
+            for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+            {
+                UFunction *Function = *FIt;
+                if (Function->IsA<UJSGeneratedFunction>()) //已经绑定过
+                {
+                    GetBindInfo(Class);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) // Just call in FClassReflection::Call, new a Object
@@ -1076,7 +1311,10 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
 
     auto ReturnVal1 = JSObject->SetPrototype(Context, Prototype.Get(Isolate));
 
-    auto ReturnVal2 = Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr);
+    if (!Constructor.IsEmpty())
+    {
+        auto ReturnVal2 = Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr);
+    }
 
     if (TryCatch.HasCaught())
     {
@@ -1219,7 +1457,16 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     {
         //UE_LOG(LogTemp, Warning, TEXT("add to multicast delegate, proxy: %p to:%p"), DelegateProxy, DelegatePtr);
         Iter->second.Proxys.Add(DelegateProxy);
-        static_cast<FMulticastScriptDelegate*>(DelegatePtr)->AddUnique(Delegate);
+#if ENGINE_MINOR_VERSION >= 23
+        if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
+        {
+            Iter->second.MulticastDelegateProperty->AddDelegate(MoveTemp(Delegate), Iter->second.Owner.Get(), DelegatePtr);
+        }
+        else
+#endif
+        {
+            static_cast<FMulticastScriptDelegate*>(DelegatePtr)->AddUnique(Delegate);
+        }
     }
     return true;
 }
@@ -1259,7 +1506,16 @@ bool FJsEnvImpl::RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>
 
         Delegate.BindUFunction(DelegateProxy, NAME_Fire);
 
-        static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
+#if ENGINE_MINOR_VERSION >= 23
+        if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
+        {
+            Iter->second.MulticastDelegateProperty->RemoveDelegate(Delegate, Iter->second.Owner.Get(), DelegatePtr);
+        }
+        else
+#endif
+        {
+            static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
+        }
             
         auto ReturnVal = Map->Set(Context, JsFunction, v8::Undefined(Isolate));
 
@@ -1302,7 +1558,16 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     {
         if (Iter->second.Owner.IsValid())
         {
-            static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Clear();
+#if ENGINE_MINOR_VERSION >= 23
+            if (Iter->second.MulticastDelegateProperty->IsA<MulticastSparseDelegatePropertyMacro>())
+            {
+                Iter->second.MulticastDelegateProperty->ClearDelegate(Iter->second.Owner.Get(), DelegatePtr);
+            }
+            else
+#endif
+            {
+                static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Clear();
+            }
         }
 
         for (auto ProxyIter = Iter->second.Proxys.CreateIterator(); ProxyIter; ++ProxyIter)
@@ -2116,68 +2381,6 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     SetFTickerDelegate(Info, true);
 }
 
-void FJsEnvImpl::RequestJitModuleMethod(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    if (!JitScript)
-    {
-        AllocRequestId = 0;
-        JitScript = std::make_unique<FJitScript>(std::make_unique<DefaultJSModuleLoader>(this->ModuleLoader->GetScriptRoot()), CreateJSEngine(), Logger);
-        JitScript->Start("puerts/jit_skeleton.js");
-    }
-
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    //Arg1 = module#method#args
-    CHECK_V8_ARGS(String, Function);
-
-    uint64 RequestId = AllocRequestId;
-    while (PendingRequests.find(RequestId) != PendingRequests.end())
-    {
-        ++RequestId;
-    }
-    AllocRequestId = RequestId + 1;
-
-    PendingRequests[RequestId] = v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(Info[1]));
-
-    JitScript->SendRquest("requestModuleMethod", FV8Utils::ToFString(Isolate, Info[0]), [this, RequestId](const FString& Rpy, const puerts::JSError* Err)
-    {
-        AsyncTask(ENamedThreads::GameThread, [=]()
-        {
-            if (PendingRequests.find(RequestId) == PendingRequests.end())
-            {
-                Logger->Error(FString::Printf(TEXT("can not find the callback for RequestId(%llu)"), RequestId));
-                return;
-            }
-
-            v8::Isolate::Scope IsolateScope1(MainIsolate);
-            v8::HandleScope HandleScope1(MainIsolate);
-            v8::Local<v8::Context> Context1 = DefaultContext.Get(MainIsolate);
-            v8::Context::Scope ContextScope1(Context1);
-
-            auto Callback = PendingRequests[RequestId].Get(MainIsolate);
-            PendingRequests[RequestId].Reset();
-            PendingRequests.erase(RequestId);
-
-            v8::Local<v8::Value> Args[2];
-            if (Err)
-            {
-                Args[0] = v8::Exception::Error(FV8Utils::ToV8String(MainIsolate, Err->Message));
-            }
-            else
-            {
-                Args[0] = v8::Undefined(MainIsolate);
-            }
-            Args[1] = FV8Utils::ToV8String(MainIsolate, Rpy);
-                
-            auto ReturnVal = Callback->Call(Context1, v8::Undefined(MainIsolate), 2, Args);
-        });
-    });
-}
-
 void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -2202,16 +2405,20 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     auto Class = UJSGeneratedClass::Create(ClassName, ParentUClass, DynamicInvoker, Isolate, Constructor, Prototype);
 
+    TSet<FName> overrided;
+
     for (TFieldIterator<UFunction> It(ParentUClass, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::IncludeInterfaces); It; ++It)
     {
         UFunction *Function = *It;
-        if (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
+        auto FunctionFName = Function->GetFName();
+        if (!overrided.Contains(FunctionFName) && Function->HasAnyFunctionFlags(FUNC_BlueprintEvent))
         {
             auto MaybeValue = Methods->Get(Context, FV8Utils::ToV8String(Isolate, Function->GetName()));
             if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
             {
                 //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
                 UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker);
+                overrided.Add(FunctionFName);
             }
         }
     }

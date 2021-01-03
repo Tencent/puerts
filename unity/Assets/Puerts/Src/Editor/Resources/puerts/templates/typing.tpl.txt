@@ -14,10 +14,18 @@ function typeKeyword(type) {
     }
 }
 
+function toJsArray(csArr) {
+    let arr = [];
+    for(var i = 0; i < csArr.Length; i++) {
+        arr.push(csArr.get_Item(i));
+    }
+    return arr;
+}
+
 function typeDeclaration(type, level1) {
     var result = type.Name;
     if (type.IsGenericTypeDefinition) {
-        result += "<" + Array.prototype.join.call(type.GenericParameters, ',') + ">";
+        result += "<" + Array.prototype.join.call(toJsArray(type.GenericParameters), ',') + ">";
     }
     if (level1 && type.BaseType) {
         result += " extends " + typeDeclaration(type.BaseType);
@@ -62,7 +70,7 @@ declare module 'csharp' {
             {{~}}{{~type.Methods :method}}{{=indent(method.Document, 12)}}
             {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
             {{~}}
-        }{{}}}{{?type.ExtensionMethods.length > 0}}
+        }{{}}}{{?type.ExtensionMethods.Length > 0}}
         {{=indent(type.Document, 8)}}
         interface {{=type.Name}} {
             {{~type.ExtensionMethods :method}}{{=indent(method.Document, 12)}}

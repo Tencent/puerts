@@ -1,0 +1,10 @@
+{
+  "name": "PuertsEditor",
+  "version": "1.0.0",
+  "description": "PuertsEditor",
+  "scripts": {},
+  "dependencies": {
+    "typescript": "3.4.5"
+  },
+  "devDependencies": {}
+}

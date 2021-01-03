@@ -81,7 +81,7 @@ public:
 
             // 输出 (filename):(line number): (message).
             std::ostringstream stm;
-            v8::String::Utf8Value FileName(Isolate, Message->GetScriptOrigin().ResourceName());
+            v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
             int LineNum = Message->GetLineNumber(Context).FromJust();
             stm << *FileName << ":" << LineNum << ": " << ExceptionStr;
 
@@ -93,11 +93,11 @@ public:
 
             // 输出波浪下划线
             std::string WavyUnderlineStr;
-            int Start = Message->GetStartColumn(Context).FromJust();
+            int Start = Message->GetStartColumn();
             for (int Index = 0; Index < Start; Index++) {
                 WavyUnderlineStr = WavyUnderlineStr.append(" ");
             }
-            int End = Message->GetEndColumn(Context).FromJust();
+            int End = Message->GetEndColumn();
             for (int Index = Start; Index < End; Index++) {
                 WavyUnderlineStr = WavyUnderlineStr.append("^");
             }
@@ -106,9 +106,7 @@ public:
 
             // 输出调用栈信息
             v8::Local<v8::Value> StackTrace;
-            if (TryCatch.StackTrace(Context).ToLocal(&StackTrace) &&
-                StackTrace->IsString() &&
-                v8::Local<v8::String>::Cast(StackTrace)->Length() > 0)
+            if (TryCatch.StackTrace(Context).ToLocal(&StackTrace))
             {
                 v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
                 stm << std::endl << *StackTraceVal;

@@ -345,7 +345,7 @@ public class JsEnv : ModuleRules
             bool bBuildForArmV7 = DefaultEngineIniFile.GetBoolean("/Script/AndroidRuntimeSettings.AndroidRuntimeSettings", "bBuildForArmV7");
             bool bBuildForArm64 = DefaultEngineIniFile.GetBoolean("/Script/AndroidRuntimeSettings.AndroidRuntimeSettings", "bBuildForArm64");
 
-            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion == 25)
+            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25)
             {
                 if (bBuildForArmV7)
                 {
@@ -429,7 +429,7 @@ public class JsEnv : ModuleRules
         // External headers
         if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion == 25)
+            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25)
             {
                 PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "8.4.371.19") });
             }

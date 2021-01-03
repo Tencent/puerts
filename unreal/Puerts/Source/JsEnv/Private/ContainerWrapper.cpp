@@ -42,10 +42,8 @@ namespace puerts
     void FScriptArrayWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         if (Info.Length() > 0)
         {
@@ -66,10 +64,8 @@ namespace puerts
     void FScriptArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -89,10 +85,8 @@ namespace puerts
     void FScriptArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(2);
         
@@ -127,10 +121,8 @@ namespace puerts
     void FScriptArrayWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
         
@@ -154,10 +146,8 @@ namespace puerts
     void FScriptArrayWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -169,10 +159,8 @@ namespace puerts
     void FScriptArrayWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
@@ -217,10 +205,8 @@ namespace puerts
     int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
@@ -270,10 +256,8 @@ namespace puerts
     void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -302,10 +286,8 @@ namespace puerts
     void FScriptSetWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -343,10 +325,8 @@ namespace puerts
     void FScriptSetWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -371,10 +351,8 @@ namespace puerts
     void FScriptSetWrapper::GetMaxIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
         uint32 Result = Self->GetMaxIndex();
@@ -384,10 +362,8 @@ namespace puerts
     void FScriptSetWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -400,10 +376,8 @@ namespace puerts
     void FScriptSetWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
@@ -432,10 +406,8 @@ namespace puerts
     int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
@@ -480,10 +452,8 @@ namespace puerts
     void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(2);
 
@@ -537,10 +507,8 @@ namespace puerts
     void FScriptMapWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -576,10 +544,8 @@ namespace puerts
     void FScriptMapWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -613,10 +579,8 @@ namespace puerts
     void FScriptMapWrapper::GetMaxIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
         int32 Result = Self->GetMaxIndex();
@@ -626,10 +590,8 @@ namespace puerts
     void FScriptMapWrapper::IsValidIndex(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -641,10 +603,8 @@ namespace puerts
     void FScriptMapWrapper::GetKey(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         CHECK_V8_ARGS_LEN(1);
 
@@ -671,10 +631,8 @@ namespace puerts
     void FScriptMapWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
         auto KeyPropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
@@ -729,10 +687,8 @@ namespace puerts
     void FFixSizeArrayWrapper::Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
         Info.GetReturnValue().Set(PropertyTranslator->Property->ArrayDim);
@@ -741,10 +697,8 @@ namespace puerts
     void FFixSizeArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<uint8>(Info.Holder(), 0);
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
@@ -771,10 +725,8 @@ namespace puerts
     void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<uint8>(Info.Holder(), 0);
         auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);

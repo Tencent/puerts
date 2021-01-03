@@ -35,10 +35,8 @@
 static void* _FQuatNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -128,10 +126,8 @@ static void* _FQuatNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -165,10 +161,8 @@ static void FQuatM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -202,10 +196,8 @@ static void FQuatM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FQuatM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -237,10 +229,8 @@ static void FQuatM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_IsIdentity(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -267,10 +257,8 @@ static void FQuatM_IsIdentity(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -355,10 +343,8 @@ static void FQuatM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -389,10 +375,8 @@ static void FQuatM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -422,10 +406,8 @@ static void FQuatM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -455,10 +437,8 @@ static void FQuatM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FQuatM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -488,10 +468,8 @@ static void FQuatM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_MakeFromEuler(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -519,10 +497,8 @@ static void FQuatS_MakeFromEuler(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FQuatM_Euler(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -551,10 +527,8 @@ static void FQuatM_Euler(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -579,10 +553,8 @@ static void FQuatM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_GetNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -613,10 +585,8 @@ static void FQuatM_GetNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FQuatM_IsNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -641,10 +611,8 @@ static void FQuatM_IsNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -669,10 +637,8 @@ static void FQuatM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -697,10 +663,8 @@ static void FQuatM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_GetAngle(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -725,10 +689,8 @@ static void FQuatM_GetAngle(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_ToAxisAndAngle(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (Info[0]->IsObject() &&
@@ -759,10 +721,8 @@ static void FQuatM_ToAxisAndAngle(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FQuatM_ToSwingTwist(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 3)
     {
         if (
@@ -800,10 +760,8 @@ static void FQuatM_ToSwingTwist(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_RotateVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -837,10 +795,8 @@ static void FQuatM_RotateVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_UnrotateVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -874,10 +830,8 @@ static void FQuatM_UnrotateVector(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FQuatM_Log(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -906,10 +860,8 @@ static void FQuatM_Log(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_Exp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -938,10 +890,8 @@ static void FQuatM_Exp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_Inverse(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -970,10 +920,8 @@ static void FQuatM_Inverse(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_EnforceShortestArcWith(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -1001,10 +949,8 @@ static void FQuatM_EnforceShortestArcWith(const v8::FunctionCallbackInfo<v8::Val
 static void FQuatM_GetAxisX(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1033,10 +979,8 @@ static void FQuatM_GetAxisX(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_GetAxisY(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1065,10 +1009,8 @@ static void FQuatM_GetAxisY(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_GetAxisZ(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1097,10 +1039,8 @@ static void FQuatM_GetAxisZ(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_GetForwardVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1129,10 +1069,8 @@ static void FQuatM_GetForwardVector(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FQuatM_GetRightVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1161,10 +1099,8 @@ static void FQuatM_GetRightVector(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FQuatM_GetUpVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1193,10 +1129,8 @@ static void FQuatM_GetUpVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_Vector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1225,10 +1159,8 @@ static void FQuatM_Vector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_Rotator(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1257,10 +1189,8 @@ static void FQuatM_Rotator(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_GetRotationAxis(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1289,10 +1219,8 @@ static void FQuatM_GetRotationAxis(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FQuatM_AngularDistance(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -1322,10 +1250,8 @@ static void FQuatM_AngularDistance(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FQuatM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1350,10 +1276,8 @@ static void FQuatM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1378,10 +1302,8 @@ static void FQuatM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 1)
     {
         if (
@@ -1408,10 +1330,8 @@ static void FQuatM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FQuatM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 0)
     {
         if (true)
@@ -1434,10 +1354,8 @@ static void FQuatM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Value>&
 static void FQuatS_FindBetween(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -1470,10 +1388,8 @@ static void FQuatS_FindBetween(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_FindBetweenNormals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -1506,10 +1422,8 @@ static void FQuatS_FindBetweenNormals(const v8::FunctionCallbackInfo<v8::Value>&
 static void FQuatS_FindBetweenVectors(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -1542,10 +1456,8 @@ static void FQuatS_FindBetweenVectors(const v8::FunctionCallbackInfo<v8::Value>&
 static void FQuatS_Error(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -1574,10 +1486,8 @@ static void FQuatS_Error(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_ErrorAutoNormalize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 2)
     {
         if (
@@ -1606,10 +1516,8 @@ static void FQuatS_ErrorAutoNormalize(const v8::FunctionCallbackInfo<v8::Value>&
 static void FQuatS_FastLerp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 3)
     {
         if (
@@ -1644,10 +1552,8 @@ static void FQuatS_FastLerp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_FastBilerp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 6)
     {
         if (
@@ -1694,10 +1600,8 @@ static void FQuatS_FastBilerp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_Slerp_NotNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 3)
     {
         if (
@@ -1732,10 +1636,8 @@ static void FQuatS_Slerp_NotNormalized(const v8::FunctionCallbackInfo<v8::Value>
 static void FQuatS_Slerp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 3)
     {
         if (
@@ -1770,10 +1672,8 @@ static void FQuatS_Slerp(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_SlerpFullPath_NotNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 3)
     {
         if (
@@ -1808,10 +1708,8 @@ static void FQuatS_SlerpFullPath_NotNormalized(const v8::FunctionCallbackInfo<v8
 static void FQuatS_SlerpFullPath(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 3)
     {
         if (
@@ -1846,10 +1744,8 @@ static void FQuatS_SlerpFullPath(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FQuatS_Squad(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 5)
     {
         if (
@@ -1894,10 +1790,8 @@ static void FQuatS_Squad(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FQuatS_SquadFullPath(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 5)
     {
         if (
@@ -1942,10 +1836,8 @@ static void FQuatS_SquadFullPath(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FQuatS_CalcTangents(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
     if (Info.Length() == 5)
     {
         if (
@@ -1984,10 +1876,8 @@ static void FQuatS_CalcTangents(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FQuatXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -1997,10 +1887,8 @@ static void _FQuatXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
 static void _FQuatXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -2009,10 +1897,8 @@ static void _FQuatXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
 static void _FQuatYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -2022,10 +1908,8 @@ static void _FQuatYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
 static void _FQuatYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -2034,10 +1918,8 @@ static void _FQuatYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
 static void _FQuatZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -2047,10 +1929,8 @@ static void _FQuatZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
 static void _FQuatZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -2059,10 +1939,8 @@ static void _FQuatZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
 static void _FQuatWGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 
@@ -2072,10 +1950,8 @@ static void _FQuatWGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
 static void _FQuatWSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     auto Self = puerts::DataTransfer::GetPoninterFast<FQuat>(Info.This());
 

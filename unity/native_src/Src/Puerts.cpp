@@ -6,9 +6,10 @@
 */
 
 #include "JSEngine.h"
+#include <cstring>
 #include "V8Utils.h"
 
-#define LIB_VERSION 7
+#define LIB_VERSION 9
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -317,8 +318,9 @@ V8_EXPORT const char* GetArrayBufferFromValue(v8::Isolate* Isolate, v8::Value *V
         else if (Value->IsArrayBuffer())
         {
             auto Ab = v8::ArrayBuffer::Cast(Value);
-            *Length = static_cast<int>(Ab->ByteLength());
-            return static_cast<char*>(Ab->GetContents().Data());
+            auto ABC = Ab->GetContents();
+            *Length = static_cast<int>(ABC.ByteLength());
+            return static_cast<char*>(ABC.Data());
         }
         else
         {
@@ -333,7 +335,7 @@ V8_EXPORT void SetArrayBufferToOutValue(v8::Isolate* Isolate, v8::Value *Value, 
     {
         auto Context = Isolate->GetCurrentContext();
         auto Outer = Value->ToObject(Context).ToLocalChecked();
-        v8::Handle<v8::ArrayBuffer> Ab = puerts::NewArrayBuffer(Isolate, Bytes, Length, true);
+        v8::Local<v8::ArrayBuffer> Ab = puerts::NewArrayBuffer(Isolate, Bytes, Length, true);
         auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), Ab);
     }
 }
@@ -696,8 +698,9 @@ V8_EXPORT const char *GetArrayBufferFromResult(FResultInfo *ResultInfo, int *Len
     else if (Value->IsArrayBuffer())
     {
         auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
-        *Length = static_cast<int>(Ab->ByteLength());
-        return static_cast<char*>(Ab->GetContents().Data());
+        auto ABC = Ab->GetContents();
+        *Length = static_cast<int>(ABC.ByteLength());
+        return static_cast<char*>(ABC.Data());
     }
     else
     {
@@ -756,58 +759,6 @@ V8_EXPORT const char* GetFunctionLastExceptionInfo(JSFunction *Function, int *Le
 }
 
 //-------------------------- end cs call js --------------------------
-
-
-//-------------------------- begin indexed property --------------------------
-V8_EXPORT int RegisterIndexedProperty(v8::Isolate *Isolate, int ClassID, CSharpIndexedGetterCallback Getter, CSharpIndexedSetterCallback Setter, int64_t Data)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    return JsEngine->RegisterIndexedProperty(ClassID, Getter, Setter, Data) ? 1 : 0;
-}
-
-V8_EXPORT void PropertyReturnObject(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int ClassID, void* Ptr)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    Info.GetReturnValue().Set(JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr));
-}
-
-V8_EXPORT void PropertyReturnNumber(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Number)
-{
-    Info.GetReturnValue().Set(Number);
-}
-
-V8_EXPORT void PropertyReturnString(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, const char* String)
-{
-    Info.GetReturnValue().Set(FV8Utils::V8String(Isolate, String));
-}
-
-V8_EXPORT void PropertyReturnBigInt(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int64_t BigInt)
-{
-    Info.GetReturnValue().Set(v8::BigInt::New(Isolate, BigInt));
-}
-
-V8_EXPORT void PropertyReturnArrayBuffer(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, unsigned char* Bytes, int Length)
-{
-    Info.GetReturnValue().Set(puerts::NewArrayBuffer(Isolate, Bytes, Length, true));
-}
-
-V8_EXPORT void PropertyReturnBoolean(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, int Bool)
-{
-    Info.GetReturnValue().Set(Bool ? true : false);
-}
-
-V8_EXPORT void PropertyReturnDate(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info, double Date)
-{
-    Info.GetReturnValue().Set(v8::Date::New(Isolate->GetCurrentContext(), Date).ToLocalChecked());
-}
-
-V8_EXPORT void PropertyReturnNull(v8::Isolate* Isolate, const v8::PropertyCallbackInfo<v8::Value>& Info)
-{
-    Info.GetReturnValue().SetNull();
-}
-
-//-------------------------- end indexed property --------------------------
-
 
 //-------------------------- begin debug --------------------------
 

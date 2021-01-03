@@ -45,10 +45,8 @@ public:
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = Info.This();
 
@@ -78,10 +76,8 @@ public:
     static void Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
         auto Self = FV8Utils::GetPoninterFast<T>(Info.Holder());
         Info.GetReturnValue().Set(Self->Num());
