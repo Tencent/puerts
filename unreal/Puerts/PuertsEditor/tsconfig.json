@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "jsx": "react",
+    "sourceMap": true,
+    "typeRoots": [
+      "../../../Content/Typing",
+    ],
+    "outDir": "../../../Content/Javascript/PuertsEditor"
+  },
+}

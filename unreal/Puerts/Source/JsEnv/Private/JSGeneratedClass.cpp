@@ -179,12 +179,8 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
     {
         if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super)) //这种情况只需简单替换下js函数
         {
-            //UE_LOG(LogTemp, Error, TEXT("js replace js fuction %s of %s"), *Super->GetName(), *Class->GetName());
-            if (MaybeJSFunction->JsFunction.IsEmpty())
-            {
-                MaybeJSFunction->DynamicInvoker = DynamicInvoker;
-                MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super);
-            }
+            MaybeJSFunction->DynamicInvoker = DynamicInvoker;
+            MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
             return;
         }

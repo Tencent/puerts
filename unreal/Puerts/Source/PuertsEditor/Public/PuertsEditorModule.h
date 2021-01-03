@@ -12,18 +12,16 @@
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 
-class PUERTS_API IPuertsModule : public IModuleInterface
+class IPuertsEditorModule : public IModuleInterface
 {
 public:
-    static inline IPuertsModule& Get()
+    static inline IPuertsEditorModule& Get()
     {
-        return FModuleManager::LoadModuleChecked<IPuertsModule>("Puerts");
+        return FModuleManager::LoadModuleChecked<IPuertsEditorModule>("PuertsEditor");
     }
 
     static inline bool IsAvailable()
     {
-        return FModuleManager::Get().IsModuleLoaded("Puerts");
+        return FModuleManager::Get().IsModuleLoaded("PuertsEditor");
     }
-
-    virtual bool IsEnabled() = 0;
 };

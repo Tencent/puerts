@@ -29,6 +29,10 @@ public:
     void EndPIE(bool bIsSimulating);
 #endif
 
+    virtual bool IsEnabled() override {
+        return Enabled;
+    }
+
 private:
     TSharedPtr<puerts::FJsEnv> JsEnv;
 
@@ -68,6 +72,9 @@ void FPuertsModule::EndPIE(bool bIsSimulating)
     {
         //UE_LOG(LogTemp, Error, TEXT("Reload All Module "));
         JsEnv->ReloadModule(NAME_None);
+        //JsEnv.Reset();
+        //JsEnv = MakeShared<puerts::FJsEnv>();
+        //JsEnv->RebindJs();
     }
 }
 #endif

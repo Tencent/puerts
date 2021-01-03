@@ -105,6 +105,8 @@ public:
 
     virtual void TryBindJs(const class UObjectBase *InObject) override;
 
+    virtual void RebindJs() override;
+
     virtual void ReloadModule(FName ModuleName) override;
 
 public:
@@ -449,6 +451,11 @@ void FJsEnv::TryBindJs(const class UObjectBase *InObject)
     GameScript->TryBindJs(InObject);
 }
 
+void FJsEnv::RebindJs()
+{
+    GameScript->RebindJs();
+}
+
 void FJsEnv::ReloadModule(FName ModuleName)
 {
     GameScript->ReloadModule(ModuleName);
@@ -661,6 +668,24 @@ FJsEnvImpl::~FJsEnvImpl()
     JsPromiseRejectCallback.Reset();
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
+
+    for (TObjectIterator<UClass> It; It; ++It)
+    {
+        UClass* Class = *It;
+        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        {
+            for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+            {
+                UFunction *Function = *FIt;
+                if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
+                {
+                    JSGeneratedFunction->JsFunction.Reset();
+                    JSGeneratedFunction->DynamicInvoker.Reset();
+                }
+            }
+        }
+    }
+
     {
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -909,6 +934,7 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
+//！！结果只能临时使用，否则Map增加容量时这个地址可能会无效
 const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 {
     auto Iter = BindInfoMap.find(Class);
@@ -1036,10 +1062,6 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
     {
         check(!Object->IsPendingKill());//
         UClass *Class = InObject->GetClass();
-        if (Class->IsChildOf<UPackage>() || Class->IsChildOf<UClass>())
-        {
-            return;
-        }
         if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
         {
             //if (GeneratedObjectMap.find(InObject) == GeneratedObjectMap.end())
@@ -1048,6 +1070,26 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
             if (Info)
             {
                 Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
+            }
+        }
+    }
+}
+
+void FJsEnvImpl::RebindJs()
+{
+    for (TObjectIterator<UClass> It; It; ++It)
+    {
+        UClass* Class = *It;
+        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        {
+            for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+            {
+                UFunction *Function = *FIt;
+                if (Function->IsA<UJSGeneratedFunction>()) //已经绑定过
+                {
+                    GetBindInfo(Class);
+                    break;
+                }
             }
         }
     }
