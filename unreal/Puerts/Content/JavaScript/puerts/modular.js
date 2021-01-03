@@ -69,9 +69,17 @@ var global = global || (function () { return this; }());
     
     function genRequire(requiringDir) {
         let localModuleCache = Object.create(null);
-        function require(moduleName, forceReload) {
+        function require(moduleName) {
             moduleName = normalize(moduleName);
-            if ((moduleName in localModuleCache) && !forceReload) return localModuleCache[moduleName].exports;
+            let forceReload = false;
+            if ((moduleName in localModuleCache)) {
+                let m = localModuleCache[moduleName];
+                if (!m.__forceReload) {
+                    return localModuleCache[moduleName].exports;
+                } else {
+                    forceReload = true;
+                }
+            }
             if (moduleName in buildinModule) return buildinModule[moduleName];
             let nativeModule = findModule(moduleName);
             if (nativeModule) {
@@ -114,11 +122,22 @@ var global = global || (function () { return this; }());
         buildinModule[name] = module;
     }
     
+    function reload(reloadModuleKey) {
+        for(var moduleKey in moduleCache) {
+            if (!reloadModuleKey || (reloadModuleKey === moduleKey)) {
+                moduleCache[moduleKey].__forceReload = true;
+                if (reloadModuleKey) break;
+            }
+        }
+    }
+    
     registerBuildinModule("puerts", puerts)
 
     puerts.genRequire = genRequire;
     
     puerts.__require = genRequire("");
+    
+    puerts.__reload = reload;
     
     puerts.getModuleBySID = getModuleBySID;
     

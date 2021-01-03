@@ -325,6 +325,8 @@ private:
 
     v8::Global<v8::Function> Require;
 
+    v8::Global<v8::Function> ReloadJs;
+
     std::map<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
 
     std::map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;
@@ -658,6 +660,8 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Require.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
 
+    ReloadJs.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(TBaseDelegate<bool, float>::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 }
 
@@ -665,6 +669,7 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 FJsEnvImpl::~FJsEnvImpl()
 {
     Require.Reset();
+    ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
@@ -950,10 +955,9 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 
             v8::TryCatch TryCatch(Isolate);
 
-            //强制刷新
-            v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName), v8::True(Isolate) };
+            v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName)};
 
-            auto MaybeRet = LocalRequire->Call(Context, v8::Undefined(Isolate), 2, Args);
+            auto MaybeRet = LocalRequire->Call(Context, v8::Undefined(Isolate), 1, Args);
 
             if (TryCatch.HasCaught())
             {
@@ -1045,6 +1049,33 @@ void FJsEnvImpl::ReloadModule(FName ModuleName)
                 break;
             }
         }
+    }
+
+    auto Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = DefaultContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto LocalReloadJs = ReloadJs.Get(Isolate);
+
+    v8::TryCatch TryCatch(Isolate);
+
+    v8::Local<v8::Value > Args[1];
+
+    if (ModuleName == NAME_None) 
+    {
+        Args[0] = v8::Undefined(Isolate);
+    }
+    else 
+    {
+        Args[0] = FV8Utils::ToV8String(Isolate, ModuleName);
+    }
+
+    auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 1, Args);
+
+    if (TryCatch.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("reload module exception %s"), *GetExecutionException(Isolate, &TryCatch)));
     }
 }
 
