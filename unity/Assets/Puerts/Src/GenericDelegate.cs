@@ -181,7 +181,7 @@ namespace Puerts
                 {
                     if ((delegateMethod.ReturnType.IsValueType && delegateMethod.ReturnType != typeof(void))
                         || parameters.Length > 4
-                        || typeArgs.Any(paramType => paramType.IsValueType || paramType.IsByRef)
+                        || typeArgs.Any(paramType => paramType.IsByRef)
                         )
                     {
                         //如果不在支持的范围，则生成一个永远返回空的构造器
