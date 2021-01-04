@@ -4,7 +4,13 @@ namespace PuertsStaticWrap
     {
         public static void Register(Puerts.JsEnv jsEnv)
         {
-            {{~it :type}}jsEnv.AddLazyStaticWrapLoader(typeof({{=type.Name}}), {{=type.WrapClassName}}.GetRegisterInfo);
+        
+            {{~it.UsingActions :action}}jsEnv.UsingAction<{{=action}}>();
+            {{~}}
+            {{~it.UsingFunctions :func}}jsEnv.UsingFunc<{{=func}}>();
+            {{~}}
+            
+            {{~it.TypeGenInfos :type}}jsEnv.AddLazyStaticWrapLoader(typeof({{=type.Name}}), {{=type.WrapClassName}}.GetRegisterInfo);
             {{?type.BlittableCopy}}{{=type.WrapClassName}}.InitBlittableCopy(jsEnv);
             {{?}}{{~}}
         }

@@ -799,7 +799,59 @@ namespace Puerts.Editor
 
             public string TaskDef;
         }
+        
+        public class AutoGenInfo
+        {
+            public TypeGenInfo[] TypeGenInfos;
+            public string[] UsingActions;
+            public string[] UsingFunctions;
+            public AutoGenInfo(Type[] genTypes, TypeGenInfo[] typeGenInfos)
+            {
+                this.TypeGenInfos = typeGenInfos;
+                
+                
+                HashSet<string> actions = new HashSet<string>();
+                HashSet<string> functions = new HashSet<string>();
+                
+                HashSet<Type> allDelegateTypes = new HashSet<Type>();
 
+                foreach (var type in genTypes)
+                {
+                    var parameterTypes = type.GetMethods(Flags).Select(m => m.GetParameters())
+                        .SelectMany(ps => ps.Select(p => p.ParameterType));
+                    var propertyTypes = type.GetProperties(Flags).Select(m=>m.PropertyType);
+                    var fieldTypes = type.GetFields(Flags).Select(m => m.FieldType);
+                    
+                    foreach (var t in parameterTypes) if (typeof(Delegate).IsAssignableFrom(t)) allDelegateTypes.Add(t);
+                    foreach (var t in propertyTypes) if (typeof(Delegate).IsAssignableFrom(t)) allDelegateTypes.Add(t);
+                    foreach (var t in fieldTypes) if (typeof(Delegate).IsAssignableFrom(t)) allDelegateTypes.Add(t);
+                }
+                
+                
+                foreach (var delegateType in allDelegateTypes)
+                {
+                    var delegateMethod = delegateType.GetMethod("Invoke");
+                    if(delegateMethod == null) continue;
+                    var typeArgs = delegateMethod.GetParameters().Select(p => p.ParameterType).ToArray();
+                    
+                    if (typeArgs.Length > 4 || typeArgs.Any(paramType=>paramType.IsByRef)) continue;
+                    if(typeArgs.Any(paramType=>paramType.IsValueType) == false) continue;
+                    
+                    if (delegateMethod.ReturnType == typeof(void))
+                    {
+                        actions.Add(string.Join(", ", typeArgs.Select(t => t.FullName)));
+                    }
+                    else
+                    {
+                        functions.Add(string.Join(", ", typeArgs.Select(t => t.FullName)) + "," + delegateMethod.ReturnType.FullName);
+                    }
+                }
+                
+                this.UsingActions = actions.ToArray();
+                this.UsingFunctions = functions.ToArray();
+            }
+        }
+        
         static TsMethodGenInfo[] GetMethodGenInfos(Dictionary<string, TsTypeGenInfo> tsGenTypeInfos, TsTypeGenInfo info, bool getBaseMethods)
         {
             var result = new List<TsMethodGenInfo>();
@@ -1087,7 +1139,7 @@ namespace Puerts.Editor
                     var autoRegisterRender = templateGetter("autoreg.tpl");
                     using (StreamWriter textWriter = new StreamWriter(saveTo + "AutoStaticCodeRegister.cs", false, Encoding.UTF8))
                     {
-                        string fileContext = autoRegisterRender(typeGenInfos.ToArray());
+                        string fileContext = autoRegisterRender(new AutoGenInfo(genTypes.ToArray(), typeGenInfos.ToArray()));
                         textWriter.Write(fileContext);
                         textWriter.Flush();
                     }
