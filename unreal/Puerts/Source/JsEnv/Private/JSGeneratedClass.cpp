@@ -137,7 +137,24 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
 
     if (Replace)
     {
+        Function->Next = Super->Next;
+        if (Class->Children == Super) // first one
+        {
+            Class->Children = Function;
+        }
+        else
+        {
+            auto P = Class->Children;
+            while (P && P->Next != Super) P = P->Next;
+            check(P);
+            P->Next = Function;
+        }
         Class->RemoveFunctionFromFunctionMap(Super);
+    }
+    else
+    {
+        Function->Next = Class->Children;
+        Class->Children = Function;
     }
     Class->AddFunctionToFunctionMap(Function, Function->GetFName());
 }
