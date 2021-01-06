@@ -50,6 +50,9 @@
 #elif PLATFORM_IOS
 #include "Blob/iOS/arm64/NativesBlob.h"
 #include "Blob/iOS/arm64/SnapshotBlob.h"
+#elif PLATFORM_LINUX
+#include "Blob/Linux/NativesBlob.h"
+#include "Blob/Linux/SnapshotBlob.h"
 #endif
 
 #else
@@ -64,6 +67,8 @@
 #include "Blob/macOS/SnapshotBlob.h"
 #elif PLATFORM_IOS
 #include "Blob/iOS/arm64/SnapshotBlob.h"
+#elif PLATFORM_LINUX
+#include "Blob/Linux/SnapshotBlob.h"
 #endif
 
 #endif

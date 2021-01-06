@@ -143,6 +143,11 @@ public class JsEnv : ModuleRules
 
             //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
         }
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Linux");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+        }
 
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
         // External headers
@@ -161,7 +166,8 @@ public class JsEnv : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Win64 ||
             Target.Platform == UnrealTargetPlatform.IOS ||
-            Target.Platform == UnrealTargetPlatform.Mac)
+            Target.Platform == UnrealTargetPlatform.Mac ||
+            Target.Platform == UnrealTargetPlatform.Linux)
         {
             PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "7.7.299") });
             PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
@@ -224,6 +230,10 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
 
             //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
+        } 
+        else if (Target.Platform == UnrealTargetPlatform.Linux) {
+            string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
         }
     }
 
