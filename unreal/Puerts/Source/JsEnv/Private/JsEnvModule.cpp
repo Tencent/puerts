@@ -9,7 +9,7 @@
 //#include "TGameJSCorePCH.h"
 
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 #pragma warning(push, 0)     
 #include "v8.h"
 #include "libplatform/libplatform.h"
@@ -24,7 +24,7 @@ class FJsEnvModule : public IJsEnvModule
     void StartupModule() override;
     void ShutdownModule() override;
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 public:
     void* GetV8Platform() override;
 
@@ -40,7 +40,7 @@ IMPLEMENT_MODULE( FJsEnvModule, JsEnv)
 void FJsEnvModule::StartupModule()
 {
     // This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
     platform_ = v8::platform::NewDefaultPlatform();
     v8::V8::InitializePlatform(platform_.get());
     v8::V8::Initialize();
@@ -52,13 +52,13 @@ void FJsEnvModule::ShutdownModule()
 {
     // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
     // we call this function before unloading the module.
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
     v8::V8::Dispose();
     v8::V8::ShutdownPlatform();
 #endif
 }
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 void* FJsEnvModule::GetV8Platform()
 {
     return reinterpret_cast<void*>(platform_.get());

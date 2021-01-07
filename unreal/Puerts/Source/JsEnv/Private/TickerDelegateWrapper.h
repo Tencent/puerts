@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 
 #include "CoreMinimal.h"
 #include <functional>
@@ -59,4 +59,4 @@ private:
     FDelegateHandle* DelegateHandle;
 };
 
-#endif  // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC
+#endif  // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
