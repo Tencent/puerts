@@ -1170,6 +1170,8 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
     });
 }
 
+type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float";
+
 declare var global:any
 
 function watch(configFilePath:string) {
@@ -1282,36 +1284,163 @@ function watch(configFilePath:string) {
                 logErrors(diagnostics);
             } else {
                 fileVersions[sourceFilePath].version = md5;
-                //services.getEmitOutput(watchFile);
-                //console.log(getOwnEmitOutputFilePath(watchFile, ".js"));
-                //var printer = ts.createPrinter();
-                //console.log(printer.printFile(sourceFile));
-                if (!sourceFile.isDeclarationFile) {
-                    ts.forEachChild(sourceFile, visit);
-                }
-            }
 
-            function visit(node: ts.Node) {
-                if (ts.isExportAssignment(node)) {
-                    //console.warn("export:", node.isExportEquals, "---", node.expression.getText(), node.expression.kind);
-                    if (ts.isIdentifier(node.expression)) {
-                        let symbol = checker.getSymbolAtLocation(node.expression);
-                        const type = checker.getTypeAtLocation(node.expression);
-                        console.warn(symbol.name);
-                        checker.getPropertiesOfType(type)
-                            .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == symbol)
-                            .forEach((symbol) => {
-                                let type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
-                                let signatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call);
-                                console.log(symbol.getName() + " : " + checker.typeToString(type) + "," + ts.isMethodDeclaration(symbol.valueDeclaration!) + "," + signatures.length);
-                                if(type.symbol && type.symbol.valueDeclaration && type.symbol.valueDeclaration.parent && ts.isModuleBlock(type.symbol.valueDeclaration.parent)) {
-                                    console.log("module:" + type.symbol.valueDeclaration.parent.parent.name.text);
-                                } 
-                            });
+                if (!sourceFile.isDeclarationFile) {
+                    let emitOutput = services.getEmitOutput(sourceFilePath);
+                    
+                    if (!emitOutput.emitSkipped) {
+                        let modulePath:string = undefined;
+                        emitOutput.outputFiles.forEach(output => {
+                            //TODO: write emit output
+                            //UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            
+                            if (output.name.endsWith(".js")) {
+                                modulePath = getDirectoryPath(output.name);
+                                console.log(output.name, modulePath);
+                                if (options.outDir && modulePath.startsWith(options.outDir)) {
+                                    modulePath = modulePath.substr(options.outDir.length);
+                                }
+                            }
+                        });
+
+                        let foundType: ts.Type = undefined;
+                        let foundBaseType: ts.Type  = undefined;
+                        ts.forEachChild(sourceFile, (node) => {
+                            if (ts.isExportAssignment(node) && ts.isIdentifier(node.expression)) {
+                                const type = checker.getTypeAtLocation(node.expression);
+                                let baseTypes = type.getBaseTypes();
+                                if (baseTypes.length != 1) return;
+                                let baseType = baseTypes[0];
+                                let baseTypeModule = getModule(baseType);
+                                if (baseTypeModule == 'ue') {
+                                    foundType = type;
+                                    foundBaseType = baseType;
+                                }
+                            }
+                        });
+
+                        if (foundType) {
+                            //console.log(foundType.getSymbol().getName(), foundBaseType.getSymbol().getName(), modulePath)
+                            onTypeChangeOrUpdate(foundBaseType, foundType, modulePath);
+                        }
                     }
                 }
             }
-        
+
+            function getIdentifierChain(node: ts.EntityName): ts.Identifier[] {
+                if (ts.isIdentifier(node)) {
+                    return [node];
+                }
+                else {
+                    return append(getIdentifierChain(node.left), node.right);
+                }
+            }
+
+            function toPinType(typeNode: ts.TypeNode) : { pinType: UE.PEGraphPinType, pinValueType?: UE.PEGraphTerminalType} | undefined {
+                if (ts.isTypeReferenceNode(typeNode)) {
+                    let typeName = getIdentifierChain(typeNode.typeName).map(i => i.text).join('.');
+                    if (typeName == 'BigInt') {
+                        let category:PinCategory = "int64";
+                        let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
+                        return {pinType: pinType};
+                    }
+                    if (!typeNode.typeArguments || typeNode.typeArguments.length == 0) { 
+                        //UE.FileSystemOperation.StaticClass();
+                        let category:PinCategory = "object";
+                        let cls = (UE as any)[typeName];
+                        if (!(cls)) {
+                            return undefined;
+                        }
+                        let pinType = new UE.PEGraphPinType(category, cls.StaticClass() as UE.Class, UE.EPinContainerType.None, false);
+                        return {pinType: pinType};
+                    } else { //TArray, TSet, TMap
+                        let result = toPinType(typeNode.typeArguments[0]);
+                        if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None) {
+                            return undefined;
+                        }
+                        if (typeName == 'TArray' || typeName == 'TSet') {
+                            result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
+                            return result;
+                        } else if (typeName == 'TMap') {
+                            let valuePinType = toPinType(typeNode.typeArguments[1]);
+                            if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
+                                return undefined;
+                            }
+                            result.pinType.PinContainerType = UE.EPinContainerType.Map;
+                            result.pinValueType = new UE.PEGraphTerminalType(valuePinType.pinType.PinCategory, valuePinType.pinType.PinSubCategoryObject);
+                            return result;
+                        } else {
+                            return undefined;
+                        }
+                    }
+                } else {
+                    //"bool" | "class" | "int64" | "string" | "object" | "struct" | "float";
+                    let category:PinCategory;
+                    switch (typeNode.kind) {
+                        case ts.SyntaxKind.NumberKeyword:
+                            category = "float";
+                            break;
+                        case ts.SyntaxKind.StringKeyword:
+                            category = 'string';
+                            break;
+                        case ts.SyntaxKind.BigIntKeyword:
+                            category = 'int64';
+                            break;
+                        case ts.SyntaxKind.BooleanKeyword:
+                            category = 'bool';
+                            break;
+                        default:
+                            return undefined;
+                    }
+                    let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
+                    return {pinType: pinType};
+                }
+            }
+
+            function onTypeChangeOrUpdate(baseType: ts.Type, type: ts.Type, modulePath:string) {
+                let bp = new UE.PEBlueprintAsset();
+                bp.Load(baseType.getSymbol().getName(), type.getSymbol().getName(), modulePath);
+                //bp.AddFunction("ReceiveBeginPlay");
+                //bp.AddFunction("ReceiveTick");
+                //bp.AddFunction("Add");
+                checker.getPropertiesOfType(type)
+                        .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
+                        .forEach((symbol) => {
+                            if (ts.isMethodDeclaration(symbol.valueDeclaration!)) {
+                                //let type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
+                                //let signatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call);
+                                //console.log(symbol.getName() + " : " + checker.typeToString(type) + "," + ts.isMethodDeclaration(symbol.valueDeclaration!) + "," + signatures.length);
+                                //console.log("module:", getModule(type));
+
+                            } else {
+                                let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
+                                let propPinType = toPinType(checker.typeToTypeNode(propType));
+                                
+                                if (!propPinType) {
+                                    console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
+                                } else {
+                                    bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType);
+                                }
+                                //console.log(symbol.getName() + " : " + checker.typeToString(type) + "," + getModule(type));
+                                //let typeNode  = checker.typeToTypeNode(type);
+                                /*if (typeNode) {
+                                    console.log("-----" + typeNode.kind);
+                                    ts.forEachChild(typeNode, (node) => {
+                                        console.log("  -----" + node.kind);
+                                    });
+                                }*/
+                                //type.ger
+                            }
+                        });
+                bp.RemoveNotExistedMemberVariable();
+                bp.Save();
+            }
+
+            function getModule(type: ts.Type) {
+                if(type.symbol && type.symbol.valueDeclaration && type.symbol.valueDeclaration.parent && ts.isModuleBlock(type.symbol.valueDeclaration.parent)) {
+                    return type.symbol.valueDeclaration.parent.parent.name.text;
+                } 
+            }
         }
     }
 

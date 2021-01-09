@@ -27,7 +27,12 @@ public class PuertsEditor : ModuleRules {
                 "Projects",
                 "JsEnv",
                 "Puerts",
-                "DirectoryWatcher"
+                "DirectoryWatcher",
+                "AssetRegistry",
+                "KismetCompiler",
+                "ScriptDisassembler",
+                "BlueprintGraph",
+                "AssetTools"
             }
         );
     }

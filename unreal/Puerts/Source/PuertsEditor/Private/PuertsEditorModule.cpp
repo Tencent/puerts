@@ -9,6 +9,7 @@
 #include "JsEnv.h"
 #include "Editor.h"
 #include "PuertsModule.h"
+#include "FileHelpers.h"
 
 class FPuertsEditorModule : public IPuertsEditorModule
 {
@@ -36,10 +37,12 @@ void FPuertsEditorModule::StartupModule()
     FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsEditorModule::PreBeginPIE);
     FEditorDelegates::EndPIE.AddRaw(this, &FPuertsEditorModule::EndPIE);
 
-    //if (Enabled)
-    //{
-
-    //}
+    if (Enabled)
+    {
+        JsEnv = MakeShared<puerts::FJsEnv>();
+        TArray<TPair<FString, UObject*>> Arguments;
+        JsEnv->Start("PuertsEditor/CodeAnalyze", Arguments);
+    }
 }
 
 
@@ -55,9 +58,7 @@ void FPuertsEditorModule::PreBeginPIE(bool bIsSimulating)
 {
     if (Enabled)
     {
-        //JsEnv = MakeShared<puerts::FJsEnv>();
-        //TArray<TPair<FString, UObject*>> Arguments;
-        //JsEnv->Start("PuertsEditor/CodeAnalyze", Arguments);
+        
     }
 }
 
