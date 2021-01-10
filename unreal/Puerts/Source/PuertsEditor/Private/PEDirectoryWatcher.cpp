@@ -7,6 +7,11 @@
 #include "HAL/FileManager.h"
 #include "Misc/SecureHash.h"
 
+UPEDirectoryWatcher::UPEDirectoryWatcher()
+{
+    this->AddToRoot();
+}
+
 bool UPEDirectoryWatcher::Watch(const FString& InDirectory)
 {
     Directory = FPaths::IsRelative(InDirectory) ? FPaths::ConvertRelativePathToFull(InDirectory) : InDirectory;

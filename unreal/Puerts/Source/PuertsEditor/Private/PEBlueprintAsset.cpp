@@ -17,6 +17,7 @@
 #include "K2Node_FunctionEntry.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Event.h"
+#include "K2Node_FunctionResult.h"
 
 UClass* FindClass(const TCHAR* ClassName)
 {
@@ -33,16 +34,24 @@ UClass* FindClass(const TCHAR* ClassName)
     return nullptr;
 }
 
+bool UPEBlueprintAsset::IsExisted(const FString& InName, const FString& InPath)
+{
+    FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
+    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    TArray<FAssetData> AssetDatas;
+    return (AssetRegistryModule.Get().GetAssetsByPackageName(*PackageName, AssetDatas) && AssetDatas.Num() > 0);
+}
+
 bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& InName, const FString& InPath)
 {
     UClass* ParentClass = FindClass(*InParentClassName);
-    UE_LOG(LogTemp, Warning, TEXT("InParentClassName: %s(%p)"), *InParentClassName, ParentClass);
-    UE_LOG(LogTemp, Warning, TEXT("InName: %s"), *InName);
-    UE_LOG(LogTemp, Warning, TEXT("InPath: %s"), *InPath);
+    //UE_LOG(LogTemp, Warning, TEXT("InParentClassName: %s(%p)"), *InParentClassName, ParentClass);
+    //UE_LOG(LogTemp, Warning, TEXT("InName: %s"), *InName);
+    //UE_LOG(LogTemp, Warning, TEXT("InPath: %s"), *InPath);
 
     FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
 
-    UE_LOG(LogTemp, Warning, TEXT("PackageName: %s"), *PackageName);
+    //UE_LOG(LogTemp, Warning, TEXT("PackageName: %s"), *PackageName);
 
     FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
     TArray<FAssetData> AssetDatas;
@@ -51,8 +60,8 @@ bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& In
         Blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), nullptr, *PackageName));
         GeneratedClass = Blueprint->GeneratedClass;
         Package = Cast<UPackage>(Blueprint->GetOuter());
-        UE_LOG(LogTemp, Warning, TEXT("existed BlueprintGeneratedClass: %s"), *GeneratedClass->GetName());
-        UE_LOG(LogTemp, Warning, TEXT("existed Package: %s"), *Package->GetName());
+        //UE_LOG(LogTemp, Warning, TEXT("existed BlueprintGeneratedClass: %s"), *GeneratedClass->GetName());
+        //UE_LOG(LogTemp, Warning, TEXT("existed Package: %s"), *Package->GetName());
         return true;
     }
 
@@ -115,7 +124,59 @@ bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction*
     return false;
 }
 
-void UPEBlueprintAsset::AddFunction(FName InName)
+static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
+{
+    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject)
+    {
+        if (InGraphPinType.PinSubCategoryObject->IsA<UScriptStruct>())
+        {
+            InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
+        }
+        else if (UClass *Class = Cast<UClass>(InGraphPinType.PinSubCategoryObject))
+        {
+            if (Class == UClass::StaticClass())
+            {
+                InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Class;
+            }
+            else
+            {
+                InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Object;
+            }
+        }
+    }
+
+    FEdGraphPinType PinType(InGraphPinType.PinCategory, NAME_None, InGraphPinType.PinSubCategoryObject,
+        (EPinContainerType)InGraphPinType.PinContainerType, InGraphPinType.bIsReference, FEdGraphTerminalType());
+    if (PinType.ContainerType == EPinContainerType::Map)
+    {
+        PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
+        PinType.PinValueType.TerminalSubCategoryObject = InGraphPinType.PinSubCategoryObject;
+    }
+
+    return PinType;
+}
+
+void UPEBlueprintAsset::AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
+{
+    ParameterNames.Add(InParameterName);
+    ParameterTypes.Add(ToFEdGraphPinType(InGraphPinType, InPinValueType));
+}
+
+static TArray<UK2Node_EditablePinBase*> GatherAllResultNodes(UK2Node_EditablePinBase* TargetNode)
+{
+    if (UK2Node_FunctionResult* ResultNode = Cast<UK2Node_FunctionResult>(TargetNode))
+    {
+        return (TArray<UK2Node_EditablePinBase*>)ResultNode->GetAllResultNodes();
+    }
+    TArray<UK2Node_EditablePinBase*> Result;
+    if (TargetNode)
+    {
+        Result.Add(TargetNode);
+    }
+    return Result;
+}
+
+void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
@@ -124,6 +185,8 @@ void UPEBlueprintAsset::AddFunction(FName InName)
     UFunction* Function = GeneratedClass->FindFunctionByName(InName, EIncludeSuperFlag::ExcludeSuper);
     if (ParentFunction && Function)
     {
+        ParameterNames.Empty();
+        ParameterTypes.Empty();
         return;
     }
 
@@ -134,7 +197,7 @@ void UPEBlueprintAsset::AddFunction(FName InName)
     const bool bUserCreated = true;
     if (ParentFunction)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Override Function %s"), *ParentFunction->GetName());
+        //UE_LOG(LogTemp, Warning, TEXT("Override Function %s"), *ParentFunction->GetName());
         //FBlueprintEditorUtils::AddFunctionGraph(Blueprint, FunctionGraph, bUserCreated, ParentFunction);
         UFunction* OverrideFunc = nullptr;
         UClass* const OverrideFuncClass = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, InName, &OverrideFunc);
@@ -162,21 +225,20 @@ void UPEBlueprintAsset::AddFunction(FName InName)
                 );
             }
         }
-
-        return;
     }
     else
     {
+        if (FunctionAdded.Contains(InName)) return;//жиди
         TArray< UEdGraph* > GraphList;
         Blueprint->GetAllGraphs(GraphList);
         UEdGraph** ExistedGraph = GraphList.FindByPredicate([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
         if (ExistedGraph)
         {
-            UE_LOG(LogTemp, Warning, TEXT("FunctionGraph %s existed, delete it!"), *InName.ToString());
+            //UE_LOG(LogTemp, Warning, TEXT("FunctionGraph %s existed, delete it!"), *InName.ToString());
             FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
         }
 
-        UE_LOG(LogTemp, Warning, TEXT("Add Function %s"), *InName.ToString());
+        //UE_LOG(LogTemp, Warning, TEXT("Add Function %s"), *InName.ToString());
         UEdGraph* FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
             Blueprint,
             InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
@@ -191,56 +253,47 @@ void UPEBlueprintAsset::AddFunction(FName InName)
 
         if (EntryNodes.Num() == 1)
         {
-            FEdGraphPinType StringPinType(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EPinContainerType::None, false, FEdGraphTerminalType());
-            FEdGraphPinType ActorPinType(UEdGraphSchema_K2::PC_Object, NAME_None, AActor::StaticClass(), EPinContainerType::None, false, FEdGraphTerminalType());
-            EntryNodes[0]->CreateUserDefinedPin(TEXT("P1"), StringPinType, EGPD_Output);
-            EntryNodes[0]->CreateUserDefinedPin(TEXT("P2"), ActorPinType, EGPD_Input, false);
+            //FEdGraphPinType StringPinType(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EPinContainerType::None, false, FEdGraphTerminalType());
+            //FEdGraphPinType ActorPinType(UEdGraphSchema_K2::PC_Object, NAME_None, AActor::StaticClass(), EPinContainerType::None, false, FEdGraphTerminalType());
+            //EntryNodes[0]->CreateUserDefinedPin(TEXT("P1"), StringPinType, EGPD_Output);
+            //EntryNodes[0]->CreateUserDefinedPin(TEXT("P2"), ActorPinType, EGPD_Input, false);
+            for (int i = 0; i < ParameterNames.Num(); i++)
+            {
+                EntryNodes[0]->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
+            }
+
+            const FName RetValName = FName(TEXT("ReturnValue"));
+
+            if (!IsVoid)
+            {
+                FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
+                //EntryNodes[0]->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
+                auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(EntryNodes[0]);
+
+                TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+                for (UK2Node_EditablePinBase* Node : TargetNodes)
+                {
+                    Node->Modify();
+                    Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
+                }
+            }
         }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("EntryNodes.Num: %d"), EntryNodes.Num());
-        }
+        FunctionAdded.Add(InName);
     }
 
-    //FEdGraphPinType TempPinType;
-    //Schema->ConvertPropertyToPinType(Temp, TempPinType);
-    //Schema->ConvertPropertyToPinType()
+    ParameterNames.Empty();
+    ParameterTypes.Empty();
+}
 
-    //FEdGraphPinType StringPinType(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EPinContainerType::None, false, FEdGraphTerminalType());
-    //FBlueprintEditorUtils::AddMemberVariable(Blueprint, TEXT("StrMember"), StringPinType);
-
-    //FEdGraphPinType ActorPinType(UEdGraphSchema_K2::PC_Object, NAME_None, AActor::StaticClass(), EPinContainerType::None, false, FEdGraphTerminalType());
-    //FBlueprintEditorUtils::AddMemberVariable(Blueprint, TEXT("ObjectMember"), ActorPinType);
+void UPEBlueprintAsset::ClearParameter()
+{
+    ParameterNames.Empty();
+    ParameterTypes.Empty();
 }
 
 void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
-    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject)
-    {
-        if (InGraphPinType.PinSubCategoryObject->IsA<UScriptStruct>())
-        {
-            InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-        }
-        else if (UClass *Class = Cast<UClass>(InGraphPinType.PinSubCategoryObject))
-        {
-            if (Class == UClass::StaticClass())
-            {
-                InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Class;
-            }
-            else
-            {
-                InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Object;
-            }
-        }
-    }
-
-    FEdGraphPinType PinType(InGraphPinType.PinCategory, NAME_None, InGraphPinType.PinSubCategoryObject, 
-        (EPinContainerType)InGraphPinType.PinContainerType, InGraphPinType.bIsReference, FEdGraphTerminalType());
-    if (PinType.ContainerType != EPinContainerType::None)
-    {
-        PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
-        PinType.PinValueType.TerminalSubCategoryObject = InGraphPinType.PinSubCategoryObject;
-    }
+    FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
     const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
     if (VarIndex == INDEX_NONE)
@@ -251,26 +304,38 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     {
         FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, NewVarName, PinType);
     }
-    NamesAdded.Add(NewVarName);
+    MemberVariableAdded.Add(NewVarName);
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
     //Blueprint->NewVariables->
-    TArray<FName> ToDelete;
-    for (int32 i = 0; i < Blueprint->NewVariables.Num(); i++)
+    if (Blueprint)
     {
-        if (!NamesAdded.Contains(Blueprint->NewVariables[i].VarName))
+        TArray<FName> ToDelete;
+        for (int32 i = 0; i < Blueprint->NewVariables.Num(); i++)
         {
-            ToDelete.Add(Blueprint->NewVariables[i].VarName);
+            if (!MemberVariableAdded.Contains(Blueprint->NewVariables[i].VarName))
+            {
+                ToDelete.Add(Blueprint->NewVariables[i].VarName);
+            }
+        }
+        for (auto Name : ToDelete)
+        {
+            //UE_LOG(LogTemp, Warning, TEXT("Delete MemberVariable %s"), *Name.ToString());
+            FBlueprintEditorUtils::RemoveMemberVariable(Blueprint, Name);
         }
     }
-    for (auto Name : ToDelete)
+    MemberVariableAdded.Empty();
+}
+
+void UPEBlueprintAsset::RemoveNotExistedFunction()
+{
+    if (Blueprint)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Delete MemberVariable %s"), *Name.ToString());
-        FBlueprintEditorUtils::RemoveMemberVariable(Blueprint, Name);
+        Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
     }
-    NamesAdded.Empty();
+    FunctionAdded.Empty();
 }
 
 void UPEBlueprintAsset::Save()

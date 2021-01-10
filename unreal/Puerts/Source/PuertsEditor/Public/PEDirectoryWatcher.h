@@ -33,6 +33,8 @@ public:
     UPROPERTY(BlueprintReadOnly)
     TMap<FString, FString> MD5Map;
 
+    UPEDirectoryWatcher();
+
     ~UPEDirectoryWatcher();
 
 private:

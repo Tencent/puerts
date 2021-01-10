@@ -48,10 +48,10 @@ void FPuertsEditorModule::StartupModule()
 
 void FPuertsEditorModule::ShutdownModule()
 {
-    //if (Enabled)
-    //{
-        
-    //}
+    if (JsEnv.IsValid())
+    {
+        JsEnv.Reset();
+    }
 }
 
 void FPuertsEditorModule::PreBeginPIE(bool bIsSimulating)
@@ -64,9 +64,6 @@ void FPuertsEditorModule::PreBeginPIE(bool bIsSimulating)
 
 void FPuertsEditorModule::EndPIE(bool bIsSimulating)
 {
-    if (JsEnv.IsValid())
-    {
-        JsEnv.Reset();
-    }
+    
 }
 

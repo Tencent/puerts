@@ -41,6 +41,7 @@ public:
     bool bIsReference;
 };
 
+
 /**
  * 
  */
@@ -61,10 +62,22 @@ public:
     UPackage* Package;
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    bool IsExisted(const FString& InName, const FString& InPath);
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     bool Load(const FString& InParentClassName, const FString& InName, const FString& InPath);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    void AddFunction(FName InName);
+    void AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    void ClearParameter();
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    void RemoveNotExistedFunction();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
@@ -76,5 +89,11 @@ public:
     void Save();
 
 private:
-    TSet<FName> NamesAdded;
+    TSet<FName> MemberVariableAdded;
+
+    TSet<FName> FunctionAdded;
+
+    TArray<FName> ParameterNames;
+
+    TArray<FEdGraphPinType> ParameterTypes;
 };
