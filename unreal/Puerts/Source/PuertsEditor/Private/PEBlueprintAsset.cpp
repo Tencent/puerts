@@ -53,11 +53,9 @@ bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& In
 
     //UE_LOG(LogTemp, Warning, TEXT("PackageName: %s"), *PackageName);
 
-    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-    TArray<FAssetData> AssetDatas;
-    if (AssetRegistryModule.Get().GetAssetsByPackageName(*PackageName, AssetDatas) && AssetDatas.Num() > 0) //防止StaticLoadObject找不到文件的Warning
+    Blueprint = LoadObject<UBlueprint>(nullptr, *PackageName, nullptr, LOAD_NoWarn | LOAD_NoRedirects);
+    if (Blueprint) //防止StaticLoadObject找不到文件的Warning
     {
-        Blueprint = Cast<UBlueprint>(StaticLoadObject(UObject::StaticClass(), nullptr, *PackageName));
         GeneratedClass = Blueprint->GeneratedClass;
         Package = Cast<UPackage>(Blueprint->GetOuter());
         //UE_LOG(LogTemp, Warning, TEXT("existed BlueprintGeneratedClass: %s"), *GeneratedClass->GetName());
@@ -73,12 +71,14 @@ bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& In
     IKismetCompilerInterface& KismetCompilerModule = FModuleManager::LoadModuleChecked<IKismetCompilerInterface>("KismetCompiler");
     KismetCompilerModule.GetBlueprintTypesForClass(ParentClass, BlueprintClass, BlueprintGeneratedClass);
 
-    UE_LOG(LogTemp, Warning, TEXT("BlueprintClass: %s"), *BlueprintClass->GetName());
-    UE_LOG(LogTemp, Warning, TEXT("BlueprintGeneratedClass: %s"), *BlueprintGeneratedClass->GetName());
+    //UE_LOG(LogTemp, Warning, TEXT("BlueprintClass: %s"), *BlueprintClass->GetName());
+    //UE_LOG(LogTemp, Warning, TEXT("BlueprintGeneratedClass: %s"), *BlueprintGeneratedClass->GetName());
 
     FString Name;
     FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
     AssetToolsModule.Get().CreateUniqueAssetName(PackageName, TEXT(""), PackageName, Name);
+
+    //UE_LOG(LogTemp, Warning, TEXT("Name: %s, PackageName: %s"), *Name, *PackageName);
 
     Package = CreatePackage(NULL, *PackageName);
     check(Package);

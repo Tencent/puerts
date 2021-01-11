@@ -23,6 +23,8 @@ private:
 
     void EndPIE(bool bIsSimulating);
 
+    void OnPostEngineInit();
+
     TSharedPtr<puerts::FJsEnv> JsEnv;
 
     bool Enabled = false;
@@ -36,7 +38,11 @@ void FPuertsEditorModule::StartupModule()
 
     FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsEditorModule::PreBeginPIE);
     FEditorDelegates::EndPIE.AddRaw(this, &FPuertsEditorModule::EndPIE);
+    FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsEditorModule::OnPostEngineInit);
+}
 
+void FPuertsEditorModule::OnPostEngineInit()
+{
     if (Enabled)
     {
         JsEnv = MakeShared<puerts::FJsEnv>();

@@ -1174,16 +1174,20 @@ type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" |
 
 declare var global:any
 
-function watch(configFilePath:string) {
+function readAndParseConfigFile(configFilePath: string) : ts.ParsedCommandLine {
     let readResult = ts.readConfigFile(configFilePath, customSystem.readFile);
 
-    let {fileNames, options} = ts.parseJsonConfigFileContent(readResult.config, {
+    return ts.parseJsonConfigFileContent(readResult.config, {
         useCaseSensitiveFileNames: true,
         readDirectory: customSystem.readDirectory,
         fileExists: customSystem.fileExists,
         readFile: customSystem.readFile,
         trace: s => console.log(s)
     }, customSystem.getCurrentDirectory());
+}
+
+function watch(configFilePath:string) {
+    let {fileNames, options} = readAndParseConfigFile(configFilePath);
 
     console.log("start watch..", JSON.stringify({fileNames:fileNames, options: options}))
     const fileVersions: ts.MapLike<{ version: string }> = {};
@@ -1228,14 +1232,14 @@ function watch(configFilePath:string) {
     let beginTime = new Date().getTime();
     let program = services.getProgram();
     console.warn ("full compile using " + (new Date().getTime() - beginTime) + "ms");
-    logErrors(ts.getPreEmitDiagnostics(program));
-
-    const enum EFileChangeAction {
-        FCA_Unknown = 0,
-        FCA_Added = 1,
-		FCA_Modified = 2,
-        FCA_Removed = 3
-    };
+    let diagnostics =  ts.getPreEmitDiagnostics(program);
+    if (diagnostics.length > 0) {
+        logErrors(diagnostics);
+    } else {
+        fileNames.forEach(fileName => {
+            onSourceFileAddOrChange(fileName, program);
+        });
+    }
 
     var dirWatcher = new UE.PEDirectoryWatcher();
     global.__dirWatcher = dirWatcher; //防止被释放?
@@ -1245,30 +1249,27 @@ function watch(configFilePath:string) {
             for(var i = 0; i < modified.Num(); i++) {
                 const fileName =  modified.Get(i);
                 if (fileName in fileVersions) {
-                    onSourceFileChange(fileName, dirWatcher.MD5Map.Get(fileName));
+                    let md5 = dirWatcher.MD5Map.Get(fileName);
+                    if (md5 === fileVersions[fileName].version) {
+                        console.log(fileName + " md5 not changed, so skiped!");
+                    } else {
+                        console.warn (`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
+                        fileVersions[fileName].version = md5;
+                        onSourceFileAddOrChange(fileName);
+                    }
                 }
             }
         }
-        /*if (e == EFileChangeAction.FCA_Modified) {
-            if (file in fileVersions) {
-                onSourceFileChange(file);
-            } else if (file === configFilePath) {
-                console.log("config changed:" + file);
-            }
-        }*/
     });
 
     dirWatcher.Watch(customSystem.getCurrentDirectory());
 
-    function onSourceFileChange(sourceFilePath: string, md5: string) {
-        if (md5 === fileVersions[sourceFilePath].version) {
-            console.warn (sourceFilePath + " md5 not changed, so skiped!");
-            return;
+    function onSourceFileAddOrChange(sourceFilePath: string, program?: ts.Program) {
+        if (!program) {
+            let beginTime = new Date().getTime();
+            program = services.getProgram();
+            console.log("incremental compile " + sourceFilePath + " using " + (new Date().getTime() - beginTime) + "ms");
         }
-        console.warn (`${sourceFilePath} md5 from ${fileVersions[sourceFilePath].version} to ${md5}`);
-        let beginTime = new Date().getTime();
-        let program = services.getProgram();
-        console.warn ("incremental compile " + sourceFilePath + " using " + (new Date().getTime() - beginTime) + "ms");
 
         let sourceFile = program.getSourceFile(sourceFilePath);
         
@@ -1283,20 +1284,17 @@ function watch(configFilePath:string) {
             if (diagnostics.length > 0) {
                 logErrors(diagnostics);
             } else {
-                fileVersions[sourceFilePath].version = md5;
-
                 if (!sourceFile.isDeclarationFile) {
                     let emitOutput = services.getEmitOutput(sourceFilePath);
                     
                     if (!emitOutput.emitSkipped) {
                         let modulePath:string = undefined;
                         emitOutput.outputFiles.forEach(output => {
-                            //TODO: write emit output
-                            //UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            console.log(`write ${output.name} ...` )
+                            UE.FileSystemOperation.WriteFile(output.name, output.text);
                             
                             if (output.name.endsWith(".js")) {
                                 modulePath = getDirectoryPath(output.name);
-                                console.log(output.name, modulePath);
                                 if (options.outDir && modulePath.startsWith(options.outDir)) {
                                     modulePath = modulePath.substr(options.outDir.length);
                                 }
@@ -1320,8 +1318,7 @@ function watch(configFilePath:string) {
                         });
 
                         if (foundType) {
-                            //console.log(foundType.getSymbol().getName(), foundBaseType.getSymbol().getName(), modulePath)
-                            onTypeChangeOrUpdate(foundBaseType, foundType, modulePath);
+                            onBlueprintTypeAddOrChange(foundBaseType, foundType, modulePath);
                         }
                     }
                 }
@@ -1403,7 +1400,8 @@ function watch(configFilePath:string) {
                 }
             }
 
-            function onTypeChangeOrUpdate(baseType: ts.Type, type: ts.Type, modulePath:string) {
+            function onBlueprintTypeAddOrChange(baseType: ts.Type, type: ts.Type, modulePath:string) {
+                console.log(`gen blueprint for ${type.getSymbol().getName()}, base type: ${baseType.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
                 bp.Load(baseType.getSymbol().getName(), type.getSymbol().getName(), modulePath);
                 checker.getPropertiesOfType(type)
