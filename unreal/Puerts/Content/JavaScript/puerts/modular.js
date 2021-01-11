@@ -123,11 +123,19 @@ var global = global || (function () { return this; }());
     }
     
     function reload(reloadModuleKey) {
+        if (reloadModuleKey) {
+            reloadModuleKey = normalize(reloadModuleKey);
+        }
+        let reloaded = false;
         for(var moduleKey in moduleCache) {
-            if (!reloadModuleKey || (reloadModuleKey === moduleKey)) {
+            if (!reloadModuleKey || (reloadModuleKey == moduleKey)) {
                 moduleCache[moduleKey].__forceReload = true;
+                reloaded = true;
                 if (reloadModuleKey) break;
             }
+        }
+        if (!reloaded && reloadModuleKey) {
+            console.warn(`reload not loaded module: ${reloadModuleKey}!`);
         }
     }
     

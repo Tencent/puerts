@@ -1055,11 +1055,12 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 
 void FJsEnvImpl::ReloadModule(FName ModuleName)
 {
+    //Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
     {
         if (ModuleName == NAME_None || ModuleName == Iter->second.BindTo)
         {
-            Logger->Info(FString::Printf(TEXT("reload module [%s]"), *Iter->second.BindTo.ToString()));
+            Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.BindTo.ToString()));
             Iter->second.IsDirty = true;
             if (ModuleName != NAME_None)
             {
@@ -1079,13 +1080,21 @@ void FJsEnvImpl::ReloadModule(FName ModuleName)
 
     v8::Local<v8::Value > Args[1];
 
+    FString OutPath, OutDebugPath;
+
     if (ModuleName == NAME_None) 
     {
         Args[0] = v8::Undefined(Isolate);
     }
-    else 
+    else if (ModuleLoader->Search(TEXT(""), ModuleName.ToString(), OutPath, OutDebugPath))
     {
-        Args[0] = FV8Utils::ToV8String(Isolate, ModuleName);
+        Logger->Info(FString::Printf(TEXT("reload js module [%s]"), *OutPath));
+        Args[0] = FV8Utils::ToV8String(Isolate, OutPath);
+    }
+    else
+    {
+        Logger->Warn(FString::Printf(TEXT("not find js module [%s]"), *ModuleName.ToString()));
+        return;
     }
 
     auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 1, Args);

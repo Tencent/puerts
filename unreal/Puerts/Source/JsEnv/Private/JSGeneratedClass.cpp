@@ -127,7 +127,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
 
     Function->Bind();
     Function->StaticLink(true);
-    Function->FunctionFlags |= FUNC_Native;//让UE不走解析
+    //Function->FunctionFlags |= FUNC_Native;//让UE不走解析
 
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
 

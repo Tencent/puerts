@@ -4,6 +4,7 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformFileManager.h"
+#include "PuertsModule.h"
 
 bool UFileSystemOperation::ReadFile(FString Path, FString &Data)
 {
@@ -61,6 +62,11 @@ TArray<FString> UFileSystemOperation::GetFiles(FString Path)
     Path = Path + "*";
     FileManager.FindFiles(Dirs, *Path, true, false);
     return Dirs;
+}
+
+void UFileSystemOperation::PuertsNotifyChange(FString Path)
+{
+    IPuertsModule::Get().ReloadJsModule(*Path);
 }
 
 //TArray<FString> UFileSystemOperation::ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32 Depth)
