@@ -24,6 +24,7 @@
 //#include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
+#include "TypeScriptObject.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -430,6 +431,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
 
 void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 {
+    if (Class->ImplementsInterface(UTypeScriptObject::StaticClass())) return;
     FStringBuffer StringBuffer {"", ""};
     StringBuffer << "class " << SafeName(Class->GetName());
     
@@ -685,6 +687,7 @@ static bool IsReactSupportProperty(PropertyMacro *Property)
 
 void FReactDeclarationGenerator::GenClass(UClass* Class)
 {
+    if (Class->ImplementsInterface(UTypeScriptObject::StaticClass())) return;
     if (!Class->IsChildOf<UPanelSlot>() && !Class->IsChildOf<UWidget>()) return;
     bool IsWidget = Class->IsChildOf<UWidget>();
     FStringBuffer StringBuffer{ "", "" };
