@@ -1245,6 +1245,9 @@ function watch(configFilePath:string) {
     global.__dirWatcher = dirWatcher; //防止被释放?
 
     dirWatcher.OnChanged.Add((added, modified, removed) => {
+        if (added.Num() > 0) {
+            onFileAdded();
+        }
         if (modified.Num() > 0) {
             for(var i = 0; i < modified.Num(); i++) {
                 const fileName =  modified.Get(i);
@@ -1253,7 +1256,7 @@ function watch(configFilePath:string) {
                     if (md5 === fileVersions[fileName].version) {
                         console.log(fileName + " md5 not changed, so skiped!");
                     } else {
-                        console.warn (`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
+                        console.log(`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
                         fileVersions[fileName].version = md5;
                         onSourceFileAddOrChange(fileName);
                     }
@@ -1263,6 +1266,26 @@ function watch(configFilePath:string) {
     });
 
     dirWatcher.Watch(customSystem.getCurrentDirectory());
+
+    function onFileAdded(): void {
+        let cmdLine = readAndParseConfigFile(configFilePath);
+        let newFiles: Array<string> = [];
+        cmdLine.fileNames.forEach(fileName => {
+            if (!(fileName in fileVersions)) {
+                console.log(`new file: ${fileName} ...`)
+                newFiles.push(fileName);
+                fileVersions[fileName] = { version: "" };
+            }
+        });
+
+        if (newFiles.length > 0) {
+            fileNames = cmdLine.fileNames;
+            options = cmdLine.options;
+            program = services.getProgram();
+
+            newFiles.forEach(fileName => onSourceFileAddOrChange(fileName, program));
+        }
+    }
 
     function onSourceFileAddOrChange(sourceFilePath: string, program?: ts.Program) {
         if (!program) {
@@ -1297,6 +1320,9 @@ function watch(configFilePath:string) {
                                 modulePath = getDirectoryPath(output.name);
                                 if (options.outDir && modulePath.startsWith(options.outDir)) {
                                     modulePath = modulePath.substr(options.outDir.length);
+                                    if (modulePath.startsWith('/')) {
+                                        modulePath  = modulePath.substr(1);
+                                    }
                                 }
                             }
                         });
