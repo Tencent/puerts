@@ -947,12 +947,20 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
     if (Iter == BindInfoMap.end() || Iter->second.IsDirty)//create and link
     {
         //TODO: 用方法更省内存，或者是某个一个类一份的东西，但生成代码可能生成属性更简单些，后续看情况
-        UObject *DefaultObject = Class->GetDefaultObject();
-        auto BindTo = ITypeScriptObject::Execute_BindTo(Class->GetDefaultObject());
-;
-        if (BindTo != NAME_None)
+        auto Package = Cast<UPackage>(Class->GetOuter());
+        if (!Package)
         {
-            FString ModuleName = BindTo.ToString();
+            return nullptr;
+        }
+
+        auto PackageName = Package->GetName();
+
+        static FString PackageNamePrefix(TEXT("/Game/Blueprints/TypeScript/"));
+;
+        if (PackageName.StartsWith(PackageNamePrefix))
+        {
+            FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
+            //Logger->Error(FString::Printf(TEXT("load module [%s] "), *ModuleName));
 
             auto Isolate = MainIsolate;
             v8::Isolate::Scope IsolateScope(Isolate);
@@ -991,7 +999,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
                         BindInfo Info;
-                        Info.BindTo = BindTo;
+                        Info.BindTo = *ModuleName;
                         Info.IsDirty = false;
                         Info.Proto.Reset(Isolate, Proto);
 
