@@ -7,9 +7,13 @@
 
 #include "PuertsModule.h"
 #include "JsEnv.h"
+#include "PuertsSetting.h"
 #if WITH_EDITOR
 #include "Editor.h"
+#include "ISettingsModule.h"
 #endif
+
+#define LOCTEXT_NAMESPACE "FPuertsModule"
 
 class FPuertsModule : public IPuertsModule, public FUObjectArray::FUObjectCreateListener, public FUObjectArray::FUObjectDeleteListener
 {
@@ -28,6 +32,10 @@ public:
 #if WITH_EDITOR
     void EndPIE(bool bIsSimulating);
 #endif
+
+    void RegisterSettings();
+
+    void UnregisterSettings();
 
     virtual bool IsEnabled() override 
     {
@@ -89,14 +97,50 @@ void FPuertsModule::EndPIE(bool bIsSimulating)
 }
 #endif
 
+void FPuertsModule::RegisterSettings()
+{
+#if WITH_EDITOR
+    if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+    {
+        SettingsModule->RegisterSettings("Project", "Plugins", "Puerts",
+            LOCTEXT("TileSetEditorSettingsName", "Puerts Settings"),
+            LOCTEXT("TileSetEditorSettingsDescription", "Configure the setting of Puerts plugin."),
+            GetMutableDefault<UPuertsSetting>());
+    }
+#endif
+}
+
+void FPuertsModule::UnregisterSettings()
+{
+#if WITH_EDITOR
+    if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+    {
+        SettingsModule->UnregisterSettings("Project", "Plugins", "Puerts");
+    }
+#endif
+}
+
 void FPuertsModule::StartupModule()
 {
 #if WITH_EDITOR
     FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+    RegisterSettings();
 #endif
+    const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+
+    Enabled = Settings.Enable;
+
     if (Enabled)
     {
-        JsEnv = MakeShared<puerts::FJsEnv>();
+        if (Settings.DebugEnable)
+        {
+            JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+        }
+        else
+        {
+            JsEnv = MakeShared<puerts::FJsEnv>();
+        }
+        
         GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
         GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
     }
@@ -105,6 +149,9 @@ void FPuertsModule::StartupModule()
 
 void FPuertsModule::ShutdownModule()
 {
+#if WITH_EDITOR
+    UnregisterSettings();
+#endif
     if (Enabled)
     {
         JsEnv.Reset();
