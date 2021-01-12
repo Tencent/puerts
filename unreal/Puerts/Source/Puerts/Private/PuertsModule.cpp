@@ -140,6 +140,11 @@ void FPuertsModule::StartupModule()
         {
             JsEnv = MakeShared<puerts::FJsEnv>();
         }
+
+        if (Settings.WaitDebugger)
+        {
+            JsEnv->WaitDebugger();
+        }
         
         GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
         GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
