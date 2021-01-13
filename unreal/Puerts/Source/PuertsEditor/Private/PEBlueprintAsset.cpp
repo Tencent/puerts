@@ -255,6 +255,12 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
 
     UFunction* Function = GeneratedClass->FindFunctionByName(InName, EIncludeSuperFlag::ExcludeSuper);
+
+    if (Function && Function->HasAnyFunctionFlags(FUNC_Native))
+    {
+        Function->FunctionFlags &= ~FUNC_Native;
+    }
+
     if (ParentFunction && Function)
     {
         ParameterNames.Empty();
