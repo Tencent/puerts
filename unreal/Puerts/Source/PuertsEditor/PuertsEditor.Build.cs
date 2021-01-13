@@ -30,7 +30,6 @@ public class PuertsEditor : ModuleRules {
                 "DirectoryWatcher",
                 "AssetRegistry",
                 "KismetCompiler",
-                "ScriptDisassembler",
                 "BlueprintGraph",
                 "AssetTools"
             }

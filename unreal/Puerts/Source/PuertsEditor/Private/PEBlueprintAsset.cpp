@@ -13,7 +13,6 @@
 #include "UObject/MetaData.h"
 #include "FunctionParametersDuplicate.h"
 #include "CoreGlobals.h"
-#include "ScriptDisassembler.h"
 #include "K2Node_FunctionEntry.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Event.h"
@@ -175,6 +174,79 @@ static TArray<UK2Node_EditablePinBase*> GatherAllResultNodes(UK2Node_EditablePin
     }
     return Result;
 }
+#if ENGINE_MINOR_VERSION <= 23
+UFunction* GetInterfaceFunction(UBlueprint* Blueprint, const FName FuncName)
+{
+    UFunction* Function = nullptr;
+
+    // If that class is an interface class implemented by this function, then return true
+    for (const FBPInterfaceDescription& I : Blueprint->ImplementedInterfaces)
+    {
+        if (I.Interface)
+        {
+            Function = FindField<UFunction>(I.Interface, FuncName);
+            if (Function)
+            {
+                // found it, done
+                return Function;
+            }
+        }
+    }
+
+    // Check if it is in a native class or parent class
+    for (UClass* TempClass = Blueprint->ParentClass; (nullptr != TempClass) && (nullptr == Function); TempClass = TempClass->GetSuperClass())
+    {
+        for (const FImplementedInterface& I : TempClass->Interfaces)
+        {
+            Function = FindField<UFunction>(I.Class, FuncName);
+            if (Function)
+            {
+                // found it, done
+                return Function;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+
+UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncName, UFunction** OutFunction)
+{
+    if (!Blueprint->SkeletonGeneratedClass)
+    {
+        return nullptr;
+    }
+
+    UFunction* OverrideFunc = GetInterfaceFunction(Blueprint, FuncName);
+
+    if (OverrideFunc == nullptr)
+    {
+        OverrideFunc = FindField<UFunction>(Blueprint->SkeletonGeneratedClass, FuncName);
+        // search up the class hierarchy, we want to find the original declaration of the function to match FBlueprintEventNodeSpawner.
+        // Doing so ensures that we can find the existing node if there is one:
+        const UClass* Iter = Blueprint->SkeletonGeneratedClass->GetSuperClass();
+        while (Iter != nullptr && OverrideFunc == nullptr)
+        {
+            if (UFunction * F = Iter->FindFunctionByName(FuncName))
+            {
+                OverrideFunc = F;
+            }
+            else
+            {
+                break;
+            }
+            Iter = Iter->GetSuperClass();
+        }
+    }
+    if (OutFunction != nullptr)
+    {
+        *OutFunction = OverrideFunc;
+    }
+
+    return (OverrideFunc ? CastChecked<UClass>(OverrideFunc->GetOuter())->GetAuthoritativeClass() : nullptr);
+}
+#endif
 
 void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
@@ -200,7 +272,11 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         //UE_LOG(LogTemp, Warning, TEXT("Override Function %s"), *ParentFunction->GetName());
         //FBlueprintEditorUtils::AddFunctionGraph(Blueprint, FunctionGraph, bUserCreated, ParentFunction);
         UFunction* OverrideFunc = nullptr;
+#if ENGINE_MINOR_VERSION <= 23
+        UClass* const OverrideFuncClass = GetOverrideFunctionClass(Blueprint, InName, &OverrideFunc);
+#else
         UClass* const OverrideFuncClass = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, InName, &OverrideFunc);
+#endif
         check(OverrideFunc);
 
         UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
