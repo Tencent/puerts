@@ -48,18 +48,12 @@ bool UPEDirectoryWatcher::Watch(const FString& InDirectory)
                 default:
                     continue;
                 }
-
-                if (Change.Action == FFileChangeData::FCA_Added || Change.Action == FFileChangeData::FCA_Modified)
-                {
-                    FMD5Hash Hash = FMD5Hash::HashFile(*Change.Filename);
-                    MD5Map.Emplace(Change.Filename, LexToString(Hash));
-                }
             }
             OnChanged.Broadcast(Added, Modified, Removed);
         });
         FDirectoryWatcherModule& DirectoryWatcherModule = FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
         IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
-        DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(Directory, Changed, DelegateHandle, true);
+        DirectoryWatcher->RegisterDirectoryChangedCallback_Handle(Directory, Changed, DelegateHandle, IDirectoryWatcher::IncludeDirectoryChanges);
         return true;
     }
     return false;

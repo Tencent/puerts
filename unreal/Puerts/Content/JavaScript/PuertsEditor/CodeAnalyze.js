@@ -773,6 +773,7 @@ function getCustomSystem() {
             return puerts_1.$unref(data);
         }
         else {
+            console.warn("readFile: read file fail! path=" + path);
             return undefined;
         }
     }
@@ -877,6 +878,7 @@ function watch(configFilePath) {
         },
         getScriptSnapshot: fileName => {
             if (!customSystem.fileExists(fileName)) {
+                console.log("getScriptSnapshot: file not existed! path=" + fileName);
                 return undefined;
             }
             //console.log("getScriptSnapshot:"+ fileName + ",in:" + new Error().stack)
@@ -891,10 +893,22 @@ function watch(configFilePath) {
         directoryExists: ts.sys.directoryExists,
         getDirectories: ts.sys.getDirectories,
     };
-    const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+    let service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+    function getProgramFromService() {
+        while (true) {
+            try {
+                return service.getProgram();
+            }
+            catch (e) {
+                console.error(e);
+            }
+            //异常了从新创建Language Service，有可能不断失败,UE的文件读取偶尔会失败，失败后ts增量编译会不断的在tryReuseStructureFromOldProgram那断言失败
+            service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+        }
+    }
     let beginTime = new Date().getTime();
-    let program = services.getProgram();
-    console.warn("full compile using " + (new Date().getTime() - beginTime) + "ms");
+    let program = getProgramFromService();
+    console.log("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics = ts.getPreEmitDiagnostics(program);
     if (diagnostics.length > 0) {
         logErrors(diagnostics);
@@ -907,25 +921,27 @@ function watch(configFilePath) {
     var dirWatcher = new UE.PEDirectoryWatcher();
     global.__dirWatcher = dirWatcher; //防止被释放?
     dirWatcher.OnChanged.Add((added, modified, removed) => {
-        if (added.Num() > 0) {
-            onFileAdded();
-        }
-        if (modified.Num() > 0) {
-            for (var i = 0; i < modified.Num(); i++) {
-                const fileName = modified.Get(i);
-                if (fileName in fileVersions) {
-                    let md5 = dirWatcher.MD5Map.Get(fileName);
-                    if (md5 === fileVersions[fileName].version) {
-                        console.log(fileName + " md5 not changed, so skiped!");
-                    }
-                    else {
-                        console.log(`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
-                        fileVersions[fileName].version = md5;
-                        onSourceFileAddOrChange(fileName, true);
+        setTimeout(() => {
+            if (added.Num() > 0) {
+                onFileAdded();
+            }
+            if (modified.Num() > 0) {
+                for (var i = 0; i < modified.Num(); i++) {
+                    const fileName = modified.Get(i);
+                    if (fileName in fileVersions) {
+                        let md5 = UE.FileSystemOperation.FileMD5Hash(fileName);
+                        if (md5 === fileVersions[fileName].version) {
+                            console.log(fileName + " md5 not changed, so skiped!");
+                        }
+                        else {
+                            console.log(`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
+                            fileVersions[fileName].version = md5;
+                            onSourceFileAddOrChange(fileName, true);
+                        }
                     }
                 }
             }
-        }
+        }, 100); //延时100毫秒，防止因为读冲突而文件读取失败
     });
     dirWatcher.Watch(customSystem.getCurrentDirectory());
     function onFileAdded() {
@@ -941,14 +957,14 @@ function watch(configFilePath) {
         if (newFiles.length > 0) {
             fileNames = cmdLine.fileNames;
             options = cmdLine.options;
-            program = services.getProgram();
+            program = getProgramFromService();
             newFiles.forEach(fileName => onSourceFileAddOrChange(fileName, true, program));
         }
     }
     function onSourceFileAddOrChange(sourceFilePath, reload, program) {
         if (!program) {
             let beginTime = new Date().getTime();
-            program = services.getProgram();
+            program = getProgramFromService();
             console.log("incremental compile " + sourceFilePath + " using " + (new Date().getTime() - beginTime) + "ms");
         }
         let sourceFile = program.getSourceFile(sourceFilePath);
@@ -963,7 +979,7 @@ function watch(configFilePath) {
             }
             else {
                 if (!sourceFile.isDeclarationFile) {
-                    let emitOutput = services.getEmitOutput(sourceFilePath);
+                    let emitOutput = service.getEmitOutput(sourceFilePath);
                     if (!emitOutput.emitSkipped) {
                         let modulePath = undefined;
                         let moduleFileName = undefined;

@@ -30,9 +30,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "File")
     void UnWatch();
 
-    UPROPERTY(BlueprintReadOnly)
-    TMap<FString, FString> MD5Map;
-
     UPEDirectoryWatcher();
 
     ~UPEDirectoryWatcher();

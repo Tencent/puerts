@@ -5,10 +5,24 @@
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformFileManager.h"
 #include "PuertsModule.h"
+#include "Misc/SecureHash.h"
 
 bool UFileSystemOperation::ReadFile(FString Path, FString &Data)
 {
-    return (FPaths::FileExists(Path) && FFileHelper::LoadFileToString(Data, *Path));
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    IFileHandle* FileHandle = PlatformFile.OpenRead(*Path);
+    if (FileHandle) {
+        int len = FileHandle->Size();
+        TArray<uint8> Content;
+        Content.Reset(len + 2);
+        Content.AddUninitialized(len);
+        FileHandle->Read(Content.GetData(), len);
+        delete FileHandle;
+        FFileHelper::BufferToString(Data, Content.GetData(), Content.Num());
+
+        return true;
+    }
+    return false;
 }
 
 void UFileSystemOperation::WriteFile(FString Path, FString Data)
@@ -67,6 +81,12 @@ TArray<FString> UFileSystemOperation::GetFiles(FString Path)
 void UFileSystemOperation::PuertsNotifyChange(FString Path)
 {
     IPuertsModule::Get().ReloadJsModule(*Path);
+}
+
+FString UFileSystemOperation::FileMD5Hash(FString Path)
+{
+    FMD5Hash Hash = FMD5Hash::HashFile(*Path);
+    return LexToString(Hash);
 }
 
 //TArray<FString> UFileSystemOperation::ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32 Depth)
