@@ -78,7 +78,7 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
     }
 }
 
-void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker)
+void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker, bool IsNative)
 {
     bool Replace = Super->GetOuter() == Class;
     FName FunctionName = Super->GetFName();
@@ -127,7 +127,11 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
 
     Function->Bind();
     Function->StaticLink(true);
-    Function->FunctionFlags |= FUNC_Native;//让UE不走解析
+
+    if (IsNative)
+    {
+        Function->FunctionFlags |= FUNC_Native;//让UE不走解析
+    }
 
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
 

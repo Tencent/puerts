@@ -1019,7 +1019,20 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                         {
                             UFunction *Function = *It;
                             auto FunctionFName = Function->GetFName();
-                            auto V8Name = FV8Utils::ToV8String(Isolate, Function->GetName());
+                            FString FunctionName = Function->GetName();
+
+                            //FString::Printf(TEXT("InpAxisEvt_%s_%s"), *InputAxisName.ToString(), *GetName())
+                            static FString AxisPrefix(TEXT("InpAxisEvt_"));
+                            if (FunctionName.StartsWith(AxisPrefix))
+                            {
+                                auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
+                                int32 SubPos;
+                                if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                                {
+                                    FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                                }
+                            }
+                            auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
                             if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
                                 (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) || Cast<UJSGeneratedFunction>(Function)))
                             {
@@ -1027,7 +1040,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                                 if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
                                 {
                                     //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
-                                    UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker);
+                                    UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
                                     overrided.Add(FunctionFName);
                                 }
                             }
@@ -2439,7 +2452,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
             if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
             {
                 //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
-                UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker);
+                UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, true);
                 overrided.Add(FunctionFName);
             }
         }

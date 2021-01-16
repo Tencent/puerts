@@ -30,7 +30,7 @@ public:
 
     static UClass * Create(const FString& Name, UClass *Parent, TSharedPtr<IDynamicInvoker> DynamicInvoker, v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype);
 
-    static void Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker);
+    static void Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker, bool IsNative);
 
     void InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr) override;
 

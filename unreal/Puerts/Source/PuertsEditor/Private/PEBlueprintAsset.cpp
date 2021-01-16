@@ -17,6 +17,8 @@
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionResult.h"
+#include "GameFramework/InputSettings.h"
+#include "K2Node_InputAxisEvent.h"
 
 UClass* FindClass(const TCHAR* ClassName)
 {
@@ -256,11 +258,6 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
     UFunction* Function = GeneratedClass->FindFunctionByName(InName, EIncludeSuperFlag::ExcludeSuper);
 
-    if (Function && Function->HasAnyFunctionFlags(FUNC_Native))
-    {
-        Function->FunctionFlags &= ~FUNC_Native;
-    }
-
     if (ParentFunction && Function)
     {
         ParameterNames.Empty();
@@ -269,6 +266,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     }
 
     Blueprint->Modify();
+
+    TArray<FName> AxisNames;
+    GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
 
     // Create the function graph.
     
@@ -306,6 +306,28 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                     }
                 );
             }
+        }
+    }
+    else if (AxisNames.Contains(InName))
+    {
+        TArray<UK2Node_InputAxisEvent*> AllEvents;
+        //TODO: K2Node_InputTouchEvent,K2Node_InputVectorAxisEvent,K2Node_InputAxisKeyEvent,UK2Node_InputKeyEvent
+        FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_InputAxisEvent>(Blueprint, AllEvents);
+
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+
+        if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAxisEvent* Node) { return Node->InputAxisName == InName; }))
+        {
+            //UE_LOG(LogTemp, Warning, TEXT("Add Axis: %s"), *InName.ToString());
+            FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_InputAxisEvent>(
+                EventGraph,
+                EventGraph->GetGoodPlaceForNewNode(),
+                EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_InputAxisEvent* NewInstance)
+                {
+                    NewInstance->Initialize(InName);
+                }
+            );
         }
     }
     else
