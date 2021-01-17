@@ -153,7 +153,7 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
     if (PinType.ContainerType == EPinContainerType::Map)
     {
         PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
-        PinType.PinValueType.TerminalSubCategoryObject = InGraphPinType.PinSubCategoryObject;
+        PinType.PinValueType.TerminalSubCategoryObject = InPinValueType.PinSubCategoryObject;
     }
 
     return PinType;
