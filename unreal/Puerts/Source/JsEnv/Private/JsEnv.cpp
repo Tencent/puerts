@@ -950,8 +950,9 @@ void FJsEnvImpl::LowMemoryNotification()
 //！！结果只能临时使用，否则Map增加容量时这个地址可能会无效
 const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 {
+    auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class);
     auto Iter = BindInfoMap.find(Class);
-    if (Iter == BindInfoMap.end() || Iter->second.IsDirty)//create and link
+    if (Iter == BindInfoMap.end() || Iter->second.IsDirty || (TypeScriptGeneratedClass && TypeScriptGeneratedClass->ReBind))//create and link
     {
         auto Package = Cast<UPackage>(Class->GetOuter());
         if (!Package)
@@ -965,9 +966,8 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 ;
         if (PackageName.StartsWith(PackageNamePrefix))
         {
-            auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class);
             FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
-            //Logger->Error(FString::Printf(TEXT("load module [%s] "), *ModuleName));
+            Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
 
             auto Isolate = MainIsolate;
             v8::Isolate::Scope IsolateScope(Isolate);
@@ -1015,6 +1015,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                             TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
                             TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
                             TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                            TypeScriptGeneratedClass->ReBind = false;
                         }
 
                         v8::Local<v8::Value> VCtor;

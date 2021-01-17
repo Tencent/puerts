@@ -28,5 +28,9 @@ public:
 
     TWeakPtr<IDynamicInvoker> DynamicInvoker;
 
+    bool ReBind = false;
+
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
+
+    void Bind() override;
 };

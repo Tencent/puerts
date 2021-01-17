@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "TypeScriptGeneratedClass.h"
@@ -18,4 +18,10 @@ void UTypeScriptGeneratedClass::StaticConstructor(const FObjectInitializer& Obje
             PinedDynamicInvoker->Construct(TypeScriptGeneratedClass, Object, TypeScriptGeneratedClass->Constructor, TypeScriptGeneratedClass->Prototype);
         }
     }
+}
+
+void UTypeScriptGeneratedClass::Bind()
+{
+    Super::Bind();
+    ReBind = true;
 }
