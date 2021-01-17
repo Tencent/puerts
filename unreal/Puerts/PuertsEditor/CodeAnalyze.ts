@@ -1164,9 +1164,9 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
         let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
           diagnostic.start!
         );
-        console.log(`  Error ${diagnostic.file.fileName} (${line + 1},${character +1}): ${message}`);
+        console.warn(`  Error ${diagnostic.file.fileName} (${line + 1},${character +1}): ${message}`);
       } else {
-        console.log(`  Error: ${message}`);
+        console.warn(`  Error: ${message}`);
       }
     });
 }
@@ -1490,8 +1490,8 @@ function watch(configFilePath:string) {
                                 }
                             }
                         });
-                bp.RemoveNotExistedMemberVariable();
-                bp.RemoveNotExistedFunction();
+                //bp.RemoveNotExistedMemberVariable();
+                //bp.RemoveNotExistedFunction();
                 bp.Save();
             }
 
