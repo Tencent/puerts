@@ -19,6 +19,7 @@
 #include "K2Node_FunctionResult.h"
 #include "GameFramework/InputSettings.h"
 #include "K2Node_InputAxisEvent.h"
+#include "TypeScriptGeneratedClass.h"
 
 UClass* FindClass(const TCHAR* ClassName)
 {
@@ -71,6 +72,7 @@ bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& In
 
     IKismetCompilerInterface& KismetCompilerModule = FModuleManager::LoadModuleChecked<IKismetCompilerInterface>("KismetCompiler");
     KismetCompilerModule.GetBlueprintTypesForClass(ParentClass, BlueprintClass, BlueprintGeneratedClass);
+    BlueprintGeneratedClass = UTypeScriptGeneratedClass::StaticClass();
 
     //UE_LOG(LogTemp, Warning, TEXT("BlueprintClass: %s"), *BlueprintClass->GetName());
     //UE_LOG(LogTemp, Warning, TEXT("BlueprintGeneratedClass: %s"), *BlueprintGeneratedClass->GetName());
@@ -88,8 +90,8 @@ bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& In
     Blueprint = FKismetEditorUtilities::CreateBlueprint(ParentClass, Package, *Name, BPTYPE_Normal, BlueprintClass, BlueprintGeneratedClass, FName("LevelEditorActions"));
     if (Blueprint)
     {
-        static FName InterfaceClassName = FName(TEXT("TypeScriptObject"));
-        FBlueprintEditorUtils::ImplementNewInterface(Blueprint, InterfaceClassName);
+        //static FName InterfaceClassName = FName(TEXT("TypeScriptObject"));
+        //FBlueprintEditorUtils::ImplementNewInterface(Blueprint, InterfaceClassName);
         // Notify the asset registry
         FAssetRegistryModule::AssetCreated(Blueprint);
 

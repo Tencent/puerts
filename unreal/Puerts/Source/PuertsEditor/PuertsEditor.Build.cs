@@ -34,5 +34,6 @@ public class PuertsEditor : ModuleRules {
                 "AssetTools"
             }
         );
+        bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
     }
 }

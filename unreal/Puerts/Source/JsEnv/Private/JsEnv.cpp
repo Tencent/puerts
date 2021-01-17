@@ -25,6 +25,7 @@
 #include "JSClassRegister.h"
 #include "PromiseRejectCallback.hpp"
 #include "TypeScriptObject.h"
+#include "TypeScriptGeneratedClass.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -754,6 +755,12 @@ FJsEnvImpl::~FJsEnvImpl()
                         JSGeneratedFunction->DynamicInvoker.Reset();
                     }
                 }
+                if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Iter->first))
+                {
+                    TypeScriptGeneratedClass->Constructor.Reset();
+                    TypeScriptGeneratedClass->Prototype.Reset();
+                    TypeScriptGeneratedClass->DynamicInvoker.Reset();
+                }
             }
             Iter->second.Proto.Reset();
             Iter->second.Ctor.Reset();
@@ -946,7 +953,6 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
     auto Iter = BindInfoMap.find(Class);
     if (Iter == BindInfoMap.end() || Iter->second.IsDirty)//create and link
     {
-        //TODO: 用方法更省内存，或者是某个一个类一份的东西，但生成代码可能生成属性更简单些，后续看情况
         auto Package = Cast<UPackage>(Class->GetOuter());
         if (!Package)
         {
@@ -959,6 +965,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 ;
         if (PackageName.StartsWith(PackageNamePrefix))
         {
+            auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class);
             FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
             //Logger->Error(FString::Printf(TEXT("load module [%s] "), *ModuleName));
 
@@ -1003,11 +1010,22 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                         Info.IsDirty = false;
                         Info.Proto.Reset(Isolate, Proto);
 
+                        if (TypeScriptGeneratedClass)
+                        {
+                            TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
+                            TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
+                            TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                        }
+
                         v8::Local<v8::Value> VCtor;
                         if (Proto->Get(Context, FV8Utils::ToV8String(Isolate, "Constructor")).ToLocal(&VCtor) && VCtor->IsFunction())
                         {
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
                             Info.Ctor.Reset(Isolate, VCtor.As<v8::Function>());
+                            if (TypeScriptGeneratedClass)
+                            {
+                                TypeScriptGeneratedClass->Constructor.Reset(Isolate, VCtor.As<v8::Function>());
+                            }
                         }
                         BindInfoMap[Class] = std::move(Info);
                         SysObjectRetainer.Retain(Class);
@@ -1121,20 +1139,27 @@ void FJsEnvImpl::ReloadModule(FName ModuleName)
 void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 {
     UObjectBaseUtility *Object = (UObjectBaseUtility*)InObject;
+
     if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
-        check(!Object->IsPendingKill());//
+        check(!Object->IsPendingKill());
+
         UClass *Class = InObject->GetClass();
-        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+
+        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
         {
-            //if (GeneratedObjectMap.find(InObject) == GeneratedObjectMap.end())
-            const BindInfo* Info = GetBindInfo(Class);
-            //UE_LOG(LogTemp, Error, TEXT("GetBindInfo, %p"), Info);
-            if (Info)
-            {
-                Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
-            }
+            GetBindInfo(TypeScriptGeneratedClass);
         }
+
+        //另外一种实现方式
+        //if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        //{
+        //    const BindInfo* Info = GetBindInfo(Class);
+        //    if (Info)
+        //    {
+        //        Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
+        //    }
+        //}
     }
 }
 
@@ -1384,6 +1409,15 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         ClassToTemplateMap[Struct].Reset();
         ClassToTemplateMap.erase(Struct);
         TypeReflectionMap.erase(Struct);
+    }
+
+    UClass *Class = (UClass*)ObjectBase;
+    auto IterBIM = BindInfoMap.find(Class);
+    if (IterBIM != BindInfoMap.end())
+    {
+        IterBIM->second.Proto.Reset();
+        IterBIM->second.Ctor.Reset();
+        BindInfoMap.erase(IterBIM);
     }
 
     UnBind(nullptr, (UObject*)ObjectBase);
