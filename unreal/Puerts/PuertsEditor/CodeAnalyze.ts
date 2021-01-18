@@ -1346,23 +1346,28 @@ function watch(configFilePath:string) {
                         }
 
                         let foundType: ts.Type = undefined;
-                        let foundBaseType: ts.Type  = undefined;
+                        let foundBaseTypeUClass: UE.Class  = undefined;
                         ts.forEachChild(sourceFile, (node) => {
                             if (ts.isExportAssignment(node) && ts.isIdentifier(node.expression)) {
                                 const type = checker.getTypeAtLocation(node.expression);
+                                if (type.getSymbol().getName() != getBaseFileName(moduleFileName)) {
+                                    console.error("type name must the same as file name!");
+                                    return;
+                                }
                                 let baseTypes = type.getBaseTypes();
                                 if (baseTypes.length != 1) return;
-                                let baseType = baseTypes[0];
-                                let baseTypeModule = getModule(baseType);
-                                if (baseTypeModule == 'ue') {
+                                let baseTypeUClass = getUClassOfType(baseTypes[0]);
+                                if (baseTypeUClass) {
                                     foundType = type;
-                                    foundBaseType = baseType;
+                                    foundBaseTypeUClass = baseTypeUClass;
+                                } else {
+                                    console.warn("can not find base for " + checker.typeToString(type));
                                 }
                             }
                         });
 
-                        if (foundType) {
-                            onBlueprintTypeAddOrChange(foundBaseType, foundType, modulePath);
+                        if (foundType && foundBaseTypeUClass) {
+                            onBlueprintTypeAddOrChange(foundBaseTypeUClass, foundType, modulePath);
                         }
                     }
                 }
@@ -1374,6 +1379,42 @@ function watch(configFilePath:string) {
                 }
                 else {
                     return node.right.text;
+                }
+            }
+
+            function getUClassOfType(type: ts.Type) : UE.Class {
+                if (!type) return undefined;
+                if (getModule(type) == 'ue') {
+                    return (UE as any)[type.symbol.getName()];
+                } else if ( type.symbol &&  type.symbol.valueDeclaration) {
+                    //eturn undefined;
+                    let baseTypes = type.getBaseTypes();
+                    if (baseTypes.length != 1) return undefined;
+                    let baseTypeUClass = getUClassOfType(baseTypes[0]);
+                    if (!baseTypeUClass) return undefined;
+
+                    //console.error("modulePath:", getModulePath(type.symbol.valueDeclaration.getSourceFile().fileName));
+                    let sourceFile = type.symbol.valueDeclaration.getSourceFile();
+                    let sourceFileName: string
+                    program.emit(sourceFile, writeFile, undefined, false, undefined);
+                    function writeFile(fileName: string, text: string, writeByteOrderMark: boolean) {
+                        if (fileName.endsWith('.js')) {
+                            sourceFileName = removeExtension(fileName, '.js');
+                        }
+                    } 
+                    if ( getBaseFileName(sourceFileName) != type.symbol.getName()) {
+                        console.error("type name must the same as file name!");
+                        return undefined;
+                    } 
+
+                    if (options.outDir && sourceFileName.startsWith(options.outDir)) {
+                        let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
+                        let modulePath = getDirectoryPath(moduleFileName);
+                        let bp = new UE.PEBlueprintAsset();
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                        bp.Save();
+                        return bp.GeneratedClass;
+                    }
                 }
             }
 
@@ -1444,10 +1485,10 @@ function watch(configFilePath:string) {
                 }
             }
 
-            function onBlueprintTypeAddOrChange(baseType: ts.Type, type: ts.Type, modulePath:string) {
-                console.log(`gen blueprint for ${type.getSymbol().getName()}, base type: ${baseType.getSymbol().getName()}, path: ${modulePath}`);
+            function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
+                console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
-                bp.Load(baseType.getSymbol().getName(), type.getSymbol().getName(), modulePath);
+                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
                 checker.getPropertiesOfType(type)
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                         .forEach((symbol) => {
@@ -1465,6 +1506,7 @@ function watch(configFilePath:string) {
                                     bp.AddParameter(parameter.name.getText(), paramPinType.pinType, paramPinType.pinValueType);
                                 }
 
+                                //console.log("add function", symbol.getName());
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
                                     bp.AddFunction(symbol.getName(), true, undefined, undefined);
                                 } else {
@@ -1486,6 +1528,7 @@ function watch(configFilePath:string) {
                                 if (!propPinType) {
                                     console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                                 } else {
+                                    //console.log("add member variable", symbol.getName());
                                     bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType);
                                 }
                             }
@@ -1503,17 +1546,18 @@ function watch(configFilePath:string) {
         }
     }
 
-    function getOwnEmitOutputFilePath(fileName: string, extension: string) {
+    //function getOwnEmitOutputFilePath(fileName: string) {
+    function getModulePath(fileName: string) {
         const compilerOptions = options;
         let emitOutputFilePathWithoutExtension: string;
         if (compilerOptions.outDir) {
-            emitOutputFilePathWithoutExtension = removeFileExtension(getSourceFilePathInNewDir(fileName, customSystem.getCurrentDirectory(), customSystem.getCurrentDirectory(), compilerOptions.outDir));
+            emitOutputFilePathWithoutExtension = removeFileExtension(getSourceFilePathInNewDir(fileName, customSystem.getCurrentDirectory(), (program as any).getCommonSourceDirectory(), options.outDir));
         }
         else {
             emitOutputFilePathWithoutExtension = removeFileExtension(fileName);
         }
 
-        return emitOutputFilePathWithoutExtension + extension;
+        return emitOutputFilePathWithoutExtension;
     }
 }
 

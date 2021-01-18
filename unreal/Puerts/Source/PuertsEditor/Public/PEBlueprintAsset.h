@@ -61,11 +61,11 @@ public:
     UPROPERTY(BlueprintReadOnly)
     UPackage* Package;
 
-    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    bool IsExisted(const FString& InName, const FString& InPath);
+    UPROPERTY(BlueprintReadOnly)
+    bool NeedSave;
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    bool Load(const FString& InParentClassName, const FString& InName, const FString& InPath);
+    bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);

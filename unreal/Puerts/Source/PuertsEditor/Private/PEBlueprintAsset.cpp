@@ -36,36 +36,24 @@ UClass* FindClass(const TCHAR* ClassName)
     return nullptr;
 }
 
-bool UPEBlueprintAsset::IsExisted(const FString& InName, const FString& InPath)
+bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass)
 {
     FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
-    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-    TArray<FAssetData> AssetDatas;
-    return (AssetRegistryModule.Get().GetAssetsByPackageName(*PackageName, AssetDatas) && AssetDatas.Num() > 0);
-}
 
-bool UPEBlueprintAsset::Load(const FString& InParentClassName, const FString& InName, const FString& InPath)
-{
-    UClass* ParentClass = FindClass(*InParentClassName);
-    //UE_LOG(LogTemp, Warning, TEXT("InParentClassName: %s(%p)"), *InParentClassName, ParentClass);
-    //UE_LOG(LogTemp, Warning, TEXT("InName: %s"), *InName);
-    //UE_LOG(LogTemp, Warning, TEXT("InPath: %s"), *InPath);
-
-    FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
-
-    //UE_LOG(LogTemp, Warning, TEXT("PackageName: %s"), *PackageName);
+    //UE_LOG(LogTemp, Warning, TEXT("LoadOrCreate.PackageName: %s"), *PackageName);
 
     Blueprint = LoadObject<UBlueprint>(nullptr, *PackageName, nullptr, LOAD_NoWarn | LOAD_NoRedirects);
-    if (Blueprint) //防止StaticLoadObject找不到文件的Warning
+    if (Blueprint) 
     {
         GeneratedClass = Blueprint->GeneratedClass;
         Package = Cast<UPackage>(Blueprint->GetOuter());
-        //UE_LOG(LogTemp, Warning, TEXT("existed BlueprintGeneratedClass: %s"), *GeneratedClass->GetName());
-        //UE_LOG(LogTemp, Warning, TEXT("existed Package: %s"), *Package->GetName());
+        NeedSave = false;
         return true;
     }
 
-    if (!ParentClass) ParentClass = UObject::StaticClass();
+    if (!ParentClass) return false;
+
+    NeedSave = true;
 
     UClass* BlueprintClass = nullptr;
     UClass* BlueprintGeneratedClass = nullptr;
@@ -254,6 +242,8 @@ UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncNa
 
 void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
+    NeedSave = true;
+
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
     UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
@@ -399,6 +389,7 @@ void UPEBlueprintAsset::ClearParameter()
 
 void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
+    NeedSave = true;
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
     const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
@@ -415,7 +406,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
-    //Blueprint->NewVariables->
+    NeedSave = true;
     if (Blueprint)
     {
         TArray<FName> ToDelete;
@@ -437,6 +428,7 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 
 void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
+    NeedSave = true;
     if (Blueprint)
     {
         Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
@@ -446,7 +438,7 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
 
 void UPEBlueprintAsset::Save()
 {
-    if (Blueprint)
+    if (Blueprint && NeedSave)
     {
         FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
