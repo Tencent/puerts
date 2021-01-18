@@ -1385,7 +1385,7 @@ function watch(configFilePath:string) {
             function getUClassOfType(type: ts.Type) : UE.Class {
                 if (!type) return undefined;
                 if (getModule(type) == 'ue') {
-                    return (UE as any)[type.symbol.getName()];
+                    return (UE as any)[type.symbol.getName()].StaticClass(); 
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
                     let baseTypes = type.getBaseTypes();

@@ -1037,7 +1037,7 @@ function watch(configFilePath) {
                 if (!type)
                     return undefined;
                 if (getModule(type) == 'ue') {
-                    return UE[type.symbol.getName()];
+                    return UE[type.symbol.getName()].StaticClass();
                 }
                 else if (type.symbol && type.symbol.valueDeclaration) {
                     //eturn undefined;
