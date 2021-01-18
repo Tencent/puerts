@@ -761,6 +761,10 @@ namespace Puerts.Editor
         static void AddRefType(HashSet<Type> refTypes, Type type)
         {
             var rawType = GetRawType(type);
+            
+            // 将此过滤放到递归之前, 防止在递归中进入死循环
+            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
+            
             if (type.IsGenericType)
             {
                 foreach (var gt in type.GetGenericArguments())
@@ -768,7 +772,7 @@ namespace Puerts.Editor
                     AddRefType(refTypes, gt);
                 }
             }
-            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
+            
             if (!rawType.IsGenericParameter)
             {
                 refTypes.Add(rawType);
