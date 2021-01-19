@@ -32,5 +32,7 @@ public:
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
+    void ObjectInitialize(const FObjectInitializer& ObjectInitializer);
+
     void Bind() override;
 };

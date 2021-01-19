@@ -6,17 +6,34 @@
 void UTypeScriptGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitializer)
 {
     auto Class = ObjectInitializer.GetClass();
-    auto Object = ObjectInitializer.GetObj();
-    Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
 
     //UE_LOG(LogTemp, Error, TEXT("UTypeScriptGeneratedClass::StaticConstructor"));
     if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
     {
-        auto PinedDynamicInvoker = TypeScriptGeneratedClass->DynamicInvoker.Pin();
-        if (PinedDynamicInvoker)
-        {
-            PinedDynamicInvoker->Construct(TypeScriptGeneratedClass, Object, TypeScriptGeneratedClass->Constructor, TypeScriptGeneratedClass->Prototype);
-        }
+        TypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
+    }
+    else
+    {
+        Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
+    }
+}
+
+void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& ObjectInitializer)
+{
+    auto Object = ObjectInitializer.GetObj();
+    if (auto SuperTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GetSuperClass()))
+    {
+        SuperTypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
+    }
+    else
+    {
+        GetSuperClass()->ClassConstructor(ObjectInitializer);
+    }
+
+    auto PinedDynamicInvoker = DynamicInvoker.Pin();
+    if (PinedDynamicInvoker)
+    {
+        PinedDynamicInvoker->Construct(this, Object, Constructor, Prototype);
     }
 }
 
