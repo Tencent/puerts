@@ -1070,75 +1070,84 @@ function watch(configFilePath) {
                     }
                 }
             }
-            function toPinType(typeNode) {
+            function toPinType(typeNode, maybeType) {
                 if (!typeNode)
                     return undefined;
-                if (ts.isTypeReferenceNode(typeNode)) {
-                    let typeName = typeNameToString(typeNode.typeName);
-                    if (typeName == 'BigInt') {
-                        let category = "int64";
+                try {
+                    if (ts.isTypeReferenceNode(typeNode)) {
+                        let typeName = typeNameToString(typeNode.typeName);
+                        if (typeName == 'BigInt') {
+                            let category = "int64";
+                            let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
+                            return { pinType: pinType };
+                        }
+                        if (!typeNode.typeArguments || typeNode.typeArguments.length == 0) {
+                            //UE.FileSystemOperation.StaticClass();
+                            let category = "object";
+                            let uclass = getUClassOfType(maybeType);
+                            if (!uclass) {
+                                let cls = UE[typeName];
+                                if (!(cls)) {
+                                    console.warn("can not find class of " + typeName);
+                                    return undefined;
+                                }
+                                uclass = cls.StaticClass();
+                            }
+                            let pinType = new UE.PEGraphPinType(category, uclass, UE.EPinContainerType.None, false);
+                            return { pinType: pinType };
+                        }
+                        else { //TArray, TSet, TMap
+                            let result = toPinType(typeNode.typeArguments[0]);
+                            if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None) {
+                                console.warn("can not find pin type of typeArguments[0] " + typeName);
+                                return undefined;
+                            }
+                            if (typeName == 'TArray' || typeName == 'TSet') {
+                                result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
+                                return result;
+                            }
+                            else if (typeName == 'TMap') {
+                                let valuePinType = toPinType(typeNode.typeArguments[1]);
+                                if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
+                                    console.warn("can not find pin type of typeArguments[1] " + typeName);
+                                    return undefined;
+                                }
+                                result.pinType.PinContainerType = UE.EPinContainerType.Map;
+                                result.pinValueType = new UE.PEGraphTerminalType(valuePinType.pinType.PinCategory, valuePinType.pinType.PinSubCategoryObject);
+                                return result;
+                            }
+                            else {
+                                console.warn("container not support: " + typeName);
+                                return undefined;
+                            }
+                        }
+                    }
+                    else {
+                        //"bool" | "class" | "int64" | "string" | "object" | "struct" | "float";
+                        let category;
+                        switch (typeNode.kind) {
+                            case ts.SyntaxKind.NumberKeyword:
+                                category = "float";
+                                break;
+                            case ts.SyntaxKind.StringKeyword:
+                                category = 'string';
+                                break;
+                            case ts.SyntaxKind.BigIntKeyword:
+                                category = 'int64';
+                                break;
+                            case ts.SyntaxKind.BooleanKeyword:
+                                category = 'bool';
+                                break;
+                            default:
+                                console.warn("not support kind: " + typeNode.kind);
+                                return undefined;
+                        }
                         let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
                         return { pinType: pinType };
                     }
-                    if (!typeNode.typeArguments || typeNode.typeArguments.length == 0) {
-                        //UE.FileSystemOperation.StaticClass();
-                        let category = "object";
-                        let cls = UE[typeName];
-                        if (!(cls)) {
-                            console.warn("can not find class of " + typeName);
-                            return undefined;
-                        }
-                        let pinType = new UE.PEGraphPinType(category, cls.StaticClass(), UE.EPinContainerType.None, false);
-                        return { pinType: pinType };
-                    }
-                    else { //TArray, TSet, TMap
-                        let result = toPinType(typeNode.typeArguments[0]);
-                        if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None) {
-                            console.warn("can not find pin type of typeArguments[0] " + typeName);
-                            return undefined;
-                        }
-                        if (typeName == 'TArray' || typeName == 'TSet') {
-                            result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
-                            return result;
-                        }
-                        else if (typeName == 'TMap') {
-                            let valuePinType = toPinType(typeNode.typeArguments[1]);
-                            if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
-                                console.warn("can not find pin type of typeArguments[1] " + typeName);
-                                return undefined;
-                            }
-                            result.pinType.PinContainerType = UE.EPinContainerType.Map;
-                            result.pinValueType = new UE.PEGraphTerminalType(valuePinType.pinType.PinCategory, valuePinType.pinType.PinSubCategoryObject);
-                            return result;
-                        }
-                        else {
-                            console.warn("container not support: " + typeName);
-                            return undefined;
-                        }
-                    }
                 }
-                else {
-                    //"bool" | "class" | "int64" | "string" | "object" | "struct" | "float";
-                    let category;
-                    switch (typeNode.kind) {
-                        case ts.SyntaxKind.NumberKeyword:
-                            category = "float";
-                            break;
-                        case ts.SyntaxKind.StringKeyword:
-                            category = 'string';
-                            break;
-                        case ts.SyntaxKind.BigIntKeyword:
-                            category = 'int64';
-                            break;
-                        case ts.SyntaxKind.BooleanKeyword:
-                            category = 'bool';
-                            break;
-                        default:
-                            console.warn("not support kind: " + typeNode.kind);
-                            return undefined;
-                    }
-                    let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
-                    return { pinType: pinType };
+                catch {
+                    return undefined;
                 }
             }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
@@ -1151,9 +1160,19 @@ function watch(configFilePath) {
                     if (ts.isMethodDeclaration(symbol.valueDeclaration)) {
                         if (symbol.getName() === 'Constructor')
                             return;
+                        let type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
+                        let signatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call);
+                        let signature;
+                        if (signatures)
+                            signature = signatures[0];
                         for (var i = 0; i < symbol.valueDeclaration.parameters.length; i++) {
                             let parameter = symbol.valueDeclaration.parameters[i];
-                            let paramPinType = toPinType(parameter.type);
+                            let paramType;
+                            if (signature) {
+                                paramType = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration);
+                                //console.log(symbol.getName() + " " + signature.parameters[i].getName() + " " + checker.typeToString(paramType));
+                            }
+                            let paramPinType = toPinType(parameter.type, paramType);
                             if (!paramPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support(p)!");
                                 bp.ClearParameter();
@@ -1166,7 +1185,11 @@ function watch(configFilePath) {
                             bp.AddFunction(symbol.getName(), true, undefined, undefined);
                         }
                         else {
-                            let resultPinType = toPinType(symbol.valueDeclaration.type);
+                            let returnType;
+                            if (signature) {
+                                returnType = signature.getReturnType();
+                            }
+                            let resultPinType = toPinType(symbol.valueDeclaration.type, returnType);
                             if (!resultPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support(r)!");
                                 bp.ClearParameter();
@@ -1178,7 +1201,7 @@ function watch(configFilePath) {
                     }
                     else {
                         let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
-                        let propPinType = toPinType(checker.typeToTypeNode(propType));
+                        let propPinType = toPinType(checker.typeToTypeNode(propType), propType);
                         if (!propPinType) {
                             console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                         }
