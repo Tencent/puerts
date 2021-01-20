@@ -123,16 +123,9 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
         {
             InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
         }
-        else if (UClass *Class = Cast<UClass>(InGraphPinType.PinSubCategoryObject))
+        else
         {
-            if (Class == UClass::StaticClass())
-            {
-                InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Class;
-            }
-            else
-            {
-                InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Object;
-            }
+            InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Object;
         }
     }
 
@@ -142,6 +135,17 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
     {
         PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
         PinType.PinValueType.TerminalSubCategoryObject = InPinValueType.PinSubCategoryObject;
+        if (InPinValueType.PinSubCategoryObject)
+        {
+            if (InPinValueType.PinSubCategoryObject->IsA<UScriptStruct>())
+            {
+                PinType.PinValueType.TerminalCategory = UEdGraphSchema_K2::PC_Struct;
+            }
+            else
+            {
+                PinType.PinValueType.TerminalCategory = UEdGraphSchema_K2::PC_Object;
+            }
+        }
     }
 
     return PinType;
