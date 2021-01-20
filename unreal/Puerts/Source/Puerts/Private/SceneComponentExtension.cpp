@@ -5,5 +5,10 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#include "PuertsSetting.h"
+#include "SceneComponentExtension.h"
 
+
+void USceneComponentExtension::SetupAttachment(USceneComponent* InSelf, USceneComponent* InParent, FName InSocketName)
+{
+    InSelf->SetupAttachment(InParent, InSocketName);
+}

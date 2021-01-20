@@ -5,5 +5,22 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#include "PuertsSetting.h"
+#pragma once
 
+#include "CoreMinimal.h"
+#include "ExtensionMethods.h"
+#include "SceneComponentExtension.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class USceneComponentExtension : public UExtensionMethods
+{
+	GENERATED_BODY()
+
+public:
+
+    UFUNCTION(BlueprintCallable, Category = "SceneComponentExtension")
+    static void SetupAttachment(USceneComponent* InSelf, USceneComponent* InParent, FName InSocketName = NAME_None);
+};
