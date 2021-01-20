@@ -398,17 +398,9 @@ private:
         FJsEnvImpl *Parent;
     };
 
-    struct BindInfo 
-    {
-        FName BindTo;
-        v8::UniquePersistent<v8::Object> Proto;
-        v8::UniquePersistent<v8::Function> Ctor;
-        bool IsDirty;
-    };
+    std::map<UTypeScriptGeneratedClass*, FName> BindInfoMap;
 
-    std::map<UClass*, BindInfo> BindInfoMap;
-
-    const BindInfo * GetBindInfo(UClass* Class);
+    void MakeSureInject(UTypeScriptGeneratedClass* Class);
 
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
 
@@ -762,8 +754,6 @@ FJsEnvImpl::~FJsEnvImpl()
                     TypeScriptGeneratedClass->DynamicInvoker.Reset();
                 }
             }
-            Iter->second.Proto.Reset();
-            Iter->second.Ctor.Reset();
         }
         BindInfoMap.clear();
 
@@ -947,17 +937,16 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
-//！！结果只能临时使用，否则Map增加容量时这个地址可能会无效
-const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
+
+void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass)
 {
-    auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class);
-    auto Iter = BindInfoMap.find(Class);
-    if (Iter == BindInfoMap.end() || Iter->second.IsDirty || (TypeScriptGeneratedClass && TypeScriptGeneratedClass->ReBind))//create and link
+    auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
+    if (Iter == BindInfoMap.end() || TypeScriptGeneratedClass->ReBind)//create and link
     {
-        auto Package = Cast<UPackage>(Class->GetOuter());
+        auto Package = Cast<UPackage>(TypeScriptGeneratedClass->GetOuter());
         if (!Package)
         {
-            return nullptr;
+            return;
         }
 
         auto PackageName = Package->GetName();
@@ -966,6 +955,9 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
 ;
         if (PackageName.StartsWith(PackageNamePrefix))
         {
+            if (auto SuperClass = Cast<UTypeScriptGeneratedClass>(TypeScriptGeneratedClass->GetSuperClass())) {
+                MakeSureInject(SuperClass);
+            }
             FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
             Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
 
@@ -985,7 +977,7 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
             if (TryCatch.HasCaught())
             {
                 Logger->Error(FString::Printf(TEXT("load module [%s] exception %s"), *ModuleName, *GetExecutionException(Isolate, &TryCatch)));
-                return nullptr;
+                return;
             }
 
             if (!MaybeRet.IsEmpty())
@@ -1005,36 +997,24 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                         //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
-                        BindInfo Info;
-                        Info.BindTo = *ModuleName;
-                        Info.IsDirty = false;
-                        Info.Proto.Reset(Isolate, Proto);
-
-                        if (TypeScriptGeneratedClass)
-                        {
-                            TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
-                            TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
-                            TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                            TypeScriptGeneratedClass->ReBind = false;
-                        }
+                        TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
+                        TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
+                        TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                        TypeScriptGeneratedClass->ReBind = false;
 
                         v8::Local<v8::Value> VCtor;
                         if (Proto->Get(Context, FV8Utils::ToV8String(Isolate, "Constructor")).ToLocal(&VCtor) && VCtor->IsFunction())
                         {
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
-                            Info.Ctor.Reset(Isolate, VCtor.As<v8::Function>());
-                            if (TypeScriptGeneratedClass)
-                            {
-                                TypeScriptGeneratedClass->Constructor.Reset(Isolate, VCtor.As<v8::Function>());
-                            }
+                            TypeScriptGeneratedClass->Constructor.Reset(Isolate, VCtor.As<v8::Function>());
                         }
-                        BindInfoMap[Class] = std::move(Info);
-                        SysObjectRetainer.Retain(Class);
+                        BindInfoMap[TypeScriptGeneratedClass] = *ModuleName;
+                        //SysObjectRetainer.Retain(Class);
 
                         //implement by js
                         TSet<FName> overrided;
 
-                        for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::IncludeInterfaces); It; ++It)
+                        for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); It; ++It)
                         {
                             UFunction *Function = *It;
                             auto FunctionFName = Function->GetFName();
@@ -1059,29 +1039,23 @@ const FJsEnvImpl::BindInfo * FJsEnvImpl::GetBindInfo(UClass* Class)
                                 if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
                                 {
                                     //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
-                                    UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
+                                    UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
                                     overrided.Add(FunctionFName);
                                 }
                             }
                         }
-
-                        return &BindInfoMap[Class];
                     }
                 }
             }
-            Logger->Error(FString::Printf(TEXT("module [%s] invalid"), *ModuleName));
-            return nullptr;
+            else
+            {
+                Logger->Error(FString::Printf(TEXT("module [%s] invalid"), *ModuleName));
+            }
         }
         else
         {
-            Logger->Warn(FString::Printf(TEXT("not find module info for [%s]"), *Class->GetName()));
-            return nullptr;
+            Logger->Warn(FString::Printf(TEXT("not find module info for [%s]"), *TypeScriptGeneratedClass->GetName()));
         }
-    }
-    else
-    {
-        //UE_LOG(LogTemp, Error, TEXT("found exist bindinfo for , %s"), *Class->GetName());
-        return &Iter->second;
     }
 }
 
@@ -1090,10 +1064,10 @@ void FJsEnvImpl::ReloadModule(FName ModuleName)
     //Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
     {
-        if (ModuleName == NAME_None || ModuleName == Iter->second.BindTo)
+        if (ModuleName == NAME_None || ModuleName == Iter->second)
         {
-            Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.BindTo.ToString()));
-            Iter->second.IsDirty = true;
+            Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.ToString()));
+            Iter->first->ReBind = true;
             if (ModuleName != NAME_None)
             {
                 break;
@@ -1149,36 +1123,24 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 
         if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
         {
-            GetBindInfo(TypeScriptGeneratedClass);
+            MakeSureInject(TypeScriptGeneratedClass);
         }
-
-        //另外一种实现方式
-        //if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
-        //{
-        //    const BindInfo* Info = GetBindInfo(Class);
-        //    if (Info)
-        //    {
-        //        Construct(Class, (UObject*)Object, Info->Ctor, Info->Proto);
-        //    }
-        //}
     }
 }
 
 void FJsEnvImpl::RebindJs()
 {
-    for (TObjectIterator<UClass> It; It; ++It)
+    for (TObjectIterator<UTypeScriptGeneratedClass> It; It; ++It)
     {
-        UClass* Class = *It;
-        if (!Class->IsNative() && Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        UTypeScriptGeneratedClass* Class = *It;
+        
+        for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
         {
-            for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
+            UFunction *Function = *FIt;
+            if (Function->IsA<UJSGeneratedFunction>()) //已经绑定过
             {
-                UFunction *Function = *FIt;
-                if (Function->IsA<UJSGeneratedFunction>()) //已经绑定过
-                {
-                    GetBindInfo(Class);
-                    break;
-                }
+                MakeSureInject(Class);
+                break;
             }
         }
     }
@@ -1412,12 +1374,10 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         TypeReflectionMap.erase(Struct);
     }
 
-    UClass *Class = (UClass*)ObjectBase;
+    UTypeScriptGeneratedClass *Class = (UTypeScriptGeneratedClass*)ObjectBase;
     auto IterBIM = BindInfoMap.find(Class);
     if (IterBIM != BindInfoMap.end())
     {
-        IterBIM->second.Proto.Reset();
-        IterBIM->second.Ctor.Reset();
         BindInfoMap.erase(IterBIM);
     }
 

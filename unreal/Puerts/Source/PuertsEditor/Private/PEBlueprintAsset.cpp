@@ -65,17 +65,17 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     //UE_LOG(LogTemp, Warning, TEXT("BlueprintClass: %s"), *BlueprintClass->GetName());
     //UE_LOG(LogTemp, Warning, TEXT("BlueprintGeneratedClass: %s"), *BlueprintGeneratedClass->GetName());
 
-    FString Name;
-    FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
-    AssetToolsModule.Get().CreateUniqueAssetName(PackageName, TEXT(""), PackageName, Name);
+    //FString Name;
+    //FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+    //AssetToolsModule.Get().CreateUniqueAssetName(PackageName, TEXT(""), PackageName, Name);
 
-    //UE_LOG(LogTemp, Warning, TEXT("Name: %s, PackageName: %s"), *Name, *PackageName);
+    //UE_LOG(LogTemp, Warning, TEXT("Name: %s, PackageName: %s, InName:%s, InPath:%s"), *Name, *PackageName, *InName, *InPath);
 
     Package = CreatePackage(NULL, *PackageName);
     check(Package);
 
     // Create and init a new Blueprint
-    Blueprint = FKismetEditorUtilities::CreateBlueprint(ParentClass, Package, *Name, BPTYPE_Normal, BlueprintClass, BlueprintGeneratedClass, FName("LevelEditorActions"));
+    Blueprint = FKismetEditorUtilities::CreateBlueprint(ParentClass, Package, *InName, BPTYPE_Normal, BlueprintClass, BlueprintGeneratedClass, FName("LevelEditorActions"));
     if (Blueprint)
     {
         //static FName InterfaceClassName = FName(TEXT("TypeScriptObject"));
