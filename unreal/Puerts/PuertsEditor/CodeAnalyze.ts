@@ -1501,6 +1501,39 @@ function watch(configFilePath:string) {
                 return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0));
             }
 
+            function tryGetCppType(symbol: ts.Symbol, leading: boolean): string {
+                const commentRanges = (leading ? ts.getLeadingCommentRanges : ts.getTrailingCommentRanges)(
+                    sourceFile.getFullText(), 
+                    symbol.valueDeclaration.getFullStart() + (leading ? 0 : symbol.valueDeclaration.getFullWidth()));
+                if (commentRanges) {
+                    let ret: string
+                    commentRanges.forEach(r => {
+                        let m =  sourceFile.getFullText().slice(r.pos, r.end).match(/@cpp:(\w+)/);
+                        if (m) {
+                            ret = m[1];
+                        }
+                    });
+                    return ret;
+                } 
+            }
+
+            function postProcessPinType(symbol: ts.Symbol,  pinType: UE.PEGraphPinType, leading: boolean):void {
+                if (pinType.PinContainerType == UE.EPinContainerType.None) {
+                    let pc = pinType.PinCategory;
+                    if (pc === "float") {
+                        let cppType = tryGetCppType(symbol, leading);
+                        if (cppType === "int" || cppType === "byte") {
+                            pinType.PinCategory = cppType;
+                        }
+                    } else if (pc === "string") {
+                        let cppType = tryGetCppType(symbol, leading);
+                        if (cppType === "name" || cppType === "text") {
+                            pinType.PinCategory = cppType;
+                        }
+                    }
+                }
+            }
+
             function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
@@ -1527,6 +1560,7 @@ function watch(configFilePath:string) {
                                 for (var i = 0; i < signature.parameters.length; i++) {
                                     let paramType:ts.Type = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration!);
                                     let paramPinType = tsTypeToPinType(paramType);
+                                    postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                                     if (!paramPinType)  {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                         bp.ClearParameter();
@@ -1541,6 +1575,7 @@ function watch(configFilePath:string) {
                                 } else {
                                     let returnType = signature.getReturnType();
                                     let resultPinType = tsTypeToPinType(returnType);
+                                    postProcessPinType(symbol, resultPinType.pinType, true);
                                     if (!resultPinType) {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                         bp.ClearParameter();
@@ -1554,6 +1589,7 @@ function watch(configFilePath:string) {
                             } else {
                                 let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
                                 let propPinType = tsTypeToPinType(propType);
+                                postProcessPinType(symbol, propPinType.pinType, true);
                                 
                                 if (!propPinType) {
                                     console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");

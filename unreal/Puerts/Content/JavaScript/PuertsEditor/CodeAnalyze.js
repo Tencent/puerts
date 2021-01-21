@@ -1153,6 +1153,36 @@ function watch(configFilePath) {
                 const commentRanges = ts.getLeadingCommentRanges(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart());
                 return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos, r.end).indexOf("@no-blueprint") > 0));
             }
+            function tryGetCppType(symbol, leading) {
+                const commentRanges = (leading ? ts.getLeadingCommentRanges : ts.getTrailingCommentRanges)(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart() + (leading ? 0 : symbol.valueDeclaration.getFullWidth()));
+                if (commentRanges) {
+                    let ret;
+                    commentRanges.forEach(r => {
+                        let m = sourceFile.getFullText().slice(r.pos, r.end).match(/@cpp:(\w+)/);
+                        if (m) {
+                            ret = m[1];
+                        }
+                    });
+                    return ret;
+                }
+            }
+            function postProcessPinType(symbol, pinType, leading) {
+                if (pinType.PinContainerType == UE.EPinContainerType.None) {
+                    let pc = pinType.PinCategory;
+                    if (pc === "float") {
+                        let cppType = tryGetCppType(symbol, leading);
+                        if (cppType === "int" || cppType === "byte") {
+                            pinType.PinCategory = cppType;
+                        }
+                    }
+                    else if (pc === "string") {
+                        let cppType = tryGetCppType(symbol, leading);
+                        if (cppType === "name" || cppType === "text") {
+                            pinType.PinCategory = cppType;
+                        }
+                    }
+                }
+            }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
@@ -1178,6 +1208,7 @@ function watch(configFilePath) {
                         for (var i = 0; i < signature.parameters.length; i++) {
                             let paramType = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration);
                             let paramPinType = tsTypeToPinType(paramType);
+                            postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                             if (!paramPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                 bp.ClearParameter();
@@ -1192,6 +1223,7 @@ function watch(configFilePath) {
                         else {
                             let returnType = signature.getReturnType();
                             let resultPinType = tsTypeToPinType(returnType);
+                            postProcessPinType(symbol, resultPinType.pinType, true);
                             if (!resultPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                 bp.ClearParameter();
@@ -1204,6 +1236,7 @@ function watch(configFilePath) {
                     else {
                         let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
                         let propPinType = tsTypeToPinType(propType);
+                        postProcessPinType(symbol, propPinType.pinType, true);
                         if (!propPinType) {
                             console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                         }
