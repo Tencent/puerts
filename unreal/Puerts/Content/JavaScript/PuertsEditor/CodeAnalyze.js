@@ -1149,18 +1149,23 @@ function watch(configFilePath) {
                     return undefined;
                 }
             }
+            function manualSkip(symbol) {
+                const commentRanges = ts.getLeadingCommentRanges(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart());
+                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos, r.end).indexOf("@no-blueprint") > 0));
+            }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
                 bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
                 checker.getPropertiesOfType(type)
                     .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
+                    .filter(x => !manualSkip(x))
                     .forEach((symbol) => {
                     if (ts.isMethodDeclaration(symbol.valueDeclaration)) {
                         if (symbol.getName() === 'Constructor')
                             return;
-                        let type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
-                        let signatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call);
+                        let methodType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
+                        let signatures = checker.getSignaturesOfType(methodType, ts.SignatureKind.Call);
                         if (!signatures) {
                             console.warn(`can not find signature for ${symbol.getName()} `);
                             return;
