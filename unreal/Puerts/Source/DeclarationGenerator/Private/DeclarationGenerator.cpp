@@ -659,7 +659,7 @@ interface TReactUMG {
 export var ReactUMG : TReactUMG;
 )";
 
-    FFileHelper::SaveStringToFile(ToString(), *(FPaths::ProjectContentDir() / TEXT("Typing/react-umg/index.d.ts")));
+    FFileHelper::SaveStringToFile(ToString(), *(FPaths::ProjectContentDir() / TEXT("ReactTyping/react-umg/index.d.ts")));
     FFileHelper::SaveStringToFile(Components, *(FPaths::ProjectContentDir() / TEXT("JavaScript/react-umg/components.js")));
 }
 
