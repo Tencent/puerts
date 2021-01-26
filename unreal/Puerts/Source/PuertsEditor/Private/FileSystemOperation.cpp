@@ -55,7 +55,7 @@ void UFileSystemOperation::CreateDirectory(FString Path)
 
 FString UFileSystemOperation::GetCurrentDirectory()
 {
-    return FPaths::ProjectDir();
+    return FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 }
 
 TArray<FString> UFileSystemOperation::GetDirectories(FString Path) 
