@@ -190,6 +190,8 @@ public:
 #endif
     void NotifyUObjectDeleted(const class UObjectBase *Object, int32 Index) override;
 
+    void TryReleaseType(UStruct *Struct);
+
 private:
     FString GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch);
 
@@ -1001,6 +1003,14 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
+                        TryReleaseType(TypeScriptGeneratedClass);
+                        auto BaseFunc = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
+                        v8::Local<v8::Value> VBaseProto;
+                        if (BaseFunc->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VBaseProto) && VBaseProto->IsObject())
+                        {
+                            Proto->SetPrototype(Context, VBaseProto);
+                        }
+
                         TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
                         TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
                         TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
@@ -1402,14 +1412,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         GeneratedObjectMap.erase(ObjectBase);
     }
     
-    UStruct *Struct = (UStruct*)ObjectBase;
-    if (ClassToTemplateMap.find(Struct) != ClassToTemplateMap.end())
-    {
-        //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
-        ClassToTemplateMap[Struct].Reset();
-        ClassToTemplateMap.erase(Struct);
-        TypeReflectionMap.erase(Struct);
-    }
+    TryReleaseType((UStruct*)ObjectBase);
 
     UTypeScriptGeneratedClass *Class = (UTypeScriptGeneratedClass*)ObjectBase;
     auto IterBIM = BindInfoMap.find(Class);
@@ -1419,6 +1422,17 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
     }
 
     UnBind(nullptr, (UObject*)ObjectBase);
+}
+
+void FJsEnvImpl::TryReleaseType(UStruct *Struct) 
+{
+    if (ClassToTemplateMap.find(Struct) != ClassToTemplateMap.end())
+    {
+        //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
+        ClassToTemplateMap[Struct].Reset();
+        ClassToTemplateMap.erase(Struct);
+        TypeReflectionMap.erase(Struct);
+    }
 }
 
 void FJsEnvImpl::InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
