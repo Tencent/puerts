@@ -108,4 +108,45 @@ var global = global || (function () { return this; }());
     }
     
     puerts.blueprint = blueprint;
+    
+    const newContainer = global.__tgjsNewContainer;
+    global.__tgjsNewContainer = undefined;
+    
+    function NewArray(t1) {
+        if (typeof t1 !== 'number') {
+            t1 = t1.StaticClass();
+        }
+        return newContainer(0, t1);
+    }
+    
+    function NewSet(t1) {
+        if (typeof t1 !== 'number') {
+            t1 = t1.StaticClass();
+        }
+        return newContainer(1, t1);
+    }
+    
+    function NewMap(t1, t2) {
+        if (typeof t1 !== 'number') {
+            t1 = t1.StaticClass();
+        }
+        if (typeof t2 !== 'number') {
+            t2 = t2.StaticClass();
+        }
+        return newContainer(2, t1, t2);
+    }
+    
+    cache.BuiltinBool = 0;
+    cache.BuiltinByte = 1;
+    cache.BuiltinInt = 2;
+    cache.BuiltinFloat = 3;
+    cache.BuiltinInt64 = 4;
+    cache.BuiltinString = 5;
+    cache.BuiltinText = 6;
+    cache.BuiltinName = 7;
+    
+    cache.NewArray = NewArray;
+    cache.NewSet = NewSet;
+    cache.NewMap = NewMap;
+    
 }(global));

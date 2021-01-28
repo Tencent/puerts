@@ -16,6 +16,9 @@ declare module "ue" {
         static NewGuid(): Guid;
         static Parse(GuidString: string, OutGuid: $Ref<Guid>): boolean;
         static ParseExact(GuidString: string, Format: number, OutGuid: $Ref<Guid>): boolean;
+        
+        static StaticClass(): Class;
+        
     }
     class Box2D {
         constructor();
@@ -44,6 +47,9 @@ declare module "ue" {
         IsInside(Other: Box2D): boolean;
         ShiftBy(Offset: Vector2D): Box2D;
         ToString(): string;
+        
+        static StaticClass(): Class;
+        
     }
     class Color {
         constructor();
@@ -68,6 +74,9 @@ declare module "ue" {
         ToPackedABGR(): number;
         ToPackedRGBA(): number;
         ToPackedBGRA(): number;
+        
+        static StaticClass(): Class;
+        
     }
     class LinearColor {
         constructor();
@@ -113,6 +122,9 @@ declare module "ue" {
         GetLuminance(): number;
         ToString(): string;
         InitFromString(InSourceString: string): boolean;
+        
+        static StaticClass(): Class;
+        
     }
     class Quat {
         constructor();
@@ -179,6 +191,9 @@ declare module "ue" {
         static Squad(quat1: Quat, tang1: Quat, quat2: Quat, tang2: Quat, Alpha: number): Quat;
         static SquadFullPath(quat1: Quat, tang1: Quat, quat2: Quat, tang2: Quat, Alpha: number): Quat;
         static CalcTangents(PrevP: Quat, P: Quat, NextP: Quat, Tension: number, OutTan: $Ref<Quat>): void;
+        
+        static StaticClass(): Class;
+        
     }
     class Rotator {
         constructor();
@@ -227,6 +242,9 @@ declare module "ue" {
         static CompressAxisToShort(Angle: number): number;
         static DecompressAxisFromShort(Angle: number): number;
         static MakeFromEuler(Euler: Vector): Rotator;
+        
+        static StaticClass(): Class;
+        
     }
     class Transform {
         constructor();
@@ -316,6 +334,9 @@ declare module "ue" {
         GetScale3D(): Vector;
         CopyRotationPart(SrcBA: Transform): void;
         CopyTranslationAndScale3D(SrcBA: Transform): void;
+        
+        static StaticClass(): Class;
+        
     }
     class Vector {
         constructor();
@@ -430,6 +451,9 @@ declare module "ue" {
         static Triple(X: Vector, Y: Vector, Z: Vector): number;
         static RadiansToDegrees(RadVector: Vector): Vector;
         static DegreesToRadians(DegVector: Vector): Vector;
+        
+        static StaticClass(): Class;
+        
     }
     class Vector2D {
         constructor();
@@ -485,6 +509,9 @@ declare module "ue" {
         DiagnosticCheckNaN(): void;
         ContainsNaN(): boolean;
         SphericalToUnitCartesian(): Vector;
+        
+        static StaticClass(): Class;
+        
     }
     class Vector4 {
         constructor(InVector: Vector, InW: number);
@@ -529,6 +556,9 @@ declare module "ue" {
         Reflect3(Normal: Vector4): Vector4;
         FindBestAxisVectors3(Axis1: $Ref<Vector4>, Axis2: $Ref<Vector4>): void;
         DiagnosticCheckNaN(): void;
+        
+        static StaticClass(): Class;
+        
     }
     class IntPoint {
         constructor();
@@ -556,6 +586,9 @@ declare module "ue" {
         static DivideAndRoundUp(lhs: IntPoint, Divisor: IntPoint): IntPoint;
         static DivideAndRoundDown(lhs: IntPoint, Divisor: number): IntPoint;
         static Num(): number;
+        
+        static StaticClass(): Class;
+        
     }
     class IntVector {
         constructor();
@@ -581,41 +614,77 @@ declare module "ue" {
         ToString(): string;
         static DivideAndRoundUp(lhs: IntVector, Divisor: number): IntVector;
         static Num(): number;
+        
+        static StaticClass(): Class;
+        
     }
     class FMatrix {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     namespace FStructuredArchive {
     class FSlot {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     }
     class FArchive {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class TSizedDefaultAllocator<T> {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class FPlane {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class FFloat16Color {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class UPackageMap {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class FIntVector4 {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class VectorRegister {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class ScalarRegister {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
     class FOutputDevice {
         constructor();
+        
+        static StaticClass(): Class;
+        
     }
 
 }

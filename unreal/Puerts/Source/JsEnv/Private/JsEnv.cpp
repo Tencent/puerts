@@ -26,6 +26,7 @@
 #include "PromiseRejectCallback.hpp"
 #include "TypeScriptObject.h"
 #include "TypeScriptGeneratedClass.h"
+#include "ContainerMeta.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -210,6 +211,10 @@ private:
     void LoadCDataType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    bool GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro ** PropertyPtr);
+
+    void NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct *Class);
 
@@ -423,6 +428,8 @@ private:
     FDelegateHandle DelegateProxysCheckerHandler;
 
     V8Inspector* Inspector;
+
+    FContainerMeta ContainerMeta;
 };
 
 FJsEnv::FJsEnv(const FString &ScriptRoot)
@@ -565,6 +572,12 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     {
         auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
         Self->UEClassToJSClass(Info);
+    }, This)->GetFunction(Context).ToLocalChecked()).Check();
+
+    Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsNewContainer"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+        Self->NewContainer(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
     Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMergeObject"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -2060,6 +2073,82 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     else
     {
         FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("argument #0 expect a UStruct")));
+    }
+}
+
+bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro ** PropertyPtr)
+{
+    if (Value->IsInt32())
+    {
+        int Type = Value->Int32Value(Context).ToChecked();
+        if (Type >= MaxBuiltinType)
+        {
+            *PropertyPtr = nullptr;
+            return false;
+        }
+        *PropertyPtr = ContainerMeta.GetBuiltinProperty((BuiltinType)Type);
+        return true;
+    }
+    else if (auto Struct = Cast<UStruct>(FV8Utils::GetUObject(Context, Value)))
+    {
+        *PropertyPtr = ContainerMeta.GetObjectProperty(Struct);
+        return *PropertyPtr != nullptr;
+    }
+    else
+    {
+        *PropertyPtr = nullptr;
+        return false;
+    }
+}
+
+void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(Int32);
+
+    int ContainerType = Info[0]->Int32Value(Context).ToChecked();
+
+    PropertyMacro * Property1 = nullptr;
+    PropertyMacro * Property2 = nullptr;
+    FScriptArray * ScriptArray = nullptr;
+    FScriptSet * ScriptSet = nullptr;
+    FScriptMap * ScriptMap = nullptr;
+
+    if (!GetContainerTypeProperty(Context, Info[1], &Property1))
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not get first type for %d"), ContainerType));
+        return;
+    }
+
+    switch (ContainerType)
+    {
+    case 0://Array
+        ScriptArray = new FScriptArray;
+        //Logger->Info(FString::Printf(TEXT("Array %s"), *Property1->GetClass()->GetName()));
+        Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptArray, false));
+        break;
+    case 1://Set
+        ScriptSet = new FScriptSet;
+        //Logger->Info(FString::Printf(TEXT("Set %s"), *Property1->GetClass()->GetName()));
+        Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptSet, false));
+        break;
+    case 2://Map
+        if (!GetContainerTypeProperty(Context, Info[2], &Property2))
+        {
+            FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not get second type for %d"), ContainerType));
+            return;
+        }
+        //Logger->Info(FString::Printf(TEXT("Map %s %s"), *Property1->GetClass()->GetName(), *Property2->GetClass()->GetName()));
+        ScriptMap = new FScriptMap;
+        Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, Property2, ScriptMap, false));
+        break;
+    default:
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("invalid container type %d"), ContainerType));
     }
 }
 
