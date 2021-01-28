@@ -1016,13 +1016,13 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
-                        TryReleaseType(TypeScriptGeneratedClass);
-                        auto BaseFunc = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
-                        v8::Local<v8::Value> VBaseProto;
-                        if (BaseFunc->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VBaseProto) && VBaseProto->IsObject())
-                        {
-                            Proto->SetPrototype(Context, VBaseProto);
-                        }
+                        //TryReleaseType(TypeScriptGeneratedClass);
+                        //auto BaseFunc = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
+                        //v8::Local<v8::Value> VBaseProto;
+                        //if (BaseFunc->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VBaseProto) && VBaseProto->IsObject())
+                        //{
+                        //    Proto->SetPrototype(Context, VBaseProto);
+                        //}
 
                         TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
                         TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
