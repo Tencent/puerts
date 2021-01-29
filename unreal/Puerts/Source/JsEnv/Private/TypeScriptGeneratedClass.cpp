@@ -12,6 +12,10 @@ void UTypeScriptGeneratedClass::StaticConstructor(const FObjectInitializer& Obje
     {
         TypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
     }
+    else if (auto SuperTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass()))
+    {
+        SuperTypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
+    }
     else
     {
         Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
