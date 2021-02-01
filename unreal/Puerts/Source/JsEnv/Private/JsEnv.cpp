@@ -2453,7 +2453,7 @@ void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Int32);
+    CHECK_V8_ARGS(Function, Number);
 
     SetFTickerDelegate(Info, false);
 }
@@ -2481,7 +2481,7 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    int Millisecond = Info[1]->Int32Value(Context).ToChecked();
+    float Millisecond = Info[1]->NumberValue(Context).ToChecked();
     float Delay = Millisecond / 1000.f;
 
     // TODO - 如果实现多线程，这里应该加锁阻止定时回调的执行，直到DelegateWrapper设置好handle
@@ -2551,7 +2551,7 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Int32);
+    CHECK_V8_ARGS(Function, Number);
 
     SetFTickerDelegate(Info, true);
 }

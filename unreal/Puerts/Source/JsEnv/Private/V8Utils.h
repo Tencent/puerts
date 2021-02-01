@@ -24,6 +24,7 @@ namespace puerts
 enum ArgType
 {
     Int32,
+    Number,
     String,
     External,
     Function,
@@ -178,6 +179,16 @@ public:
             {
             case Int32:
                 if (!Info[i]->IsInt32())
+                {
+                    ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a int32."), i));
+                    return false;
+                }
+                else
+                {
+                    break;
+                }
+            case Number:
+                if (!Info[i]->IsNumber())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a int32."), i));
                     return false;
