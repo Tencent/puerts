@@ -53,10 +53,7 @@ void UTypeScriptGeneratedClass::Bind()
     for (TFieldIterator<PropertyMacro> PropertyIt(this, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
     {
         PropertyMacro *Property = *PropertyIt;
-        if (Cast<UTypeScriptGeneratedClass>(Property->GetOuter()))
-        {
-            Property->SetPropertyFlags(CPF_SkipSerialization | CPF_Transient | CPF_InstancedReference);
-        }
+        Property->SetPropertyFlags(CPF_SkipSerialization | CPF_Transient | CPF_InstancedReference);
     }
 
     //可避免非CDO的在PostConstructInit从基类拷贝值
