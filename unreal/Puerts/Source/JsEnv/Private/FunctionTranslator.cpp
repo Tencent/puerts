@@ -193,7 +193,7 @@ static FOutParmRec* GetMatchOutParmRec(FOutParmRec *OutParam, PropertyMacro *Out
 }
 
 void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
-    v8::Local<v8::Value> This, FFrame &Stack, void *RESULT_PARAM)
+    v8::Local<v8::Value> This, UObject *ContextObject, FFrame &Stack, void *RESULT_PARAM)
 {
     void *Params = Stack.Locals;
 
@@ -211,9 +211,9 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             {
                 Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
             }
-            check(Stack.PeekCode() == EX_EndFunctionParms);
-            Stack.SkipCode(1);          // skip EX_EndFunctionParms
         }
+        check(Stack.PeekCode() == EX_EndFunctionParms);
+        Stack.SkipCode(1);          // skip EX_EndFunctionParms
     }
 
     std::vector< v8::Local<v8::Value>> Args;

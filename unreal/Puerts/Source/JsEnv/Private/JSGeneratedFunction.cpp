@@ -18,7 +18,7 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallJS)
         auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
-            PinedDynamicInvoker->InvokeJsMethod(Func, Stack, RESULT_PARAM);
+            PinedDynamicInvoker->InvokeJsMethod(Context, Func, Stack, RESULT_PARAM);
         }
     }
 }

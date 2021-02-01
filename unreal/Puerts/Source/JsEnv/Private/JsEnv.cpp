@@ -173,7 +173,7 @@ public:
 
     void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype);
 
-    void InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM);
+    void InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM);
 
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
@@ -399,9 +399,9 @@ private:
             if (Parent) Parent->Construct(Class, Object, Constructor, Prototype);
         }
 
-        void InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM) override
+        void InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM) override
         {
-            if (Parent) Parent->InvokeJsMethod(Function, Stack, RESULT_PARAM);
+            if (Parent) Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 
         FJsEnvImpl *Parent;
@@ -1453,7 +1453,7 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
     }
 }
 
-void FJsEnvImpl::InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
+void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
 {
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
@@ -1464,7 +1464,7 @@ void FJsEnvImpl::InvokeJsMethod(UJSGeneratedFunction* Function, FFrame &Stack, v
     v8::TryCatch TryCatch(Isolate);
 
     Function->FunctionTranslator->CallJs(Isolate, Context, Function->JsFunction.Get(Isolate),
-        GeneratedObjectMap[Stack.Object].Get(Isolate), Stack, RESULT_PARAM);
+        GeneratedObjectMap[ContextObject].Get(Isolate), ContextObject, Stack, RESULT_PARAM);
 
     if (TryCatch.HasCaught())
     {

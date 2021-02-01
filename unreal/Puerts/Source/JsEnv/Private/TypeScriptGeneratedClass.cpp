@@ -3,6 +3,7 @@
 
 #include "TypeScriptGeneratedClass.h"
 #include "PropertyMacros.h"
+#include "JSGeneratedFunction.h"
 
 void UTypeScriptGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitializer)
 {
@@ -60,6 +61,17 @@ void UTypeScriptGeneratedClass::Bind()
 
     //可避免非CDO的在PostConstructInit从基类拷贝值
     //ClassFlags |= CLASS_Native;
+
+    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+    {
+        auto Function = *FuncIt;
+        if (Function->IsA<UJSGeneratedFunction>())
+        {
+            Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+            Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
+            AddNativeFunction(*Function->GetName(), &UJSGeneratedFunction::execCallJS);
+        }
+    }
 
     Super::Bind();
     ReBind = true;
