@@ -1016,16 +1016,18 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
-                        //TryReleaseType(TypeScriptGeneratedClass);
-                        //auto BaseFunc = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
-                        //v8::Local<v8::Value> VBaseProto;
-                        //if (BaseFunc->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VBaseProto) && VBaseProto->IsObject())
-                        //{
-                        //    Proto->SetPrototype(Context, VBaseProto);
-                        //}
+                        TryReleaseType(TypeScriptGeneratedClass);
+                        auto NativeCtor = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
+                        v8::Local<v8::Value> VNativeProto;
+                        if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) && VNativeProto->IsObject())
+                        {
+                            v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
+                            Proto->SetPrototype(Context, NativeProto->GetPrototype());
+                            NativeProto->SetPrototype(Context, Proto);
+                        }
 
                         TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
-                        TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
+                        //TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
                         TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
                         TypeScriptGeneratedClass->ReBind = false;
 
@@ -1175,7 +1177,7 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 {
     UObjectBaseUtility *Object = (UObjectBaseUtility*)InObject;
 
-    if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+    //if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
         check(!Object->IsPendingKill());
 
@@ -1392,7 +1394,10 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
 
     auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
 
-    auto ReturnVal1 = JSObject->SetPrototype(Context, Prototype.Get(Isolate));
+    if (!Prototype.IsEmpty())
+    {
+        auto ReturnVal1 = JSObject->SetPrototype(Context, Prototype.Get(Isolate));
+    }
 
     if (!Constructor.IsEmpty())
     {
