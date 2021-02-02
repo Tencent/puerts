@@ -36,34 +36,6 @@ namespace puerts
         ResultInfo.Context.Reset();
     }
 
-    static v8::Local<v8::Value> ToV8(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const FValue &Value)
-    {
-        JSEngine *JsEngine = nullptr;
-        switch (Value.Type)
-        {
-        case NullOrUndefined:
-            return v8::Null(Isolate);
-        case BigInt:
-            return v8::BigInt::New(Isolate, Value.BigInt);
-        case Number:
-            return v8::Number::New(Isolate, Value.Number);
-        case String:
-            return FV8Utils::V8String(Isolate, Value.Str.c_str());
-        case NativeObject:
-            JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-            return JsEngine->FindOrAddObject(Isolate, Context, Value.ObjectInfo.ClassID, Value.ObjectInfo.ObjectPtr);
-        case Function:
-            return Value.FunctionPtr->GFunction.Get(Isolate);
-        case Boolean:
-            return v8::Boolean::New(Isolate, Value.Boolean);
-        case ArrayBuffer:
-            return NewArrayBuffer(Isolate, Value.ArrayBuffer.Bytes, Value.ArrayBuffer.Length, false);
-     
-        default:
-            return v8::Undefined(Isolate);
-        }
-    }
-
     /*void JSFunction::SetResult(v8::MaybeLocal<v8::Value> maybeValue)
     {
 
@@ -80,7 +52,7 @@ namespace puerts
         std::vector< v8::Local<v8::Value>> V8Args;
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
+            V8Args.push_back(Arguments[i].Get(Isolate));
         }
         v8::TryCatch TryCatch(Isolate);
         auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());

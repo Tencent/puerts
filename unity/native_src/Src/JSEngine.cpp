@@ -13,12 +13,11 @@
 
 namespace puerts
 {
-    v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size, bool Copy)
+    v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size)
     {
         v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
         void* Buff = Ab->GetContents().Data();
         ::memcpy(Buff, Ptr, Size);
-        if (!Copy) ::free(Ptr);
         return Ab;
     }
 
