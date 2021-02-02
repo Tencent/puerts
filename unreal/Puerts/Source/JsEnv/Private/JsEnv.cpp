@@ -196,7 +196,7 @@ public:
 private:
     FString GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch);
 
-    void LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data);
+    bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data);
 
     void ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor = nullptr);
 
@@ -2217,17 +2217,22 @@ void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UO
     Started = true;
 }
 
-void FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data)
+bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data)
 {
-    if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath)) {
+    if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath)) 
+    {
         if (!ModuleLoader->Load(OutPath, Data))
         {
-            throw JSError(FString::Printf(TEXT("can not load [%s]"), *ModuleName));
+            Logger->Error(FString::Printf(TEXT("can not load [%s]"), *ModuleName));
+            return false;
         }
     }
-    else {
-        throw JSError(FString::Printf(TEXT("can not find [%s]"), *ModuleName));
+    else 
+    {
+        Logger->Error(FString::Printf(TEXT("can not find [%s]"), *ModuleName));
+        return false;
     }
+    return true;
 }
 
 FString FJsEnvImpl::GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch)
@@ -2296,13 +2301,8 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     FString DebugPath;
     TArray<uint8> Data;
 
-    try
+    if (!LoadFile(TEXT(""), ModuleName, OutPath, DebugPath, Data))
     {
-        LoadFile(TEXT(""), ModuleName, OutPath, DebugPath, Data);
-    }
-    catch (const JSError& Err)
-    {
-        Logger->Error(Err.Message);
         return;
     }
 
