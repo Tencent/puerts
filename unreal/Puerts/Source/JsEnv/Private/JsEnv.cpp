@@ -1022,8 +1022,8 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) && VNativeProto->IsObject())
                         {
                             v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
-                            Proto->SetPrototype(Context, NativeProto->GetPrototype());
-                            NativeProto->SetPrototype(Context, Proto);
+                            __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
+                            __USE(NativeProto->SetPrototype(Context, Proto));
                         }
 
                         TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
