@@ -212,6 +212,10 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
             }
         }
+    }
+
+    if (Stack.Code)
+    {
         check(Stack.PeekCode() == EX_EndFunctionParms);
         Stack.SkipCode(1);          // skip EX_EndFunctionParms
     }
