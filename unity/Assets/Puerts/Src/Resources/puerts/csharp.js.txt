@@ -122,9 +122,7 @@ var global = global || (function () { return this; }());
     }
     
     function getType(cls) {
-        if (cls.__p_innerTypeCache) return cls.__p_innerTypeCache;
-        cls.__p_innerTypeCache = cls.__p_innerType;
-        return cls.__p_innerTypeCache;
+        return cls.__p_innerType;
     }
     
     function bindThisToFirstArgument(func) {
