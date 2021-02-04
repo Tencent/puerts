@@ -21,6 +21,25 @@
 
 namespace puerts
 {
+struct FValue
+{
+    JsValueType Type;
+    std::string Str;
+    union
+    {
+        double Number;
+        bool Boolean;
+        int64_t BigInt;
+        struct 
+        {
+            void *ObjectPtr;
+            int ClassID;
+        } ObjectInfo;
+        class JSFunction *FunctionPtr;
+    };
+    v8::UniquePersistent<v8::Value> ArrayBuffer;
+};
+
 struct FResultInfo
 {
     v8::Isolate* Isolate;
@@ -39,7 +58,7 @@ public:
 
     bool Invoke(bool HasResult);
 
-    std::vector<v8::UniquePersistent<v8::Value>> Arguments;
+    std::vector<FValue> Arguments;
 
     v8::UniquePersistent<v8::Function> GFunction;
 
