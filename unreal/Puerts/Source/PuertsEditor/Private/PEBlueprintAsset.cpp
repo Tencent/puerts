@@ -20,6 +20,7 @@
 #include "GameFramework/InputSettings.h"
 #include "K2Node_InputAxisEvent.h"
 #include "TypeScriptGeneratedClass.h"
+#include "TypeScriptBlueprint.h"
 
 UClass* FindClass(const TCHAR* ClassName)
 {
@@ -55,12 +56,13 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
 
     NeedSave = true;
 
-    UClass* BlueprintClass = nullptr;
-    UClass* BlueprintGeneratedClass = nullptr;
+    UClass* BlueprintClass = UBlueprint::StaticClass();
+    UClass* BlueprintGeneratedClass = UTypeScriptGeneratedClass::StaticClass();
 
-    IKismetCompilerInterface& KismetCompilerModule = FModuleManager::LoadModuleChecked<IKismetCompilerInterface>("KismetCompiler");
-    KismetCompilerModule.GetBlueprintTypesForClass(ParentClass, BlueprintClass, BlueprintGeneratedClass);
-    BlueprintGeneratedClass = UTypeScriptGeneratedClass::StaticClass();
+    if (!ParentClass->IsChildOf(AActor::StaticClass()))
+    {
+        BlueprintClass = UTypeScriptBlueprint::StaticClass();
+    }
 
     //UE_LOG(LogTemp, Warning, TEXT("BlueprintClass: %s"), *BlueprintClass->GetName());
     //UE_LOG(LogTemp, Warning, TEXT("BlueprintGeneratedClass: %s"), *BlueprintGeneratedClass->GetName());
@@ -287,9 +289,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         {
             // Add to event graph
             FName EventName = OverrideFunc->GetFName();
-            UK2Node_Event* ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, OverrideFuncClass, EventName);
+            //UK2Node_Event* ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, OverrideFuncClass, EventName);
 
-            if (!ExistingNode)
+            //if (!ExistingNode)
             {
                 UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(
                     EventGraph,

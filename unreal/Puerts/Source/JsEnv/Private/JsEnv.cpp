@@ -1393,6 +1393,8 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
     v8::TryCatch TryCatch(Isolate);
 
     auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
+    GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    UnBind(Class, Object);
 
     if (!Prototype.IsEmpty())
     {
@@ -1408,8 +1410,6 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
     {
         Logger->Error(FString::Printf(TEXT("js callback exception %s"), *GetExecutionException(Isolate, &TryCatch)));
     }
-    GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-    UnBind(Class, Object);
 }
 
 void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32 Index)

@@ -10,6 +10,8 @@
 #include "Editor.h"
 #include "PuertsModule.h"
 #include "FileHelpers.h"
+#include "TypeScriptCompilerContext.h"
+#include "TypeScriptBlueprint.h"
 
 class FPuertsEditorModule : public IPuertsEditorModule
 {
@@ -41,10 +43,25 @@ void FPuertsEditorModule::StartupModule()
     FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsEditorModule::OnPostEngineInit);
 }
 
+TSharedPtr<FKismetCompilerContext> MakeCompiler(
+    UBlueprint* InBlueprint,
+    FCompilerResultsLog& InMessageLog,
+    const FKismetCompilerOptions& InCompileOptions)
+{
+    return MakeShared<FTypeScriptCompilerContext>(
+        CastChecked<UTypeScriptBlueprint>(InBlueprint),
+        InMessageLog,
+        InCompileOptions);
+}
+
 void FPuertsEditorModule::OnPostEngineInit()
 {
     if (Enabled)
     {
+        FKismetCompilerContext::RegisterCompilerForBP(
+            UTypeScriptBlueprint::StaticClass(),
+            &MakeCompiler);
+
         JsEnv = MakeShared<puerts::FJsEnv>();
         TArray<TPair<FString, UObject*>> Arguments;
         JsEnv->Start("PuertsEditor/CodeAnalyze", Arguments);
