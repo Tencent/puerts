@@ -2429,13 +2429,9 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     FString OutPath;
     FString OutDebugPath;
     TArray<uint8> Data;
-    try
-    { 
-        LoadFile(RequiringDir, ModuleName, OutPath, OutDebugPath, Data);
-    }
-    catch (const JSError& Err)
+    if(!LoadFile(RequiringDir, ModuleName, OutPath, OutDebugPath, Data))
     {
-        FV8Utils::ThrowException(Isolate, Err.Message);
+        FV8Utils::ThrowException(Isolate, "load module fail!");
         return;
     }
     FString Script;
