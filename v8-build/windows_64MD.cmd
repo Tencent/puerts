@@ -23,6 +23,9 @@ call git restore *
 cd ..\..\..\
 call gclient sync
 
+git apply --cached ..\patch\allocation.h.patch
+git checkout -- .
+
 echo =====[ Make dynamic_crt ]=====
 node %~dp0\rep.js  build\config\win\BUILD.gn
 
