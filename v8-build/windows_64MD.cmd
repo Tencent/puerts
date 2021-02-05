@@ -23,7 +23,7 @@ call git restore *
 cd ..\..\..\
 call gclient sync
 
-git apply --cached ..\patch\allocation.h.patch
+git apply --cached %~dp0\patch\allocation.h.patch
 git checkout -- .
 
 echo =====[ Make dynamic_crt ]=====
