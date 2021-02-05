@@ -23,8 +23,7 @@ call git restore *
 cd ..\..\..\
 call gclient sync
 
-git apply --ignore-space-change --ignore-whitespace --cached %~dp0\patch\allocation.h.patch
-git checkout -- .
+node %~dp0\patch_array_new.js  src\utils\allocation.h
 
 echo =====[ Make dynamic_crt ]=====
 node %~dp0\rep.js  build\config\win\BUILD.gn
