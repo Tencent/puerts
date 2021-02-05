@@ -23,8 +23,7 @@ call git restore *
 cd ..\..\..\
 call gclient sync
 
-cat src\utils\allocation.h
-git apply --cached %~dp0\patch\allocation.h.patch
+git apply --ignore-space-change --ignore-whitespace --cached %~dp0\patch\allocation.h.patch
 git checkout -- .
 
 echo =====[ Make dynamic_crt ]=====
