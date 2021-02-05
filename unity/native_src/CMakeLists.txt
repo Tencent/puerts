@@ -171,13 +171,13 @@ elseif ( ANDROID )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Android/armv7/${LIB_FILE_NAME}
+            ${V8_ENGINE}/Lib/Android/armeabi-v7a/${LIB_FILE_NAME}
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
     else ( )
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Android/arm64/${LIB_FILE_NAME}
+            ${V8_ENGINE}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)

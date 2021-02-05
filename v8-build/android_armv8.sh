@@ -54,7 +54,7 @@ third_party/android_ndk/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_
 
 node $GITHUB_WORKSPACE/v8-build/genBlobHeader.js "android arm64" out.gn/arm64.release/snapshot_blob.bin
 
-mkdir -p output/v8/Lib/Android/arm64
-cp out.gn/arm64.release/obj/libwee8.a output/v8/Lib/Android/arm64/
+mkdir -p output/v8/Lib/Android/arm64-v8a
+cp out.gn/arm64.release/obj/libwee8.a output/v8/Lib/Android/arm64-v8a/
 mkdir -p output/v8/Inc/Blob/Android/arm64
 cp SnapshotBlob.h output/v8/Inc/Blob/Android/arm64/
