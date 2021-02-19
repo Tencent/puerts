@@ -32,10 +32,10 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
 if ( JS_ENGINE STREQUAL "quickjs")
-set(LIB_FILE_NAME libquickjs.a)
+    set(LIB_FILE_NAME libquickjs.a)
 else()
-set(JS_ENGINE v8)
-set(LIB_FILE_NAME libwee8.a)
+    set(JS_ENGINE v8)
+    set(LIB_FILE_NAME libwee8.a)
 endif()
 
 set(V8_ENGINE ${CMAKE_SOURCE_DIR}/${JS_ENGINE})
@@ -92,8 +92,8 @@ endmacro(source_group_by_dir)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_INC)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_SRC)
 
-if (APPLE)
-    if (IOS)
+if ( APPLE )
+    if ( IO S)
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
         add_library(puerts STATIC
            ${PUERTS_SRC} ${PUERTS_INC}
@@ -106,21 +106,21 @@ if (APPLE)
         )
         set_target_properties ( puerts PROPERTIES BUNDLE TRUE )
     endif ()
-else ( )
+else ()
     add_library(puerts SHARED
         ${PUERTS_SRC} ${PUERTS_INC}
     )
-endif ( )
+endif ()
 
 if ( WIN32 AND NOT CYGWIN )
     target_compile_definitions (puerts PRIVATE BUILDING_V8_SHARED)
-endif ( )
+endif ()
 
 if ( JS_ENGINE STREQUAL "quickjs")
     target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
-endif ( )
+endif ()
 
-if (MSYS)
+if ( MSYS )
     if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
         target_link_libraries(puerts
             ${V8_ENGINE}/Lib/Win32/${LIB_FILE_NAME}
@@ -175,13 +175,13 @@ elseif ( ANDROID )
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
-    else ( )
+    else ()
         target_link_libraries(puerts
             ${V8_ENGINE}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
             ${log-lib}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
-    endif ( )
+    endif ()
 
     #set_target_properties( puerts PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")
@@ -191,12 +191,12 @@ elseif ( ANDROID )
             "${CMAKE_BINARY_DIR}/libpuerts.so"
             COMMENT "Strip debug symbols done on final binary.")
 elseif ( APPLE )
-    if (IOS)
+    if ( IOS )
         target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
     else ()
         target_link_libraries(puerts
             ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
-    endif ( )
+    endf ()
 endif ( )
