@@ -198,5 +198,5 @@ elseif ( APPLE )
             ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
-    endf ()
-endif ( )
+    endif ()
+endif ()
