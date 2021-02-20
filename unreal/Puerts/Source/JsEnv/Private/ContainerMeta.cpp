@@ -20,6 +20,20 @@ FContainerMeta::~FContainerMeta()
     {
         delete KV.Value;
     }
+#else
+    for (int i = 0; i < MaxBuiltinType; i++)
+    {
+        if (BuiltinProperty[i])
+        {
+            //UE_LOG(LogTemp, Warning, TEXT("BuiltinProperty RemoveFromRoot %s"), *BuiltinProperty[i]->GetName());
+            BuiltinProperty[i]->RemoveFromRoot();
+        }
+    }
+    for (auto KV : ObjectPropertyMap)
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("BuiltinProperty RemoveFromRoot %s"), *KV.Value->GetName());
+        KV.Value->RemoveFromRoot();
+    }
 #endif
 }
 
@@ -95,7 +109,7 @@ PropertyMacro * FContainerMeta::GetBuiltinProperty(BuiltinType type)
         if (Ret)
         {
 #if ENGINE_MINOR_VERSION < 25
-            ObjectRetainer.Retain(Ret);
+            Ret->AddToRoot();
 #endif
             BuiltinProperty[type] = Ret;
         }
@@ -136,7 +150,7 @@ PropertyMacro * FContainerMeta::GetObjectProperty(UStruct *Struct)
     }
 
 #if ENGINE_MINOR_VERSION < 25
-    ObjectRetainer.Retain(Ret);
+    Ret->AddToRoot();
 #endif
 
     ObjectPropertyMap.Add(Struct, Ret);
@@ -149,7 +163,7 @@ void FContainerMeta::NotifyUStructDeleted(const UStruct *Struct)
     if (Iter)
     {
 #if ENGINE_MINOR_VERSION < 25
-        ObjectRetainer.Release(const_cast<UStruct *>(Struct));
+        (const_cast<UStruct *>(Struct))->RemoveFromRoot();
 #else
         delete *Iter;
 #endif

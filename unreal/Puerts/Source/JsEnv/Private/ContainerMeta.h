@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ObjectRetainer.h"
 #include "PropertyMacros.h"
 
 
@@ -40,7 +39,6 @@ public:
     void NotifyUStructDeleted(const UStruct *Struct);
 
 private:
-    puerts::FObjectRetainer ObjectRetainer;
 
     UScriptStruct *PropertyMetaRoot;
 
