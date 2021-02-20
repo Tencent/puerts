@@ -1016,16 +1016,6 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
-                        TryReleaseType(TypeScriptGeneratedClass);
-                        auto NativeCtor = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
-                        v8::Local<v8::Value> VNativeProto;
-                        if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) && VNativeProto->IsObject())
-                        {
-                            v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
-                            __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
-                            __USE(NativeProto->SetPrototype(Context, Proto));
-                        }
-
                         TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
                         //TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
                         TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
@@ -1072,6 +1062,16 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                     overrided.Add(FunctionFName);
                                 }
                             }
+                        }
+
+                        TryReleaseType(TypeScriptGeneratedClass);
+                        auto NativeCtor = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
+                        v8::Local<v8::Value> VNativeProto;
+                        if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) && VNativeProto->IsObject())
+                        {
+                            v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
+                            __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
+                            __USE(NativeProto->SetPrototype(Context, Proto));
                         }
 
                         if (RebindObject)
