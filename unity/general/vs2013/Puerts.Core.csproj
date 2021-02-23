@@ -11,6 +11,7 @@
     <AssemblyName>Puerts.Core</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Core</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -84,6 +85,9 @@
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Src\Utils.cs">
       <Link>Assets\Puerts\Src\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\TypedValue.cs">
+      <Link>Assets\Puerts\Src\TypedValue.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
