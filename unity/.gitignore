@@ -3,3 +3,6 @@
 /general/Lib
 /general/vs2013/*/
 /general/vs2013/*.user
+*.DS_Store
+/native_src/build_osx/
+/native_src/v8/
