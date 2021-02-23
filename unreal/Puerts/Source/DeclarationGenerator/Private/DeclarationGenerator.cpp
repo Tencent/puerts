@@ -31,8 +31,23 @@
 
 static FString SafeName(const FString &Name)
 {
-    auto Ret = Name.Replace(TEXT(" "), TEXT("")).Replace(TEXT("-"), TEXT("_")).Replace(TEXT("/"), TEXT("_")).Replace(TEXT("("), TEXT("_")).Replace(TEXT(")"), TEXT("_")).Replace(TEXT("?"), TEXT("$"))
-        .Replace(TEXT(","), TEXT("_"));
+    FString Ret = TEXT("");
+    
+    for (int i = 0; i < Name.Len(); i++)
+    {
+        auto Char = Name[i];
+        if ((Char >= (TCHAR)'0' && Char <= (TCHAR)'9')
+            || (Char >= (TCHAR)'a' && Char <= (TCHAR)'z')
+            || (Char >= (TCHAR)'A' && Char <= (TCHAR)'Z')
+            || Char == (TCHAR)'_')
+        {
+            Ret += Char;
+        }
+        else
+        {
+            Ret += (TCHAR)'_';
+        }
+    }
     if (Ret.Len() > 0)
     {
         auto FirstChar = Ret[0];
