@@ -14,10 +14,10 @@ namespace Puerts.UnitTest
 {
     public class TxtLoader : ILoader
     {
-        //private string root = Path.Combine(
-            //System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:\\\\", ""),
-            //"../../Assets/Puerts/Src/Resources");
-        private string root = "../../Assets/Puerts/Src/Resources";
+        private string root = Path.Combine(
+            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
+            "../../Assets/Puerts/Src/Resources"
+        );
 
         public bool FileExists(string filepath)
         {

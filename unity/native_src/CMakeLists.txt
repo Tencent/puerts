@@ -94,7 +94,10 @@ if ( APPLE )
         )
 		set_xcode_property (puerts IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
-        set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+        # set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+        # 某些mac机器上会默认开始编译arm64版本，暂时先写死x86版本，后续再支持arm64
+        set(CMAKE_OSX_ARCHITECTURES x86_64)
+        # add_library(puerts SHARED
         add_library(puerts MODULE
             ${PUERTS_SRC} ${PUERTS_INC}
         )
