@@ -2017,6 +2017,11 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (auto Struct = Cast<UStruct>(Type))
     {
+        if (!Struct->IsNative())
+        {
+            FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("%s is blueprint type, load it using puerts.blueprint."), *TypeName));
+            return;
+        }
         Info.GetReturnValue().Set(GetTemplateOfClass(Struct)->GetFunction(Context).ToLocalChecked());
     }
     else if (auto Enum = Cast<UEnum>(Type))

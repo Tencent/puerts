@@ -101,7 +101,9 @@ var global = global || (function () { return this; }());
     function blueprint(path) {
         let uclass = UE.Class.Load(path);
         if (uclass) {
-            return UEClassToJSClass(uclass);
+            let jsclass = UEClassToJSClass(uclass);
+            jsclass.__puerts_uclass = uclass;
+            return jsclass;
         } else {
             throw new Error("can not load class in " + path);
         }
