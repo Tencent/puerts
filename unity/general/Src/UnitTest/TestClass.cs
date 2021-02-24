@@ -494,7 +494,8 @@ namespace Puerts.UnitTest
         {
             lastCallbackValue = o;
         }
-        public static Type GetLastCallbackValueType() {
+        public static Type GetLastCallbackValueType() 
+        {
             return lastCallbackValue == null ? null : lastCallbackValue.GetType();
         }
     }

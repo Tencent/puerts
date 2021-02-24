@@ -177,7 +177,8 @@ namespace Puerts
                     var result = objectPool.Get(objPtr.ToInt32());
 
                     var typedValueResult = result as TypedValue;
-                    if (typedValueResult != null) {
+                    if (typedValueResult != null) 
+                    {
                         return typedValueResult.Target;
                     }
 
