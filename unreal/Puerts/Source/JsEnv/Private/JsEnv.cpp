@@ -2257,7 +2257,7 @@ FString FJsEnvImpl::GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* Tr
         v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
 
         // 输出 (filename):(line number): (message).
-        v8::String::Utf8Value FileName(Isolate, Message->GetScriptOrigin().ResourceName());
+        v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
         int LineNum = Message->GetLineNumber(Context).FromJust();
         FString FileNameStr(*FileName);
         FString LineNumStr = FString::FromInt(LineNum);
@@ -2266,25 +2266,6 @@ FString FJsEnvImpl::GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* Tr
 
         FString FinalReport;
         FinalReport.Append(FileInfoStr).Append("\n");
-
-        // 输出错误的一行源码
-        v8::String::Utf8Value SourceLine(Isolate, Message->GetSourceLine(Context).ToLocalChecked());
-        FString SourceLineStr(*SourceLine);
-
-        FinalReport.Append(SourceLineStr).Append("\n");
-
-        // 输出波浪下划线
-        FString WavyUnderlineStr;
-        int Start = Message->GetStartColumn(Context).FromJust();
-        for (int Index = 0; Index < Start; Index++) {
-            WavyUnderlineStr.Append(" ");
-        }
-        int End = Message->GetEndColumn(Context).FromJust();
-        for (int Index = Start; Index < End; Index++) {
-            WavyUnderlineStr.Append("^");
-        }
-
-        FinalReport.Append(WavyUnderlineStr);
 
         // 输出调用栈信息
         v8::Local<v8::Value> StackTrace;

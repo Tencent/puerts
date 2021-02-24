@@ -87,23 +87,6 @@ public:
 
             stm << std::endl;
 
-            // 输出错误的一行源码
-            v8::String::Utf8Value SourceLine(Isolate, Message->GetSourceLine(Context).ToLocalChecked());
-            stm << *SourceLine << std::endl;
-
-            // 输出波浪下划线
-            std::string WavyUnderlineStr;
-            int Start = Message->GetStartColumn();
-            for (int Index = 0; Index < Start; Index++) {
-                WavyUnderlineStr = WavyUnderlineStr.append(" ");
-            }
-            int End = Message->GetEndColumn();
-            for (int Index = Start; Index < End; Index++) {
-                WavyUnderlineStr = WavyUnderlineStr.append("^");
-            }
-
-            stm << WavyUnderlineStr;
-
             // 输出调用栈信息
             v8::Local<v8::Value> StackTrace;
             if (TryCatch.StackTrace(Context).ToLocal(&StackTrace))
