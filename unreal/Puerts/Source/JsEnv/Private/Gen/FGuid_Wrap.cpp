@@ -100,7 +100,7 @@ static void FGuidM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->operator[](Arg0);
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -150,7 +150,7 @@ static void FGuidM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->IsValid();
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -176,7 +176,7 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ToString();
-            auto V8Result =v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
+            auto V8Result = v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -196,7 +196,7 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ToString(Arg0);
-            auto V8Result =v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
+            auto V8Result = v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -216,10 +216,9 @@ static void FGuidS_NewGuid(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             auto MethodResult = FGuid::NewGuid();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FGuid(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FGuid>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FGuid>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -247,7 +246,7 @@ static void FGuidS_Parse(const v8::FunctionCallbackInfo<v8::Value>& Info)
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
             FGuid* Arg1 = puerts::DataTransfer::GetPoninterFast<FGuid>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
             auto MethodResult = FGuid::Parse(Arg0, *Arg1);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -276,7 +275,7 @@ static void FGuidS_ParseExact(const v8::FunctionCallbackInfo<v8::Value>& Info)
             EGuidFormats Arg1 = EGuidFormats(Info[1]->ToInt32(Context).ToLocalChecked()->Value());
             FGuid* Arg2 = puerts::DataTransfer::GetPoninterFast<FGuid>(puerts::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked());
             auto MethodResult = FGuid::ParseExact(Arg0, Arg1, *Arg2);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;

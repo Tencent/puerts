@@ -103,7 +103,7 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->DWColor();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -121,7 +121,7 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->DWColor();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -152,7 +152,7 @@ static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->operator==(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -183,7 +183,7 @@ static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
                 return;
             }
             auto MethodResult = Self->operator!=(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -209,10 +209,9 @@ static void FColorM_FromRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->FromRGBE();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FLinearColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -235,10 +234,9 @@ static void FColorS_FromHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
             auto MethodResult = FColor::FromHex(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -259,10 +257,9 @@ static void FColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Value>& I
         {
             
             auto MethodResult = FColor::MakeRandomColor();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -285,10 +282,9 @@ static void FColorS_MakeRedToGreenColorFromScalar(const v8::FunctionCallbackInfo
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FColor::MakeRedToGreenColorFromScalar(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -311,10 +307,9 @@ static void FColorS_MakeFromColorTemperature(const v8::FunctionCallbackInfo<v8::
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FColor::MakeFromColorTemperature(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -343,10 +338,9 @@ static void FColorM_WithAlpha(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->WithAlpha(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -373,10 +367,9 @@ static void FColorM_ReinterpretAsLinear(const v8::FunctionCallbackInfo<v8::Value
                 return;
             }
             auto MethodResult = Self->ReinterpretAsLinear();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FLinearColor(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -403,7 +396,7 @@ static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ToHex();
-            auto V8Result =v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
+            auto V8Result = v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -429,7 +422,7 @@ static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ToString();
-            auto V8Result =v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
+            auto V8Result = v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -457,7 +450,7 @@ static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& In
                 return;
             }
             auto MethodResult = Self->InitFromString(Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -483,7 +476,7 @@ static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info
                 return;
             }
             auto MethodResult = Self->ToPackedARGB();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -509,7 +502,7 @@ static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info
                 return;
             }
             auto MethodResult = Self->ToPackedABGR();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -535,7 +528,7 @@ static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info
                 return;
             }
             auto MethodResult = Self->ToPackedRGBA();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -561,7 +554,7 @@ static void FColorM_ToPackedBGRA(const v8::FunctionCallbackInfo<v8::Value>& Info
                 return;
             }
             auto MethodResult = Self->ToPackedBGRA();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;

@@ -118,7 +118,7 @@ static void FBox2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->operator==(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -149,7 +149,7 @@ static void FBox2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
                 return;
             }
             auto MethodResult = Self->operator!=(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -180,10 +180,9 @@ static void FBox2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->operator+(*Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FBox2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -207,10 +206,9 @@ static void FBox2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->operator+(*Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FBox2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -268,7 +266,7 @@ static void FBox2DM_ComputeSquaredDistanceToPoint(const v8::FunctionCallbackInfo
                 return;
             }
             auto MethodResult = Self->ComputeSquaredDistanceToPoint(*Arg0);
-            auto V8Result =v8::Number::New(Isolate, MethodResult);
+            auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -296,10 +294,9 @@ static void FBox2DM_ExpandBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ExpandBy(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FBox2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -326,7 +323,7 @@ static void FBox2DM_GetArea(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->GetArea();
-            auto V8Result =v8::Number::New(Isolate, MethodResult);
+            auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -352,10 +349,9 @@ static void FBox2DM_GetCenter(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->GetCenter();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FVector2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -421,10 +417,9 @@ static void FBox2DM_GetClosestPointTo(const v8::FunctionCallbackInfo<v8::Value>&
                 return;
             }
             auto MethodResult = Self->GetClosestPointTo(*Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FVector2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -451,10 +446,9 @@ static void FBox2DM_GetExtent(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->GetExtent();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FVector2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -481,10 +475,9 @@ static void FBox2DM_GetSize(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->GetSize();
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FVector2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -540,7 +533,7 @@ static void FBox2DM_Intersect(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->Intersect(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -571,7 +564,7 @@ static void FBox2DM_IsInside(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->IsInside(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -594,7 +587,7 @@ static void FBox2DM_IsInside(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->IsInside(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -625,10 +618,9 @@ static void FBox2DM_ShiftBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ShiftBy(*Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FBox2D(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FBox2D>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -655,7 +647,7 @@ static void FBox2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->ToString();
-            auto V8Result =v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
+            auto V8Result = v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
             Info.GetReturnValue().Set(V8Result);
             
             return;

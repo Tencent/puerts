@@ -147,7 +147,7 @@ static void FIntVectorM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info
                 return;
             }
             auto MethodResult = Self->operator[](Arg0);
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -204,7 +204,7 @@ static void FIntVectorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& I
                 return;
             }
             auto MethodResult = Self->operator==(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -235,7 +235,7 @@ static void FIntVectorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>&
                 return;
             }
             auto MethodResult = Self->operator!=(*Arg0);
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -263,10 +263,9 @@ static void FIntVectorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& I
                 return;
             }
             auto MethodResult = Self->operator*(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FIntVector(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -295,10 +294,9 @@ static void FIntVectorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& I
                 return;
             }
             auto MethodResult = Self->operator/(Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FIntVector(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -330,10 +328,9 @@ static void FIntVectorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& I
                 return;
             }
             auto MethodResult = Self->operator+(*Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FIntVector(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -365,10 +362,9 @@ static void FIntVectorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>
                 return;
             }
             auto MethodResult = Self->operator-(*Arg0);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FIntVector(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -395,7 +391,7 @@ static void FIntVectorM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->IsZero();
-            auto V8Result =v8::Boolean::New(Isolate, MethodResult);
+            auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -421,7 +417,7 @@ static void FIntVectorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->GetMax();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -447,7 +443,7 @@ static void FIntVectorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->GetMin();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -473,7 +469,7 @@ static void FIntVectorM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 return;
             }
             auto MethodResult = Self->Size();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -499,7 +495,7 @@ static void FIntVectorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info
                 return;
             }
             auto MethodResult = Self->ToString();
-            auto V8Result =v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
+            auto V8Result = v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*MethodResult), v8::NewStringType::kNormal).ToLocalChecked();
             Info.GetReturnValue().Set(V8Result);
             
             return;
@@ -526,10 +522,9 @@ static void FIntVectorS_DivideAndRoundUp(const v8::FunctionCallbackInfo<v8::Valu
             FIntVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
             int32 Arg1 = Info[1]->ToInteger(Context).ToLocalChecked()->Value();
             auto MethodResult = FIntVector::DivideAndRoundUp(*Arg0, Arg1);
-            auto V8Result =v8::Undefined(Isolate).As<v8::Value>();
             void* Ptr = new FIntVector(MethodResult);
                 
-            V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FIntVector>(Isolate, Context, Ptr, false);
                 
             Info.GetReturnValue().Set(V8Result);
             
@@ -550,7 +545,7 @@ static void FIntVectorS_Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             auto MethodResult = FIntVector::Num();
-            auto V8Result =v8::Integer::New(Isolate, MethodResult);
+            auto V8Result = v8::Integer::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
             
             return;
