@@ -16,7 +16,8 @@ namespace Puerts.UnitTest
     {
         private string root = Path.Combine(
             System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:\\\\", ""),
-            "../../Assets/Puerts/Src/Resources");
+            "../../Assets/Puerts/Src/Resources"
+        );
 
         public bool FileExists(string filepath)
         {
@@ -1003,6 +1004,34 @@ namespace Puerts.UnitTest
                 
             ");
             jsEnv.Dispose();
+        }
+        [Test]
+        public void Int64Value()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let value = new CS.Puerts.Int64Value(512n);
+                CS.Puerts.UnitTest.TypedValue.Callback(value);
+            ");
+
+            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
+            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+        }
+        [Test]
+        public void FloatValue()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let value = new CS.Puerts.FloatValue(512.256);
+                CS.Puerts.UnitTest.TypedValue.Callback(value);
+            ");
+
+            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Single));
+            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
     }
 }

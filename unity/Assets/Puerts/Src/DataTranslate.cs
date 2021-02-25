@@ -174,7 +174,15 @@ namespace Puerts
                         }
                     }
                     var objPtr = getValueApi.GetObject(isolate, value, isByRef);
-                    return objectPool.Get(objPtr.ToInt32());
+                    var result = objectPool.Get(objPtr.ToInt32());
+
+                    var typedValueResult = result as TypedValue;
+                    if (typedValueResult != null) 
+                    {
+                        return typedValueResult.Target;
+                    }
+
+                    return result;
                 case JsValueType.Number:
                     return getValueApi.GetNumber(isolate, value, isByRef);
                 case JsValueType.String:
