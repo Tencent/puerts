@@ -529,8 +529,6 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     v8::Context::Scope ContextScope(Context);
     v8::Local<v8::Object> Global = Context->Global();
-    Global->Set(Context, FV8Utils::InternalString(Isolate, "global"), Global)
-        .Check();
 
     v8::Local<v8::Object> Puerts = v8::Object::New(Isolate);
     Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), Puerts)
@@ -2469,7 +2467,7 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
     DelegateWrapper->SetDelegateHandle(DelegateHandle);
     TickerDelegateHandleMap[DelegateHandle] = DelegateWrapper;
 
-    Info.GetReturnValue().Set(v8::Local<v8::External>::New(Info.GetIsolate(), v8::External::New(Info.GetIsolate(), DelegateHandle)));
+    Info.GetReturnValue().Set(v8::External::New(Info.GetIsolate(), DelegateHandle));
 }
 
 void FJsEnvImpl::ReportExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch, std::function<void(const JSError*)> CompletionHandler)
@@ -2622,6 +2620,7 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value> &Info)
 {
+#ifndef WITH_QUICKJS
     v8::HeapStatistics Statistics;
 
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -2663,5 +2662,6 @@ void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value> &In
     );
 
     Logger->Info(StatisticsLog);
+#endif // !WITH_QUICKJS
 }
 }

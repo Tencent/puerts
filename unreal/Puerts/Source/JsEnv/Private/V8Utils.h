@@ -107,11 +107,7 @@ public:
 
     FORCEINLINE static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
     {
-#if ENGINE_MINOR_VERSION >= 24
-        return reinterpret_cast<TCHAR*>(*(v8::String::Value(Isolate, Value)));
-#else
         return UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Value)));
-#endif
             
     }
 
@@ -133,13 +129,8 @@ public:
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const TCHAR *String)
     {
-#if ENGINE_MINOR_VERSION >= 24
-        return v8::String::NewFromTwoByte(Isolate, (const uint16_t *)String,
-            v8::NewStringType::kNormal).ToLocalChecked();
-#else
         return v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(String),
             v8::NewStringType::kNormal).ToLocalChecked();
-#endif
             
     }
 

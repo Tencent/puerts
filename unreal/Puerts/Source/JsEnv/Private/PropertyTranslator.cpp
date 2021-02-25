@@ -411,7 +411,7 @@ public:
         {
             auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
             ArrayBuffer.Data = Ab->GetContents().Data();
-            ArrayBuffer.Length = Ab->ByteLength();
+            ArrayBuffer.Length = Ab->GetContents().ByteLength();
             Ptr = &ArrayBuffer;
         }
         else
