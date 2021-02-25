@@ -14,6 +14,8 @@ public class JsEnv : ModuleRules
 {
     private bool UseNewV8 = false;
 
+    private bool UseQuickjs = false;
+
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -29,6 +31,10 @@ public class JsEnv : ModuleRules
         if (UseNewV8)
         {
             ThirdParty(Target);
+        }
+        else if (UseQuickjs)
+        {
+            ThirdPartyQJS(Target);
         }
         else
         {
@@ -234,6 +240,68 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Linux) {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+        }
+    }
+
+    void ThirdPartyQJS(ReadOnlyTargetRules Target)
+    {
+        //Add header
+        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
+        Definitions.Add("WITHOUT_INSPECTOR");
+        Definitions.Add("WITH_QUICKJS");
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "quickjs", "Inc") });
+
+        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "quickjs", "Lib"));
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
+
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "quickjs.dll.lib"));
+            var DllNames = new string[]
+            {
+                "libgcc_s_seh-1.dll",
+                "libwinpthread-1.dll",
+                "msys-quickjs.dll"
+            };
+            string BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", "Win64"));
+            foreach (var DllName in DllNames)
+            {
+                var DllPath = Path.Combine(V8LibraryPath, DllName);
+                var DestDllPath = Path.Combine(BinariesDir, DllName);
+                if (!System.IO.File.Exists(DestDllPath) && System.IO.File.Exists(DllPath))
+                {
+                    System.IO.File.Copy(DllPath, DestDllPath, false);
+                }
+            }
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Android)
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "Android", "armeabi-v7a");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
+            V8LibraryPath = Path.Combine(LibraryPath, "Android", "arm64-v8a");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
+        {
+            // PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
+            PublicFrameworks.AddRange(new string[] { "WebKit" });
+            string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
+
+            //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "macOS"), "libffi.a"));
+        }
+        else if (Target.Platform == UnrealTargetPlatform.IOS)
+        {
+            PublicFrameworks.AddRange(new string[] { "WebKit" });
+            string V8LibraryPath = Path.Combine(LibraryPath, "iOS", "arm64");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
+
+            //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
         }
     }
 
