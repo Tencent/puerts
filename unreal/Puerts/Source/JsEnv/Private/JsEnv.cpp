@@ -1453,6 +1453,12 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
 
 void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
 {
+    if (GeneratedObjectMap.find(ContextObject) == GeneratedObjectMap.end())
+    {
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
+            *Function->GetName(), ContextObject));
+        return;
+    }
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1466,8 +1472,8 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
 
     if (TryCatch.HasCaught())
     {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *Stack.Object->GetClass()->GetName(),
-            *Function->GetName(), Stack.Object, *GetExecutionException(Isolate, &TryCatch)));
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
+            *Function->GetName(), ContextObject, *GetExecutionException(Isolate, &TryCatch)));
     }
 }
 
@@ -2556,7 +2562,18 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
 
-    auto Class = UJSGeneratedClass::Create(ClassName, ParentUClass, DynamicInvoker, Isolate, Constructor, Prototype);
+    UObject* ClassPackage = ANY_PACKAGE;
+
+    FString GenClassName;
+    int i = 0;
+    while(true)
+    {
+        GenClassName = FString::Printf(TEXT("%s%d"), *ClassName, i);
+        if (!FindObject<UClass>(ClassPackage, *GenClassName)) break;
+        i++;
+    }
+
+    auto Class = UJSGeneratedClass::Create(GenClassName, ParentUClass, DynamicInvoker, Isolate, Constructor, Prototype);
 
     TSet<FName> overrided;
 
