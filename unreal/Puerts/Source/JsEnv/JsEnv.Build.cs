@@ -268,6 +268,11 @@ public class JsEnv : ModuleRules
             {
                 var DllPath = Path.Combine(V8LibraryPath, DllName);
                 var DestDllPath = Path.Combine(BinariesDir, DllName);
+                try
+                {
+                    System.IO.File.Delete(DestDllPath);
+                }
+                catch { }
                 if (!System.IO.File.Exists(DestDllPath) && System.IO.File.Exists(DllPath))
                 {
                     System.IO.File.Copy(DllPath, DestDllPath, false);
