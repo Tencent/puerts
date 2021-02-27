@@ -17,7 +17,7 @@ jobs:
       run: |
         cd quickjs-build
         ./make_osx.sh
-        cp -r include ~/qjs/Inc
+        cp -r include ~/qjs/quickjs/Inc
     - uses: actions/upload-artifact@v2
       with:
         name: qjs_v8
@@ -89,11 +89,11 @@ jobs:
     - name: Prepare
       shell: msys2 {0}
       run: |
-        mkdir -p qjs/Lib/Win64/
-        cp quickjs-build/win/quickjs.dll.lib qjs/Lib/Win64/
-        cp quickjs-build/build/msys-quickjs.dll qjs/Lib/Win64/
-        cp /mingw64/bin/libgcc_s_seh-1.dll qjs/Lib/Win64/
-        cp /mingw64/bin/libwinpthread-1.dll qjs/Lib/Win64/
+        mkdir -p qjs/quickjs/Lib/Win64/
+        cp quickjs-build/win/quickjs.dll.lib qjs/quickjs/Lib/Win64/
+        cp quickjs-build/build/msys-quickjs.dll qjs/quickjs/Lib/Win64/
+        cp /mingw64/bin/libgcc_s_seh-1.dll qjs/quickjs/Lib/Win64/
+        cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64/
     - uses: actions/upload-artifact@v2
       with:
         name: qjs_v8
@@ -130,11 +130,11 @@ jobs:
     - name: Prepare
       shell: msys2 {0}
       run: |
-        mkdir -p qjs/Lib/Win64MD/
-        cp quickjs-build/win/quickjs.dll.lib qjs/Lib/Win64MD/
-        cp quickjs-build/build/msys-quickjs.dll qjs/Lib/Win64MD/
-        cp /mingw64/bin/libgcc_s_seh-1.dll qjs/Lib/Win64MD/
-        cp /mingw64/bin/libwinpthread-1.dll qjs/Lib/Win64MD/
+        mkdir -p qjs/quickjs/Lib/Win64MD/
+        cp quickjs-build/win/quickjs.dll.lib qjs/quickjs/Lib/Win64MD/
+        cp quickjs-build/build/msys-quickjs.dll qjs/quickjs/Lib/Win64MD/
+        cp /mingw64/bin/libgcc_s_seh-1.dll qjs/quickjs/Lib/Win64MD/
+        cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64MD/
     - uses: actions/upload-artifact@v2
       with:
         name: qjs_v8
@@ -170,11 +170,11 @@ jobs:
     - name: Prepare
       shell: msys2 {0}
       run: |
-        mkdir -p qjs/Lib/Win32/
-        cp quickjs-build/win/quickjs.dll.lib qjs/Lib/Win32/
-        cp quickjs-build/build/msys-quickjs.dll qjs/Lib/Win32/
-        cp /mingw32/bin/libgcc_s_dw2-1.dll qjs/Lib/Win32/
-        cp /mingw32/bin/libwinpthread-1.dll qjs/Lib/Win32/
+        mkdir -p qjs/quickjs/Lib/Win32/
+        cp quickjs-build/win/quickjs.dll.lib qjs/quickjs/Lib/Win32/
+        cp quickjs-build/build/msys-quickjs.dll qjs/quickjs/Lib/Win32/
+        cp /mingw32/bin/libgcc_s_dw2-1.dll qjs/quickjs/Lib/Win32/
+        cp /mingw32/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win32/
     - uses: actions/upload-artifact@v2
       with:
         name: qjs_v8
