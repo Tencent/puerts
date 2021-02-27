@@ -10,6 +10,7 @@ on:
 jobs:
   android:
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v2
       - name: Download artifact
@@ -35,7 +36,36 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Puerts_Unity_Plugins
+          name: Unity_Plugins_V8
+  android_qjs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_quickjs.yml
+          name: qjs_v8
+          path: unity/native_src/
+      - name: Install NDK
+        run: |
+          cd ~
+          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
+          sudo apt install unzip -y
+          unzip -q NDK
+          export ANDROID_NDK=~/android-ndk-r21b
+      - name: Build
+        run: |
+          ls ~/android-ndk-r21b
+          cd unity/native_src
+          chmod 777 make_android.sh
+          ./make_android_qjs.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_Quickjs
   ios:
     runs-on: macos-10.15
 
@@ -57,7 +87,29 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Puerts_Unity_Plugins
+          name: Unity_Plugins_V8
+  ios_qjs:
+    runs-on: macos-10.15
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_quickjs.yml
+          name: qjs_v8
+          path: unity/native_src/
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
+      - name: Build
+        run: |
+          cd unity/native_src
+          sh ./make_ios_qjs.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_Quickjs
   osx:
     runs-on: macos-10.15
 
@@ -79,7 +131,29 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Puerts_Unity_Plugins
+          name: Unity_Plugins_V8
+  osx_qjs:
+    runs-on: macos-10.15
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_quickjs.yml
+          name: qjs_v8
+          path: unity/native_src/
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
+      - name: Build
+        run: |
+          cd unity/native_src
+          sh ./make_osx_qjs.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_Quickjs
   windows:
     runs-on: windows-2019
 
@@ -100,10 +174,31 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Puerts_Unity_Plugins
+          name: Unity_Plugins_V8
+  windows_qjs:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_quickjs.yml
+          name: qjs_v8
+          path: unity/native_src/
+      - name: Build
+        run: |
+          cd unity\native_src
+          .\make_win64_qjs.bat
+          .\make_win32_qjs.bat
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_Quickjs
   publish:
     runs-on: ubuntu-latest
-    needs: [windows,osx,ios,android]
+    needs: [windows,osx,ios,android,windows_qjs,osx_qjs,ios_qjs,android_qjs]
     steps:
       - uses: actions/checkout@v2
       
@@ -113,12 +208,18 @@ jobs:
             
       - uses: actions/download-artifact@v1
         with:
-          name: Puerts_Unity_Plugins
-          path: Plugins/
+          name: Unity_Plugins_V8
+          path: V8/Plugins/
+          
+      - uses: actions/download-artifact@v1
+        with:
+          name: Unity_Plugins_Quickjs
+          path: Quickjs/Plugins/
           
       - name: Create Release Asset
         run: |
-          tar cvfz Plugins_v${{ env.PLUGIN_VERSION }}.tgz Plugins
+          tar -C V8 cvfz Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz Plugins
+          tar -C Quickjs cvfz Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins
           
       - name: Create Release
         id: create_release
@@ -131,14 +232,25 @@ jobs:
           draft: false
           prerelease: false
           
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload V8 Plugins
+        #id: upload-release-asset 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Plugins_v${{ env.PLUGIN_VERSION }}.tgz
-          asset_name: Plugins_v${{ env.PLUGIN_VERSION }}.tgz
+          asset_path: ./Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_name: Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_content_type: application/tgz
+          
+      - name: Upload Quickjs Plugins
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_name: Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
           asset_content_type: application/tgz
    
