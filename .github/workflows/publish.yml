@@ -218,8 +218,8 @@ jobs:
           
       - name: Create Release Asset
         run: |
-          tar -C V8 cvfz Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz Plugins
-          tar -C Quickjs cvfz Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins
+          cd V8/ && tar cvfz Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
+          cd Quickjs/ && tar cvfz Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
           
       - name: Create Release
         id: create_release
