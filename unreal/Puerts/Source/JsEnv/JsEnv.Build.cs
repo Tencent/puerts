@@ -245,8 +245,6 @@ public class JsEnv : ModuleRules
 
     void ThirdPartyQJS(ReadOnlyTargetRules Target)
     {
-        //Add header
-        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
         Definitions.Add("WITHOUT_INSPECTOR");
         Definitions.Add("WITH_QUICKJS");
         PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "quickjs", "Inc") });
