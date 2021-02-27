@@ -1,4 +1,4 @@
-name: Build quickjs backend
+name: build quickjs backend
 
 on: 
   push:
