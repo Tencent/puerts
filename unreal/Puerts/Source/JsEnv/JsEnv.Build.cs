@@ -264,6 +264,7 @@ public class JsEnv : ModuleRules
             string BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", "Win64"));
             foreach (var DllName in DllNames)
             {
+                PublicDelayLoadDLLs.Add(DllName);
                 var DllPath = Path.Combine(V8LibraryPath, DllName);
                 var DestDllPath = Path.Combine(BinariesDir, DllName);
                 try
@@ -275,6 +276,7 @@ public class JsEnv : ModuleRules
                 {
                     System.IO.File.Copy(DllPath, DestDllPath, false);
                 }
+                RuntimeDependencies.Add(DestDllPath);
             }
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
