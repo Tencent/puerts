@@ -763,7 +763,7 @@ namespace Puerts.Editor
             var rawType = GetRawType(type);
 			
 			//移动到此处进行判断, 避免递归进入死循环
-			if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
+            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
 			
             if (type.IsGenericType)
             {
