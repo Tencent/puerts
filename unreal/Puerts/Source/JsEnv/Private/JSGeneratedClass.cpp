@@ -89,6 +89,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
+            MaybeJSFunction->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
             return;
         }
         //UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
