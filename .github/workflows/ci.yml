@@ -39,11 +39,10 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Download artifact
-        uses: chexiongsheng/action-download-artifact@master
+        uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build_quickjs_backend.yml
-          run_id: 613019695
-          name: qjs_v8
+          workflow: build_quickjs_impl_v8.yml
+          name: qjs_v8_bin
           path: unity/native_src/
       - name: Build plugin
         run: |
