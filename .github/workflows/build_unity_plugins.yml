@@ -48,7 +48,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs_backend.yml
-          name: qjs_v8
+          name: qjs_v8_bin
           path: unity/native_src/
       - name: Install NDK
         run: |
@@ -99,7 +99,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs_backend.yml
-          name: qjs_v8
+          name: qjs_v8_bin
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
@@ -143,7 +143,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs_backend.yml
-          name: qjs_v8
+          name: qjs_v8_bin
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
@@ -186,7 +186,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs_backend.yml
-          name: qjs_v8
+          name: qjs_v8_bin
           path: unity/native_src/
       - name: Build
         run: |
