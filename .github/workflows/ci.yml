@@ -38,6 +38,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
+      - name: clear quickjs
+        shell: bash
+        run: |
+          cd unity/native_src
+          rm -rf quickjs
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
