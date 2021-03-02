@@ -50,6 +50,7 @@ jobs:
           cd unity\native_src
           .\make_win64_qjs.bat
           copy build64qjs\Release\puerts.dll ..\general\Bin
+          copy quickjs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
         run: |
           cd unity\general\vs2013
