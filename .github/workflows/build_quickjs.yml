@@ -21,7 +21,7 @@ jobs:
         cp -r include ~/qjs/quickjs/Inc
     - uses: actions/upload-artifact@v2
       with:
-        name: qjs_v8_bin
+        name: qjs_v8
         path: ~/qjs/**/*
         
   build_ios:
@@ -37,7 +37,7 @@ jobs:
         ./make_ios.sh
     - uses: actions/upload-artifact@v2
       with:
-        name: qjs_v8_bin
+        name: qjs_v8
         path: ~/qjs/**/*
 
   build_android:
@@ -58,7 +58,7 @@ jobs:
         ./make_android.sh
     - uses: actions/upload-artifact@v2
       with:
-        name: qjs_v8_bin
+        name: qjs_v8
         path: ~/qjs/**/*
 
   build_window_dll:
@@ -97,7 +97,7 @@ jobs:
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64/
     - uses: actions/upload-artifact@v2
       with:
-        name: qjs_v8_bin
+        name: qjs_v8
         path: qjs/**/*
         
   build_window_dll_md:
@@ -138,7 +138,7 @@ jobs:
         cp /mingw64/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win64MD/
     - uses: actions/upload-artifact@v2
       with:
-        name: qjs_v8_bin
+        name: qjs_v8
         path: qjs/**/*
 
   build_window_dll32:
@@ -178,6 +178,6 @@ jobs:
         cp /mingw32/bin/libwinpthread-1.dll qjs/quickjs/Lib/Win32/
     - uses: actions/upload-artifact@v2
       with:
-        name: qjs_v8_bin
+        name: qjs_v8
         path: qjs/**/*
 
