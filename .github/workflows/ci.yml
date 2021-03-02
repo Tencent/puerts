@@ -42,7 +42,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs.yml
-          workflow_conclusion: success
+          run_id: 613019695
           name: qjs_v8
           path: unity/native_src/
       - name: Build plugin
