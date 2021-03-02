@@ -41,7 +41,7 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build_quickjs.yml
+          workflow: build_quickjs
           name: qjs_v8
           path: unity/native_src/
       - name: Build plugin
