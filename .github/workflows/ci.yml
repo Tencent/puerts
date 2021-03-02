@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  ci:
+  ci-v8:
     runs-on: windows-2019
 
     steps:
@@ -23,7 +23,33 @@ jobs:
           cd unity\native_src
           .\make_win64.bat
           copy build64\Release\puerts.dll ..\general\Bin
-          dir ..\general\Bin
+      - name: UnitTest
+        run: |
+          cd unity\general\vs2013
+          nuget restore Puerts.sln
+          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
+          msbuild /property:Configuration=Release Puerts.sln
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
+          
+  ci-quickjs:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_quickjs.yml
+          name: qjs_v8
+          path: unity/native_src/
+      - name: Build plugin
+        run: |
+          md unity\general\Bin
+          cd unity\native_src
+          .\make_win64_qjs.bat
+          copy build64qjs\Release\puerts.dll ..\general\Bin
       - name: UnitTest
         run: |
           cd unity\general\vs2013
