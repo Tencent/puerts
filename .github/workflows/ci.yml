@@ -38,22 +38,13 @@ jobs:
       - uses: actions/checkout@v2
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
-      - name: clear quickjs
-        shell: bash
-        run: |
-          cd unity/native_src
-          rm -rf quickjs
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs.yml
+          workflow_conclusion: success
           name: qjs_v8
           path: unity/native_src/
-      - name: Print v8.h
-        shell: bash
-        run: |
-          cd unity/native_src
-          cat quickjs/Inc/v8.h
       - name: Build plugin
         run: |
           md unity\general\Bin
