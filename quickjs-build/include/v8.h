@@ -1010,10 +1010,12 @@ public:
     }
     
     V8_INLINE Global(Global&& other) {
-        this->isolate_ = other.isolate_;
-        this->val_ = other.val_;
-        this->weak_ = other.weak_;
-        this->val_.SetGlobal(this->isolate_, reinterpret_cast<Value*>(&this->store_));
+        if (!other.IsEmpty()) {
+            this->isolate_ = other.isolate_;
+            this->val_ = other.val_;
+            this->weak_ = other.weak_;
+            this->val_.SetGlobal(this->isolate_, reinterpret_cast<Value*>(&this->store_));
+        }
         
         other.weak_ = true;
         other.isolate_ = nullptr;
