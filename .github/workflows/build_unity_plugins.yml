@@ -9,6 +9,9 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
       - .github/workflows/build_unity_plugins.yml
 
+env:
+  RUNID: 613573412
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -47,7 +50,8 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build_quickjs_impl_v8.yml
+          workflow: build_quickjs.yml
+          run_id: ${{env.RUNID}}
           name: qjs_v8_bin
           path: unity/native_src/
       - name: Install NDK
@@ -98,7 +102,8 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build_quickjs_impl_v8.yml
+          workflow: build_quickjs.yml
+          run_id: ${{env.RUNID}}
           name: qjs_v8_bin
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
@@ -142,7 +147,8 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build_quickjs_impl_v8.yml
+          workflow: build_quickjs.yml
+          run_id: ${{env.RUNID}}
           name: qjs_v8_bin
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
@@ -185,7 +191,8 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: build_quickjs_impl_v8.yml
+          workflow: build_quickjs.yml
+          run_id: ${{env.RUNID}}
           name: qjs_v8_bin
           path: unity/native_src/
       - name: Build

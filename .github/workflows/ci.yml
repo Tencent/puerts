@@ -2,6 +2,9 @@ name: ci
 
 on: 
   push:
+  
+env:
+  RUNID: 613573412
 
 jobs:
   ci-v8:
@@ -39,12 +42,11 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Download artifact
-        uses: chexiongsheng/action-download-artifact@master
+        uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs.yml
-          workflow_conclusion: success
-          branch: master
-          name: qjs_v8
+          run_id: ${{env.RUNID}}
+          name: qjs_v8_bin
           path: unity/native_src/
       - name: Build plugin
         run: |
