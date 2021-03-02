@@ -7,7 +7,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
-      #- .github/workflows/build.yml
+      - .github/workflows/build_unity_plugins.yml
 
 jobs:
   android:
