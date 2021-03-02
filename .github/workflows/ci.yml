@@ -39,7 +39,7 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Download artifact
-        uses: chexiongsheng/action-download-artifact
+        uses: chexiongsheng/action-download-artifact@master
         with:
           workflow: build_quickjs.yml
           run_id: 613019695
