@@ -4,6 +4,7 @@ on:
   push:
     paths: 
       - quickjs-build/**
+      - .github/workflows/build_quickjs.yml
 
 jobs:
   build_macos:
