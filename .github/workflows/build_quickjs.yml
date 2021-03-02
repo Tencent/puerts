@@ -1,10 +1,10 @@
-name: build_qjs
+name: Build quickjs backend
 
 on: 
   push:
     paths: 
       - quickjs-build/**
-      - .github/workflows/build_qjs.yml
+      - .github/workflows/build_quickjs.yml
 
 jobs:
   build_macos:
