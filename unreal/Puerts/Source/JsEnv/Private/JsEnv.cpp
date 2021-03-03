@@ -1253,13 +1253,6 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local
 {
     check(Ptr);//must not null
 
-    if (ScriptStruct == FArrayBuffer::StaticStruct())
-    {
-        FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
-        return Ab;
-    }
-
     if (!PassByPointer)
     {
         auto Iter = StructMap.find(Ptr);

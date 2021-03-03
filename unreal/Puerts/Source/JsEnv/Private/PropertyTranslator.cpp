@@ -381,11 +381,20 @@ public:
     explicit FScriptStructPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
         ScriptStruct = StructProperty->Struct;
+        IsArrayBuffer = (ScriptStruct == FArrayBuffer::StaticStruct());
     }
 
     v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override //还是得有个指针模式，否则不能通过obj.xx.xx直接修改struct值，倒是和性能无关，应该强制js测不许保存指针型对象的引用（从native侧进入，最后一层退出时清空？）
     {
         void *Ptr = const_cast<void *>(ValuePtr);
+
+        if (IsArrayBuffer)
+        {
+            FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
+            v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+            return Ab;
+        }
+
         if (!PassByPointer)
         {
             Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
@@ -399,7 +408,7 @@ public:
     {
         FArrayBuffer ArrayBuffer;
         void * Ptr = nullptr;
-        if (Value->IsArrayBufferView())
+        if (IsArrayBuffer && Value->IsArrayBufferView())
         {
             v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
             auto ABC = BuffView->Buffer()->GetContents();
@@ -407,7 +416,7 @@ public:
             ArrayBuffer.Length = BuffView->ByteLength();
             Ptr = &ArrayBuffer;
         }
-        else if (Value->IsArrayBuffer())
+        else if (IsArrayBuffer && Value->IsArrayBuffer())
         {
             auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
             ArrayBuffer.Data = Ab->GetContents().Data();
@@ -431,6 +440,8 @@ public:
 
 private:
     UScriptStruct *ScriptStruct;
+
+    bool IsArrayBuffer;
 };
 
 class FClassPropertyTranslator : public FObjectPropertyTranslator
