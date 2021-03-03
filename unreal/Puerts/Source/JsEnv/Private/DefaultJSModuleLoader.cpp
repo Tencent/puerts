@@ -19,6 +19,7 @@ namespace puerts
         PathIn.ParseIntoArray(PathFrags, TEXT("/"));
         Algo::Reverse(PathFrags);
         TArray<FString> NewPathFrags;
+        bool FromRoot = PathIn.StartsWith(TEXT("/"));
         while (PathFrags.Num() > 0) {
             FString E = PathFrags.Pop();
             if (E != TEXT("") && E != TEXT(".")) 
@@ -31,7 +32,14 @@ namespace puerts
                 }
             }
         }
-        return FString::Join(NewPathFrags, TEXT("/"));
+        if (FromRoot)
+        {
+            return TEXT("/") + FString::Join(NewPathFrags, TEXT("/"));
+        }
+        else
+        {
+            return FString::Join(NewPathFrags, TEXT("/"));
+        }
     }
 
 	bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FString& AbsolutePath)
