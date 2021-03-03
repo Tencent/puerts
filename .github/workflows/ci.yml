@@ -2,6 +2,13 @@ name: ci
 
 on: 
   push:
+    paths: 
+      - unity/Assets/**
+      - unity/general/**
+      - unity/native_src/**
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+      - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+      - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
   
 env:
   RUNID: 613573412
@@ -62,3 +69,17 @@ jobs:
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
           ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
+          
+  test-workflow-download:
+    runs-on: windows-2019
+
+    steps:
+
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_quickjs.yml
+          name: qjs_v8_bin
+          path: ./
+      
+
