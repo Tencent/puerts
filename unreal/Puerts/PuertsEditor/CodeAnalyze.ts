@@ -531,7 +531,9 @@ function getSubPatternFromSpec(spec: string, basePath: string, usage: "files" | 
         }
 
         //modify by john, 如果使用相对路径，最后面的pattern会添加一个/到开头，导致匹配失败
-        hasWrittenComponent = !!component;
+        // hasWrittenComponent = !!component;
+        //modify by zombie，上述改动会导致Mac无法watch到TS文件，据车神说现在已经不用相对路径，因此回滚
+        hasWrittenComponent = true;
     }
 
     while (optionalCount > 0) {
