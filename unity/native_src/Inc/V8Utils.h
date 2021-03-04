@@ -84,7 +84,8 @@ public:
             std::ostringstream stm;
             v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
             int LineNum = Message->GetLineNumber(Context).FromJust();
-            stm << *FileName << ":" << LineNum << ": " << ExceptionStr;
+            const char * StrFileName = *FileName;
+            stm << (StrFileName == nullptr ? "unknow file" : StrFileName) << ":" << LineNum << ": " << ExceptionStr;
 
             stm << std::endl;
 
