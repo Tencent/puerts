@@ -97,7 +97,8 @@ class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectD
 public:
     explicit FJsEnvImpl(const FString &ScriptRoot);
 
-    FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int Port);
+    FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
+        void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
     ~FJsEnvImpl() override;
 
@@ -437,9 +438,10 @@ FJsEnv::FJsEnv(const FString &ScriptRoot)
     GameScript = std::make_unique<FJsEnvImpl>(ScriptRoot);
 }
 
-FJsEnv::FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort)
+FJsEnv::FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+    void* InExternalRuntime, void* InExternalContext)
 {
-    GameScript = std::make_unique<FJsEnvImpl>(std::move(InModuleLoader), InLogger, InDebugPort);
+    GameScript = std::make_unique<FJsEnvImpl>(std::move(InModuleLoader), InLogger, InDebugPort, InExternalRuntime, InExternalContext);
 }
 
 void FJsEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments)
@@ -472,11 +474,12 @@ void FJsEnv::ReloadModule(FName ModuleName)
     GameScript->ReloadModule(ModuleName);
 }
 
-FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1)
+FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, nullptr)
 {
 }
 
-FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort)
+FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+    void* InExternalRuntime, void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -517,14 +520,23 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
 
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+#if WITH_QUICKJS
+    MainIsolate = InExternalRuntime ? v8::Isolate::New(InExternalRuntime) : v8::Isolate::New(CreateParams);
+#else
+    check(!InExternalRuntime && !InExternalContext);
     MainIsolate = v8::Isolate::New(CreateParams);
+#endif
     auto Isolate = MainIsolate;
     Isolate->SetData(0, static_cast<IObjectMapper*>(this));//直接传this会有问题，强转后地址会变
 
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(Isolate);
 
+#if WITH_QUICKJS
+    v8::Local<v8::Context> Context = (InExternalRuntime && InExternalContext) ? v8::Context::New(Isolate, InExternalContext) : v8::Context::New(Isolate);
+#else
     v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+#endif
     DefaultContext.Reset(Isolate, Context);
 
     v8::Context::Scope ContextScope(Context);
