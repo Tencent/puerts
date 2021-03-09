@@ -115,6 +115,7 @@ endif ()
 
 if ( JS_ENGINE STREQUAL "quickjs")
     target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
+    target_compile_definitions (puerts PRIVATE WITH_QUICKJS)
 endif ()
 
 if ( MSYS )
