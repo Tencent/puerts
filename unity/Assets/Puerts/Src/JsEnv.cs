@@ -68,7 +68,7 @@ namespace Puerts
             Init(loader, debugPort);
         }
         
-        private Init(ILoader loader, int debugPort)
+        private void Init(ILoader loader, int debugPort)
         {
             //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
