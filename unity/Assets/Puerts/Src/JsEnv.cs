@@ -65,7 +65,7 @@ namespace Puerts
             {
                 throw new InvalidProgramException("create jsengine fail");
             }
-            Init(loader, debugPort);
+            Init(loader, -1);
         }
         
         private void Init(ILoader loader, int debugPort)
