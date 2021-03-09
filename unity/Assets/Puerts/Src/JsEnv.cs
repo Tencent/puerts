@@ -40,7 +40,7 @@ namespace Puerts
         {
         }
 
-        public JsEnv(ILoader loader) : this(loader, -1, IntPtr.Zero, IntPtr.Zero)
+        public JsEnv(ILoader loader, int debugPort = -1) : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
