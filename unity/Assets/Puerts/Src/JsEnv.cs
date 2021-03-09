@@ -59,7 +59,15 @@ namespace Puerts
             }
             //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
-            isolate = PuertsDLL.CreateJSEngine();
+            if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
+            {
+                isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+            }
+            else
+            {
+                isolate = PuertsDLL.CreateJSEngine();
+            }
+            
             if (isolate == IntPtr.Zero)
             {
                 throw new InvalidProgramException("create jsengine fail");
