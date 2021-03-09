@@ -404,6 +404,7 @@ namespace Puerts
             generalSetterMap[typeof(string)] = StringTranslator;
             generalSetterMap[typeof(DateTime)] = DateTranslator;
             generalSetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
+            generalSetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
             generalSetterMap[typeof(void)] = VoidTranslator;
             generalSetterMap[typeof(object)] = AnyTranslator;
         }
@@ -486,6 +487,11 @@ namespace Puerts
         private static void ArrayBufferTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
             setValueApi.SetArrayBuffer(isolate, holder, (ArrayBuffer)obj);
+        }
+
+        private static void GenericDelegateTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        {
+            setValueApi.SetFunction(isolate, holder, ((GenericDelegate)obj).getJsFuncPtr());
         }
 
         internal void AnyTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)

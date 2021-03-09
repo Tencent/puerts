@@ -45,6 +45,8 @@ namespace Puerts
     {
         void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self);
 
+        void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction);
+
         void SetNumber(IntPtr isolate, IntPtr holder, double number);
 
         void SetString(IntPtr isolate, IntPtr holder, string str);
@@ -237,6 +239,11 @@ namespace Puerts
             PuertsDLL.ReturnObject(isolate, holder, classID, self);
         }
 
+        public void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction)
+        {
+            PuertsDLL.ReturnFunction(isolate, holder, JSFunction);
+        }
+
         public void SetString(IntPtr isolate, IntPtr holder, string str)
         {
             PuertsDLL.ReturnString(isolate, holder, str);
@@ -285,6 +292,11 @@ namespace Puerts
         public void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
         {
             PuertsDLL.SetObjectToOutValue(isolate, holder, classID, self);
+        }
+
+        public void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction)
+        {
+            throw new Exception("not implement yet");
         }
 
         public void SetString(IntPtr isolate, IntPtr holder, string str)
@@ -336,6 +348,11 @@ namespace Puerts
         public void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
         {
             PuertsDLL.PushObjectForJSFunction(holder, classID, self);
+        }
+
+        public void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction)
+        {
+            PuertsDLL.PushJSFunctionForJSFunction(holder, JSFunction);
         }
 
         public void SetString(IntPtr isolate, IntPtr holder, string str)

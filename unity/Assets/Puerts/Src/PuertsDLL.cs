@@ -73,7 +73,7 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngine();
-        
+
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngineWithExternalEnv(IntPtr externalRuntime, IntPtr externalContext);
 
@@ -251,6 +251,9 @@ namespace Puerts
         public static extern void ReturnNull(IntPtr isolate, IntPtr info);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReturnFunction(IntPtr isolate, IntPtr info, IntPtr JSFunction);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArgumentValue(IntPtr info, int index);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -365,6 +368,9 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PushObjectForJSFunction(IntPtr function, int classId, IntPtr objectId);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PushJSFunctionForJSFunction(IntPtr function, IntPtr JSFunction);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr InvokeJSFunction(IntPtr function, bool hasResult);

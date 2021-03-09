@@ -309,6 +309,10 @@ namespace Puerts
         private Delegate firstValue = null;
         private Dictionary<Type, Delegate> bindTo = null;
 
+        internal IntPtr getJsFuncPtr() {
+            return nativeJsFuncPtr;
+        }
+
         internal GenericDelegate(IntPtr nativeJsFuncPtr, JsEnv jsEnv)
         {
             this.nativeJsFuncPtr = nativeJsFuncPtr;

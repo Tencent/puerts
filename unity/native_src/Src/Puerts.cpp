@@ -496,10 +496,10 @@ V8_EXPORT void ReturnNull(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v
     Info.GetReturnValue().SetNull();
 }
 
-//V8_EXPORT void ReturnFunction(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, JSFunction *Function)
-//{
-//    Info.GetReturnValue().Set(Function->GFunction.Get(Isolate));
-//}
+V8_EXPORT void ReturnFunction(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, JSFunction *Function)
+{
+   Info.GetReturnValue().Set(Function->GFunction.Get(Isolate));
+}
 
 //-------------------------- end js call cs --------------------------
 
@@ -574,13 +574,13 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
     Function->Arguments.push_back(std::move(Value));
 }
 
-//V8_EXPORT void PushJSFunctionForJSFunction(JSFunction *F, JSFunction *V)
-//{
-//    FValue Value;
-//    Value.Type = Function;
-//    Value.FunctionPtr = V;
-//    F->Arguments.push_back(Value);
-//}
+V8_EXPORT void PushJSFunctionForJSFunction(JSFunction *F, JSFunction *V)
+{
+   FValue Value;
+   Value.Type = puerts::Function;
+   Value.FunctionPtr = V;
+   F->Arguments.push_back(std::move(Value));
+}
 
 V8_EXPORT FResultInfo *InvokeJSFunction(JSFunction *Function, int HasResult)
 {
