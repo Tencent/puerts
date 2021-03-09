@@ -89,8 +89,12 @@ void V8FinalizerWrap(JSRuntime *rt, JSValue val) {
     }
 }
 
-Isolate::Isolate() : current_context_(nullptr) {
-    runtime_ = JS_NewRuntime();
+Isolate::Isolate() : Isolate(nullptr) {
+}
+
+Isolate::Isolate(void* external_runtime) : current_context_(nullptr) {
+    is_external_runtime_ = external_runtime != nullptr;
+    runtime_ = is_external_runtime_ ? ((JSRuntime *)external_runtime) : JS_NewRuntime();
     JS_SetRuntimeOpaque(runtime_, this);
     literal_values_[kUndefinedValueIndex] = JS_Undefined();
     literal_values_[kNullValueIndex] = JS_Null();
@@ -120,7 +124,9 @@ Isolate::~Isolate() {
     }
     values_.clear();
     JS_FreeValueRT(runtime_, literal_values_[kEmptyStringIndex]);
-    JS_FreeRuntime(runtime_);
+    if (!is_external_runtime_) {
+        JS_FreeRuntime(runtime_);
+    }
 };
 
 Value* Isolate::Alloc_() {
@@ -627,16 +633,21 @@ Local<Object> Context::Global() {
     return Local<Object>(g);
 }
 
+Context::Context(Isolate* isolate) : Context(isolate, nullptr) {
+}
 
-Context::Context(Isolate* isolate) :isolate_(isolate) {
-    context_ = JS_NewContext(isolate->runtime_);
+Context::Context(Isolate* isolate, void* external_context) :isolate_(isolate) {
+    is_external_context_ = external_context != nullptr;
+    context_ = is_external_context_ ? ((JSContext *)external_context) : JS_NewContext(isolate->runtime_);
     JS_SetContextOpaque(context_, this);
     global_ = JS_GetGlobalObject(context_);
 }
 
 Context::~Context() {
     JS_FreeValue(context_, global_);
-    JS_FreeContext(context_);
+    if (!is_external_context_) {
+        JS_FreeContext(context_);
+    }
 }
 
 MaybeLocal<Value> Function::Call(Local<Context> context,

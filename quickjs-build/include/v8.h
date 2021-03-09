@@ -752,6 +752,10 @@ public:
     V8_INLINE static Isolate* New(const CreateParams& params) {
         return new Isolate();
     }
+    
+    V8_INLINE static Isolate* New(void* external_runtime) {
+        return new Isolate(external_runtime);
+    }
 
     V8_INLINE void Dispose() {
         delete this;
@@ -771,11 +775,15 @@ public:
 
     JSRuntime *runtime_;
     
+    bool is_external_runtime_;
+    
     JSClassID class_id_;
 
     Local<Context> current_context_;
 
     Isolate();
+    
+    Isolate(void* external_runtime);
 
     ~Isolate();
     
@@ -855,6 +863,10 @@ public:
     V8_INLINE static Local<Context> New(Isolate* isolate) {
         return Local<Context>(new Context(isolate));
     }
+    
+    V8_INLINE static Local<Context> New(Isolate* isolate, void* external_context) {
+        return Local<Context>(new Context(isolate, external_context));
+    }
 
     Local<Object> Global();
 
@@ -895,7 +907,11 @@ public:
     JSContext *context_;
     
     JSValue global_;
+    
+    bool is_external_context_;
 
+    Context(Isolate* isolate, void* external_context);
+    
     Context(Isolate* isolate);
 };
 
