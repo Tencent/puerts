@@ -27,9 +27,7 @@
 #include "libplatform/libplatform.h"
 #pragma warning(pop)
 
-#if PLATFORM_MAC
-#define ASIO_NO_TYPEID  // Mac下需避免使用RTTI功能
-#endif
+#define ASIO_NO_TYPEID  // UE需避免使用RTTI功能
 
 #define ASIO_STANDALONE
 #define _WEBSOCKETPP_CPP11_TYPE_TRAITS_

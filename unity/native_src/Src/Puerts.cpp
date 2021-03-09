@@ -9,7 +9,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define LIB_VERSION 9
+#define LIB_VERSION 10
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -30,8 +30,18 @@ V8_EXPORT int GetLibVersion()
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
 {
-    auto JsEngine = new JSEngine();
+    auto JsEngine = new JSEngine(nullptr, nullptr);
     return JsEngine->MainIsolate;
+}
+
+V8_EXPORT v8::Isolate *CreateJSEngineWithExternalEnv(void* external_quickjs_runtime, void* external_quickjs_context)
+{
+#if WITH_QUICKJS
+    auto JsEngine = new JSEngine(external_quickjs_runtime, external_quickjs_context);
+    return JsEngine->MainIsolate;
+#else
+    return nullptr;
+#endif
 }
 
 V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)

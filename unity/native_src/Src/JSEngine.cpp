@@ -51,7 +51,7 @@ namespace puerts
         Info.GetReturnValue().Set(Result.ToLocalChecked());
     }
 
-    JSEngine::JSEngine()
+    JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
         GeneralDestructor = nullptr;
         Inspector = nullptr;
@@ -78,7 +78,11 @@ namespace puerts
 
         // 初始化Isolate和DefaultContext
         CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+#if WITH_QUICKJS
+        MainIsolate = (external_quickjs_runtime == nullptr) ? v8::Isolate::New(CreateParams) : v8::Isolate::New(external_quickjs_runtime);
+#else
         MainIsolate = v8::Isolate::New(CreateParams);
+#endif
         auto Isolate = MainIsolate;
         ResultInfo.Isolate = MainIsolate;
         Isolate->SetData(0, this);
@@ -86,7 +90,11 @@ namespace puerts
         v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 
+#if WITH_QUICKJS
+        v8::Local<v8::Context> Context = (external_quickjs_runtime && external_quickjs_context) ? v8::Context::New(Isolate, external_quickjs_context) : v8::Context::New(Isolate);
+#else
         v8::Local<v8::Context> Context = v8::Context::New(Isolate);
+#endif
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(Isolate, Context);
         v8::Local<v8::Object> Global = Context->Global();
