@@ -124,6 +124,8 @@ public:
 
     void UnBind(UClass *Class, UObject *UEObject) override;
 
+    void UnBind(UClass *Class, UObject *UEObject, bool ResetPointer);
+
     v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject) override;
 
     void BindStruct(UScriptStruct* ScriptStruct, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
@@ -1227,13 +1229,29 @@ void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JS
     ObjectMap[UEObject].SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
 }
 
-void FJsEnvImpl::UnBind(UClass *Class, UObject *UEObject)
+void FJsEnvImpl::UnBind(UClass *Class, UObject *UEObject, bool ResetPointer)
 {
-    if (ObjectMap.find(UEObject) != ObjectMap.end())
+    auto Iter = ObjectMap.find(UEObject);
+    if (Iter != ObjectMap.end())
     {
+        if (ResetPointer)
+        {
+            auto Isolate = MainIsolate;
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            auto Context = DefaultContext.Get(Isolate);
+            v8::Context::Scope ContextScope(Context);
+
+            FV8Utils::SetPointer(MainIsolate, Iter->second.Get(Isolate).As<v8::Object>(), RELEASED_UOBJECT, 0);
+        }
         ObjectMap.erase(UEObject);
         UserObjectRetainer.Release(UEObject);
     }
+}
+
+void FJsEnvImpl::UnBind(UClass *Class, UObject *UEObject)
+{
+    UnBind(Class, UEObject, false);
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
@@ -1442,7 +1460,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         BindInfoMap.erase(IterBIM);
     }
 
-    UnBind(nullptr, (UObject*)ObjectBase);
+    UnBind(nullptr, (UObject*)ObjectBase, true);
 }
 
 void FJsEnvImpl::TryReleaseType(UStruct *Struct) 

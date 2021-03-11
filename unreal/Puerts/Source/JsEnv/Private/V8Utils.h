@@ -31,6 +31,9 @@ enum ArgType
     Object
 };
 
+#define RELEASED_UOBJECT ((UObject*)12)
+#define RELEASED_UOBJECT_MEMBER ((void*)12)
+
 class FV8Utils
 {
 public:
@@ -86,13 +89,18 @@ public:
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
         auto UEObject = reinterpret_cast<UObject*>(GetPoninter(Context, Value, Index));
-        return (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill()) ? UEObject : nullptr;
+        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())) ? UEObject : RELEASED_UOBJECT;
     }
 
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Object> Object, int Index = 0)
     {
         auto UEObject = reinterpret_cast<UObject*>(GetPoninter(Object, Index));
-        return (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill()) ? UEObject : nullptr;
+        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())) ? UEObject : RELEASED_UOBJECT;
+    }
+
+    FORCEINLINE static bool IsReleasedPtr(void *Ptr)
+    {
+        return RELEASED_UOBJECT_MEMBER == Ptr;
     }
 
     FORCEINLINE static v8::Local<v8::String> InternalString(v8::Isolate* Isolate, const FString& String)
