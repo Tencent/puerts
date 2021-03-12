@@ -87,7 +87,7 @@ public class JsEnv : ModuleRules
                 V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "arm64-v8a", "8.4.371.19");
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
             }
-            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 25)
+            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 25 && Target.Version.MinorVersion >= 22)
             {
                 // for arm7
                 string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armeabi-v7a", "7.4.288");
@@ -105,6 +105,19 @@ public class JsEnv : ModuleRules
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
+            } 
+            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 22) 
+            {
+                string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armeabi-v7a", "7.4.288");
+                PublicLibraryPaths.Add(V8LibraryPath);
+                V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "arm64-v8a", "7.4.288");
+                PublicLibraryPaths.Add(V8LibraryPath);
+                PublicAdditionalLibraries.Add("inspector");
+                PublicAdditionalLibraries.Add("v8_base");
+                PublicAdditionalLibraries.Add("v8_external_snapshot");
+                PublicAdditionalLibraries.Add("v8_libbase");
+                PublicAdditionalLibraries.Add("v8_libplatform");
+                PublicAdditionalLibraries.Add("v8_libsampler");
             }
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
