@@ -4,11 +4,17 @@
 #include "Kismet2/KismetReinstanceUtilities.h"
 #include "KismetCompilerMisc.h"
 
+#include "Runtime/Launch/Resources/Version.h"
+
 FTypeScriptCompilerContext::FTypeScriptCompilerContext(
 	UBlueprint* SourceSketch,
 	FCompilerResultsLog& MessageLog,
 	const FKismetCompilerOptions& CompilerOptions)
+#if (ENGINE_MAJOR_VERSION <= 4) & (ENGINE_MINOR_VERSION <= 21)
+	: Super(SourceSketch, MessageLog, CompilerOptions, nullptr)
+#else
 	: Super(SourceSketch, MessageLog, CompilerOptions)
+#endif
 {
 }
 
