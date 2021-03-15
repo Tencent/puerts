@@ -764,10 +764,7 @@ namespace Puerts.Editor
             workTypes.Add(type);
 
             var rawType = GetRawType(type);
-			
-			//移动到此处进行判断, 避免递归进入死循环
-            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
-			
+				
             if (type.IsGenericType)
             {
                 foreach (var gt in type.GetGenericArguments())
@@ -776,6 +773,7 @@ namespace Puerts.Editor
                 }
             }
             
+            if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
             if (!rawType.IsGenericParameter)
             {
                 refTypes.Add(rawType);
