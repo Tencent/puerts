@@ -57,16 +57,16 @@ namespace Puerts
             Init(loader, debugPort);
         }
         
-        public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
-        {
-            CheckLibVersion();
-            isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
-            if (isolate == IntPtr.Zero)
-            {
-                throw new InvalidProgramException("create jsengine fail");
-            }
-            Init(loader, -1);
-        }
+        //public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
+        //{
+        //    CheckLibVersion();
+        //    isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+        //    if (isolate == IntPtr.Zero)
+        //    {
+        //        throw new InvalidProgramException("create jsengine fail");
+        //    }
+        //    Init(loader, -1);
+        //}
         
         private void Init(ILoader loader, int debugPort)
         {

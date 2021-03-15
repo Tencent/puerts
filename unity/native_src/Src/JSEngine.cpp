@@ -168,38 +168,66 @@ namespace puerts
         }
     }
 
-    JSObject* JSEngine::CreateJSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
+    JSObject *JSEngine::CreateJSObject(v8::Isolate *InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
     {
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
-        // 这个记录id的方式，后续有空看看能不能用WeakMap实现。
-        auto maybeId = InObject->Get(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY));
-        if (!maybeId.IsEmpty()) {
-            auto id = maybeId.ToLocalChecked();
-            if (id->IsNumber()) {
-                int32_t index = id->Int32Value(InContext).ToChecked();
-                return JSObjects[index];
+
+        v8::Local<v8::Map> idmap;
+        if (JSObjectIdMap.Get(InIsolate).IsEmpty())
+        {
+            idmap = v8::Map::New(InIsolate);
+            JSObjectIdMap.Reset(InIsolate, idmap);
+        } 
+        else 
+        {
+            idmap = JSObjectIdMap.Get(InIsolate);
+        }
+        
+        // 从idmap尝试取出该jsObject的id
+        v8::Local<v8::Value> v8MapIndex = idmap->Get(InContext, InObject).ToLocalChecked();
+        JSObject* jsObject = nullptr;
+
+        // 如果存在该id，则从objectmap里取出该对象
+        if (!v8MapIndex.IsEmpty()) 
+        {
+            int32_t mapIndex = (int32_t)v8::Number::Cast(*v8MapIndex)->Value();
+            jsObject = JSObjectMap[mapIndex];
+        }
+
+        // 如果不存在id，则创建新对象
+        if (jsObject == nullptr) 
+        {
+            int32_t id = 0;
+            size_t freeIDSize = ObjectMapFreeIndex.size();
+            if (freeIDSize > 0) {
+                id = ObjectMapFreeIndex[freeIDSize - 1];
             }
-        }
-        JSObject* Object = nullptr;
-        for (int i = 0; i < JSObjects.size(); i++) {
-            if (!JSObjects[i]) {
-                Object = new JSObject(InIsolate, InContext, InObject, i);
-                JSObjects[i] = Object;
-                break;
+            else
+            {
+                id = JSObjectMap.size();
             }
+            jsObject = new JSObject(InIsolate, InContext, InObject, id);
+            JSObjectMap[id] = jsObject;
         }
-        if (!Object) {
-            Object = new JSObject(InIsolate, InContext, InObject, static_cast<int32_t>(JSObjects.size()));
-            JSObjects.push_back(Object);
-        }
-        InObject->Set(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY), v8::Integer::New(InIsolate, Object->Index));
-        return Object;
+
+        return jsObject;
     }
 
-    void JSEngine::ReleaseJSObject(JSObject* InObject)
+    void JSEngine::ReleaseJSObject(JSObject *InObject)
     {
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
-        JSObjects[InObject->Index] = nullptr;
+
+        v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InObject->Isolate);
+        v8::Isolate* isolate = InObject->Isolate;
+        idmap->Set(
+            InObject->Context.Get(isolate),
+            InObject->GObject.Get(isolate),
+            v8::Undefined(isolate)
+        );
+
+        JSObjectMap[InObject->Index] = nullptr;
+        
+        ObjectMapFreeIndex.push_back(InObject->Index);
         delete InObject;
     }
 
