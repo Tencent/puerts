@@ -36,11 +36,20 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
-        public JsEnv() : this(new DefaultLoader(), -1)
+        public JsEnv() : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
         {
         }
-        
-        private void CheckLibVersion()
+
+        public JsEnv(ILoader loader, int debugPort = -1) : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
+        {
+        }
+
+        public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
+            : this(loader, -1, externalRuntime, externalContext)
+        {
+        }
+
+        public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
             const int libVersionExpect = 10;
             int libVersion = PuertsDLL.GetLibVersion();
@@ -48,30 +57,21 @@ namespace Puerts
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-        }
-
-        public JsEnv(ILoader loader, int debugPort = -1)
-        {
-            CheckLibVersion();
-            isolate = PuertsDLL.CreateJSEngine();
-            Init(loader, debugPort);
-        }
-        
-        //public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
-        //{
-        //    CheckLibVersion();
-        //    isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
-        //    if (isolate == IntPtr.Zero)
-        //    {
-        //        throw new InvalidProgramException("create jsengine fail");
-        //    }
-        //    Init(loader, -1);
-        //}
-        
-        private void Init(ILoader loader, int debugPort)
-        {
             //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
+            if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
+            {
+                isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+            }
+            else
+            {
+                isolate = PuertsDLL.CreateJSEngine();
+            }
+            
+            if (isolate == IntPtr.Zero)
+            {
+                throw new InvalidProgramException("create jsengine fail");
+            }
             lock (jsEnvs)
             {
                 Idx = -1;
@@ -512,6 +512,7 @@ namespace Puerts
 #endif
             CheckLiveness();
             ReleasePendingJSFunctions();
+            ReleasePendingJSObjects();
             if (PuertsDLL.InspectorTick(isolate))
             {
 #if CSHARP_7_3_OR_NEWER
@@ -621,6 +622,7 @@ namespace Puerts
         }
 
         Queue<IntPtr> pendingReleaseFuncs = new Queue<IntPtr>();
+        Queue<IntPtr> pendingReleaseObjs = new Queue<IntPtr>();
 
         internal void addPenddingReleaseFunc(IntPtr nativeJsFuncPtr)
         {
@@ -629,6 +631,15 @@ namespace Puerts
             lock (pendingReleaseFuncs)
             {
                 pendingReleaseFuncs.Enqueue(nativeJsFuncPtr);
+            }
+        }
+        internal void addPenddingReleaseObject(IntPtr nativeJsObjPtr)
+        {
+            if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
+
+            lock (pendingReleaseObjs)
+            {
+                pendingReleaseObjs.Enqueue(nativeJsObjPtr);
             }
         }
 
@@ -642,6 +653,20 @@ namespace Puerts
                     if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
                     {
                         PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
+                    }
+                }
+            }
+        }
+        internal void ReleasePendingJSObjects()
+        {
+            lock (pendingReleaseObjs)
+            {
+                while (pendingReleaseObjs.Count > 0)
+                {
+                    IntPtr nativeJsObjPtr = pendingReleaseObjs.Dequeue();
+                    if (!JSObject.IsJsObjectAlive(nativeJsObjPtr))
+                    {
+                        PuertsDLL.ReleaseJSObject(isolate, nativeJsObjPtr);
                     }
                 }
             }

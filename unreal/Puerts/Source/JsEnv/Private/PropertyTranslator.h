@@ -30,9 +30,9 @@ public:
         return UEToJs(Isolate, Context, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
-    FORCEINLINE void JsToUEInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ContainerPtr, bool DeepCopy) const
+    FORCEINLINE bool JsToUEInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ContainerPtr, bool DeepCopy) const
     {
-        JsToUE(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
+        return JsToUE(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), DeepCopy);
     }
 
     FORCEINLINE void UEOutToJsInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, const void *ContainerPtr, bool PassByPointer) const
@@ -40,20 +40,20 @@ public:
         UEOutToJs(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
-    FORCEINLINE void JsToUEOutInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ContainerPtr, bool PassByPointer) const
+    FORCEINLINE bool JsToUEOutInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ContainerPtr, bool PassByPointer) const
     {
-        JsToUEOut(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
+        return JsToUEOut(Isolate, Context, Value, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
     }
 
     virtual v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const = 0;
 
-    virtual void JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const = 0;
+    virtual bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const = 0;
 
     virtual void Cleanup(void *ContainerPtr) const {}
 
     virtual void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, const void *ValuePtr, bool PassByPointer) const {} 
 
-    virtual void JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const {}
+    virtual bool JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const { return true; }
 
     virtual bool IsOut() const { return false; }
 

@@ -304,7 +304,7 @@ namespace Puerts
 
         private IntPtr nativeJsObjectPtr;
 
-        internal IntPtr getJsObjPtr() {
+        public IntPtr getJsObjPtr() {
             return nativeJsObjectPtr;
         }
 
@@ -314,16 +314,32 @@ namespace Puerts
             this.jsEnv = jsEnv;
         }
 
-        private static Dictionary<IntPtr, WeakReference> nativePtrToGenericDelegate = new Dictionary<IntPtr, WeakReference>();
+        private static Dictionary<IntPtr, WeakReference> nativePtrToJSObject = new Dictionary<IntPtr, WeakReference>();
         public static JSObject GetOrCreateJSObject(IntPtr ptr, JsEnv jsEnv) {
             WeakReference maybeOne;
-            if (nativePtrToGenericDelegate.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive)
+            if (nativePtrToJSObject.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive)
             {
-                return maybeOne.Target as JSObject;
+               return maybeOne.Target as JSObject;
             }
             JSObject jsObject = new JSObject(ptr, jsEnv);
-            nativePtrToGenericDelegate[ptr] = new WeakReference(jsObject);
+            nativePtrToJSObject[ptr] = new WeakReference(jsObject);
             return jsObject;
+        }
+
+        internal static bool IsJsObjectAlive(IntPtr ptr)
+        {
+            WeakReference maybeOne;
+            return nativePtrToJSObject.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive;
+        }
+
+        ~JSObject() {
+#if THREAD_SAFE
+            lock(jsEnv) {
+#endif
+            jsEnv.addPenddingReleaseObject(nativeJsObjectPtr);
+#if THREAD_SAFE
+            }
+#endif
         }
     }
 

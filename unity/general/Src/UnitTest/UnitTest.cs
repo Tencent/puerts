@@ -1,4 +1,5 @@
-﻿/*
+﻿using System.Security.AccessControl;
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -15,7 +16,7 @@ namespace Puerts.UnitTest
     public class TxtLoader : ILoader
     {
         private string root = Path.Combine(
-            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:\\\\", ""),
+            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
             "../../Assets/Puerts/Src/Resources"
         );
 
@@ -90,6 +91,23 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
 
             Assert.True(ret);
+        }
+
+        [Test]
+        public void JSObject() 
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var ret = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let jsObj = {'a': 1};
+                let obj = new CS.Puerts.UnitTest.JsObjectTest();
+                JSON.stringify(obj.passThroughJSObject(jsObj))
+            ");
+            Assert.AreEqual("{\"a\":1}", ret);
+            ret = jsEnv.Eval<string>(@"
+                (obj.passThroughJSObject(jsObj) == obj.passThroughJSObject(jsObj)).toString();
+            ");
+            Assert.AreEqual("true", ret);
         }
 
         [Test]

@@ -94,7 +94,12 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     UObject * CallObject = BindObject ? BindObject : FV8Utils::GetUObject(Info.Holder());
     if (!CallObject)
     {
-        FV8Utils::ThrowException(Isolate, "invalid object");
+        FV8Utils::ThrowException(Isolate, "access a null object");
+        return;
+    }
+    if (FV8Utils::IsReleasedPtr(CallObject))
+    {
+        FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
     UFunction *CallFunction = !IsInterfaceFunction ? 
@@ -108,7 +113,10 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Params) CallFunction->InitializeStruct(Params);
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false);
+        if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
+        {
+            return;
+        }
     }
 
     CallObject->UObject::ProcessEvent(CallFunction, Params);
@@ -137,7 +145,10 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Params) Function->InitializeStruct(Params);
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false);
+        if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
+        {
+            return;
+        }
     }
 
     OnCall(Params);
@@ -274,6 +285,18 @@ void FExtensionMethodTranslator::CallExtension(const v8::FunctionCallbackInfo<v8
     
 void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
+    UObject * CallObject = FV8Utils::GetUObject(Info.Holder());
+    if (!CallObject)
+    {
+        FV8Utils::ThrowException(Isolate, "access a null object");
+        return;
+    }
+    if (FV8Utils::IsReleasedPtr(CallObject))
+    {
+        FV8Utils::ThrowException(Isolate, "access a invalid object");
+        return;
+    }
+
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void *Params = Buffer;
 #else
@@ -286,7 +309,10 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
 
     for (int i = 1; i < Arguments.size(); ++i)
     {
-        Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false);
+        if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
+        {
+            return;
+        }
     }
 
     BindObject->UObject::ProcessEvent(Function, Params);

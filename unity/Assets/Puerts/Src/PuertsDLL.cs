@@ -387,6 +387,9 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseJSFunction(IntPtr isolate, IntPtr function);
 
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReleaseJSObject(IntPtr isolate, IntPtr obj);
+
         public static string GetFunctionLastExceptionInfo(IntPtr function)
         {
             int strlen;
@@ -484,6 +487,11 @@ namespace Puerts
         public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern double __DebugGetJSObjectMapSize(IntPtr isolate);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern double __DebugGetJSObjectFreeIDListSize(IntPtr isolate);
     }
 }
 

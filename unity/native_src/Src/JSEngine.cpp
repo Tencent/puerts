@@ -184,13 +184,15 @@ namespace puerts
         }
         
         // 从idmap尝试取出该jsObject的id
-        v8::Local<v8::Value> v8MapIndex = idmap->Get(InContext, InObject).ToLocalChecked();
+        v8::Local<v8::Value> v8ObjectIndex = idmap->Get(InContext, InObject).ToLocalChecked();
         JSObject* jsObject = nullptr;
 
+        // PLog(puerts::Log, v8ObjectIndex->IsNullOrUndefined() ? "[PuertsDLL]v8ObjectIndex isnull": "[PuertsDLL]v8ObjectIndex notnull");
+
         // 如果存在该id，则从objectmap里取出该对象
-        if (!v8MapIndex.IsEmpty()) 
+        if (!v8ObjectIndex->IsNullOrUndefined()) 
         {
-            int32_t mapIndex = (int32_t)v8::Number::Cast(*v8MapIndex)->Value();
+            int32_t mapIndex = (int32_t)v8::Number::Cast(*v8ObjectIndex)->Value();
             jsObject = JSObjectMap[mapIndex];
         }
 
@@ -208,6 +210,7 @@ namespace puerts
             }
             jsObject = new JSObject(InIsolate, InContext, InObject, id);
             JSObjectMap[id] = jsObject;
+            idmap->Set(InContext, InObject, v8::Number::New(InIsolate, id));
         }
 
         return jsObject;
@@ -215,14 +218,20 @@ namespace puerts
 
     void JSEngine::ReleaseJSObject(JSObject *InObject)
     {
+        // PLog(puerts::Log, std::to_string((long)InObject));
+        v8::Isolate* Isolate = InObject->Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = InObject->Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
 
         v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InObject->Isolate);
-        v8::Isolate* isolate = InObject->Isolate;
         idmap->Set(
-            InObject->Context.Get(isolate),
-            InObject->GObject.Get(isolate),
-            v8::Undefined(isolate)
+            InObject->Context.Get(Isolate),
+            InObject->GObject.Get(Isolate),
+            v8::Undefined(Isolate)
         );
 
         JSObjectMap[InObject->Index] = nullptr;

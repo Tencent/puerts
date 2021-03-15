@@ -461,6 +461,14 @@ V8_EXPORT void ReleaseJSFunction(v8::Isolate* Isolate, JSFunction *Function)
         JsEngine->ReleaseJSFunction(Function);
     }
 }
+V8_EXPORT void ReleaseJSObject(v8::Isolate* Isolate, puerts::JSObject *Object)
+{
+    if (Isolate && Object)
+    {
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        JsEngine->ReleaseJSObject(Object);
+    }
+}
 
 V8_EXPORT void ThrowException(v8::Isolate* Isolate, const char * Message)
 {

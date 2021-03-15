@@ -85,7 +85,7 @@ let csharpKeywords = {};
 });
 
 function UnK(identifier) {
-    return csharpKeywords[identifier] || identifier
+    return csharpKeywords.hasOwnProperty(identifier) ? csharpKeywords[identifier] : identifier;
 }
 
 function getArgument(typeInfo, argHelper, idx) {

@@ -85,15 +85,15 @@ void FPuertsModule::OnUObjectArrayShutdown()
 #if WITH_EDITOR
 void FPuertsModule::EndPIE(bool bIsSimulating)
 {
-    //if (Enabled)
-    //{
+    if (Enabled)
+    {
         //UE_LOG(LogTemp, Error, TEXT("Reload All Module "));
         //JsEnv->ReloadModule(NAME_None);
 
-        //JsEnv.Reset();
-        //JsEnv = MakeShared<puerts::FJsEnv>();
-        //JsEnv->RebindJs();
-    //}
+        JsEnv.Reset();
+        JsEnv = MakeShared<puerts::FJsEnv>();
+        JsEnv->RebindJs();
+    }
 }
 #endif
 
