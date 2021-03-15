@@ -760,6 +760,9 @@ namespace Puerts.Editor
 
         static void AddRefType(HashSet<Type> workTypes, HashSet<Type> refTypes, Type type)
         {
+            if(workTypes.Contains(type)) return;
+            workTypes.Add(type);
+
             var rawType = GetRawType(type);
 			
 			//移动到此处进行判断, 避免递归进入死循环
