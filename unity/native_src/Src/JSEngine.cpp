@@ -168,6 +168,41 @@ namespace puerts
         }
     }
 
+    JSObject* JSEngine::CreateJSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
+    {
+        std::lock_guard<std::mutex> guard(JSObjectsMutex);
+        // 这个记录id的方式，后续有空看看能不能用WeakMap实现。
+        auto maybeId = InObject->Get(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY));
+        if (!maybeId.IsEmpty()) {
+            auto id = maybeId.ToLocalChecked();
+            if (id->IsNumber()) {
+                int32_t index = id->Int32Value(InContext).ToChecked();
+                return JSObjects[index];
+            }
+        }
+        JSObject* Object = nullptr;
+        for (int i = 0; i < JSObjects.size(); i++) {
+            if (!JSObjects[i]) {
+                Object = new JSObject(InIsolate, InContext, InObject, i);
+                JSObjects[i] = Object;
+                break;
+            }
+        }
+        if (!Object) {
+            Object = new JSObject(InIsolate, InContext, InObject, static_cast<int32_t>(JSObjects.size()));
+            JSObjects.push_back(Object);
+        }
+        InObject->Set(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY), v8::Integer::New(InIsolate, Object->Index));
+        return Object;
+    }
+
+    void JSEngine::ReleaseJSObject(JSObject* InObject)
+    {
+        std::lock_guard<std::mutex> guard(JSObjectsMutex);
+        JSObjects[InObject->Index] = nullptr;
+        delete InObject;
+    }
+
     JSFunction* JSEngine::CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);

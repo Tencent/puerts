@@ -75,9 +75,6 @@ namespace Puerts
         public static extern IntPtr CreateJSEngine();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateJSEngineWithExternalEnv(IntPtr externalRuntime, IntPtr externalContext);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyJSEngine(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -254,6 +251,9 @@ namespace Puerts
         public static extern void ReturnFunction(IntPtr isolate, IntPtr info, IntPtr JSFunction);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReturnJSObject(IntPtr isolate, IntPtr info, IntPtr JSObject);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArgumentValue(IntPtr info, int index);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -304,6 +304,9 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetFunctionFromValue(IntPtr isolate, IntPtr value, bool isByRef);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetJSObjectFromValue(IntPtr isolate, IntPtr value, bool isByRef);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetNumberToOutValue(IntPtr isolate, IntPtr value, double number);
@@ -373,6 +376,9 @@ namespace Puerts
         public static extern void PushJSFunctionForJSFunction(IntPtr function, IntPtr JSFunction);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PushJSObjectForJSFunction(IntPtr function, IntPtr JSObject);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr InvokeJSFunction(IntPtr function, bool hasResult);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -434,6 +440,9 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetFunctionFromResult(IntPtr resultInfo);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetJSObjectFromResult(IntPtr resultInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ResetResult(IntPtr resultInfo);

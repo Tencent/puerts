@@ -106,6 +106,10 @@ public:
 
     void ReleaseJSFunction(JSFunction* InFunction);
 
+    JSObject* CreateJSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject);
+
+    void ReleaseJSObject(JSObject* InObject);
+
     void CreateInspector(int32_t Port);
 
     void DestroyInspector();
@@ -138,9 +142,14 @@ private:
 
     std::map<void*, v8::UniquePersistent<v8::Value>> ObjectMap;
 
+    // 把已生成的JSFunction存起来，让重复的JSFunction传进来的时候可以复用
     std::vector<JSFunction*> JSFunctions;
 
+    std::vector<JSObject*> JSObjects;
+
     std::mutex JSFunctionsMutex;
+
+    std::mutex JSObjectsMutex;
 
     V8Inspector* Inspector;
 

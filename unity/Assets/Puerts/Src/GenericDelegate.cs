@@ -298,6 +298,35 @@ namespace Puerts
         }
     }
 
+    public class JSObject
+    {
+        private readonly JsEnv jsEnv;
+
+        private IntPtr nativeJsObjectPtr;
+
+        internal IntPtr getJsObjPtr() {
+            return nativeJsObjectPtr;
+        }
+
+        internal JSObject(IntPtr nativeJsObjectPtr, JsEnv jsEnv)
+        {
+            this.nativeJsObjectPtr = nativeJsObjectPtr;
+            this.jsEnv = jsEnv;
+        }
+
+        private static Dictionary<IntPtr, WeakReference> nativePtrToGenericDelegate = new Dictionary<IntPtr, WeakReference>();
+        public static JSObject GetOrCreateJSObject(IntPtr ptr, JsEnv jsEnv) {
+            WeakReference maybeOne;
+            if (nativePtrToGenericDelegate.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive)
+            {
+                return maybeOne.Target as JSObject;
+            }
+            JSObject jsObject = new JSObject(ptr, jsEnv);
+            nativePtrToGenericDelegate[ptr] = new WeakReference(jsObject);
+            return jsObject;
+        }
+    }
+
     //泛型适配器
     public class GenericDelegate
     {

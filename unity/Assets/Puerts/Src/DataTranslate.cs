@@ -51,6 +51,7 @@ namespace Puerts
             generalGetterMap[typeof(DateTime)] = DateTranslator;
             generalGetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
             generalGetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
+            generalGetterMap[typeof(JSObject)] = JSObjectTranslator;
             generalGetterMap[typeof(object)] = AnyTranslator;
             //special type
             //translatorMap[typeof(LuaTable)] = getLuaTable;
@@ -134,6 +135,12 @@ namespace Puerts
             return getValueApi.GetArrayBuffer(isolate, value, isByRef);
         }
 
+        private object JSObjectTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        {
+            IntPtr DLLJSObjectPtr = getValueApi.GetJSObject(isolate, value, isByRef);
+            return JSObject.GetOrCreateJSObject(DLLJSObjectPtr, jsEnv);
+        }
+
         private object GenericDelegateTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
@@ -161,8 +168,10 @@ namespace Puerts
                     return DateTranslator(isolate, getValueApi, value, isByRef);
                 case JsValueType.ArrayBuffer:
                     return getValueApi.GetArrayBuffer(isolate, value, isByRef);
-                //case JsValueType.Function:
-                //case JsValueType.JsObject:
+                case JsValueType.Function:
+                    return getValueApi.GetFunction(isolate, value, isByRef);
+                case JsValueType.JsObject:
+                    return getValueApi.GetJSObject(isolate, value, isByRef);
                 case JsValueType.NativeObject:
                     var typeId = getValueApi.GetTypeId(isolate, value, isByRef);
                     if (!typeRegister.IsArray(typeId))
@@ -173,11 +182,11 @@ namespace Puerts
                             return generalGetterMap[objType](isolate, getValueApi, value, isByRef);
                         }
                     }
-                    var objPtr = getValueApi.GetObject(isolate, value, isByRef);
+                    var objPtr = getValueApi.GetNativeObject(isolate, value, isByRef);
                     var result = objectPool.Get(objPtr.ToInt32());
 
                     var typedValueResult = result as TypedValue;
-                    if (typedValueResult != null) 
+                    if (typedValueResult != null)
                     {
                         return typedValueResult.Target;
                     }
@@ -211,9 +220,9 @@ namespace Puerts
         {
             GeneralGetter fixTypeGetter = (IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
-                if (getValueApi.GetJsValueType(isolate, value, isByRef)  == JsValueType.NativeObject)
+                if (getValueApi.GetJsValueType(isolate, value, isByRef) == JsValueType.NativeObject)
                 {
-                    var objPtr = getValueApi.GetObject(isolate, value, isByRef);
+                    var objPtr = getValueApi.GetNativeObject(isolate, value, isByRef);
                     var obj = objectPool.Get(objPtr.ToInt32());
                     return (obj != null && type.IsAssignableFrom(obj.GetType())) ? obj : null;
                 }
@@ -331,45 +340,49 @@ namespace Puerts
                 return GetJsTypeMask(Enum.GetUnderlyingType(type));
             }
 
-            JsValueType mash = 0;
+            JsValueType mask = 0;
             if (primitiveTypeMap.ContainsKey(type))
             {
-                mash = primitiveTypeMap[type];
+                mask = primitiveTypeMap[type];
             }
             else if (type.IsArray)
             {
-                mash = JsValueType.NativeObject | JsValueType.NullOrUndefined;
+                mask = JsValueType.NativeObject | JsValueType.NullOrUndefined;
             }
             else if (type == typeof(DateTime))
             {
-                mash = JsValueType.Date;
+                mask = JsValueType.Date;
             }
             else if (type == typeof(ArrayBuffer))
             {
-                mash = JsValueType.ArrayBuffer;
+                mask = JsValueType.ArrayBuffer;
+            }
+            else if (type == typeof(JSObject))
+            {
+                mask = JsValueType.JsObject | JsValueType.NullOrUndefined;
             }
             else if (type == typeof(GenericDelegate))
             {
-                mash = JsValueType.Function | JsValueType.NativeObject | JsValueType.NullOrUndefined;
+                mask = JsValueType.Function | JsValueType.NativeObject | JsValueType.NullOrUndefined;
             }
             else if (!type.IsAbstract() && typeof(Delegate).IsAssignableFrom(type))
             {
-                mash = JsValueType.Function | JsValueType.NativeObject | JsValueType.NullOrUndefined;
+                mask = JsValueType.Function | JsValueType.NativeObject | JsValueType.NullOrUndefined;
             }
             else if (type.IsValueType())
             {
-                mash = JsValueType.NativeObject/* | JsValueType.JsObject*/; //TODO: 支持js对象到C#对象静默转换
+                mask = JsValueType.NativeObject/* | JsValueType.JsObject*/; //TODO: 支持js对象到C#对象静默转换
             }
             else
             {
-                mash = JsValueType.NativeObject | JsValueType.NullOrUndefined;
+                mask = JsValueType.NativeObject | JsValueType.NullOrUndefined;
                 /*if ((type.IsClass() && type.GetConstructor(System.Type.EmptyTypes) != null))
                 {
                     mash = mash | JsValueType.JsObject;
                 }*/
             }
 
-            return mash;
+            return mask;
         }
     }
 
@@ -405,6 +418,7 @@ namespace Puerts
             generalSetterMap[typeof(DateTime)] = DateTranslator;
             generalSetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
             generalSetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
+            generalSetterMap[typeof(JSObject)] = JSObjectTranslator;
             generalSetterMap[typeof(void)] = VoidTranslator;
             generalSetterMap[typeof(object)] = AnyTranslator;
         }
@@ -494,6 +508,11 @@ namespace Puerts
             setValueApi.SetFunction(isolate, holder, ((GenericDelegate)obj).getJsFuncPtr());
         }
 
+        private static void JSObjectTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        {
+            setValueApi.SetJSObject(isolate, holder, ((JSObject)obj).getJsObjPtr());
+        }
+
         internal void AnyTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
             if (obj == null)
@@ -507,7 +526,7 @@ namespace Puerts
                 {
                     int typeId = typeRegister.GetTypeId(isolate, realType);
                     int objectId = objectPool.FindOrAddObject(obj);
-                    setValueApi.SetObject(isolate, holder, typeId, new IntPtr(objectId));
+                    setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                 }
                 else
                 {
@@ -530,7 +549,7 @@ namespace Puerts
                     {
                         int typeId = typeRegister.GetTypeId(isolate, obj.GetType());
                         int objectId = objectPool.AddBoxedValueType(obj);
-                        setValueApi.SetObject(isolate, holder, typeId, new IntPtr(objectId));
+                        setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
                 };
             }
@@ -546,7 +565,7 @@ namespace Puerts
                     {
                         int typeId = typeRegister.GetTypeId(isolate, obj.GetType());
                         int objectId = objectPool.FindOrAddObject(obj);
-                        setValueApi.SetObject(isolate, holder, typeId, new IntPtr(objectId));
+                        setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
                 };
             }

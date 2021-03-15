@@ -43,7 +43,9 @@ namespace Puerts
 
     public interface ISetValueToJs
     {
-        void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self);
+        void SetNativeObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self);
+
+        void SetJSObject(IntPtr isolate, IntPtr holder, IntPtr JSObject);
 
         void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction);
 
@@ -76,9 +78,11 @@ namespace Puerts
 
         long GetBigInt(IntPtr isolate, IntPtr holder, bool isByRef);
 
-        IntPtr GetObject(IntPtr isolate, IntPtr holder, bool isByRef);
+        IntPtr GetNativeObject(IntPtr isolate, IntPtr holder, bool isByRef);
 
         int GetTypeId(IntPtr isolate, IntPtr holder, bool isByRef);
+
+        IntPtr GetJSObject(IntPtr isolate, IntPtr holder, bool isByRef);
 
         IntPtr GetFunction(IntPtr isolate, IntPtr holder, bool isByRef);
 
@@ -107,6 +111,11 @@ namespace Puerts
             return PuertsDLL.GetFunctionFromResult(holder);
         }
 
+        public IntPtr GetJSObject(IntPtr isolate, IntPtr holder, bool isByRef)
+        {
+            return PuertsDLL.GetJSObjectFromResult(holder);
+        }
+
         public JsValueType GetJsValueType(IntPtr isolate, IntPtr holder, bool isByRef)
         {
             return PuertsDLL.GetResultType(holder);
@@ -117,7 +126,7 @@ namespace Puerts
             return PuertsDLL.GetNumberFromResult(holder);
         }
 
-        public IntPtr GetObject(IntPtr isolate, IntPtr holder, bool isByRef)
+        public IntPtr GetNativeObject(IntPtr isolate, IntPtr holder, bool isByRef)
         {
             return PuertsDLL.GetObjectFromResult(holder);
         }
@@ -162,6 +171,11 @@ namespace Puerts
             return PuertsDLL.GetFunctionFromValue(isolate, holder, isByRef);
         }
 
+        public IntPtr GetJSObject(IntPtr isolate, IntPtr holder, bool isByRef)
+        {
+            return PuertsDLL.GetJSObjectFromValue(isolate, holder, isByRef);
+        }
+
         public JsValueType GetJsValueType(IntPtr isolate, IntPtr holder, bool isByRef)
         {
             return PuertsDLL.GetJsValueType(isolate, holder, isByRef);
@@ -172,7 +186,7 @@ namespace Puerts
             return PuertsDLL.GetNumberFromValue(isolate, holder, isByRef);
         }
 
-        public IntPtr GetObject(IntPtr isolate, IntPtr holder, bool isByRef)
+        public IntPtr GetNativeObject(IntPtr isolate, IntPtr holder, bool isByRef)
         {
             return PuertsDLL.GetObjectFromValue(isolate, holder, isByRef);
         }
@@ -234,7 +248,7 @@ namespace Puerts
             PuertsDLL.ReturnNumber(isolate, holder, number);
         }
 
-        public void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
+        public void SetNativeObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
         {
             PuertsDLL.ReturnObject(isolate, holder, classID, self);
         }
@@ -242,6 +256,11 @@ namespace Puerts
         public void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction)
         {
             PuertsDLL.ReturnFunction(isolate, holder, JSFunction);
+        }
+
+        public void SetJSObject(IntPtr isolate, IntPtr holder, IntPtr JSObject)
+        {
+            PuertsDLL.ReturnJSObject(isolate, holder, JSObject);
         }
 
         public void SetString(IntPtr isolate, IntPtr holder, string str)
@@ -289,14 +308,19 @@ namespace Puerts
             PuertsDLL.SetNumberToOutValue(isolate, holder, number);
         }
 
-        public void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
+        public void SetNativeObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
         {
             PuertsDLL.SetObjectToOutValue(isolate, holder, classID, self);
         }
 
         public void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction)
         {
-            throw new Exception("not implement yet");
+            throw new Exception("not implemented yet");
+        }
+
+        public void SetJSObject(IntPtr isolate, IntPtr holder, IntPtr JSObject)
+        {
+            throw new Exception("not implemented yet");
         }
 
         public void SetString(IntPtr isolate, IntPtr holder, string str)
@@ -345,7 +369,7 @@ namespace Puerts
             PuertsDLL.PushNumberForJSFunction(holder, number);
         }
 
-        public void SetObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
+        public void SetNativeObject(IntPtr isolate, IntPtr holder, int classID, IntPtr self)
         {
             PuertsDLL.PushObjectForJSFunction(holder, classID, self);
         }
@@ -353,6 +377,11 @@ namespace Puerts
         public void SetFunction(IntPtr isolate, IntPtr holder, IntPtr JSFunction)
         {
             PuertsDLL.PushJSFunctionForJSFunction(holder, JSFunction);
+        }
+
+        public void SetJSObject(IntPtr isolate, IntPtr holder, IntPtr JSObject)
+        {
+            PuertsDLL.PushJSObjectForJSFunction(holder, JSObject);
         }
 
         public void SetString(IntPtr isolate, IntPtr holder, string str)
