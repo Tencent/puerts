@@ -67,13 +67,19 @@ var global = global || (function () { return this; }());
             localModuleCache[moduleName] = m;
             moduleCache[key] = m;
             let sid = addModule(m);
-            if (fullPath.endsWith("package.json")) {
+            if (fullPath.endsWith(".json")) {
                 let packageConfigure = JSON.parse(script);
-                let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
-                let tmpRequire = genRequire(fullDirInJs);
-                let r = tmpRequire(packageConfigure.main);
-                tmpModuleStorage[sid] = undefined;
-                return r;
+                if (fullPath.endsWith("package.json") && packageConfigure.main) {
+                    let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
+                    let tmpRequire = genRequire(fullDirInJs);
+                    let r = tmpRequire(packageConfigure.main);
+                    tmpModuleStorage[sid] = undefined;
+                    return r;
+                } else {
+                    tmpModuleStorage[sid] = undefined;
+                    m.exports = packageConfigure;
+                    return packageConfigure;
+                }
             } else {
                 executeModule(fullPath, script, debugPath, sid);
                 tmpModuleStorage[sid] = undefined;

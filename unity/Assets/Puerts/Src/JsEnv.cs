@@ -36,11 +36,20 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
-        public JsEnv() : this(new DefaultLoader(), -1)
+        public JsEnv() : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
         {
         }
-        
-        private void CheckLibVersion()
+
+        public JsEnv(ILoader loader, int debugPort = -1) : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
+        {
+        }
+
+        public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
+            : this(loader, -1, externalRuntime, externalContext)
+        {
+        }
+
+        public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
             const int libVersionExpect = 10;
             int libVersion = PuertsDLL.GetLibVersion();
@@ -48,30 +57,21 @@ namespace Puerts
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-        }
-
-        public JsEnv(ILoader loader, int debugPort = -1)
-        {
-            CheckLibVersion();
-            isolate = PuertsDLL.CreateJSEngine();
-            Init(loader, debugPort);
-        }
-        
-        public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
-        {
-            CheckLibVersion();
-            isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+            //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            this.loader = loader;
+            if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
+            {
+                isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+            }
+            else
+            {
+                isolate = PuertsDLL.CreateJSEngine();
+            }
+            
             if (isolate == IntPtr.Zero)
             {
                 throw new InvalidProgramException("create jsengine fail");
             }
-            Init(loader, -1);
-        }
-        
-        private void Init(ILoader loader, int debugPort)
-        {
-            //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
-            this.loader = loader;
             lock (jsEnvs)
             {
                 Idx = -1;
