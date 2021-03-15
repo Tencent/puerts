@@ -38,6 +38,8 @@ public:
 
     virtual void RebindJs() = 0;
 
+    virtual FString CurrentStackTrace() = 0;
+
     virtual ~IJsEnv() {}
 };
 
@@ -61,6 +63,8 @@ public:
     void ReloadModule(FName ModuleName);
 
     void RebindJs();
+
+    FString CurrentStackTrace();
 
 private:
     std::unique_ptr<IJsEnv> GameScript;
