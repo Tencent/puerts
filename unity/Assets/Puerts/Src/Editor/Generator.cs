@@ -758,7 +758,7 @@ namespace Puerts.Editor
             return false;
         }
 
-        static void AddRefType(HashSet<Type> refTypes, Type type)
+        static void AddRefType(HashSet<Type> workTypes, HashSet<Type> refTypes, Type type)
         {
             var rawType = GetRawType(type);
 			
@@ -769,7 +769,7 @@ namespace Puerts.Editor
             {
                 foreach (var gt in type.GetGenericArguments())
                 {
-                    AddRefType(refTypes, gt);
+                    AddRefType(workTypes, refTypes, gt);
                 }
             }
             
@@ -781,17 +781,17 @@ namespace Puerts.Editor
             if (IsDelegate(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
             {
                 MethodInfo delegateMethod = type.GetMethod("Invoke");
-                AddRefType(refTypes, delegateMethod.ReturnType);
+                AddRefType(workTypes, refTypes, delegateMethod.ReturnType);
                 foreach (var pinfo in delegateMethod.GetParameters())
                 {
-                    AddRefType(refTypes, pinfo.ParameterType);
+                    AddRefType(workTypes, refTypes, pinfo.ParameterType);
                 }
             }
 
             var baseType = type.BaseType;
             while (baseType != null)
             {
-                AddRefType(refTypes, baseType);
+                AddRefType(workTypes, refTypes, baseType);
                 baseType = baseType.BaseType;
             }
             
@@ -894,36 +894,37 @@ namespace Puerts.Editor
         {
             HashSet<Type> genTypeSet = new HashSet<Type>();
 
+            HashSet<Type> workTypes = new HashSet<Type>();
             HashSet<Type> refTypes = new HashSet<Type>();
 
             foreach (var type in types)
             {
-                AddRefType(refTypes, type);
+                AddRefType(workTypes, refTypes, type);
                 var defType = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
                 if (!genTypeSet.Contains(defType)) genTypeSet.Add(defType);
                 foreach (var field in type.GetFields(Flags))
                 {
-                    AddRefType(refTypes, field.FieldType);
+                    AddRefType(workTypes, refTypes, field.FieldType);
                 }
 
                 foreach(var method in type.GetMethods(Flags))
                 {
-                    AddRefType(refTypes, method.ReturnType);
+                    AddRefType(workTypes, refTypes, method.ReturnType);
                     foreach(var pinfo in method.GetParameters())
                     {
-                        AddRefType(refTypes, pinfo.ParameterType);
+                        AddRefType(workTypes, refTypes, pinfo.ParameterType);
                     }
                 }
                 foreach(var constructor in type.GetConstructors())
                 {
                     foreach (var pinfo in constructor.GetParameters())
                     {
-                        AddRefType(refTypes, pinfo.ParameterType);
+                        AddRefType(workTypes, refTypes, pinfo.ParameterType);
                     }
                 }
             }
 
-            if (!genTypeSet.Contains(typeof(Array)) && !refTypes.Contains(typeof(Array))) AddRefType(refTypes, typeof(Array));
+            if (!genTypeSet.Contains(typeof(Array)) && !refTypes.Contains(typeof(Array))) AddRefType(workTypes, refTypes, typeof(Array));
 
             var tsTypeGenInfos = new Dictionary<string, TsTypeGenInfo>();
             foreach (var t in refTypes.Distinct())
