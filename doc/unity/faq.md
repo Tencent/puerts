@@ -52,3 +52,41 @@ sudo xattr -r -d com.apple.quarantine puerts.bundle
 
 unity默认会进行代码剪裁，简而言之unity发现某引擎api，系统api没有被业务c#使用，就不编译倒cpp。
 解决办法：1、对要调用的api生成wrap代码，这样c#里头就有了引用；2、通过link.xml告知unity别剪裁，link.xml的配置请参考unity官方文档。
+
+## source-map-support支持
+安装模块
+```
+npm install source-map-support --save-dev
+```
+然后在js起始, 执行如下代码:
+``` javascript
+var csharp = require("csharp");
+var puerts = require("puerts");
+puerts.registerBuildinModule("path", {
+    dirname(path) {
+        return csharp.System.IO.Path.GetDirectoryName(path);
+    },
+    resolve(dir, url) {
+        url = url.replace(/\\/g, "/");
+        while (url.startsWith("../")) {
+            dir = csharp.System.IO.Path.GetDirectoryName(dir);
+            url = url.substr(3);
+        }
+        return csharp.System.IO.Path.Combine(dir, url);
+    },
+});
+puerts.registerBuildinModule("fs", {
+    existsSync(path) {
+        return csharp.System.IO.File.Exists(path);
+    },
+    readFileSync(path) {
+        return csharp.System.IO.File.ReadAllText(path);
+    },
+});
+(function () {
+    let global = this ?? globalThis;
+    global["Buffer"] = global["Buffer"] ?? {};
+})();
+require('source-map-support').install();
+```
+注: source-map-support是nodejs模块, 此处手动创建path和fs替代模块.
