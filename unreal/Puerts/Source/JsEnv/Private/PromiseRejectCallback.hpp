@@ -58,9 +58,10 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
+//TODO: 后续本文件应该换个名字
+#ifndef WITH_QUICKJS
 std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
-#ifndef WITH_QUICKJS
     std::ostringstream stm;
     for (int i = 0; i < InStack->GetFrameCount() - 1; i++)
     {
@@ -91,9 +92,7 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
         }
     }
     return stm.str();
-#else
-    return "";
-#endif
 }
+#endif
 
 }
