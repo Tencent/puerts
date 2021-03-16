@@ -30,19 +30,13 @@ public class TxtLoader : ILoader
 
 public class PuertsTest
 {
-    public static Puerts.JSObject JSObjectTest(Puerts.JSObject obj)
-    {
-        return obj;
-    }
-
     public static void Main()
     {
-        var jsEnv = new JsEnv(new TxtLoader(), 9222);
-        jsEnv.WaitDebugger();
+        var jsEnv = new JsEnv(new TxtLoader());
         jsEnv.Eval(@"
-            const CS = require('csharp');
-            console.log(CS.PuertsTest.JSObjectTest({a: 1}));
-        ");
+                const CS = require('csharp');
+                CS.System.Console.WriteLine('hello world');
+            ");
 
         jsEnv.Dispose();
     }
