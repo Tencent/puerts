@@ -115,6 +115,8 @@ public:
 
     virtual void RebindJs() override;
 
+    virtual FString CurrentStackTrace() override;
+
     void ReloadJsModule(FName ModuleName);
 
     virtual void ReloadModule(FName ModuleName) override;
@@ -469,6 +471,11 @@ void FJsEnv::TryBindJs(const class UObjectBase *InObject)
 void FJsEnv::RebindJs()
 {
     GameScript->RebindJs();
+}
+
+FString FJsEnv::CurrentStackTrace()
+{
+    return GameScript->CurrentStackTrace();
 }
 
 void FJsEnv::ReloadModule(FName ModuleName)
@@ -1218,6 +1225,21 @@ void FJsEnvImpl::RebindJs()
             }
         }
     }
+}
+
+FString FJsEnvImpl::CurrentStackTrace()
+{
+#ifndef WITH_QUICKJS
+    v8::Isolate* Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+
+    std::string StackTrace = StackTraceToString(Isolate,
+        v8::StackTrace::CurrentStackTrace(Isolate, 10, v8::StackTrace::kDetailed));
+    return UTF8_TO_TCHAR(StackTrace.c_str());
+#else
+    return TEXT("");
+#endif
 }
 
 void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) // Just call in FClassReflection::Call, new a Object
