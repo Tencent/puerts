@@ -11,5 +11,5 @@ mkdir -p ../Assets/Plugins/
 cp -r build_osx/Release/puerts.bundle ../Assets/Plugins/
 if [ "$1" == "-ut" ]
 then
-    cp -r build_osx_qjs/Release/libpuerts.dylib ../general/Bin/
+    cp -r build_osx/Release/libpuerts.dylib ../general/Bin/
 fi
