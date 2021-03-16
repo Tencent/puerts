@@ -15,7 +15,7 @@ namespace Puerts.UnitTest
     public class TxtLoader : ILoader
     {
         private string root = Path.Combine(
-            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:\\\\", ""),
+            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
             "../../Assets/Puerts/Src/Resources"
         );
 
