@@ -21,6 +21,22 @@
 
 namespace puerts
 {
+class JSObject
+{
+public:
+    JSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject, int32_t InIndex);
+
+    ~JSObject();
+    
+    v8::Isolate* Isolate;
+
+    v8::UniquePersistent<v8::Context> Context;
+
+    v8::UniquePersistent<v8::Object> GObject;
+
+    int32_t Index;
+};
+
 struct FValue
 {
     JsValueType Type;
@@ -36,7 +52,7 @@ struct FValue
             int ClassID;
         } ObjectInfo;
         class JSFunction *FunctionPtr;
-        class JSObject *JSObjectPtr;
+        class puerts::JSObject *JSObjectPtr;
     };
     v8::UniquePersistent<v8::Value> ArrayBuffer;
 };
@@ -66,22 +82,6 @@ public:
     std::string LastExceptionInfo;
 
     FResultInfo ResultInfo;
-
-    int32_t Index;
-};
-
-class JSObject
-{
-public:
-    JSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject, int32_t InIndex);
-
-    ~JSObject();
-    
-    v8::Isolate* Isolate;
-
-    v8::UniquePersistent<v8::Context> Context;
-
-    v8::UniquePersistent<v8::Object> GObject;
 
     int32_t Index;
 };

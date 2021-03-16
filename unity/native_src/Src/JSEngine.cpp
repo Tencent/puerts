@@ -103,6 +103,8 @@ namespace puerts
 
         Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+
+        JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }
 
     JSEngine::~JSEngine()
@@ -113,6 +115,7 @@ namespace puerts
             Inspector = nullptr;
         }
 
+        JSObjectIdMap.Reset();
         JsPromiseRejectCallback.Reset();
 
         for (int i = 0; i < Templates.size(); ++i)
@@ -170,27 +173,25 @@ namespace puerts
 
     JSObject *JSEngine::CreateJSObject(v8::Isolate *InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
     {
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]mutex");
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
 
-        v8::Local<v8::Map> idmap;
-        if (JSObjectIdMap.Get(InIsolate).IsEmpty())
-        {
-            idmap = v8::Map::New(InIsolate);
-            JSObjectIdMap.Reset(InIsolate, idmap);
-        } 
-        else 
-        {
-            idmap = JSObjectIdMap.Get(InIsolate);
-        }
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]ContextScope");
+        v8::Isolate::Scope IsolateScope(InIsolate);
+        v8::HandleScope HandleScope(InIsolate);
+        v8::Context::Scope ContextScope(InContext);
+
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]map get");
+        v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InIsolate);
         
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]get v8object id");
         // 从idmap尝试取出该jsObject的id
         v8::Local<v8::Value> v8ObjectIndex = idmap->Get(InContext, InObject).ToLocalChecked();
         JSObject* jsObject = nullptr;
 
-        // PLog(puerts::Log, v8ObjectIndex->IsNullOrUndefined() ? "[PuertsDLL]v8ObjectIndex isnull": "[PuertsDLL]v8ObjectIndex notnull");
-
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]get jsobject");
         // 如果存在该id，则从objectmap里取出该对象
-        if (!v8ObjectIndex->IsNullOrUndefined()) 
+        if (!v8ObjectIndex->IsNullOrUndefined())
         {
             int32_t mapIndex = (int32_t)v8::Number::Cast(*v8ObjectIndex)->Value();
             jsObject = JSObjectMap[mapIndex];
