@@ -220,14 +220,14 @@ namespace puerts
 
     void JSEngine::ReleaseJSObject(JSObject *InObject)
     {
+        std::lock_guard<std::mutex> guard(JSObjectsMutex);
+
         // PLog(puerts::Log, std::to_string((long)InObject));
         v8::Isolate* Isolate = InObject->Isolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = InObject->Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
-
-        std::lock_guard<std::mutex> guard(JSObjectsMutex);
 
         v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InObject->Isolate);
         idmap->Set(

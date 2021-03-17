@@ -104,9 +104,12 @@ namespace Puerts.UnitTest
             ");
             Assert.AreEqual("{\"a\":1}", ret);
             ret = jsEnv.Eval<string>(@"
-                (obj.passThroughJSObject(jsObj) == obj.passThroughJSObject(jsObj)).toString();
+                [
+                    (obj.passThroughJSObject(jsObj) === obj.passThroughJSObject(jsObj)).toString(),
+                    (obj.passThroughJSObject(jsObj) === jsObj).toString()
+                ].join('')
             ");
-            Assert.AreEqual("true", ret);
+            Assert.AreEqual("truetrue", ret);
         }
 
         [Test]
