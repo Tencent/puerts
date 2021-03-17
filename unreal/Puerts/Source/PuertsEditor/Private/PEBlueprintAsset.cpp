@@ -339,7 +339,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         {
             //UE_LOG(LogTemp, Warning, TEXT("FunctionGraph %s existed, delete it!"), *InName.ToString());
             //FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
-	    FunctionGraph = *ExistedGraph;
+	        FunctionGraph = *ExistedGraph;
         }
         else 
         {
@@ -348,7 +348,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
                 UEdGraph::StaticClass(),
                 UEdGraphSchema_K2::StaticClass());
-                FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
+            FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
         }
 
         //TODO: Add parameter
