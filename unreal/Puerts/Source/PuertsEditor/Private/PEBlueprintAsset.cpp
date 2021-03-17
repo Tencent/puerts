@@ -334,7 +334,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         TArray< UEdGraph* > GraphList;
         Blueprint->GetAllGraphs(GraphList);
         UEdGraph** ExistedGraph = GraphList.FindByPredicate([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
-		UEdGraph* FunctionGraph;
+        UEdGraph* FunctionGraph;
         if (ExistedGraph)
         {
             //UE_LOG(LogTemp, Warning, TEXT("FunctionGraph %s existed, delete it!"), *InName.ToString());
