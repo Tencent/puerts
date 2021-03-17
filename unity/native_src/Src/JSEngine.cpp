@@ -204,6 +204,7 @@ namespace puerts
             size_t freeIDSize = ObjectMapFreeIndex.size();
             if (freeIDSize > 0) {
                 id = ObjectMapFreeIndex[freeIDSize - 1];
+                ObjectMapFreeIndex.pop_back();
             }
             else
             {
