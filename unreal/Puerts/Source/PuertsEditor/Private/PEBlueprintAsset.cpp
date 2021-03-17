@@ -384,7 +384,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 for (UK2Node_EditablePinBase* Node : TargetNodes)
                 {
                     Node->Modify();
-                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = EntryNode->UserDefinedPins;
+                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = Node->UserDefinedPins;
 					for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
 					{
 						Node->RemoveUserDefinedPin(pinInfo);
