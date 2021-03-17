@@ -5,7 +5,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 ![CI](https://github.com/Tencent/puerts/workflows/CI/badge.svg)
 
-[(English Documents Available)](./doc/en/README.md)
+[(English README Available)](./doc/en/README.md)
 ## What？
 
 puerts是游戏引擎下的TypeScript编程解决方案
