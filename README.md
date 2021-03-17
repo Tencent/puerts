@@ -5,6 +5,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 ![CI](https://github.com/Tencent/puerts/workflows/CI/badge.svg)
 
+[(English Documents Available)](./doc/en/README.md)
 ## What？
 
 puerts是游戏引擎下的TypeScript编程解决方案
@@ -109,3 +110,5 @@ QQ群：942696334
 
 UE4专属群：689643903
 
+## 开发博客
+[知乎专栏](https://www.zhihu.com/column/c_1355534112468402176)
