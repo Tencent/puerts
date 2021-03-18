@@ -459,7 +459,6 @@ void UPEBlueprintAsset::Save()
 {
     if (Blueprint && NeedSave)
     {
-        this->RemoveNotExistedFunction();
         FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
         TArray<UPackage*> PackagesToSave;
