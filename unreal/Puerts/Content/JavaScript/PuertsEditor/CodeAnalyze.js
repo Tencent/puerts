@@ -1248,8 +1248,8 @@ function watch(configFilePath) {
                         }
                     }
                 });
-                //bp.RemoveNotExistedMemberVariable();
-                //bp.RemoveNotExistedFunction();
+                bp.RemoveNotExistedMemberVariable();
+                bp.RemoveNotExistedFunction();
                 bp.Save();
             }
             function getModule(type) {

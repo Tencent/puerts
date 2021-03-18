@@ -1601,8 +1601,8 @@ function watch(configFilePath:string) {
                                 }
                             }
                         });
-                //bp.RemoveNotExistedMemberVariable();
-                //bp.RemoveNotExistedFunction();
+                bp.RemoveNotExistedMemberVariable();
+                bp.RemoveNotExistedFunction();
                 bp.Save();
             }
 
