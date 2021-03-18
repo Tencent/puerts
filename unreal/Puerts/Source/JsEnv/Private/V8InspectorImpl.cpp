@@ -229,14 +229,14 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
         Server.start_accept();
 
         JSONVersion = R"({
-        "Browser": "TGameJS/v1.0.0",
+        "Browser": "Puerts/v1.0.0",
         "Protocol-Version": "1.1"
         })";
 
         JSONList = R"([{
-        "description": "TGameJS Inspector",
+        "description": "Puerts Inspector",
         "id": "0",
-        "title": "TGameJS Inspector",
+        "title": "Puerts Inspector",
         "type": "node",
         )";
         JSONList += "\"webSocketDebuggerUrl\"";
