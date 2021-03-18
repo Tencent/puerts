@@ -28,6 +28,8 @@ namespace Puerts
 
         internal readonly GenericDelegateFactory genericDelegateFactory;
 
+        internal readonly JSObjectFactory jsObjectFactory;
+
         private readonly ILoader loader;
 
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
@@ -94,6 +96,7 @@ namespace Puerts
             objectPool = new ObjectPool();
             TypeRegister = new TypeRegister(this);
             genericDelegateFactory = new GenericDelegateFactory(this);
+            jsObjectFactory = new JSObjectFactory();
 
             GeneralGetterManager = new GeneralGetterManager(this);
             GeneralSetterManager = new GeneralSetterManager(this);
@@ -664,7 +667,7 @@ namespace Puerts
                 while (pendingReleaseObjs.Count > 0)
                 {
                     IntPtr nativeJsObjPtr = pendingReleaseObjs.Dequeue();
-                    if (!JSObject.IsJsObjectAlive(nativeJsObjPtr))
+                    if (!jsObjectFactory.IsJsObjectAlive(nativeJsObjPtr))
                     {
                         PuertsDLL.ReleaseJSObject(isolate, nativeJsObjPtr);
                     }
