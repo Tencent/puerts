@@ -330,24 +330,26 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     }
     else
     {
-        if (FunctionAdded.Contains(InName)) return;//жиди
+        if (FunctionAdded.Contains(InName)) return;
         TArray< UEdGraph* > GraphList;
         Blueprint->GetAllGraphs(GraphList);
         UEdGraph** ExistedGraph = GraphList.FindByPredicate([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
+        UEdGraph* FunctionGraph;
         if (ExistedGraph)
         {
             //UE_LOG(LogTemp, Warning, TEXT("FunctionGraph %s existed, delete it!"), *InName.ToString());
-            FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
+            //FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
+	        FunctionGraph = *ExistedGraph;
         }
-
-        //UE_LOG(LogTemp, Warning, TEXT("Add Function %s"), *InName.ToString());
-        UEdGraph* FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
-            Blueprint,
-            InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
-            UEdGraph::StaticClass(),
-            UEdGraphSchema_K2::StaticClass());
-
-        FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
+        else 
+        {
+            FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
+                Blueprint,
+                InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
+                UEdGraph::StaticClass(),
+                UEdGraphSchema_K2::StaticClass());
+            FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
+        }
 
         //TODO: Add parameter
         TArray<UK2Node_FunctionEntry*> EntryNodes;
@@ -359,6 +361,12 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             //FEdGraphPinType ActorPinType(UEdGraphSchema_K2::PC_Object, NAME_None, AActor::StaticClass(), EPinContainerType::None, false, FEdGraphTerminalType());
             //EntryNodes[0]->CreateUserDefinedPin(TEXT("P1"), StringPinType, EGPD_Output);
             //EntryNodes[0]->CreateUserDefinedPin(TEXT("P2"), ActorPinType, EGPD_Input, false);
+            UK2Node_FunctionEntry* EntryNode = EntryNodes[0];
+            TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = EntryNode->UserDefinedPins;
+            for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
+            {
+                EntryNode->RemoveUserDefinedPin(pinInfo);
+            }
             for (int i = 0; i < ParameterNames.Num(); i++)
             {
                 EntryNodes[0]->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
@@ -376,6 +384,11 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 for (UK2Node_EditablePinBase* Node : TargetNodes)
                 {
                     Node->Modify();
+                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    {
+                        Node->RemoveUserDefinedPin(pinInfo);
+                    }
                     Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
                 }
             }
