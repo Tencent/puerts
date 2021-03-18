@@ -326,7 +326,8 @@ namespace Puerts.UnitTest
             Assert.AreEqual("aabbcc", Getter.Func<string, string>("b.a"));
         }
 
-        public JSObject passThroughJSObject(JSObject obj) {
+        public JSObject passThroughJSObject(JSObject obj) 
+        {
             return obj;
         }
     }

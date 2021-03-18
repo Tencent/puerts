@@ -337,9 +337,11 @@ namespace Puerts
             this.jsEnv = jsEnv;
         }
 
-        ~JSObject() {
+        ~JSObject() 
+        {
 #if THREAD_SAFE
-            lock(jsEnv) {
+            lock(jsEnv) 
+            {
 #endif
             jsEnv.addPenddingReleaseObject(nativeJsObjectPtr);
 #if THREAD_SAFE
@@ -359,7 +361,8 @@ namespace Puerts
         private Delegate firstValue = null;
         private Dictionary<Type, Delegate> bindTo = null;
 
-        internal IntPtr getJsFuncPtr() {
+        internal IntPtr getJsFuncPtr() 
+        {
             return nativeJsFuncPtr;
         }
 
