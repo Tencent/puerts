@@ -597,6 +597,8 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             StringBuffer << "    " << TmpBuff.Buffer << ";\n";
         }
     }
+
+    StringBuffer << "    static StaticClass(): Class;\n";
     
     StringBuffer << "}\n\n";
     
