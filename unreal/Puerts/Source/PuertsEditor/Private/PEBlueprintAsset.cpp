@@ -248,8 +248,6 @@ UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncNa
 
 void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
-    NeedSave = true;
-
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
     UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
@@ -262,8 +260,6 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         ParameterTypes.Empty();
         return;
     }
-
-    Blueprint->Modify();
 
     TArray<FName> AxisNames;
     GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
@@ -304,6 +300,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                     }
                 );
             }
+            NeedSave = true;
         }
     }
     else if (AxisNames.Contains(InName))
@@ -326,6 +323,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                     NewInstance->Initialize(InName);
                 }
             );
+            NeedSave = true;
         }
     }
     else
@@ -363,14 +361,33 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             //EntryNodes[0]->CreateUserDefinedPin(TEXT("P2"), ActorPinType, EGPD_Input, false);
             UK2Node_FunctionEntry* EntryNode = EntryNodes[0];
             TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = EntryNode->UserDefinedPins;
-            for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
+
+            bool ParameterChanged = OldUserDefinedPins.Num() != ParameterTypes.Num();
+
+            if (!ParameterChanged)
             {
-                EntryNode->RemoveUserDefinedPin(pinInfo);
+                for (int i = 0; i < OldUserDefinedPins.Num(); i++)
+                {
+                    if (OldUserDefinedPins[i]->PinType != ParameterTypes[i])
+                    {
+                        ParameterChanged = true;
+                    }
+                }
             }
-            for (int i = 0; i < ParameterNames.Num(); i++)
+
+            if (ParameterChanged)
             {
-                EntryNodes[0]->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
+                for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
+                {
+                    EntryNode->RemoveUserDefinedPin(pinInfo);
+                }
+                for (int i = 0; i < ParameterNames.Num(); i++)
+                {
+                    EntryNodes[0]->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
+                }
             }
+
+            bool RetChanged = false;
 
             const FName RetValName = FName(TEXT("ReturnValue"));
 
@@ -383,15 +400,44 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
                 for (UK2Node_EditablePinBase* Node : TargetNodes)
                 {
-                    Node->Modify();
                     TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
-                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 1) || (OldUserDefinedReturnPins[0]->PinType != PinType);
+
+                    if (RetChanged)
                     {
-                        Node->RemoveUserDefinedPin(pinInfo);
+                        Node->Modify();
+                        for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                        {
+                            Node->RemoveUserDefinedPin(pinInfo);
+                        }
+                        Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
                     }
-                    Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
                 }
             }
+            else
+            {
+                auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(EntryNodes[0]);
+
+                TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+                for (UK2Node_EditablePinBase* Node : TargetNodes)
+                {
+                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                    RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 0);
+
+                    if (RetChanged)
+                    {
+                        Node->Modify();
+                        for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                        {
+                            Node->RemoveUserDefinedPin(pinInfo);
+                        }
+                    }
+                }
+            }
+
+            NeedSave = NeedSave || ParameterChanged || RetChanged;
+
+            //UE_LOG(LogTemp, Error, TEXT("function %s, %d, %d "), *InName.ToString(), ParameterChanged, RetChanged);
         }
         FunctionAdded.Add(InName);
     }
@@ -408,24 +454,33 @@ void UPEBlueprintAsset::ClearParameter()
 
 void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
-    NeedSave = true;
+    
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
     const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
     if (VarIndex == INDEX_NONE)
     {
         FBlueprintEditorUtils::AddMemberVariable(Blueprint, NewVarName, PinType);
+        NeedSave = true;
     }
     else
     {
-        FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, NewVarName, PinType);
+        FBPVariableDescription& Variable = Blueprint->NewVariables[VarIndex];
+        if (Variable.VarType != PinType)
+        {
+            FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, NewVarName, PinType);
+            NeedSave = true;
+        }
+        //else
+        //{
+        //    UE_LOG(LogTemp, Error, TEXT("do not changed %s"), *NewVarName.ToString());
+        //}
     }
     MemberVariableAdded.Add(NewVarName);
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
-    NeedSave = true;
     if (Blueprint)
     {
         TArray<FName> ToDelete;
@@ -438,7 +493,7 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
         }
         for (auto Name : ToDelete)
         {
-            //UE_LOG(LogTemp, Warning, TEXT("Delete MemberVariable %s"), *Name.ToString());
+            NeedSave = true;
             FBlueprintEditorUtils::RemoveMemberVariable(Blueprint, Name);
         }
     }
@@ -447,10 +502,10 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 
 void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
-    NeedSave = true;
     if (Blueprint)
     {
-        Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
+        auto Removed = Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
+        NeedSave = NeedSave || (Removed > 0);
     }
     FunctionAdded.Empty();
 }
