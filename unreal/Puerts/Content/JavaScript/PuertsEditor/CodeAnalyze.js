@@ -874,9 +874,14 @@ function watch(configFilePath) {
     const servicesHost = {
         getScriptFileNames: () => fileNames,
         getScriptVersion: fileName => {
-            let res = fileVersions[fileName] && fileVersions[fileName].version.toString();
-            //console.log("getScriptVersion:"+ fileName + ", res:" + res + ",in:" + new Error().stack);
-            return res;
+            if (fileName in fileVersions) {
+                return fileVersions[fileName] && fileVersions[fileName].version.toString();
+            }
+            else {
+                let md5 = UE.FileSystemOperation.FileMD5Hash(fileName);
+                fileVersions[fileName] = { version: md5 };
+                return md5;
+            }
         },
         getScriptSnapshot: fileName => {
             if (!customSystem.fileExists(fileName)) {
