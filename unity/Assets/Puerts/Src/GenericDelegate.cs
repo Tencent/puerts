@@ -298,6 +298,58 @@ namespace Puerts
         }
     }
 
+    internal class JSObjectFactory
+    {
+        private Dictionary<IntPtr, WeakReference> nativePtrToJSObject = new Dictionary<IntPtr, WeakReference>();
+
+        public JSObject GetOrCreateJSObject(IntPtr ptr, JsEnv jsEnv) {
+            WeakReference maybeOne;
+            if (nativePtrToJSObject.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive)
+            {
+               return maybeOne.Target as JSObject;
+            }
+            JSObject jsObject = new JSObject(ptr, jsEnv);
+            nativePtrToJSObject[ptr] = new WeakReference(jsObject);
+            return jsObject;
+        }
+
+        internal bool IsJsObjectAlive(IntPtr ptr)
+        {
+            WeakReference maybeOne;
+            return nativePtrToJSObject.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive;
+        }
+
+    }
+
+    public class JSObject
+    {
+        private readonly JsEnv jsEnv;
+
+        private IntPtr nativeJsObjectPtr;
+
+        public IntPtr getJsObjPtr() {
+            return nativeJsObjectPtr;
+        }
+
+        internal JSObject(IntPtr nativeJsObjectPtr, JsEnv jsEnv)
+        {
+            this.nativeJsObjectPtr = nativeJsObjectPtr;
+            this.jsEnv = jsEnv;
+        }
+
+        ~JSObject() 
+        {
+#if THREAD_SAFE
+            lock(jsEnv) 
+            {
+#endif
+            jsEnv.addPenddingReleaseObject(nativeJsObjectPtr);
+#if THREAD_SAFE
+            }
+#endif
+        }
+    }
+
     //泛型适配器
     public class GenericDelegate
     {
@@ -308,6 +360,11 @@ namespace Puerts
         private Type firstKey = null;
         private Delegate firstValue = null;
         private Dictionary<Type, Delegate> bindTo = null;
+
+        internal IntPtr getJsFuncPtr() 
+        {
+            return nativeJsFuncPtr;
+        }
 
         internal GenericDelegate(IntPtr nativeJsFuncPtr, JsEnv jsEnv)
         {

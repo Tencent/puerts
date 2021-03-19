@@ -251,6 +251,12 @@ namespace Puerts
         public static extern void ReturnNull(IntPtr isolate, IntPtr info);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReturnFunction(IntPtr isolate, IntPtr info, IntPtr JSFunction);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReturnJSObject(IntPtr isolate, IntPtr info, IntPtr JSObject);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArgumentValue(IntPtr info, int index);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -301,6 +307,9 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetFunctionFromValue(IntPtr isolate, IntPtr value, bool isByRef);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetJSObjectFromValue(IntPtr isolate, IntPtr value, bool isByRef);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetNumberToOutValue(IntPtr isolate, IntPtr value, double number);
@@ -367,6 +376,12 @@ namespace Puerts
         public static extern void PushObjectForJSFunction(IntPtr function, int classId, IntPtr objectId);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PushJSFunctionForJSFunction(IntPtr function, IntPtr JSFunction);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PushJSObjectForJSFunction(IntPtr function, IntPtr JSObject);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr InvokeJSFunction(IntPtr function, bool hasResult);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -374,6 +389,9 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseJSFunction(IntPtr isolate, IntPtr function);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReleaseJSObject(IntPtr isolate, IntPtr obj);
 
         public static string GetFunctionLastExceptionInfo(IntPtr function)
         {
@@ -430,6 +448,9 @@ namespace Puerts
         public static extern IntPtr GetFunctionFromResult(IntPtr resultInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetJSObjectFromResult(IntPtr resultInfo);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ResetResult(IntPtr resultInfo);
         //end cs call js
 
@@ -469,6 +490,11 @@ namespace Puerts
         public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern double __DebugGetJSObjectMapSize(IntPtr isolate);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern double __DebugGetJSObjectFreeIDListSize(IntPtr isolate);
     }
 }
 

@@ -325,6 +325,11 @@ namespace Puerts.UnitTest
             Assert.AreEqual(1, Getter.Func<string, int>("a"));
             Assert.AreEqual("aabbcc", Getter.Func<string, string>("b.a"));
         }
+
+        public JSObject passThroughJSObject(JSObject obj) 
+        {
+            return obj;
+        }
     }
 
     public class ArrayTest

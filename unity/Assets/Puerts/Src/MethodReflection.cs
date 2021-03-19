@@ -129,16 +129,19 @@ namespace Puerts
                 if (i < length)
                 {
                     var argJsType = callInfo.JsTypes[i];
-                    if (argJsType == JsValueType.JsObject)
+                    if (byRef[i])
                     {
-                        if (!byRef[i]) return false;
-                        if (!isOut[i])
+                        if (argJsType != JsValueType.JsObject)
                         {
-                            argJsType = PuertsDLL.GetJsValueType(callInfo.Isolate, callInfo.NativePtrs[i], true);
+                            return false;
+                        }
+                        if (isOut[i])
+                        {
+                            continue;
                         }
                         else
                         {
-                            continue;
+                            argJsType = PuertsDLL.GetJsValueType(callInfo.Isolate, callInfo.NativePtrs[i], true);
                         }
                     }
                     if ((typeMasks[i] & argJsType) != argJsType)

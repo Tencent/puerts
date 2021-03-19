@@ -93,6 +93,26 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void JSObject() 
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var ret = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let jsObj = {'a': 1};
+                let obj = new CS.Puerts.UnitTest.JsObjectTest();
+                JSON.stringify(obj.passThroughJSObject(jsObj))
+            ");
+            Assert.AreEqual("{\"a\":1}", ret);
+            ret = jsEnv.Eval<string>(@"
+                [
+                    (obj.passThroughJSObject(jsObj) === obj.passThroughJSObject(jsObj)).toString(),
+                    (obj.passThroughJSObject(jsObj) === jsObj).toString()
+                ].join('')
+            ");
+            Assert.AreEqual("truetrue", ret);
+        }
+
+        [Test]
         public void GenericDelegate()
         {
             var jsEnv = new JsEnv(new TxtLoader());
