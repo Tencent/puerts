@@ -22,7 +22,13 @@ var global = global || (function () { return this; }());
     var console = {}
 
     function log(level, args) {
-        tgjsLog(level, Array.prototype.map.call(args, x => x === null? "null": x === undefined ? 'undefined' : x.toString()).join(','));
+        tgjsLog(level, Array.prototype.map.call(args, x => {
+            try {
+                return x+'';
+            } catch (err){
+                return err;
+            }
+        }).join(','));
     }
 
     console.log = function() {
