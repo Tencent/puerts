@@ -19,7 +19,7 @@ var global = global || (function () { return this; }());
     function toString(args) {
         return Array.prototype.map.call(args, x => {
             try {
-                return x.toString();
+                return x+'';
             } catch (err) {
                 return err;
             }
