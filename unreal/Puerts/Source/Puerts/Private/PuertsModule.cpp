@@ -50,6 +50,25 @@ public:
         }
     }
 
+	void MakeSharedJsEnv() override
+	{
+		const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+
+		if (Settings.DebugEnable)
+		{
+			JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+		}
+		else
+		{
+			JsEnv = MakeShared<puerts::FJsEnv>();
+		}
+
+		if (Settings.WaitDebugger)
+		{
+			JsEnv->WaitDebugger();
+		}
+	}
+
 private:
     TSharedPtr<puerts::FJsEnv> JsEnv;
 
@@ -91,7 +110,7 @@ void FPuertsModule::EndPIE(bool bIsSimulating)
         //JsEnv->ReloadModule(NAME_None);
 
         JsEnv.Reset();
-        JsEnv = MakeShared<puerts::FJsEnv>();
+        MakeSharedJsEnv();
         JsEnv->RebindJs();
     }
 }
@@ -132,19 +151,7 @@ void FPuertsModule::StartupModule()
 
     if (Enabled)
     {
-        if (Settings.DebugEnable)
-        {
-            JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
-        }
-        else
-        {
-            JsEnv = MakeShared<puerts::FJsEnv>();
-        }
-
-        if (Settings.WaitDebugger)
-        {
-            JsEnv->WaitDebugger();
-        }
+		MakeSharedJsEnv();
         
         GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
         GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));

@@ -28,4 +28,7 @@ public:
     virtual bool IsEnabled() = 0;
 
     virtual void ReloadJsModule(FName ModuleName) = 0;
+
+	virtual void MakeSharedJsEnv() = 0;
+
 };
