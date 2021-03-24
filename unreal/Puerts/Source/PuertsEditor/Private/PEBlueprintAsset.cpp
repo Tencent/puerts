@@ -334,39 +334,39 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     //Create Action node and PrintString node
     //then Connection them.
     //UK2Node_InputAction Node must have one connected node to create function "InpActEvt_%s_%s"
-	else if (ActionNames.Contains(InName))
-	{
-		TArray<UK2Node_InputAction*> AllEvents;
-		FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_InputAction>(Blueprint, AllEvents);
+    else if (ActionNames.Contains(InName))
+    {
+        TArray<UK2Node_InputAction*> AllEvents;
+        FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_InputAction>(Blueprint, AllEvents);
 
-		UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
 
-		if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAction* Node) { return Node->InputActionName == InName; }))
-		{
+        if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAction* Node) { return Node->InputActionName == InName; }))
+        {
             UK2Node_InputAction* NewNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_InputAction>(
-				EventGraph,
-				EventGraph->GetGoodPlaceForNewNode(),
-				EK2NewNodeFlags::SelectNewNode,
-				[InName](UK2Node_InputAction* NewInstance)
-				{
+                EventGraph,
+                EventGraph->GetGoodPlaceForNewNode(),
+                EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_InputAction* NewInstance)
+                {
                     NewInstance->InputActionName = InName;
-				}
-			);
+                }
+            );
             //UK2Node_CallFunction
             UK2Node_CallFunction* NewNode2 = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CallFunction>(
-				EventGraph,
-				EventGraph->GetGoodPlaceForNewNode(),
-				EK2NewNodeFlags::SelectNewNode,
-				[InName](UK2Node_CallFunction* NewInstance)
-				{
+                EventGraph,
+                EventGraph->GetGoodPlaceForNewNode(),
+                EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_CallFunction* NewInstance)
+                {
                     NewInstance->FunctionReference.SetExternalMember(FName("PrintString"), UKismetSystemLibrary::StaticClass());
-				}
-			);
-            
+                }
+            );
+
             EventGraph->GetSchema()->TryCreateConnection(NewNode->Pins[0], NewNode2->Pins[0]);
-			NeedSave = true;
-		}
-	}
+            NeedSave = true;
+        }
+    }
     else
     {
         if (FunctionAdded.Contains(InName)) return;
