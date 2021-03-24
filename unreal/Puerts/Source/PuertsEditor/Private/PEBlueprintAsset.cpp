@@ -19,6 +19,9 @@
 #include "K2Node_FunctionResult.h"
 #include "GameFramework/InputSettings.h"
 #include "K2Node_InputAxisEvent.h"
+#include "K2Node_InputAction.h"
+#include "K2Node_CallFunction.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
 
@@ -261,8 +264,10 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         return;
     }
 
-    TArray<FName> AxisNames;
-    GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
+	TArray<FName> AxisNames;
+	TArray<FName> ActionNames;
+	GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
+	GetDefault<UInputSettings>()->GetActionNames(ActionNames);
 
     // Create the function graph.
     
@@ -326,6 +331,42 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             NeedSave = true;
         }
     }
+    //Create Action node and PrintString node
+    //then Connection them.
+    //UK2Node_InputAction Node must have one connected node to create function "InpActEvt_%s_%s"
+	else if (ActionNames.Contains(InName))
+	{
+		TArray<UK2Node_InputAction*> AllEvents;
+		FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_InputAction>(Blueprint, AllEvents);
+
+		UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+
+		if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAction* Node) { return Node->InputActionName == InName; }))
+		{
+            UK2Node_InputAction* NewNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_InputAction>(
+				EventGraph,
+				EventGraph->GetGoodPlaceForNewNode(),
+				EK2NewNodeFlags::SelectNewNode,
+				[InName](UK2Node_InputAction* NewInstance)
+				{
+                    NewInstance->InputActionName = InName;
+				}
+			);
+            //UK2Node_CallFunction
+            UK2Node_CallFunction* NewNode2 = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CallFunction>(
+				EventGraph,
+				EventGraph->GetGoodPlaceForNewNode(),
+				EK2NewNodeFlags::SelectNewNode,
+				[InName](UK2Node_CallFunction* NewInstance)
+				{
+                    NewInstance->FunctionReference.SetExternalMember(FName("PrintString"), UKismetSystemLibrary::StaticClass());
+				}
+			);
+            
+            EventGraph->GetSchema()->TryCreateConnection(NewNode->Pins[0], NewNode2->Pins[0]);
+			NeedSave = true;
+		}
+	}
     else
     {
         if (FunctionAdded.Contains(InName)) return;
