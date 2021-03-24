@@ -50,7 +50,7 @@ public:
         }
     }
 
-	void MakeSharedJsEnv() override
+	void MakeSharedJsEnv()
 	{
 		const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
