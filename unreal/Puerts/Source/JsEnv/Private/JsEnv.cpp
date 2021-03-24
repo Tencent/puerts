@@ -1069,6 +1069,16 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                     FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
                                 }
                             }
+                            static FString ActionPrefix(TEXT("InpActEvt_"));
+                            if (FunctionName.StartsWith(ActionPrefix))
+                            {
+                                auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
+                                int32 SubPos;
+                                if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                                {
+                                    FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                                }
+                            }
                             auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
                             if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
                                 (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) || Cast<UJSGeneratedFunction>(Function)))
