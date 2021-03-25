@@ -340,6 +340,19 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void NoParamConstructorStructTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            string res = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let s = new CS.Puerts.UnitTest.S();
+                s
+            ");
+            Assert.AreEqual(res, "Puerts.UnitTest.S");
+            jsEnv.Dispose();
+        }
+
+        [Test]
         public void ParamStructRefTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
