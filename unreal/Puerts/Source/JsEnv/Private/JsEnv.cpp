@@ -497,11 +497,6 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 #endif
 
-#if PLATFORM_ANDROID
-    std::string Flags = "--trace-gc-object-stats";
-    v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
-#endif
-
     Started = false;
     Inspector = nullptr;
 
