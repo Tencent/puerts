@@ -523,8 +523,21 @@ namespace Puerts
             }
             else
             {
+                bool hasNoParametersCtor = false;
                 var constructorWraps = type.GetConstructors(flag)
-                    .Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)).ToList();
+                    .Select(m => 
+                    {
+                        if (m.GetParameters().Length == 0) 
+                        {
+                            hasNoParametersCtor = true;
+                        }
+                        return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
+                    })
+                    .ToList();
+                if (type.IsValueType && !hasNoParametersCtor)
+                {
+                    constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
+                }
                 MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
                 constructorCallback = constructorReflectionWrap.Construct;
             }
