@@ -16,6 +16,7 @@
 #include "K2Node_FunctionEntry.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Event.h"
+#include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionResult.h"
 #include "GameFramework/InputSettings.h"
 #include "K2Node_InputAxisEvent.h"
@@ -249,7 +250,7 @@ UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncNa
 }
 #endif
 
-void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
+void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags)
 {
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
@@ -268,6 +269,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 	TArray<FName> ActionNames;
 	GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
 	GetDefault<UInputSettings>()->GetActionNames(ActionNames);
+
+    UK2Node_EditablePinBase* FunctionEntryNode = nullptr;
+    bool IsCustomEvent = false;
 
     // Create the function graph.
     
@@ -367,6 +371,36 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             NeedSave = true;
         }
     }
+    else if (InFlags & FUNC_Net)
+    {
+        TArray<UK2Node_CustomEvent*> AllEvents;
+        FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_CustomEvent>(Blueprint, AllEvents);
+
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+
+        auto Iter = AllEvents.FindByPredicate([&](UK2Node_CustomEvent* Node) { return Node->CustomFunctionName == InName; });
+
+        if (EventGraph && !Iter)
+        {
+            UK2Node_CustomEvent* EventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CustomEvent>(
+                EventGraph,
+                EventGraph->GetGoodPlaceForNewNode(),
+                EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_Event* NewInstance)
+                {
+                    NewInstance->CustomFunctionName = InName;
+                    NewInstance->bIsEditable = true;
+                }
+            );
+
+            FunctionEntryNode = EventNode;
+        }
+        else
+        {
+            FunctionEntryNode = *Iter;
+        }
+        IsCustomEvent = true;
+    }
     else
     {
         if (FunctionAdded.Contains(InName)) return;
@@ -388,99 +422,129 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 UEdGraph::StaticClass(),
                 UEdGraphSchema_K2::StaticClass());
             FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
+            NeedSave = true;
         }
 
-        //TODO: Add parameter
+        //if (InFlags)
+        //{
+        //    const UEdGraphSchema_K2* K2Schema = Cast<const UEdGraphSchema_K2>(FunctionGraph->GetSchema());
+        //    K2Schema->AddExtraFunctionFlags(FunctionGraph, InFlags);
+        //}
+
         TArray<UK2Node_FunctionEntry*> EntryNodes;
         FunctionGraph->GetNodesOfClass(EntryNodes);
 
         if (EntryNodes.Num() == 1)
         {
-            //FEdGraphPinType StringPinType(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EPinContainerType::None, false, FEdGraphTerminalType());
-            //FEdGraphPinType ActorPinType(UEdGraphSchema_K2::PC_Object, NAME_None, AActor::StaticClass(), EPinContainerType::None, false, FEdGraphTerminalType());
-            //EntryNodes[0]->CreateUserDefinedPin(TEXT("P1"), StringPinType, EGPD_Output);
-            //EntryNodes[0]->CreateUserDefinedPin(TEXT("P2"), ActorPinType, EGPD_Input, false);
-            UK2Node_FunctionEntry* EntryNode = EntryNodes[0];
-            TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = EntryNode->UserDefinedPins;
-
-            bool ParameterChanged = OldUserDefinedPins.Num() != ParameterTypes.Num();
-
-            if (!ParameterChanged)
-            {
-                for (int i = 0; i < OldUserDefinedPins.Num(); i++)
-                {
-                    if (OldUserDefinedPins[i]->PinType != ParameterTypes[i])
-                    {
-                        ParameterChanged = true;
-                    }
-                }
-            }
-
-            if (ParameterChanged)
-            {
-                for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
-                {
-                    EntryNode->RemoveUserDefinedPin(pinInfo);
-                }
-                for (int i = 0; i < ParameterNames.Num(); i++)
-                {
-                    EntryNodes[0]->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
-                }
-            }
-
-            bool RetChanged = false;
-
-            const FName RetValName = FName(TEXT("ReturnValue"));
-
-            if (!IsVoid)
-            {
-                FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
-                //EntryNodes[0]->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
-                auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(EntryNodes[0]);
-
-                TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
-                for (UK2Node_EditablePinBase* Node : TargetNodes)
-                {
-                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
-                    RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 1) || (OldUserDefinedReturnPins[0]->PinType != PinType);
-
-                    if (RetChanged)
-                    {
-                        Node->Modify();
-                        for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
-                        {
-                            Node->RemoveUserDefinedPin(pinInfo);
-                        }
-                        Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
-                    }
-                }
-            }
-            else
-            {
-                auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(EntryNodes[0]);
-
-                TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
-                for (UK2Node_EditablePinBase* Node : TargetNodes)
-                {
-                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
-                    RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 0);
-
-                    if (RetChanged)
-                    {
-                        Node->Modify();
-                        for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
-                        {
-                            Node->RemoveUserDefinedPin(pinInfo);
-                        }
-                    }
-                }
-            }
-
-            NeedSave = NeedSave || ParameterChanged || RetChanged;
-
-            //UE_LOG(LogTemp, Error, TEXT("function %s, %d, %d "), *InName.ToString(), ParameterChanged, RetChanged);
+            FunctionEntryNode = EntryNodes[0];
         }
         FunctionAdded.Add(InName);
+    }
+
+    if (FunctionEntryNode)
+    {
+        const int32 NetMask = FUNC_Net | FUNC_NetMulticast | FUNC_NetServer | FUNC_NetClient;
+        int32 NetFlags = InFlags & NetMask;
+        NetFlags = NetFlags ? FUNC_Net | NetFlags : 0;
+
+        if (UK2Node_FunctionEntry* TypedEntryNode = Cast<UK2Node_FunctionEntry>(FunctionEntryNode))
+        {
+            int32 ExtraFlags = TypedEntryNode->GetExtraFlags();
+
+            if ((ExtraFlags & NetMask) != NetFlags)
+            {
+                ExtraFlags &= ~NetMask;
+                ExtraFlags |= NetFlags;
+                TypedEntryNode->SetExtraFlags(ExtraFlags);
+                NeedSave = true;
+            }
+        }
+        else if (UK2Node_CustomEvent* CustomEventNode = Cast<UK2Node_CustomEvent>(FunctionEntryNode))
+        {
+            if ((CustomEventNode->FunctionFlags & NetMask) != NetFlags)
+            {
+                CustomEventNode->FunctionFlags &= ~NetMask;
+                CustomEventNode->FunctionFlags |= NetFlags;
+                NeedSave = true;
+            }
+        }
+
+        TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = FunctionEntryNode->UserDefinedPins;
+
+        bool ParameterChanged = OldUserDefinedPins.Num() != ParameterTypes.Num();
+
+        if (!ParameterChanged)
+        {
+            for (int i = 0; i < OldUserDefinedPins.Num(); i++)
+            {
+                if (OldUserDefinedPins[i]->PinType != ParameterTypes[i])
+                {
+                    ParameterChanged = true;
+                }
+            }
+        }
+
+        if (ParameterChanged)
+        {
+            for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
+            {
+                FunctionEntryNode->RemoveUserDefinedPin(pinInfo);
+            }
+            for (int i = 0; i < ParameterNames.Num(); i++)
+            {
+                FunctionEntryNode->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
+            }
+        }
+
+        bool RetChanged = false;
+
+        const FName RetValName = FName(TEXT("ReturnValue"));
+
+        if (!IsVoid && !IsCustomEvent)
+        {
+            FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
+            //EntryNodes[0]->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
+            auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
+
+            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+            for (UK2Node_EditablePinBase* Node : TargetNodes)
+            {
+                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 1) || (OldUserDefinedReturnPins[0]->PinType != PinType);
+
+                if (RetChanged)
+                {
+                    Node->Modify();
+                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    {
+                        Node->RemoveUserDefinedPin(pinInfo);
+                    }
+                    Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
+                }
+            }
+        }
+        else
+        {
+            auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
+
+            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+            for (UK2Node_EditablePinBase* Node : TargetNodes)
+            {
+                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 0);
+
+                if (RetChanged)
+                {
+                    Node->Modify();
+                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    {
+                        Node->RemoveUserDefinedPin(pinInfo);
+                    }
+                }
+            }
+        }
+
+        NeedSave = NeedSave || ParameterChanged || RetChanged;
     }
 
     ParameterNames.Empty();
@@ -493,12 +557,12 @@ void UPEBlueprintAsset::ClearParameter()
     ParameterTypes.Empty();
 }
 
-void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
+void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags)
 {
     
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
-    const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
+    int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
     if (VarIndex == INDEX_NONE)
     {
         FBlueprintEditorUtils::AddMemberVariable(Blueprint, NewVarName, PinType);
@@ -516,6 +580,19 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
         //{
         //    UE_LOG(LogTemp, Error, TEXT("do not changed %s"), *NewVarName.ToString());
         //}
+    }
+    VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
+    if (VarIndex != INDEX_NONE)
+    {
+        FBPVariableDescription& Variable = Blueprint->NewVariables[VarIndex];
+        int32 NetFlags = InFlags & CPF_Net;
+        
+        if ((Variable.PropertyFlags & CPF_Net) != NetFlags)
+        {
+            Variable.PropertyFlags &= ~CPF_Net;
+            Variable.PropertyFlags |= NetFlags;
+            NeedSave = true;
+        }
     }
     MemberVariableAdded.Add(NewVarName);
 }
