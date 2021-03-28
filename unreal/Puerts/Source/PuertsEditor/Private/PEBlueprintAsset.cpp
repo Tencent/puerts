@@ -400,6 +400,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             FunctionEntryNode = *Iter;
         }
         IsCustomEvent = true;
+        FunctionAdded.Add(InName);
     }
     else
     {
@@ -622,8 +623,18 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
     if (Blueprint)
     {
-        auto Removed = Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
-        NeedSave = NeedSave || (Removed > 0);
+        auto RemovedFunction = Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
+        NeedSave = NeedSave || (RemovedFunction > 0);
+
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+        if (EventGraph)
+        {
+            auto RemovedCustomEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) { 
+                UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
+                return CustomEvent && !FunctionAdded.Contains(CustomEvent->CustomFunctionName);
+                });
+            NeedSave = NeedSave || (RemovedCustomEvent > 0);
+        }
     }
     FunctionAdded.Empty();
 }
