@@ -380,27 +380,39 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
         auto Iter = AllEvents.FindByPredicate([&](UK2Node_CustomEvent* Node) { return Node->CustomFunctionName == InName; });
 
-        if (EventGraph && !Iter)
+        if (EventGraph)
         {
-            UK2Node_CustomEvent* EventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CustomEvent>(
-                EventGraph,
-                EventGraph->GetGoodPlaceForNewNode(),
-                EK2NewNodeFlags::SelectNewNode,
-                [InName](UK2Node_Event* NewInstance)
-                {
-                    NewInstance->CustomFunctionName = InName;
-                    NewInstance->bIsEditable = true;
-                }
-            );
+            if (EventGraph && !Iter)
+            {
+                //处理标签改变的情况
+                Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
 
-            FunctionEntryNode = EventNode;
+                UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
+                if (ExistingGraph)
+                {
+                    ExistingGraph->Rename(*FString::Printf(TEXT("%s%s"), *ExistingGraph->GetName(), TEXT("__Removed")), nullptr, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+                }
+
+                UK2Node_CustomEvent* EventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CustomEvent>(
+                    EventGraph,
+                    EventGraph->GetGoodPlaceForNewNode(),
+                    EK2NewNodeFlags::SelectNewNode,
+                    [InName](UK2Node_Event* NewInstance)
+                    {
+                        NewInstance->CustomFunctionName = InName;
+                        NewInstance->bIsEditable = true;
+                    }
+                );
+
+                FunctionEntryNode = EventNode;
+            }
+            else
+            {
+                FunctionEntryNode = *Iter;
+            }
+            IsCustomEvent = true;
+            FunctionAdded.Add(InName);
         }
-        else
-        {
-            FunctionEntryNode = *Iter;
-        }
-        IsCustomEvent = true;
-        FunctionAdded.Add(InName);
     }
     else
     {
@@ -417,6 +429,19 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         }
         else 
         {
+            UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+            if (EventGraph)
+            {
+                EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
+                    UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
+                    return CustomEvent && CustomEvent->CustomFunctionName == InName;
+                    });
+                UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
+                if (ExistingGraph)
+                {
+                    ExistingGraph->Rename(*FString::Printf(TEXT("%s%s"), *ExistingGraph->GetName(), TEXT("__Removed")), nullptr, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+                }
+            }
             FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
                 Blueprint,
                 InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
