@@ -60,7 +60,12 @@ var global = global || (function () { return this; }());
         let wrapped = evalScript(
             // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
             // to enable stepping through original source in-place.
-            "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
+            `(function() {
+                let self = this;
+                return (function (exports, require, module, __filename, __dirname) {
+                    ${script}
+                });
+            }).call(this)`,
             debugPath
         )
         wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
