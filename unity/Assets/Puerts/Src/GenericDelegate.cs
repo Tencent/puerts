@@ -302,7 +302,8 @@ namespace Puerts
     {
         private Dictionary<IntPtr, WeakReference> nativePtrToJSObject = new Dictionary<IntPtr, WeakReference>();
 
-        public JSObject GetOrCreateJSObject(IntPtr ptr, JsEnv jsEnv) {
+        public JSObject GetOrCreateJSObject(IntPtr ptr, JsEnv jsEnv) 
+        {
             WeakReference maybeOne;
             if (nativePtrToJSObject.TryGetValue(ptr, out maybeOne) && maybeOne.IsAlive)
             {
