@@ -397,7 +397,7 @@ namespace PuertsStaticWrap
             fixed ({{=it.Name}}* result = &HeapValue)
             {
                 var typeId = Puerts.JsEnv.jsEnvs[jsEnvIdx].GetTypeId(typeof({{=it.Name}}));
-                setValueApi.SetObject(isolate, value, typeId, new IntPtr(result));
+                setValueApi.SetNativeObject(isolate, value, typeId, new IntPtr(result));
             }
         }
         
