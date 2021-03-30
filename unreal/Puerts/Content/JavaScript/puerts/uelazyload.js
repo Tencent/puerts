@@ -77,7 +77,8 @@ var global = global || (function () { return this; }());
             let ueConstructor = defaultUeConstructor;
             for(var i = 0; i < names.length; ++i) {
                 let name = names[i];
-                if (typeof proto[name] === 'function' && name != "constructor") {
+                let descriptor = Object.getOwnPropertyDescriptor(proto, name);
+                if (typeof descriptor.value === 'function' && name != "constructor") {
                     if (name === 'Constructor') {
                         ueConstructor = proto[name];
                     } else {
