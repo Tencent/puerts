@@ -34,7 +34,7 @@ public:
 
     virtual void TryBindJs(const class UObjectBase *InObject) = 0;
 
-    virtual void ReloadModule(FName ModuleName) = 0;
+    virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
 
     virtual void RebindJs() = 0;
 
@@ -59,8 +59,7 @@ public:
 
     void TryBindJs(const class UObjectBase *InObject);
 
-    //ModuleName等于NAME_None代表从新加载所有脚本
-    void ReloadModule(FName ModuleName);
+    void ReloadModule(FName ModuleName, const FString& JsSource);
 
     void RebindJs();
 

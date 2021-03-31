@@ -78,9 +78,9 @@ TArray<FString> UFileSystemOperation::GetFiles(FString Path)
     return Dirs;
 }
 
-void UFileSystemOperation::PuertsNotifyChange(FString Path)
+void UFileSystemOperation::PuertsNotifyChange(FString Path, FString Source)
 {
-    IPuertsModule::Get().ReloadJsModule(*Path);
+    IPuertsModule::Get().ReloadModule(*Path, Source);
 }
 
 FString UFileSystemOperation::FileMD5Hash(FString Path)

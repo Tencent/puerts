@@ -8,15 +8,29 @@
 #pragma once
 
 #include<stdint.h>
+#include <functional>
+#include <string> 
 
 namespace puerts
 {
+class V8InspectorChannel
+{
+public:
+    virtual void DispatchProtocolMessage(const std::string& Message) = 0;
+    
+    virtual void OnMessage(std::function<void(const std::string&)> Handler) = 0;
+    
+    virtual ~V8InspectorChannel() {}
+};
+
 class V8Inspector
 {
 public:
     virtual void Close() = 0;
 
     virtual bool Tick() = 0;
+    
+    virtual V8InspectorChannel* CreateV8InspectorChannel() = 0;
 
     virtual ~V8Inspector() {}
 };

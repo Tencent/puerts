@@ -42,11 +42,11 @@ public:
         return Enabled;
     }
 
-    void ReloadJsModule(FName ModuleName) override 
+    void ReloadModule(FName ModuleName, const FString& JsSource) override
     {
         if (JsEnv.IsValid())
         {
-            JsEnv->ReloadModule(ModuleName);
+            JsEnv->ReloadModule(ModuleName, JsSource);
         }
     }
 

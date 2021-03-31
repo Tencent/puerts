@@ -46,14 +46,14 @@ DEFINE_LOG_CATEGORY_STATIC(LogV8Inspector, Log, All);
 
 namespace puerts
 {
-class V8InspectorChannelImpl : public v8_inspector::V8Inspector::Channel
+class V8InspectorChannelImpl : public v8_inspector::V8Inspector::Channel, public V8InspectorChannel
 {
 public:
-    V8InspectorChannelImpl(const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID, v8::Isolate* InIsolate);
+    V8InspectorChannelImpl(const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
 
-    void ReceiveMessage(const std::string& Message);
+    void DispatchProtocolMessage(const std::string& Message) override;
 
-    std::function<void(const std::string&)> OnSendMessage;
+    void OnMessage(std::function<void(const std::string&)> Handler) override;
 
 private:
     void SendMessage(v8_inspector::StringBuffer& MessageBuffer);
@@ -66,24 +66,27 @@ private:
 
     std::unique_ptr<v8_inspector::V8InspectorSession> V8InspectorSession;
 
-    v8::Isolate* Isolate;
+    std::function<void(const std::string&)> OnSendMessage;
 };
 
-V8InspectorChannelImpl::V8InspectorChannelImpl(const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID, v8::Isolate* InIsolate)
+V8InspectorChannelImpl::V8InspectorChannelImpl(const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID)
 {
-    Isolate = InIsolate;
-
     v8_inspector::StringView DummyState;
     V8InspectorSession = InV8Inspector->connect(InCxtGroupID, this, DummyState);
 }
 
-void V8InspectorChannelImpl::ReceiveMessage(const std::string& Message)
+void V8InspectorChannelImpl::DispatchProtocolMessage(const std::string& Message)
 {
     const auto MessagePtr = reinterpret_cast<const uint8_t*>(Message.c_str());
     const auto MessageLen = (size_t)Message.length();
 
     v8_inspector::StringView StringView(MessagePtr, MessageLen);
     V8InspectorSession->dispatchProtocolMessage(StringView);
+}
+
+void V8InspectorChannelImpl::OnMessage(std::function<void(const std::string&)> Handler)
+{
+    OnSendMessage = Handler;
 }
 
 void V8InspectorChannelImpl::SendMessage(v8_inspector::StringBuffer& MessageBuffer)
@@ -149,6 +152,8 @@ public:
 #endif
 
     bool Tick() override;
+    
+    V8InspectorChannel* CreateV8InspectorChannel() override;
 
 private:
     void OnHTTP(wspp_connection_hdl Handle);
@@ -212,6 +217,8 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
     v8_inspector::StringView CtxName(CtxNameConst, sizeof(CtxNameConst) - 1);
     V8Inspector = v8_inspector::V8Inspector::create(Isolate, this);
     V8Inspector->contextCreated(v8_inspector::V8ContextInfo(InContext, CtxGroupID, CtxName));
+    
+    if (Port < 0) return;
 
     try
     {
@@ -266,6 +273,11 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
     }
 
     IsPaused = false;
+}
+
+V8InspectorChannel* V8InspectorClientImpl::CreateV8InspectorChannel()
+{
+    return new V8InspectorChannelImpl(V8Inspector, CtxGroupID);
 }
 
 V8InspectorClientImpl::~V8InspectorClientImpl()
@@ -360,8 +372,8 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 
 void V8InspectorClientImpl::OnOpen(wspp_connection_hdl Handle)
 {
-    V8InspectorChannel.reset(new V8InspectorChannelImpl(V8Inspector, CtxGroupID, Isolate));
-    V8InspectorChannel->OnSendMessage = std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1);
+    V8InspectorChannel.reset(new V8InspectorChannelImpl(V8Inspector, CtxGroupID));
+    V8InspectorChannel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Connect"));
 #else
@@ -377,7 +389,7 @@ void V8InspectorClientImpl::OnReceiveMessage(wspp_connection_hdl Handle, wspp_me
 //    PLog(Log, "<---: %s", Message->get_payload().c_str());
 //#endif
 
-    V8InspectorChannel->ReceiveMessage(Message->get_payload());
+    V8InspectorChannel->DispatchProtocolMessage(Message->get_payload());
 }
     
 void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std::string& Message)

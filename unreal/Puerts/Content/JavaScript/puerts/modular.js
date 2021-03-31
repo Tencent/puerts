@@ -128,7 +128,7 @@ var global = global || (function () { return this; }());
         buildinModule[name] = module;
     }
     
-    function reload(reloadModuleKey) {
+    function forceReload(reloadModuleKey) {
         if (reloadModuleKey) {
             reloadModuleKey = normalize(reloadModuleKey);
         }
@@ -151,11 +151,11 @@ var global = global || (function () { return this; }());
     
     puerts.__require = genRequire("");
     
-    puerts.__reload = reload;
-    
     puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;
 
     puerts.loadModule = loadModule;
+    
+    puerts.forceReload = forceReload;
 }(global));
