@@ -387,7 +387,7 @@ namespace PuertsStaticWrap
         {{?it.BlittableCopy}}
         unsafe private static {{=it.Name}} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            {{=it.Name}}* result = ({{=it.Name}}*)getValueApi.GetObject(isolate, value, isByRef);
+            {{=it.Name}}* result = ({{=it.Name}}*)getValueApi.GetNativeObject(isolate, value, isByRef);
             return result == null ? default({{=it.Name}}) : *result;
         }
 
