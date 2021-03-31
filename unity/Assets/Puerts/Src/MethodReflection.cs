@@ -144,6 +144,11 @@ namespace Puerts
                             argJsType = PuertsDLL.GetJsValueType(callInfo.Isolate, callInfo.NativePtrs[i], true);
                         }
                     }
+                    if (argJsType == JsValueType.NativeObject && types[i] == typeof(JSObject)) 
+                    {
+                        // 非要把一个NativeObject赋值给JSObject是允许的。
+                        continue;
+                    }
                     if ((typeMasks[i] & argJsType) != argJsType)
                     {
                         //UnityEngine.Debug.Log("arg " + i + " not match, expected " + typeMasks[i] + ", but got " + argJsType);
