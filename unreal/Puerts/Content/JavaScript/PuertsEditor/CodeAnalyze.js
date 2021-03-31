@@ -1085,10 +1085,12 @@ function watch(configFilePath) {
                     if (!emitOutput.emitSkipped) {
                         let modulePath = undefined;
                         let moduleFileName = undefined;
+                        let jsSource = undefined;
                         emitOutput.outputFiles.forEach(output => {
                             console.log(`write ${output.name} ...`);
                             UE.FileSystemOperation.WriteFile(output.name, output.text);
                             if (output.name.endsWith(".js")) {
+                                jsSource = output.text;
                                 if (options.outDir && output.name.startsWith(options.outDir)) {
                                     moduleFileName = output.name.substr(options.outDir.length + 1);
                                     modulePath = getDirectoryPath(moduleFileName);
@@ -1097,7 +1099,7 @@ function watch(configFilePath) {
                             }
                         });
                         if (moduleFileName && reload) {
-                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName);
+                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
                         }
                         let foundType = undefined;
                         let foundBaseTypeUClass = undefined;

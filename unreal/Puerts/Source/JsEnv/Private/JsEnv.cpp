@@ -117,9 +117,9 @@ public:
 
     virtual FString CurrentStackTrace() override;
 
-    void ReloadJsModule(FName ModuleName);
+    void JsHotReload(FName ModuleName, const FString& JsSource);
 
-    virtual void ReloadModule(FName ModuleName) override;
+    virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
 
 public:
     void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) override;
@@ -250,6 +250,10 @@ private:
     void FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value> &Info);
+
+    void SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> &Info);
+
+    void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value> &Info);
 
     struct ObjectMerger;
 
@@ -434,6 +438,10 @@ private:
 
     V8Inspector* Inspector;
 
+    V8InspectorChannel* InspectorChannel;
+
+    v8::Global<v8::Function> InspectorMessageHandler;
+
     FContainerMeta ContainerMeta;
 };
 
@@ -478,9 +486,9 @@ FString FJsEnv::CurrentStackTrace()
     return GameScript->CurrentStackTrace();
 }
 
-void FJsEnv::ReloadModule(FName ModuleName)
+void FJsEnv::ReloadModule(FName ModuleName, const FString& JsSource)
 {
-    GameScript->ReloadModule(ModuleName);
+    GameScript->ReloadModule(ModuleName, JsSource);
 }
 
 FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_unique<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, nullptr)
@@ -499,6 +507,7 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Started = false;
     Inspector = nullptr;
+    InspectorChannel = nullptr;
 
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
@@ -618,6 +627,18 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->FindModule(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
+    Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetInspectorCallback"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+        Self->SetInspectorCallback(Info);
+    }, This)->GetFunction(Context).ToLocalChecked()).Check();
+
+    Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsDispatchProtocolMessage"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        auto Self = reinterpret_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+        Self->DispatchProtocolMessage(Info);
+    }, This)->GetFunction(Context).ToLocalChecked()).Check();
+
     Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<FJsEnvImpl>);
     Global->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<FJsEnvImpl>)->GetFunction(Context).ToLocalChecked()).Check();
 
@@ -672,10 +693,7 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     InitExtensionMethodsMap();
 
-    if (InDebugPort >= 0)
-    {
-        Inspector = CreateV8Inspector(InDebugPort, &Context);
-    }
+    Inspector = CreateV8Inspector(InDebugPort, &Context);
 
     ExecuteModule("puerts/first_run.js");
     ExecuteModule("puerts/polyfill.js");
@@ -686,6 +704,7 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/promises.js");
     ExecuteModule("puerts/argv.js");
     ExecuteModule("puerts/jit_stub.js");
+    ExecuteModule("puerts/hot_reload.js");
 
     Require.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
 
@@ -697,6 +716,7 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+    InspectorMessageHandler.Reset();
     Require.Reset();
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
@@ -811,6 +831,12 @@ FJsEnvImpl::~FJsEnvImpl()
                 JSAnimGeneratedClass->Release();
             }
         }
+    }
+
+    if (InspectorChannel)
+    {
+        delete InspectorChannel;
+        InspectorChannel = nullptr;
     }
 
     if (Inspector)
@@ -1081,7 +1107,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 auto MaybeValue = Proto->Get(Context, V8Name);
                                 if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
                                 {
-                                    //Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
+                                    //Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(), *Function->GetName()));
                                     UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
                                     overrided.Add(FunctionFName);
                                 }
@@ -1124,9 +1150,8 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
     }
 }
 
-void FJsEnvImpl::ReloadJsModule(FName ModuleName)
+void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 {
-
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1134,52 +1159,44 @@ void FJsEnvImpl::ReloadJsModule(FName ModuleName)
     v8::Context::Scope ContextScope(Context);
     auto LocalReloadJs = ReloadJs.Get(Isolate);
 
-    v8::TryCatch TryCatch(Isolate);
-
-    v8::Local<v8::Value > Args[1];
-
     FString OutPath, OutDebugPath;
 
-    if (ModuleName == NAME_None) 
-    {
-        Args[0] = v8::Undefined(Isolate);
-    }
-    else if (ModuleLoader->Search(TEXT(""), ModuleName.ToString(), OutPath, OutDebugPath))
+    if (ModuleLoader->Search(TEXT(""), ModuleName.ToString(), OutPath, OutDebugPath))
     {
         Logger->Info(FString::Printf(TEXT("reload js module [%s]"), *OutPath));
-        Args[0] = FV8Utils::ToV8String(Isolate, OutPath);
+        v8::TryCatch TryCatch(Isolate);
+        v8::Handle<v8::Value> Args[] = {
+            FV8Utils::ToV8String(Isolate, ModuleName),
+            FV8Utils::ToV8String(Isolate, OutPath),
+            FV8Utils::ToV8String(Isolate, JsSource) };
+
+        auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args);
+
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FString::Printf(TEXT("reload module exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+        }
     }
     else
     {
         Logger->Warn(FString::Printf(TEXT("not find js module [%s]"), *ModuleName.ToString()));
         return;
     }
-
-    auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 1, Args);
-
-    if (TryCatch.HasCaught())
-    {
-        Logger->Error(FString::Printf(TEXT("reload module exception %s"), *GetExecutionException(Isolate, &TryCatch)));
-    }
 }
 
-void FJsEnvImpl::ReloadModule(FName ModuleName)
+void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 {
     //Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
+    JsHotReload(ModuleName, JsSource);
     UTypeScriptGeneratedClass* ToReload = nullptr;
     for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
     {
-        if (ModuleName == NAME_None || ModuleName == Iter->second)
+        if (ModuleName == Iter->second)
         {
             Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.ToString()));
-            ReloadJsModule(ModuleName);
             Iter->first->ReBind = true;
-            
-            if (ModuleName != NAME_None)
-            {
-                ToReload = Iter->first;
-                break;
-            }
+            ToReload = Iter->first;
+            break;
         }
     }
 
@@ -1190,7 +1207,6 @@ void FJsEnvImpl::ReloadModule(FName ModuleName)
             if (Iter->first != ToReload && Iter->first->IsChildOf(ToReload))
             {
                 Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.ToString()));
-                ReloadJsModule(Iter->second);
                 Iter->first->ReBind = true;
             }
         }
@@ -2682,6 +2698,61 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
         auto Exports = v8::Object::New(Isolate);
         Func(Isolate, Context, Exports);
         Info.GetReturnValue().Set(Exports);
+    }
+}
+
+void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> &Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(Function);
+
+    if (!InspectorChannel)
+    {
+        InspectorChannel = Inspector->CreateV8InspectorChannel();
+        InspectorChannel->OnMessage([this](std::string Message)
+            {
+                //UE_LOG(LogTemp, Warning, TEXT("<-- %s"), UTF8_TO_TCHAR(Message.c_str()));
+                v8::Isolate::Scope Isolatescope(MainIsolate);
+                v8::HandleScope HandleScope(MainIsolate);
+                v8::Local<v8::Context> ContextInner = DefaultContext.Get(MainIsolate);
+                v8::Context::Scope ContextScope(ContextInner);
+
+                auto Handler = InspectorMessageHandler.Get(MainIsolate);
+
+                v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(MainIsolate, Message.c_str()) };
+
+                v8::TryCatch TryCatch(MainIsolate);
+                __USE(Handler->Call(ContextInner, ContextInner->Global(), 1, Args));
+                if (TryCatch.HasCaught())
+                {
+                    Logger->Error(FString::Printf(TEXT("inspector callback exception %s"), *GetExecutionException(MainIsolate, &TryCatch)));
+                }
+            });
+    }
+
+    InspectorMessageHandler.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
+}
+
+void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value> &Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(String);
+
+    if (InspectorChannel)
+    {
+        FString Message = FV8Utils::ToFString(Isolate, Info[0]);
+        //UE_LOG(LogTemp, Warning, TEXT("--> %s"), *Message);
+        InspectorChannel->DispatchProtocolMessage(TCHAR_TO_UTF8(*Message));
     }
 }
 

@@ -1435,11 +1435,13 @@ function watch(configFilePath:string) {
                     if (!emitOutput.emitSkipped) {
                         let modulePath:string = undefined;
                         let moduleFileName:string = undefined;
+                        let jsSource:string = undefined;
                         emitOutput.outputFiles.forEach(output => {
                             console.log(`write ${output.name} ...` )
                             UE.FileSystemOperation.WriteFile(output.name, output.text);
                             
                             if (output.name.endsWith(".js")) {
+                                jsSource = output.text;
                                 if (options.outDir && output.name.startsWith(options.outDir)) {
                                     moduleFileName = output.name.substr(options.outDir.length + 1);
                                     modulePath = getDirectoryPath(moduleFileName);
@@ -1448,7 +1450,7 @@ function watch(configFilePath:string) {
                             }
                         });
                         if (moduleFileName && reload) {
-                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName);
+                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
                         }
 
                         let foundType: ts.Type = undefined;
