@@ -1075,6 +1075,8 @@ namespace Puerts.Editor
                 if (!tsOnly)
                 {
                     var typeGenInfos = new List<TypeGenInfo>();
+
+                    Dictionary<string, bool> makeFileUniqueMap = new Dictionary<string, bool>();
                     foreach (var type in genTypes)
                     {
                         if (type.IsEnum || type.IsArray || (IsDelegate(type) && type != typeof(Delegate))) continue;
@@ -1082,6 +1084,14 @@ namespace Puerts.Editor
                         typeGenInfo.BlittableCopy = blittableCopyTypes.Contains(type);
                         typeGenInfos.Add(typeGenInfo);
                         string filePath = saveTo + typeGenInfo.WrapClassName + ".cs";
+
+                        int uniqueId = 1;
+                        while (makeFileUniqueMap.ContainsKey(filePath.ToLower())) {
+                            filePath = saveTo + typeGenInfo.WrapClassName + "_" + uniqueId + ".cs";
+                            uniqueId++;
+                        }
+                        makeFileUniqueMap.Add(filePath.ToLower(), true);
+
                         string fileContext = wrapRender(typeGenInfo);
                         using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
                         {
