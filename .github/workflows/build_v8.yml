@@ -87,18 +87,16 @@ jobs:
         name: v8_bin
         path: v8/v8/output/**/*
         
-  build_windows_md_vs2017:
-    name: Windows-MD
-    runs-on: windows-2016
+  build_windows_md_dll:
+    name: Windows-MD-DLL
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v2
-    - name: Insatll MSVC
-      uses: microsoft/setup-msbuild@v1.0.2
     - name: Run build script
       shell: cmd
       run: |
         cd %GITHUB_WORKSPACE%
-        call .\v8-build\windows_64MD_vs2017.cmd ${{env.VERSION}}
+        call .\v8-build\windows_64MD_DLL.cmd ${{env.VERSION}}
     - uses: actions/upload-artifact@v2
       with:
         name: v8_bin
