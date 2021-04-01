@@ -1651,12 +1651,16 @@ function watch(configFilePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
                 bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                let hasConstructor = false;
                 checker.getPropertiesOfType(type)
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                         .filter(x => !manualSkip(x))
                         .forEach((symbol) => {
                             if (ts.isMethodDeclaration(symbol.valueDeclaration!)) {
-                                if (symbol.getName() === 'Constructor') return;
+                                if (symbol.getName() === 'Constructor') {
+                                    hasConstructor = true;
+                                    return;
+                                }
 
                                 let methodType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
                                 let signatures = checker.getSignaturesOfType(methodType, ts.SignatureKind.Call);
@@ -1719,6 +1723,7 @@ function watch(configFilePath:string) {
                         });
                 bp.RemoveNotExistedMemberVariable();
                 bp.RemoveNotExistedFunction();
+                bp.HasConstructor = hasConstructor;
                 bp.Save();
             }
 

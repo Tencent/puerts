@@ -666,12 +666,18 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
 
 void UPEBlueprintAsset::Save()
 {
-    if (Blueprint && NeedSave)
+    auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass);
+    if (Blueprint && TypeScriptGeneratedClass)
     {
-        FKismetEditorUtilities::CompileBlueprint(Blueprint);
+        NeedSave = NeedSave || (TypeScriptGeneratedClass->HasConstructor != HasConstructor);
+        TypeScriptGeneratedClass->HasConstructor = HasConstructor;
+        if (NeedSave)
+        {
+            FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
-        TArray<UPackage*> PackagesToSave;
-        PackagesToSave.Add(Package);
-        FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+            TArray<UPackage*> PackagesToSave;
+            PackagesToSave.Add(Package);
+            FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+        }
     }
 }
