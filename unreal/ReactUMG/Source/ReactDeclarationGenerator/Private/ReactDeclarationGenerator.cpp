@@ -8,6 +8,7 @@
 #include "TypeScriptDeclarationGenerator.h"
 #include "Components/PanelSlot.h"
 #include "Components/Widget.h"
+#include "Interfaces/IPluginManager.h"
 
 static FString SafeName(const FString &Name)
 {
@@ -115,7 +116,7 @@ interface TReactUMG {
 export var ReactUMG : TReactUMG;
 )";
 
-    FFileHelper::SaveStringToFile(ToString(), *(FPaths::ProjectContentDir() / TEXT("ReactTyping/react-umg/index.d.ts")));
+    FFileHelper::SaveStringToFile(ToString(), *(IPluginManager::Get().FindPlugin("ReactUMG")->GetBaseDir() / TEXT("Typing/react-umg/index.d.ts")));
     FFileHelper::SaveStringToFile(Components, *(FPaths::ProjectContentDir() / TEXT("JavaScript/react-umg/components.js")));
 }
 

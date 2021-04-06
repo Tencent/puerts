@@ -8,6 +8,7 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "IDeclarationGenerator.h"
 #include "Features/IModularFeatures.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
 #include "CoreUObject.h"
 #include "TypeScriptDeclarationGenerator.h"
@@ -181,7 +182,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
     }
     End();
 
-    FFileHelper::SaveStringToFile(ToString(), *(FPaths::ProjectContentDir() / TEXT("Typing/ue/ue.d.ts")));
+    FFileHelper::SaveStringToFile(ToString(), *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")));
 }
 
 void FTypeScriptDeclarationGenerator::Gen(UObject *ToGen)
