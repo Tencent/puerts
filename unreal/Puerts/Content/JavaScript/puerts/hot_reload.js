@@ -85,8 +85,6 @@ var global = global || (function () { return this; }());
                 await sendCommand("Debugger.setScriptSource", {scriptId:scriptId,scriptSource:source});
                 //puerts.forceReload(url);
             }
-        } else {
-            console.error("can not find scriptId for:" + url);
         }
     };
     
