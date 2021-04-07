@@ -52,7 +52,14 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     {
         GeneratedClass = Blueprint->GeneratedClass;
         Package = Cast<UPackage>(Blueprint->GetOuter());
-        NeedSave = false;
+        if (Blueprint->ParentClass != ParentClass)
+        {
+            Blueprint->ParentClass = ParentClass;
+            NeedSave = true;
+        }
+        else {
+            NeedSave = false;
+        }
         return true;
     }
 
