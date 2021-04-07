@@ -99,7 +99,7 @@ jobs:
         call .\v8-build\windows_64MD_DLL.cmd ${{env.VERSION}}
     - uses: actions/upload-artifact@v2
       with:
-        name: v8_bin
+        name: v8_bin_win64_dll
         path: v8/v8/output/**/*
         
   build_windows_32:
