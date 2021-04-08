@@ -97,10 +97,14 @@ jobs:
       run: |
         cd %GITHUB_WORKSPACE%
         call .\v8-build\windows_64MD_DLL.cmd ${{env.VERSION}}
-    - uses: actions/upload-artifact@v2
-      with:
-        name: v8_bin_win64_dll
-        path: v8/v8/output/**/*
+    - shell: msys2 {0}
+      run: |
+        cd $GITHUB_WORKSPACE
+        find . -name "*.dll"
+    #- uses: actions/upload-artifact@v2
+    #  with:
+    #    name: v8_bin_win64_dll
+    #    path: v8/v8/output/**/*
         
   build_windows_32:
     name: Windows-32
