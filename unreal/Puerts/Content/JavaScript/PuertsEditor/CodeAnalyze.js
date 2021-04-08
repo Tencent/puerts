@@ -1320,12 +1320,12 @@ function watch(configFilePath) {
                         for (var i = 0; i < signature.parameters.length; i++) {
                             let paramType = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration);
                             let paramPinType = tsTypeToPinType(paramType);
-                            postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                             if (!paramPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                 bp.ClearParameter();
                                 return;
                             }
+                            postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                             bp.AddParameter(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType);
                         }
                         //console.log("add function", symbol.getName());
@@ -1337,12 +1337,12 @@ function watch(configFilePath) {
                         else {
                             let returnType = signature.getReturnType();
                             let resultPinType = tsTypeToPinType(returnType);
-                            postProcessPinType(symbol, resultPinType.pinType, true);
                             if (!resultPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                 bp.ClearParameter();
                                 return;
                             }
+                            postProcessPinType(symbol, resultPinType.pinType, true);
                             bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
                         }
                         bp.ClearParameter();
@@ -1350,11 +1350,11 @@ function watch(configFilePath) {
                     else {
                         let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
                         let propPinType = tsTypeToPinType(propType);
-                        postProcessPinType(symbol, propPinType.pinType, true);
                         if (!propPinType) {
                             console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                         }
                         else {
+                            postProcessPinType(symbol, propPinType.pinType, true);
                             //console.log("add member variable", symbol.getName());
                             let sflags = tryGetAnnotation(symbol, "flags", true);
                             let flags = getFlagsValue(sflags, PropertyFlags);
