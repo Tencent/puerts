@@ -16,6 +16,8 @@ public class JsEnv : ModuleRules
 
     private bool UseQuickjs = false;
 
+    private bool WinDll = false;
+
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -205,6 +207,27 @@ public class JsEnv : ModuleRules
         //}
     }
 
+    void AddRuntimeDependencies(string[] DllNames, string LibraryPath, bool Delay)
+    {
+        string BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", "Win64"));
+        foreach (var DllName in DllNames)
+        {
+            if(Delay) PublicDelayLoadDLLs.Add(DllName);
+            var DllPath = Path.Combine(LibraryPath, DllName);
+            var DestDllPath = Path.Combine(BinariesDir, DllName);
+            try
+            {
+                System.IO.File.Delete(DestDllPath);
+            }
+            catch { }
+            if (!System.IO.File.Exists(DestDllPath) && System.IO.File.Exists(DllPath))
+            {
+                System.IO.File.Copy(DllPath, DestDllPath, false);
+            }
+            RuntimeDependencies.Add(DestDllPath);
+        }
+    }
+
     void ThirdParty(ReadOnlyTargetRules Target)
     {
         //Add header
@@ -224,9 +247,29 @@ public class JsEnv : ModuleRules
         string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8", "Lib"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
+            //TargetRules targetRules = typeof(ReadOnlyTargetRules).GetField("Inner",
+            //System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public |
+            //System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly).GetValue(Target) as TargetRules;
+            //targetRules.bUseStaticCRT = true;
+
             string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
 
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "wee8.lib"));
+            if (!WinDll)
+            {
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "wee8.lib"));
+            }
+            else {
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8.dll.lib"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8_libplatform.dll.lib"));
+
+                AddRuntimeDependencies(new string[]
+                {
+                "v8.dll",
+                "v8_libplatform.dll",
+                "v8_libbase.dll",
+                "zlib.dll"
+                }, V8LibraryPath, false);
+            }
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -270,29 +313,12 @@ public class JsEnv : ModuleRules
             string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
 
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "quickjs.dll.lib"));
-            var DllNames = new string[]
+            AddRuntimeDependencies(new string[]
             {
                 "libgcc_s_seh-1.dll",
                 "libwinpthread-1.dll",
                 "msys-quickjs.dll"
-            };
-            string BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", "Win64"));
-            foreach (var DllName in DllNames)
-            {
-                PublicDelayLoadDLLs.Add(DllName);
-                var DllPath = Path.Combine(V8LibraryPath, DllName);
-                var DestDllPath = Path.Combine(BinariesDir, DllName);
-                try
-                {
-                    System.IO.File.Delete(DestDllPath);
-                }
-                catch { }
-                if (!System.IO.File.Exists(DestDllPath) && System.IO.File.Exists(DllPath))
-                {
-                    System.IO.File.Copy(DllPath, DestDllPath, false);
-                }
-                RuntimeDependencies.Add(DestDllPath);
-            }
+            }, V8LibraryPath, true);
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
