@@ -64,6 +64,9 @@ public:
     UPROPERTY(BlueprintReadOnly)
     bool NeedSave;
 
+    UPROPERTY()
+    bool HasConstructor;
+
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass);
 

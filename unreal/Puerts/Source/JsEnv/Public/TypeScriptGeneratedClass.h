@@ -35,4 +35,7 @@ public:
     void ObjectInitialize(const FObjectInitializer& ObjectInitializer);
 
     void Bind() override;
+
+    UPROPERTY()
+    bool HasConstructor;
 };

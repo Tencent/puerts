@@ -1651,12 +1651,16 @@ function watch(configFilePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
                 bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                let hasConstructor = false;
                 checker.getPropertiesOfType(type)
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                         .filter(x => !manualSkip(x))
                         .forEach((symbol) => {
                             if (ts.isMethodDeclaration(symbol.valueDeclaration!)) {
-                                if (symbol.getName() === 'Constructor') return;
+                                if (symbol.getName() === 'Constructor') {
+                                    hasConstructor = true;
+                                    return;
+                                }
 
                                 let methodType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
                                 let signatures = checker.getSignaturesOfType(methodType, ts.SignatureKind.Call);
@@ -1673,12 +1677,12 @@ function watch(configFilePath:string) {
                                 for (var i = 0; i < signature.parameters.length; i++) {
                                     let paramType:ts.Type = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration!);
                                     let paramPinType = tsTypeToPinType(paramType);
-                                    postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                                     if (!paramPinType)  {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                         bp.ClearParameter();
                                         return;
                                     }
+                                    postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                                     bp.AddParameter(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType);
                                 }
 
@@ -1691,12 +1695,12 @@ function watch(configFilePath:string) {
                                 } else {
                                     let returnType = signature.getReturnType();
                                     let resultPinType = tsTypeToPinType(returnType);
-                                    postProcessPinType(symbol, resultPinType.pinType, true);
                                     if (!resultPinType) {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                         bp.ClearParameter();
                                         return;
                                     }
+                                    postProcessPinType(symbol, resultPinType.pinType, true);
                                     
                                     bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
                                 }
@@ -1705,11 +1709,10 @@ function watch(configFilePath:string) {
                             } else {
                                 let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration!);
                                 let propPinType = tsTypeToPinType(propType);
-                                postProcessPinType(symbol, propPinType.pinType, true);
-                                
                                 if (!propPinType) {
                                     console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                                 } else {
+                                    postProcessPinType(symbol, propPinType.pinType, true);
                                     //console.log("add member variable", symbol.getName());
                                     let sflags = tryGetAnnotation(symbol, "flags", true);
                                     let flags = getFlagsValue(sflags, PropertyFlags);
@@ -1719,6 +1722,7 @@ function watch(configFilePath:string) {
                         });
                 bp.RemoveNotExistedMemberVariable();
                 bp.RemoveNotExistedFunction();
+                bp.HasConstructor = hasConstructor;
                 bp.Save();
             }
 

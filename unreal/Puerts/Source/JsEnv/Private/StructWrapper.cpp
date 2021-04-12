@@ -103,10 +103,12 @@ namespace puerts
 
                 if (Function->HasAnyFunctionFlags(FUNC_Static))
                 {
+                    AddedFunctions.Add(Function->GetName());
                     Result->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
                 }
                 else
                 {
+                    AddedMethods.Add(Function->GetName());
                     Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
                 }
                 Functions.push_back(std::move(FunctionTranslator));
@@ -120,10 +122,16 @@ namespace puerts
         {
             UFunction* Function = *Iter;
 
+            if (AddedMethods.Contains(Function->GetName()))
+            {
+                continue;
+            }
+
             auto FunctionTranslator = std::make_unique<FExtensionMethodTranslator>(Function);
 
             auto Key = FV8Utils::InternalString(Isolate, Function->GetName());
 
+            AddedMethods.Add(Function->GetName());
             Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
 
             Functions.push_back(std::move(FunctionTranslator));

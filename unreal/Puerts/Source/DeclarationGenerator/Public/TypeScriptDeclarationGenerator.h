@@ -62,22 +62,3 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     virtual ~FTypeScriptDeclarationGenerator(){}
 };
-
-struct DECLARATIONGENERATOR_API FReactDeclarationGenerator : public FTypeScriptDeclarationGenerator
-{
-    void Begin(FString Namespace) override;
-
-    void GenReactDeclaration();
-
-    void GenClass(UClass* Class) override;
-
-    void GenStruct(UStruct *Struct) override;
-
-    void GenEnum(UEnum *Enum) override;
-
-    void End() override;
-
-    virtual ~FReactDeclarationGenerator() {}
-};
-
-

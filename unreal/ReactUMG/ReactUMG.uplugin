@@ -1,10 +1,10 @@
 {
   "FileVersion": 3,
-  "FriendlyName": "puer.ts",
+  "FriendlyName": "react umg",
   "Version": 1,
   "VersionName": "1.0",
   "FriendlyVersion": "1.0",
-  "Description": "Javascript Runtime for unreal engine",
+  "Description": "react umg",
   "Category": "Programming",
   "CreatedBy": "Tencent Corporation",
   "CreatedByURL": "https://github.com/Tencent",
@@ -14,26 +14,21 @@
   "CanBeUsedWithUnrealHeaderTool" : false,
   "Modules": [
     {
-      "Name": "JsEnv",
-      "Type": "Runtime",
-      "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
-    },
-    {
-      "Name": "DeclarationGenerator",
+      "Name": "ReactDeclarationGenerator",
       "Type": "Editor",
       "LoadingPhase": "Default"
     },
     {
-      "Name": "Puerts",
+      "Name": "ReactUMG",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
-    },
-    {
-      "Name": "PuertsEditor",
-      "Type": "Editor",
-      "LoadingPhase": "Default"
+	  "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
     }
-  ]
+  ],
+  "Plugins": [
+     {
+       "Name": "Puerts",
+       "Enabled": true
+     }
+   ]
 }

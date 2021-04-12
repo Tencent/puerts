@@ -145,6 +145,13 @@ var global = global || (function () { return this; }());
         }
     }
     
+    function getModuleByUrl(url) {
+        if (url) {
+            url = normalize(url);
+            return moduleCache[url];
+        }
+    }
+    
     registerBuildinModule("puerts", puerts)
 
     puerts.genRequire = genRequire;
@@ -158,4 +165,6 @@ var global = global || (function () { return this; }());
     puerts.loadModule = loadModule;
     
     puerts.forceReload = forceReload;
+    
+    puerts.getModuleByUrl = getModuleByUrl;
 }(global));

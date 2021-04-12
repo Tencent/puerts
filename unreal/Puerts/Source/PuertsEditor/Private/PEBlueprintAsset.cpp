@@ -52,7 +52,14 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     {
         GeneratedClass = Blueprint->GeneratedClass;
         Package = Cast<UPackage>(Blueprint->GetOuter());
-        NeedSave = false;
+        if (Blueprint->ParentClass != ParentClass)
+        {
+            Blueprint->ParentClass = ParentClass;
+            NeedSave = true;
+        }
+        else {
+            NeedSave = false;
+        }
         return true;
     }
 
@@ -666,12 +673,18 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
 
 void UPEBlueprintAsset::Save()
 {
-    if (Blueprint && NeedSave)
+    auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass);
+    if (Blueprint && TypeScriptGeneratedClass)
     {
-        FKismetEditorUtilities::CompileBlueprint(Blueprint);
+        NeedSave = NeedSave || (TypeScriptGeneratedClass->HasConstructor != HasConstructor);
+        TypeScriptGeneratedClass->HasConstructor = HasConstructor;
+        if (NeedSave)
+        {
+            FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
-        TArray<UPackage*> PackagesToSave;
-        PackagesToSave.Add(Package);
-        FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+            TArray<UPackage*> PackagesToSave;
+            PackagesToSave.Add(Package);
+            FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+        }
     }
 }
