@@ -2709,11 +2709,14 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> &Info)
 {
+#ifndef WITH_QUICKJS
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
+
+    if (!Inspector) return;
 
     CHECK_V8_ARGS(Function);
 
@@ -2742,10 +2745,12 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
     }
 
     InspectorMessageHandler.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
+#endif // !WITH_QUICKJS
 }
 
 void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value> &Info)
 {
+#ifndef WITH_QUICKJS
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -2760,6 +2765,7 @@ void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Valu
         //UE_LOG(LogTemp, Warning, TEXT("--> %s"), *Message);
         InspectorChannel->DispatchProtocolMessage(TCHAR_TO_UTF8(*Message));
     }
+#endif // !WITH_QUICKJS
 }
 
 void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value> &Info)
