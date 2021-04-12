@@ -34,6 +34,11 @@ namespace Puerts
             return JsEnv.jsEnvs[jsEnvIdx].objectPool.Get(self.ToInt32());
         }
 
+        public static void SetSelf(int jsEnvIdx, IntPtr self, object obj)
+        {
+            JsEnv.jsEnvs[jsEnvIdx].objectPool.ReplaceValueType(self.ToInt32(), obj);
+        }
+
         public static bool IsSupportedMethod(MethodInfo method)
         {
             if (!method.ContainsGenericParameters)
