@@ -131,6 +131,13 @@ function getSelf(type) {
         return `Puerts.Utils.GetSelf((int)data, self) as ${type.Name}`;
     }
 }
+function setSelf(type) {
+    if (type.IsValueType) {
+        return `Puerts.Utils.SetSelf((int)data, self, obj);`
+    } else {
+        return '';
+    }
+}
 
 function refSelf() {
     return it.BlittableCopy ? "(*obj)" : "obj";
@@ -207,6 +214,7 @@ namespace PuertsStaticWrap
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
+                        {{=setSelf(it)}}
                         {{?method.HasOverloads}}return;{{?}}
                     }{{~}}
                 }
@@ -244,6 +252,7 @@ namespace PuertsStaticWrap
                 {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 {{=property.IsStatic?it.Name:refSelf()}}.{{=UnK(property.Name)}} = {{=getArgument(property, 'argHelper')}};
+                {{=setSelf(it)}}
             }
             catch (Exception e)
             {
