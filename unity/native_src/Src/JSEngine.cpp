@@ -10,6 +10,9 @@
 #include "Log.h"
 #include <memory>
 #include "PromiseRejectCallback.hpp"
+#if PLATFORM_LINUX
+#include "Blob/Linux/SnapshotBlob.h"
+#endif
 
 namespace puerts
 {

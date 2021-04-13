@@ -49,6 +49,12 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
 )
 
+if(UNIX AND NOT APPLE)
+    include_directories(
+        ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/ThirdParty/Include/v8/7.7.299
+    )
+endif()
+
 set ( PUERTS_INC
     Inc/Log.h
     Inc/JSEngine.h
@@ -203,6 +209,9 @@ elseif ( APPLE )
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
+elseif (UNIX)
+    target_link_libraries(puerts  ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/ThirdParty/Library/V8/Linux/${LIB_FILE_NAME})
+    target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
 endif ()
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
