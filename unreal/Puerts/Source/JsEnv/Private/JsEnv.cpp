@@ -422,7 +422,7 @@ private:
 
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
 
-    TArray<UClass *> GeneratedClassList;
+    TSet<UClass *> GeneratedClasses;
 
     v8::UniquePersistent<v8::FunctionTemplate> DelegateTemplate;
 
@@ -822,19 +822,28 @@ FJsEnvImpl::~FJsEnvImpl()
         }
         TickerDelegateHandleMap.clear();
 
-        for (int i = 0; i < GeneratedClassList.Num(); ++i)
+        for (auto&  GeneratedClass : GeneratedClasses)
         {
-            if (auto JSGeneratedClass = Cast< UJSGeneratedClass>(GeneratedClassList[i]))
+            if (auto JSGeneratedClass = Cast< UJSGeneratedClass>(GeneratedClass))
             {
-                JSGeneratedClass->Release();
+                if (JSGeneratedClass->IsValidLowLevelFast() && !JSGeneratedClass->IsPendingKill())
+                {
+                    JSGeneratedClass->Release();
+                }
             }
-            else if (auto JSWidgetGeneratedClass = Cast<UJSWidgetGeneratedClass>(GeneratedClassList[i]))
+            else if (auto JSWidgetGeneratedClass = Cast<UJSWidgetGeneratedClass>(GeneratedClass))
             {
-                JSWidgetGeneratedClass->Release();
+                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !JSWidgetGeneratedClass->IsPendingKill())
+                {
+                    JSWidgetGeneratedClass->Release();
+                }
             }
-            else if (auto JSAnimGeneratedClass = Cast< UJSAnimGeneratedClass>(GeneratedClassList[i]))
+            else if (auto JSAnimGeneratedClass = Cast< UJSAnimGeneratedClass>(GeneratedClass))
             {
-                JSAnimGeneratedClass->Release();
+                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !JSWidgetGeneratedClass->IsPendingKill())
+                {
+                    JSAnimGeneratedClass->Release();
+                }
             }
         }
     }
@@ -1502,14 +1511,20 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
     
     TryReleaseType((UStruct*)ObjectBase);
 
-    UTypeScriptGeneratedClass *Class = (UTypeScriptGeneratedClass*)ObjectBase;
-    auto IterBIM = BindInfoMap.find(Class);
+    UTypeScriptGeneratedClass *GeneratedClass = (UTypeScriptGeneratedClass*)ObjectBase;
+    auto IterBIM = BindInfoMap.find(GeneratedClass);
     if (IterBIM != BindInfoMap.end())
     {
         BindInfoMap.erase(IterBIM);
     }
 
     UnBind(nullptr, (UObject*)ObjectBase, true);
+
+    UClass *Class = (UClass *)ObjectBase;
+    if (GeneratedClasses.Contains(Class))
+    {
+        GeneratedClasses.Remove(Class);
+    }
 }
 
 void FJsEnvImpl::TryReleaseType(UStruct *Struct) 
@@ -2678,7 +2693,10 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
         Class->AssembleReferenceTokenStream();
     }
 #endif
-    GeneratedClassList.Add(Class);
+    if (!GeneratedClasses.Contains(Class))
+    {
+        GeneratedClasses.Add(Class);
+    }
     SysObjectRetainer.Retain(Class);
 
     auto Result = FindOrAdd(Isolate, Context, Class->GetClass(), Class);
