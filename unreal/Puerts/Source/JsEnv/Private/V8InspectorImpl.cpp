@@ -264,8 +264,8 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
     {
         IsAlive = false;
 #if USING_UE
-        UE_LOG(LogV8Inspector, Error, TEXT("V8InspectorClientImpl: %s"), ANSI_TO_TCHAR(Exception.what()));
-        UE_LOG(LogV8Inspector, Error, TEXT("Failed to Startup Inspector."));
+        UE_LOG(LogV8Inspector, Warning, TEXT("V8InspectorClientImpl: %s"), ANSI_TO_TCHAR(Exception.what()));
+        UE_LOG(LogV8Inspector, Warning, TEXT("Failed to Startup Inspector."));
 #else
         PLog(Error, "V8InspectorClientImpl: %s", Exception.what());
         PLog(Error, "Failed to Startup Inspector.");
