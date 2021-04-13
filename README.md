@@ -25,7 +25,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
 ## 安装
-
+1. 下载项目
 * git clone https://github.com/Tencent/puerts.git
 
 * 拷贝插件到您项目
@@ -39,6 +39,9 @@ puerts是游戏引擎下的TypeScript编程解决方案
         + 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下，可以参考[unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
         
         + Plugins要单独下载[releases](https://github.com/Tencent/puerts/releases)，或者自行编译
+
+2. 通过npm快速安装
+[传送门](https://github.com/zombieyang/puerts-cli)
 
 ## 编程样例
 
