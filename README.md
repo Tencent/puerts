@@ -41,7 +41,15 @@ puerts是游戏引擎下的TypeScript编程解决方案
         + Plugins要单独下载[releases](https://github.com/Tencent/puerts/releases)，或者自行编译
 
 方法2. 通过npm快速安装
-[传送门](https://github.com/zombieyang/puerts-cli)
+
+    1. 已经安装好Node.js后，执行以下命令下载安装器
+    ```
+    npm i -g @puerts/cli
+    ```
+    2. 随后，你可以在unreal项目根目录(包含*.uproject文件)或是unity项目根目录(包含Assets目录)执行以下命令安装puerts
+    ```
+    puerts init
+    ```
 
 ## 编程样例
 
