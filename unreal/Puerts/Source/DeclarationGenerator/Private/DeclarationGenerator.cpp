@@ -48,6 +48,49 @@ static FString SafeName(const FString &Name)
     return Ret;
 }
 
+static FString SafeFieldName(const FString &Name)
+{
+    bool IsInvalid = false;
+    FString Ret = TEXT("");
+
+    for (int i = 0; i < Name.Len(); i++)
+    {
+        auto Char = Name[i];
+        if ((Char >= (TCHAR)'0' && Char <= (TCHAR)'9')
+            || (Char >= (TCHAR)'a' && Char <= (TCHAR)'z')
+            || (Char >= (TCHAR)'A' && Char <= (TCHAR)'Z')
+            || Char == (TCHAR)'_')
+        {
+            Ret += Char;
+        }
+        else
+        {
+            IsInvalid = true;
+            if (Char == (TCHAR)'"')
+            {
+                Ret += "\\\"";
+            }
+            else if (Char == (TCHAR)'\\')
+            {
+                Ret += "\\\\";
+            }
+            else
+            {
+                Ret += Char;
+            }
+        }
+    }
+    if (Ret.Len() > 0)
+    {
+        auto FirstChar = Ret[0];
+        if ((TCHAR)'0' <= FirstChar && FirstChar <= (TCHAR)'9')
+        {
+            IsInvalid = true;
+        }
+    }
+    return IsInvalid  ? (TEXT("[\"") + Ret + TEXT("\"]")) : Ret;
+}
+
 //在PropertyTranslator.cpp另有一份，因为属于两个不同的模块共享比较困难，改动需要同步改
 static FString DisplayNameOfUserDefinedStructField(const FString &Name)
 {
@@ -351,7 +394,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
             OwnerBuffer << "static ";
         }
         
-        OwnerBuffer << SafeName(Function->GetName());
+        OwnerBuffer << SafeFieldName(Function->GetName());
     }
     OwnerBuffer << "(";
     PropertyMacro *ReturnValue = nullptr;
@@ -433,7 +476,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
         auto Property = *PropertyIt;
 
         FStringBuffer TmpBuff;
-        TmpBuff << SafeName(Property->GetName()) << ": ";
+        TmpBuff << SafeFieldName(Property->GetName()) << ": ";
         TArray<UObject *> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
         {

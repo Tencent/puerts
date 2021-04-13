@@ -27,7 +27,7 @@ public class JsEnv : ModuleRules
             "Core", "CoreUObject", "Engine", "InputCore", "Serialization", "OpenSSL","UMG"
         });
 
-        Definitions.Add("WITH_INSPECTOR");
+        //Definitions.Add("WITH_INSPECTOR");
 
         bEnableExceptions = true;
         bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
