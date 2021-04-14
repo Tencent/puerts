@@ -214,7 +214,7 @@ namespace PuertsStaticWrap
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
-                        {{=setSelf(it)}}
+                        {{?!it.BlittableCopy && !method.IsStatic}}{{=setSelf(it)}}{{?}}
                         {{?method.HasOverloads}}return;{{?}}
                     }{{~}}
                 }
@@ -252,7 +252,7 @@ namespace PuertsStaticWrap
                 {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 {{=property.IsStatic?it.Name:refSelf()}}.{{=UnK(property.Name)}} = {{=getArgument(property, 'argHelper')}};
-                {{=setSelf(it)}}
+                {{?!it.BlittableCopy && !property.IsStatic}}{{=setSelf(it)}}{{?}}
             }
             catch (Exception e)
             {
