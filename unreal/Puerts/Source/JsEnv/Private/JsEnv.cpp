@@ -203,7 +203,7 @@ public:
 private:
     FString GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch);
 
-    bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data);
+    bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data, FString &ErrInfo);
 
     void ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor = nullptr);
 
@@ -2386,19 +2386,19 @@ void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UO
     Started = true;
 }
 
-bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data)
+bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data, FString &ErrInfo)
 {
     if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath)) 
     {
         if (!ModuleLoader->Load(OutPath, Data))
         {
-            Logger->Error(FString::Printf(TEXT("can not load [%s]"), *ModuleName));
+            ErrInfo = FString::Printf(TEXT("can not load [%s]"), *ModuleName);
             return false;
         }
     }
     else 
     {
-        Logger->Error(FString::Printf(TEXT("can not find [%s]"), *ModuleName));
+        ErrInfo = FString::Printf(TEXT("can not find [%s]"), *ModuleName);
         return false;
     }
     return true;
@@ -2449,8 +2449,10 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     FString DebugPath;
     TArray<uint8> Data;
 
-    if (!LoadFile(TEXT(""), ModuleName, OutPath, DebugPath, Data))
+    FString ErrInfo;
+    if (!LoadFile(TEXT(""), ModuleName, OutPath, DebugPath, Data, ErrInfo))
     {
+        Logger->Error(ErrInfo);
         return;
     }
 
@@ -2577,9 +2579,10 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     FString OutPath;
     FString OutDebugPath;
     TArray<uint8> Data;
-    if(!LoadFile(RequiringDir, ModuleName, OutPath, OutDebugPath, Data))
+    FString ErrInfo;
+    if(!LoadFile(RequiringDir, ModuleName, OutPath, OutDebugPath, Data, ErrInfo))
     {
-        FV8Utils::ThrowException(Isolate, "load module fail!");
+        FV8Utils::ThrowException(Isolate, TCHAR_TO_UTF8(*ErrInfo));
         return;
     }
     FString Script;
