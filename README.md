@@ -25,7 +25,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
 ## 安装
-方法1. 下载项目
+<!-- 方法1. 下载项目 -->
 * git clone https://github.com/Tencent/puerts.git
 
 * 拷贝插件到您项目
@@ -40,7 +40,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
         
         + Plugins要单独下载[releases](https://github.com/Tencent/puerts/releases)，或者自行编译
 
-方法2. 通过npm快速安装
+<!-- 方法2. 通过npm快速安装
 
 1. 已经安装好Node.js后，执行以下命令下载安装器
 
@@ -52,7 +52,7 @@ npm i -g @puerts/cli
 
 ```
 puerts init
-```
+``` -->
 
 ## 编程样例
 
