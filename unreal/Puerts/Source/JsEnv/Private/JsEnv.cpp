@@ -180,6 +180,8 @@ public:
 
     void InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM);
 
+    void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM);
+
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
     V8_INLINE static FJsEnvImpl * Get(v8::Isolate* Isolate)
@@ -393,6 +395,13 @@ private:
         TSet<UDynamicDelegateProxy*> Proxys; // for MulticastDelegate
     };
 
+    struct TsFunctionInfo
+    {
+        v8::UniquePersistent<v8::Function> JsFunction;
+
+        std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
+    };
+
     class DynamicInvokerImpl : public IDynamicInvoker
     {
     public:
@@ -413,6 +422,11 @@ private:
             if (Parent) Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 
+        void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM) override
+        {
+            if (Parent) Parent->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
+        }
+
         FJsEnvImpl *Parent;
     };
 
@@ -429,6 +443,8 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> MulticastDelegateTemplate;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
+
+    std::map<UFunction*, TsFunctionInfo> TsFunctionMap;
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 
@@ -791,6 +807,11 @@ FJsEnvImpl::~FJsEnvImpl()
             }
         }
 
+        for (auto Iter = TsFunctionMap.begin(); Iter != TsFunctionMap.end(); Iter++)
+        {
+            Iter->second.JsFunction.Reset();
+        }
+
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
             if (Iter->first->IsValidLowLevelFast() && !Iter->first->IsPendingKill())
@@ -1117,13 +1138,26 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             }
                             auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
                             if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
-                                (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent) || Cast<UJSGeneratedFunction>(Function)))
+                                (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
                             {
                                 auto MaybeValue = Proto->Get(Context, V8Name);
                                 if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
                                 {
                                     //Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(), *Function->GetName()));
-                                    UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
+                                    //UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
+                                    TsFunctionMap.erase(Function);
+                                    TsFunctionMap[Function] = {
+                                        v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
+                                        std::make_unique<puerts::FFunctionTranslator>(Function)
+                                    };
+                                    Function->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
+                                    if (Function->Script.Num() == 0)
+                                    {
+                                        Function->Script.Add(EX_EndFunctionParms);
+                                    }
+                                    Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                                    Function->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
+                                    TypeScriptGeneratedClass->AddNativeFunction(*Function->GetName(), &UTypeScriptGeneratedClass::execCallJS);
                                     overrided.Add(FunctionFName);
                                 }
                             }
@@ -1525,6 +1559,8 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
     {
         GeneratedClasses.Remove(Class);
     }
+
+    TsFunctionMap.erase((UFunction*)ObjectBase);
 }
 
 void FJsEnvImpl::TryReleaseType(UStruct *Struct) 
@@ -1561,6 +1597,43 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject, *GetExecutionException(Isolate, &TryCatch)));
+    }
+}
+
+void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM)
+{
+    if (GeneratedObjectMap.find(ContextObject) == GeneratedObjectMap.end())
+    {
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
+            *Function->GetName(), ContextObject));
+        return;
+    }
+
+    auto Iter = TsFunctionMap.find(Function);
+    if (Iter == TsFunctionMap.end())
+    {
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
+            *Function->GetName(), ContextObject));
+        return;
+    }
+    else 
+    {
+        auto Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = DefaultContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        v8::TryCatch TryCatch(Isolate);
+
+        Iter->second.FunctionTranslator->CallJs(Isolate, Context, Iter->second.JsFunction.Get(Isolate),
+            GeneratedObjectMap[ContextObject].Get(Isolate), ContextObject, Stack, RESULT_PARAM);
+
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
+                *Function->GetName(), ContextObject, *GetExecutionException(Isolate, &TryCatch)));
+        }
     }
 }
 
