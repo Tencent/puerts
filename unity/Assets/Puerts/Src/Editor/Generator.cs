@@ -1052,7 +1052,8 @@ namespace Puerts.Editor
             var genTypes = configure["Puerts.BindingAttribute"].Select( kv => kv.Key)
                 .Where(o => o is Type)
                 .Cast<Type>()
-                .Where(t => !t.IsGenericTypeDefinition);
+                .Where(t => !t.IsGenericTypeDefinition)
+                .Distinct();
 
             var blittableCopyTypes = new HashSet<Type>(configure["Puerts.BlittableCopyAttribute"].Select(kv => kv.Key)
                 .Where(o => o is Type)
