@@ -1150,14 +1150,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                         v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
                                         std::make_unique<puerts::FFunctionTranslator>(Function)
                                     };
-                                    Function->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
-                                    if (Function->Script.Num() == 0)
-                                    {
-                                        Function->Script.Add(EX_EndFunctionParms);
-                                    }
-                                    Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
-                                    Function->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
-                                    TypeScriptGeneratedClass->AddNativeFunction(*Function->GetName(), &UTypeScriptGeneratedClass::execCallJS);
+                                    TypeScriptGeneratedClass->RedirectToTypeScript(Function);
                                     overrided.Add(FunctionFName);
                                 }
                             }

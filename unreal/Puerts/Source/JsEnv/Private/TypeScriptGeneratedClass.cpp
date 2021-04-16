@@ -65,6 +65,17 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     }
 }
 
+void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
+{
+    if (InFunction->Script.Num() == 0)
+    {
+        InFunction->Script.Add(EX_EndFunctionParms);
+    }
+    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+    InFunction->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
+    AddNativeFunction(*InFunction->GetName(), &UTypeScriptGeneratedClass::execCallJS);
+}
+
 void UTypeScriptGeneratedClass::Bind()
 {
     if (HasConstructor)
@@ -87,9 +98,7 @@ void UTypeScriptGeneratedClass::Bind()
     for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
     {
         auto Function = *FuncIt;
-        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
-        Function->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
-        AddNativeFunction(*Function->GetName(), &UTypeScriptGeneratedClass::execCallJS);
+        RedirectToTypeScript(Function);
     }
 
     Super::Bind();

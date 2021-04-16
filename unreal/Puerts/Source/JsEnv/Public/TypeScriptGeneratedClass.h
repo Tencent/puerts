@@ -41,6 +41,8 @@ public:
 
     void Bind() override;
 
+    void RedirectToTypeScript(UFunction* InFunction);
+
     UPROPERTY()
     bool HasConstructor;
 
