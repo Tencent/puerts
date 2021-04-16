@@ -51,6 +51,10 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     if (Blueprint) 
     {
         GeneratedClass = Blueprint->GeneratedClass;
+        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass))
+        {
+            HasConstructor = TypeScriptGeneratedClass->HasConstructor;
+        }
         Package = Cast<UPackage>(Blueprint->GetOuter());
         if (Blueprint->ParentClass != ParentClass)
         {
