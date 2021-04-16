@@ -356,6 +356,11 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
         }
         else
         {
+#if USING_UE
+            UE_LOG(LogV8Inspector, Display, TEXT("404 Not Found"));
+#else
+            PLog(Log, "404 Not Found");
+#endif
             Connection->set_body("404 Not Found");
             Connection->set_status(websocketpp::http::status_code::not_found);
         }
