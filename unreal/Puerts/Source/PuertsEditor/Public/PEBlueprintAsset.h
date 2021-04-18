@@ -96,6 +96,8 @@ private:
 
     TSet<FName> FunctionAdded;
 
+    TSet<FName> OverrideAdded;
+
     TArray<FName> ParameterNames;
 
     TArray<FEdGraphPinType> ParameterTypes;
