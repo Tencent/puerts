@@ -169,7 +169,7 @@ namespace PuertsStaticWrap
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?it.Constructor.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
@@ -207,7 +207,7 @@ namespace PuertsStaticWrap
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?method.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
@@ -217,11 +217,11 @@ namespace PuertsStaticWrap
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
                         {{?!it.BlittableCopy && !method.IsStatic}}{{=setSelf(it)}}{{?}}
-                        return;
+                        {{?method.HasOverloads}}return;{{?}}
                     }{{~}}
                 }
                 {{~}}
-                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=method.Name}}");
+                {{?method.HasOverloads}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=method.Name}}");{{?}}
             }
             catch (Exception e)
             {
@@ -321,18 +321,18 @@ namespace PuertsStaticWrap
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?operator.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
                         var result = {{=operatorCall(operator.Name, overload.ParameterInfos.Length, overload)}};
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
-                        return;
+                        {{?operator.HasOverloads}}return;{{?}}
                     }{{~}}
                 }
                 {{~}}
-                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=operator.Name}}");
+                {{?operator.HasOverloads}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=operator.Name}}");{{?}}
             }
             catch (Exception e)
             {
