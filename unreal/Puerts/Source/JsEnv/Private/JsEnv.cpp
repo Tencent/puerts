@@ -1278,15 +1278,7 @@ void FJsEnvImpl::RebindJs()
     {
         UTypeScriptGeneratedClass* Class = *It;
         
-        for (TFieldIterator<UFunction> FIt(Class, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
-        {
-            UFunction *Function = *FIt;
-            if (Function->IsA<UJSGeneratedFunction>()) //已经绑定过
-            {
-                MakeSureInject(Class, true);
-                break;
-            }
-        }
+        MakeSureInject(Class, false);
     }
 }
 
