@@ -91,7 +91,9 @@ function UnK(identifier) {
 function getArgument(typeInfo, argHelper, idx) {
     let typeName = typeInfo.TypeName;
     let isByRef = typeInfo.IsByRef ? "true" : "false";
-    if (typeInfo.IsParams) {
+    if (typeInfo.IsOut) {
+        return `default(${typeName})`;
+    } else if (typeInfo.IsParams) {
         return `${argHelper}.GetParams<${typeName}>(info, ${idx}, paramLen)`;
     } else if (typeInfo.IsEnum) {
         return `(${typeName})${argHelper}.${fixGet[typeInfo.UnderlyingTypeName]}(${isByRef})`;
@@ -167,7 +169,7 @@ namespace PuertsStaticWrap
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?it.Constructor.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
@@ -205,7 +207,7 @@ namespace PuertsStaticWrap
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?method.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
@@ -215,11 +217,11 @@ namespace PuertsStaticWrap
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
                         {{?!it.BlittableCopy && !method.IsStatic}}{{=setSelf(it)}}{{?}}
-                        {{?method.HasOverloads}}return;{{?}}
+                        return;
                     }{{~}}
                 }
                 {{~}}
-                {{?method.HasOverloads}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=method.Name}}");{{?}}
+                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=method.Name}}");
             }
             catch (Exception e)
             {
@@ -319,18 +321,18 @@ namespace PuertsStaticWrap
                     var argHelper{{=i}} = new Puerts.ArgumentHelper((int)data, isolate, info, {{=i}});{{}}}
                     
                     {{~overloadGroup :overload}}
-                    {{?operator.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
+                    {{?overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
                         var result = {{=operatorCall(operator.Name, overload.ParameterInfos.Length, overload)}};
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
-                        {{?operator.HasOverloads}}return;{{?}}
+                        return;
                     }{{~}}
                 }
                 {{~}}
-                {{?operator.HasOverloads}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=operator.Name}}");{{?}}
+                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=operator.Name}}");
             }
             catch (Exception e)
             {
