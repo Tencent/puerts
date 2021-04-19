@@ -1,6 +1,6 @@
 {{
-function parameterDef(pinfo) {
-    return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + pinfo.TypeName;
+function parameterDef(pinfo, isStatic, type) {
+    return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + (isStatic ? typeNameWithOutGenericType(type, pinfo.TypeName) : pinfo.TypeName);
 }
 function typeKeyword(type) {
     if (type.IsDelegate) {
@@ -44,6 +44,13 @@ function indent(str, n) {
     }
     return newLines.join('\n');
 }
+function typeNameWithOutGenericType(type, name) {
+    if (type.IsGenericTypeDefinition) {
+        const gParameters = toJsArray(type.GenericParameters);
+        return gParameters.indexOf(name) != -1 ? "any" : name
+    }
+    return name;
+}
 }}
 declare module 'csharp' {
     interface $Ref<T> {
@@ -65,10 +72,10 @@ declare module 'csharp' {
         {{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
         var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
             {{~type.Properties :property}}{{=indent(property.Document, 12)}}
-            {{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
-            {{?}}{{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=property.Name}}(value: {{=property.TypeName}});{{?}}{{?!property.HasSetter && !property.HasGetter}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?}}
+            {{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
+            {{?}}{{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=property.Name}}(value: {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}});{{?}}{{?!property.HasSetter && !property.HasGetter}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}};{{?}}{{?}}
             {{~}}{{~type.Methods :method}}{{=indent(method.Document, 12)}}
-            {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}){{=method.IsConstructor?"":":" + method.TypeName}};
+            {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo, method.IsStatic, type)}}{{~}}){{=method.IsConstructor?"":":" + (method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName)}};
             {{~}}
         }{{}}}{{?type.ExtensionMethods.Length > 0}}
         {{=indent(type.Document, 8)}}
