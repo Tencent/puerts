@@ -1215,6 +1215,7 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 
     if (ModuleLoader->Search(TEXT(""), ModuleName.ToString(), OutPath, OutDebugPath))
     {
+        OutPath = FPaths::ConvertRelativePathToFull(OutPath);
         Logger->Info(FString::Printf(TEXT("reload js module [%s]"), *OutPath));
         v8::TryCatch TryCatch(Isolate);
         v8::Handle<v8::Value> Args[] = {
