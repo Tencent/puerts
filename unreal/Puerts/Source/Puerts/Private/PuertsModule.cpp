@@ -11,6 +11,7 @@
 #if WITH_EDITOR
 #include "Editor.h"
 #include "ISettingsModule.h"
+#include "ISettingsSection.h"
 #endif
 
 #define LOCTEXT_NAMESPACE "FPuertsModule"
@@ -31,11 +32,16 @@ public:
 
 #if WITH_EDITOR
     void EndPIE(bool bIsSimulating);
+    bool HandleSettingsSaved();
 #endif
 
     void RegisterSettings();
 
     void UnregisterSettings();
+
+    void Enable();
+
+    void Disable();
 
     virtual bool IsEnabled() override 
     {
@@ -67,6 +73,8 @@ public:
 		{
 			JsEnv->WaitDebugger();
 		}
+
+        JsEnv->RebindJs();
 	}
 
 private:
@@ -97,6 +105,7 @@ void FPuertsModule::OnUObjectArrayShutdown()
     {
         GUObjectArray.RemoveUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
         GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+        Enabled = false;
     }
 }
 #endif
@@ -106,12 +115,8 @@ void FPuertsModule::EndPIE(bool bIsSimulating)
 {
     if (Enabled)
     {
-        //UE_LOG(LogTemp, Error, TEXT("Reload All Module "));
-        //JsEnv->ReloadModule(NAME_None);
-
         JsEnv.Reset();
         MakeSharedJsEnv();
-        JsEnv->RebindJs();
     }
 }
 #endif
@@ -121,10 +126,12 @@ void FPuertsModule::RegisterSettings()
 #if WITH_EDITOR
     if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
     {
-        SettingsModule->RegisterSettings("Project", "Plugins", "Puerts",
+        auto SettingsSection = SettingsModule->RegisterSettings("Project", "Plugins", "Puerts",
             LOCTEXT("TileSetEditorSettingsName", "Puerts Settings"),
             LOCTEXT("TileSetEditorSettingsDescription", "Configure the setting of Puerts plugin."),
             GetMutableDefault<UPuertsSetting>());
+
+        SettingsSection->OnModified().BindRaw(this, &FPuertsModule::HandleSettingsSaved);
     }
 #endif
 }
@@ -147,18 +154,47 @@ void FPuertsModule::StartupModule()
 #endif
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
-    Enabled = Settings.Enable;
-
-    if (Enabled)
+    if (Settings.Enable)
     {
-		MakeSharedJsEnv();
-        JsEnv->RebindJs();
-        
-        GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
-        GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+        Enable();
     }
 }
 
+void FPuertsModule::Enable()
+{
+    Enabled = true;
+    MakeSharedJsEnv();
+    GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
+    GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+}
+
+void FPuertsModule::Disable()
+{
+    Enabled = false;
+    JsEnv.Reset();
+    GUObjectArray.RemoveUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
+    GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+}
+
+#if WITH_EDITOR
+bool FPuertsModule::HandleSettingsSaved()
+{
+    const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+
+    if (Settings.Enable != Enabled)
+    {
+        if (Settings.Enable)
+        {
+            Enable();
+        }
+        else
+        {
+            Disable();
+        }
+    }
+    return true;
+}
+#endif
 
 void FPuertsModule::ShutdownModule()
 {
@@ -167,7 +203,7 @@ void FPuertsModule::ShutdownModule()
 #endif
     if (Enabled)
     {
-        JsEnv.Reset();
+        Disable();
     }
 }
 
