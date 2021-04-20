@@ -152,6 +152,7 @@ void FPuertsModule::StartupModule()
     if (Enabled)
     {
 		MakeSharedJsEnv();
+        JsEnv->RebindJs();
         
         GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
         GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
