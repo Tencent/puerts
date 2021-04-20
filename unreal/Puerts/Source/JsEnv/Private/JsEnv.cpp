@@ -117,6 +117,8 @@ public:
 
     virtual FString CurrentStackTrace() override;
 
+    virtual void InitExtensionMethodsMap() override;
+
     void JsHotReload(FName ModuleName, const FString& JsSource);
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
@@ -228,8 +230,6 @@ private:
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(const JSClassDefinition* ClassDefinition);
 
     FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
-
-    void InitExtensionMethodsMap();
 
     void SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -500,6 +500,11 @@ void FJsEnv::RebindJs()
 FString FJsEnv::CurrentStackTrace()
 {
     return GameScript->CurrentStackTrace();
+}
+
+void FJsEnv::InitExtensionMethodsMap()
+{
+    GameScript->InitExtensionMethodsMap();
 }
 
 void FJsEnv::ReloadModule(FName ModuleName, const FString& JsSource)
@@ -904,7 +909,7 @@ void FJsEnvImpl::InitExtensionMethodsMap()
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
-        if (Class->IsChildOf<UExtensionMethods>())
+        if (Class->IsChildOf<UExtensionMethods>() && Class->IsNative())
         {
             for (TFieldIterator<UFunction> FuncIt(Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
@@ -930,7 +935,12 @@ void FJsEnvImpl::InitExtensionMethodsMap()
                             {
                                 ExtensionMethodsMap[Struct] = std::vector<UFunction*>();
                             }
-                            ExtensionMethodsMap[Struct].push_back(Function);
+                            auto Iter = ExtensionMethodsMap.find(Struct);
+                            
+                            if (std::find(Iter->second.begin(), Iter->second.end(), Function) == Iter->second.end())
+                            {
+                                Iter->second.push_back(Function);
+                            }
                         }
                     }
                 }

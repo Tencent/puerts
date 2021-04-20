@@ -56,6 +56,14 @@ public:
         }
     }
 
+    void InitExtensionMethodsMap() override
+    {
+        if (Enabled && JsEnv.IsValid())
+        {
+            JsEnv->InitExtensionMethodsMap();
+        }
+    }
+
 	void MakeSharedJsEnv()
 	{
 		const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();

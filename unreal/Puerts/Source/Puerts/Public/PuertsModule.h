@@ -29,4 +29,5 @@ public:
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
 
+    virtual void InitExtensionMethodsMap() = 0;
 };
