@@ -28,9 +28,9 @@ class UJSGeneratedClass : public UBlueprintGeneratedClass
 
 public:
 
-    static UClass * Create(const FString& Name, UClass *Parent, TSharedPtr<IDynamicInvoker> DynamicInvoker, v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype);
+    static UClass * Create(const FString& Name, UClass *Parent, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype);
 
-    static void Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker, bool IsNative);
+    static void Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative);
 
     void InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr) override;
 
@@ -44,5 +44,5 @@ public:
 
     v8::UniquePersistent<v8::Object> Prototype;
 
-    TWeakPtr<IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 };

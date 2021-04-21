@@ -180,6 +180,8 @@ public:
 
     void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype);
 
+    void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object);
+
     void InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM);
 
     void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM);
@@ -331,6 +333,27 @@ private:
         
     friend ObjectMerger;
 
+
+    class TsDynamicInvokerImpl : public ITsDynamicInvoker
+    {
+    public:
+        TsDynamicInvokerImpl(FJsEnvImpl *InParent) :Parent(InParent) {}
+
+        void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
+        {
+            if (Parent) Parent->TsConstruct(Class, Object);
+        }
+
+        void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM) override
+        {
+            if (Parent) Parent->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
+        }
+
+        FJsEnvImpl *Parent;
+    };
+
+    TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
+
 private:
     puerts::FObjectRetainer UserObjectRetainer;
 
@@ -405,7 +428,7 @@ private:
     class DynamicInvokerImpl : public IDynamicInvoker
     {
     public:
-        DynamicInvokerImpl() :Parent(nullptr) {}
+        DynamicInvokerImpl(FJsEnvImpl *InParent) :Parent(InParent) {}
 
         void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms) override
         {
@@ -422,15 +445,16 @@ private:
             if (Parent) Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 
-        void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM) override
-        {
-            if (Parent) Parent->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
-        }
-
         FJsEnvImpl *Parent;
     };
 
-    std::map<UTypeScriptGeneratedClass*, FName> BindInfoMap;
+    struct FBindInfo
+    {
+        FName Name;
+        v8::UniquePersistent<v8::Function> Constructor;
+    };
+
+    std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
 
     void MakeSureInject(UTypeScriptGeneratedClass* Class, bool RebindObject);
 
@@ -709,8 +733,8 @@ FJsEnvImpl::FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MulticastDelegateTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FMulticastDelegateWrapper::ToFunctionTemplate(Isolate));
 
-    DynamicInvoker = MakeShared<DynamicInvokerImpl>();
-    DynamicInvoker->Parent = this;
+    DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
+    TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
 
     InitExtensionMethodsMap();
 
@@ -817,17 +841,10 @@ FJsEnvImpl::~FJsEnvImpl()
             Iter->second.JsFunction.Reset();
         }
 
+        TsDynamicInvoker.Reset();
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
-            if (Iter->first->IsValidLowLevelFast() && !Iter->first->IsPendingKill())
-            {
-                if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Iter->first))
-                {
-                    TypeScriptGeneratedClass->Constructor.Reset();
-                    TypeScriptGeneratedClass->Prototype.Reset();
-                    TypeScriptGeneratedClass->DynamicInvoker.Reset();
-                }
-            }
+            Iter->second.Constructor.Reset();
         }
         BindInfoMap.clear();
 
@@ -877,7 +894,6 @@ FJsEnvImpl::~FJsEnvImpl()
         Inspector = nullptr;
     }
         
-    DynamicInvoker->Parent = nullptr;
     DynamicInvoker.Reset();
 
     MulticastDelegateTemplate.Reset();
@@ -1088,13 +1104,16 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                     v8::Local<v8::Value> VProto;
                     //UE_LOG(LogTemp, Error, TEXT("found function for , %s"), *ModuleName);
 
+                    FBindInfo BindInfo;
+
                     if (Func->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VProto) && VProto->IsObject())
                     {
+                        BindInfo.Name = *ModuleName;
                         //UE_LOG(LogTemp, Error, TEXT("found proto for , %s"), *ModuleName);
                         v8::Local<v8::Object> Proto = VProto.As<v8::Object>();
 
-                        TypeScriptGeneratedClass->DynamicInvoker = DynamicInvoker;
-                        //TypeScriptGeneratedClass->Prototype.Reset(Isolate, Proto);
+                        TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+                        //BindInfo.Prototype.Reset(Isolate, Proto);
                         TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
                         TypeScriptGeneratedClass->ReBind = false;
 
@@ -1102,9 +1121,9 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         if (Proto->Get(Context, FV8Utils::ToV8String(Isolate, "Constructor")).ToLocal(&VCtor) && VCtor->IsFunction())
                         {
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
-                            TypeScriptGeneratedClass->Constructor.Reset(Isolate, VCtor.As<v8::Function>());
+                            BindInfo.Constructor.Reset(Isolate, VCtor.As<v8::Function>());
                         }
-                        BindInfoMap[TypeScriptGeneratedClass] = *ModuleName;
+                        BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
                         //SysObjectRetainer.Retain(Class);
 
                         //implement by js
@@ -1235,9 +1254,9 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
     UTypeScriptGeneratedClass* ToReload = nullptr;
     for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
     {
-        if (ModuleName == Iter->second)
+        if (ModuleName == Iter->second.Name)
         {
-            Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.ToString()));
+            Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.Name.ToString()));
             Iter->first->ReBind = true;
             ToReload = Iter->first;
             break;
@@ -1250,7 +1269,7 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
         {
             if (Iter->first != ToReload && Iter->first->IsChildOf(ToReload))
             {
-                Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.ToString()));
+                Logger->Info(FString::Printf(TEXT("reload blueprint module [%s]"), *Iter->second.Name.ToString()));
                 Iter->first->ReBind = true;
             }
         }
@@ -1509,6 +1528,38 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
     if (TryCatch.HasCaught())
     {
         Logger->Error(FString::Printf(TEXT("js callback exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+    }
+}
+
+void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
+{
+    auto Iter = BindInfoMap.find(Class);
+    if (Iter != BindInfoMap.end())
+    {
+        auto Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = DefaultContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        v8::TryCatch TryCatch(Isolate);
+
+        auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
+        GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+        UnBind(Class, Object);
+
+        if (!Iter->second.Constructor.IsEmpty())
+        {
+            auto ReturnVal2 = Iter->second.Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr);
+        }
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FString::Printf(TEXT("js callback exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+        }
+    }
+    else
+    {
+        Logger->Error(FString::Printf(TEXT("Construct TypeScript Object fail for %s"), *Class->GetName()));
     }
 }
 

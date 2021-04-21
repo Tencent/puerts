@@ -7,12 +7,7 @@
 
 #pragma once
 
-#pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
-#include "v8.h"
-#pragma warning(pop)
-
-#include "DynamicInvoker.h"
+#include "TsDynamicInvoker.h"
 
 #include "CoreMinimal.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -27,11 +22,7 @@ class JSENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
 	GENERATED_BODY()
 
 public:
-    v8::UniquePersistent<v8::Function> Constructor;
-
-    v8::UniquePersistent<v8::Object> Prototype;
-
-    TWeakPtr<IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::ITsDynamicInvoker> DynamicInvoker;
 
     bool ReBind = false;
 

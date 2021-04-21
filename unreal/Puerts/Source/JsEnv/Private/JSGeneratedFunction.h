@@ -34,7 +34,7 @@ public:
 
     v8::UniquePersistent<v8::Function> JsFunction;
 
-    TWeakPtr<IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
 };

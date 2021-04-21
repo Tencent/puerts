@@ -61,7 +61,7 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
-        PinedDynamicInvoker->Construct(this, Object, Constructor, Prototype);
+        PinedDynamicInvoker->TsConstruct(this, Object);
     }
 }
 
