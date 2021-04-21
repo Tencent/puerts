@@ -821,15 +821,6 @@ FJsEnvImpl::~FJsEnvImpl()
         {
             if (Iter->first->IsValidLowLevelFast() && !Iter->first->IsPendingKill())
             {
-                for (TFieldIterator<UFunction> FIt(Iter->first, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); FIt; ++FIt)
-                {
-                    UFunction *Function = *FIt;
-                    if (auto JSGeneratedFunction = Cast<UJSGeneratedFunction>(Function)) //已经绑定过
-                    {
-                        JSGeneratedFunction->JsFunction.Reset();
-                        JSGeneratedFunction->DynamicInvoker.Reset();
-                    }
-                }
                 if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Iter->first))
                 {
                     TypeScriptGeneratedClass->Constructor.Reset();
