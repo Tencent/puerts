@@ -131,6 +131,8 @@ public:
 
     void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM);
 
+    void NotifyReBind(UTypeScriptGeneratedClass* Class);
+
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
     V8_INLINE static FJsEnvImpl * Get(v8::Isolate* Isolate)
@@ -294,6 +296,11 @@ public:
             if (Parent) Parent->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 
+        void NotifyReBind(UTypeScriptGeneratedClass* Class) override
+        {
+            //if (Parent) Parent->NotifyReBind(Class);
+        }
+
         FJsEnvImpl *Parent;
     };
 
@@ -397,6 +404,7 @@ private:
     {
         FName Name;
         v8::UniquePersistent<v8::Function> Constructor;
+        bool Rebind;
     };
 
     std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;

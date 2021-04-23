@@ -83,12 +83,15 @@ public:
         }
     }
 
+    std::function<int(UObject*, int)> Selector;
+
     void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector) override
     {
         if (Enabled && NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
         {
             JsEnvGroup->SetJsEnvSelector(InSelector);
         }
+        Selector = InSelector;
     }
 
 	void MakeSharedJsEnv()
@@ -109,6 +112,11 @@ public:
             else
             {
                 JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv);
+            }
+
+            if (Selector)
+            {
+                JsEnvGroup->SetJsEnvSelector(Selector);
             }
 
             //这种不支持等待
@@ -234,6 +242,10 @@ void FPuertsModule::StartupModule()
     {
         Enable();
     }
+
+    //SetJsEnvSelector([this](UObject* Obj, int Size){
+    //    return 1;
+    //    });
 }
 
 void FPuertsModule::Enable()

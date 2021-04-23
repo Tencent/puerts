@@ -18,6 +18,8 @@ public:
     virtual void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) = 0;
 
     virtual void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM) = 0;
+
+    virtual void NotifyReBind(UTypeScriptGeneratedClass* Class) = 0;
 };
 
 }

@@ -33,6 +33,14 @@ public:
         JsEnvs[GetSelectIndex(ContextObject)]->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
     }
 
+    void NotifyReBind(UTypeScriptGeneratedClass* Class) override
+    {
+        for (int i = 0; i < JsEnvs.size(); i++)
+        {
+            JsEnvs[i]->NotifyReBind(Class);
+        }
+    }
+
     std::vector<FJsEnvImpl *> JsEnvs;
 
     std::function<int(UObject*, int)> Selector;
