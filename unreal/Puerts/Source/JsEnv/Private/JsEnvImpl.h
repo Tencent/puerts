@@ -409,7 +409,7 @@ private:
 
     std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
 
-    void MakeSureInject(UTypeScriptGeneratedClass* Class, bool RebindObject, bool CDOLoading = false);
+    void MakeSureInject(UTypeScriptGeneratedClass* Class, bool RebindObject);
 
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
 
