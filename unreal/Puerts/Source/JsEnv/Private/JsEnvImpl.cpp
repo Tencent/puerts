@@ -595,7 +595,7 @@ void FJsEnvImpl::LowMemoryNotification()
 }
 
 
-void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool RebindObject)
+void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool RebindObject, bool CDOLoading)
 {
     auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
     if (Iter == BindInfoMap.end() || Iter->second.Rebind || TypeScriptGeneratedClass->ReBind)//create and link
@@ -608,6 +608,13 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
         
         if (Iter != BindInfoMap.end() && Iter->second.Rebind)
         {
+            //打开这个宏可以避免这类warning: Failed to bind native function REINST_TsTestActor_C_0.SetActor
+            //这类warning的原因是我们设置了函数的FUNC_Native属性，而UE编辑器生成这种辅助类时复制完成后UFunction.Bind时报的错
+            //打开这个宏的副作用是：由于CDO构造时没覆盖方法，所以在CDO的构造函数调用TS生成方法会崩溃，所以默认先不打开，后面
+            //如果后面实现为JS调用这类方法不经过UE中转，这个宏可以去掉
+#if NO_CDO_CONSTRUCTOR_CALL_OVERRIDE
+            if (CDOLoading) return;
+#endif
             RebindObject = true;
         }
         auto Package = Cast<UPackage>(TypeScriptGeneratedClass->GetOuter());
@@ -627,7 +634,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                 MakeSureInject(SuperClass, false);
             }
             FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
-            Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
+            Logger->Info(FString::Printf(TEXT("Bind module [%s], CDO Loading [%d]"), *ModuleName, CDOLoading));
 
             auto Isolate = MainIsolate;
             v8::Isolate::Scope IsolateScope(Isolate);
@@ -671,7 +678,6 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
                         //BindInfo.Prototype.Reset(Isolate, Proto);
                         TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                        BindInfo.Rebind = false;
 
                         v8::Local<v8::Value> VCtor;
                         if (Proto->Get(Context, FV8Utils::ToV8String(Isolate, "Constructor")).ToLocal(&VCtor) && VCtor->IsFunction())
@@ -679,79 +685,91 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
                             BindInfo.Constructor.Reset(Isolate, VCtor.As<v8::Function>());
                         }
-                        BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
+                        
                         //SysObjectRetainer.Retain(Class);
 
-                        //implement by js
-                        TSet<FName> overrided;
-
-                        for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); It; ++It)
+#if NO_CDO_CONSTRUCTOR_CALL_OVERRIDE
+                        if (CDOLoading)
                         {
-                            UFunction *Function = *It;
-                            auto FunctionFName = Function->GetFName();
-                            FString FunctionName = Function->GetName();
-
-                            //FString::Printf(TEXT("InpAxisEvt_%s_%s"), *InputAxisName.ToString(), *GetName())
-                            static FString AxisPrefix(TEXT("InpAxisEvt_"));
-                            if (FunctionName.StartsWith(AxisPrefix))
-                            {
-                                auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
-                                int32 SubPos;
-                                if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
-                                {
-                                    FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
-                                }
-                            }
-                            static FString ActionPrefix(TEXT("InpActEvt_"));
-                            if (FunctionName.StartsWith(ActionPrefix))
-                            {
-                                auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
-                                int32 SubPos;
-                                if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
-                                {
-                                    FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
-                                }
-                            }
-                            auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
-                            if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
-                                (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
-                            {
-                                auto MaybeValue = Proto->Get(Context, V8Name);
-                                if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
-                                {
-                                    //Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(), *Function->GetName()));
-                                    //UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
-                                    TsFunctionMap.erase(Function);
-                                    TsFunctionMap[Function] = {
-                                        v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
-                                        std::make_unique<puerts::FFunctionTranslator>(Function)
-                                    };
-                                    TypeScriptGeneratedClass->RedirectToTypeScript(Function);
-                                    overrided.Add(FunctionFName);
-                                }
-                            }
+                            BindInfo.Rebind = true;
+                            BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
                         }
-
-                        TryReleaseType(TypeScriptGeneratedClass);
-                        auto NativeCtor = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
-                        v8::Local<v8::Value> VNativeProto;
-                        if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) && VNativeProto->IsObject())
+                        else
+#endif
                         {
-                            v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
-                            __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
-                            __USE(NativeProto->SetPrototype(Context, Proto));
-                        }
+                            //implement by js
+                            TSet<FName> overrided;
 
-                        if (RebindObject)
-                        {
-                            for (FObjectIterator It(TypeScriptGeneratedClass); It; ++It)
+                            for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); It; ++It)
                             {
-                                auto Object = *It;
-                                if (Object->GetClass() != TypeScriptGeneratedClass) continue;
-                                auto JSObject = FindOrAdd(Isolate, Context, TypeScriptGeneratedClass, Object)->ToObject(Context).ToLocalChecked();
-                                auto ReturnVal1 = JSObject->SetPrototype(Context, Proto);
-                                UnBind(TypeScriptGeneratedClass, Object);
+                                UFunction *Function = *It;
+                                auto FunctionFName = Function->GetFName();
+                                FString FunctionName = Function->GetName();
+
+                                //FString::Printf(TEXT("InpAxisEvt_%s_%s"), *InputAxisName.ToString(), *GetName())
+                                static FString AxisPrefix(TEXT("InpAxisEvt_"));
+                                if (FunctionName.StartsWith(AxisPrefix))
+                                {
+                                    auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
+                                    int32 SubPos;
+                                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                                    {
+                                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                                    }
+                                }
+                                static FString ActionPrefix(TEXT("InpActEvt_"));
+                                if (FunctionName.StartsWith(ActionPrefix))
+                                {
+                                    auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
+                                    int32 SubPos;
+                                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                                    {
+                                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                                    }
+                                }
+                                auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
+                                if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() &&
+                                    (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
+                                {
+                                    auto MaybeValue = Proto->Get(Context, V8Name);
+                                    if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
+                                    {
+                                        //Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(), *Function->GetName()));
+                                        //UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
+                                        TsFunctionMap.erase(Function);
+                                        TsFunctionMap[Function] = {
+                                            v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
+                                            std::make_unique<puerts::FFunctionTranslator>(Function)
+                                        };
+                                        TypeScriptGeneratedClass->RedirectToTypeScript(Function);
+                                        overrided.Add(FunctionFName);
+                                    }
+                                }
                             }
+
+                            TryReleaseType(TypeScriptGeneratedClass);
+                            auto NativeCtor = GetTemplateOfClass(TypeScriptGeneratedClass)->GetFunction(Context).ToLocalChecked();
+                            v8::Local<v8::Value> VNativeProto;
+                            if (NativeCtor->Get(Context, FV8Utils::ToV8String(Isolate, "prototype")).ToLocal(&VNativeProto) && VNativeProto->IsObject())
+                            {
+                                v8::Local<v8::Object> NativeProto = VNativeProto.As<v8::Object>();
+                                __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
+                                __USE(NativeProto->SetPrototype(Context, Proto));
+                            }
+
+                            if (RebindObject)
+                            {
+                                for (FObjectIterator It(TypeScriptGeneratedClass); It; ++It)
+                                {
+                                    auto Object = *It;
+                                    if (Object->GetClass() != TypeScriptGeneratedClass) continue;
+                                    auto JSObject = FindOrAdd(Isolate, Context, TypeScriptGeneratedClass, Object)->ToObject(Context).ToLocalChecked();
+                                    auto ReturnVal1 = JSObject->SetPrototype(Context, Proto);
+                                    UnBind(TypeScriptGeneratedClass, Object);
+                                }
+                            }
+                            BindInfo.Rebind = false;
+                            BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
                         }
                     }
                 }
@@ -844,7 +862,11 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 
         if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
         {
+#if NO_CDO_CONSTRUCTOR_CALL_OVERRIDE
+            MakeSureInject(TypeScriptGeneratedClass, false, Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject));
+#else
             MakeSureInject(TypeScriptGeneratedClass, false);
+#endif
         }
     }
 }
