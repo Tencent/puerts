@@ -25,6 +25,7 @@
 //#include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
+#include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
 #include "CodeGenerator.h"
 
@@ -221,6 +222,14 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
+        checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
+        if (Class->GetName().StartsWith("SKEL_")        ||
+            Class->GetName().StartsWith("REINST_")      ||
+            Class->GetName().StartsWith("TRASHCLASS_")  ||
+            Class->GetName().StartsWith("PLACEHOLDER_"))
+        {
+            continue;
+        }
         Gen(Class);
     }
     End();
@@ -716,30 +725,19 @@ public:
 #if WITH_EDITOR
         FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked< FAssetRegistryModule >(FName("AssetRegistry"));
         IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-        TArray< FString > ContentPaths;
-        ContentPaths.Add(TEXT("/Game"));
-        AssetRegistry.ScanPathsSynchronous(ContentPaths);
 
         TArray< FAssetData > AssetList;
-        AssetRegistry.GetAssetsByClass(FName("Blueprint"), AssetList);
 
-        for (auto const& Asset : AssetList)
+        FARFilter BPFilter;
+        BPFilter.PackagePaths.Add(FName(TEXT("/Game")));
+        BPFilter.bRecursivePaths = true;
+        BPFilter.bRecursiveClasses = true;
+        BPFilter.ClassNames.Add(FName(TEXT("Blueprint")));
+
+        AssetRegistry.GetAssets(BPFilter, AssetList);
+        for (FAssetData const& Asset : AssetList)
         {
-            if (Asset.ObjectPath.ToString().StartsWith("/Game/"))
-            {
-                Asset.GetAsset();
-            }
-        }
-
-        TArray< FAssetData > AssetList1;
-        AssetRegistry.GetAssetsByClass(FName("WidgetBlueprint"), AssetList1);
-
-        for (auto const& Asset : AssetList1)
-        {
-            if (Asset.ObjectPath.ToString().StartsWith("/Game/"))
-            {
-                Asset.GetAsset();
-            }
+            Asset.GetAsset();
         }
 #endif
     }

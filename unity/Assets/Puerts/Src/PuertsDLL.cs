@@ -143,6 +143,19 @@ namespace Puerts
             SetGeneralDestructor(isolate, fn);
         }
 
+#if PUERTS_GENERAL
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr Eval(IntPtr isolate, byte[] code, string path);
+
+        public static IntPtr EvalChecked(IntPtr isolate, string code, string path)
+        {
+            if (code == null)
+            {
+                throw new InvalidProgramException("eval null string");
+            }
+            return Eval(isolate, Encoding.UTF8.GetBytes(code), path);
+        }
+#else
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr Eval(IntPtr isolate, string code, string path);
 
@@ -154,6 +167,7 @@ namespace Puerts
             }
             return Eval(isolate, code, path);
         }
+#endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, IntPtr constructor, IntPtr destructor, long data);
@@ -223,8 +237,13 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnNumber(IntPtr isolate, IntPtr info, double number);
 
+#if PUERTS_GENERAL
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
+        public static extern void __ReturnString(IntPtr isolate, IntPtr info, byte[] str);
+#else
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
         public static extern void __ReturnString(IntPtr isolate, IntPtr info, string str);
+#endif
 
         public static void ReturnString(IntPtr isolate, IntPtr info, string str)
         {
@@ -234,7 +253,11 @@ namespace Puerts
             }
             else
             {
+#if PUERTS_GENERAL
+                __ReturnString(isolate, info, Encoding.UTF8.GetBytes(str));
+#else
                 __ReturnString(isolate, info, str);
+#endif
             }
         }
 
@@ -317,8 +340,18 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetDateToOutValue(IntPtr isolate, IntPtr value, double date);
 
+#if PUERTS_GENERAL
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, byte[] str);
+
+        public static void SetStringToOutValue(IntPtr isolate, IntPtr value, string str)
+        {
+            SetStringToOutValue(isolate, value, Encoding.UTF8.GetBytes(str));
+        }
+#else
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, string str);
+#endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetBooleanToOutValue(IntPtr isolate, IntPtr value, bool b);
@@ -490,11 +523,6 @@ namespace Puerts
         public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern double __DebugGetJSObjectMapSize(IntPtr isolate);
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern double __DebugGetJSObjectFreeIDListSize(IntPtr isolate);
     }
 }
 

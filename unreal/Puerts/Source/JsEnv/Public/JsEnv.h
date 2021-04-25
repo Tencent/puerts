@@ -40,6 +40,8 @@ public:
 
     virtual FString CurrentStackTrace() = 0;
 
+    virtual void InitExtensionMethodsMap() = 0;
+
     virtual ~IJsEnv() {}
 };
 
@@ -64,6 +66,8 @@ public:
     void RebindJs();
 
     FString CurrentStackTrace();
+
+    void InitExtensionMethodsMap();
 
 private:
     std::unique_ptr<IJsEnv> GameScript;

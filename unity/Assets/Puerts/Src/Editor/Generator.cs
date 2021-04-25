@@ -465,7 +465,7 @@ namespace Puerts.Editor
                 return "ArrayBuffer";
             else if (type == typeof(object))
                 return "any";
-            else if (type == typeof(Delegate))
+            else if (type == typeof(Delegate) || type == typeof(Puerts.GenericDelegate))
                 return "Function";
             else if (type.IsByRef)
                 return "$Ref<" + GetTsTypeName(type.GetElementType()) + ">";

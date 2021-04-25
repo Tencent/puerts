@@ -12,7 +12,7 @@
 #include "JSAnimGeneratedClass.h"
 #include "FunctionParametersDuplicate.h"
 
-UClass * UJSGeneratedClass::Create(const FString& Name, UClass *Parent, TSharedPtr<IDynamicInvoker> DynamicInvoker, v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
+UClass * UJSGeneratedClass::Create(const FString& Name, UClass *Parent, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
 {
     auto  Outer = GetTransientPackage();
     UClass *Class = nullptr;
@@ -78,7 +78,7 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
     }
 }
 
-void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<IDynamicInvoker> DynamicInvoker, bool IsNative)
+void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction * Super, v8::Local<v8::Function> JSImpl, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative)
 {
     bool Replace = Super->GetOuter() == Class;
     FName FunctionName = Super->GetFName();

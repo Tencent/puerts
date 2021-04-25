@@ -4,3 +4,4 @@ popd
 cmake --build build32qjs --config Release
 md ..\Assets\Plugins\x86
 copy build32qjs\Release\puerts.dll ..\Assets\Plugins\x86
+copy quickjs\Lib\Win32\*.dll ..\Assets\Plugins\x86
