@@ -81,6 +81,7 @@ var global = global || (function () { return this; }());
                     let tmpRequire = genRequire(fullDirInJs);
                     let r = tmpRequire(packageConfigure.main);
                     tmpModuleStorage[sid] = undefined;
+                    m.exports = r;
                     return r;
                 } else {
                     tmpModuleStorage[sid] = undefined;
