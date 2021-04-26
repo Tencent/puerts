@@ -72,5 +72,14 @@ namespace Puerts
             }
             return hasValidGenericParameter && returnTypeValid;
         }
+
+        public static bool IsNullableType(Type type)
+        {
+            if (!type.IsValueType) return true; // ref-type
+
+            if (Nullable.GetUnderlyingType(type) != null) return true; // Nullable<T>
+
+            return false; // value-type
+        }
     }
 }

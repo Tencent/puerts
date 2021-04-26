@@ -107,6 +107,8 @@ function setReturn(typeInfo) {
         return fixReturn[typeName];
     } else if (typeInfo.IsEnum) {
         return fixReturn[typeInfo.UnderlyingTypeName].replace('result', `(${typeInfo.UnderlyingTypeName})result`);
+    } else if (typeInfo.IsNullableReturn) {
+        return `Puerts.ResultHelper.Set((int)data, isolate, info, result, (result == null))`;
     } else {
         return `Puerts.ResultHelper.Set((int)data, isolate, info, result)`;
     }

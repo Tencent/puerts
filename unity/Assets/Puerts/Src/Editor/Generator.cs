@@ -93,6 +93,7 @@ namespace Puerts.Editor
             public ParameterGenInfo[] ParameterInfos;
             public bool IsVoid;
             public bool HasParams;
+            public bool IsNullableReturn;
         }
 
         public class MethodGenInfo
@@ -252,7 +253,8 @@ namespace Puerts.Editor
                 {
                     ParameterInfos = methodInfo.GetParameters().Select(info => ToParameterGenInfo(info)).ToArray(),
                     TypeName = RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
-                    IsVoid = methodInfo.ReturnType == typeof(void)
+                    IsVoid = methodInfo.ReturnType == typeof(void),
+                    IsNullableReturn = Utils.IsNullableType(methodInfo.ReturnType)
                 };
                 FillEnumInfo(mainInfo, methodInfo.ReturnType);
                 mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);

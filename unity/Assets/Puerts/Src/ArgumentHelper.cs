@@ -236,9 +236,20 @@ namespace Puerts
 
     public struct ResultHelper
     {
-        public static void Set<T>(int jsEnvIdx, IntPtr isolate, IntPtr info, T result)
+        public static void Set<T>(int jsEnvIdx, IntPtr isolate, IntPtr info, T result, bool isNullValue = false)
         {
-            StaticTranslate<T>.Set(jsEnvIdx, isolate, NativeValueApi.SetValueToResult, info, result);
+            // Generic function issue.
+            // If pass the null value to the generic function, the parameter is not null and it is a default value.
+            // Explicitly pass <null or not> together. (isNullValue)
+            if (isNullValue)
+            {
+                // TODO : need to make a code in a prettier way.
+                Set(jsEnvIdx, isolate, info, Puerts.JsValueType.NullOrUndefined);
+            }
+            else
+            {
+                StaticTranslate<T>.Set(jsEnvIdx, isolate, NativeValueApi.SetValueToResult, info, result);
+            }
         }
     }
 }
