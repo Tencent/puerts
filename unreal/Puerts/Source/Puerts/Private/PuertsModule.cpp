@@ -219,18 +219,18 @@ void FPuertsModule::RegisterSettings()
     }
 #endif
     UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
-    const TCHAR* ImportSectionName = TEXT("/Script/Puerts.PuertsSetting");
+    const TCHAR* SectionName = TEXT("/Script/Puerts.PuertsSetting");
     const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
-    if (GConfig->DoesSectionExist(ImportSectionName, PuertsConfigIniPath))
+    if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
-        GConfig->GetBool(ImportSectionName, TEXT("Enable"), Settings.Enable, PuertsConfigIniPath);
-        GConfig->GetBool(ImportSectionName, TEXT("DebugEnable"), Settings.Enable, PuertsConfigIniPath);
-        GConfig->GetBool(ImportSectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
-        if (!GConfig->GetInt(ImportSectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
+        GConfig->GetBool(SectionName, TEXT("Enable"), Settings.Enable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.Enable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
+        if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
         {
             Settings.DebugPort = 8080;
         }
-        if (!GConfig->GetInt(ImportSectionName, TEXT("NumberOfJsEnv"), Settings.NumberOfJsEnv, PuertsConfigIniPath))
+        if (!GConfig->GetInt(SectionName, TEXT("NumberOfJsEnv"), Settings.NumberOfJsEnv, PuertsConfigIniPath))
         {
             Settings.NumberOfJsEnv = 1;
         }
