@@ -217,7 +217,7 @@ void FPuertsModule::RegisterSettings()
 
         SettingsSection->OnModified().BindRaw(this, &FPuertsModule::HandleSettingsSaved);
     }
-#else
+#endif
     UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
     const TCHAR* ImportSectionName = TEXT("/Script/Puerts.PuertsSetting");
     const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
@@ -235,7 +235,6 @@ void FPuertsModule::RegisterSettings()
             Settings.NumberOfJsEnv = 1;
         }
     }
-#endif
 }
 
 void FPuertsModule::UnregisterSettings()
