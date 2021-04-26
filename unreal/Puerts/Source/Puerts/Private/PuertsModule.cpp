@@ -224,7 +224,7 @@ void FPuertsModule::RegisterSettings()
     if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
         GConfig->GetBool(SectionName, TEXT("Enable"), Settings.Enable, PuertsConfigIniPath);
-        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.Enable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
         if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
         {
