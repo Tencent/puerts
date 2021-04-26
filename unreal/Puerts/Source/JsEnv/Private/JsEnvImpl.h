@@ -42,7 +42,7 @@ class FJsEnvImpl : public IJsEnv, IObjectMapper, public FUObjectArray::FUObjectD
 public:
     explicit FJsEnvImpl(const FString &ScriptRoot);
 
-    FJsEnvImpl(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
+    FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
         void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
     ~FJsEnvImpl() override;
@@ -278,7 +278,7 @@ private:
 
     friend ObjectMerger;
 
-
+public:
     class TsDynamicInvokerImpl : public ITsDynamicInvoker
     {
     public:
@@ -304,7 +304,7 @@ private:
 
     puerts::FObjectRetainer SysObjectRetainer;
 
-    std::unique_ptr<IJSModuleLoader> ModuleLoader;
+    std::shared_ptr<IJSModuleLoader> ModuleLoader;
 
     std::shared_ptr<ILogger> Logger;
 

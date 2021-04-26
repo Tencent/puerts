@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdio>
+#include <functional>
 
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
@@ -30,4 +31,6 @@ public:
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
 
     virtual void InitExtensionMethodsMap() = 0;
+
+    virtual void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector) = 0;
 };
