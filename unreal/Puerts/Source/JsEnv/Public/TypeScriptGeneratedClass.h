@@ -24,7 +24,7 @@ class JSENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
 public:
     TWeakPtr<puerts::ITsDynamicInvoker> DynamicInvoker;
 
-    bool ReBind = false;
+    bool InjectNotFinished = true;
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
@@ -33,6 +33,8 @@ public:
     void Bind() override;
 
     void RedirectToTypeScript(UFunction* InFunction);
+
+    bool NotSupportInject();
 
     UPROPERTY()
     bool HasConstructor;

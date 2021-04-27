@@ -298,7 +298,7 @@ public:
 
         void NotifyReBind(UTypeScriptGeneratedClass* Class) override
         {
-            //if (Parent) Parent->NotifyReBind(Class);
+            if (Parent) Parent->NotifyReBind(Class);
         }
 
         FJsEnvImpl *Parent;
@@ -404,7 +404,6 @@ private:
     {
         FName Name;
         v8::UniquePersistent<v8::Function> Constructor;
-        bool Rebind;
     };
 
     std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
