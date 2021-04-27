@@ -116,7 +116,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ### Unreal自动绑定模式
 
-* [step by step fps](https://github.com/chexiongsheng/puerts_fps_demo) ： 用Puerts的自动绑定模式写一个fps demo
+* [step by step fps](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的自动绑定模式
 
 ### Unreal自创建虚拟机模式
 
