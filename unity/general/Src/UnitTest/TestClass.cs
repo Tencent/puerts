@@ -91,6 +91,10 @@ namespace Puerts.UnitTest
                 baseArr[i] = value;
             }
         }
+
+        public void ActionParam(System.Action action)
+        {
+        }
     }
 
     public class DerivedClass : BaseClass
