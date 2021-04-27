@@ -14,6 +14,8 @@
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
 #endif
+#include "Kismet/KismetSystemLibrary.h"
+#include "Regex.h"
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
 
@@ -94,9 +96,72 @@ public:
         Selector = InSelector;
     }
 
+    int32 GetBaseDebuggerPort(int32 InSettingsDebugPort)
+    {
+        int32 Result = InSettingsDebugPort;
+
+        /**
+         * get command line
+         */
+        TArray<FString> OutTokens;
+        TArray<FString> OutSwitches;
+        TMap<FString, FString> OutParams;
+        UKismetSystemLibrary::ParseCommandLine(FCommandLine::Get(), OutTokens, OutSwitches, OutParams);
+
+#if WITH_EDITOR
+        static const auto GetPIEInstanceID = [](const TArray<FString>& InTokens) -> int32
+        {
+            static const int32 Start = FString{TEXT("PIEGameUserSettings")}.Len();
+            static const int32 BaseCount = FString{TEXT("PIEGameUserSettings.ini")}.Len();
+
+            const FString* TokenPtr = InTokens.FindByPredicate([](const FString& InToken) { return InToken.StartsWith(TEXT("GameUserSettingsINI="));});
+            if (TokenPtr == nullptr)
+            {
+                return INDEX_NONE;
+            }
+
+            const FRegexPattern GameUserSettingsPattern{TEXT("PIEGameUserSettings[0-9]+\\.ini")};
+            FRegexMatcher GameUserSettingsMatcher{GameUserSettingsPattern, *TokenPtr};
+            if (GameUserSettingsMatcher.FindNext())
+            {
+                const FString GameUserSettingsFile = GameUserSettingsMatcher.GetCaptureGroup(0);
+                return FCString::Atoi(*GameUserSettingsFile.Mid(Start, GameUserSettingsFile.Len() - BaseCount));
+            }
+
+            return INDEX_NONE;
+        };
+
+        const bool bPIEGame = OutSwitches.Find(TEXT("PIEVIACONSOLE")) != INDEX_NONE && OutSwitches.Find(TEXT("game")) != INDEX_NONE;
+        if (bPIEGame)
+        {
+            const int32 Index = GetPIEInstanceID(OutTokens);
+            if (OutSwitches.Find(TEXT("server")) != INDEX_NONE)
+            {
+                Result += 999;     // for server, we add 999, 8080 -> 9079
+            }
+            else 
+            { 
+                Result += 10 * (Index + 1); //  for client, we add 10 for each new process, 8080 -> 8090, 8100, 8110
+            }
+        }
+#endif
+
+        // we can also specify the debug port via command line, -JsEnvDebugPort
+
+        static const FString DebugPortParam{TEXT("JsEnvDebugPort")};
+        if (OutParams.Contains(DebugPortParam))
+        {
+            Result = FCString::Atoi(*OutParams[DebugPortParam]);
+        }
+
+        return Result;
+    }
+
 	void MakeSharedJsEnv()
 	{
 		const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+        
+        int32 DefaultDebugPort = GetBaseDebuggerPort(Settings.DebugPort);    
 
         JsEnv.Reset();
         JsEnvGroup.Reset();
@@ -107,7 +172,7 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DefaultDebugPort /** Settings.DebugPort*/ );
             }
             else
             {
@@ -132,7 +197,7 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+                JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DefaultDebugPort/*Settings.DebugPort*/);
             }
             else
             {
