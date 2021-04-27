@@ -114,9 +114,33 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## 示例
 
-* [unreal demo](https://github.com/chexiongsheng/puerts_unreal_demo)
+### Unreal自动绑定模式
 
-* [unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
+* [step by step fps](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的自动绑定模式
+
+### Unreal自创建虚拟机模式
+
+* [QuickStart.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/QuickStart.ts) ： 演示TypeScript和UE4引擎互相调用
+
+* [NewContainer.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/NewContainer.ts) ： 演示容器的创建
+
+* [AsyncTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/AsyncTest.ts) ： 将异步加载蓝图，Delay封装成async/await
+
+* [UsingWidget.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingWidget.ts) ： UI加载，绑定事件，获取数据的演示
+
+### Unity
+
+* [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/01_JsCallCs) ： js调用c#
+
+* [02_Require](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/02_Require) ： 加载js文件
+
+* [03_Callback](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/03_Callback) ： 回调基本演示
+
+* [04_JsBehaviour](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/04_JsBehaviour) ： 用js模拟MonoBehaviour
+
+* [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
+
+* [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/06_UIEvent) ：UI事件的演示
 
 ## 技术支持
 

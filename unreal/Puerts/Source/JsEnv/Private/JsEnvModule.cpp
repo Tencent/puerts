@@ -7,7 +7,7 @@
 
 #include "JsEnvModule.h"
 //#include "TGameJSCorePCH.h"
-#include "HAL\MemoryBase.h"
+#include "HAL/MemoryBase.h"
 
 class FMallocWrapper final
     : public FMalloc

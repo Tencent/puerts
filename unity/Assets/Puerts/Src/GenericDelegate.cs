@@ -111,6 +111,7 @@ namespace Puerts
             {
                 return maybeOne.Target as GenericDelegate;
             }
+            jsEnv.RemoveFromPending(ptr);
             GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
             nativePtrToGenericDelegate[ptr] = new WeakReference(genericDelegate);
             return genericDelegate;

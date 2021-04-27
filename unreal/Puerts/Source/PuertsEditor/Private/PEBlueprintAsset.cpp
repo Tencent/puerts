@@ -693,6 +693,11 @@ void UPEBlueprintAsset::Save()
         TypeScriptGeneratedClass->HasConstructor = HasConstructor;
         if (NeedSave)
         {
+            for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            {
+                auto Function = *FuncIt;
+                Function->FunctionFlags &= ~FUNC_Native;
+            }
             FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
             FKismetEditorUtilities::CompileBlueprint(Blueprint);
 

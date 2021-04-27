@@ -218,6 +218,23 @@ void FPuertsModule::RegisterSettings()
         SettingsSection->OnModified().BindRaw(this, &FPuertsModule::HandleSettingsSaved);
     }
 #endif
+    UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
+    const TCHAR* SectionName = TEXT("/Script/Puerts.PuertsSetting");
+    const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
+    if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
+    {
+        GConfig->GetBool(SectionName, TEXT("Enable"), Settings.Enable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
+        if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
+        {
+            Settings.DebugPort = 8080;
+        }
+        if (!GConfig->GetInt(SectionName, TEXT("NumberOfJsEnv"), Settings.NumberOfJsEnv, PuertsConfigIniPath))
+        {
+            Settings.NumberOfJsEnv = 1;
+        }
+    }
 }
 
 void FPuertsModule::UnregisterSettings()

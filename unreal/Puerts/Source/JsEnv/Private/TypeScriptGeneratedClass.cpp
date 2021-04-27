@@ -71,13 +71,28 @@ void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
     {
         InFunction->Script.Add(EX_EndFunctionParms);
     }
-    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
     InFunction->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
     AddNativeFunction(*InFunction->GetName(), &UTypeScriptGeneratedClass::execCallJS);
 }
 
+bool UTypeScriptGeneratedClass::NotSupportInject()
+{
+    return (GetName().StartsWith("SKEL_") ||
+        GetName().StartsWith("REINST_") ||
+        GetName().StartsWith("TRASHCLASS_") ||
+        GetName().StartsWith("PLACEHOLDER_"));
+}
+
 void UTypeScriptGeneratedClass::Bind()
 {
+    Super::Bind();
+
+    if (NotSupportInject())
+    {
+        return;
+    }
+
     if (HasConstructor)
     {
         //普通对象会从CDO拷贝，而CDO会从蓝图AR那反序列化（见UBlueprintGeneratedClass::SerializeDefaultObject），这会
@@ -100,7 +115,12 @@ void UTypeScriptGeneratedClass::Bind()
         auto Function = *FuncIt;
         RedirectToTypeScript(Function);
     }
+    
+    InjectNotFinished = true;
 
-    Super::Bind();
-    ReBind = true;
+    auto PinedDynamicInvoker = DynamicInvoker.Pin();
+    if (PinedDynamicInvoker)
+    {
+        PinedDynamicInvoker->NotifyReBind(this);
+    }
 }
