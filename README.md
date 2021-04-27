@@ -126,6 +126,8 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [AsyncTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/AsyncTest.ts) ： 将异步加载蓝图，Delay封装成async/await
 
+* [UsingWidget.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingWidget.ts) ： UI加载，绑定事件，获取数据的演示
+
 ### Unity
 
 * [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/01_JsCallCs) ： js调用c#
