@@ -11,6 +11,20 @@
 
 namespace puerts
 {
+    JSObject::JSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject, int32_t InIndex) 
+    {
+        Isolate = InIsolate;
+        Context.Reset(InIsolate, InContext);
+        GObject.Reset(InIsolate, InObject);
+        Index = InIndex;
+    }
+
+    JSObject::~JSObject() 
+    {
+        Context.Reset();
+        GObject.Reset();
+    }
+
     JSFunction::JSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction, int32_t InIndex)
     {
         ResultInfo.Isolate = InIsolate;
@@ -56,6 +70,8 @@ namespace puerts
             return JsEngine->FindOrAddObject(Isolate, Context, Value.ObjectInfo.ClassID, Value.ObjectInfo.ObjectPtr);
         case Function:
             return Value.FunctionPtr->GFunction.Get(Isolate);
+        case JsObject:
+            return Value.JSObjectPtr->GObject.Get(Isolate);
         case Boolean:
             return v8::Boolean::New(Isolate, Value.Boolean);
         case ArrayBuffer:
@@ -84,8 +100,8 @@ namespace puerts
             V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
         }
         v8::TryCatch TryCatch(Isolate);
-        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         Arguments.clear();
+        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         if (TryCatch.HasCaught())
         {
             LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);

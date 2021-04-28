@@ -44,7 +44,7 @@ class PUERTSEDITOR_API UFileSystemOperation : public UBlueprintFunctionLibrary
     static TArray<FString> GetFiles(FString Path);
 
     UFUNCTION(BlueprintCallable, Category = "File")
-    static void PuertsNotifyChange(FString Path);
+    static void PuertsNotifyChange(FString Path, FString Source);
 
     UFUNCTION(BlueprintCallable, Category = "File")
     static FString FileMD5Hash(FString Path);

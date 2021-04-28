@@ -7,11 +7,15 @@
 
 #include "PuertsModule.h"
 #include "JsEnv.h"
+#include "JsEnvGroup.h"
 #include "PuertsSetting.h"
 #if WITH_EDITOR
 #include "Editor.h"
 #include "ISettingsModule.h"
+#include "ISettingsSection.h"
 #endif
+
+DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
 
 #define LOCTEXT_NAMESPACE "FPuertsModule"
 
@@ -31,29 +35,128 @@ public:
 
 #if WITH_EDITOR
     void EndPIE(bool bIsSimulating);
+    bool HandleSettingsSaved();
 #endif
 
     void RegisterSettings();
 
     void UnregisterSettings();
 
+    void Enable();
+
+    void Disable();
+
     virtual bool IsEnabled() override 
     {
         return Enabled;
     }
 
-    void ReloadJsModule(FName ModuleName) override 
+    void ReloadModule(FName ModuleName, const FString& JsSource) override
     {
-        if (JsEnv.IsValid())
+        if (Enabled)
         {
-            JsEnv->ReloadModule(ModuleName);
+            if (JsEnv.IsValid())
+            {
+                //UE_LOG(PuertsModule, Warning, TEXT("Normal Mode ReloadModule"));
+                JsEnv->ReloadModule(ModuleName, JsSource);
+            }
+            else if (NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
+            {
+                //UE_LOG(PuertsModule, Warning, TEXT("Group Mode ReloadModule"));
+                JsEnvGroup->ReloadModule(ModuleName, JsSource);
+            }
         }
     }
+
+    void InitExtensionMethodsMap() override
+    {
+        if (Enabled)
+        {
+            if (JsEnv.IsValid())
+            {
+                JsEnv->InitExtensionMethodsMap();
+            }
+            else if (NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
+            {
+                JsEnvGroup->InitExtensionMethodsMap();
+            }
+        }
+    }
+
+    std::function<int(UObject*, int)> Selector;
+
+    void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector) override
+    {
+        if (Enabled && NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
+        {
+            JsEnvGroup->SetJsEnvSelector(InSelector);
+        }
+        Selector = InSelector;
+    }
+
+	void MakeSharedJsEnv()
+	{
+		const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+
+        JsEnv.Reset();
+        JsEnvGroup.Reset();
+
+        NumberOfJsEnv = (Settings.NumberOfJsEnv > 1 && Settings.NumberOfJsEnv < 10) ? Settings.NumberOfJsEnv : 1;
+
+        if (NumberOfJsEnv > 1)
+        {
+            if (Settings.DebugEnable)
+            {
+                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+            }
+            else
+            {
+                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv);
+            }
+
+            if (Selector)
+            {
+                JsEnvGroup->SetJsEnvSelector(Selector);
+            }
+
+            //这种不支持等待
+            if (Settings.WaitDebugger)
+            {
+                UE_LOG(PuertsModule, Warning, TEXT("Do not support WaitDebugger in Group Mode!"));
+            }
+
+            JsEnvGroup->RebindJs();
+            UE_LOG(PuertsModule, Log, TEXT("Group Mode started! Number of JsEnv is %d"), NumberOfJsEnv);
+        }
+        else
+        {
+            if (Settings.DebugEnable)
+            {
+                JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+            }
+            else
+            {
+                JsEnv = MakeShared<puerts::FJsEnv>();
+            }
+
+            if (Settings.WaitDebugger)
+            {
+                JsEnv->WaitDebugger();
+            }
+
+            JsEnv->RebindJs();
+            UE_LOG(PuertsModule, Log, TEXT("Normal Mode started!"));
+        }
+	}
 
 private:
     TSharedPtr<puerts::FJsEnv> JsEnv;
 
     bool Enabled = false;
+
+    int32 NumberOfJsEnv = 1;
+
+    TSharedPtr<puerts::FJsEnvGroup> JsEnvGroup;
 };
 
 IMPLEMENT_MODULE( FPuertsModule, Puerts)
@@ -62,13 +165,22 @@ void FPuertsModule::NotifyUObjectCreated(const class UObjectBase *InObject, int3
 {
     if (Enabled)
     {
-        JsEnv->TryBindJs(InObject);
+        if (JsEnv.IsValid())
+        {
+            //UE_LOG(PuertsModule, Warning, TEXT("Normal Mode TryBindJs"));
+            JsEnv->TryBindJs(InObject);
+        }
+        else if (NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
+        {
+            //UE_LOG(PuertsModule, Warning, TEXT("Group Mode TryBindJs"));
+            JsEnvGroup->TryBindJs(InObject);
+        }
     }
 }
 
 void FPuertsModule::NotifyUObjectDeleted(const class UObjectBase *InObject, int32 Index) 
 {
-    //UE_LOG(LogTemp, Warning, TEXT("NotifyUObjectDeleted, %p"), InObject);
+    //UE_LOG(PuertsModule, Warning, TEXT("NotifyUObjectDeleted, %p"), InObject);
 }
 
 #if ENGINE_MINOR_VERSION > 22
@@ -78,6 +190,7 @@ void FPuertsModule::OnUObjectArrayShutdown()
     {
         GUObjectArray.RemoveUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
         GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+        Enabled = false;
     }
 }
 #endif
@@ -87,12 +200,7 @@ void FPuertsModule::EndPIE(bool bIsSimulating)
 {
     if (Enabled)
     {
-        //UE_LOG(LogTemp, Error, TEXT("Reload All Module "));
-        //JsEnv->ReloadModule(NAME_None);
-
-        JsEnv.Reset();
-        JsEnv = MakeShared<puerts::FJsEnv>();
-        JsEnv->RebindJs();
+        MakeSharedJsEnv();
     }
 }
 #endif
@@ -102,12 +210,31 @@ void FPuertsModule::RegisterSettings()
 #if WITH_EDITOR
     if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
     {
-        SettingsModule->RegisterSettings("Project", "Plugins", "Puerts",
+        auto SettingsSection = SettingsModule->RegisterSettings("Project", "Plugins", "Puerts",
             LOCTEXT("TileSetEditorSettingsName", "Puerts Settings"),
             LOCTEXT("TileSetEditorSettingsDescription", "Configure the setting of Puerts plugin."),
             GetMutableDefault<UPuertsSetting>());
+
+        SettingsSection->OnModified().BindRaw(this, &FPuertsModule::HandleSettingsSaved);
     }
 #endif
+    UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
+    const TCHAR* SectionName = TEXT("/Script/Puerts.PuertsSetting");
+    const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
+    if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
+    {
+        GConfig->GetBool(SectionName, TEXT("Enable"), Settings.Enable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
+        if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
+        {
+            Settings.DebugPort = 8080;
+        }
+        if (!GConfig->GetInt(SectionName, TEXT("NumberOfJsEnv"), Settings.NumberOfJsEnv, PuertsConfigIniPath))
+        {
+            Settings.NumberOfJsEnv = 1;
+        }
+    }
 }
 
 void FPuertsModule::UnregisterSettings()
@@ -128,29 +255,52 @@ void FPuertsModule::StartupModule()
 #endif
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
-    Enabled = Settings.Enable;
-
-    if (Enabled)
+    if (Settings.Enable)
     {
-        if (Settings.DebugEnable)
+        Enable();
+    }
+
+    //SetJsEnvSelector([this](UObject* Obj, int Size){
+    //    return 1;
+    //    });
+}
+
+void FPuertsModule::Enable()
+{
+    Enabled = true;
+    MakeSharedJsEnv();
+    GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
+    GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+}
+
+void FPuertsModule::Disable()
+{
+    Enabled = false;
+    JsEnv.Reset();
+    JsEnvGroup.Reset();
+    GUObjectArray.RemoveUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
+    GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+}
+
+#if WITH_EDITOR
+bool FPuertsModule::HandleSettingsSaved()
+{
+    const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+
+    if (Settings.Enable != Enabled)
+    {
+        if (Settings.Enable)
         {
-            JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), Settings.DebugPort);
+            Enable();
         }
         else
         {
-            JsEnv = MakeShared<puerts::FJsEnv>();
+            Disable();
         }
-
-        if (Settings.WaitDebugger)
-        {
-            JsEnv->WaitDebugger();
-        }
-        
-        GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
-        GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
     }
+    return true;
 }
-
+#endif
 
 void FPuertsModule::ShutdownModule()
 {
@@ -159,7 +309,7 @@ void FPuertsModule::ShutdownModule()
 #endif
     if (Enabled)
     {
-        JsEnv.Reset();
+        Disable();
     }
 }
 

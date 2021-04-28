@@ -101,13 +101,19 @@ var global = global || (function () { return this; }());
             localModuleCache[moduleName] = m;
             moduleCache[key] = m;
             let sid = addModule(m);
-            if (fullPath.endsWith("package.json")) {
+            if (fullPath.endsWith(".json")) {
                 let packageConfigure = JSON.parse(script);
-                let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
-                let tmpRequire = genRequire(fullDirInJs);
-                let r = tmpRequire(packageConfigure.main);
-                tmpModuleStorage[sid] = undefined;
-                m.exports = r;
+                
+                if (fullPath.endsWith("package.json") && packageConfigure.main) {
+                    let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
+                    let tmpRequire = genRequire(fullDirInJs);
+                    let r = tmpRequire(packageConfigure.main);
+                    tmpModuleStorage[sid] = undefined;
+                    m.exports = r;
+                } else {
+                    tmpModuleStorage[sid] = undefined;
+                    m.exports = packageConfigure;
+                }
             } else {
                 executeModule(fullPath, script, debugPath, sid);
                 tmpModuleStorage[sid] = undefined;
@@ -122,7 +128,7 @@ var global = global || (function () { return this; }());
         buildinModule[name] = module;
     }
     
-    function reload(reloadModuleKey) {
+    function forceReload(reloadModuleKey) {
         if (reloadModuleKey) {
             reloadModuleKey = normalize(reloadModuleKey);
         }
@@ -139,17 +145,26 @@ var global = global || (function () { return this; }());
         }
     }
     
+    function getModuleByUrl(url) {
+        if (url) {
+            url = normalize(url);
+            return moduleCache[url];
+        }
+    }
+    
     registerBuildinModule("puerts", puerts)
 
     puerts.genRequire = genRequire;
     
     puerts.__require = genRequire("");
     
-    puerts.__reload = reload;
-    
     puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;
 
     puerts.loadModule = loadModule;
+    
+    puerts.forceReload = forceReload;
+    
+    puerts.getModuleByUrl = getModuleByUrl;
 }(global));

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdio>
+#include <functional>
 
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
@@ -27,5 +28,9 @@ public:
 
     virtual bool IsEnabled() = 0;
 
-    virtual void ReloadJsModule(FName ModuleName) = 0;
+    virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
+
+    virtual void InitExtensionMethodsMap() = 0;
+
+    virtual void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector) = 0;
 };

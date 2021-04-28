@@ -40,5 +40,5 @@ public:
 
     v8::UniquePersistent<v8::Object> Prototype;
 
-    TWeakPtr<IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 };

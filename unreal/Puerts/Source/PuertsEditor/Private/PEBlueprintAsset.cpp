@@ -16,9 +16,13 @@
 #include "K2Node_FunctionEntry.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "K2Node_Event.h"
+#include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionResult.h"
 #include "GameFramework/InputSettings.h"
 #include "K2Node_InputAxisEvent.h"
+#include "K2Node_InputAction.h"
+#include "K2Node_CallFunction.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
 
@@ -47,8 +51,19 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     if (Blueprint) 
     {
         GeneratedClass = Blueprint->GeneratedClass;
+        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass))
+        {
+            HasConstructor = TypeScriptGeneratedClass->HasConstructor;
+        }
         Package = Cast<UPackage>(Blueprint->GetOuter());
-        NeedSave = false;
+        if (Blueprint->ParentClass != ParentClass)
+        {
+            Blueprint->ParentClass = ParentClass;
+            NeedSave = true;
+        }
+        else {
+            NeedSave = false;
+        }
         return true;
     }
 
@@ -246,10 +261,8 @@ UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncNa
 }
 #endif
 
-void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
+void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags)
 {
-    NeedSave = true;
-
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
     UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
@@ -260,13 +273,17 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     {
         ParameterNames.Empty();
         ParameterTypes.Empty();
+        OverrideAdded.Add(InName);
         return;
     }
 
-    Blueprint->Modify();
+	TArray<FName> AxisNames;
+	TArray<FName> ActionNames;
+	GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
+	GetDefault<UInputSettings>()->GetActionNames(ActionNames);
 
-    TArray<FName> AxisNames;
-    GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
+    UK2Node_EditablePinBase* FunctionEntryNode = nullptr;
+    bool IsCustomEvent = false;
 
     // Create the function graph.
     
@@ -304,6 +321,8 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                     }
                 );
             }
+            OverrideAdded.Add(InName);
+            NeedSave = true;
         }
     }
     else if (AxisNames.Contains(InName))
@@ -326,61 +345,246 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                     NewInstance->Initialize(InName);
                 }
             );
+            NeedSave = true;
+        }
+    }
+    //Create Action node and PrintString node
+    //then Connection them.
+    //UK2Node_InputAction Node must have one connected node to create function "InpActEvt_%s_%s"
+    else if (ActionNames.Contains(InName))
+    {
+        TArray<UK2Node_InputAction*> AllEvents;
+        FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_InputAction>(Blueprint, AllEvents);
+
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+
+        if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAction* Node) { return Node->InputActionName == InName; }))
+        {
+            UK2Node_InputAction* NewNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_InputAction>(
+                EventGraph,
+                EventGraph->GetGoodPlaceForNewNode(),
+                EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_InputAction* NewInstance)
+                {
+                    NewInstance->InputActionName = InName;
+                }
+            );
+            //UK2Node_CallFunction
+            UK2Node_CallFunction* NewNode2 = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CallFunction>(
+                EventGraph,
+                EventGraph->GetGoodPlaceForNewNode(),
+                EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_CallFunction* NewInstance)
+                {
+                    NewInstance->FunctionReference.SetExternalMember(FName("PrintString"), UKismetSystemLibrary::StaticClass());
+                }
+            );
+
+            EventGraph->GetSchema()->TryCreateConnection(NewNode->Pins[0], NewNode2->Pins[0]);
+            NeedSave = true;
+        }
+    }
+    else if (InFlags & FUNC_Net)
+    {
+        TArray<UK2Node_CustomEvent*> AllEvents;
+        FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_CustomEvent>(Blueprint, AllEvents);
+
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+
+        auto Iter = AllEvents.FindByPredicate([&](UK2Node_CustomEvent* Node) { return Node->CustomFunctionName == InName; });
+
+        if (EventGraph)
+        {
+            if (EventGraph && !Iter)
+            {
+                //处理标签改变的情况
+                Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
+
+                UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
+                if (ExistingGraph)
+                {
+                    ExistingGraph->Rename(*FString::Printf(TEXT("%s%s"), *ExistingGraph->GetName(), TEXT("__Removed")), nullptr, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+                }
+
+                UK2Node_CustomEvent* EventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CustomEvent>(
+                    EventGraph,
+                    EventGraph->GetGoodPlaceForNewNode(),
+                    EK2NewNodeFlags::SelectNewNode,
+                    [InName](UK2Node_Event* NewInstance)
+                    {
+                        NewInstance->CustomFunctionName = InName;
+                        NewInstance->bIsEditable = true;
+                    }
+                );
+
+                FunctionEntryNode = EventNode;
+                NeedSave = true;
+            }
+            else
+            {
+                FunctionEntryNode = *Iter;
+            }
+            IsCustomEvent = true;
+            FunctionAdded.Add(InName);
         }
     }
     else
     {
-        if (FunctionAdded.Contains(InName)) return;//重载
+        if (FunctionAdded.Contains(InName)) return;
         TArray< UEdGraph* > GraphList;
         Blueprint->GetAllGraphs(GraphList);
         UEdGraph** ExistedGraph = GraphList.FindByPredicate([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
+        UEdGraph* FunctionGraph;
         if (ExistedGraph)
         {
             //UE_LOG(LogTemp, Warning, TEXT("FunctionGraph %s existed, delete it!"), *InName.ToString());
-            FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
+            //FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
+	        FunctionGraph = *ExistedGraph;
+        }
+        else 
+        {
+            UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+            if (EventGraph)
+            {
+                EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
+                    UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
+                    return CustomEvent && CustomEvent->CustomFunctionName == InName;
+                    });
+                UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
+                if (ExistingGraph)
+                {
+                    ExistingGraph->Rename(*FString::Printf(TEXT("%s%s"), *ExistingGraph->GetName(), TEXT("__Removed")), nullptr, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+                }
+            }
+            FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
+                Blueprint,
+                InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
+                UEdGraph::StaticClass(),
+                UEdGraphSchema_K2::StaticClass());
+            FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
+            NeedSave = true;
         }
 
-        //UE_LOG(LogTemp, Warning, TEXT("Add Function %s"), *InName.ToString());
-        UEdGraph* FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
-            Blueprint,
-            InName, //FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, FuncName.ToString()),
-            UEdGraph::StaticClass(),
-            UEdGraphSchema_K2::StaticClass());
+        //if (InFlags)
+        //{
+        //    const UEdGraphSchema_K2* K2Schema = Cast<const UEdGraphSchema_K2>(FunctionGraph->GetSchema());
+        //    K2Schema->AddExtraFunctionFlags(FunctionGraph, InFlags);
+        //}
 
-        FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FunctionGraph, bUserCreated, nullptr);
-
-        //TODO: Add parameter
         TArray<UK2Node_FunctionEntry*> EntryNodes;
         FunctionGraph->GetNodesOfClass(EntryNodes);
 
         if (EntryNodes.Num() == 1)
         {
-            //FEdGraphPinType StringPinType(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EPinContainerType::None, false, FEdGraphTerminalType());
-            //FEdGraphPinType ActorPinType(UEdGraphSchema_K2::PC_Object, NAME_None, AActor::StaticClass(), EPinContainerType::None, false, FEdGraphTerminalType());
-            //EntryNodes[0]->CreateUserDefinedPin(TEXT("P1"), StringPinType, EGPD_Output);
-            //EntryNodes[0]->CreateUserDefinedPin(TEXT("P2"), ActorPinType, EGPD_Input, false);
+            FunctionEntryNode = EntryNodes[0];
+        }
+        FunctionAdded.Add(InName);
+    }
+
+    if (FunctionEntryNode)
+    {
+        const int32 NetMask = FUNC_Net | FUNC_NetMulticast | FUNC_NetServer | FUNC_NetClient;
+        int32 NetFlags = InFlags & NetMask;
+        NetFlags = NetFlags ? FUNC_Net | NetFlags : 0;
+
+        if (UK2Node_FunctionEntry* TypedEntryNode = Cast<UK2Node_FunctionEntry>(FunctionEntryNode))
+        {
+            int32 ExtraFlags = TypedEntryNode->GetExtraFlags();
+
+            if ((ExtraFlags & NetMask) != NetFlags)
+            {
+                ExtraFlags &= ~NetMask;
+                ExtraFlags |= NetFlags;
+                TypedEntryNode->SetExtraFlags(ExtraFlags);
+                NeedSave = true;
+            }
+        }
+        else if (UK2Node_CustomEvent* CustomEventNode = Cast<UK2Node_CustomEvent>(FunctionEntryNode))
+        {
+            if ((CustomEventNode->FunctionFlags & NetMask) != NetFlags)
+            {
+                CustomEventNode->FunctionFlags &= ~NetMask;
+                CustomEventNode->FunctionFlags |= NetFlags;
+                NeedSave = true;
+            }
+        }
+
+        TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = FunctionEntryNode->UserDefinedPins;
+
+        bool ParameterChanged = OldUserDefinedPins.Num() != ParameterTypes.Num();
+
+        if (!ParameterChanged)
+        {
+            for (int i = 0; i < OldUserDefinedPins.Num(); i++)
+            {
+                if (OldUserDefinedPins[i]->PinType != ParameterTypes[i])
+                {
+                    ParameterChanged = true;
+                }
+            }
+        }
+
+        if (ParameterChanged)
+        {
+            for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedPins)
+            {
+                FunctionEntryNode->RemoveUserDefinedPin(pinInfo);
+            }
             for (int i = 0; i < ParameterNames.Num(); i++)
             {
-                EntryNodes[0]->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
+                FunctionEntryNode->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
             }
+        }
 
-            const FName RetValName = FName(TEXT("ReturnValue"));
+        bool RetChanged = false;
 
-            if (!IsVoid)
+        const FName RetValName = FName(TEXT("ReturnValue"));
+
+        if (!IsVoid && !IsCustomEvent)
+        {
+            FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
+            //EntryNodes[0]->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
+            auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
+
+            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+            for (UK2Node_EditablePinBase* Node : TargetNodes)
             {
-                FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
-                //EntryNodes[0]->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
-                auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(EntryNodes[0]);
+                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 1) || (OldUserDefinedReturnPins[0]->PinType != PinType);
 
-                TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
-                for (UK2Node_EditablePinBase* Node : TargetNodes)
+                if (RetChanged)
                 {
                     Node->Modify();
+                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    {
+                        Node->RemoveUserDefinedPin(pinInfo);
+                    }
                     Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
                 }
             }
         }
-        FunctionAdded.Add(InName);
+        else
+        {
+            auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
+
+            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+            for (UK2Node_EditablePinBase* Node : TargetNodes)
+            {
+                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 0);
+
+                if (RetChanged)
+                {
+                    Node->Modify();
+                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    {
+                        Node->RemoveUserDefinedPin(pinInfo);
+                    }
+                }
+            }
+        }
+
+        NeedSave = NeedSave || ParameterChanged || RetChanged;
     }
 
     ParameterNames.Empty();
@@ -393,26 +597,48 @@ void UPEBlueprintAsset::ClearParameter()
     ParameterTypes.Empty();
 }
 
-void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
+void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags)
 {
-    NeedSave = true;
+    
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
-    const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
+    int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
     if (VarIndex == INDEX_NONE)
     {
         FBlueprintEditorUtils::AddMemberVariable(Blueprint, NewVarName, PinType);
+        NeedSave = true;
     }
     else
     {
-        FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, NewVarName, PinType);
+        FBPVariableDescription& Variable = Blueprint->NewVariables[VarIndex];
+        if (Variable.VarType != PinType)
+        {
+            FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, NewVarName, PinType);
+            NeedSave = true;
+        }
+        //else
+        //{
+        //    UE_LOG(LogTemp, Error, TEXT("do not changed %s"), *NewVarName.ToString());
+        //}
+    }
+    VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
+    if (VarIndex != INDEX_NONE)
+    {
+        FBPVariableDescription& Variable = Blueprint->NewVariables[VarIndex];
+        int32 NetFlags = InFlags & CPF_Net;
+        
+        if ((Variable.PropertyFlags & CPF_Net) != NetFlags)
+        {
+            Variable.PropertyFlags &= ~CPF_Net;
+            Variable.PropertyFlags |= NetFlags;
+            NeedSave = true;
+        }
     }
     MemberVariableAdded.Add(NewVarName);
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
-    NeedSave = true;
     if (Blueprint)
     {
         TArray<FName> ToDelete;
@@ -425,7 +651,7 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
         }
         for (auto Name : ToDelete)
         {
-            //UE_LOG(LogTemp, Warning, TEXT("Delete MemberVariable %s"), *Name.ToString());
+            NeedSave = true;
             FBlueprintEditorUtils::RemoveMemberVariable(Blueprint, Name);
         }
     }
@@ -434,22 +660,50 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 
 void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
-    NeedSave = true;
     if (Blueprint)
     {
-        Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
+        auto RemovedFunction = Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
+        NeedSave = NeedSave || (RemovedFunction > 0);
+
+        UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+        if (EventGraph)
+        {
+            auto RemovedCustomEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) { 
+                UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
+                return CustomEvent && !FunctionAdded.Contains(CustomEvent->CustomFunctionName);
+                });
+            NeedSave = NeedSave || (RemovedCustomEvent > 0);
+
+            auto RemoveOverrideEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
+                UK2Node_Event* Event = Cast<UK2Node_Event>(GraphNode);
+                return Event && Event->bOverrideFunction && !OverrideAdded.Contains(Event->EventReference.GetMemberName());
+                });
+            NeedSave = NeedSave || (RemoveOverrideEvent > 0);
+        }
     }
     FunctionAdded.Empty();
 }
 
 void UPEBlueprintAsset::Save()
 {
-    if (Blueprint && NeedSave)
+    auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass);
+    if (Blueprint && TypeScriptGeneratedClass)
     {
-        FKismetEditorUtilities::CompileBlueprint(Blueprint);
+        NeedSave = NeedSave || (TypeScriptGeneratedClass->HasConstructor != HasConstructor);
+        TypeScriptGeneratedClass->HasConstructor = HasConstructor;
+        if (NeedSave)
+        {
+            for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            {
+                auto Function = *FuncIt;
+                Function->FunctionFlags &= ~FUNC_Native;
+            }
+            FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+            FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
-        TArray<UPackage*> PackagesToSave;
-        PackagesToSave.Add(Package);
-        FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+            TArray<UPackage*> PackagesToSave;
+            PackagesToSave.Add(Package);
+            FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
+        }
     }
 }

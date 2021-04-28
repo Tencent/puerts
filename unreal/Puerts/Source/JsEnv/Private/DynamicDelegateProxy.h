@@ -31,7 +31,7 @@ public:
 
     void ProcessEvent(UFunction*, void* Parms) override;
 
-    TWeakPtr<IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 
     UFunction* SignatureFunction;
 

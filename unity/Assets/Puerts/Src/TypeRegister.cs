@@ -211,7 +211,7 @@ namespace Puerts
 
         internal void InitArrayTypeId(IntPtr isolate)
         {
-            arrayTypeId = PuertsDLL.RegisterClass(jsEnv.isolate, GetTypeId(isolate, typeof(Array)), "__puerts.Array", null, null, 0);
+            arrayTypeId = PuertsDLL.RegisterClass(jsEnv.isolate, GetTypeId(isolate, typeof(Array)), "__puerts.Array", null, null, Utils.TwoIntToLong(jsEnv.Idx, 0));
             var lengthFuncId = jsEnv.AddCallback(ArrayLength);
             PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "Length", false, callbackWrap, lengthFuncId, null, 0, true);
 
@@ -523,8 +523,21 @@ namespace Puerts
             }
             else
             {
+                bool hasNoParametersCtor = false;
                 var constructorWraps = type.GetConstructors(flag)
-                    .Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)).ToList();
+                    .Select(m => 
+                    {
+                        if (m.GetParameters().Length == 0) 
+                        {
+                            hasNoParametersCtor = true;
+                        }
+                        return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
+                    })
+                    .ToList();
+                if (type.IsValueType && !hasNoParametersCtor)
+                {
+                    constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
+                }
                 MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
                 constructorCallback = constructorReflectionWrap.Construct;
             }

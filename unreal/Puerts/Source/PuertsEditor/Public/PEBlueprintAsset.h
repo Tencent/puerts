@@ -64,6 +64,9 @@ public:
     UPROPERTY(BlueprintReadOnly)
     bool NeedSave;
 
+    UPROPERTY()
+    bool HasConstructor;
+
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass);
 
@@ -74,13 +77,13 @@ public:
     void ClearParameter();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
+    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedFunction();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
+    void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedMemberVariable();
@@ -92,6 +95,8 @@ private:
     TSet<FName> MemberVariableAdded;
 
     TSet<FName> FunctionAdded;
+
+    TSet<FName> OverrideAdded;
 
     TArray<FName> ParameterNames;
 

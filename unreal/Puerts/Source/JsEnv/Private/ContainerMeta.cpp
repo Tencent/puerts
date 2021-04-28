@@ -16,10 +16,10 @@ FContainerMeta::FContainerMeta()
 FContainerMeta::~FContainerMeta()
 {
 #if ENGINE_MINOR_VERSION >= 25
-    for (auto KV : ObjectPropertyMap)
-    {
-        delete KV.Value;
-    }
+    //for (auto KV : ObjectPropertyMap)
+    //{
+    //    delete KV.Value;
+    //}
 #else
     for (int i = 0; i < MaxBuiltinType; i++)
     {
@@ -165,7 +165,7 @@ void FContainerMeta::NotifyUStructDeleted(const UStruct *Struct)
 #if ENGINE_MINOR_VERSION < 25
         (const_cast<UStruct *>(Struct))->RemoveFromRoot();
 #else
-        delete *Iter;
+        //delete *Iter;
 #endif
         ObjectPropertyMap.Remove(Struct);
     }

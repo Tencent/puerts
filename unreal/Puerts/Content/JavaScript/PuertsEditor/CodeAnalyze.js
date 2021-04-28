@@ -849,6 +849,101 @@ function logErrors(allDiagnostics) {
         }
     });
 }
+var FunctionFlags = {
+    FUNC_None: 0x00000000,
+    FUNC_Final: 0x00000001,
+    FUNC_RequiredAPI: 0x00000002,
+    FUNC_BlueprintAuthorityOnly: 0x00000004,
+    FUNC_BlueprintCosmetic: 0x00000008,
+    // FUNC_				: 0x00000010,   // unused.
+    // FUNC_				: 0x00000020,   // unused.
+    FUNC_Net: 0x00000040,
+    FUNC_NetReliable: 0x00000080,
+    FUNC_NetRequest: 0x00000100,
+    FUNC_Exec: 0x00000200,
+    FUNC_Native: 0x00000400,
+    FUNC_Event: 0x00000800,
+    FUNC_NetResponse: 0x00001000,
+    FUNC_Static: 0x00002000,
+    FUNC_NetMulticast: 0x00004000,
+    FUNC_UbergraphFunction: 0x00008000,
+    FUNC_MulticastDelegate: 0x00010000,
+    FUNC_Public: 0x00020000,
+    FUNC_Private: 0x00040000,
+    FUNC_Protected: 0x00080000,
+    FUNC_Delegate: 0x00100000,
+    FUNC_NetServer: 0x00200000,
+    FUNC_HasOutParms: 0x00400000,
+    FUNC_HasDefaults: 0x00800000,
+    FUNC_NetClient: 0x01000000,
+    FUNC_DLLImport: 0x02000000,
+    FUNC_BlueprintCallable: 0x04000000,
+    FUNC_BlueprintEvent: 0x08000000,
+    FUNC_BlueprintPure: 0x10000000,
+    FUNC_EditorOnly: 0x20000000,
+    FUNC_Const: 0x40000000,
+    FUNC_NetValidate: 0x80000000,
+    FUNC_AllFlags: 0xFFFFFFFF,
+};
+var PropertyFlags = {
+    CPF_None: 0,
+    CPF_Edit: 0x0000000000000001,
+    CPF_ConstParm: 0x0000000000000002,
+    CPF_BlueprintVisible: 0x0000000000000004,
+    CPF_ExportObject: 0x0000000000000008,
+    CPF_BlueprintReadOnly: 0x0000000000000010,
+    CPF_Net: 0x0000000000000020,
+    CPF_EditFixedSize: 0x0000000000000040,
+    CPF_Parm: 0x0000000000000080,
+    CPF_OutParm: 0x0000000000000100,
+    CPF_ZeroConstructor: 0x0000000000000200,
+    CPF_ReturnParm: 0x0000000000000400,
+    CPF_DisableEditOnTemplate: 0x0000000000000800,
+    //CPF_      						: 0x0000000000001000,	///< 
+    CPF_Transient: 0x0000000000002000,
+    CPF_Config: 0x0000000000004000,
+    //CPF_								: 0x0000000000008000,	///< 
+    CPF_DisableEditOnInstance: 0x0000000000010000,
+    CPF_EditConst: 0x0000000000020000,
+    CPF_GlobalConfig: 0x0000000000040000,
+    CPF_InstancedReference: 0x0000000000080000,
+    //CPF_								: 0x0000000000100000,	///<
+    CPF_DuplicateTransient: 0x0000000000200000,
+    CPF_SubobjectReference: 0x0000000000400000,
+    //CPF_    							: 0x0000000000800000,	///< 
+    CPF_SaveGame: 0x0000000001000000,
+    CPF_NoClear: 0x0000000002000000,
+    //CPF_  							: 0x0000000004000000,	///<
+    CPF_ReferenceParm: 0x0000000008000000,
+    CPF_BlueprintAssignable: 0x0000000010000000,
+    CPF_Deprecated: 0x0000000020000000,
+    CPF_IsPlainOldData: 0x0000000040000000,
+    CPF_RepSkip: 0x0000000080000000,
+    CPF_RepNotify: 0x0000000100000000,
+    CPF_Interp: 0x0000000200000000,
+    CPF_NonTransactional: 0x0000000400000000,
+    CPF_EditorOnly: 0x0000000800000000,
+    CPF_NoDestructor: 0x0000001000000000,
+    //CPF_								: 0x0000002000000000,	///<
+    CPF_AutoWeak: 0x0000004000000000,
+    CPF_ContainsInstancedReference: 0x0000008000000000,
+    CPF_AssetRegistrySearchable: 0x0000010000000000,
+    CPF_SimpleDisplay: 0x0000020000000000,
+    CPF_AdvancedDisplay: 0x0000040000000000,
+    CPF_Protected: 0x0000080000000000,
+    CPF_BlueprintCallable: 0x0000100000000000,
+    CPF_BlueprintAuthorityOnly: 0x0000200000000000,
+    CPF_TextExportTransient: 0x0000400000000000,
+    CPF_NonPIEDuplicateTransient: 0x0000800000000000,
+    CPF_ExposeOnSpawn: 0x0001000000000000,
+    CPF_PersistentInstance: 0x0002000000000000,
+    CPF_UObjectWrapper: 0x0004000000000000,
+    CPF_HasGetValueTypeHash: 0x0008000000000000,
+    CPF_NativeAccessSpecifierPublic: 0x0010000000000000,
+    CPF_NativeAccessSpecifierProtected: 0x0020000000000000,
+    CPF_NativeAccessSpecifierPrivate: 0x0040000000000000,
+    CPF_SkipSerialization: 0x0080000000000000,
+};
 function readAndParseConfigFile(configFilePath) {
     let readResult = ts.readConfigFile(configFilePath, customSystem.readFile);
     return ts.parseJsonConfigFileContent(readResult.config, {
@@ -874,9 +969,14 @@ function watch(configFilePath) {
     const servicesHost = {
         getScriptFileNames: () => fileNames,
         getScriptVersion: fileName => {
-            let res = fileVersions[fileName] && fileVersions[fileName].version.toString();
-            //console.log("getScriptVersion:"+ fileName + ", res:" + res + ",in:" + new Error().stack);
-            return res;
+            if (fileName in fileVersions) {
+                return fileVersions[fileName] && fileVersions[fileName].version.toString();
+            }
+            else {
+                let md5 = UE.FileSystemOperation.FileMD5Hash(fileName);
+                fileVersions[fileName] = { version: md5 };
+                return md5;
+            }
         },
         getScriptSnapshot: fileName => {
             if (!customSystem.fileExists(fileName)) {
@@ -985,10 +1085,12 @@ function watch(configFilePath) {
                     if (!emitOutput.emitSkipped) {
                         let modulePath = undefined;
                         let moduleFileName = undefined;
+                        let jsSource = undefined;
                         emitOutput.outputFiles.forEach(output => {
                             console.log(`write ${output.name} ...`);
                             UE.FileSystemOperation.WriteFile(output.name, output.text);
                             if (output.name.endsWith(".js")) {
+                                jsSource = output.text;
                                 if (options.outDir && output.name.startsWith(options.outDir)) {
                                     moduleFileName = output.name.substr(options.outDir.length + 1);
                                     modulePath = getDirectoryPath(moduleFileName);
@@ -997,7 +1099,7 @@ function watch(configFilePath) {
                             }
                         });
                         if (moduleFileName && reload) {
-                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName);
+                            UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
                         }
                         let foundType = undefined;
                         let foundBaseTypeUClass = undefined;
@@ -1155,14 +1257,14 @@ function watch(configFilePath) {
                 const commentRanges = ts.getLeadingCommentRanges(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart());
                 return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos, r.end).indexOf("@no-blueprint") > 0));
             }
-            function tryGetCppType(symbol, leading) {
+            function tryGetAnnotation(symbol, key, leading) {
                 const commentRanges = (leading ? ts.getLeadingCommentRanges : ts.getTrailingCommentRanges)(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart() + (leading ? 0 : symbol.valueDeclaration.getFullWidth()));
                 if (commentRanges) {
                     let ret;
                     commentRanges.forEach(r => {
-                        let m = sourceFile.getFullText().slice(r.pos, r.end).match(/@cpp:(\w+)/);
+                        let m = sourceFile.getFullText().slice(r.pos, r.end).match(new RegExp(`@${key}:([^*]*)`));
                         if (m) {
-                            ret = m[1];
+                            ret = m[1].trim();
                         }
                     });
                     return ret;
@@ -1172,30 +1274,38 @@ function watch(configFilePath) {
                 if (pinType.PinContainerType == UE.EPinContainerType.None) {
                     let pc = pinType.PinCategory;
                     if (pc === "float") {
-                        let cppType = tryGetCppType(symbol, leading);
+                        let cppType = tryGetAnnotation(symbol, "cpp", leading);
                         if (cppType === "int" || cppType === "byte") {
                             pinType.PinCategory = cppType;
                         }
                     }
                     else if (pc === "string") {
-                        let cppType = tryGetCppType(symbol, leading);
+                        let cppType = tryGetAnnotation(symbol, "cpp", leading);
                         if (cppType === "name" || cppType === "text") {
                             pinType.PinCategory = cppType;
                         }
                     }
                 }
             }
+            function getFlagsValue(str, flagsDef) {
+                if (!str)
+                    return 0;
+                return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] : 0).reduce((x, y) => x | y);
+            }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
                 bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                let hasConstructor = false;
                 checker.getPropertiesOfType(type)
                     .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                     .filter(x => !manualSkip(x))
                     .forEach((symbol) => {
                     if (ts.isMethodDeclaration(symbol.valueDeclaration)) {
-                        if (symbol.getName() === 'Constructor')
+                        if (symbol.getName() === 'Constructor') {
+                            hasConstructor = true;
                             return;
+                        }
                         let methodType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
                         let signatures = checker.getSignaturesOfType(methodType, ts.SignatureKind.Call);
                         if (!signatures) {
@@ -1210,46 +1320,51 @@ function watch(configFilePath) {
                         for (var i = 0; i < signature.parameters.length; i++) {
                             let paramType = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration);
                             let paramPinType = tsTypeToPinType(paramType);
-                            postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                             if (!paramPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                 bp.ClearParameter();
                                 return;
                             }
+                            postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
                             bp.AddParameter(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType);
                         }
                         //console.log("add function", symbol.getName());
+                        let sflags = tryGetAnnotation(symbol, "flags", true);
+                        let flags = getFlagsValue(sflags, FunctionFlags);
                         if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
-                            bp.AddFunction(symbol.getName(), true, undefined, undefined);
+                            bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
                         }
                         else {
                             let returnType = signature.getReturnType();
                             let resultPinType = tsTypeToPinType(returnType);
-                            postProcessPinType(symbol, resultPinType.pinType, true);
                             if (!resultPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                 bp.ClearParameter();
                                 return;
                             }
-                            bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType);
+                            postProcessPinType(symbol, resultPinType.pinType, true);
+                            bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
                         }
                         bp.ClearParameter();
                     }
                     else {
                         let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
                         let propPinType = tsTypeToPinType(propType);
-                        postProcessPinType(symbol, propPinType.pinType, true);
                         if (!propPinType) {
                             console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                         }
                         else {
+                            postProcessPinType(symbol, propPinType.pinType, true);
                             //console.log("add member variable", symbol.getName());
-                            bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType);
+                            let sflags = tryGetAnnotation(symbol, "flags", true);
+                            let flags = getFlagsValue(sflags, PropertyFlags);
+                            bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags);
                         }
                     }
                 });
-                //bp.RemoveNotExistedMemberVariable();
-                //bp.RemoveNotExistedFunction();
+                bp.RemoveNotExistedMemberVariable();
+                bp.RemoveNotExistedFunction();
+                bp.HasConstructor = hasConstructor;
                 bp.Save();
             }
             function getModule(type) {

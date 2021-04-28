@@ -43,8 +43,9 @@ var global = global || (function () { return this; }());
         return cls;
     }
 
+    function Namespace() {}
     function createTypeProxy(namespace) {
-        return new Proxy(Object.create(null), {
+        return new Proxy(new Namespace, {
             get: function(cache, name) {
                 if (!(name in cache)) {
                     let fullName = namespace ? (namespace + '.' + name) : name;
@@ -132,7 +133,7 @@ var global = global || (function () { return this; }());
     }
     
     function extension(cls, extension) {
-        for(var key in extension) {
+        Object.keys(extension).forEach(key=> {
             var func = extension[key];
             if (typeof func == 'function' && key != 'constructor') {
                 Object.defineProperty(cls.prototype, key, {
@@ -141,7 +142,7 @@ var global = global || (function () { return this; }());
                     configurable: false
                 });
             }
-        }
+        })
     }
     
     puerts.$ref = ref;

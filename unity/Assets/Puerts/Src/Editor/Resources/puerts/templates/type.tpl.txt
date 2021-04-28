@@ -131,6 +131,13 @@ function getSelf(type) {
         return `Puerts.Utils.GetSelf((int)data, self) as ${type.Name}`;
     }
 }
+function setSelf(type) {
+    if (type.IsValueType) {
+        return `Puerts.Utils.SetSelf((int)data, self, obj);`
+    } else {
+        return '';
+    }
+}
 
 function refSelf() {
     return it.BlittableCopy ? "(*obj)" : "obj";
@@ -207,6 +214,7 @@ namespace PuertsStaticWrap
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
+                        {{?!it.BlittableCopy && !method.IsStatic}}{{=setSelf(it)}}{{?}}
                         {{?method.HasOverloads}}return;{{?}}
                     }{{~}}
                 }
@@ -244,6 +252,7 @@ namespace PuertsStaticWrap
                 {{?!property.IsStatic}}var obj = {{=getSelf(it)}};{{?}}
                 var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 {{=property.IsStatic?it.Name:refSelf()}}.{{=UnK(property.Name)}} = {{=getArgument(property, 'argHelper')}};
+                {{?!it.BlittableCopy && !property.IsStatic}}{{=setSelf(it)}}{{?}}
             }
             catch (Exception e)
             {
@@ -387,7 +396,7 @@ namespace PuertsStaticWrap
         {{?it.BlittableCopy}}
         unsafe private static {{=it.Name}} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            {{=it.Name}}* result = ({{=it.Name}}*)getValueApi.GetObject(isolate, value, isByRef);
+            {{=it.Name}}* result = ({{=it.Name}}*)getValueApi.GetNativeObject(isolate, value, isByRef);
             return result == null ? default({{=it.Name}}) : *result;
         }
 
@@ -397,7 +406,7 @@ namespace PuertsStaticWrap
             fixed ({{=it.Name}}* result = &HeapValue)
             {
                 var typeId = Puerts.JsEnv.jsEnvs[jsEnvIdx].GetTypeId(typeof({{=it.Name}}));
-                setValueApi.SetObject(isolate, value, typeId, new IntPtr(result));
+                setValueApi.SetNativeObject(isolate, value, typeId, new IntPtr(result));
             }
         }
         

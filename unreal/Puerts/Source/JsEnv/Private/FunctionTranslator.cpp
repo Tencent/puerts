@@ -285,18 +285,6 @@ void FExtensionMethodTranslator::CallExtension(const v8::FunctionCallbackInfo<v8
     
 void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    UObject * CallObject = FV8Utils::GetUObject(Info.Holder());
-    if (!CallObject)
-    {
-        FV8Utils::ThrowException(Isolate, "access a null object");
-        return;
-    }
-    if (FV8Utils::IsReleasedPtr(CallObject))
-    {
-        FV8Utils::ThrowException(Isolate, "access a invalid object");
-        return;
-    }
-
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void *Params = Buffer;
 #else
@@ -305,7 +293,12 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
 
     if (Params) Function->InitializeStruct(Params);
 
-    Arguments[0]->JsToUEInContainer(Isolate, Context, Info.Holder(), Params, false);
+    if (!Arguments[0]->JsToUEInContainer(Isolate, Context, Info.Holder(), Params, false))
+    {
+        if (Params) Function->DestroyStruct(Params);
+        FV8Utils::ThrowException(Isolate, "access a invalid object");
+        return;
+    }
 
     for (int i = 1; i < Arguments.size(); ++i)
     {

@@ -97,11 +97,17 @@ if ( APPLE )
         # set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
         # 某些mac机器上会默认开始编译arm64版本，暂时先写死x86版本，后续再支持arm64
         set(CMAKE_OSX_ARCHITECTURES x86_64)
-        # add_library(puerts SHARED
-        add_library(puerts MODULE
-            ${PUERTS_SRC} ${PUERTS_INC}
-        )
-        set_target_properties ( puerts PROPERTIES BUNDLE TRUE )
+
+        if ( FOR_UT STREQUAL "1")
+            add_library(puerts SHARED
+                ${PUERTS_SRC} ${PUERTS_INC}
+            )
+        else ()
+            add_library(puerts MODULE
+                ${PUERTS_SRC} ${PUERTS_INC}
+            )
+            set_target_properties ( puerts PROPERTIES BUNDLE TRUE )
+        endif ()
     endif ()
 else ()
     add_library(puerts SHARED

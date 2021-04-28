@@ -30,4 +30,7 @@ public:
 
     UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Wait Debugger", defaultValue = false))
     bool WaitDebugger = false;
+
+    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
+    int32 NumberOfJsEnv = 1;
 };

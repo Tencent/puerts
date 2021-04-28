@@ -17,7 +17,7 @@
       "Name": "JsEnv",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" , "Linux"]
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
     },
     {
       "Name": "DeclarationGenerator",
@@ -25,16 +25,10 @@
       "LoadingPhase": "Default"
     },
     {
-      "Name": "ReactUMG",
-      "Type": "Runtime",
-      "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
-    },
-    {
       "Name": "Puerts",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
     },
     {
       "Name": "PuertsEditor",

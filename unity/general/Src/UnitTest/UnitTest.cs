@@ -15,7 +15,7 @@ namespace Puerts.UnitTest
     public class TxtLoader : ILoader
     {
         private string root = Path.Combine(
-            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:\\\\", ""),
+            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
             "../../Assets/Puerts/Src/Resources"
         );
 
@@ -90,6 +90,26 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
 
             Assert.True(ret);
+        }
+
+        [Test]
+        public void JSObject() 
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var ret = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let jsObj = {'a': 1};
+                let obj = new CS.Puerts.UnitTest.JsObjectTest();
+                JSON.stringify(obj.passThroughJSObject(jsObj))
+            ");
+            Assert.AreEqual("{\"a\":1}", ret);
+            ret = jsEnv.Eval<string>(@"
+                [
+                    (obj.passThroughJSObject(jsObj) === obj.passThroughJSObject(jsObj)).toString(),
+                    (obj.passThroughJSObject(jsObj) === jsObj).toString()
+                ].join('')
+            ");
+            Assert.AreEqual("truetrue", ret);
         }
 
         [Test]
@@ -317,6 +337,19 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Dispose();
             Assert.AreEqual(age, 22);
+        }
+
+        [Test]
+        public void NoParamConstructorStructTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            string res = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                let s = new CS.Puerts.UnitTest.S();
+                s
+            ");
+            Assert.AreEqual(res, "Puerts.UnitTest.S");
+            jsEnv.Dispose();
         }
 
         [Test]
@@ -1032,6 +1065,26 @@ namespace Puerts.UnitTest
 
             Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Single));
             Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+        }
+        [Test]
+        public void DelegateGC()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let obj = new CS.Puerts.UnitTest.BaseClass();
+                obj.ActionParam(Math.floor);
+                ");
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+
+            jsEnv.Eval(@"
+                obj.ActionParam(Math.floor);
+                ");
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+            jsEnv.Tick();
+            jsEnv.Dispose();
         }
     }
 }
