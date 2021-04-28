@@ -100,8 +100,8 @@ namespace puerts
             V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
         }
         v8::TryCatch TryCatch(Isolate);
-        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         Arguments.clear();
+        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         if (TryCatch.HasCaught())
         {
             LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
