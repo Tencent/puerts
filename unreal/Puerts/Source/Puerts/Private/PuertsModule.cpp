@@ -14,7 +14,7 @@
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
 #endif
-#include "Kismet/KismetSystemLibrary.h"
+#include "Commandlets/Commandlet.h"
 #include "Regex.h"
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
@@ -106,7 +106,7 @@ public:
         TArray<FString> OutTokens;
         TArray<FString> OutSwitches;
         TMap<FString, FString> OutParams;
-        UKismetSystemLibrary::ParseCommandLine(FCommandLine::Get(), OutTokens, OutSwitches, OutParams);
+        UCommandlet::ParseCommandLine(FCommandLine::Get(), OutTokens, OutSwitches, OutParams);
 
 #if WITH_EDITOR
         static const auto GetPIEInstanceID = [](const TArray<FString>& InTokens) -> int32
