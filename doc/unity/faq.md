@@ -53,6 +53,17 @@ sudo xattr -r -d com.apple.quarantine puerts.bundle
 unity默认会进行代码剪裁，简而言之unity发现某引擎api，系统api没有被业务c#使用，就不编译倒cpp。
 解决办法：1、对要调用的api生成wrap代码，这样c#里头就有了引用；2、通过link.xml告知unity别剪裁，link.xml的配置请参考unity官方文档。
 
+## GetComponent<XXX>()在CS为null，但在JS调用却不为null，为什么
+其实那C#对象并不为null，是UnityEngine.Object重载的==操作符。当一个对象被Destroy，未初始化等情况，obj == null返回true；`GetComponent<XXX>()`如果组件不存在，Unity重载==的结果也会让其返回null。但这些C#对象并不为null，可以通过System.Object.ReferenceEquals(null, obj)来验证下。
+
+对应这种情况，可以为UnityEngine.Object写一个扩展方法，需要判空的时候统一用它解决：
+```
+public static bool IsNull(this UnityEngine.Object o) 
+{
+    return o == null;
+}
+```
+
 ## source-map-support支持
 安装模块
 ```
