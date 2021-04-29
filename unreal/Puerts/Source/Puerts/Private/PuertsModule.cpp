@@ -96,9 +96,9 @@ public:
         Selector = InSelector;
     }
 
-    int32 GetBaseDebuggerPort(int32 InSettingsDebugPort)
+    int32 GetDebuggerPortFromCommandLine()
     {
-        int32 Result = InSettingsDebugPort;
+        int32 Result = -1;
 
         /**
          * get command line
@@ -157,12 +157,10 @@ public:
         return Result;
     }
 
-	void MakeSharedJsEnv()
-	{
-		const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+    void MakeSharedJsEnv()
+    {
+        const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
         
-        int32 DefaultDebugPort = GetBaseDebuggerPort(Settings.DebugPort);    
-
         JsEnv.Reset();
         JsEnvGroup.Reset();
 
@@ -172,7 +170,7 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DefaultDebugPort /** Settings.DebugPort*/ );
+                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
@@ -197,7 +195,7 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DefaultDebugPort/*Settings.DebugPort*/);
+                JsEnv = MakeShared<puerts::FJsEnv>(std::make_unique<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
@@ -212,7 +210,7 @@ public:
             JsEnv->RebindJs();
             UE_LOG(PuertsModule, Log, TEXT("Normal Mode started!"));
         }
-	}
+    }
 
 private:
     TSharedPtr<puerts::FJsEnv> JsEnv;
@@ -222,6 +220,8 @@ private:
     int32 NumberOfJsEnv = 1;
 
     TSharedPtr<puerts::FJsEnvGroup> JsEnvGroup;
+
+    int32 DebuggerPortFromCommandLine = -1;
 };
 
 IMPLEMENT_MODULE( FPuertsModule, Puerts)
@@ -300,6 +300,8 @@ void FPuertsModule::RegisterSettings()
             Settings.NumberOfJsEnv = 1;
         }
     }
+
+    DebuggerPortFromCommandLine = GetDebuggerPortFromCommandLine();
 }
 
 void FPuertsModule::UnregisterSettings()
