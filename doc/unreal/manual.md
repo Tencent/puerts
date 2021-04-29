@@ -63,6 +63,33 @@ export default TS_Player;
 
 ![select_character.png](../../pic/select_character.png)
 
+* 能被UE识别的类，支持构造函数，支持override蓝图能override的方法，支持轴映射Axis、Action事件，支持RPC
+
+~~~typescript
+class TS_Player extends UE.Character {
+    FpsCamera: UE.CameraComponent;
+    //...
+
+    Constructor() {
+        let FpsCamera = this.CreateDefaultSubobjectGeneric<UE.CameraComponent>("FpsCamera", UE.CameraComponent.StaticClass());
+        FpsCamera.SetupAttachment(this.CapsuleComponent, "FpsCamera");
+        //...
+    }
+
+    MoveForward(axisValue: number): void {
+        this.AddMovementInput(this.GetActorForwardVector(), axisValue, false);
+    }
+
+    MoveRight(axisValue: number): void {
+        this.AddMovementInput(this.GetActorRightVector(), axisValue, false);
+    }
+
+    ReceiveBeginPlay(): void {
+        //...
+    }
+
+~~~
+
 
 ### 两种模式之间的关系
 
@@ -334,4 +361,8 @@ UFunction* UObjectExtension::FindFunction(UObject *Object, FName InName)
 let cls = obj.GetClass();
 let func = obj.FindFunction("Func");
 ~~~
+
+## 自动绑定模式支持的数据类型
+
+## 自动绑定模式的注解
 
