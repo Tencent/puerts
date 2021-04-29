@@ -126,18 +126,30 @@ var global = global || (function () { return this; }());
         return cls.__p_innerType;
     }
     
-    function bindThisToFirstArgument(func) {
+    function bindThisToFirstArgument(func, parentFunc) {
+	if (parentFunc) {
+            return function (...args) {
+                try {
+                    return func.apply(null, [this, ...args]);
+                } catch {
+                    return parentFunc.call(this, ...args);
+                };
+            }
+        }
         return function(...args) {
             return func.apply(null, [this, ...args]);
         }
     }
     
     function extension(cls, extension) {
+	var parentPrototype = Object.getPrototypeOf(cls.prototype);
         Object.keys(extension).forEach(key=> {
             var func = extension[key];
             if (typeof func == 'function' && key != 'constructor') {
+		var parentFunc = parentPrototype ? parentPrototype[key] : undefined;
+                parentFunc = typeof parentFunc === "function" ? parentFunc : undefined;
                 Object.defineProperty(cls.prototype, key, {
-                    value: bindThisToFirstArgument(func),
+                    value: bindThisToFirstArgument(func, parentFunc),
                     writable: false,
                     configurable: false
                 });

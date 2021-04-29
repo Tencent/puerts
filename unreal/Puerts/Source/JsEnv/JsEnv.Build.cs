@@ -215,6 +215,10 @@ public class JsEnv : ModuleRules
             if(Delay) PublicDelayLoadDLLs.Add(DllName);
             var DllPath = Path.Combine(LibraryPath, DllName);
             var DestDllPath = Path.Combine(BinariesDir, DllName);
+            if (!Directory.Exists(BinariesDir))
+            {
+                Directory.CreateDirectory(BinariesDir);
+            }
             try
             {
                 System.IO.File.Delete(DestDllPath);
