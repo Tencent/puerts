@@ -199,6 +199,7 @@ namespace Puerts
 
         internal static void Init()
         {
+            StaticTranslate<bool>.ReplaceDefault(PushBoolean, GetBoolean);
             StaticTranslate<char>.ReplaceDefault(PushChar, GetChar);
             StaticTranslate<sbyte>.ReplaceDefault(PushSByte, GetSByte);
             StaticTranslate<byte>.ReplaceDefault(PushByte, GetByte);
