@@ -42,11 +42,6 @@ public:
 node enable_puerts_module.js
 ~~~
 
-* 满足如下以下三点，一个类才能被UE编辑器识别
-    - 这个类继承自UE的类或者另一继承UE的类；
-    - 类名和去掉.ts后缀的文件名相同；
-    - 把这个类export default。
-
 例如这么一个类：
 
 ~~~typescript
@@ -362,7 +357,131 @@ let cls = obj.GetClass();
 let func = obj.FindFunction("Func");
 ~~~
 
-## 自动绑定模式支持的数据类型
+## 自动绑定模式
 
-## 自动绑定模式的注解
+### 格式
+
+一个TypeScript满足如下以下三点，一个类才能被UE编辑器识别
+
+* 这个类继承自UE的类或者另一继承UE的类；
+* 类名和去掉.ts后缀的文件名相同；
+* 把这个类export default。
+
+### 构造函数
+
+和标准的typescript构造函数不一样，自动绑定模式被UE初始化调用的构造函数首字母需大写，也就是Constructor
+
+~~~typescript
+class TsTestActor extends UE.Actor {
+    tickCount: number;
+
+    //注意，继承UE类的js类，构造函数必须大写开头
+    Constructor() {
+        this.PrimaryActorTick.bCanEverTick = true;
+        tickCount = 0;
+    }
+}
+~~~
+
+* 构造函数中可以调用一些UE限定必须在构造函数调用的API，比如CreateDefaultSubobject
+* 如果一个类定义了构造函数，该类成员变量的初始化会被TypeScript接管，这时你在UE编辑器下设置的值将会无效
+* 如果没定义构造函数，则支持在UE编辑器手动设置成员变量值
+
+Constructor
+
+### 自动绑定模式支持的数据类型
+
+只有用自动绑定模式支持的类型声明的字段、方法，才能被UE识别
+
+**直接映射的类型**
+
+void，number，string，bigint，boolean，UE模块下的UObject子类或者UStruct，TArray、TSet、TMap
+
+注意：一个函数返回类型声明为void才是无返回值，如果一个函数不声明返回类型，等同于返回any类型，而自动半丁模式并不支持any类型
+
+如下是几个字段和方法的示例：
+
+~~~typescript
+class TsTestActor extends UE.Actor {
+    tickCount: number;
+
+    actor: UE.Actor; 
+
+    map: UE.TMap<string, number>;
+
+    arr: UE.TArray<UE.Object>;
+
+    set: UE.TSet<string>;
+
+    Add(a: number, b: number): number {
+        return a + b;
+    }
+}
+~~~
+
+**类型注解**
+
+TypeScript和UE两者间的数据类型丰富程度不一样，因而两者并不是一一映射的，比如UE里头的byte，int，float都对应TypeScript的number，那么我们如何告诉puerts生成我们所需的类型呢？puerts提供了类型注解，如下是几个例子：
+
+~~~typescript
+class TsTestActor extends UE.Actor {
+    //@cpp:text
+    Foo(): string {
+        return "hello";
+    }
+
+    Bar(p1:number/*@cpp:int*/): void {
+    }
+
+    //@cpp:name
+    Field: string;
+}
+~~~
+
+* Foo的返回值是FText
+* Bar的参数是int
+* Field字段的类型是FName
+* 目前支持的类型注解支持的类型有：text，name，int，byte
+
+### 其它注解
+
+除了类型注解，puerts还支持其它注解
+
+* @no-blueprint
+
+表示不被UE编辑器识别，方法和字段均可用
+
+~~~typescript
+class TsTestActor extends UE.Actor {
+    //@no-blueprint
+    TsOnlyMethod():void {
+
+    }
+
+    //@no-blueprint
+    TsOnlyField: number;
+}
+~~~
+
+* @flags
+
+为字段，方法设置flags，目前只支持RPC相关的flags，也就是字段只支持CPF_Net，方法只支持FUNC_Net、FUNC_NetMulticast、FUNC_NetServer、FUNC_NetClient
+
+~~~typescript
+class TsTestActor extends UE.Actor {
+    //@flags: FUNC_Net | FUNC_NetServer
+    FireServer():void {
+
+    }
+
+    //@flags: FUNC_Net | FUNC_NetClient
+    FireClient():void {
+
+    }
+
+    //@flags: CPF_Net
+    TsOnlyField: number;
+}
+~~~
+
 
