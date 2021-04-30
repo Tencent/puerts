@@ -484,4 +484,16 @@ class TsTestActor extends UE.Actor {
 }
 ~~~
 
+## 虚拟机切换
 
+puerts同时支持V8和quickjs两种虚拟机，而V8目前有两套版本
+
+* 对于UE4.24及以下，android用的是7.4.288版本的v8，其它系统用的是7.7.299版本的v8
+* 对于高于4.24的版本，可以各操作性统一为8.4.371.19
+* 对于包大小苛刻的场景，可以选用quickjs
+
+默认提供的上述第一种V8版本。
+
+希望使用8.4.371.19的v8的话，先到[这里](../../puerts/actions/workflows/build_v8.yml)下载编译好的V8，解压到Plugins/Puerts/ThirdParty下，然后把[JsEnv.Build.cs](../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)的UseNewV8修改为true
+
+希望使用quickjs的话，先到[这里](../../puerts/actions/workflows/build_quickjs.yml)下载编译好的V8，解压到Plugins/Puerts/ThirdParty下，然后把[JsEnv.Build.cs](../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)的UseQuickjs修改为true
