@@ -13,9 +13,9 @@
 #include "Editor.h"
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
+#include "Internationalization/Regex.h"
 #endif
 #include "Commandlets/Commandlet.h"
-#include "Regex.h"
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
 
