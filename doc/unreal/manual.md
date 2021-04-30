@@ -480,7 +480,7 @@ class TsTestActor extends UE.Actor {
     }
 
     //@flags: CPF_Net
-    TsOnlyField: number;
+    NetField: number;
 }
 ~~~
 
