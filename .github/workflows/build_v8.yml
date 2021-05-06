@@ -2,6 +2,10 @@ name: build v8
 
 on: 
   workflow_dispatch:
+    inputs:
+      tag_date:
+        description: 'tag date'     
+        required: true
 
 #https://docs.google.com/document/d/1oFPHyNb_eXg6NzrE6xJDNPdJrHMZvx0LqsD6wpbd9vY/edit#heading=h.4tfb7x3beh2l
 #libwee8按设计只支持wasm，不支持js，但8.4.371.19版本尚未移除js功能，还能用，如果升级v8版本要注意
@@ -182,8 +186,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: V8_${{env.VERSION}}
+          tag_name: V8_${{env.VERSION}}_${{ github.event.inputs.tag_date }}
+          release_name: V8_${{env.VERSION}}_${{ github.event.inputs.tag_date }}
           draft: false
           prerelease: false
           
