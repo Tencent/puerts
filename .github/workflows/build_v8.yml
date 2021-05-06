@@ -183,7 +183,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: V8: ${{env.VERSION}}
+          release_name: V8_${{env.VERSION}}
           draft: false
           prerelease: false
           
