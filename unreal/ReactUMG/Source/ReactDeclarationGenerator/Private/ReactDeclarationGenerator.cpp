@@ -76,7 +76,7 @@ void FReactDeclarationGenerator::End() { } //do nothing
 void FReactDeclarationGenerator::GenReactDeclaration()
 {
     FString Components = TEXT("exports.lazyloadComponents = {};\n");
-    Output << "import * as React from 'react';\nimport {TArray}  from 'ue';\n\n";
+    Output << "import * as React from 'react';\nimport * as ue from 'ue';\ntype TArray<T> = ue.TArray<T>;\n\n";
 
     for (TObjectIterator<UClass> It; It; ++It)
     {
@@ -236,31 +236,7 @@ void FReactDeclarationGenerator::GenStruct(UStruct *Struct)
 
 void FReactDeclarationGenerator::GenEnum(UEnum *Enum)
 {
-    FStringBuffer StringBuffer{ "", "" };
-
-    TArray<FString> EnumListerrals;
-    for (int i = 0; i < Enum->NumEnums(); ++i)
-    {
-        auto Name = Enum->GetNameStringByIndex(i);
-        if (INDEX_NONE == EnumListerrals.Find(Name))
-        {
-            EnumListerrals.Add(Name);
-        }
-    }
-
-    StringBuffer << "export type " << SafeName(Enum->GetName()) << " = ";
-    TArray<FString> Arr1;
-    TArray<FString> Arr2;
-    for (auto Name : EnumListerrals)
-    {
-        Arr1.Add(TEXT("\"") + Name + TEXT("\""));
-        Arr2.Add(Name + TEXT(": \"") + Name + TEXT("\""));
-    }
-
-    StringBuffer << FString::Join(Arr1, TEXT(" | ")) << ";\n";
-    StringBuffer << "export const " << SafeName(Enum->GetName()) << ": {" << FString::Join(Arr2, TEXT(" ,")) << "};\n";
-
-    Output << StringBuffer;
+    Output << "type " << SafeName(Enum->GetName()) << " = ue." << SafeName(Enum->GetName()) <<";\n";
 }
 
 //--- FSlotDeclarationGenerator end ---
