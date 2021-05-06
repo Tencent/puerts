@@ -281,8 +281,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "boolean";
     }
-    else if (Property->IsA<BytePropertyMacro>()
-             || Property->IsA<DoublePropertyMacro>()
+    else if (Property->IsA<DoublePropertyMacro>()
              || Property->IsA<FloatPropertyMacro>()
              || Property->IsA<IntPropertyMacro>()
              || Property->IsA<UInt32PropertyMacro>()
@@ -308,6 +307,18 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         AddToGen.Add(EnumProperty->GetEnum());
         StringBuffer << SafeName(EnumProperty->GetEnum()->GetName());
+    }
+    else if (BytePropertyMacro* ByteProperty = CastFieldMacro<BytePropertyMacro>(Property))
+    {
+        if(ByteProperty->GetIntPropertyEnum())
+        {
+            AddToGen.Add(ByteProperty->GetIntPropertyEnum());
+            StringBuffer << SafeName(ByteProperty->GetIntPropertyEnum()->GetName());
+        }
+        else
+        {
+            StringBuffer << "number";
+        }
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
