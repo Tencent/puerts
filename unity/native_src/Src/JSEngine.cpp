@@ -143,10 +143,11 @@ namespace puerts
         }
 
         {
-            std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-            for (auto Iter = JSFunctions.begin(); Iter != JSFunctions.end(); ++Iter)
+            std::lock_guard<std::mutex> guard1(JSFunctionsMutex);
+            std::lock_guard<std::mutex> guard2(JSObjectsMutex);
+            for (auto Iter = JSObjectMap.begin(); Iter != JSObjectMap.end(); ++Iter)
             {
-                delete *Iter;
+                delete Iter->second;
             }
         }
 
@@ -189,7 +190,7 @@ namespace puerts
         if (!v8ObjectIndex->IsNullOrUndefined())
         {
             int32_t mapIndex = (int32_t)v8::Number::Cast(*v8ObjectIndex)->Value();
-            jsObject = JSObjectMap[mapIndex];
+            jsObject = (JSObject*)JSObjectMap[mapIndex];
         }
 
         // 如果不存在id，则创建新对象
@@ -216,7 +217,7 @@ namespace puerts
     void JSEngine::ReleaseJSObject(JSObject *InObject)
     {
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
-
+    
         // PLog(puerts::Log, std::to_string((long)InObject));
         v8::Isolate* Isolate = InObject->Isolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -240,34 +241,66 @@ namespace puerts
     JSFunction* JSEngine::CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-        auto maybeId = InFunction->Get(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY));
-        if (!maybeId.IsEmpty()) {
-            auto id = maybeId.ToLocalChecked();
-            if (id->IsNumber()) {
-                int32_t index = id->Int32Value(InContext).ToChecked();
-                return JSFunctions[index];
+
+        v8::Isolate::Scope IsolateScope(InIsolate);
+        v8::HandleScope HandleScope(InIsolate);
+        v8::Context::Scope ContextScope(InContext);
+
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]map get");
+        v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InIsolate);
+        
+        // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]get v8object id");
+        // 从idmap尝试取出该jsObject的id
+        v8::Local<v8::Value> v8ObjectIndex = idmap->Get(InContext, InFunction).ToLocalChecked();
+        JSFunction* jsFunction = nullptr;
+
+        // 如果存在该id，则从objectmap里取出该对象
+        if (!v8ObjectIndex->IsNullOrUndefined())
+        {
+            int32_t mapIndex = (int32_t)v8::Number::Cast(*v8ObjectIndex)->Value();
+            jsFunction = (JSFunction*)JSObjectMap[mapIndex];
+        }
+
+        // 如果不存在id，则创建新对象
+        if (jsFunction == nullptr) 
+        {
+            int32_t id = 0;
+            size_t freeIDSize = ObjectMapFreeIndex.size();
+            if (freeIDSize > 0) {
+                id = ObjectMapFreeIndex[freeIDSize - 1];
+                ObjectMapFreeIndex.pop_back();
             }
-        }
-        JSFunction* Function = nullptr;
-        for (int i = 0; i < JSFunctions.size(); i++) {
-            if (!JSFunctions[i]) {
-                Function = new JSFunction(InIsolate, InContext, InFunction, i);
-                JSFunctions[i] = Function;
-                break;
+            else
+            {
+                id = JSObjectMap.size();
             }
+            jsFunction = new JSFunction(InIsolate, InContext, InFunction, id);
+            JSObjectMap[id] = jsFunction;
+            idmap->Set(InContext, InFunction, v8::Number::New(InIsolate, id));
         }
-        if (!Function) {
-            Function = new JSFunction(InIsolate, InContext, InFunction, static_cast<int32_t>(JSFunctions.size()));
-            JSFunctions.push_back(Function);
-        }
-        InFunction->Set(InContext, FV8Utils::V8String(InIsolate, FUNCTION_INDEX_KEY), v8::Integer::New(InIsolate, Function->Index));
-        return Function;
+
+        return jsFunction;
     }
 
     void JSEngine::ReleaseJSFunction(JSFunction* InFunction)
     {
         std::lock_guard<std::mutex> guard(JSFunctionsMutex);
-        JSFunctions[InFunction->Index] = nullptr;
+        v8::Isolate* Isolate = InFunction->ResultInfo.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = InFunction->ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InFunction->ResultInfo.Isolate);
+        idmap->Set(
+            InFunction->ResultInfo.Context.Get(Isolate),
+            InFunction->GFunction.Get(Isolate),
+            v8::Undefined(Isolate)
+        );
+
+        JSObjectMap[InFunction->Index] = nullptr;
+        
+        ObjectMapFreeIndex.push_back(InFunction->Index);
         delete InFunction;
     }
 
