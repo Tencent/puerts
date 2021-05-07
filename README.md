@@ -91,6 +91,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## 使用手册
 
+* [unreal](doc/unreal/manual.md)
 * [unity](doc/unity/manual.md)
 
 ## 支持的引擎，平台
@@ -116,7 +117,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ### Unreal自动绑定模式
 
-* [step by step fps](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的自动绑定模式
+* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的自动绑定模式
 
 ### Unreal自创建虚拟机模式
 

@@ -17,7 +17,7 @@
       "Name": "JsEnv",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
     },
     {
       "Name": "DeclarationGenerator",
@@ -28,7 +28,7 @@
       "Name": "Puerts",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
-      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS" ]
+      "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
     },
     {
       "Name": "PuertsEditor",

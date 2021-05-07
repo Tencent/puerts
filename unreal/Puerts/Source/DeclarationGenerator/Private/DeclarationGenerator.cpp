@@ -25,6 +25,7 @@
 //#include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
+#include "Engine/UserDefinedEnum.h"
 #include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
 #include "CodeGenerator.h"
@@ -281,8 +282,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "boolean";
     }
-    else if (Property->IsA<BytePropertyMacro>()
-             || Property->IsA<DoublePropertyMacro>()
+    else if (Property->IsA<DoublePropertyMacro>()
              || Property->IsA<FloatPropertyMacro>()
              || Property->IsA<IntPropertyMacro>()
              || Property->IsA<UInt32PropertyMacro>()
@@ -308,6 +308,18 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         AddToGen.Add(EnumProperty->GetEnum());
         StringBuffer << SafeName(EnumProperty->GetEnum()->GetName());
+    }
+    else if (BytePropertyMacro* ByteProperty = CastFieldMacro<BytePropertyMacro>(Property))
+    {
+        if(ByteProperty->GetIntPropertyEnum())
+        {
+            AddToGen.Add(ByteProperty->GetIntPropertyEnum());
+            StringBuffer << SafeName(ByteProperty->GetIntPropertyEnum()->GetName());
+        }
+        else
+        {
+            StringBuffer << "number";
+        }
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
@@ -540,7 +552,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
     TArray<FString> EnumListerrals;
     for (int i = 0; i < Enum->NumEnums(); ++i)
     {
-        auto Name = Enum->GetNameStringByIndex(i);
+        auto Name = Enum->IsA<UUserDefinedEnum>() ? Enum->GetAuthoredNameStringByIndex(i): Enum->GetNameStringByIndex(i);
        // auto Value = Enum->GetValueByIndex(i);
         EnumListerrals.Add(Name);
     }

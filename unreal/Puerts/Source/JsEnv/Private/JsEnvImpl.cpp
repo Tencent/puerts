@@ -27,6 +27,7 @@
 #include "TypeScriptObject.h"
 #include "TypeScriptGeneratedClass.h"
 #include "ContainerMeta.h"
+#include "Engine/UserDefinedEnum.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -1791,7 +1792,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
         auto Result = v8::Object::New(Isolate);
         for (int i = 0; i < Enum->NumEnums(); ++i)
         {
-            auto Name = Enum->GetNameStringByIndex(i);
+            auto Name = Enum->IsA<UUserDefinedEnum>() ? Enum->GetAuthoredNameStringByIndex(i) : Enum->GetNameStringByIndex(i);
             auto Value = Enum->GetValueByIndex(i);
             auto ReturnVal = Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value));
         }
