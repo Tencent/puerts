@@ -25,6 +25,7 @@
 //#include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
+#include "Engine/UserDefinedEnum.h"
 #include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
 #include "CodeGenerator.h"
@@ -551,7 +552,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
     TArray<FString> EnumListerrals;
     for (int i = 0; i < Enum->NumEnums(); ++i)
     {
-        auto Name = Enum->GetNameStringByIndex(i);
+        auto Name = Enum->IsA<UUserDefinedEnum>() ? Enum->GetAuthoredNameStringByIndex(i): Enum->GetNameStringByIndex(i);
        // auto Value = Enum->GetValueByIndex(i);
         EnumListerrals.Add(Name);
     }
