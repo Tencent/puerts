@@ -15,29 +15,6 @@
 
 namespace puerts
 {
-//在DeclarationGenerator.cpp另有一份，因为属于两个不同的模块共享比较困难，改动需要同步改
-//如果是用户自定义的蓝图结构体，它的字段名内部名会是这样：DispalyName_UniqueNameId_GUID
-//其中DispalyName是用户看到的名字，这样会比较不直观，所以这里自动去掉这个后缀，便于编码
-//内部字段名规则位于UE_4.XX\Engine\Source\Editor\UnrealEd\Private\Kismet2\StructureEditorUtils.cpp，FMemberVariableNameHelper类
-static FString DisplayNameOfUserDefinedStructField(const FString &Name)
-{
-    const int32 GuidStrLen = 32;
-    if (Name.Len() > GuidStrLen + 3)
-    {
-        const int32 UnderscoreIndex = Name.Len() - GuidStrLen - 1;
-        if (TCHAR('_') == Name[UnderscoreIndex])
-        {
-            for (int i = UnderscoreIndex - 1; i > 0; i--)
-            {
-                if (TCHAR('_') == Name[i])
-                {
-                    return Name.Mid(0, i);
-                }
-            }
-        }
-    }
-    return Name;
-}
 
 void FPropertyTranslator::Getter(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
@@ -154,7 +131,7 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
     {
         auto OwnerStruct = Property->GetOwnerStruct();
         Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
-            DisplayNameOfUserDefinedStructField(Property->GetName()) : Property->GetName()), Getter, Setter,
+            Property->GetAuthoredName() : Property->GetName()), Getter, Setter,
             v8::External::New(Isolate, this), v8::DEFAULT, v8::DontDelete);
     }
 }

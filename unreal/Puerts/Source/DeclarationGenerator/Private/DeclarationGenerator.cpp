@@ -93,28 +93,6 @@ static FString SafeFieldName(const FString &Name)
     return IsInvalid  ? (TEXT("[\"") + Ret + TEXT("\"]")) : Ret;
 }
 
-//在PropertyTranslator.cpp另有一份，因为属于两个不同的模块共享比较困难，改动需要同步改
-static FString DisplayNameOfUserDefinedStructField(const FString &Name)
-{
-    const int32 GuidStrLen = 32;
-    if (Name.Len() > GuidStrLen + 3)
-    {
-        const int32 UnderscoreIndex = Name.Len() - GuidStrLen - 1;
-        if (TCHAR('_') == Name[UnderscoreIndex])
-        {
-            for (int i = UnderscoreIndex - 1; i > 0; i--)
-            {
-                if (TCHAR('_') == Name[i])
-                {
-                    return Name.Mid(0, i);
-                }
-            }
-        }
-    }
-    return Name;
-}
-
-
 FStringBuffer& FStringBuffer::operator <<(const FString& InText)
 {
     this->Buffer += InText;
@@ -594,7 +572,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             {
                 TmpBuff << ", ";
             }
-            TmpBuff << SafeName(Property->GetName()) << ": ";
+            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ? Property->GetAuthoredName() : Property->GetName()) << ": ";
             TArray<UObject *> RefTypesTmp;
             if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
             {
@@ -610,8 +588,8 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
     {
         auto Property = *PropertyIt;
         FStringBuffer TmpBuff;
-        FString SN = SafeName(Property->GetName());
-        TmpBuff << (Struct->IsA<UUserDefinedStruct>() ? DisplayNameOfUserDefinedStructField(SN) : SN) << ": ";
+        FString SN = SafeName(Struct->IsA<UUserDefinedStruct>() ? Property->GetAuthoredName() : Property->GetName());
+        TmpBuff << SN << ": ";
         TArray<UObject *> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
         {
