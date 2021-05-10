@@ -830,11 +830,11 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                 }
                 else
                 {
-                    for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+                    /*for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
                     {
                         auto Function = *FuncIt;
                         Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
-                    }
+                    }*/
                     TypeScriptGeneratedClass->InjectNotFinished = false;
                 }
             }
