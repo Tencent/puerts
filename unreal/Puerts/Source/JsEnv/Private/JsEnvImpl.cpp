@@ -828,21 +828,40 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                         MakeSureInject(TypeScriptGeneratedClass, false);
                     }
                 }
-                else
+                else //InjectNotFinished状态下非CDO对象构建，把UFunction设置为Native
                 {
-                    /*for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+                    for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
                     {
                         auto Function = *FuncIt;
                         Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
-                    }*/
+                    }
                     TypeScriptGeneratedClass->InjectNotFinished = false;
                 }
+            }
+        }
+        else if (UNLIKELY(IsCDO && !Class->IsNative()))
+        {
+            auto Super = Class->GetSuperClass();
+            while (Super && !Super->IsNative())
+            {
+                auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Super);
+                if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
+                {
+                    for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+                    {
+                        auto Function = *FuncIt;
+                        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                    }
+                    TempTypeScriptGeneratedClass->InjectNotFinished = false;
+                }
+                Super = Super->GetSuperClass();
             }
         }
         //else if (UNLIKELY(Class == UTypeScriptGeneratedClass::StaticClass()))
         //{
         //    ((UTypeScriptGeneratedClass *)InObject)->DynamicInvoker = TsDynamicInvoker;
         //}
+        
     }
 }
 

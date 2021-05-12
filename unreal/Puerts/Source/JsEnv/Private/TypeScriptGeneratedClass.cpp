@@ -71,7 +71,7 @@ void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
     {
         InFunction->Script.Add(EX_EndFunctionParms);
     }
-    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
     InFunction->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
     AddNativeFunction(*InFunction->GetName(), &UTypeScriptGeneratedClass::execCallJS);
 }
