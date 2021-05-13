@@ -650,6 +650,45 @@ public:
     virtual void Cleanup(void *ContainerPtr) const { Inner->Cleanup(ContainerPtr); }
 };
 
+//delegate
+class FDelegatePropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FDelegatePropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+
+    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    {
+        //暂时不支持返回到JS，因为通过函数返回Delegate，FScriptDelegate是参数结构体的一部分，所以ValuePtr指向的内容在函数调用完毕会释放,
+        //需要分配堆内存进行保存，但目前只支持指向Delegate的指针，并不会回收指针指向的内容，需要调整相关机制，暂不加，后续如果有这样的需要再加。
+        /*
+        auto DelegatePtr = static_cast<FScriptDelegate*>(const_cast<void*>(ValuePtr));
+
+        if (DelegatePtr)
+        {
+            UObject* UEObject = DelegatePtr->GetUObject();
+            if (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())
+            {
+                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, UEObject, DelegateProperty, DelegatePtr);
+            }
+        }
+        */
+        return v8::Undefined(Isolate);
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    {
+        FScriptDelegate *Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
+        auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPoninter(Context, Value, 0));
+        if (Des && Src)
+        {
+            *Des = *Src;
+        }
+        return true;
+    }
+
+private:
+};
+
 class FOutReflection : public FPropertyTranslator
 {
 public:
@@ -806,8 +845,11 @@ std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *
     {
         return TCreate<FScriptSetPropertyTranslator>(InProperty, IgnoreOut);
     }
-    else if (InProperty->IsA<DelegatePropertyMacro>()
-        || InProperty->IsA<MulticastDelegatePropertyMacro>()
+    else if (InProperty->IsA<DelegatePropertyMacro>())
+    {
+        return TCreate<FDelegatePropertyTranslator>(InProperty, IgnoreOut);
+    }
+    else if (InProperty->IsA<MulticastDelegatePropertyMacro>()
 #if ENGINE_MINOR_VERSION >= 23
         || InProperty->IsA<MulticastInlineDelegatePropertyMacro>()
         || InProperty->IsA<MulticastSparseDelegatePropertyMacro>()
