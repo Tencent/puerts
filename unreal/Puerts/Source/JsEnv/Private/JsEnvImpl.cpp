@@ -393,6 +393,7 @@ FJsEnvImpl::~FJsEnvImpl()
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
             Iter->second.Constructor.Reset();
+            Iter->second.Prototype.Reset();
         }
         BindInfoMap.clear();
 
@@ -670,6 +671,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         {
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
                             BindInfo.Constructor.Reset(Isolate, VCtor.As<v8::Function>());
+                            BindInfo.Prototype.Reset(Isolate, Proto);
                         }
                         BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
                         //SysObjectRetainer.Retain(Class);
@@ -1123,9 +1125,14 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
         UnBind(Class, Object);
 
+        if (!Iter->second.Prototype.IsEmpty())
+        {
+            __USE(JSObject->SetPrototype(Context, Iter->second.Prototype.Get(Isolate)));
+        }
+
         if (!Iter->second.Constructor.IsEmpty())
         {
-            auto ReturnVal2 = Iter->second.Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr);
+            __USE(Iter->second.Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr));
         }
         if (TryCatch.HasCaught())
         {

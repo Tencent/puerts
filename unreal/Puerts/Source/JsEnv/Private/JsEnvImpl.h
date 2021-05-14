@@ -404,6 +404,7 @@ private:
     {
         FName Name;
         v8::UniquePersistent<v8::Function> Constructor;
+        v8::UniquePersistent<v8::Object> Prototype;
     };
 
     std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
