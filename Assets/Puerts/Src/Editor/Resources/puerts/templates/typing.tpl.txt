@@ -1,0 +1,91 @@
+{{
+function parameterDef(pinfo, isStatic, type) {
+    return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + (isStatic ? typeNameWithOutGenericType(type, pinfo.TypeName) : pinfo.TypeName);
+}
+function typeKeyword(type) {
+    if (type.IsDelegate) {
+        return 'type';
+    } else if (type.IsInterface) {
+        return 'interface';
+    } else if (type.IsEnum) {
+        return 'enum';
+    } else {
+        return 'class'
+    }
+}
+
+function toJsArray(csArr) {
+    let arr = [];
+    for(var i = 0; i < csArr.Length; i++) {
+        arr.push(csArr.get_Item(i));
+    }
+    return arr;
+}
+
+function typeDeclaration(type, level1) {
+    var result = type.Name;
+    if (type.IsGenericTypeDefinition) {
+        result += "<" + Array.prototype.join.call(toJsArray(type.GenericParameters), ',') + ">";
+    }
+    if (level1 && type.BaseType) {
+        result += " extends " + typeDeclaration(type.BaseType);
+    }
+    if(!level1 && type.Namespace) {
+        result = type.Namespace + "." + result;
+    }
+    return result;
+}
+function indent(str, n) {
+    let lines = str.split(/[\n\r]/);
+    let newLines = [lines[0]];
+    let append = " ".repeat(n);
+    for(var i = 1; i < lines.length; i++) {
+        if (lines[i]) newLines.push(append + lines[i]);
+    }
+    return newLines.join('\n');
+}
+function typeNameWithOutGenericType(type, name) {
+    if (type.IsGenericTypeDefinition) {
+        const gParameters = toJsArray(type.GenericParameters);
+        return gParameters.indexOf(name) != -1 ? "any" : name
+    }
+    return name;
+}
+}}
+declare module 'csharp' {
+    interface $Ref<T> {
+        value: T
+    }
+    
+    namespace System {
+        interface Array$1<T> extends System.Array {
+            get_Item(index: number):T;
+            
+            set_Item(index: number, value: T):void;
+        }
+    }
+    
+    {{=it.TaskDef}}
+    
+    {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
+        {{~ns.Types :type}}{{=indent(type.Document, 8)}}
+        {{=typeKeyword(type)}} {{=typeDeclaration(type, true)}} {{if(type.IsDelegate){}}= {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
+        var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ } else if(type.IsEnum) { }}{ {{=type.EnumKeyValues}} }{{ }else{ }}{
+            {{~type.Properties :property}}{{=indent(property.Document, 12)}}
+            {{?type.IsInterface}}{{=property.Name}}: {{=property.TypeName}};{{?}}{{?!type.IsInterface}}{{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=property.Name}}(): {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}};{{?}}{{?property.HasGetter && property.HasSetter}}
+            {{?}}{{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=property.Name}}(value: {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}});{{?}}{{?!property.HasSetter && !property.HasGetter}}public {{?property.IsStatic}}static {{?}}{{=property.Name}}: {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}};{{?}}{{?}}
+            {{~}}{{~type.Methods :method}}{{=indent(method.Document, 12)}}
+            {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo, method.IsStatic, type)}}{{~}}){{=method.IsConstructor?"":":" + (method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName)}};
+            {{~}}
+        }{{}}}{{?type.ExtensionMethods.Length > 0}}
+        {{=indent(type.Document, 8)}}
+        interface {{=type.Name}} {
+            {{~type.ExtensionMethods :method}}{{=indent(method.Document, 12)}}
+            {{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
+            {{~}}
+        }
+        {{?}}
+        {{~}}
+    {{?ns.Name}}}{{?}}
+    {{~}}
+}
