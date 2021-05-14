@@ -111,7 +111,6 @@ namespace Puerts
             {
                 return maybeOne.Target as GenericDelegate;
             }
-            jsEnv.RemoveFromPending(ptr);
             GenericDelegate genericDelegate = new GenericDelegate(ptr, jsEnv);
             nativePtrToGenericDelegate[ptr] = new WeakReference(genericDelegate);
             return genericDelegate;
@@ -372,6 +371,7 @@ namespace Puerts
         internal GenericDelegate(IntPtr nativeJsFuncPtr, JsEnv jsEnv)
         {
             this.nativeJsFuncPtr = nativeJsFuncPtr;
+            jsEnv.IncFuncRef(nativeJsFuncPtr);
             isolate = jsEnv != null ? jsEnv.isolate : IntPtr.Zero;
             this.jsEnv = jsEnv;
         }
@@ -387,7 +387,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif
-            jsEnv.addPenddingReleaseFunc(nativeJsFuncPtr);
+            jsEnv.DecFuncRef(nativeJsFuncPtr);
 #if THREAD_SAFE
             }
 #endif
