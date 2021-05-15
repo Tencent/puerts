@@ -671,7 +671,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         {
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
                             BindInfo.Constructor.Reset(Isolate, VCtor.As<v8::Function>());
-                            BindInfo.Prototype.Reset(Isolate, Proto);
+                            //BindInfo.Prototype.Reset(Isolate, Proto);
                         }
                         BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
                         //SysObjectRetainer.Retain(Class);
