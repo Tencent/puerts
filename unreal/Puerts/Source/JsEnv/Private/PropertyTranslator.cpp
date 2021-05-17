@@ -15,29 +15,6 @@
 
 namespace puerts
 {
-//在DeclarationGenerator.cpp另有一份，因为属于两个不同的模块共享比较困难，改动需要同步改
-//如果是用户自定义的蓝图结构体，它的字段名内部名会是这样：DispalyName_UniqueNameId_GUID
-//其中DispalyName是用户看到的名字，这样会比较不直观，所以这里自动去掉这个后缀，便于编码
-//内部字段名规则位于UE_4.XX\Engine\Source\Editor\UnrealEd\Private\Kismet2\StructureEditorUtils.cpp，FMemberVariableNameHelper类
-static FString DisplayNameOfUserDefinedStructField(const FString &Name)
-{
-    const int32 GuidStrLen = 32;
-    if (Name.Len() > GuidStrLen + 3)
-    {
-        const int32 UnderscoreIndex = Name.Len() - GuidStrLen - 1;
-        if (TCHAR('_') == Name[UnderscoreIndex])
-        {
-            for (int i = UnderscoreIndex - 1; i > 0; i--)
-            {
-                if (TCHAR('_') == Name[i])
-                {
-                    return Name.Mid(0, i);
-                }
-            }
-        }
-    }
-    return Name;
-}
 
 void FPropertyTranslator::Getter(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
@@ -154,7 +131,7 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
     {
         auto OwnerStruct = Property->GetOwnerStruct();
         Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
-            DisplayNameOfUserDefinedStructField(Property->GetName()) : Property->GetName()), Getter, Setter,
+            Property->GetAuthoredName() : Property->GetName()), Getter, Setter,
             v8::External::New(Isolate, this), v8::DEFAULT, v8::DontDelete);
     }
 }
@@ -673,6 +650,45 @@ public:
     virtual void Cleanup(void *ContainerPtr) const { Inner->Cleanup(ContainerPtr); }
 };
 
+//delegate
+class FDelegatePropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FDelegatePropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+
+    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    {
+        //暂时不支持返回到JS，因为通过函数返回Delegate，FScriptDelegate是参数结构体的一部分，所以ValuePtr指向的内容在函数调用完毕会释放,
+        //需要分配堆内存进行保存，但目前只支持指向Delegate的指针，并不会回收指针指向的内容，需要调整相关机制，暂不加，后续如果有这样的需要再加。
+        /*
+        auto DelegatePtr = static_cast<FScriptDelegate*>(const_cast<void*>(ValuePtr));
+
+        if (DelegatePtr)
+        {
+            UObject* UEObject = DelegatePtr->GetUObject();
+            if (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())
+            {
+                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, UEObject, DelegateProperty, DelegatePtr);
+            }
+        }
+        */
+        return v8::Undefined(Isolate);
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    {
+        FScriptDelegate *Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
+        auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPoninter(Context, Value, 0));
+        if (Des && Src)
+        {
+            *Des = *Src;
+        }
+        return true;
+    }
+
+private:
+};
+
 class FOutReflection : public FPropertyTranslator
 {
 public:
@@ -829,8 +845,11 @@ std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *
     {
         return TCreate<FScriptSetPropertyTranslator>(InProperty, IgnoreOut);
     }
-    else if (InProperty->IsA<DelegatePropertyMacro>()
-        || InProperty->IsA<MulticastDelegatePropertyMacro>()
+    else if (InProperty->IsA<DelegatePropertyMacro>())
+    {
+        return TCreate<FDelegatePropertyTranslator>(InProperty, IgnoreOut);
+    }
+    else if (InProperty->IsA<MulticastDelegatePropertyMacro>()
 #if ENGINE_MINOR_VERSION >= 23
         || InProperty->IsA<MulticastInlineDelegatePropertyMacro>()
         || InProperty->IsA<MulticastSparseDelegatePropertyMacro>()

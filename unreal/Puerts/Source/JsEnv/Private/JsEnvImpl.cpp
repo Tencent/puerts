@@ -393,6 +393,7 @@ FJsEnvImpl::~FJsEnvImpl()
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
             Iter->second.Constructor.Reset();
+            Iter->second.Prototype.Reset();
         }
         BindInfoMap.clear();
 
@@ -670,6 +671,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         {
                             //UE_LOG(LogTemp, Error, TEXT("found ctor for , %s"), *ModuleName);
                             BindInfo.Constructor.Reset(Isolate, VCtor.As<v8::Function>());
+                            //BindInfo.Prototype.Reset(Isolate, Proto);
                         }
                         BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
                         //SysObjectRetainer.Retain(Class);
@@ -828,7 +830,7 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                         MakeSureInject(TypeScriptGeneratedClass, false);
                     }
                 }
-                else
+                else //InjectNotFinished状态下非CDO对象构建，把UFunction设置为Native
                 {
                     for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
                     {
@@ -839,10 +841,29 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                 }
             }
         }
+        else if (UNLIKELY(IsCDO && !Class->IsNative()))
+        {
+            auto Super = Class->GetSuperClass();
+            while (Super && !Super->IsNative())
+            {
+                auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Super);
+                if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
+                {
+                    for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+                    {
+                        auto Function = *FuncIt;
+                        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                    }
+                    TempTypeScriptGeneratedClass->InjectNotFinished = false;
+                }
+                Super = Super->GetSuperClass();
+            }
+        }
         //else if (UNLIKELY(Class == UTypeScriptGeneratedClass::StaticClass()))
         //{
         //    ((UTypeScriptGeneratedClass *)InObject)->DynamicInvoker = TsDynamicInvoker;
         //}
+        
     }
 }
 
@@ -1104,9 +1125,14 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
         UnBind(Class, Object);
 
+        if (!Iter->second.Prototype.IsEmpty())
+        {
+            __USE(JSObject->SetPrototype(Context, Iter->second.Prototype.Get(Isolate)));
+        }
+
         if (!Iter->second.Constructor.IsEmpty())
         {
-            auto ReturnVal2 = Iter->second.Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr);
+            __USE(Iter->second.Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr));
         }
         if (TryCatch.HasCaught())
         {

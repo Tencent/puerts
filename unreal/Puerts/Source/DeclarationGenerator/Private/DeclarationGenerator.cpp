@@ -50,7 +50,7 @@ static FString SafeName(const FString &Name)
     return Ret;
 }
 
-static FString SafeFieldName(const FString &Name)
+static FString SafeFieldName(const FString &Name, bool WithBracket = true)
 {
     bool IsInvalid = false;
     FString Ret = TEXT("");
@@ -90,30 +90,8 @@ static FString SafeFieldName(const FString &Name)
             IsInvalid = true;
         }
     }
-    return IsInvalid  ? (TEXT("[\"") + Ret + TEXT("\"]")) : Ret;
+    return IsInvalid  ? (WithBracket ? ((TEXT("[\"") + Ret + TEXT("\"]"))) : ((TEXT("\"") + Ret + TEXT("\"")))) : Ret;
 }
-
-//在PropertyTranslator.cpp另有一份，因为属于两个不同的模块共享比较困难，改动需要同步改
-static FString DisplayNameOfUserDefinedStructField(const FString &Name)
-{
-    const int32 GuidStrLen = 32;
-    if (Name.Len() > GuidStrLen + 3)
-    {
-        const int32 UnderscoreIndex = Name.Len() - GuidStrLen - 1;
-        if (TCHAR('_') == Name[UnderscoreIndex])
-        {
-            for (int i = UnderscoreIndex - 1; i > 0; i--)
-            {
-                if (TCHAR('_') == Name[i])
-                {
-                    return Name.Mid(0, i);
-                }
-            }
-        }
-    }
-    return Name;
-}
-
 
 FStringBuffer& FStringBuffer::operator <<(const FString& InText)
 {
@@ -554,7 +532,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
     {
         auto Name = Enum->IsA<UUserDefinedEnum>() ? Enum->GetAuthoredNameStringByIndex(i): Enum->GetNameStringByIndex(i);
        // auto Value = Enum->GetValueByIndex(i);
-        EnumListerrals.Add(Name);
+        EnumListerrals.Add(SafeFieldName(Name, false));
     }
     
     StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", ")) << "}\n";
@@ -594,7 +572,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             {
                 TmpBuff << ", ";
             }
-            TmpBuff << SafeName(Property->GetName()) << ": ";
+            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ? Property->GetAuthoredName() : Property->GetName()) << ": ";
             TArray<UObject *> RefTypesTmp;
             if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
             {
@@ -610,8 +588,8 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
     {
         auto Property = *PropertyIt;
         FStringBuffer TmpBuff;
-        FString SN = SafeName(Property->GetName());
-        TmpBuff << (Struct->IsA<UUserDefinedStruct>() ? DisplayNameOfUserDefinedStructField(SN) : SN) << ": ";
+        FString SN = SafeFieldName(Struct->IsA<UUserDefinedStruct>() ? Property->GetAuthoredName() : Property->GetName());
+        TmpBuff << SN << ": ";
         TArray<UObject *> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
         {

@@ -624,18 +624,37 @@ namespace Puerts
             }
         }
 
-        HashSet<IntPtr> pendingReleaseFuncs = new HashSet<IntPtr>();
+        Dictionary<IntPtr, int> funcRefCount = new Dictionary<IntPtr, int>();
         HashSet<IntPtr> pendingReleaseObjs = new HashSet<IntPtr>();
 
-        internal void addPenddingReleaseFunc(IntPtr nativeJsFuncPtr)
+        internal void IncFuncRef(IntPtr nativeJsFuncPtr)
+        {
+            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
+            lock (funcRefCount)
+            {
+                int refCount;
+                if (funcRefCount.TryGetValue(nativeJsFuncPtr, out refCount))
+                {
+                    ++refCount;
+                }
+                else
+                {
+                    refCount = 1;
+                }
+                funcRefCount[nativeJsFuncPtr] = refCount;
+            }
+        }
+
+        internal void DecFuncRef(IntPtr nativeJsFuncPtr)
         {
             if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
 
-            lock (pendingReleaseFuncs)
+            lock (funcRefCount)
             {
-                pendingReleaseFuncs.Add(nativeJsFuncPtr);
+                funcRefCount[nativeJsFuncPtr] = funcRefCount[nativeJsFuncPtr] - 1;
             }
         }
+
         internal void addPenddingReleaseObject(IntPtr nativeJsObjPtr)
         {
             if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
@@ -646,29 +665,30 @@ namespace Puerts
             }
         }
 
+        List<IntPtr> pendingRemovedList = new List<IntPtr>();
+
         internal void ReleasePendingJSFunctions()
         {
-            lock (pendingReleaseFuncs)
+            lock (funcRefCount)
             {
-                foreach(var nativeJsFuncPtr in pendingReleaseFuncs)
+                pendingRemovedList.Clear();
+                foreach (var kv in funcRefCount)
                 {
+                    if (kv.Value <= 0) pendingRemovedList.Add(kv.Key);
+                }
+                for(int i = 0; i  < pendingRemovedList.Count; ++i)
+                {
+                    var nativeJsFuncPtr = pendingRemovedList[i];
+                    funcRefCount.Remove(nativeJsFuncPtr);
                     if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
                     {
                         PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
                     }
                 }
-                pendingReleaseFuncs.Clear();
+                pendingRemovedList.Clear();
             }
         }
 
-        internal void RemoveFromPending(IntPtr nativeJsFuncPtr)
-        {
-            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
-            lock (pendingReleaseFuncs)
-            {
-                pendingReleaseFuncs.Remove(nativeJsFuncPtr);
-            }
-        }
         internal void RemoveJSObjectFromPendingRelease(IntPtr nativeJsObjPtr)
         {
             if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
