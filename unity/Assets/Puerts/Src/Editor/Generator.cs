@@ -570,6 +570,7 @@ namespace Puerts.Editor
             public bool IsInterface;
             public string Namespace;
             public TsTypeGenInfo BaseType;
+            public TsTypeGenInfo[] interfaces;
             public bool IsEnum;
             public string EnumKeyValues;
             public TsMethodGenInfo[] ExtensionMethods;
@@ -658,6 +659,27 @@ namespace Puerts.Editor
                     var tsFuncDef = "(" + string.Join(", ", m.GetParameters().Select(p => p.Name + ": " + GetTsTypeName(p.ParameterType)).ToArray()) + ") => " + GetTsTypeName(m.ReturnType);
                     result.DelegateDef = tsFuncDef;
                 }
+            }
+
+            Type[] interfaces = type.GetInterfaces();
+            if (interfaces != null && interfaces.Length > 0) 
+            {
+                List<TsTypeGenInfo> genInfoList = new List<TsTypeGenInfo>();
+
+                for (int i = 0; i < interfaces.Length; i++) {
+                    var interfaceTypeGenInfo = new TsTypeGenInfo()
+                    {
+                        Name = interfaces[i].IsGenericType ? GetTsTypeName(interfaces[i]): interfaces[i].Name.Replace('`', '$'),
+                        Document = DocResolver.GetTsDocument(interfaces[i]),
+                        Namespace = interfaces[i].Namespace
+                    };
+                    if (interfaces[i].IsGenericType && interfaces[i].Namespace != null)
+                    {
+                        interfaceTypeGenInfo.Name = interfaceTypeGenInfo.Name.Substring(interfaces[i].Namespace.Length + 1);
+                    }
+                    genInfoList.Add(interfaceTypeGenInfo);
+                }
+                result.interfaces = genInfoList.ToArray();
             }
 
             if (type.IsNested)
@@ -796,6 +818,14 @@ namespace Puerts.Editor
                 baseType = baseType.BaseType;
             }
             
+            Type[] interfaces = type.GetInterfaces();
+            if (interfaces != null && interfaces.Length > 0) 
+            {
+                for (int i = 0; i < interfaces.Length; i++)
+                {
+                    AddRefType(workTypes, refTypes, interfaces[i]);
+                }
+            }
         }
 
         public class TypingGenInfo
