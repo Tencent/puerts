@@ -30,6 +30,10 @@ function typeDeclaration(type, level1) {
     if (level1 && type.BaseType) {
         result += " extends " + typeDeclaration(type.BaseType);
     }
+    var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
+    if (level1 && !type.IsInterface && !type.IsDelegate && !type.IsEnum && interfaces.length) {
+        result += (" implements " + interfaces.map(interface=> typeDeclaration(interface)).join(','))
+    }
     if(!level1 && type.Namespace) {
         result = type.Namespace + "." + result;
     }
