@@ -174,7 +174,9 @@ private:
 
     void NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct *Class);
+    v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct *Class, bool &Existed);
+
+    v8::Local<v8::Function> GetJsClass(UStruct *Class, v8::Local<v8::Context> Context);
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(const JSClassDefinition* ClassDefinition);
 
@@ -409,7 +411,7 @@ private:
 
     std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
 
-    void MakeSureInject(UTypeScriptGeneratedClass* Class, bool RebindObject);
+    void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject);
 
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
 
