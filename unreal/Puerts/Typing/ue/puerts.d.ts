@@ -25,6 +25,7 @@ declare module "ue" {
         Add(fn : T): void;
         Remove(fn : T): void;
         Broadcast(...a: ArgumentTypes<T>) : ReturnType<T>;
+        Clear(): void;
     }
     
     class FixSizeArray<T> {
