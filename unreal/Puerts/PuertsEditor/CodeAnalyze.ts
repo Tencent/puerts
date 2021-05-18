@@ -1458,12 +1458,13 @@ function watch(configFilePath:string) {
                         ts.forEachChild(sourceFile, (node) => {
                             if (ts.isExportAssignment(node) && ts.isIdentifier(node.expression)) {
                                 const type = checker.getTypeAtLocation(node.expression);
+                                if (!type || !type.getSymbol()) return;
                                 if (type.getSymbol().getName() != getBaseFileName(moduleFileName)) {
-                                    console.error("type name must the same as file name!");
+                                    //console.error("type name must the same as file name!");
                                     return;
                                 }
                                 let baseTypes = type.getBaseTypes();
-                                if (baseTypes.length != 1) return;
+                                if (!baseTypes || baseTypes.length != 1) return;
                                 let baseTypeUClass = getUClassOfType(baseTypes[0]);
                                 if (baseTypeUClass) {
                                     foundType = type;
