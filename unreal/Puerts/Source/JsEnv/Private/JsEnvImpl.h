@@ -103,7 +103,7 @@ public:
 
     v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap *Ptr, bool PassByPointer) override;
 
-    v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner, PropertyMacro* Property, void *DelegatePtr) override;
+    v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner, PropertyMacro* Property, void *DelegatePtr, bool PassByPointer) override;
 
     bool AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
 
@@ -368,6 +368,7 @@ private:
         DelegatePropertyMacro *DelegateProperty;
         MulticastDelegatePropertyMacro *MulticastDelegateProperty;
         UFunction *SignatureFunction;
+        bool PassByPointer;
         UDynamicDelegateProxy *Proxy;//for delegate
         TSet<UDynamicDelegateProxy*> Proxys; // for MulticastDelegate
     };

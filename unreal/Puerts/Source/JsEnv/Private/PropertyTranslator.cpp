@@ -108,7 +108,7 @@ void FPropertyTranslator::DelegateGetter(v8::Local<v8::Name> Property, const v8:
     }
     auto DelegatePtr = PropertyTranslator->Property->ContainerPtrToValuePtr<void>(Object);
 
-    Info.GetReturnValue().Set(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr));
+    Info.GetReturnValue().Set(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr, true));
 }
 
 void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template)
@@ -658,9 +658,6 @@ public:
 
     v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
     {
-        //暂时不支持返回到JS，因为通过函数返回Delegate，FScriptDelegate是参数结构体的一部分，所以ValuePtr指向的内容在函数调用完毕会释放,
-        //需要分配堆内存进行保存，但目前只支持指向Delegate的指针，并不会回收指针指向的内容，需要调整相关机制，暂不加，后续如果有这样的需要再加。
-        /*
         auto DelegatePtr = static_cast<FScriptDelegate*>(const_cast<void*>(ValuePtr));
 
         if (DelegatePtr)
@@ -668,10 +665,9 @@ public:
             UObject* UEObject = DelegatePtr->GetUObject();
             if (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())
             {
-                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, UEObject, DelegateProperty, DelegatePtr);
+                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
             }
         }
-        */
         return v8::Undefined(Isolate);
     }
 

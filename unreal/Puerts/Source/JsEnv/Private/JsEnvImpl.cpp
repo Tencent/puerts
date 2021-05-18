@@ -382,6 +382,10 @@ FJsEnvImpl::~FJsEnvImpl()
             {
                 (*ProxyIter)->JsFunction.Reset();
             }
+            if (!Iter->second.PassByPointer)
+            {
+                delete ((FScriptDelegate *)Iter->first);
+            }
         }
 
         for (auto Iter = TsFunctionMap.begin(); Iter != TsFunctionMap.end(); Iter++)
@@ -962,6 +966,9 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local
 {
     check(Ptr);//must not null
 
+    //查询历史记录，当初这么改是因为一个结构体如果其第一个成员也是结构体，这个结构体的指针将和这个第一个成员的指针值一样，导致访问该成员也会返回外层结构体
+    //但问题是目前看，这部分是多余代码了，如果不是传指针才查，但不是传指针每次都是new堆内存，实际上是不可能查找到的，还是走到后面的逻辑
+    //另外，这有没更好的解决办法呢？记录下ScriptStruct，如果类型不一致才new？
     if (!PassByPointer)
     {
         auto Iter = StructMap.find(Ptr);
@@ -1010,12 +1017,32 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddCData(v8::Isolate* Isolate, v8::Local<
     }
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner, PropertyMacro* Property, void *DelegatePtr)
+v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner, PropertyMacro* Property, void *DelegatePtr, bool PassByPointer)
 {
     check(DelegatePtr);//must not null
 
-    auto Iter = DelegateMap.find(DelegatePtr);
-    if (Iter == DelegateMap.end())//create and link
+    if (PassByPointer)
+    {
+        auto Iter = DelegateMap.find(DelegatePtr);
+        if (Iter != DelegateMap.end())
+        {
+            return Iter->second.JSObject.Get(Isolate);
+        }
+    }
+    else
+    {
+        if (CastFieldMacro<DelegatePropertyMacro>(Property))
+        {
+            auto NewDelegatePtr = new FScriptDelegate;
+            *NewDelegatePtr = *static_cast<FScriptDelegate *>(DelegatePtr);
+            DelegatePtr = NewDelegatePtr;
+        }
+        else // do not support MulticastDelegate
+        {
+            return v8::Undefined(Isolate);
+        }
+    }
+
     {
         //UE_LOG(LogTemp, Warning, TEXT("FindOrAddDelegate -- new %s"), *Property->GetName());
         auto Constructor = (Property->IsA<DelegatePropertyMacro>() ? DelegateTemplate : MulticastDelegateTemplate).Get(Isolate)->GetFunction(Context).ToLocalChecked();
@@ -1039,14 +1066,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
             DelegateProperty,
             MulticastDelegateProperty,
             Function,
+            PassByPointer,
             nullptr
         };
         return JSObject;
-    }
-    else
-    {
-        //UE_LOG(LogTemp, Warning, TEXT("FindOrAddDelegate -- old %s"), *Property->GetName());
-        return Iter->second.JSObject.Get(Isolate);
     }
 }
 
@@ -1317,6 +1340,10 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     {
         Logger->Warn("try to bind a delegate with invalid owner!");
         ClearDelegate(Isolate, Context, DelegatePtr);
+        if (!Iter->second.PassByPointer)
+        {
+            delete ((FScriptDelegate *)Iter->first);
+        }
         DelegateMap.erase(Iter);
         return false;
     }
@@ -1501,6 +1528,10 @@ bool FJsEnvImpl::CheckDelegateProxys(float tick)
     for (int i = 0; i < PendingToRemove.size(); ++i)
     {
         ClearDelegate(Isolate, Context, PendingToRemove[i]);
+        if (!DelegateMap[PendingToRemove[i]].PassByPointer)
+        {
+            delete ((FScriptDelegate *)PendingToRemove[i]);
+        }
         DelegateMap.erase(PendingToRemove[i]);
     }
     return true;
