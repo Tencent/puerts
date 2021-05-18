@@ -35,6 +35,16 @@ namespace puerts
 
     JSFunction::~JSFunction()
     {
+        v8::Isolate* Isolate = ResultInfo.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        auto Function = GFunction.Get(Isolate);
+
+        Function->Set(Context, FV8Utils::V8String(Isolate, FUNCTION_INDEX_KEY), v8::Undefined(Isolate));
+
         GFunction.Reset();
         ResultInfo.Result.Reset();
         ResultInfo.Context.Reset();
