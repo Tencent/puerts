@@ -1176,7 +1176,17 @@ function watch(configFilePath) {
                     }
                 }
             }
-            function tsTypeToPinType(type) {
+            function getSymbolTypeNode(symbol) {
+                if (symbol.valueDeclaration) {
+                    for (var i = symbol.valueDeclaration.getChildCount() - 1; i >= 0; i--) {
+                        var child = symbol.valueDeclaration.getChildAt(i);
+                        if (child.kind == ts.SyntaxKind.TypeReference) {
+                            return child;
+                        }
+                    }
+                }
+            }
+            function tsTypeToPinType(type, node) {
                 if (!type)
                     return undefined;
                 try {
@@ -1201,20 +1211,32 @@ function watch(configFilePath) {
                         }
                         else { //TArray, TSet, TMap
                             let typeRef = type;
-                            let result = tsTypeToPinType(typeRef.typeArguments[0]);
+                            var children = [];
+                            if (node) {
+                                node.forEachChild(child => {
+                                    children.push(child);
+                                });
+                            }
+                            let result = tsTypeToPinType(typeRef.typeArguments[0], children[1]);
                             if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None) {
                                 console.warn("can not find pin type of typeArguments[0] " + typeName);
                                 return undefined;
+                            }
+                            if (children[1]) {
+                                postProcessPinType(children[1], result.pinType, false);
                             }
                             if (typeName == 'TArray' || typeName == 'TSet') {
                                 result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
                                 return result;
                             }
                             else if (typeName == 'TMap') {
-                                let valuePinType = tsTypeToPinType(typeRef.typeArguments[1]);
+                                let valuePinType = tsTypeToPinType(typeRef.typeArguments[1], undefined);
                                 if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
                                     console.warn("can not find pin type of typeArguments[1] " + typeName);
                                     return undefined;
+                                }
+                                if (children[2]) {
+                                    postProcessPinType(children[2], valuePinType.pinType, false);
                                 }
                                 result.pinType.PinContainerType = UE.EPinContainerType.Map;
                                 result.pinValueType = new UE.PEGraphTerminalType(valuePinType.pinType.PinCategory, valuePinType.pinType.PinSubCategoryObject);
@@ -1259,8 +1281,8 @@ function watch(configFilePath) {
                 const commentRanges = ts.getLeadingCommentRanges(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart());
                 return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos, r.end).indexOf("@no-blueprint") > 0));
             }
-            function tryGetAnnotation(symbol, key, leading) {
-                const commentRanges = (leading ? ts.getLeadingCommentRanges : ts.getTrailingCommentRanges)(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart() + (leading ? 0 : symbol.valueDeclaration.getFullWidth()));
+            function tryGetAnnotation(valueDeclaration, key, leading) {
+                const commentRanges = (leading ? ts.getLeadingCommentRanges : ts.getTrailingCommentRanges)(sourceFile.getFullText(), valueDeclaration.getFullStart() + (leading ? 0 : valueDeclaration.getFullWidth()));
                 if (commentRanges) {
                     let ret;
                     commentRanges.forEach(r => {
@@ -1272,17 +1294,17 @@ function watch(configFilePath) {
                     return ret;
                 }
             }
-            function postProcessPinType(symbol, pinType, leading) {
+            function postProcessPinType(valueDeclaration, pinType, leading) {
                 if (pinType.PinContainerType == UE.EPinContainerType.None) {
                     let pc = pinType.PinCategory;
                     if (pc === "float") {
-                        let cppType = tryGetAnnotation(symbol, "cpp", leading);
+                        let cppType = tryGetAnnotation(valueDeclaration, "cpp", leading);
                         if (cppType === "int" || cppType === "byte") {
                             pinType.PinCategory = cppType;
                         }
                     }
                     else if (pc === "string") {
-                        let cppType = tryGetAnnotation(symbol, "cpp", leading);
+                        let cppType = tryGetAnnotation(valueDeclaration, "cpp", leading);
                         if (cppType === "name" || cppType === "text") {
                             pinType.PinCategory = cppType;
                         }
@@ -1321,44 +1343,44 @@ function watch(configFilePath) {
                         let signature = signatures[0];
                         for (var i = 0; i < signature.parameters.length; i++) {
                             let paramType = checker.getTypeOfSymbolAtLocation(signature.parameters[i], signature.parameters[i].valueDeclaration);
-                            let paramPinType = tsTypeToPinType(paramType);
+                            let paramPinType = tsTypeToPinType(paramType, getSymbolTypeNode(signature.parameters[i]));
                             if (!paramPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
                                 bp.ClearParameter();
                                 return;
                             }
-                            postProcessPinType(signature.parameters[i], paramPinType.pinType, false);
+                            postProcessPinType(signature.parameters[i].valueDeclaration, paramPinType.pinType, false);
                             bp.AddParameter(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType);
                         }
                         //console.log("add function", symbol.getName());
-                        let sflags = tryGetAnnotation(symbol, "flags", true);
+                        let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                         let flags = getFlagsValue(sflags, FunctionFlags);
                         if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
                             bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
                         }
                         else {
                             let returnType = signature.getReturnType();
-                            let resultPinType = tsTypeToPinType(returnType);
+                            let resultPinType = tsTypeToPinType(returnType, getSymbolTypeNode(symbol));
                             if (!resultPinType) {
                                 console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported return type!");
                                 bp.ClearParameter();
                                 return;
                             }
-                            postProcessPinType(symbol, resultPinType.pinType, true);
+                            postProcessPinType(symbol.valueDeclaration, resultPinType.pinType, true);
                             bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
                         }
                         bp.ClearParameter();
                     }
                     else {
                         let propType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
-                        let propPinType = tsTypeToPinType(propType);
+                        let propPinType = tsTypeToPinType(propType, getSymbolTypeNode(symbol));
                         if (!propPinType) {
                             console.warn(symbol.getName() + " of " + checker.typeToString(type) + " not support!");
                         }
                         else {
-                            postProcessPinType(symbol, propPinType.pinType, true);
+                            postProcessPinType(symbol.valueDeclaration, propPinType.pinType, true);
                             //console.log("add member variable", symbol.getName());
-                            let sflags = tryGetAnnotation(symbol, "flags", true);
+                            let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                             let flags = getFlagsValue(sflags, PropertyFlags);
                             bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags);
                         }
