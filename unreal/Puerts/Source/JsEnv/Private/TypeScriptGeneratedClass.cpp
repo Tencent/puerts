@@ -31,18 +31,15 @@ void UTypeScriptGeneratedClass::StaticConstructor(const FObjectInitializer& Obje
 {
     auto Class = ObjectInitializer.GetClass();
 
-    //UE_LOG(LogTemp, Error, TEXT("UTypeScriptGeneratedClass::StaticConstructor"));
-    if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
+    //蓝图继承ts类，既然进了这里，表明链上必然有ts类，由于目前不支持ts继承蓝图，所以顶部节点往下找的第一个UTypeScriptGeneratedClass就是本类
+    while (Class)
     {
-        TypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
-    }
-    else if (auto SuperTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass()))
-    {
-        SuperTypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
-    }
-    else
-    {
-        Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
+        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
+        {
+            TypeScriptGeneratedClass->ObjectInitialize(ObjectInitializer);
+            break;
+        }
+        Class = Class->GetSuperClass();
     }
 }
 
