@@ -1175,7 +1175,7 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
 
 type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float";
 
-var FunctionFlags = {
+const FunctionFlags = {
     FUNC_None				: 0x00000000,
 
 	FUNC_Final				: 0x00000001,	// Function is final (prebindable, non-overridable function).
@@ -1214,7 +1214,7 @@ var FunctionFlags = {
 	FUNC_AllFlags		: 0xFFFFFFFF,
 };
 
-var PropertyFlags = {
+const PropertyFlags = {
 	CPF_None : 0,
 
 	CPF_Edit							: 0x0000000000000001,	///< Property is user-settable in the editor.
@@ -1273,6 +1273,23 @@ var PropertyFlags = {
 	CPF_NativeAccessSpecifierProtected	: 0x0020000000000000,	///< Protected native access specifier
 	CPF_NativeAccessSpecifierPrivate	: 0x0040000000000000,	///< Private native access specifier
 	CPF_SkipSerialization				: 0x0080000000000000,	///< Property shouldn't be serialized, can still be exported to text
+};
+
+const ELifetimeCondition = {
+    "COND_InitialOnly" : 1					    ,   // This property will only attempt to send on the initial bunch
+    "COND_OwnerOnly" : 2						,   // This property will only send to the actor's owner
+    "COND_SkipOwner" : 3						,   // This property send to every connection EXCEPT the owner
+    "COND_SimulatedOnly" : 4					,   // This property will only send to simulated actors
+    "COND_AutonomousOnly" : 5					,   // This property will only send to autonomous actors
+    "COND_SimulatedOrPhysics" : 6				,   // This property will send to simulated OR bRepPhysics actors
+    "COND_InitialOrOwner" : 7					,   // This property will send on the initial packet, or to the actors owner
+    "COND_Custom" : 8							,   // This property has no particular condition, but wants the ability to toggle on/off via SetCustomIsActiveOverride
+    "COND_ReplayOrOwner" : 9					,   // This property will only send to the replay connection, or to the actors owner
+    "COND_ReplayOnly" : 10					    ,   // This property will only send to the replay connection
+    "COND_SimulatedOnlyNoReplay" : 11			,   // This property will send to actors only, but not to replay connections
+    "COND_SimulatedOrPhysicsNoReplay" : 12	    ,   // This property will send to simulated Or bRepPhysics actors, but not to replay connections
+    "COND_SkipReplay" : 13				    	,   // This property will not send to the replay connection
+    "COND_Never" : 15							,   // This property will never be replicated						
 };
 
 declare var global:any
@@ -1676,6 +1693,29 @@ function watch(configFilePath:string) {
                 return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] as number : 0).reduce((x, y) => x | y);
             }
 
+            function getDecoratorFlagsValue(valueDeclaration:ts.Node, posfix: string, flagsDef:object): number {
+                if (valueDeclaration && valueDeclaration.decorators) {
+                    let decorators = valueDeclaration.decorators;
+                    let ret:number = 0;
+                    decorators.forEach((decorator, index) => {
+                        let expression = decorator.expression;
+                        if (ts.isCallExpression(expression)) {
+                            if (expression.expression.getFullText().endsWith(posfix)) {
+                                expression.arguments.forEach((value, index) => {
+                                    let e = value.getFullText().split("|").map(x => x.trim().replace(/^.*[\.]/, ''))
+                                        .map(x => x in flagsDef ? flagsDef[x] as number : 0)
+                                        .reduce((x, y) => x | y);
+                                    ret = ret | e;
+                                })
+                            }
+                        }
+                    });
+                    return ret;
+                } else {
+                    return 0;
+                }
+            }
+
             function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
@@ -1718,6 +1758,10 @@ function watch(configFilePath:string) {
                                 //console.log("add function", symbol.getName());
                                 let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                                 let flags = getFlagsValue(sflags, FunctionFlags);
+
+                                if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
+                                    flags = getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags);
+                                }
                                 
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
                                     bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
@@ -1745,7 +1789,14 @@ function watch(configFilePath:string) {
                                     //console.log("add member variable", symbol.getName());
                                     let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                                     let flags = getFlagsValue(sflags, PropertyFlags);
-                                    bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags);
+                                    let cond = 0;
+                                    if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
+                                        cond = getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition);
+                                        if (cond != 0) {
+                                            flags = flags | PropertyFlags.CPF_Net;
+                                        }
+                                    }
+                                    bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags, cond);
                                 }
                             }
                         });

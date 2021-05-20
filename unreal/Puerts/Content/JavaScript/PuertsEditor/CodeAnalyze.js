@@ -849,7 +849,7 @@ function logErrors(allDiagnostics) {
         }
     });
 }
-var FunctionFlags = {
+const FunctionFlags = {
     FUNC_None: 0x00000000,
     FUNC_Final: 0x00000001,
     FUNC_RequiredAPI: 0x00000002,
@@ -885,7 +885,7 @@ var FunctionFlags = {
     FUNC_NetValidate: 0x80000000,
     FUNC_AllFlags: 0xFFFFFFFF,
 };
-var PropertyFlags = {
+const PropertyFlags = {
     CPF_None: 0,
     CPF_Edit: 0x0000000000000001,
     CPF_ConstParm: 0x0000000000000002,
@@ -943,6 +943,22 @@ var PropertyFlags = {
     CPF_NativeAccessSpecifierProtected: 0x0020000000000000,
     CPF_NativeAccessSpecifierPrivate: 0x0040000000000000,
     CPF_SkipSerialization: 0x0080000000000000,
+};
+const ELifetimeCondition = {
+    "COND_InitialOnly": 1,
+    "COND_OwnerOnly": 2,
+    "COND_SkipOwner": 3,
+    "COND_SimulatedOnly": 4,
+    "COND_AutonomousOnly": 5,
+    "COND_SimulatedOrPhysics": 6,
+    "COND_InitialOrOwner": 7,
+    "COND_Custom": 8,
+    "COND_ReplayOrOwner": 9,
+    "COND_ReplayOnly": 10,
+    "COND_SimulatedOnlyNoReplay": 11,
+    "COND_SimulatedOrPhysicsNoReplay": 12,
+    "COND_SkipReplay": 13,
+    "COND_Never": 15,
 };
 function readAndParseConfigFile(configFilePath) {
     let readResult = ts.readConfigFile(configFilePath, customSystem.readFile);
@@ -1316,6 +1332,29 @@ function watch(configFilePath) {
                     return 0;
                 return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] : 0).reduce((x, y) => x | y);
             }
+            function getDecoratorFlagsValue(valueDeclaration, posfix, flagsDef) {
+                if (valueDeclaration && valueDeclaration.decorators) {
+                    let decorators = valueDeclaration.decorators;
+                    let ret = 0;
+                    decorators.forEach((decorator, index) => {
+                        let expression = decorator.expression;
+                        if (ts.isCallExpression(expression)) {
+                            if (expression.expression.getFullText().endsWith(posfix)) {
+                                expression.arguments.forEach((value, index) => {
+                                    let e = value.getFullText().split("|").map(x => x.trim().replace(/^.*[\.]/, ''))
+                                        .map(x => x in flagsDef ? flagsDef[x] : 0)
+                                        .reduce((x, y) => x | y);
+                                    ret = ret | e;
+                                });
+                            }
+                        }
+                    });
+                    return ret;
+                }
+                else {
+                    return 0;
+                }
+            }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
@@ -1355,6 +1394,9 @@ function watch(configFilePath) {
                         //console.log("add function", symbol.getName());
                         let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                         let flags = getFlagsValue(sflags, FunctionFlags);
+                        if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
+                            flags = getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags);
+                        }
                         if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
                             bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
                         }
@@ -1382,7 +1424,14 @@ function watch(configFilePath) {
                             //console.log("add member variable", symbol.getName());
                             let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                             let flags = getFlagsValue(sflags, PropertyFlags);
-                            bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags);
+                            let cond = 0;
+                            if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
+                                cond = getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition);
+                                if (cond != 0) {
+                                    flags = flags | PropertyFlags.CPF_Net;
+                                }
+                            }
+                            bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags, cond);
                         }
                     }
                 });

@@ -597,7 +597,7 @@ void UPEBlueprintAsset::ClearParameter()
     ParameterTypes.Empty();
 }
 
-void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags)
+void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags, int32 InLifetimeCondition)
 {
     
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
@@ -631,6 +631,12 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
         {
             Variable.PropertyFlags &= ~CPF_Net;
             Variable.PropertyFlags |= NetFlags;
+            NeedSave = true;
+        }
+
+        if (InLifetimeCondition < COND_Max && Variable.ReplicationCondition != InLifetimeCondition)
+        {
+            Variable.ReplicationCondition = (ELifetimeCondition)InLifetimeCondition;
             NeedSave = true;
         }
     }
