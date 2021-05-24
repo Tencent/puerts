@@ -185,7 +185,7 @@ jobs:
         
   publish:
     runs-on: ubuntu-latest
-    needs: [build_android_arm_v8,build_android_arm_v7,build_android_x86_64,build_linux,build_windows,build_windows_md,build_windows_32,build_macos,build_ios]
+    needs: [build_android_arm_v8,build_android_arm_v7,build_android_x86_64,build_linux,build_windows,build_windows_md,build_windows_32,build_macos,build_ios,build_ios_simulator]
     steps:
       - uses: actions/download-artifact@v1
         with:
