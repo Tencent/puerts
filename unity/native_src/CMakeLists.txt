@@ -196,7 +196,12 @@ elseif ( ANDROID )
             COMMENT "Strip debug symbols done on final binary.")
 elseif ( APPLE )
     if ( IOS )
-        target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
+        if(PLATFORM STREQUAL "SIMULATOR64")
+            target_compile_definitions (puerts PRIVATE PLATFORM_IOS_SIMULATOR)
+            message(STATUS "SIMULATOR64 BUILD...")
+        else ()
+            target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
+        endif ()
     else ()
         target_link_libraries(puerts
             ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
