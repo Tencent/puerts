@@ -140,6 +140,10 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
         {
             InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
         }
+        else if (InGraphPinType.PinSubCategoryObject->IsA<UEnum>())
+        {
+            InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
+        }
         else
         {
             InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Object;
@@ -157,6 +161,10 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
             if (InPinValueType.PinSubCategoryObject->IsA<UScriptStruct>())
             {
                 PinType.PinValueType.TerminalCategory = UEdGraphSchema_K2::PC_Struct;
+            }
+            else if (InPinValueType.PinSubCategoryObject->IsA<UEnum>())
+            {
+                PinType.PinValueType.TerminalCategory = UEdGraphSchema_K2::PC_Byte;
             }
             else
             {

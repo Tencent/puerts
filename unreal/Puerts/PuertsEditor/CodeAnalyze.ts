@@ -1173,7 +1173,7 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
     });
 }
 
-type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float";
+type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum";
 
 const FunctionFlags = {
     FUNC_None				: 0x00000000,
@@ -1508,10 +1508,17 @@ function watch(configFilePath:string) {
                 }
             }
 
-            function getUClassOfType(type: ts.Type) : UE.Class {
+            function getUClassOfType(type: ts.Type) : UE.Object {
                 if (!type) return undefined;
                 if (getModule(type) == 'ue') {
-                    return (UE as any)[type.symbol.getName()].StaticClass(); 
+                    try {
+                        let jsCls = (UE as any)[type.symbol.getName()]; 
+                        if (typeof jsCls.StaticClass == 'function') {
+                            return jsCls.StaticClass();
+                        } 
+                    } catch (e) {
+                        console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
+                    }
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
                     let baseTypes = type.getBaseTypes();
@@ -1571,7 +1578,11 @@ function watch(configFilePath:string) {
                             let category:PinCategory = "object";
                             let uclass = getUClassOfType(type);
                             if (!uclass) {
-                                console.warn("can not find class of " + typeName);
+                                let uenum = UE.Enum.Find(type.symbol.getName());
+                                if (uenum) {
+                                    return {pinType: new UE.PEGraphPinType("byte", uenum, UE.EPinContainerType.None, false)};
+                                }
+                                console.warn("can not find type of " + typeName);
                                 return undefined;
                             }
                             

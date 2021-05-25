@@ -1159,7 +1159,15 @@ function watch(configFilePath) {
                 if (!type)
                     return undefined;
                 if (getModule(type) == 'ue') {
-                    return UE[type.symbol.getName()].StaticClass();
+                    try {
+                        let jsCls = UE[type.symbol.getName()];
+                        if (typeof jsCls.StaticClass == 'function') {
+                            return jsCls.StaticClass();
+                        }
+                    }
+                    catch (e) {
+                        console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
+                    }
                 }
                 else if (type.symbol && type.symbol.valueDeclaration) {
                     //eturn undefined;
@@ -1219,7 +1227,11 @@ function watch(configFilePath) {
                             let category = "object";
                             let uclass = getUClassOfType(type);
                             if (!uclass) {
-                                console.warn("can not find class of " + typeName);
+                                let uenum = UE.Enum.Find(type.symbol.getName());
+                                if (uenum) {
+                                    return { pinType: new UE.PEGraphPinType("byte", uenum, UE.EPinContainerType.None, false) };
+                                }
+                                console.warn("can not find type of " + typeName);
                                 return undefined;
                             }
                             let pinType = new UE.PEGraphPinType(category, uclass, UE.EPinContainerType.None, false);
