@@ -154,6 +154,11 @@ declare module "ue" {
             FUNC_NetClient			= 0x01000000,	// function is executed on clients
         }
         
+        export enum PropertyFlags {
+            CPF_Net				    = 0x0000000000000020,  ///< Property is relevant to network replication.
+            CPF_RepNotify		    = 0x0000000100000000,  ///< Notify actors when a property is replicated
+        }
+        
         export enum ELifetimeCondition {
             COND_InitialOnly = 1					,   // This property will only attempt to send on the initial bunch
             COND_OwnerOnly = 2						,   // This property will only send to the actor's owner
@@ -171,7 +176,7 @@ declare module "ue" {
             COND_Never = 15							,   // This property will never be replicated						
         }
     
-        export function flags(f: FunctionFlags): (target:any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+        export function flags(f: FunctionFlags | PropertyFlags): any;
     
         export function condition(f: ELifetimeCondition) : (target: Object, propertyKey: string) => void;
     }

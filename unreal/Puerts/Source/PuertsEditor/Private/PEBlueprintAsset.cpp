@@ -605,9 +605,8 @@ void UPEBlueprintAsset::ClearParameter()
     ParameterTypes.Empty();
 }
 
-void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags, int32 InLifetimeCondition)
+void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int64 InFlags, int32 InLifetimeCondition)
 {
-    
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
     int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
@@ -633,12 +632,27 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     if (VarIndex != INDEX_NONE)
     {
         FBPVariableDescription& Variable = Blueprint->NewVariables[VarIndex];
-        int32 NetFlags = InFlags & CPF_Net;
-        
-        if ((Variable.PropertyFlags & CPF_Net) != NetFlags)
+        const uint64 NetMask = CPF_Net | CPF_RepNotify;
+        uint64 NetFlags = InFlags & NetMask;
+        if ((Variable.PropertyFlags & NetMask) != NetFlags)
         {
-            Variable.PropertyFlags &= ~CPF_Net;
+            Variable.PropertyFlags &= ~NetMask;
             Variable.PropertyFlags |= NetFlags;
+            if (Variable.PropertyFlags & CPF_RepNotify)
+            {
+                FString NewFuncNameStr = FString::Printf(TEXT("OnRep_%s"), *NewVarName.ToString());
+                FName NewFuncName = FName(*NewFuncNameStr);
+                UEdGraph* FuncGraph = FindObject<UEdGraph>(Blueprint, *NewFuncNameStr);
+                if (!FuncGraph)
+                {
+                    FuncGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, NewFuncName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+                    FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint, FuncGraph, false, NULL);
+                }
+
+                FunctionAdded.Add(NewFuncName);
+
+                Blueprint->NewVariables[VarIndex].RepNotifyFunc = NewFuncName;
+            }
             NeedSave = true;
         }
 

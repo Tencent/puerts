@@ -1701,21 +1701,21 @@ function watch(configFilePath:string) {
 
             function getFlagsValue(str: string, flagsDef:object):number {
                 if (!str) return 0;
-                return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] as number : 0).reduce((x, y) => x | y);
+                return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] as number : 0).reduce((x, y) => Number(BigInt(x) | BigInt(y)));
             }
 
-            function getDecoratorFlagsValue(valueDeclaration:ts.Node, posfix: string, flagsDef:object): number {
+            function getDecoratorFlagsValue(valueDeclaration:ts.Node, posfix: string, flagsDef:object): bigint {
                 if (valueDeclaration && valueDeclaration.decorators) {
                     let decorators = valueDeclaration.decorators;
-                    let ret:number = 0;
+                    let ret:bigint = 0n;
                     decorators.forEach((decorator, index) => {
                         let expression = decorator.expression;
                         if (ts.isCallExpression(expression)) {
                             if (expression.expression.getFullText().endsWith(posfix)) {
                                 expression.arguments.forEach((value, index) => {
                                     let e = value.getFullText().split("|").map(x => x.trim().replace(/^.*[\.]/, ''))
-                                        .map(x => x in flagsDef ? flagsDef[x] as number : 0)
-                                        .reduce((x, y) => x | y);
+                                        .map(x => x in flagsDef ? BigInt(flagsDef[x]) : 0n)
+                                        .reduce((x, y) => BigInt(x) | BigInt(y));
                                     ret = ret | e;
                                 })
                             }
@@ -1723,7 +1723,7 @@ function watch(configFilePath:string) {
                     });
                     return ret;
                 } else {
-                    return 0;
+                    return 0n;
                 }
             }
 
@@ -1771,7 +1771,7 @@ function watch(configFilePath:string) {
                                 let flags = getFlagsValue(sflags, FunctionFlags);
 
                                 if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                    flags = getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags);
+                                    flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags));
                                 }
                                 
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
@@ -1799,13 +1799,14 @@ function watch(configFilePath:string) {
                                     postProcessPinType(symbol.valueDeclaration, propPinType.pinType, true);
                                     //console.log("add member variable", symbol.getName());
                                     let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
-                                    let flags = getFlagsValue(sflags, PropertyFlags);
+                                    let flags:bigint = BigInt(getFlagsValue(sflags, PropertyFlags));
                                     let cond = 0;
                                     if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                        cond = getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition);
+                                        cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition));
                                         if (cond != 0) {
-                                            flags = flags | PropertyFlags.CPF_Net;
+                                            flags = flags | BigInt(PropertyFlags.CPF_Net);
                                         }
+                                        flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", PropertyFlags);
                                     }
                                     bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags, cond);
                                 }

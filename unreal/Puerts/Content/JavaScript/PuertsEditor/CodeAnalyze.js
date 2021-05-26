@@ -1347,15 +1347,15 @@ function watch(configFilePath) {
             function getDecoratorFlagsValue(valueDeclaration, posfix, flagsDef) {
                 if (valueDeclaration && valueDeclaration.decorators) {
                     let decorators = valueDeclaration.decorators;
-                    let ret = 0;
+                    let ret = 0n;
                     decorators.forEach((decorator, index) => {
                         let expression = decorator.expression;
                         if (ts.isCallExpression(expression)) {
                             if (expression.expression.getFullText().endsWith(posfix)) {
                                 expression.arguments.forEach((value, index) => {
                                     let e = value.getFullText().split("|").map(x => x.trim().replace(/^.*[\.]/, ''))
-                                        .map(x => x in flagsDef ? flagsDef[x] : 0)
-                                        .reduce((x, y) => x | y);
+                                        .map(x => x in flagsDef ? BigInt(flagsDef[x]) : 0n)
+                                        .reduce((x, y) => BigInt(x) | BigInt(y));
                                     ret = ret | e;
                                 });
                             }
@@ -1364,7 +1364,7 @@ function watch(configFilePath) {
                     return ret;
                 }
                 else {
-                    return 0;
+                    return 0n;
                 }
             }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
@@ -1407,7 +1407,7 @@ function watch(configFilePath) {
                         let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                         let flags = getFlagsValue(sflags, FunctionFlags);
                         if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                            flags = getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags);
+                            flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags));
                         }
                         if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
                             bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
@@ -1435,13 +1435,14 @@ function watch(configFilePath) {
                             postProcessPinType(symbol.valueDeclaration, propPinType.pinType, true);
                             //console.log("add member variable", symbol.getName());
                             let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
-                            let flags = getFlagsValue(sflags, PropertyFlags);
+                            let flags = BigInt(getFlagsValue(sflags, PropertyFlags));
                             let cond = 0;
                             if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                cond = getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition);
+                                cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition));
                                 if (cond != 0) {
-                                    flags = flags | PropertyFlags.CPF_Net;
+                                    flags = flags | BigInt(PropertyFlags.CPF_Net);
                                 }
+                                flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", PropertyFlags);
                             }
                             bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags, cond);
                         }
