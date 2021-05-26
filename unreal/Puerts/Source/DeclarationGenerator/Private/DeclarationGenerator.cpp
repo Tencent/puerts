@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -418,7 +418,20 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
             else
             {
                 FStringBuffer TmpBuf;
-                TmpBuf << SafeName(Property->GetName()) << ": ";
+                TMap<FName, FString> *MetaMap = UMetaData::GetMapForObject(Function);
+                const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
+                FString *DefaultValuePtr = nullptr;
+                if (MetaMap)
+                {
+                    DefaultValuePtr = MetaMap->Find(MetadataCppDefaultValueKey);
+                }
+
+                TmpBuf << SafeName(Property->GetName());
+                if (DefaultValuePtr)
+                {
+                    TmpBuf << "?";
+                }
+                TmpBuf << ": ";
                 if (!IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm)))
                 {
                     if (ForceOneway) return false;
@@ -431,6 +444,20 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                 if (!IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm)))
                 {
                     TmpBuf << ">";
+                }
+                
+                if (DefaultValuePtr)
+                {
+                    if (Property->IsA<StrPropertyMacro>()
+                        || Property->IsA<NamePropertyMacro>()
+                        || Property->IsA<TextPropertyMacro>())
+                    {
+                        TmpBuf << " /* = \"" << *DefaultValuePtr << "\" */";
+                    }
+                    else
+                    {
+                        TmpBuf << " /* = " << *DefaultValuePtr << " */";
+                    }
                 }
                 ParamDecls.Add(TmpBuf.Buffer);
             }

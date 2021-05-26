@@ -27,7 +27,13 @@ class FFunctionTranslator
 public:
     explicit FFunctionTranslator(UFunction *InFunction);
 
-    virtual ~FFunctionTranslator() {}
+    virtual ~FFunctionTranslator()
+    {
+        if (ArgumentDefaultValues)
+        {
+            FMemory::Free(ArgumentDefaultValues);
+        }
+    }
 
     virtual v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
@@ -49,6 +55,8 @@ protected:
     UObject *BindObject;
 
     uint32 ParamsBufferSize;
+
+    void *ArgumentDefaultValues;
 
 private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);

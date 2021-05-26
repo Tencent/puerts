@@ -7,6 +7,7 @@
 
 #include "FunctionTranslator.h"
 #include "V8Utils.h"
+#include "Misc/DefaultValueHelper.h"
 
 namespace puerts
 {
@@ -69,6 +70,72 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
             Arguments.push_back(FPropertyTranslator::Create(Property));
         }
     }
+
+    ArgumentDefaultValues = nullptr;
+
+    TMap<FName, FString> *MetaMap = UMetaData::GetMapForObject(InFunction);
+    if (MetaMap)
+    {
+        for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
+        {
+            auto Property = *ParamIt;
+            if (Property->PropertyFlags & CPF_Parm)
+            {
+                if (!(Property->PropertyFlags & CPF_ReturnParm))
+                {
+                    const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
+                    FString *DefaultValuePtr = nullptr;
+                    DefaultValuePtr = MetaMap->Find(MetadataCppDefaultValueKey);
+                    if (DefaultValuePtr)
+                    {
+                        if (!ArgumentDefaultValues)
+                        {
+                            ArgumentDefaultValues = FMemory::Malloc(ParamsBufferSize, 16);
+                            InFunction->InitializeStruct(ArgumentDefaultValues);
+                        }
+
+                        void *PropValuePtr = Property->ContainerPtrToValuePtr<void>(ArgumentDefaultValues);
+
+                        if (const UStructProperty* StructProp = Cast<UStructProperty>(Property))
+                        {
+                            if (StructProp->Struct == TBaseStructure<FVector>::Get())
+                            {
+                                FVector* Vector = (FVector*)PropValuePtr;
+                                FDefaultValueHelper::ParseVector(**DefaultValuePtr, *Vector);
+                                return;
+                            }
+                            else if (StructProp->Struct == TBaseStructure<FVector2D>::Get())
+                            {
+                                FVector2D* Vector2D = (FVector2D*)PropValuePtr;
+                                FDefaultValueHelper::ParseVector2D(**DefaultValuePtr, *Vector2D);
+                                return;
+                            }
+                            else if (StructProp->Struct == TBaseStructure<FRotator>::Get())
+                            {
+                                FRotator* Rotator = (FRotator*)PropValuePtr;
+                                FDefaultValueHelper::ParseRotator(**DefaultValuePtr, *Rotator);
+                                return;
+                            }
+                            else if (StructProp->Struct == TBaseStructure<FColor>::Get())
+                            {
+                                FColor* Color = (FColor*)PropValuePtr;
+                                FDefaultValueHelper::ParseColor(**DefaultValuePtr, *Color);
+                                return;
+                            }
+                            else if (StructProp->Struct == TBaseStructure<FLinearColor>::Get())
+                            {
+                                FLinearColor* LinearColor = (FLinearColor*)PropValuePtr;
+                                FDefaultValueHelper::ParseLinearColor(**DefaultValuePtr, *LinearColor);
+                                return;
+                            }
+                        }
+
+                        Property->ImportText(**DefaultValuePtr, PropValuePtr, PPF_None, nullptr);
+                    }
+                }
+            }
+        }
+    }
 }
 
 v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isolate* Isolate)
@@ -113,6 +180,10 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Params) CallFunction->InitializeStruct(Params);
     for (int i = 0; i < Arguments.size(); ++i)
     {
+        if (ArgumentDefaultValues)
+        {
+            Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
+        }
         if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
         {
             return;

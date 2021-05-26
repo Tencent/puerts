@@ -148,6 +148,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->Int32Value(Context).ToChecked()));
         return true;
     }
@@ -165,6 +166,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->Uint32Value(Context).ToChecked()));
         return true;
     }
@@ -182,6 +184,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         if (Value->IsBigInt())
         {
             NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<int64>(Value->ToBigInt(Context).ToLocalChecked()->Int64Value()));
@@ -202,6 +205,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         if (Value->IsBigInt())
         {
             NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->ToBigInt(Context).ToLocalChecked()->Uint64Value()));
@@ -222,6 +226,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         NumericProperty->SetFloatingPointPropertyValue(ValuePtr, Value->NumberValue(Context).ToChecked());
         return true;
     }
@@ -239,6 +244,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         BoolProperty->SetPropertyValue(ValuePtr, Value->BooleanValue(Isolate));
         return true;
     }
@@ -256,6 +262,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         EnumProperty->GetUnderlyingProperty()->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->Int32Value(Context).ToChecked()));
         return true;
     }
@@ -285,6 +292,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         auto Str = FV8Utils::ToFString(Isolate, Value);
         //TCHAR* Str = (TCHAR*)(*(v8::String::Value(Isolate, Value)));
         StringProperty->SetPropertyValue(ValuePtr, Str);
@@ -304,6 +312,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         NameProperty->SetPropertyValue(ValuePtr, FName(*FV8Utils::ToFString(Isolate, Value)));
         return true;
     }
@@ -321,6 +330,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(FV8Utils::ToFString(Isolate, Value)));
         return true;
     }
@@ -345,6 +355,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         auto Object = FV8Utils::GetUObject(Context, Value);
         if (FV8Utils::IsReleasedPtr(Object))
         {
@@ -377,6 +388,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         UObject* Object = FV8Utils::GetUObject(Context, Value);
         if (FV8Utils::IsReleasedPtr(Object))
         {
@@ -421,6 +433,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         FArrayBuffer ArrayBuffer;
         void * Ptr = nullptr;
         if (IsArrayBuffer && Value->IsArrayBufferView())
@@ -481,6 +494,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         auto Object = FV8Utils::GetUObject(Context, Value);
         if (FV8Utils::IsReleasedPtr(Object))
         {
@@ -522,6 +536,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         auto Ptr = FV8Utils::GetPoninter(Context, Value);
         if (Ptr)
         {
@@ -558,6 +573,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         auto Ptr = FV8Utils::GetPoninter(Context, Value);
         if (Ptr)
         {
@@ -594,6 +610,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
+        if (UNLIKELY(Value->IsUndefined())) return true;
         auto Ptr = FV8Utils::GetPoninter(Context, Value);
         if (Ptr)
         {
