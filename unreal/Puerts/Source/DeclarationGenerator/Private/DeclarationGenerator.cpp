@@ -557,7 +557,13 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
     TArray<FString> EnumListerrals;
     for (int i = 0; i < Enum->NumEnums(); ++i)
     {
-        auto Name = Enum->IsA<UUserDefinedEnum>() ? Enum->GetAuthoredNameStringByIndex(i): Enum->GetNameStringByIndex(i);
+        auto Name = Enum->IsA<UUserDefinedEnum>() ? 
+#if ENGINE_MINOR_VERSION >= 23
+            Enum->GetAuthoredNameStringByIndex(i)
+#else
+            Enum->GetDisplayNameTextByIndex(i).ToString()
+#endif
+            : Enum->GetNameStringByIndex(i);
        // auto Value = Enum->GetValueByIndex(i);
         EnumListerrals.Add(SafeFieldName(Name, false));
     }
@@ -599,7 +605,13 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             {
                 TmpBuff << ", ";
             }
-            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ? Property->GetAuthoredName() : Property->GetName()) << ": ";
+            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ? 
+#if ENGINE_MINOR_VERSION >= 23
+                Property->GetAuthoredName() 
+#else
+                Property->GetDisplayNameText().ToString()
+#endif
+                : Property->GetName()) << ": ";
             TArray<UObject *> RefTypesTmp;
             if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
             {
@@ -615,7 +627,13 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
     {
         auto Property = *PropertyIt;
         FStringBuffer TmpBuff;
-        FString SN = SafeFieldName(Struct->IsA<UUserDefinedStruct>() ? Property->GetAuthoredName() : Property->GetName());
+        FString SN = SafeFieldName(Struct->IsA<UUserDefinedStruct>() ? 
+#if ENGINE_MINOR_VERSION >= 23
+            Property->GetAuthoredName() 
+#else
+            Property->GetDisplayNameText().ToString()
+#endif
+            : Property->GetName());
         TmpBuff << SN << ": ";
         TArray<UObject *> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))

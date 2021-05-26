@@ -1701,7 +1701,7 @@ function watch(configFilePath:string) {
 
             function getFlagsValue(str: string, flagsDef:object):number {
                 if (!str) return 0;
-                return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] as number : 0).reduce((x, y) => Number(BigInt(x) | BigInt(y)));
+                return str.split("|").map(x => x.trim()).map(x => x in flagsDef ? flagsDef[x] as number : 0).reduce((x, y) => x | y);
             }
 
             function getDecoratorFlagsValue(valueDeclaration:ts.Node, posfix: string, flagsDef:object): bigint {
@@ -1808,7 +1808,7 @@ function watch(configFilePath:string) {
                                         }
                                         flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", PropertyFlags);
                                     }
-                                    bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags, cond);
+                                    bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond);
                                 }
                             }
                         });

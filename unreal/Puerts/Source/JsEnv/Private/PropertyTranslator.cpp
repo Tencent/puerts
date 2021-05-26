@@ -131,7 +131,12 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
     {
         auto OwnerStruct = Property->GetOwnerStruct();
         Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
-            Property->GetAuthoredName() : Property->GetName()), Getter, Setter,
+#if ENGINE_MINOR_VERSION >= 23
+            Property->GetAuthoredName()
+#else
+            Property->GetDisplayNameText().ToString()
+#endif
+            : Property->GetName()), Getter, Setter,
             v8::External::New(Isolate, this), v8::DEFAULT, v8::DontDelete);
     }
 }

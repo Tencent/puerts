@@ -83,7 +83,7 @@ public:
     void RemoveNotExistedFunction();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int64 InFlags, int32 InLifetimeCondition);
+    void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InLFlags, int32 InHFlags, int32 InLifetimeCondition);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedMemberVariable();

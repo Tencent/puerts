@@ -1444,7 +1444,7 @@ function watch(configFilePath) {
                                 }
                                 flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", PropertyFlags);
                             }
-                            bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, flags, cond);
+                            bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond);
                         }
                     }
                 });

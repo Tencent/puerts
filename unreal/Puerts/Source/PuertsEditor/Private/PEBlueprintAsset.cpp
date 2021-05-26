@@ -605,8 +605,9 @@ void UPEBlueprintAsset::ClearParameter()
     ParameterTypes.Empty();
 }
 
-void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int64 InFlags, int32 InLifetimeCondition)
+void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InLFlags, int32 InHFlags, int32 InLifetimeCondition)
 {
+    uint64 InFlags = (uint64)InHFlags << 32 | InLFlags;
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
     int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
