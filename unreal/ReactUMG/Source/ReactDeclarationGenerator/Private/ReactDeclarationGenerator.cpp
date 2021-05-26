@@ -82,6 +82,14 @@ void FReactDeclarationGenerator::GenReactDeclaration()
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
+        checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
+        if (Class->GetName().StartsWith("SKEL_") ||
+            Class->GetName().StartsWith("REINST_") ||
+            Class->GetName().StartsWith("TRASHCLASS_") ||
+            Class->GetName().StartsWith("PLACEHOLDER_"))
+        {
+            continue;
+        }
         if (Class->IsChildOf<UPanelSlot>()) Gen(Class);
     }
 
@@ -92,6 +100,14 @@ void FReactDeclarationGenerator::GenReactDeclaration()
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
+        checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
+        if (Class->GetName().StartsWith("SKEL_") ||
+            Class->GetName().StartsWith("REINST_") ||
+            Class->GetName().StartsWith("TRASHCLASS_") ||
+            Class->GetName().StartsWith("PLACEHOLDER_"))
+        {
+            continue;
+        }
         if (Class->IsChildOf<UWidget>())
         {
             Gen(Class);
