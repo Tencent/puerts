@@ -14,6 +14,7 @@ static TMap<FName, TMap<FName, TMap<FName, FString>>> ParamDefaultMetas;
 static TMap<FName, TMap<FName, FString>> *PC = nullptr;
 static TMap<FName, FString> *PF = nullptr;
 
+#pragma optimize("", off)
 static void MakesureParamDefaultMetasInited()
 {
     static bool Inited = false;
@@ -24,11 +25,11 @@ static void MakesureParamDefaultMetasInited()
         //PF->Add(TEXT("Str"), TEXT("i am default"));
         //PF->Add(TEXT("I"), TEXT("10"));
         //PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
-//#include "../Puerts/InitParamDefaultMetas.inl"
+#include "../Puerts/InitParamDefaultMetas.inl"
         Inited = true;
     }
 }
-
+#pragma optimize("", on)
 
 TMap<FName, FString> * GetParamDefaultMetaFor(UFunction *InFunction)
 {
@@ -39,21 +40,6 @@ TMap<FName, FString> * GetParamDefaultMetaFor(UFunction *InFunction)
     {
         return ClassParamDefaultMeta->Find(InFunction->GetFName());
     }
-
-    if (!InFunction->IsNative())
-    {
-        check(InFunction);
-        UPackage* Package = InFunction->GetOutermost();
-        if (Package)
-        {
-            UMetaData* Metadata = Package->GetMetaData();
-            if (Metadata)
-            {
-                return Metadata->ObjectMetaDataMap.Find(InFunction);
-            }
-        }
-    }
-    
     return nullptr;
 }
 
