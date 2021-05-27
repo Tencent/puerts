@@ -15,25 +15,21 @@ static TMap<FName, TMap<FName, FString>> *PC = nullptr;
 static TMap<FName, FString> *PF = nullptr;
 
 #pragma optimize("", off)
-static void MakesureParamDefaultMetasInited()
+static int ParamDefaultMetasInit()
 {
-    static bool Inited = false;
-    if (!Inited)
-    {
-        //PC = &ParamDefaultMetas.Add(TEXT("MainObject"));
-        //PF = &PC->Add(TEXT("DefaultTest"));
-        //PF->Add(TEXT("Str"), TEXT("i am default"));
-        //PF->Add(TEXT("I"), TEXT("10"));
-        //PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
+    //PC = &ParamDefaultMetas.Add(TEXT("MainObject"));
+    //PF = &PC->Add(TEXT("DefaultTest"));
+    //PF->Add(TEXT("Str"), TEXT("i am default"));
+    //PF->Add(TEXT("I"), TEXT("10"));
+    //PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
 #include "../Puerts/InitParamDefaultMetas.inl"
-        Inited = true;
-    }
 }
 #pragma optimize("", on)
 
+int gDummy_ParamDefaultMetasInit_Ret = ParamDefaultMetasInit();
+
 TMap<FName, FString> * GetParamDefaultMetaFor(UFunction *InFunction)
 {
-    MakesureParamDefaultMetasInited();
     UClass *OuterClass = InFunction->GetOuterUClass();
     auto ClassParamDefaultMeta = ParamDefaultMetas.Find(OuterClass->GetFName());
     if (ClassParamDefaultMeta)
