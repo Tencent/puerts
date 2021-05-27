@@ -28,16 +28,15 @@ public:
     
     virtual void Initialize(const FString& RootLocalPath, const FString& RootBuildPath, const FString& OutputDirectory, const FString& IncludeBase) override
     {
-        UE_LOG(LogTemp, Warning, TEXT("FParamDefaultValueMetasModule OutputDirectory: %s, IncludeBase:%s"), *OutputDirectory, *IncludeBase);
+        if (Finished) return;
+        //UE_LOG(LogTemp, Warning, TEXT("FParamDefaultValueMetasModule OutputDirectory: %s, IncludeBase:%s"), *OutputDirectory, *IncludeBase);
         GeneratedFileContent.Empty();
         OutputDir = OutputDirectory;
     }
 
     virtual void ExportClass(UClass* Class, const FString& SourceHeaderFilename, const FString& GeneratedHeaderFilename, bool bHasChanged) override
     {
-        // #lizard forgives
-
-        // filter out interfaces
+        if (Finished) return;
         if (Class->HasAnyClassFlags(CLASS_Interface))
         {
             return;
@@ -80,6 +79,7 @@ public:
 
     virtual void FinishExport() override
     {
+        if (Finished) return;
         const FString FilePath = FString::Printf(TEXT("%s%s"), *OutputDir, TEXT("InitParamDefaultMetas.inl"));
         //UE_LOG(LogTemp, Error, TEXT("save to: %s"), *FilePath);
         //UE_LOG(LogTemp, Error, TEXT("context: %s"), *GeneratedFileContent);
@@ -90,6 +90,7 @@ public:
             bool bResult = FFileHelper::SaveStringToFile(GeneratedFileContent, *FilePath);
             check(bResult);
         }
+        Finished = true;
     }
 
 
@@ -118,6 +119,8 @@ private:
 
     FString OutputDir;
     FString GeneratedFileContent;
+
+    bool Finished = false;
 };
 
 #undef LOCTEXT_NAMESPACE
