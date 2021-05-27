@@ -127,7 +127,7 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
 
                         void *PropValuePtr = Property->ContainerPtrToValuePtr<void>(ArgumentDefaultValues);
 
-                        if (const UStructProperty* StructProp = Cast<UStructProperty>(Property))
+                        if (const StructPropertyMacro* StructProp = CastFieldMacro<StructPropertyMacro>(Property))
                         {
                             if (StructProp->Struct == TBaseStructure<FVector>::Get())
                             {
