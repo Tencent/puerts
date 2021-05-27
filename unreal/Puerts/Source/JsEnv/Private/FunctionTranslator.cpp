@@ -9,6 +9,54 @@
 #include "V8Utils.h"
 #include "Misc/DefaultValueHelper.h"
 
+static TMap<FName, TMap<FName, TMap<FName, FString>>> ParamDefaultMetas;
+
+static TMap<FName, TMap<FName, FString>> *PC = nullptr;
+static TMap<FName, FString> *PF = nullptr;
+
+static void MakesureParamDefaultMetasInited()
+{
+    static bool Inited = false;
+    if (!Inited)
+    {
+        //PC = &ParamDefaultMetas.Add(TEXT("MainObject"));
+        //PF = &PC->Add(TEXT("DefaultTest"));
+        //PF->Add(TEXT("Str"), TEXT("i am default"));
+        //PF->Add(TEXT("I"), TEXT("10"));
+        //PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
+#include "../Puerts/InitParamDefaultMetas.inl"
+
+    }
+}
+
+
+TMap<FName, FString> * GetParamDefaultMetaFor(UFunction *InFunction)
+{
+    MakesureParamDefaultMetasInited();
+    UClass *OuterClass = InFunction->GetOuterUClass();
+    auto ClassParamDefaultMeta = ParamDefaultMetas.Find(OuterClass->GetFName());
+    if (ClassParamDefaultMeta)
+    {
+        return ClassParamDefaultMeta->Find(InFunction->GetFName());
+    }
+
+    if (!InFunction->IsNative())
+    {
+        check(InFunction);
+        UPackage* Package = InFunction->GetOutermost();
+        if (Package)
+        {
+            UMetaData* Metadata = Package->GetMetaData();
+            if (Metadata)
+            {
+                return Metadata->ObjectMetaDataMap.Find(InFunction);
+            }
+        }
+    }
+    
+    return nullptr;
+}
+
 namespace puerts
 {
 static const int ARG_ARRAY_SIZE = 8;
@@ -73,7 +121,7 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
 
     ArgumentDefaultValues = nullptr;
 
-    TMap<FName, FString> *MetaMap = UMetaData::GetMapForObject(InFunction);
+    TMap<FName, FString> *MetaMap = GetParamDefaultMetaFor(InFunction);
     if (MetaMap)
     {
         for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
@@ -83,11 +131,12 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
             {
                 if (!(Property->PropertyFlags & CPF_ReturnParm))
                 {
-                    const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
+                    //const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
                     FString *DefaultValuePtr = nullptr;
-                    DefaultValuePtr = MetaMap->Find(MetadataCppDefaultValueKey);
-                    if (DefaultValuePtr)
+                    DefaultValuePtr = MetaMap->Find(Property->GetFName());
+                    if (DefaultValuePtr && !DefaultValuePtr->IsEmpty())
                     {
+                        //UE_LOG(LogTemp, Warning, TEXT("Meta %s %s"), *Property->GetFName().ToString(), **DefaultValuePtr);
                         if (!ArgumentDefaultValues)
                         {
                             ArgumentDefaultValues = FMemory::Malloc(ParamsBufferSize, 16);
