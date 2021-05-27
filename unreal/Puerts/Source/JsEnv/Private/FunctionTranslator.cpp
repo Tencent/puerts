@@ -215,11 +215,11 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Params) CallFunction->InitializeStruct(Params);
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        if (ArgumentDefaultValues)
+        if (UNLIKELY(ArgumentDefaultValues && Info[i]->IsUndefined()))
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
         }
-        if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
+        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
         {
             return;
         }
@@ -408,7 +408,11 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
 
     for (int i = 1; i < Arguments.size(); ++i)
     {
-        if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
+        if (UNLIKELY(ArgumentDefaultValues && Info[i - 1]->IsUndefined()))
+        {
+            Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
+        }
+        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
         {
             return;
         }
