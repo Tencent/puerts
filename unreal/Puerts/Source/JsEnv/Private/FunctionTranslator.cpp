@@ -14,7 +14,7 @@ static TMap<FName, TMap<FName, TMap<FName, FString>>> ParamDefaultMetas;
 static TMap<FName, TMap<FName, FString>> *PC = nullptr;
 static TMap<FName, FString> *PF = nullptr;
 
-#pragma optimize("", off)
+PRAGMA_DISABLE_OPTIMIZATION
 static int ParamDefaultMetasInit()
 {
     //PC = &ParamDefaultMetas.Add(TEXT("MainObject"));
@@ -24,7 +24,7 @@ static int ParamDefaultMetasInit()
     //PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
 #include "../Puerts/InitParamDefaultMetas.inl"
 }
-#pragma optimize("", on)
+PRAGMA_ENABLE_OPTIMIZATION
 
 int gDummy_ParamDefaultMetasInit_Ret = ParamDefaultMetasInit();
 
