@@ -1,5 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
 
 #include "PEBlueprintAsset.h"
 #include "Modules/ModuleManager.h"
@@ -25,6 +29,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
+
+#define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
 UClass* FindClass(const TCHAR* ClassName)
 {
@@ -332,6 +338,21 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             OverrideAdded.Add(InName);
             NeedSave = true;
         }
+        else
+        {
+            UEdGraph* const ExistingGraph = FindObject<UEdGraph>(Blueprint, *InName.ToString());
+            if (!ExistingGraph)
+            {
+                const FScopedTransaction Transaction(LOCTEXT("CreateOverrideFunctionGraph", "Create Override Function Graph"));
+                Blueprint->Modify();
+                // Implement the function graph
+                UEdGraph* const NewGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, InName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+                FBlueprintEditorUtils::AddFunctionGraph(Blueprint, NewGraph, /*bIsUserCreated=*/ false, OverrideFuncClass);
+                NewGraph->Modify();
+                FunctionAdded.Add(InName);
+                NeedSave = true;
+            }
+        }
     }
     else if (AxisNames.Contains(InName))
     {
@@ -405,7 +426,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         {
             if (EventGraph && !Iter)
             {
-                //´¦Àí±êÇ©¸Ä±äµÄÇé¿ö
+                //å¤„ç†æ ‡ç­¾æ”¹å˜çš„æƒ…å†µ
                 Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
 
                 UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
