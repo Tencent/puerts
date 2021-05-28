@@ -86,6 +86,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## 常见问题
 
+* [general faq](doc/faq.md)
 * [unreal faq](doc/unreal/faq.md)
 * [unity faq](doc/unity/faq.md)
 
