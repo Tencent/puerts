@@ -12,7 +12,7 @@ namespace puerts
 {
     FORCEINLINE static int32 GetKeyOffset(const FScriptMapLayout &ScriptMapLayout)
     {
-#if ENGINE_MINOR_VERSION < 22
+#if ENGINE_MINOR_VERSION < 22 && ENGINE_MAJOR_VERSION < 5
         return ScriptMapLayout.KeyOffset;
 #else
         return 0;

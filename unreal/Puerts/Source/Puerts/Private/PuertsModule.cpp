@@ -31,7 +31,7 @@ public:
     virtual void NotifyUObjectCreated(const class UObjectBase *InObject, int32 Index) override;
     virtual void NotifyUObjectDeleted(const class UObjectBase *InObject, int32 Index) override;
 
-#if ENGINE_MINOR_VERSION > 22
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 22
     virtual void OnUObjectArrayShutdown() override;
 #endif
 
@@ -248,7 +248,7 @@ void FPuertsModule::NotifyUObjectDeleted(const class UObjectBase *InObject, int3
     //UE_LOG(PuertsModule, Warning, TEXT("NotifyUObjectDeleted, %p"), InObject);
 }
 
-#if ENGINE_MINOR_VERSION > 22
+#if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
 void FPuertsModule::OnUObjectArrayShutdown()
 {
     if (Enabled)

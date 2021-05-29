@@ -201,7 +201,7 @@ static TArray<UK2Node_EditablePinBase*> GatherAllResultNodes(UK2Node_EditablePin
     }
     return Result;
 }
-#if ENGINE_MINOR_VERSION <= 23
+#if ENGINE_MINOR_VERSION <= 23 && ENGINE_MAJOR_VERSION == 4
 UFunction* GetInterfaceFunction(UBlueprint* Blueprint, const FName FuncName)
 {
     UFunction* Function = nullptr;
@@ -307,7 +307,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         //UE_LOG(LogTemp, Warning, TEXT("Override Function %s"), *ParentFunction->GetName());
         //FBlueprintEditorUtils::AddFunctionGraph(Blueprint, FunctionGraph, bUserCreated, ParentFunction);
         UFunction* OverrideFunc = nullptr;
-#if ENGINE_MINOR_VERSION <= 23
+#if ENGINE_MINOR_VERSION <= 23 && ENGINE_MAJOR_VERSION < 5
         UClass* const OverrideFuncClass = GetOverrideFunctionClass(Blueprint, InName, &OverrideFunc);
 #else
         UClass* const OverrideFuncClass = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, InName, &OverrideFunc);

@@ -15,7 +15,7 @@ FContainerMeta::FContainerMeta()
 
 FContainerMeta::~FContainerMeta()
 {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     //for (auto KV : ObjectPropertyMap)
     //{
     //    delete KV.Value;
@@ -50,7 +50,7 @@ PropertyMacro * FContainerMeta::GetBuiltinProperty(BuiltinType type)
 
         switch (type)
         {
-#if ENGINE_MINOR_VERSION < 25
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         case puerts::TBool:
             Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient) UBoolProperty(FObjectInitializer(), EC_CppProperty, 0, (EPropertyFlags)0, 0xFF, 1, true);
             break;
@@ -108,7 +108,7 @@ PropertyMacro * FContainerMeta::GetBuiltinProperty(BuiltinType type)
         }
         if (Ret)
         {
-#if ENGINE_MINOR_VERSION < 25
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
             Ret->AddToRoot();
 #endif
             BuiltinProperty[type] = Ret;
@@ -130,7 +130,7 @@ PropertyMacro * FContainerMeta::GetObjectProperty(UStruct *Struct)
 
     if (auto Class = Cast<UClass>(Struct))
     {
-#if ENGINE_MINOR_VERSION < 25
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient) UObjectProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, Class);
 #else
         Ret = new FObjectProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, Class);
@@ -138,7 +138,7 @@ PropertyMacro * FContainerMeta::GetObjectProperty(UStruct *Struct)
     }
     else if (auto ScriptStruct = Cast<UScriptStruct>(Struct))
     {
-#if ENGINE_MINOR_VERSION < 25
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient) UStructProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, ScriptStruct);
 #else
         Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, ScriptStruct);
@@ -149,7 +149,7 @@ PropertyMacro * FContainerMeta::GetObjectProperty(UStruct *Struct)
         return nullptr;
     }
 
-#if ENGINE_MINOR_VERSION < 25
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
     Ret->AddToRoot();
 #endif
 
@@ -162,7 +162,7 @@ void FContainerMeta::NotifyUStructDeleted(const UStruct *Struct)
     auto Iter = ObjectPropertyMap.Find(Struct);
     if (Iter)
     {
-#if ENGINE_MINOR_VERSION < 25
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         (const_cast<UStruct *>(Struct))->RemoveFromRoot();
 #else
         //delete *Iter;
