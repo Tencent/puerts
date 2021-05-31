@@ -11,7 +11,7 @@
 #include "PropertyMacros.h"
 
 static PropertyMacro* DuplicateProperty(
-#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4 || ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     FFieldVariant Outer,
 #else
     UObject* Outer,
@@ -28,9 +28,7 @@ static PropertyMacro* DuplicateProperty(
 
     if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-#if   ENGINE_MAJOR_VERSION > 4
-    	auto Temp = new StructPropertyMacro(Outer, Name, ObjectFlags);
-#elif ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new StructPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<StructPropertyMacro>(Outer, Name);
