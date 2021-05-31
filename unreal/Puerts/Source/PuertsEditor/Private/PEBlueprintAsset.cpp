@@ -283,14 +283,6 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
     UFunction* Function = GeneratedClass->FindFunctionByName(InName, EIncludeSuperFlag::ExcludeSuper);
 
-    if (ParentFunction && Function)
-    {
-        ParameterNames.Empty();
-        ParameterTypes.Empty();
-        OverrideAdded.Add(InName);
-        return;
-    }
-
 	TArray<FName> AxisNames;
 	TArray<FName> ActionNames;
 	GetDefault<UInputSettings>()->GetAxisNames(AxisNames);
@@ -320,9 +312,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         {
             // Add to event graph
             FName EventName = OverrideFunc->GetFName();
-            //UK2Node_Event* ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, OverrideFuncClass, EventName);
+            UK2Node_Event* ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, OverrideFuncClass, EventName);
 
-            //if (!ExistingNode)
+            if (!ExistingNode && !Function)
             {
                 UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(
                     EventGraph,
@@ -340,6 +332,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         }
         else
         {
+            if (FunctionAdded.Contains(InName)) return;
             UEdGraph* const ExistingGraph = FindObject<UEdGraph>(Blueprint, *InName.ToString());
             if (!ExistingGraph)
             {
@@ -349,10 +342,14 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 UEdGraph* const NewGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, InName, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
                 FBlueprintEditorUtils::AddFunctionGraph(Blueprint, NewGraph, /*bIsUserCreated=*/ false, OverrideFuncClass);
                 NewGraph->Modify();
-                FunctionAdded.Add(InName);
                 NeedSave = true;
             }
+            FunctionAdded.Add(InName);
         }
+
+        ParameterNames.Empty();
+        ParameterTypes.Empty();
+        return;
     }
     else if (AxisNames.Contains(InName))
     {

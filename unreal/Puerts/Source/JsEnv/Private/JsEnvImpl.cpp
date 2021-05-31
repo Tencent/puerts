@@ -601,7 +601,7 @@ void FJsEnvImpl::LowMemoryNotification()
 }
 
 
-void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject)
+void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
 {
     auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
 
@@ -622,7 +622,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
             auto SuperClass = Cast<UTypeScriptGeneratedClass>(TypeScriptGeneratedClass->GetSuperClass());
             if (SuperClass)
             {
-                MakeSureInject(SuperClass, false);
+                MakeSureInject(SuperClass, false, RebindObject);
             }
             FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
             Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
@@ -759,6 +759,22 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         {
                             __USE(BindInfoMap[TypeScriptGeneratedClass].Prototype.Get(Isolate)->SetPrototype(Context, Proto));
                         }
+
+                        if (RebindObject)
+                        {
+                            for (FObjectIterator It(TypeScriptGeneratedClass); It; ++It)
+                            {
+                                auto Object = *It;
+                                if (Object->GetClass() != TypeScriptGeneratedClass) continue;
+                                //在编辑器下重启虚拟机，如果TS带构造函数，不重新执行的话，新虚拟机上逻辑上少执行了逻辑（比如对js对象一些字段的初始化）
+                                //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
+                                //后面看是否能参照蓝图的组件初始化进行改造
+                                //TsConstruct(TypeScriptGeneratedClass, Object);
+                                auto JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
+                                GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+                                UnBind(TypeScriptGeneratedClass, Object);
+                            }
+                        }
                     }
                 }
             }
@@ -883,7 +899,7 @@ void FJsEnvImpl::RebindJs()
         
         if (!Class->NotSupportInject())
         {
-            MakeSureInject(Class, false);
+            MakeSureInject(Class, false, true);
         }
     }
 }
@@ -1296,7 +1312,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
-    MakeSureInject(Class, true);
+    MakeSureInject(Class, true, false);
 }
 
 void FJsEnvImpl::ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void *DelegatePtr)
@@ -1732,7 +1748,7 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct *InStruct, v8::Local<v8::
             auto SuperClass = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass());
             if (SuperClass)
             {
-                MakeSureInject(SuperClass, false);
+                MakeSureInject(SuperClass, false, false);
                 v8::Local<v8::Value> VProto;
                 if (Ret->Get(Context, FV8Utils::ToV8String(MainIsolate, "prototype")).ToLocal(&VProto) && VProto->IsObject())
                 {
