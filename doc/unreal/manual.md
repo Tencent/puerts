@@ -395,7 +395,7 @@ Constructor
 
 **直接映射的类型**
 
-void，number，string，bigint，boolean，UE模块下的UObject子类或者UStruct，TArray、TSet、TMap
+void，number，string，bigint，boolean，UE模块下的UObject派生类、枚举、UStruct，TArray、TSet、TMap
 
 注意：一个函数返回类型声明为void才是无返回值，如果一个函数不声明返回类型，等同于返回any类型，而自动半丁模式并不支持any类型
 
