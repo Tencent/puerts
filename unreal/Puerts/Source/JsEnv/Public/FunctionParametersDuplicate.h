@@ -39,9 +39,7 @@ static PropertyMacro* DuplicateProperty(
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
     {
 
-#if ENGINE_MAJOR_VERSION > 4
-    	auto Temp = new ArrayPropertyMacro(Outer, Name, ObjectFlags);
-#elif ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new ArrayPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<ArrayPropertyMacro>(Outer, Name);
