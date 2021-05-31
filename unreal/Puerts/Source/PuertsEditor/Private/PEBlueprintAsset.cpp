@@ -54,7 +54,7 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     //UE_LOG(LogTemp, Warning, TEXT("LoadOrCreate.PackageName: %s"), *PackageName);
 
     Blueprint = LoadObject<UBlueprint>(nullptr, *PackageName, nullptr, LOAD_NoWarn | LOAD_NoRedirects);
-    if (Blueprint) 
+    if (Blueprint)
     {
         GeneratedClass = Blueprint->GeneratedClass;
         if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(GeneratedClass))
@@ -117,7 +117,7 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     }
 }
 
-bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction* OverrideFunc) 
+bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction* OverrideFunc)
 {
     // If the original function was created in a parent blueprint, then prefer a BP function
     if (OverrideFunc)
@@ -201,7 +201,7 @@ static TArray<UK2Node_EditablePinBase*> GatherAllResultNodes(UK2Node_EditablePin
     }
     return Result;
 }
-#if ENGINE_MINOR_VERSION <= 23 && ENGINE_MAJOR_VERSION == 4
+#if ENGINE_MINOR_VERSION <= 23 && ENGINE_MAJOR_VERSION < 5
 UFunction* GetInterfaceFunction(UBlueprint* Blueprint, const FName FuncName)
 {
     UFunction* Function = nullptr;
@@ -300,7 +300,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     bool IsCustomEvent = false;
 
     // Create the function graph.
-    
+
     const bool bUserCreated = true;
     if (ParentFunction)
     {
@@ -470,7 +470,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             //FBlueprintEditorUtils::RemoveGraph(Blueprint, *ExistedGraph);
 	        FunctionGraph = *ExistedGraph;
         }
-        else 
+        else
         {
             UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
             if (EventGraph)
@@ -718,7 +718,7 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
         UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
         if (EventGraph)
         {
-            auto RemovedCustomEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) { 
+            auto RemovedCustomEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
                 UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
                 return CustomEvent && !FunctionAdded.Contains(CustomEvent->CustomFunctionName);
                 });
