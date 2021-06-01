@@ -463,24 +463,41 @@ class TsTestActor extends UE.Actor {
 }
 ~~~
 
-* @flags
+### rpc
 
-为字段，方法设置flags，目前只支持RPC相关的flags，也就是字段只支持CPF_Net，方法只支持FUNC_Net、FUNC_NetMulticast、FUNC_NetServer、FUNC_NetClient
+可以通过decorator来设置方法、字段的RPC属性。
+
+注意：TypeScript的decorator默认不打开，需要在tsconfig.json上将experimentalDecorators属性设置为true
+
+* rpc.flags
+
+为字段，方法设置flags
+
+* rpc.condition
+
+为字段设置replicate condition
+
 
 ~~~typescript
 class TsTestActor extends UE.Actor {
-    //@flags: FUNC_Net | FUNC_NetServer
-    FireServer():void {
+    @rpc.flags(rpc.PropertyFlags.CPF_Net | rpc.PropertyFlags.CPF_RepNotify)
+    @rpc.condition(rpc.ELifetimeCondition.COND_InitialOrOwner)
+    dint: number;
+
+    @rpc.flags(rpc.FunctionFlags.FUNC_Net | rpc.FunctionFlags.FUNC_NetClient)
+    Fire(): void {
 
     }
 
-    //@flags: FUNC_Net | FUNC_NetClient
-    FireClient():void {
+    @rpc.flags(rpc.FunctionFlags.FUNC_Net | rpc.FunctionFlags.FUNC_NetServer)
+    FireServer(): void {
 
     }
 
-    //@flags: CPF_Net
-    NetField: number;
+    //如果字段设置了CPF_RepNotify，需要增加“OnRep_字段名”为名字的方法
+    OnRep_dint(): void {
+        
+    }
 }
 ~~~
 
