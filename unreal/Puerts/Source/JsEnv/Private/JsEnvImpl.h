@@ -141,7 +141,7 @@ public:
     }
 
 public:
-#if ENGINE_MINOR_VERSION > 22
+#if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
     void OnUObjectArrayShutdown() override
     {
         GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));

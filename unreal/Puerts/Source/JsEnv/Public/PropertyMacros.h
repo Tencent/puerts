@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     #define PropertyMacro FProperty
 
     #define NumericPropertyMacro FNumericProperty

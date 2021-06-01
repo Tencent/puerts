@@ -11,7 +11,7 @@
 #include "PropertyMacros.h"
 
 static PropertyMacro* DuplicateProperty(
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     FFieldVariant Outer,
 #else
     UObject* Outer,
@@ -28,7 +28,7 @@ static PropertyMacro* DuplicateProperty(
 
     if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new StructPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<StructPropertyMacro>(Outer, Name);
@@ -38,7 +38,8 @@ static PropertyMacro* DuplicateProperty(
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
     {
-#if ENGINE_MINOR_VERSION >= 25
+
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new ArrayPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<ArrayPropertyMacro>(Outer, Name);
@@ -48,7 +49,7 @@ static PropertyMacro* DuplicateProperty(
     }
     else if (auto ByteProperty = CastFieldMacro<BytePropertyMacro>(Property))
     {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new BytePropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<BytePropertyMacro>(Outer, Name);
@@ -58,7 +59,7 @@ static PropertyMacro* DuplicateProperty(
     }
     else if (CastFieldMacro<BoolPropertyMacro>(Property))
     {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new BoolPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<BoolPropertyMacro>(Outer, Name);
@@ -68,7 +69,7 @@ static PropertyMacro* DuplicateProperty(
     }
     else if (auto ClassProperty = CastFieldMacro<ClassPropertyMacro>(Property))
     {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new ClassPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<ClassPropertyMacro>(Outer, Name);
@@ -79,7 +80,7 @@ static PropertyMacro* DuplicateProperty(
     }
     else if (auto ObjectProperty = CastFieldMacro<ObjectPropertyMacro>(Property))
     {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new ObjectPropertyMacro(Outer, Name, ObjectFlags);
 #else
         auto Temp = NewObject<ObjectPropertyMacro>(Outer, Name);
@@ -89,7 +90,7 @@ static PropertyMacro* DuplicateProperty(
     }
     else
     {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         NewProperty = CastField<PropertyMacro>(FField::Duplicate(Property, Outer, *(Name.ToString())));
 #else
         NewProperty = static_cast<PropertyMacro*>(StaticDuplicateObject(Property, Outer, *(Name.ToString())));
@@ -103,7 +104,7 @@ static PropertyMacro* DuplicateProperty(
 
 static void DuplicateParameters(UFunction * FromFunction, UFunction * Function)
 {
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     FField** Storage = &Function->ChildProperties;
 #else
     UField** Storage = &Function->Children;

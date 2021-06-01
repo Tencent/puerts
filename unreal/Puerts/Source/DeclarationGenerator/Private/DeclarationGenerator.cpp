@@ -558,7 +558,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
     for (int i = 0; i < Enum->NumEnums(); ++i)
     {
         auto Name = Enum->IsA<UUserDefinedEnum>() ? 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
             Enum->GetAuthoredNameStringByIndex(i)
 #else
             Enum->GetDisplayNameTextByIndex(i).ToString()
@@ -606,7 +606,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
                 TmpBuff << ", ";
             }
             TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ? 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                 Property->GetAuthoredName() 
 #else
                 Property->GetDisplayNameText().ToString()
@@ -628,7 +628,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
         auto Property = *PropertyIt;
         FStringBuffer TmpBuff;
         FString SN = SafeFieldName(Struct->IsA<UUserDefinedStruct>() ? 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
             Property->GetAuthoredName() 
 #else
             Property->GetDisplayNameText().ToString()

@@ -115,7 +115,7 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
 {
     if (Property->IsA<DelegatePropertyMacro>()
         || Property->IsA<MulticastDelegatePropertyMacro>()
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
         || Property->IsA<MulticastInlineDelegatePropertyMacro>()
         || Property->IsA<MulticastSparseDelegatePropertyMacro>()
 #endif
@@ -131,7 +131,7 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
     {
         auto OwnerStruct = Property->GetOwnerStruct();
         Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
             Property->GetAuthoredName()
 #else
             Property->GetDisplayNameText().ToString()
@@ -851,7 +851,7 @@ std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *
         return TCreate<FDelegatePropertyTranslator>(InProperty, IgnoreOut);
     }
     else if (InProperty->IsA<MulticastDelegatePropertyMacro>()
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
         || InProperty->IsA<MulticastInlineDelegatePropertyMacro>()
         || InProperty->IsA<MulticastSparseDelegatePropertyMacro>()
 #endif

@@ -30,7 +30,7 @@ public:
         return InnerMalloc->Malloc(Size, Alignment);
     }
 
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     virtual void* TryMalloc(SIZE_T Size, uint32 Alignment) override
     {
         if (UNLIKELY(Size == 0))
@@ -46,7 +46,7 @@ public:
         return InnerMalloc->Realloc(Ptr, NewSize, Alignment);
     }
 
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     virtual void* TryRealloc(void* Ptr, SIZE_T NewSize, uint32 Alignment) override
     {
         return InnerMalloc->TryRealloc(Ptr, NewSize, Alignment);
@@ -83,7 +83,7 @@ public:
         return InnerMalloc->QuantizeSize(Count, Alignment);
     }
 
-#if ENGINE_MINOR_VERSION > 21
+#if ENGINE_MINOR_VERSION > 21 || ENGINE_MAJOR_VERSION > 4
     virtual void Trim(bool bTrimThreadCaches) override
     {
         InnerMalloc->Trim(bTrimThreadCaches);
