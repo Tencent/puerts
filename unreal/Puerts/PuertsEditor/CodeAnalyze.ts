@@ -1592,13 +1592,24 @@ function watch(configFilePath:string) {
                             let typeRef = type as ts.TypeReference;
                             var children: ts.Node[] = [];
 
+                            let typeArguments = typeRef.typeArguments || typeRef.aliasTypeArguments;
+
+                            if (typeRef.aliasTypeArguments && typeRef.aliasSymbol) {
+                                typeName = typeRef.aliasSymbol.getName();
+                            }
+
+                            if (!typeArguments) {
+                                console.warn("can not find type arguments of " + node.getFullText());
+                                return undefined;
+                            }
+
                             if (node) {
                                 node.forEachChild(child => {
                                     children.push(child);
                                 })
                             }
 
-                            let result = tsTypeToPinType(typeRef.typeArguments[0], children[1]); 
+                            let result = tsTypeToPinType(typeArguments[0], children[1]); 
                             
                             if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None) {
                                 console.warn("can not find pin type of typeArguments[0] " + typeName);
@@ -1612,8 +1623,11 @@ function watch(configFilePath:string) {
                             if (typeName == 'TArray' || typeName == 'TSet') {
                                 result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
                                 return result;
+                            } else if (typeName == 'TSubclassOf') {
+                                result.pinType.PinCategory = "class";
+                                return result;
                             } else if (typeName == 'TMap') {
-                                let valuePinType = tsTypeToPinType(typeRef.typeArguments[1], undefined);
+                                let valuePinType = tsTypeToPinType(typeArguments[1], undefined);
                                 if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
                                     console.warn("can not find pin type of typeArguments[1] " + typeName);
                                     return undefined;
@@ -1625,7 +1639,7 @@ function watch(configFilePath:string) {
                                 result.pinValueType = new UE.PEGraphTerminalType(valuePinType.pinType.PinCategory, valuePinType.pinType.PinSubCategoryObject);
                                 return result;
                             } else {
-                                console.warn("container not support: " + typeName);
+                                console.warn("not support generic type: " + typeName);
                                 return undefined;
                             }
                         }

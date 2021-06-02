@@ -125,6 +125,10 @@ declare module "ue" {
     type TLazyObjectPtr<T> = {
         [K in keyof T]: T[K];
     }
+    
+    type TSubclassOf<T> = {
+        [K in keyof T]: T[K];
+    }
 
     class UInt64Ptr { }
 

@@ -26,6 +26,7 @@
 #include "K2Node_InputAxisEvent.h"
 #include "K2Node_InputAction.h"
 #include "K2Node_CallFunction.h"
+#include "ScopedTransaction.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
@@ -140,7 +141,7 @@ bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction*
 
 static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
-    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject)
+    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject && InGraphPinType.PinCategory != UEdGraphSchema_K2::PC_Class)
     {
         if (InGraphPinType.PinSubCategoryObject->IsA<UScriptStruct>())
         {
@@ -162,7 +163,7 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
     {
         PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
         PinType.PinValueType.TerminalSubCategoryObject = InPinValueType.PinSubCategoryObject;
-        if (InPinValueType.PinSubCategoryObject)
+        if (InPinValueType.PinSubCategoryObject && InPinValueType.PinCategory != UEdGraphSchema_K2::PC_Class)
         {
             if (InPinValueType.PinSubCategoryObject->IsA<UScriptStruct>())
             {
