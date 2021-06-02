@@ -620,6 +620,11 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
         if (PackageName.StartsWith(PackageNamePrefix))
         {
             auto SuperClass = Cast<UTypeScriptGeneratedClass>(TypeScriptGeneratedClass->GetSuperClass());
+            if (SuperClass && SuperClass->GetName().StartsWith(TEXT("REINST_")))
+            {
+                //中间状态，父类修改，子类可能有个中间状态，其父类可能被修改为一个REINST_前缀的临时类
+                return;
+            }
             if (SuperClass)
             {
                 MakeSureInject(SuperClass, false, RebindObject);
