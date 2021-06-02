@@ -219,7 +219,7 @@ namespace Puerts.Editor
             {
                 ret.AddRange(ToOverloadGenInfo(iBase));
             }
-            if (type.IsValueType && isCtor)//值类型添加无参构造
+            if (type.IsValueType && isCtor && ret.TrueForAll(t => t.HasParams))//值类型添加无参构造
             {
                 if (!overloads.Exists(m => m.GetParameters().Length == 0))
                 {
