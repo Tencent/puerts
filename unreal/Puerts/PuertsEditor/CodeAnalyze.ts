@@ -1173,7 +1173,7 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
     });
 }
 
-type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum";
+type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum" | "softobject" | "softclass";
 
 const FunctionFlags = {
     FUNC_None				: 0x00000000,
@@ -1624,7 +1624,16 @@ function watch(configFilePath:string) {
                                 result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
                                 return result;
                             } else if (typeName == 'TSubclassOf') {
-                                result.pinType.PinCategory = "class";
+                                let category:PinCategory = "class";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            } else if (typeName == 'TSoftObjectPtr') {
+                                let category:PinCategory = "softobject";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            } else if (typeName == 'TSoftClassPtr') {
+                                let category:PinCategory = "softclass";
+                                result.pinType.PinCategory = category;
                                 return result;
                             } else if (typeName == 'TMap') {
                                 let valuePinType = tsTypeToPinType(typeArguments[1], undefined);

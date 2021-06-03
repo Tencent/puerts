@@ -130,6 +130,10 @@ declare module "ue" {
         [K in keyof T]: T[K];
     }
 
+    type TSoftClassPtr<T> = {
+        [K in keyof T]: T[K];
+    }
+
     class UInt64Ptr { }
 
     class FloatPtr { }

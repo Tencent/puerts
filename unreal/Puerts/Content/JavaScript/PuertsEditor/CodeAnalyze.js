@@ -1266,7 +1266,18 @@ function watch(configFilePath) {
                                 return result;
                             }
                             else if (typeName == 'TSubclassOf') {
-                                result.pinType.PinCategory = "class";
+                                let category = "class";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            }
+                            else if (typeName == 'TSoftObjectPtr') {
+                                let category = "softobject";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            }
+                            else if (typeName == 'TSoftClassPtr') {
+                                let category = "softclass";
+                                result.pinType.PinCategory = category;
                                 return result;
                             }
                             else if (typeName == 'TMap') {

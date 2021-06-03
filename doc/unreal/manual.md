@@ -386,8 +386,7 @@ class TsTestActor extends UE.Actor {
 * 构造函数中可以调用一些UE限定必须在构造函数调用的API，比如CreateDefaultSubobject
 * 如果一个类定义了构造函数，该类成员变量的初始化会被TypeScript接管，这时你在UE编辑器下设置的值将会无效
 * 如果没定义构造函数，则支持在UE编辑器手动设置成员变量值
-
-Constructor
+* Constructor是UE调用的构造函数，不能在该函数中做js的初始化工作，比如no-blueprint标注的变量的初始化
 
 ### 自动绑定模式支持的数据类型
 
@@ -395,7 +394,7 @@ Constructor
 
 **直接映射的类型**
 
-void，number，string，bigint，boolean，UE模块下的UObject派生类、枚举、UStruct，TArray、TSet、TMap
+void，number，string，bigint，boolean，UE模块下的UObject派生类、枚举、UStruct，TArray、TSet、TMap、TSubclassOf（类引用）、TSoftObjectPtr（软对象引用）、TSoftClassPtr（软类引用）
 
 注意：一个函数返回类型声明为void才是无返回值，如果一个函数不声明返回类型，等同于返回any类型，而自动半丁模式并不支持any类型
 
@@ -416,6 +415,14 @@ class TsTestActor extends UE.Actor {
     Add(a: number, b: number): number {
         return a + b;
     }
+    
+    e: UE.ETickingGroup;
+    
+    clsOfWidget: UE.TSubclassOf<UE.Widget>;
+
+    softObject: UE.TSoftObjectPtr<UE.Actor>;
+
+    softClass: UE.TSoftClassPtr<UE.Actor>;
 }
 ~~~
 
