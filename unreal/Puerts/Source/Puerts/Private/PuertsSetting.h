@@ -19,8 +19,8 @@ class UPuertsSetting : public UObject
 {
 	GENERATED_BODY()
 public:
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Puerts Module Enable", defaultValue = false))
-    bool Enable = false;
+    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Auto Mode Enable", defaultValue = false))
+    bool AutoModeEnable = false;
 
     UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Debug Enable", defaultValue = false))
     bool DebugEnable = false;
