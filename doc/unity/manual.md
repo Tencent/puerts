@@ -79,7 +79,7 @@
         {
             get
             { 
-                return (from type in Assembly.Load("Assembly-CSharp").GetTypes()
+                return (from type in Assembly.Load("Assembly-CSharp").GetExportedTypes()
                     where type.Namespace == "MyNamespace"
                     select type);
             }
