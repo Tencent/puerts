@@ -1374,7 +1374,10 @@ function watch(configFilePath:string) {
         logErrors(diagnostics);
     } else {
         fileNames.forEach(fileName => {
-            onSourceFileAddOrChange(fileName, false, program);
+            onSourceFileAddOrChange(fileName, false, program, true, false);
+        });
+        fileNames.forEach(fileName => {
+            onSourceFileAddOrChange(fileName, false, program, false);
         });
     }
 
@@ -1426,7 +1429,7 @@ function watch(configFilePath:string) {
         }
     }
 
-    function onSourceFileAddOrChange(sourceFilePath: string, reload: boolean, program?: ts.Program) {
+    function onSourceFileAddOrChange(sourceFilePath: string, reload: boolean, program?: ts.Program, doEmitJs: boolean = true, doEmitBP:boolean = true) {
         if (!program) {
             let beginTime = new Date().getTime();
             program = getProgramFromService();
@@ -1454,8 +1457,10 @@ function watch(configFilePath:string) {
                         let moduleFileName:string = undefined;
                         let jsSource:string = undefined;
                         emitOutput.outputFiles.forEach(output => {
-                            console.log(`write ${output.name} ...` )
-                            UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            if (doEmitJs) {
+                                console.log(`write ${output.name} ...` )
+                                UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            }
                             
                             if (output.name.endsWith(".js")) {
                                 jsSource = output.text;
@@ -1469,6 +1474,8 @@ function watch(configFilePath:string) {
                         if (moduleFileName && reload) {
                             UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
                         }
+
+                        if (!doEmitBP) return;
 
                         let foundType: ts.Type = undefined;
                         let foundBaseTypeUClass: UE.Class  = undefined;
