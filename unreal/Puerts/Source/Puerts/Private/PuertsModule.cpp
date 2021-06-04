@@ -204,7 +204,7 @@ public:
 
             if (Settings.WaitDebugger)
             {
-                JsEnv->WaitDebugger();
+                JsEnv->WaitDebugger(Settings.WaitDebuggerTimeout);
             }
 
             JsEnv->RebindJs();
@@ -291,6 +291,7 @@ void FPuertsModule::RegisterSettings()
         GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
+        GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, PuertsConfigIniPath);
         if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
         {
             Settings.DebugPort = 8080;
