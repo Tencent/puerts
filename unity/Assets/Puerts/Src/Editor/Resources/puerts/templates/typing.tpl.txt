@@ -21,6 +21,12 @@ function toJsArray(csArr) {
     }
     return arr;
 }
+function typeDeclarationForImplements(type, level1) {
+    var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
+    if (level1 && interfaces.length) {
+        return " extends " + interfaces.map(interface=> typeDeclaration(interface)).join(',')
+    }
+}
 function typeDeclaration(type, level1) {
     var result = type.Name;
     if (type.IsGenericTypeDefinition) {
@@ -30,7 +36,7 @@ function typeDeclaration(type, level1) {
         result += " extends " + typeDeclaration(type.BaseType);
     }
     var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
-    if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
+    if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length && /*implements不好用临时加*/type.IsInterface) {
         result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(interface=> typeDeclaration(interface)).join(','))
     }
     if(!level1 && type.Namespace) {
@@ -80,9 +86,10 @@ declare module 'csharp' {
             {{~}}{{~type.Methods :method}}{{=indent(method.Document, 12)}}
             {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo, method.IsStatic, type)}}{{~}}){{=method.IsConstructor?"":":" + (method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName)}};
             {{~}}
-        }{{}}}{{?type.ExtensionMethods.Length > 0}}
+        }{{}}}
+        {{?type.ExtensionMethods.Length > 0 || (!(type.IsDelegate || type.IsInterface || type.IsEnum) && type.interfaces && type.interfaces.Length)}}
         {{=indent(type.Document, 8)}}
-        interface {{=type.Name}} {
+        interface {{=type.Name}}{{=typeDeclarationForImplements(type, true)}} {
             {{~type.ExtensionMethods :method}}{{=indent(method.Document, 12)}}
             {{=method.Name}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
             {{~}}
