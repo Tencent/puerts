@@ -21,7 +21,6 @@ function toJsArray(csArr) {
     }
     return arr;
 }
-
 function typeDeclaration(type, level1) {
     var result = type.Name;
     if (type.IsGenericTypeDefinition) {
@@ -31,8 +30,8 @@ function typeDeclaration(type, level1) {
         result += " extends " + typeDeclaration(type.BaseType);
     }
     var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
-    if (level1 && !type.IsInterface && !type.IsDelegate && !type.IsEnum && interfaces.length) {
-        result += (" implements " + interfaces.map(interface=> typeDeclaration(interface)).join(','))
+    if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
+        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(interface=> typeDeclaration(interface)).join(','))
     }
     if(!level1 && type.Namespace) {
         result = type.Namespace + "." + result;
