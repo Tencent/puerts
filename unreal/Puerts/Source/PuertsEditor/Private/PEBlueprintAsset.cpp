@@ -327,9 +327,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                         NewInstance->bOverrideFunction = true;
                     }
                 );
+                NeedSave = true;
             }
             OverrideAdded.Add(InName);
-            NeedSave = true;
         }
         else
         {
