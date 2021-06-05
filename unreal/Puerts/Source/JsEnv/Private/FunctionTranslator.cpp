@@ -23,6 +23,7 @@ static int ParamDefaultMetasInit()
     //PF->Add(TEXT("I"), TEXT("10"));
     //PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
 #include "../Puerts/InitParamDefaultMetas.inl"
+    return 0;
 }
 PRAGMA_ENABLE_OPTIMIZATION
 
