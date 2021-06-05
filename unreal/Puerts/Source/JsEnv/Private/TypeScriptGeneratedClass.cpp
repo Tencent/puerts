@@ -104,7 +104,7 @@ void UTypeScriptGeneratedClass::Bind()
         }
 
         //可避免非CDO的在PostConstructInit从基类拷贝值
-        ClassFlags |= CLASS_Native;
+        //ClassFlags |= CLASS_Native;
     }
 
     for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
