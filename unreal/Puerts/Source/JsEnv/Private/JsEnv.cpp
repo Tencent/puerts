@@ -32,9 +32,9 @@ void FJsEnv::LowMemoryNotification()
     GameScript->LowMemoryNotification();
 }
 
-void FJsEnv::WaitDebugger()
+void FJsEnv::WaitDebugger(double timeout)
 {
-    GameScript->WaitDebugger();
+    GameScript->WaitDebugger(timeout);
 }
 
 void FJsEnv::TryBindJs(const class UObjectBase *InObject)

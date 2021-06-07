@@ -30,7 +30,7 @@ public:
 
     virtual void LowMemoryNotification() = 0;
 
-    virtual void WaitDebugger() = 0;
+    virtual void WaitDebugger(double timeout) = 0;
 
     virtual void TryBindJs(const class UObjectBase *InObject) = 0;
 
@@ -57,7 +57,7 @@ public:
 
     void LowMemoryNotification();
 
-    void WaitDebugger();
+    void WaitDebugger(double timeout = 0);
 
     void TryBindJs(const class UObjectBase *InObject);
 
