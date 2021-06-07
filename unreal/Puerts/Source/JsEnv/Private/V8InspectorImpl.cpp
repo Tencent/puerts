@@ -202,7 +202,7 @@ private:
 };
 
 #if USING_UE
-void ReportException(const websocketpp::exception& Exception, TCHAR *JobInfo)  
+void ReportException(const websocketpp::exception& Exception, const TCHAR *JobInfo)  
 {
 #if PLATFORM_WINDOWS
     int len = MultiByteToWideChar(CP_ACP, 0, Exception.what(), -1, NULL, 0);  
