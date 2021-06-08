@@ -49,16 +49,7 @@ namespace puerts
 		if (PlatformFile.FileExists(*NormalizedPath))
 		{
             AbsolutePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*NormalizedPath);
-#if PLATFORM_WINDOWS
-			auto PathInWin = AbsolutePath.Replace(TEXT("/"), TEXT("\\"));
-			if (PathInWin.Len() && PathInWin[1] == ':')
-			{
-				PathInWin = PathInWin.Mid(0, 1).ToLower() + PathInWin.Mid(1);
-			}
-#endif
-            
             Path = NormalizedPath;
-            
             return true;
 		}
 
