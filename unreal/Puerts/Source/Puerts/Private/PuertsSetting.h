@@ -19,8 +19,8 @@ class UPuertsSetting : public UObject
 {
 	GENERATED_BODY()
 public:
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Puerts Module Enable", defaultValue = false))
-    bool Enable = false;
+    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Auto Mode Enable", defaultValue = false))
+    bool AutoModeEnable = false;
 
     UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Debug Enable", defaultValue = false))
     bool DebugEnable = false;
@@ -31,6 +31,9 @@ public:
     UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Wait Debugger", defaultValue = false))
     bool WaitDebugger = false;
 
+	UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Wait Debugger Timeout", defaultValue = 0))
+	double WaitDebuggerTimeout = 0;
+	
     UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
     int32 NumberOfJsEnv = 1;
 };

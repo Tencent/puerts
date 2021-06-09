@@ -1173,7 +1173,7 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
     });
 }
 
-type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum";
+type PinCategory = "bool" | "class" | "int64" | "string" | "object" | "struct" | "float" | "enum" | "softobject" | "softclass";
 
 const FunctionFlags = {
     FUNC_None				: 0x00000000,
@@ -1374,7 +1374,10 @@ function watch(configFilePath:string) {
         logErrors(diagnostics);
     } else {
         fileNames.forEach(fileName => {
-            onSourceFileAddOrChange(fileName, false, program);
+            onSourceFileAddOrChange(fileName, false, program, true, false);
+        });
+        fileNames.forEach(fileName => {
+            onSourceFileAddOrChange(fileName, false, program, false);
         });
     }
 
@@ -1426,7 +1429,7 @@ function watch(configFilePath:string) {
         }
     }
 
-    function onSourceFileAddOrChange(sourceFilePath: string, reload: boolean, program?: ts.Program) {
+    function onSourceFileAddOrChange(sourceFilePath: string, reload: boolean, program?: ts.Program, doEmitJs: boolean = true, doEmitBP:boolean = true) {
         if (!program) {
             let beginTime = new Date().getTime();
             program = getProgramFromService();
@@ -1454,8 +1457,10 @@ function watch(configFilePath:string) {
                         let moduleFileName:string = undefined;
                         let jsSource:string = undefined;
                         emitOutput.outputFiles.forEach(output => {
-                            console.log(`write ${output.name} ...` )
-                            UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            if (doEmitJs) {
+                                console.log(`write ${output.name} ...` )
+                                UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            }
                             
                             if (output.name.endsWith(".js")) {
                                 jsSource = output.text;
@@ -1469,6 +1474,8 @@ function watch(configFilePath:string) {
                         if (moduleFileName && reload) {
                             UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
                         }
+
+                        if (!doEmitBP) return;
 
                         let foundType: ts.Type = undefined;
                         let foundBaseTypeUClass: UE.Class  = undefined;
@@ -1624,7 +1631,16 @@ function watch(configFilePath:string) {
                                 result.pinType.PinContainerType = typeName == 'TArray' ? UE.EPinContainerType.Array : UE.EPinContainerType.Set;
                                 return result;
                             } else if (typeName == 'TSubclassOf') {
-                                result.pinType.PinCategory = "class";
+                                let category:PinCategory = "class";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            } else if (typeName == 'TSoftObjectPtr') {
+                                let category:PinCategory = "softobject";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            } else if (typeName == 'TSoftClassPtr') {
+                                let category:PinCategory = "softclass";
+                                result.pinType.PinCategory = category;
                                 return result;
                             } else if (typeName == 'TMap') {
                                 let valuePinType = tsTypeToPinType(typeArguments[1], undefined);

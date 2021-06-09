@@ -201,6 +201,27 @@ private:
     bool Connected;
 };
 
+#if USING_UE
+void ReportException(const websocketpp::exception& Exception, const TCHAR *JobInfo)  
+{
+#if PLATFORM_WINDOWS
+    int len = MultiByteToWideChar(CP_ACP, 0, Exception.what(), -1, NULL, 0);  
+    wchar_t* wstr = new wchar_t[len+1];  
+    memset(wstr, 0, len+1);  
+    MultiByteToWideChar(CP_ACP, 0, Exception.what(), -1, wstr, len);  
+    len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);  
+    char* str = new char[len+1];  
+    memset(str, 0, len+1);  
+    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);  
+    if(wstr) delete[] wstr;
+    UE_LOG(LogV8Inspector, Warning, TEXT("%s, errno:%d, message:%s"), JobInfo, Exception.code().value(), UTF8_TO_TCHAR(str));
+    delete str;
+#else
+    UE_LOG(LogV8Inspector, Warning, TEXT("%s, errno:%d, message:%s"), JobInfo, Exception.code().value(), ANSI_TO_TCHAR(Exception.what()));
+#endif
+}
+#endif
+
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
 #if USING_UE
     : FTickerObjectBase(0.001f)
@@ -264,8 +285,7 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
     {
         IsAlive = false;
 #if USING_UE
-        UE_LOG(LogV8Inspector, Warning, TEXT("V8InspectorClientImpl: %s"), ANSI_TO_TCHAR(Exception.what()));
-        UE_LOG(LogV8Inspector, Warning, TEXT("Failed to Startup Inspector."));
+        ReportException(Exception, TEXT("Failed to Startup Inspector"));
 #else
         PLog(Error, "V8InspectorClientImpl: %s", Exception.what());
         PLog(Error, "Failed to Startup Inspector.");
@@ -312,8 +332,7 @@ bool V8InspectorClientImpl::Tick(float /* DeltaTime */)
     catch (const wspp_exception& Exception)
     {
 #if USING_UE
-        // TODO - 解决乱码问题（疑似utf8编解码问题）
-        UE_LOG(LogV8Inspector, Error, TEXT("Tick: %s"), ANSI_TO_TCHAR(Exception.what()));
+        ReportException(Exception, TEXT("Tick"));
 #else
         PLog(Error, "Tick: %s", Exception.what());
 #endif
@@ -368,7 +387,7 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
     catch (const wspp_exception& Exception)
     {
 #if USING_UE
-        UE_LOG(LogV8Inspector, Error, TEXT("OnHTTP: %s"), ANSI_TO_TCHAR(Exception.what()));
+        ReportException(Exception, TEXT("OnHTTP"));
 #else
         PLog(Error, "OnHTTP: %s", Exception.what());
 #endif
@@ -412,7 +431,7 @@ void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std:
     catch (const websocketpp::exception& Exception)
     {
 #if USING_UE
-        UE_LOG(LogV8Inspector, Error, TEXT("OnSendMessage: %s"), ANSI_TO_TCHAR(Exception.what()));
+        ReportException(Exception, TEXT("OnSendMessage"));
 #else
         PLog(Error, "OnSendMessage: %s", Exception.what());
 #endif

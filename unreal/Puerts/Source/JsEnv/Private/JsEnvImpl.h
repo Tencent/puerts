@@ -51,9 +51,20 @@ public:
 
     void LowMemoryNotification() override;
 
-    void WaitDebugger() override
+    void WaitDebugger(double timeout) override
     {
-        while (Inspector && !Inspector->Tick()) {}
+        const auto startTime = FDateTime::Now();
+        while (Inspector && !Inspector->Tick())
+        {
+            if (timeout > 0)
+            {
+                auto now = FDateTime::Now();
+                if ((now - startTime).GetTotalSeconds() >= timeout)
+                {
+                    break;
+                }
+            }
+        }
     }
 
     virtual void TryBindJs(const class UObjectBase *InObject) override;

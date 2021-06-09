@@ -99,7 +99,7 @@ declare module 'csharp' {
         }{{}}}
         {{?type.ExtensionMethods.Length > 0}}
         {{=indent(type.Document, 8)}}
-        interface {{=type.Name}} {
+        interface {{=type.Name}}{{=typeDeclarationForImplements(type, true)}} {
             {{~type.ExtensionMethods :method}}{{=indent(method.Document, 12)}}
             {{=formatPropertyOrMethodName(method.Name)}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
             {{~}}

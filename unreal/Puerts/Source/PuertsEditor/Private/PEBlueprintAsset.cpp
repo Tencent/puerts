@@ -141,7 +141,7 @@ bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction*
 
 static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
-    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject && InGraphPinType.PinCategory != UEdGraphSchema_K2::PC_Class)
+    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject && InGraphPinType.PinCategory == UEdGraphSchema_K2::PC_Object)
     {
         if (InGraphPinType.PinSubCategoryObject->IsA<UScriptStruct>())
         {
@@ -163,7 +163,7 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
     {
         PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
         PinType.PinValueType.TerminalSubCategoryObject = InPinValueType.PinSubCategoryObject;
-        if (InPinValueType.PinSubCategoryObject && InPinValueType.PinCategory != UEdGraphSchema_K2::PC_Class)
+        if (InPinValueType.PinSubCategoryObject && InPinValueType.PinCategory == UEdGraphSchema_K2::PC_Object)
         {
             if (InPinValueType.PinSubCategoryObject->IsA<UScriptStruct>())
             {
@@ -327,9 +327,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                         NewInstance->bOverrideFunction = true;
                     }
                 );
+                NeedSave = true;
             }
             OverrideAdded.Add(InName);
-            NeedSave = true;
         }
         else
         {

@@ -1033,7 +1033,10 @@ function watch(configFilePath) {
     }
     else {
         fileNames.forEach(fileName => {
-            onSourceFileAddOrChange(fileName, false, program);
+            onSourceFileAddOrChange(fileName, false, program, true, false);
+        });
+        fileNames.forEach(fileName => {
+            onSourceFileAddOrChange(fileName, false, program, false);
         });
     }
     var dirWatcher = new UE.PEDirectoryWatcher();
@@ -1079,7 +1082,7 @@ function watch(configFilePath) {
             newFiles.forEach(fileName => onSourceFileAddOrChange(fileName, true, program));
         }
     }
-    function onSourceFileAddOrChange(sourceFilePath, reload, program) {
+    function onSourceFileAddOrChange(sourceFilePath, reload, program, doEmitJs = true, doEmitBP = true) {
         if (!program) {
             let beginTime = new Date().getTime();
             program = getProgramFromService();
@@ -1103,8 +1106,10 @@ function watch(configFilePath) {
                         let moduleFileName = undefined;
                         let jsSource = undefined;
                         emitOutput.outputFiles.forEach(output => {
-                            console.log(`write ${output.name} ...`);
-                            UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            if (doEmitJs) {
+                                console.log(`write ${output.name} ...`);
+                                UE.FileSystemOperation.WriteFile(output.name, output.text);
+                            }
                             if (output.name.endsWith(".js")) {
                                 jsSource = output.text;
                                 if (options.outDir && output.name.startsWith(options.outDir)) {
@@ -1117,6 +1122,8 @@ function watch(configFilePath) {
                         if (moduleFileName && reload) {
                             UE.FileSystemOperation.PuertsNotifyChange(moduleFileName, jsSource);
                         }
+                        if (!doEmitBP)
+                            return;
                         let foundType = undefined;
                         let foundBaseTypeUClass = undefined;
                         ts.forEachChild(sourceFile, (node) => {
@@ -1266,7 +1273,18 @@ function watch(configFilePath) {
                                 return result;
                             }
                             else if (typeName == 'TSubclassOf') {
-                                result.pinType.PinCategory = "class";
+                                let category = "class";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            }
+                            else if (typeName == 'TSoftObjectPtr') {
+                                let category = "softobject";
+                                result.pinType.PinCategory = category;
+                                return result;
+                            }
+                            else if (typeName == 'TSoftClassPtr') {
+                                let category = "softclass";
+                                result.pinType.PinCategory = category;
                                 return result;
                             }
                             else if (typeName == 'TMap') {

@@ -204,7 +204,7 @@ public:
 
             if (Settings.WaitDebugger)
             {
-                JsEnv->WaitDebugger();
+                JsEnv->WaitDebugger(Settings.WaitDebuggerTimeout);
             }
 
             JsEnv->RebindJs();
@@ -288,9 +288,10 @@ void FPuertsModule::RegisterSettings()
     const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
     if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
-        GConfig->GetBool(SectionName, TEXT("Enable"), Settings.Enable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
+        GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, PuertsConfigIniPath);
         if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
         {
             Settings.DebugPort = 8080;
@@ -322,7 +323,7 @@ void FPuertsModule::StartupModule()
 #endif
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
-    if (Settings.Enable)
+    if (Settings.AutoModeEnable)
     {
         Enable();
     }
@@ -354,9 +355,9 @@ bool FPuertsModule::HandleSettingsSaved()
 {
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
-    if (Settings.Enable != Enabled)
+    if (Settings.AutoModeEnable != Enabled)
     {
-        if (Settings.Enable)
+        if (Settings.AutoModeEnable)
         {
             Enable();
         }
