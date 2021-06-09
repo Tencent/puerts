@@ -601,19 +601,19 @@ namespace Puerts.Editor
 
         static bool IsStatic(PropertyInfo propertyInfo)
         {
-            var getMethod = propertyInfo.GetGetMethod();
-            var setMethod = propertyInfo.GetSetMethod();
+            var getMethod = propertyInfo.GetMethod;
+            var setMethod = propertyInfo.SetMethod;
             return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
         }
 
         static MethodInfo[] GetMethodsForTsTypeGen(Type type, HashSet<Type> genTypeSet)
         {
-            var declMethods = type.GetMethods(Flags)
+            var declMethods = type.GetMethods(Flags | BindingFlags.NonPublic)
                 .Where(m => m.GetBaseDefinition() == m || !genTypeSet.Contains(m.GetBaseDefinition().DeclaringType)).ToArray();
 
             var methodNames = declMethods.Select(m => m.Name).ToArray();
 
-            return type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+            return type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
                 .Where(m => genTypeSet.Contains(m.DeclaringType) && methodNames.Contains(m.Name))
                 .Concat(declMethods).Distinct().ToArray();
         }
@@ -626,13 +626,13 @@ namespace Puerts.Editor
                 Document = DocResolver.GetTsDocument(type), 
                 Methods = genTypeSet.Contains(type) ? (type.IsAbstract ? new MethodBase[] { } : type.GetConstructors(Flags).Where(m => !isFiltered(m)).Cast<MethodBase>())
                     .Concat(GetMethodsForTsTypeGen(type, genTypeSet)
-                        .Where(m => !isFiltered(m) && !IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))
+                        .Where(m => !isFiltered(m, true) && !IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))
                         .Cast<MethodBase>())
                     .Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition, false)).ToArray() : new TsMethodGenInfo[] { },
-                Properties = genTypeSet.Contains(type) ? type.GetFields(Flags).Where(m => !isFiltered(m))
+                Properties = genTypeSet.Contains(type) ? type.GetFields(Flags | BindingFlags.NonPublic).Where(m => !isFiltered(m, true))
                     .Select(f => new TsPropertyGenInfo() { Name = f.Name, Document = DocResolver.GetTsDocument(f),  TypeName = GetTsTypeName(f.FieldType), IsStatic = f.IsStatic })
                     .Concat(
-                        type.GetProperties(Flags).Where(m => m.Name != "Item").Where(m => !isFiltered(m))
+                        type.GetProperties(Flags | BindingFlags.NonPublic).Where(m => m.Name != "Item").Where(m => !isFiltered(m, true))
                         .Select(p => new TsPropertyGenInfo() { Name = p.Name, Document = DocResolver.GetTsDocument(p),  TypeName = GetTsTypeName(p.PropertyType), IsStatic = IsStatic(p), HasGetter = p.GetMethod != null && p.GetMethod.IsPublic, HasSetter = p.SetMethod != null && p.SetMethod.IsPublic }))
                     .ToArray() : new TsPropertyGenInfo[] { },
                 IsGenericTypeDefinition = type.IsGenericTypeDefinition,
@@ -751,32 +751,87 @@ namespace Puerts.Editor
             return type;
         }
 
-        static bool isFiltered(MemberInfo mb)
+        static bool isFiltered(MemberInfo mbi, bool notFiltEII = false)
         {
-            if (mb == null) return false;
-            ObsoleteAttribute oa = mb.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute;
+            if (mbi == null) return false;
+            ObsoleteAttribute oa = mbi.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute;
             if (oa != null/* && oa.IsError*/) //希望只过滤掉Error类别过时方法可以把oa.IsError加上
             {
                 return true;
             }
 
-            if (mb is FieldInfo && (mb as FieldInfo).FieldType.IsPointer) return true;
-            if (mb is PropertyInfo && (mb as PropertyInfo).PropertyType.IsPointer) return true;
-            if (mb is MethodInfo && (mb as MethodInfo).ReturnType.IsPointer) return true;
+            if (mbi is FieldInfo) 
+            {
+                FieldInfo fi = (mbi as FieldInfo);
+                if (fi.FieldType.IsPointer) 
+                {
+                    return true;
+                }
+                if (!fi.IsPublic)
+                {
+                    if (notFiltEII) 
+                    {
+                        return !fi.Name.Contains("."); /*explicit interface implementation*/
+                    }
+                    return true;    
+                }
+            };
+            if (mbi is PropertyInfo) 
+            {
+                PropertyInfo pi = (mbi as PropertyInfo);
+                if (pi.PropertyType.IsPointer) {
+                    return true;
+                }
+                if (!(
+                    (pi.GetMethod == null || pi.GetMethod.IsPublic) && 
+                    (pi.SetMethod == null || pi.SetMethod.IsPublic)
+                )) {
+                    if (notFiltEII)
+                    {
+                        return !pi.Name.Contains(".");
+                    }
+                    return true;
+                }
+            }
+            if (mbi is MethodInfo) 
+            {
+                MethodInfo mi = mbi as MethodInfo;
+                if (mi.ReturnType.IsPointer)
+                {
+                    return true;
+                }
+                if (!mi.IsPublic) 
+                {
+                    if (notFiltEII) 
+                    {
+                        return !mi.Name.Contains(".");
+                    }
+                    return true;
+                }
+            }
 
             if (filters != null && filters.Count > 0)
             {
                 foreach (var filter in filters)
                 {
-                    if ((bool)filter.Invoke(null, new object[] { mb }))
+                    if ((bool)filter.Invoke(null, new object[] { mbi }))
                     {
                         return true;
                     }
                 }
             }
 
-            if (mb is MethodBase && (mb as MethodBase).GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer)) return true;
-
+            if (mbi is MethodBase)
+            {
+                MethodBase mb = mbi as MethodBase;
+                if (mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer)) {
+                    return true;
+                }
+                if (!mb.IsPublic) 
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
