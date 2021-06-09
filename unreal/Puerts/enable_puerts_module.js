@@ -32,7 +32,7 @@ const puertsConfig = `
 
 
 [/Script/Puerts.PuertsSetting]
-Enable=True
+AutoModeEnable=True
 
 `
 
