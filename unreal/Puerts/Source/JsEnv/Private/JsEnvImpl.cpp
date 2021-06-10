@@ -2186,10 +2186,10 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         return;
     }
 
-#if UE_BUILD_DEBUG || UE_BUILD_DEVELOPMENT
-    if (!DebugPath.IsEmpty())
-        OutPath = DebugPath;
-#endif
+// #if UE_BUILD_DEBUG || UE_BUILD_DEVELOPMENT
+//     if (!DebugPath.IsEmpty())
+//         OutPath = DebugPath;
+// #endif
 
     FString Script;
     FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
@@ -2203,10 +2203,10 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     v8::Context::Scope ContextScope(Context);
     {
 #if PLATFORM_MAC
-        FString FormattedScriptUrl = OutPath;
+        FString FormattedScriptUrl = DebugPath;
 #else
         // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
-        FString FormattedScriptUrl = OutPath.Replace(TEXT("/"), TEXT("\\"));
+        FString FormattedScriptUrl = DebugPath.Replace(TEXT("/"), TEXT("\\"));
 #endif
         v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
         v8::ScriptOrigin Origin(Name);
