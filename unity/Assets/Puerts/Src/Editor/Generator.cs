@@ -783,8 +783,8 @@ namespace Puerts.Editor
                     return true;
                 }
                 if (!(
-                    (pi.GetMethod == null || pi.GetMethod.IsPublic) && 
-                    (pi.SetMethod == null || pi.SetMethod.IsPublic)
+                    (pi.GetMethod != null && pi.GetMethod.IsPublic) ||
+                    (pi.SetMethod != null && pi.SetMethod.IsPublic)
                 )) {
                     if (notFiltEII)
                     {
