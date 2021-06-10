@@ -837,7 +837,8 @@ namespace Puerts.Editor
 
         static void AddRefType(HashSet<Type> workTypes, HashSet<Type> refTypes, Type type)
         {
-            if(workTypes.Contains(type)) return;
+            if (type.Name.StartsWith("<")) return;
+            if (workTypes.Contains(type)) return;
             workTypes.Add(type);
 
             var rawType = GetRawType(type);
@@ -1137,7 +1138,7 @@ namespace Puerts.Editor
             var genTypes = configure["Puerts.BindingAttribute"].Select( kv => kv.Key)
                 .Where(o => o is Type)
                 .Cast<Type>()
-                .Where(t => !t.IsGenericTypeDefinition)
+                .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
                 .Distinct();
 
             var blittableCopyTypes = new HashSet<Type>(configure["Puerts.BlittableCopyAttribute"].Select(kv => kv.Key)
