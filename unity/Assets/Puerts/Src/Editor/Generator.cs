@@ -377,6 +377,30 @@ namespace Puerts.Editor
                 .Select(i => i.Cast<MethodBase>().ToList());
 
             var constructors = type.GetConstructors(Flags).Where(m => !isFiltered(m)).Cast<MethodBase>().ToList();
+            var typeConstructor = (!type.IsAbstract && constructors.Count > 0) ? ToMethodGenInfo(type, true, constructors) : null;
+            if (null == typeConstructor)
+            {
+                //如果是没有显式构造函数的结构体, 添加无参构造
+                if (!type.IsPrimitive && !type.IsEnum && type.IsValueType)
+                {
+                    var ret = new List<OverloadGenInfo>() {
+                         new OverloadGenInfo()
+                         {
+                            ParameterInfos = new ParameterGenInfo[] { },
+                            TypeName = type.GetFriendlyName(),
+                            IsVoid = false
+                         }
+                    };
+                    typeConstructor = new MethodGenInfo()
+                    {
+                        Name = type.Name,
+                        IsStatic = true,
+                        HasOverloads = false,
+                        OverloadCount = ret.Count,
+                        OverloadGroups = ret.GroupBy(m => m.ParameterInfos.Length + (m.HasParams ? 0 : 9999)).Select(lst => lst.ToArray()).ToArray(),
+                    };
+                }
+            }
 
             return new TypeGenInfo
             {
@@ -384,7 +408,7 @@ namespace Puerts.Editor
                 Name = type.GetFriendlyName(),
                 Methods = methodGroups.Select(m => ToMethodGenInfo(type, false, m)).ToArray(),
                 IsValueType = type.IsValueType,
-                Constructor = (!type.IsAbstract && constructors.Count > 0) ? ToMethodGenInfo(type, true, constructors) : null,
+                Constructor = typeConstructor,
                 Properties = type.GetProperties(Flags)
                     .Where(m => !isFiltered(m))
                     .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
