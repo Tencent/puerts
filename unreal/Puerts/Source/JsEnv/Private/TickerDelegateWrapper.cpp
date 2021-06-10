@@ -60,7 +60,9 @@ bool FTickerDelegateWrapper::CallFunction(float)
     v8::Local<v8::Function> Function = v8::Local<v8::Function>::New(GetIsolate(), GetFunction());
 
     v8::TryCatch TryCatch(GetIsolate());
+    IsCalling = true;
     v8::MaybeLocal<v8::Value> Result = Function->Call(Context, Context->Global(), 0, nullptr);
+    IsCalling = false;
     if (TryCatch.HasCaught())
     {
         ExceptionHandler(GetIsolate(), &TryCatch);
