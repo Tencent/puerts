@@ -12,7 +12,7 @@
 #include "ExtensionMethods.generated.h"
 
 USTRUCT(BlueprintType)
-struct FArrayBuffer //暂时放这里吧
+struct FArrayBuffer //鏆傛椂鏀捐繖閲屽惂
 {
 public:
     GENERATED_USTRUCT_BODY()
