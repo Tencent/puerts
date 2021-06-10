@@ -5,7 +5,11 @@ on:
     paths: 
       - quickjs-build/**
       #- .github/workflows/build_quickjs.yml
-
+  workflow_dispatch:
+    inputs:
+      tag_date:
+        description: 'tag date'     
+        required: true
 jobs:
   build_macos:
     name: macOS
