@@ -7,7 +7,7 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
-      #- .github/workflows/build_unity_plugins.yml
+      - .github/workflows/build_unity_plugins.yml
 
 env:
   RUNID: 613573412
@@ -18,12 +18,13 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download Lib
+        uses: dsaltares/fetch-gh-release-asset@master
         with:
-          workflow: build_v8.yml
-          name: v8_bin
-          path: unity/native_src/
+          version: "tags/V8_8.4.371.19_2020_05_24"
+          file: "v8_bin_8.4.371.19.tgz"
+          target: "unity/native_src/v8_bin_8.4.371.19.tgz"
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install NDK
         run: |
           cd ~
@@ -35,6 +36,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
+          tar xvfz v8_bin_8.4.371.19.tgz
           chmod 777 make_android.sh
           ./make_android.sh
       - name: Upload
