@@ -10,7 +10,11 @@
 UObject* UObjectExtension::CreateDefaultSubobject(UObject *Object, FName SubobjectFName, UClass* ReturnType,
     UClass* ClassToCreateByDefault, bool bIsRequired, bool bAbstract, bool bIsTransient)
 {
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
+    return Object->CreateDefaultSubobject(SubobjectFName, ReturnType, ClassToCreateByDefault, bIsRequired, bIsTransient);
+#else
     return Object->CreateDefaultSubobject(SubobjectFName, ReturnType, ClassToCreateByDefault, bIsRequired, bAbstract, bIsTransient);
+#endif
 }
 
 FString UObjectExtension::GetName(UObject *Object)
