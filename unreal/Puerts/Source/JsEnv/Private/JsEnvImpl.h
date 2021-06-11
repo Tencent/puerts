@@ -209,6 +209,8 @@ private:
 
     void NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     void MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info);

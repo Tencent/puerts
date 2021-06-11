@@ -54,6 +54,9 @@ var global = global || (function () { return this; }());
     cache.NewObject = global.__tgjsNewObject;
     global.__tgjsNewObject = undefined;
     
+    cache.NewStruct = global.__tgjsNewStruct;
+    global.__tgjsNewStruct = undefined;
+    
     puerts.$ref = ref;
     puerts.$unref = unref;
     puerts.$set = setref;

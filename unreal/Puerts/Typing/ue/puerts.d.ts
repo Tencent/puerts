@@ -114,6 +114,8 @@ declare module "ue" {
 
     function NewObject(Cls: Class, Outer?: Object, Name?:string, ObjectFlags?: number): Object;
     
+    function NewStruct(St: ScriptStruct): object;
+    
     type TWeakObjectPtr<T> = {
         [K in keyof T]: T[K];
     }
