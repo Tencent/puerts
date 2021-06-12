@@ -103,17 +103,10 @@ require('source-map-support').install();
 注: source-map-support是nodejs模块, 需要自定义path和fs模块.
     
 ##  webpack打包
-webpack将自定义模块加入external module
-``` json
+将自定义模块加入external module
+``` js
 module.exports = {
-    mode: "development",
-    entry: {
-        main: path.resolve(__dirname, "./src/main.ts"),
-    },
-    output: {
-        filename: "[name].bundle.js",
-        path: path.resolve(__dirname, "./dist")
-    },
+    // other...
     /** 忽略编辑的第三方库 */
     externals: {
         csharp: "commonjs2 csharp",
