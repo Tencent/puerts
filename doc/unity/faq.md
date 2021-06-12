@@ -69,7 +69,7 @@ public static bool IsNull(this UnityEngine.Object o)
 ```
 npm install source-map-support --save-dev
 ```
-然后在js起始, 执行如下代码:
+然后执行如下代码:
 ``` javascript
 var csharp = require("csharp");
 var puerts = require("puerts");
@@ -100,4 +100,26 @@ puerts.registerBuildinModule("fs", {
 })();
 require('source-map-support').install();
 ```
-注: source-map-support是nodejs模块, 此处手动创建path和fs替代模块.
+注: source-map-support是nodejs模块, 需要自定义path和fs模块.
+    
+##  webpack打包
+webpack将自定义模块加入external module
+``` json
+module.exports = {
+    mode: "development",
+    entry: {
+        main: path.resolve(__dirname, "./src/main.ts"),
+    },
+    output: {
+        filename: "[name].bundle.js",
+        path: path.resolve(__dirname, "./dist")
+    },
+    /** 忽略编辑的第三方库 */
+    externals: {
+        csharp: "commonjs2 csharp",
+        puerts: "commonjs2 puerts",
+        path: "commonjs2 path",
+        fs: "commonjs2 fs",
+    }
+};
+```
