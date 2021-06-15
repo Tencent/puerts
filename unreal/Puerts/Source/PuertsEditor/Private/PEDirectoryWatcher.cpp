@@ -31,6 +31,7 @@ bool UPEDirectoryWatcher::Watch(const FString& InDirectory)
                     continue;
                 }
                 FPaths::NormalizeFilename(Change.Filename);
+                Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
                 switch (Change.Action)
                 {
                 case FFileChangeData::FCA_Added:
