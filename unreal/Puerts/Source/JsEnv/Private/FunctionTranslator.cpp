@@ -321,6 +321,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             
         if (Params)
         {
+            Function->InitializeStruct(Params);
             for (TFieldIterator<PropertyMacro> It(Function); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
             {
                 Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
