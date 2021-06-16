@@ -380,12 +380,13 @@ FJsEnvImpl::~FJsEnvImpl()
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
             Iter->second.JSObject.Reset();
-            if (Iter->second.Proxy)
+            if (Iter->second.Proxy.IsValid())
             {
                 Iter->second.Proxy->JsFunction.Reset();
             }
             for (auto ProxyIter = Iter->second.Proxys.CreateIterator(); ProxyIter; ++ProxyIter)
             {
+                if (!(*ProxyIter).IsValid()) { continue; }
                 (*ProxyIter)->JsFunction.Reset();
             }
             if (!Iter->second.PassByPointer)
@@ -1400,7 +1401,7 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         DelegateMap.erase(Iter);
         return false;
     }
-    if (Iter->second.Proxy)
+    if (Iter->second.Proxy.IsValid())
     {
         ClearDelegate(Isolate, Context, DelegatePtr);
     }
@@ -1523,7 +1524,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 
     if (Iter->second.DelegateProperty)
     {
-        if (Iter->second.Proxy)
+        if (Iter->second.Proxy.IsValid())
         {
             if (Iter->second.Owner.IsValid())
             {
@@ -1531,9 +1532,9 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
                 *(static_cast<FScriptDelegate*>(DelegatePtr)) = Delegate;
             }
 
-            SysObjectRetainer.Release(Iter->second.Proxy);
+            SysObjectRetainer.Release(Iter->second.Proxy.Get());
             Iter->second.Proxy->JsFunction.Reset();
-            Iter->second.Proxy = nullptr;
+            Iter->second.Proxy.Reset();
         }
     }
     else if (Iter->second.MulticastDelegateProperty)
@@ -1554,8 +1555,9 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 
         for (auto ProxyIter = Iter->second.Proxys.CreateIterator(); ProxyIter; ++ProxyIter)
         {
+            if (!(*ProxyIter).IsValid()) { continue; }
             (*ProxyIter)->JsFunction.Reset();
-            SysObjectRetainer.Release(*ProxyIter);
+            SysObjectRetainer.Release((*ProxyIter).Get());
         }
         Iter->second.Proxys.Empty();
     }
