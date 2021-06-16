@@ -84,5 +84,7 @@ public:
     FResultInfo ResultInfo;
 
     int32_t Index;
+
+    static std::vector<v8::Local<v8::Value>> S_V8Args;
 };
 }
