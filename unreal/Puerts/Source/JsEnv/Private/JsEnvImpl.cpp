@@ -2419,7 +2419,11 @@ void FJsEnvImpl::RemoveFTickerDelegateHandle(FDelegateHandle* Handle)
     if (Iterator != TickerDelegateHandleMap.end())
     {
         //call clearTimeout in setTimeout callback
-        if (!Iterator->second->FunctionContinue && Iterator->second->IsCalling) return;
+        if (Iterator->second->IsCalling)
+        {
+            Iterator->second->FunctionContinue = false;
+            return;
+        }
         FTicker::GetCoreTicker().RemoveTicker(*(Iterator->first));
         delete Iterator->first;
         delete Iterator->second;
