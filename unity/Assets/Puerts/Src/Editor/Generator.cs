@@ -219,22 +219,35 @@ namespace Puerts.Editor
             {
                 ret.AddRange(ToOverloadGenInfo(iBase));
             }
-            if (type.IsValueType && isCtor)//值类型添加无参构造
-            {
-                if (!overloads.Exists(m => m.GetParameters().Length == 0))
+            
+            string name;
+            bool isStatic;
+            if (isCtor) {
+                if (type.IsValueType)//值类型添加无参构造
                 {
-                    ret.Add(new OverloadGenInfo()
+                    if (!overloads.Exists(m => m.GetParameters().Length == 0))
                     {
-                        ParameterInfos = new ParameterGenInfo[] { },
-                        TypeName = type.GetFriendlyName(),
-                        IsVoid = false
-                    });
+                        ret.Add(new OverloadGenInfo()
+                        {
+                            ParameterInfos = new ParameterGenInfo[] { },
+                            TypeName = type.GetFriendlyName(),
+                            IsVoid = false
+                        });
+                    }
                 }
+                // 如果是构造函数此处固定赋值，因为像结构体的情况overloads不一定有含有元素
+                name = ".ctor";
+                isStatic = false;
+
+            } else {
+                name = overloads[0].Name;
+                isStatic = overloads[0].IsStatic;
             }
+            
             var result = new MethodGenInfo()
             {
-                Name = overloads[0].Name,
-                IsStatic = overloads[0].IsStatic,
+                Name = name,
+                IsStatic = isStatic,
                 HasOverloads = ret.Count > 1,
                 OverloadCount = ret.Count,
                 OverloadGroups = ret.GroupBy(m => m.ParameterInfos.Length + (m.HasParams ? 0 : 9999)).Select(lst => lst.ToArray()).ToArray()
@@ -384,7 +397,7 @@ namespace Puerts.Editor
                 Name = type.GetFriendlyName(),
                 Methods = methodGroups.Select(m => ToMethodGenInfo(type, false, m)).ToArray(),
                 IsValueType = type.IsValueType,
-                Constructor = (!type.IsAbstract && constructors.Count > 0) ? ToMethodGenInfo(type, true, constructors) : null,
+                Constructor = !type.IsAbstract ? ToMethodGenInfo(type, true, constructors) : null,
                 Properties = type.GetProperties(Flags)
                     .Where(m => !isFiltered(m))
                     .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
