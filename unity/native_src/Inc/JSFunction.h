@@ -85,6 +85,6 @@ public:
 
     int32_t Index;
 
-    static std::vector<v8::Local<v8::Value>> S_V8Args;
+    std::vector<v8::Local<v8::Value>> V8Arguments;
 };
 }

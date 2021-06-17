@@ -11,8 +11,6 @@
 
 namespace puerts
 {
-    std::vector<v8::Local<v8::Value>> JSFunction::S_V8Args;
-
     JSObject::JSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject, int32_t InIndex) 
     {
         Isolate = InIsolate;
@@ -96,13 +94,13 @@ namespace puerts
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
 
-        JSFunction::S_V8Args.clear();
+        V8Arguments.clear();
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            JSFunction::S_V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
+            V8Arguments.push_back(ToV8(Isolate, Context, Arguments[i]));
         }
         v8::TryCatch TryCatch(Isolate);
-        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(JSFunction::S_V8Args.size()), JSFunction::S_V8Args.data());
+        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Arguments.size()), V8Arguments.data());
         Arguments.clear();
         
         if (TryCatch.HasCaught())
