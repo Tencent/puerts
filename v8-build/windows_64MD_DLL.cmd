@@ -23,6 +23,10 @@ call git restore *
 cd ..\..\..\
 call gclient sync
 
+echo =====[ Patching V8 ]=====
+call git apply --cached v8-build\patch\builtins-puerts.patch
+call git checkout -- .
+
 echo =====[ Make dynamic_crt ]=====
 node %~dp0\rep.js  build\config\win\BUILD.gn
 

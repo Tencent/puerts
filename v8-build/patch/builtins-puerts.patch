@@ -1,0 +1,191 @@
+From ba533be32f4b461ac019b939c6388669f2698663 Mon Sep 17 00:00:00 2001
+From: zombieyang <zombieyang@tencent.com>
+Date: Fri, 18 Jun 2021 21:32:52 +0800
+Subject: [PATCH] Puerts builtin module
+
+---
+ include/v8.h                        | 50 +++++++++++++++++++++++++++++
+ src/api/api.cc                      |  6 ++++
+ src/builtins/builtins-definitions.h |  1 +
+ src/builtins/builtins-string.cc     | 21 ++++++++++++
+ src/compiler/typer.cc               |  2 ++
+ src/init/bootstrapper.cc            |  8 +++++
+ 6 files changed, 88 insertions(+)
+
+diff --git a/include/v8.h b/include/v8.h
+index 18d72f1630..028a53e200 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -38,6 +38,9 @@
+  */
+ namespace v8 {
+ 
++namespace Puerts {
++  class FunctionCallbackInfo;
++}
+ class AccessorSignature;
+ class Array;
+ class ArrayBuffer;
+@@ -307,6 +310,7 @@ class Local {
+   template <class F>
+   friend class MaybeLocal;
+   template<class F> friend class FunctionCallbackInfo;
++  friend class Puerts::FunctionCallbackInfo;
+   template<class F> friend class PropertyCallbackInfo;
+   friend class String;
+   friend class Object;
+@@ -12038,6 +12042,52 @@ size_t SnapshotCreator::AddData(Local<T> object) {
+  */
+ 
+ 
++namespace Puerts {
++  typedef void (*CallbackFunction)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
++  
++  struct FunctionInfo {
++    CallbackFunction callback;
++    void* bindData;
++  };
++  class FunctionCallbackInfo {
++    class ReturnValue {
++      protected: 
++        internal::Address* v8Value = nullptr;
++      public:
++        internal::Address* Get()
++        {
++          return v8Value;
++        }
++        void Set(Local<Value> value);
++        bool Setted() {
++          return v8Value == nullptr;
++        }
++    };
++    private:
++      internal::Address* values;
++      ReturnValue returnee;
++      int length;
++    public:
++      FunctionCallbackInfo(internal::Address* address, int length) {
++        values = address;
++        this->length = length;
++      }
++      ReturnValue GetReturnValue() const {
++        return returnee;
++      }
++      int Length() const {
++        return length;
++      }
++      Local<Value> operator[](int i) const {
++      #ifdef V8_REVERSE_JSARGS
++        return Local<Value>(reinterpret_cast<Value*>(values + i));
++      #else
++        return Local<Value>(reinterpret_cast<Value*>(values - i));
++      #endif
++      }
++  };
++}
++
+ }  // namespace v8
+ 
+ #endif  // INCLUDE_V8_H_
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 93780bceec..f2edb2ebf0 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -11181,6 +11181,12 @@ void InvokeFinalizationRegistryCleanupFromTask(
+ #undef CALLBACK_SETTER
+ 
+ }  // namespace internal
++
++void Puerts::FunctionCallbackInfo::ReturnValue::Set(v8::Local<v8::Value> value) {
++    internal::Address iValue = v8::Utils::OpenHandle(*value)->ptr();
++    v8Value = &iValue;
++}
++
+ }  // namespace v8
+ 
+ #undef TRACE_BS
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index 84ddf55f6f..67ec7315a0 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -792,6 +792,7 @@ namespace internal {
+   TFJ(StringPrototypeTrimStart, kDontAdaptArgumentsSentinel)                   \
+   /* ES6 #sec-string.raw */                                                    \
+   CPP(StringRaw)                                                               \
++  CPP(StringPuertsCallback)                                                  \
+                                                                                \
+   /* Symbol */                                                                 \
+   /* ES #sec-symbol-constructor */                                             \
+diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
+index 8a897765c8..545f9aea83 100644
+--- a/src/builtins/builtins-string.cc
++++ b/src/builtins/builtins-string.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "src/api/api-inl.h"
+ #include "src/builtins/builtins-utils-inl.h"
+ #include "src/builtins/builtins.h"
+ #include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
+@@ -484,5 +485,25 @@ BUILTIN(StringRaw) {
+   RETURN_RESULT_OR_FAILURE(isolate, result_builder.Finish());
+ }
+ 
++BUILTIN(StringPuertsCallback) {
++  Handle<JSObject> puertsThis = args.at<JSObject>(0);
++
++  Puerts::FunctionInfo* functionInfo = (Puerts::FunctionInfo*)Foreign::cast(
++    JSObject::cast(puertsThis->GetEmbedderField(0)).GetEmbedderField(0)
++  ).foreign_address();
++  
++  int argLength = args.length() - 1;
++  Puerts::FunctionCallbackInfo callbackInfo(args.address_of_first_argument(), argLength);
++  functionInfo->callback(reinterpret_cast<v8::Isolate*>(isolate) , callbackInfo, nullptr, argLength, (int64_t)functionInfo->bindData);
++  // (v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData)
++  if (callbackInfo.GetReturnValue().Setted()) {
++    internal::Object ret(*callbackInfo.GetReturnValue().Get());
++    return ret;
++
++  } else {
++    return *isolate->factory()->undefined_value();
++  }
++}
++
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/compiler/typer.cc b/src/compiler/typer.cc
+index 6d53531f1c..76a73068b6 100644
+--- a/src/compiler/typer.cc
++++ b/src/compiler/typer.cc
+@@ -1663,6 +1663,8 @@ Type Typer::Visitor::JSCallTyper(Type fun, Typer* t) {
+     case Builtins::kStringPrototypeEndsWith:
+     case Builtins::kStringPrototypeIncludes:
+       return Type::Boolean();
++    case Builtins::kStringPuertsCallback:
++      return Type::Number();
+     case Builtins::kStringRaw:
+     case Builtins::kStringRepeat:
+     case Builtins::kStringPrototypeSlice:
+diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
+index f4049e328e..c1d31e7bd2 100644
+--- a/src/init/bootstrapper.cc
++++ b/src/init/bootstrapper.cc
+@@ -1917,6 +1917,14 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
+     SimpleInstallFunction(isolate_, string_fun, "raw", Builtins::kStringRaw, 1,
+                           false);
+ 
++    // === zombie ===
++
++    Handle<JSObject> puerts_object =
++        factory->NewJSObject(isolate_->object_function(), AllocationType::kOld);
++    JSObject::AddProperty(isolate_, global, "PuertsV8", puerts_object, DONT_ENUM);
++
++    SimpleInstallFunction(isolate_, puerts_object, "callback", Builtins::kStringPuertsCallback, 1, false);
++
+     // Create the %StringPrototype%
+     Handle<JSPrimitiveWrapper> prototype = Handle<JSPrimitiveWrapper>::cast(
+         factory->NewJSObject(string_fun, AllocationType::kOld));
+-- 
+2.30.1 (Apple Git-130)
+

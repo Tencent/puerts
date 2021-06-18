@@ -23,6 +23,10 @@ call git restore *
 cd ..\..\..\
 call gclient sync
 
+echo =====[ Patching V8 ]=====
+call git apply --cached v8-build\patch\builtins-puerts.patch
+call git checkout -- .
+
 echo =====[ Building V8 ]=====
 call gn gen out.gn\x64.release -args="target_os=""win"" target_cpu=""x64"" v8_use_external_startup_data=true v8_enable_i18n_support=false is_debug=false v8_static_library=true is_clang=false strip_debug_info=true symbol_level=0 v8_enable_pointer_compression=false"
 

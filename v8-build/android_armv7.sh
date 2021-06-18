@@ -31,6 +31,10 @@ git checkout refs/tags/$VERSION
 gclient sync
 
 
+echo "=====[ Patching V8 ]====="
+git apply --cached $GITHUB_WORKSPACE/v8-build/patch/builtins-puerts.patch
+git checkout -- .
+
 echo "=====[ Building V8 ]====="
 python ./tools/dev/v8gen.py arm.release -vv -- '
 target_os = "android"

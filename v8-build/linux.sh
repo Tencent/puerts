@@ -18,6 +18,10 @@ cd ~/v8/v8
 git checkout refs/tags/$VERSION
 gclient sync
 
+echo "=====[ Patching V8 ]====="
+git apply --cached $GITHUB_WORKSPACE/v8-build/patch/builtins-puerts.patch
+git checkout -- .
+
 
 echo "=====[ Building V8 ]====="
 python ./tools/dev/v8gen.py x64.release -vv -- '
