@@ -106,6 +106,8 @@ class TS_Player extends UE.Character {
 
 ![puerts_gen_dts.png](../../pic/puerts_gen_dts.png)
 
+* 或者，也可以通过控制台命令生成声明文件：`Puerts.Gen`
+    - 注：UE5 EA版的工具栏扩展按钮目前无法使用，故可用这种方式替代。
 ### 成员及函数
 
 ~~~typescript

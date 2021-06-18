@@ -689,6 +689,7 @@ class FDeclarationGenerator : public IDeclarationGenerator
 {
 private:
     TSharedPtr<class FUICommandList> PluginCommands;
+	TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
 
     void AddToolbarExtension(FToolBarBuilder& Builder)
     {
@@ -746,6 +747,10 @@ public:
 
             LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
         }
+
+		ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen")
+			, TEXT("Execute GenDTS action")
+			, FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
     }
 
     void ShutdownModule() override 

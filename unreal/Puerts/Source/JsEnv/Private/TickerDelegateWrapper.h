@@ -38,7 +38,7 @@ public:
 
     bool IsCalling = false;
 
-    const bool FunctionContinue;
+    bool FunctionContinue;
     
 private:
     v8::Isolate* Isolate;

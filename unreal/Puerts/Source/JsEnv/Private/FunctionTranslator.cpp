@@ -271,7 +271,6 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 
 void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, v8::Local<v8::Value> This, void *Params)
 {
-    std::vector< v8::Local<v8::Value>> Args;
     for (int i = 0; i < Arguments.size(); ++i)
     {
         Args.push_back(Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false));
@@ -290,6 +289,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             Arguments[i]->JsToUEOutInContainer(Isolate, Context, Args[i], Params, false);
         }
     }
+    Args.clear();
 }
 
 static FOutParmRec* GetMatchOutParmRec(FOutParmRec *OutParam, PropertyMacro *OutProperty)
@@ -321,6 +321,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             
         if (Params)
         {
+            Function->InitializeStruct(Params);
             for (TFieldIterator<PropertyMacro> It(Function); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
             {
                 Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
@@ -334,7 +335,6 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
         Stack.SkipCode(1);          // skip EX_EndFunctionParms
     }
 
-    std::vector< v8::Local<v8::Value>> Args;
     for (int i = 0; i < Arguments.size(); ++i)
     {
         Args.push_back(Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false));
@@ -358,6 +358,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             }
         }
     }
+    Args.clear();
 }
 
 FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction *InFunction) : FFunctionTranslator(InFunction)

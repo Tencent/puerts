@@ -45,6 +45,7 @@ namespace Puerts
     [Flags]
     public enum JsValueType
     {
+        Invalid = 0,
         NullOrUndefined = 1,
         BigInt = 2,
         Number = 4,

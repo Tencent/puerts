@@ -382,8 +382,8 @@ private:
         MulticastDelegatePropertyMacro *MulticastDelegateProperty;
         UFunction *SignatureFunction;
         bool PassByPointer;
-        UDynamicDelegateProxy *Proxy;//for delegate
-        TSet<UDynamicDelegateProxy*> Proxys; // for MulticastDelegate
+        TWeakObjectPtr<UDynamicDelegateProxy> Proxy;//for delegate
+        TSet<TWeakObjectPtr<UDynamicDelegateProxy>> Proxys; // for MulticastDelegate
     };
 
     struct TsFunctionInfo

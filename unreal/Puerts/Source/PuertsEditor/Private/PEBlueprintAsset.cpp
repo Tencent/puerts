@@ -710,6 +710,22 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
     if (Blueprint)
     {
+        if (FBlueprintEditorUtils::SupportsConstructionScript(Blueprint) && Blueprint->SimpleConstructionScript)
+        {
+            if (UEdGraph* ExistingUCS = FBlueprintEditorUtils::FindUserConstructionScript(Blueprint))
+            {
+                ExistingUCS->bAllowDeletion = false;
+            }
+            else
+            {
+                UEdGraph* UCSGraph = FBlueprintEditorUtils::CreateNewGraph(Blueprint, UEdGraphSchema_K2::FN_UserConstructionScript, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+                FBlueprintEditorUtils::AddFunctionGraph(Blueprint, UCSGraph, /*bIsUserCreated=*/ false, AActor::StaticClass());
+                UCSGraph->bAllowDeletion = false;
+                NeedSave = true;
+            }
+            FunctionAdded.Add(UEdGraphSchema_K2::FN_UserConstructionScript);
+        }
+        
         auto RemovedFunction = Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
         NeedSave = NeedSave || (RemovedFunction > 0);
 
