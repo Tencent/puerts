@@ -99,6 +99,15 @@ namespace puerts
         Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
 
+        // the new version callback
+        auto Template = v8::FunctionTemplate::New(Isolate, nullptr);
+        Template->InstanceTemplate()->SetInternalFieldCount(1);
+        Global->Set(
+            Context,
+            FV8Utils::V8String(Isolate, "__PuertsCallbackHandler__"),
+            Template->GetFunction(Context).ToLocalChecked()
+        );
+        
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }
 
@@ -305,6 +314,33 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
+    }
+
+    void JSEngine::SetGlobalFunctionV2(const char *Name, CSharpFunctionCallbackV2 Callback, int64_t Data)
+    {
+        v8::Isolate* Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        char code[1024];
+        std::snprintf(
+            code, 
+            sizeof(code),
+            "(function() { const handler = new __PuertsCallbackHandler__(); this['%s'] = PuertsV8.callback.bind(handler); return handler; })()",
+            Name, Name
+        );
+
+        v8::Local<v8::Value> puertsHandler = v8::Script::Compile(
+            Context,
+            FV8Utils::V8String(Isolate, code)
+        ).ToLocalChecked()->Run(Context).ToLocalChecked();
+
+        v8::Puerts::FunctionInfo* functionInfo = new v8::Puerts::FunctionInfo();
+        functionInfo->callback = Callback;
+        functionInfo->bindData = (void*)Data;
+        
+        v8::Object::Cast(*puertsHandler)->SetInternalField(0, v8::External::New(Isolate, (void*)functionInfo));
     }
 
     bool JSEngine::Eval(const char *Code, const char* Path)
