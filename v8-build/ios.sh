@@ -7,7 +7,6 @@ git clone -q https://chromium.googlesource.com/chromium/tools/depot_tools.git
 export PATH=$(pwd)/depot_tools:$PATH
 gclient
 
-
 mkdir v8
 cd v8
 
