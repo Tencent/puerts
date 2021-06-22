@@ -40,14 +40,14 @@ index 18d72f1630..028a53e200 100644
  
 +namespace Puerts {
 +  typedef void (*CallbackFunction)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
-+  
++
 +  struct FunctionInfo {
 +    CallbackFunction callback;
 +    void* bindData;
 +  };
 +  class FunctionCallbackInfo {
 +    class ReturnValue {
-+      protected: 
++      protected:
 +        internal::Address* v8Value = nullptr;
 +      public:
 +        internal::Address* Get()
@@ -138,7 +138,7 @@ index 8a897765c8..545f9aea83 100644
 +  Puerts::FunctionInfo* functionInfo = (Puerts::FunctionInfo*)Foreign::cast(
 +    JSObject::cast(puertsThis->GetEmbedderField(0)).GetEmbedderField(0)
 +  ).foreign_address();
-+  
++
 +  int argLength = args.length() - 1;
 +  Puerts::FunctionCallbackInfo callbackInfo(args.address_of_first_argument(), argLength);
 +  functionInfo->callback(reinterpret_cast<v8::Isolate*>(isolate) , callbackInfo, nullptr, argLength, (int64_t)functionInfo->bindData);
