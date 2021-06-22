@@ -26,8 +26,8 @@ call gclient sync
 node %~dp0\patch_array_new.js  src\utils\allocation.h
 
 echo =====[ Patching V8 ]=====
-call git apply --cached %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
-call git checkout -- .
+git apply --cached %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
+git checkout -- .
 
 echo =====[ Make dynamic_crt ]=====
 node %~dp0\rep.js  build\config\win\BUILD.gn
