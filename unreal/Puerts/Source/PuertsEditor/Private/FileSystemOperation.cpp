@@ -58,35 +58,35 @@ FString UFileSystemOperation::GetCurrentDirectory()
     return FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 }
 
-TArray<FString> UFileSystemOperation::GetDirectories(FString Path, bool Recursive) 
+TArray<FString> UFileSystemOperation::GetDirectories(FString Path, FString Pattern, bool Recursive) 
 {
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> Dirs;
     if (!Path.EndsWith(TEXT("/"))) Path = Path + TEXT("/");
     if (Recursive)
     {
-        FileManager.FindFilesRecursive(Dirs, *Path, TEXT("*"), false, true); 
+        FileManager.FindFilesRecursive(Dirs, *Path, *Pattern, false, true); 
     }
     else
     {
-        Path = Path + "*";
+        Path = Path + Pattern;
         FileManager.FindFiles(Dirs, *Path, false, true);
     }
     return Dirs;
 }
 
-TArray<FString> UFileSystemOperation::GetFiles(FString Path, bool Recursive)
+TArray<FString> UFileSystemOperation::GetFiles(FString Path, FString Pattern, bool Recursive)
 {
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> Files;
     if (!Path.EndsWith(TEXT("/"))) Path = Path + TEXT("/");
     if (Recursive)
     {
-        FileManager.FindFilesRecursive(Files, *Path, TEXT("*"), true, false); 
+        FileManager.FindFilesRecursive(Files, *Path, *Pattern, true, false); 
     }
     else
     {
-        Path = Path + "*";
+        Path = Path + Pattern;
         FileManager.FindFiles(Files, *Path, true, false);
     }
     return Files;

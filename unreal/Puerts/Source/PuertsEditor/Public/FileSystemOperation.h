@@ -38,10 +38,10 @@ class PUERTSEDITOR_API UFileSystemOperation : public UBlueprintFunctionLibrary
     static FString GetCurrentDirectory();
 
     UFUNCTION(BlueprintCallable, Category = "File")
-    static TArray<FString> GetDirectories(FString Path, bool Recursive = false);
+    static TArray<FString> GetDirectories(FString Path, FString Pattern = TEXT("*"), bool Recursive = false);
 
     UFUNCTION(BlueprintCallable, Category = "File")
-    static TArray<FString> GetFiles(FString Path, bool Recursive = false);
+    static TArray<FString> GetFiles(FString Path, FString Pattern = TEXT("*"), bool Recursive = false);
 
     UFUNCTION(BlueprintCallable, Category = "File")
     static void PuertsNotifyChange(FString Path, FString Source);
