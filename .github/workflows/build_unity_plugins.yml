@@ -11,6 +11,8 @@ on:
 
 env:
   RUNID: 613573412
+  V8_RELEASE_TAG: "V8_8.4.371.19_2020_05_24"
+  V8_RELEASE_FILE_NAME: "v8_bin_8.4.371.19.tgz"
 
 jobs:
   android:
@@ -21,10 +23,14 @@ jobs:
       - name: Download Lib
         uses: dsaltares/fetch-gh-release-asset@master
         with:
-          version: "tags/V8_8.4.371.19_2020_05_24"
-          file: "v8_bin_8.4.371.19.tgz"
-          target: "unity/native_src/v8_bin_8.4.371.19.tgz"
+          version: "tags/${{env.V8_RELEASE_TAG}}"
+          file: ${{env.V8_RELEASE_FILE_NAME}}
+          target: "unity/native_src/${{env.V8_RELEASE_FILE_NAME}}"
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Lib
+        run: |
+          cd unity/native_src
+          tar xvfz ${{env.V8_RELEASE_FILE_NAME}}
       - name: Install NDK
         run: |
           cd ~
@@ -36,7 +42,6 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          tar xvfz v8_bin_8.4.371.19.tgz
           chmod 777 make_android.sh
           ./make_android.sh
       - name: Upload
@@ -79,12 +84,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download Lib
+        uses: dsaltares/fetch-gh-release-asset@master
         with:
-          workflow: build_v8.yml
-          name: v8_bin
-          path: unity/native_src/
+          version: "tags/${{env.V8_RELEASE_TAG}}"
+          file: ${{env.V8_RELEASE_FILE_NAME}}
+          target: "unity/native_src/${{env.V8_RELEASE_FILE_NAME}}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Lib
+        run: |
+          cd unity/native_src
+          tar xvfz ${{env.V8_RELEASE_FILE_NAME}}
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -124,12 +134,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Download Lib
+        uses: dsaltares/fetch-gh-release-asset@master
         with:
-          workflow: build_v8.yml
-          name: v8_bin
-          path: unity/native_src/
+          version: "tags/${{env.V8_RELEASE_TAG}}"
+          file: ${{env.V8_RELEASE_FILE_NAME}}
+          target: "unity/native_src/${{env.V8_RELEASE_FILE_NAME}}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Lib
+        run: |
+          cd unity/native_src
+          tar xvfz ${{env.V8_RELEASE_FILE_NAME}}
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
