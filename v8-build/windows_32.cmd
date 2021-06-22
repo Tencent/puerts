@@ -24,7 +24,7 @@ cd ..\..\..\
 call gclient sync
 
 echo =====[ Patching V8 ]=====
-git apply --cached %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
+git apply --cached --reject %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
 git checkout -- .
 
 echo =====[ Building V8 ]=====
