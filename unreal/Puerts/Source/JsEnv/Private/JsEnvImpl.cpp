@@ -310,12 +310,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ReloadJs.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(TBaseDelegate<bool, float>::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
-
-    int * Dummy = new (std::nothrow) int[0];
-    if (!Dummy)
-    {
-        Logger->Warn("new (std::nothrow) int[0] return nullptr");
-    }
 }
 
 // #lizard forgives
