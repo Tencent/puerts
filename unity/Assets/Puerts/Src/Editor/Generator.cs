@@ -225,7 +225,7 @@ namespace Puerts.Editor
             if (isCtor) {
                 if (type.IsValueType)//值类型添加无参构造
                 {
-                    if (!overloads.Exists(m => m.GetParameters().Length == 0))
+                    if (!ret.Exists(m => m.ParameterInfos.Length == 0))
                     {
                         ret.Add(new OverloadGenInfo()
                         {
