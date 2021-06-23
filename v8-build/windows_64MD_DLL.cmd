@@ -24,10 +24,10 @@ cd ..\..\..\
 call gclient sync
 
 echo =====[ Patching V8 ]=====
-git config --global core.autocrlf true
-git config --global core.whitespace cr-at-eol
-git apply --cached --reject %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
-git checkout -- .
+call git config --global core.autocrlf true
+call git config --global core.whitespace cr-at-eol
+call git apply --cached --reject %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
+call git checkout -- .
 
 echo =====[ Make dynamic_crt ]=====
 node %~dp0\rep.js  build\config\win\BUILD.gn
