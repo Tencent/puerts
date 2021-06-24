@@ -24,7 +24,7 @@ cd ..\..\..\
 call gclient sync
 
 echo =====[ Patching V8 ]=====
-node %GITHUB_WORKSPACE%\v8-build\CRLF2LF.js out.gn\x86.release\snapshot_blob.bin
+node %GITHUB_WORKSPACE%\v8-build\CRLF2LF.js %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
 call git apply --cached --reject %GITHUB_WORKSPACE%\v8-build\patch\builtins-puerts.patch
 call git checkout -- .
 
