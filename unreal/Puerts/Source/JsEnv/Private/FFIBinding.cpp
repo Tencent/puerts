@@ -608,4 +608,10 @@ static void Init(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local
 
 PUERTS_MODULE(ffi_bindings, Init);
 
+#else
+
+void SetFunctionArray(FuncPtr *FuncArray, uint32_t FuncArrayLength)
+{
+}
+
 #endif
