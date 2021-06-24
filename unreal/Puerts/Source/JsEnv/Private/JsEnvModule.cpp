@@ -170,7 +170,7 @@ void FJsEnvModule::StartupModule()
         MallocWrapper = new FMallocWrapper(GMalloc);
         GMalloc = MallocWrapper;
     }
-    delete Dummy;
+    delete[] Dummy;
     
     // This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
