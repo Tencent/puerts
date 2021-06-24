@@ -61,6 +61,19 @@ primitiveTypes.size_t = {
     alloc: alloc
 }
 
+function makePointer(t) {
+    t = typeInfo(t);
+    let ret = Object.assign({}, pointer);
+    const orgRead = ret.read;
+    function readTypedPointer(buffer, offset) {
+        return orgRead(buffer, offset, t.size);
+    }
+    
+    ret.read = readTypedPointer;
+    
+    return ret;
+}
+
 function makeStruct(info, noFfiType) {
     function structType (buff, data) {
         if (!(this instanceof structType)) {
@@ -184,3 +197,4 @@ function alloc(...values) {
 
 exports.typeInfo = typeInfo;
 exports.makeStruct = makeStruct;
+exports.makePointer = makePointer;

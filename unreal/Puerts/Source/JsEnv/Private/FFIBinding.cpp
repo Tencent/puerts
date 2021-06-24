@@ -6,10 +6,20 @@
 */
 
 #include "FFIBinding.h"
-#if 0 //PLATFORM_MAC || PLATFORM_IOS
+#if WITH_FFI
 #include "JSClassRegister.h"
 #include "V8Utils.h"
+#if _MSC_VER
+#define FFI_BUILDING
+#endif
+
+#if PLATFORM_ANDROID_ARM
+#include "armeabi-v7a/ffi.h"
+#elif PLATFORM_ANDROID_ARM64
+#include "arm64-v8a/ffi.h"
+#else
 #include "ffi.h"
+#endif
 
 
 static FuncPtr *GFuncArray = nullptr;
@@ -555,11 +565,19 @@ static void Init(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local
     Exports->Set(Context, puerts::FV8Utils::ToV8String(Isolate, "sizeof"), SizeOf).Check();
     
     auto AlignOf = v8::Object::New(Isolate);
+#if _MSC_VER
+#define SET_ALIGNOF(name, type) \
+    struct s_##name { type a; }; \
+    AlignOf->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, #name), \
+        v8::Integer::New(Isolate, static_cast<uint32_t>(alignof(struct s_##name))), \
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
+#else
 #define SET_ALIGNOF(name, type) \
     struct s_##name { type a; }; \
     AlignOf->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, #name), \
         v8::Integer::New(Isolate, static_cast<uint32_t>(__alignof__(struct s_##name))), \
         static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
+#endif
     
     SET_ALIGNOF(uint8, uint8_t);
     SET_ALIGNOF(int8, int8_t);
