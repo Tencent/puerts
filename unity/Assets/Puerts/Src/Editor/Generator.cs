@@ -1042,37 +1042,37 @@ namespace Puerts.Editor
             TsTypeGenInfo targetInfo;
             //find baseType methods
             Dictionary<string, List<TsMethodGenInfo>> baseMethods = null;
-            TsPropertyGenInfo[] basePropertys = null;
+            TsPropertyGenInfo[] baseProperties = null;
             if (info.BaseType != null && tsGenTypeInfos.TryGetValue(info.BaseType.FullName, out targetInfo))
             {
                 CheckGenInfos(tsGenTypeInfos, targetInfo);
                 baseMethods = MethodGenInfosToDict(GetMethodGenInfos(tsGenTypeInfos, targetInfo, true));
-                basePropertys = GetPropertyGenInfos(tsGenTypeInfos, targetInfo, true);
+                baseProperties = GetPropertyGenInfos(tsGenTypeInfos, targetInfo, true);
             }
 
             //find interfaces
             TsMethodGenInfo[] ifaceMethods = null;
-            TsPropertyGenInfo[] ifacePropertys = null;
+            TsPropertyGenInfo[] ifaceProperties = null;
             if (info.interfaces != null)
             {
                 List<TsMethodGenInfo> methods = new List<TsMethodGenInfo>();
-                List<TsPropertyGenInfo> propertys = new List<TsPropertyGenInfo>();
+                List<TsPropertyGenInfo> properties = new List<TsPropertyGenInfo>();
                 foreach (var iface in info.interfaces)
                 {
                     if (!tsGenTypeInfos.TryGetValue(iface.FullName, out targetInfo))
                         continue;
                     methods.AddRange(GetMethodGenInfos(tsGenTypeInfos, targetInfo, true));
-                    propertys.AddRange(GetPropertyGenInfos(tsGenTypeInfos, targetInfo, true));
+                    properties.AddRange(GetPropertyGenInfos(tsGenTypeInfos, targetInfo, true));
                 }
                 ifaceMethods = methods.ToArray();
-                ifacePropertys = propertys.ToArray();
+                ifaceProperties = properties.ToArray();
             }
 
             if (baseMethods == null && ifaceMethods == null)
                 return;
 
             Dictionary<string, List<TsMethodGenInfo>> ownMethods = MethodGenInfosToDict(GetMethodGenInfos(tsGenTypeInfos, info, false));
-            TsPropertyGenInfo[] ownPropertys = GetPropertyGenInfos(tsGenTypeInfos, info, false);
+            TsPropertyGenInfo[] ownProperties = GetPropertyGenInfos(tsGenTypeInfos, info, false);
 
             //implemented method
             if (ifaceMethods != null)
@@ -1082,11 +1082,11 @@ namespace Puerts.Editor
                     !(ownMethods.TryGetValue(method.Name, out infos) && infos.FirstOrDefault(m => method.Equals(m)) != null ||
                     baseMethods != null && baseMethods.TryGetValue(method.Name, out infos) && infos.FirstOrDefault(m => method.Equals(m)) != null)
                 );
-                var implPropertys = ifacePropertys.Where(prop =>
-                    !(ownPropertys.FirstOrDefault(p => prop.Name.Equals(p.Name)) != null ||
-                    basePropertys != null && basePropertys.FirstOrDefault(p => prop.Name.Equals(p.Name)) != null));
+                var implProperties = ifaceProperties.Where(prop =>
+                    !(ownProperties.FirstOrDefault(p => prop.Name.Equals(p.Name)) != null ||
+                    baseProperties != null && baseProperties.FirstOrDefault(p => prop.Name.Equals(p.Name)) != null));
                 info.Methods = info.Methods.Concat(implMethods).ToArray();
-                info.Properties = info.Properties.Concat(implPropertys).ToArray();
+                info.Properties = info.Properties.Concat(implProperties).ToArray();
 
                 ownMethods = MethodGenInfosToDict(info.Methods);
             }
