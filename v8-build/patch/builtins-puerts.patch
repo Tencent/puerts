@@ -56,7 +56,7 @@ index 18d72f1630..028a53e200 100644
 +        }
 +        void Set(Local<Value> value);
 +        bool Setted() {
-+          return v8Value == nullptr;
++          return v8Value != nullptr;
 +        }
 +    };
 +    private:
