@@ -290,8 +290,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
     TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
 
-    InitExtensionMethodsMap();
-
     Inspector = CreateV8Inspector(InDebugPort, &Context);
 
     ExecuteModule("puerts/first_run.js");
@@ -508,6 +506,7 @@ void FJsEnvImpl::InitExtensionMethodsMap()
             }
         }
     }
+    ExtensionMethodsMapInited = true;
 }
 
 std::unique_ptr<FJsEnvImpl::ObjectMerger>& FJsEnvImpl::GetObjectMerger(UStruct * Struct)
@@ -1706,6 +1705,10 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
     auto Iter = ClassToTemplateMap.find(InStruct);
     if (Iter == ClassToTemplateMap.end())
     {
+        if (!ExtensionMethodsMapInited)
+        {
+            InitExtensionMethodsMap();
+        }
         v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
