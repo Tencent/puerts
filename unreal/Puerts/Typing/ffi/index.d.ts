@@ -27,6 +27,7 @@ declare module "ffi" {
 
     interface PointerTypeInfo extends TypeInfo {
         ref(val: any): Uint8Array;
+        unref(buff:Uint8Array): any;
     }
     
     type AnyTypeInfo = PrimitiveTypes | TypeInfo;
