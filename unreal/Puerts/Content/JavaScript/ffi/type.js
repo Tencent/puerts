@@ -69,7 +69,12 @@ function makePointer(t) {
         return orgRead(buffer, offset, t.size);
     }
     
+    function mkRef(value) {
+        return t.alloc(value);
+    }
+    
     ret.read = readTypedPointer;
+    ret.ref = mkRef;
     
     return ret;
 }
