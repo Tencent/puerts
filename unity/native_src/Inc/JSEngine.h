@@ -20,6 +20,7 @@
 #pragma warning(pop)
 
 #include "JSFunction.h"
+#include "JSEngine_NativeClasses.h"
 #include "V8InspectorImpl.h"
 
 #if defined(PLATFORM_WINDOWS)
@@ -77,6 +78,8 @@ v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_
 
 class JSEngine
 {
+JSENGINE_NATIVECLASS_DEFINE
+
 public:
     JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
 
@@ -87,12 +90,6 @@ public:
     void SetGlobalFunctionV2(const char *Name, CSharpFunctionCallbackV2 Callback, int64_t Data);
 
     bool Eval(const char *Code, const char* Path);
-
-    int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
-
-    bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
-
-    bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
 
     v8::Local<v8::Value> GetClassConstructor(int ClassID);
 
@@ -142,7 +139,7 @@ private:
 
     std::vector<FLifeCycleInfo*> LifeCycleInfos;
 
-    std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
+    // std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
 
     std::map<std::string, int> NameToTemplateID;
 

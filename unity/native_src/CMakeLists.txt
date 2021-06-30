@@ -52,6 +52,7 @@ include_directories(
 set ( PUERTS_INC
     Inc/Log.h
     Inc/JSEngine.h
+    Inc/JSEngine_NativeClasses.h
     Inc/V8Utils.h
     Inc/JSFunction.h
     ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
@@ -62,6 +63,7 @@ set ( PUERTS_SRC
     Src/Puerts.cpp
     Src/Log.cpp
     Src/JSEngine.cpp
+    Src/JSEngine_NativeClasses.cpp
     Src/JSFunction.cpp
     ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
