@@ -18,8 +18,8 @@ const ClassManager = {                                                          
                                                                                         \
     createClass(constructorFunction, id, baseid) {                                      \
         classes[id] = constructorFunction;                                              \
-        if (baseid) {                                                                   \
-            inherit(func, classes[baseid]);                                             \
+        if (baseid > 0) {                                                                   \
+            inherit(constructorFunction, classes[baseid]);                                             \
         }                                                                               \
         return id;                                                                      \
     },                                                                                  \
@@ -225,16 +225,19 @@ bool JSEngine::RegisterFunction(int ClassID, const char *Name, bool IsStatic, v8
 
 bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, v8::Puerts::CallbackFunction Getter, int64_t GetterData, v8::Puerts::CallbackFunction Setter, int64_t SetterData, bool DontDelete)
 {
+    printf("rp1\n");
     v8::Isolate::Scope IsolateScope(MainIsolate);
     v8::HandleScope HandleScope(MainIsolate);
-    v8::Local<v8::Context> Context = MainIsolate->GetCurrentContext();
+    v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
     v8::Context::Scope ContextScope(Context);
 
     v8::Function* JSRegisterPropertyFunction = v8::Function::Cast(*GJSRegisterProperty.Get(MainIsolate));
     
+    printf("rp2\n");
     v8::Local<v8::Object> getterHandler = MakeHandler(Context, Getter, GetterData);
     v8::Local<v8::Object> setterHandler = MakeHandler(Context, Setter, SetterData);
 
+    printf("rp3\n");
     v8::Local<v8::Value> args[6];
     args[0] = v8::Number::New(MainIsolate, ClassID);
     args[1] = FV8Utils::V8String(MainIsolate, Name);
@@ -243,6 +246,7 @@ bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, v8
     args[4] = setterHandler;
     args[5] = v8::Boolean::New(MainIsolate, DontDelete);
 
+    printf("rp4\n");
     JSRegisterPropertyFunction // registerProperty(classid, name, static, getter, setter, dontdelete) 
         ->Call(Context, Context->Global(), 6, args)
         .ToLocalChecked();
