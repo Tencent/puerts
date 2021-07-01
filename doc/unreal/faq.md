@@ -26,3 +26,12 @@ IPuertsModule::Get().InitExtensionMethodsMap();
 这个选项就是卡住进程来等待调试器连接，连上了就往下走了。
 
 如果你还没配置好调试器，又不小心选了这个选项，也就没办法进入把这个选项去掉，此时可以关闭进程，打开Config\DefaultPuerts.ini把WaitDebugger改为False。
+
+
+## ts生成蓝图的StaticClass调用，返回UClass使用不符合预期
+
+ts类是没有StaticClass方法的，所以StaticClass调用其实是继承链上第一个有StaticClass方法的类，返回的也是该StaticClass方法所在类的UClass。
+
+没理解这点可能会导致一些误解：比如我创建的对象为啥没子类方法，必然CreateDefaultSubobject报错说类是abstract的，无法创建等。
+
+正确的做法应该是通过UE.Class.Load("path/to/your/blueprint/file")去加载。
