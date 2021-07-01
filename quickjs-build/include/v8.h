@@ -23,10 +23,10 @@
 
 #define JS_TAG_EXTERNAL (JS_TAG_FLOAT64 + 1)
 
-#define V8_MAJOR_VERSION 8
-#define V8_MINOR_VERSION 4
-#define V8_BUILD_NUMBER 371
-#define V8_PATCH_LEVEL 19
+#define V8_MAJOR_VERSION 7
+#define V8_MINOR_VERSION 7
+#define V8_BUILD_NUMBER 299
+#define V8_PATCH_LEVEL 0
 
 namespace v8 {
 class Object;

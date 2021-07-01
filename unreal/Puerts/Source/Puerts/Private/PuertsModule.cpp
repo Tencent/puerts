@@ -14,6 +14,7 @@
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
 #include "Internationalization/Regex.h"
+#include "LevelEditor.h"
 #endif
 #include "Commandlets/Commandlet.h"
 
@@ -38,6 +39,13 @@ public:
 #if WITH_EDITOR
     void EndPIE(bool bIsSimulating);
     bool HandleSettingsSaved();
+    void HandleMapChanged(UWorld* InWorld, EMapChangeType InMapChangeType)
+    {
+        if (Enabled && EMapChangeType::TearDownWorld == InMapChangeType)
+        {
+            MakeSharedJsEnv();
+        }
+    }
 #endif
 
     void RegisterSettings();
@@ -319,6 +327,9 @@ void FPuertsModule::StartupModule()
 {
 #if WITH_EDITOR
     FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+    //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
+    FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+    LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
     RegisterSettings();
 #endif
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
@@ -374,6 +385,10 @@ void FPuertsModule::ShutdownModule()
 {
 #if WITH_EDITOR
     UnregisterSettings();
+    if (FLevelEditorModule* LevelEditor = FModuleManager::GetModulePtr<FLevelEditorModule>("LevelEditor"))
+    {
+        LevelEditor->OnMapChanged().RemoveAll(this);
+    }
 #endif
     if (Enabled)
     {

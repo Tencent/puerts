@@ -10,3 +10,4 @@ module.exports.binding = require('binding').binding;
 module.exports.closure= require('binding').closure;
 module.exports.typeInfo = require('type').typeInfo;
 module.exports.makeStruct = require('type').makeStruct;
+module.exports.makePointer = require('type').makePointer;
