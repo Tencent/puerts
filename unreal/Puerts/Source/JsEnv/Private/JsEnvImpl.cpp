@@ -1938,7 +1938,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (!Struct->IsNative())
         {
-            FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("%s is blueprint type, load it using puerts.blueprint."), *TypeName));
+            FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("%s is blueprint type, load it using UE.Class.Load('path/to/your/blueprint/file')."), *TypeName));
             return;
         }
         Info.GetReturnValue().Set(GetJsClass(Struct, Context));
