@@ -6,6 +6,7 @@
 */
 
 #include "JSEngine.h"
+#include "Log.h"
 #include <cstring>
 #include "V8Utils.h"
 
@@ -54,12 +55,6 @@ V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, CSharpF
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->SetGlobalFunction(Name, Callback, Data);
-}
-
-V8_EXPORT void SetGlobalFunctionV2(v8::Isolate *Isolate, const char *Name, CSharpFunctionCallbackV2 Callback, int64_t Data)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->SetGlobalFunctionV2(Name, Callback, Data);
 }
 
 V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)
@@ -119,7 +114,7 @@ V8_EXPORT void SetGeneralDestructor(v8::Isolate *Isolate, CSharpDestructorCallba
 }
 
 //-------------------------- begin js call cs --------------------------
-V8_EXPORT const v8::Value *GetArgumentValue(const v8::FunctionCallbackInfo<v8::Value>& Info, int Index)
+V8_EXPORT const v8::Value *GetArgumentValue(const v8::Puerts::FunctionCallbackInfo& Info, int Index)
 {
     return *Info[Index];
 }
@@ -152,7 +147,7 @@ V8_EXPORT JsValueType GetJsValueType(v8::Isolate* Isolate, const v8::Value *Valu
     }
 }
 
-V8_EXPORT JsValueType GetArgumentType(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int Index, int IsOut)
+V8_EXPORT JsValueType GetArgumentType(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, int Index, int IsOut)
 {
     return GetJsValueType(Isolate, *Info[Index], IsOut);
 }
@@ -481,59 +476,59 @@ V8_EXPORT void ThrowException(v8::Isolate* Isolate, const char * Message)
     FV8Utils::ThrowException(Isolate, Message);
 }
 
-V8_EXPORT void ReturnClass(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ClassID)
+V8_EXPORT void ReturnClass(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, int ClassID)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     Info.GetReturnValue().Set(JsEngine->GetClassConstructor(ClassID));
 }
 
-V8_EXPORT void ReturnObject(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ClassID, void* Ptr)
+V8_EXPORT void ReturnObject(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, int ClassID, void* Ptr)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     Info.GetReturnValue().Set(JsEngine->FindOrAddObject(Isolate, Isolate->GetCurrentContext(), ClassID, Ptr));
 }
 
-V8_EXPORT void ReturnNumber(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, double Number)
+V8_EXPORT void ReturnNumber(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, double Number)
 {
-    Info.GetReturnValue().Set(Number);
+    Info.GetReturnValue().Set(v8::Number::New(Isolate, Number));
 }
 
-V8_EXPORT void ReturnString(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, const char* String)
+V8_EXPORT void ReturnString(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, const char* String)
 {
     Info.GetReturnValue().Set(FV8Utils::V8String(Isolate, String));
 }
 
-V8_EXPORT void ReturnBigInt(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int64_t BigInt)
+V8_EXPORT void ReturnBigInt(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, int64_t BigInt)
 {
     Info.GetReturnValue().Set(v8::BigInt::New(Isolate, BigInt));
 }
 
-V8_EXPORT void ReturnArrayBuffer(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, unsigned char *Bytes, int Length)
+V8_EXPORT void ReturnArrayBuffer(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, unsigned char *Bytes, int Length)
 {
     Info.GetReturnValue().Set(puerts::NewArrayBuffer(Isolate, Bytes, Length));
 }
 
-V8_EXPORT void ReturnBoolean(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int Bool)
+V8_EXPORT void ReturnBoolean(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, int Bool)
 {
-    Info.GetReturnValue().Set(Bool ? true : false);
+    Info.GetReturnValue().Set(v8::Boolean::New(Isolate, Bool ? true : false));
 }
 
-V8_EXPORT void ReturnDate(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, double Date)
+V8_EXPORT void ReturnDate(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, double Date)
 {
     Info.GetReturnValue().Set(v8::Date::New(Isolate->GetCurrentContext(), Date).ToLocalChecked());
 }
 
-V8_EXPORT void ReturnNull(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info)
+V8_EXPORT void ReturnNull(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info)
 {
-    Info.GetReturnValue().SetNull();
+    Info.GetReturnValue().Set(v8::Null(Isolate));
 }
 
-V8_EXPORT void ReturnFunction(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, JSFunction *Function)
+V8_EXPORT void ReturnFunction(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, JSFunction *Function)
 {
    Info.GetReturnValue().Set(Function->GFunction.Get(Isolate));
 }
 
-V8_EXPORT void ReturnJSObject(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, puerts::JSObject *Object)
+V8_EXPORT void ReturnJSObject(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, puerts::JSObject *Object)
 {
    Info.GetReturnValue().Set(Object->GObject.Get(Isolate));
 }

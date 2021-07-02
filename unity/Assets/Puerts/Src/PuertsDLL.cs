@@ -92,18 +92,7 @@ namespace Puerts
             IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
             SetGlobalFunction(isolate, name, fn, data);
         }
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetGlobalFunctionV2(IntPtr isolate, string name, IntPtr v8FunctionCallback, long data);
-
-        public static void SetGlobalFunctionV2(IntPtr isolate, string name, V8FunctionCallback v8FunctionCallback, long data)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            GCHandle.Alloc(v8FunctionCallback);
-#endif
-            IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
-            SetGlobalFunctionV2(isolate, name, fn, data);
-        }
+        
         private static string GetStringFromNative(IntPtr str, int strlen)
         {
             if (str != IntPtr.Zero)

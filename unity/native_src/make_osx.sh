@@ -11,5 +11,6 @@ mkdir -p ../Assets/Plugins/
 cp -r build_osx/Release/puerts.bundle ../Assets/Plugins/
 if [ "$1" == "-ut" ]
 then
+    rm -rf ../general/Bin/libpuerts.dylib
     cp -r build_osx/Release/libpuerts.dylib ../general/Bin/
 fi

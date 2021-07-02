@@ -278,44 +278,44 @@ namespace puerts
         delete InFunction;
     }
 
-    static void CSharpFunctionCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
+    // static void CSharpFunctionCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    // {
+    //     v8::Isolate* Isolate = Info.GetIsolate();
+    //     v8::Isolate::Scope IsolateScope(Isolate);
+    //     v8::HandleScope HandleScope(Isolate);
+    //     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    //     v8::Context::Scope ContextScope(Context);
 
-        FCallbackInfo* CallbackInfo = reinterpret_cast<FCallbackInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    //     FCallbackInfo* CallbackInfo = reinterpret_cast<FCallbackInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
 
-        void* Ptr = CallbackInfo->IsStatic ? nullptr : FV8Utils::GetPoninter(Info.Holder());
+    //     void* Ptr = CallbackInfo->IsStatic ? nullptr : FV8Utils::GetPoninter(Info.Holder());
 
-        CallbackInfo->Callback(Isolate, Info, Ptr, Info.Length(), CallbackInfo->Data);
-    }
+    //     CallbackInfo->Callback(Isolate, Info, Ptr, Info.Length(), CallbackInfo->Data);
+    // }
 
-    v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
-    {
-        auto Pos = CallbackInfos.size();
-        auto CallbackInfo = new FCallbackInfo(IsStatic, Callback, Data);
-        CallbackInfos.push_back(CallbackInfo);
-        return v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackInfos[Pos]));
-    }
+    // v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
+    // {
+    //     auto Pos = CallbackInfos.size();
+    //     auto CallbackInfo = new FCallbackInfo(IsStatic, Callback, Data);
+    //     CallbackInfos.push_back(CallbackInfo);
+    //     return v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackInfos[Pos]));
+    // }
 
     void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)
     {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
+    //     v8::Isolate* Isolate = MainIsolate;
+    //     v8::Isolate::Scope IsolateScope(Isolate);
+    //     v8::HandleScope HandleScope(Isolate);
+    //     v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+    //     v8::Context::Scope ContextScope(Context);
 
-        v8::Local<v8::Object> Global = Context->Global();
+    //     v8::Local<v8::Object> Global = Context->Global();
 
-        Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
-    }
+    //     Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
+    // }
 
-    void JSEngine::SetGlobalFunctionV2(const char *Name, CSharpFunctionCallbackV2 Callback, int64_t Data)
-    {
+    // void JSEngine::SetGlobalFunctionV2(const char *Name, CSharpFunctionCallbackV2 Callback, int64_t Data)
+    // {
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -325,7 +325,7 @@ namespace puerts
         std::snprintf(
             code, 
             sizeof(code),
-            "(function() { const handler = new __PuertsCallbackHandler__(); this['%s'] = PuertsV8.callback.bind(handler); return handler; })()",
+            "(function() { const handler = new __PuertsCallbackHandler__(); this['%s'] = function(...args) { return PuertsV8.callback.call(handler, this, ...args) }; return handler; })()",
             Name, Name
         );
 
@@ -465,11 +465,11 @@ namespace puerts
     {
         v8::Isolate* Isolate = MainIsolate;
 
-        auto Context = Isolate->GetCurrentContext();
+        auto Context = ResultInfo.Context.Get(Isolate);
 
         v8::Local<v8::Value> Args[1];
         Args[0] = v8::Number::New(MainIsolate, ClassID);
-
+        
         auto Result = v8::Function::Cast(*GJSGetClass.Get(MainIsolate))->Call(Context, Context->Global(), 1, Args).ToLocalChecked();
         if (!Result->IsUndefined()) {
             v8::Function::Cast(*Result)->Set(Context, FV8Utils::V8String(Isolate, "$cid"), v8::Integer::New(Isolate, ClassID));

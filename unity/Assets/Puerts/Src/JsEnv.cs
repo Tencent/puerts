@@ -59,7 +59,7 @@ namespace Puerts
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-            //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
             if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
             {
@@ -562,23 +562,23 @@ namespace Puerts
         }
 #endif
 
-        /*[MonoPInvokeCallback(typeof(LogCallback))]
+        [MonoPInvokeCallback(typeof(LogCallback))]
         private static void LogCallback(string msg)
         {
-            UnityEngine.Debug.Log(msg);
+            System.Console.WriteLine(msg);
         }
 
         [MonoPInvokeCallback(typeof(LogCallback))]
         private static void LogWarningCallback(string msg)
         {
-            UnityEngine.Debug.LogWarning(msg);
+            System.Console.WriteLine(msg);
         }
 
         [MonoPInvokeCallback(typeof(LogCallback))]
         private static void LogErrorCallback(string msg)
         {
-            UnityEngine.Debug.LogError(msg);
-        }*/
+            System.Console.WriteLine(msg);
+        }
 
         ~JsEnv()
         {

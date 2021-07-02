@@ -43,9 +43,7 @@
 #include "Blob/iOS/x64/SnapshotBlob.h"
 #endif
 
-typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
-
-typedef void(*CSharpFunctionCallbackV2)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
+typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
 
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
 
@@ -86,8 +84,6 @@ public:
     ~JSEngine();
 
     void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
-
-    void SetGlobalFunctionV2(const char *Name, CSharpFunctionCallbackV2 Callback, int64_t Data);
 
     bool Eval(const char *Code, const char* Path);
 

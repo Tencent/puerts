@@ -11,6 +11,7 @@ var global = global || (function () { return this; }());
     
     function csTypeToClass(csType) {
         let cls = puerts.loadType(csType);
+        
         if (cls) {
             let parentPrototype = Object.getPrototypeOf(cls.prototype);
             if (parentPrototype) {
