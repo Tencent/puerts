@@ -441,6 +441,8 @@ private:
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 
+    bool ExtensionMethodsMapInited = false;
+
     std::map<FDelegateHandle*, FTickerDelegateWrapper*> TickerDelegateHandleMap;
 
     FDelegateHandle DelegateProxysCheckerHandler;

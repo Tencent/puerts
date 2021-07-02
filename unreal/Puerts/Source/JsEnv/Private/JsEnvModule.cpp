@@ -12,7 +12,7 @@
 class FMallocWrapper final
     : public FMalloc
 {
-private:
+public:
     FMalloc* InnerMalloc;
 
 public:
@@ -138,13 +138,15 @@ public:
 #pragma warning(pop)
 #endif
 
-//DEFINE_LOG_CATEGORY(Javascript)
+DEFINE_LOG_CATEGORY_STATIC(JsEnvModule, Log, All);
 
 class FJsEnvModule : public IJsEnvModule
 {
     /** IModuleInterface implementation */
     void StartupModule() override;
     void ShutdownModule() override;
+
+    FMallocWrapper* MallocWrapper = nullptr;
 
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 public:
@@ -161,9 +163,15 @@ IMPLEMENT_MODULE( FJsEnvModule, JsEnv)
 
 void FJsEnvModule::StartupModule()
 {
-#if PLATFORM_WINDOWS
-    GMalloc = new FMallocWrapper(GMalloc);
-#endif
+    int * Dummy = new (std::nothrow) int[0];
+    if (!Dummy)
+    {
+        UE_LOG(JsEnvModule, Warning, TEXT("new (std::nothrow) int[0] return nullptr, try fix it!"));
+        MallocWrapper = new FMallocWrapper(GMalloc);
+        GMalloc = MallocWrapper;
+    }
+    delete[] Dummy;
+    
     // This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
     platform_ = v8::platform::NewDefaultPlatform();
@@ -181,6 +189,14 @@ void FJsEnvModule::ShutdownModule()
     v8::V8::Dispose();
     v8::V8::ShutdownPlatform();
 #endif
+
+    if (MallocWrapper && MallocWrapper == GMalloc)
+    {
+        GMalloc = MallocWrapper->InnerMalloc;
+        delete MallocWrapper;
+        MallocWrapper = nullptr;
+        UE_LOG(JsEnvModule, Warning, TEXT("GMalloc restored!"));
+    }
 }
 
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX

@@ -18,13 +18,12 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Download Lib
-        uses: dsaltares/fetch-gh-release-asset@master
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
         with:
-          version: "tags/V8_8.4.371.19_2020_05_24"
-          file: "v8_bin_8.4.371.19.tgz"
-          target: "unity/native_src/v8_bin_8.4.371.19.tgz"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
       - name: Install NDK
         run: |
           cd ~
@@ -36,7 +35,6 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          tar xvfz v8_bin_8.4.371.19.tgz
           chmod 777 make_android.sh
           ./make_android.sh
       - name: Upload

@@ -6,10 +6,20 @@
 */
 
 #include "FFIBinding.h"
-#if 0 //PLATFORM_MAC || PLATFORM_IOS
+#if WITH_FFI
 #include "JSClassRegister.h"
 #include "V8Utils.h"
+#if _MSC_VER
+#define FFI_BUILDING
+#endif
+
+#if PLATFORM_ANDROID_ARM
+#include "armeabi-v7a/ffi.h"
+#elif PLATFORM_ANDROID_ARM64
+#include "arm64-v8a/ffi.h"
+#else
 #include "ffi.h"
+#endif
 
 
 static FuncPtr *GFuncArray = nullptr;
@@ -147,27 +157,6 @@ public:
     {
     }
     
-    static void WeakCallback(const v8::WeakCallbackInfo<ClosureInfo>& Info)
-    {
-        ClosureInfo* Self = Info.GetParameter();
-        Self->WeakCallback();
-        delete Self;
-    }
-    
-    void WeakCallback()
-    {
-        ffi_closure_free(Closure);
-        int64_t ChangeInBytes = -static_cast<int64_t>(sizeof(*this));
-        Isolate->AdjustAmountOfExternalAllocatedMemory(ChangeInBytes);
-    }
-    
-    void Init(v8::Isolate* InIsolate, v8::Local<v8::ArrayBuffer> InBuffer)
-    {
-        Buffer.Reset(InIsolate, InBuffer);
-        Buffer.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
-        InIsolate->AdjustAmountOfExternalAllocatedMemory(sizeof(*this));
-    }
-    
     void *CodeLoc;
     
     v8::Isolate* Isolate;
@@ -235,8 +224,10 @@ static void FFIAllocClosure(const v8::FunctionCallbackInfo<v8::Value>& Info)
         puerts::FV8Utils::ThrowException(Isolate, "ffi_alloc_closure: alloc closure fail!");
         return;
     }
+
+    v8::Local<v8::ArrayBuffer> AB = v8::ArrayBuffer::New(Isolate, sizeof(ClosureInfo));
     
-    ClosureInfo* CI = new ClosureInfo(Isolate, Context, Callback, CodeLoc, Closure, RetSize);
+    ClosureInfo* CI = new(AB->GetContents().Data()) ClosureInfo(Isolate, Context, Callback, CodeLoc, Closure, RetSize);
     
     ffi_status status = ffi_prep_closure_loc(
       Closure,
@@ -252,11 +243,7 @@ static void FFIAllocClosure(const v8::FunctionCallbackInfo<v8::Value>& Info)
         puerts::FV8Utils::ThrowException(Isolate, "ffi_alloc_closure: ffi_prep_closure_loc fail!");
         return;
     }
-    
-    v8::Local<v8::ArrayBuffer> AB = v8::ArrayBuffer::New(Isolate, CI, sizeof(ClosureInfo));
-    
-    CI->Init(Isolate, AB);
-    
+
     Info.GetReturnValue().Set(v8::Uint8Array::New(AB, 0, sizeof(ClosureInfo)));
 }
 
@@ -281,7 +268,8 @@ static void FFIFreeClosure(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     
     ClosureInfo* CI = reinterpret_cast<ClosureInfo*>(ArrayBufferData(Info[0]));
-    delete CI;
+    ffi_closure_free(CI->Closure);
+    CI->~ClosureInfo();
 }
 
 static void FFICall(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -555,11 +543,19 @@ static void Init(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local
     Exports->Set(Context, puerts::FV8Utils::ToV8String(Isolate, "sizeof"), SizeOf).Check();
     
     auto AlignOf = v8::Object::New(Isolate);
+#if _MSC_VER
+#define SET_ALIGNOF(name, type) \
+    struct s_##name { type a; }; \
+    AlignOf->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, #name), \
+        v8::Integer::New(Isolate, static_cast<uint32_t>(alignof(struct s_##name))), \
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
+#else
 #define SET_ALIGNOF(name, type) \
     struct s_##name { type a; }; \
     AlignOf->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, #name), \
         v8::Integer::New(Isolate, static_cast<uint32_t>(__alignof__(struct s_##name))), \
         static_cast<v8::PropertyAttribute>(v8::ReadOnly|v8::DontDelete))
+#endif
     
     SET_ALIGNOF(uint8, uint8_t);
     SET_ALIGNOF(int8, int8_t);
@@ -589,5 +585,11 @@ static void Init(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local
 }
 
 PUERTS_MODULE(ffi_bindings, Init);
+
+#else
+
+void SetFunctionArray(FuncPtr *FuncArray, uint32_t FuncArrayLength)
+{
+}
 
 #endif
