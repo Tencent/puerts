@@ -619,6 +619,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             }
         }
         TmpBuff << ")";
+        StringBuffer << "    constructor();\n";
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     };
     GenConstrutor();

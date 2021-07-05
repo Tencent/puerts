@@ -267,7 +267,8 @@ namespace puerts
                 else
                 {
                     Memory = Alloc(ScriptStruct);
-                    for (int i = 0; i < Properties.size(); ++i)
+                    const int Count = Info.Length() < Properties.size() ? Info.Length() : Properties.size();
+                    for (int i = 0; i < Count; ++i)
                     {
                         Properties[i]->JsToUEInContainer(Isolate, Context, Info[i], Memory, false);
                     }
