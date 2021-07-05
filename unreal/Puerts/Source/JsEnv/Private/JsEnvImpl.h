@@ -118,6 +118,10 @@ public:
 
     bool AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
 
+    FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) override;
+
+    void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     bool RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
 
     bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr) override;
@@ -454,6 +458,10 @@ private:
     v8::Global<v8::Function> InspectorMessageHandler;
 
     FContainerMeta ContainerMeta;
+
+    v8::Global<v8::Map> ManualReleaseCallbackMap;
+
+    std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
 };
 
 }
