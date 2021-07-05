@@ -32,7 +32,8 @@ public class PuertsTest
 {
     public static void Main()
     {
-        var jsEnv = new JsEnv(new TxtLoader());
+        var jsEnv = new JsEnv(new TxtLoader(), 9224);
+        jsEnv.WaitDebugger();
         jsEnv.Eval(@"
             const CS = require('csharp');
             CS.System.Console.WriteLine('hello world');

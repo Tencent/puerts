@@ -74,7 +74,7 @@ const ClassManager = {                                                          
 ClassManager;                                                                           \
 ";
 
-v8::Local<v8::Object> JSEngine::MakeHandler(v8::Local<v8::Context> Context, v8::Puerts::CallbackFunction Callback, int64_t Data) 
+v8::Local<v8::Object> JSEngine::MakeHandler(v8::Local<v8::Context> Context, v8::Puerts::CallbackFunction Callback, int64_t Data, bool isStatic) 
 {
     v8::Local<v8::Object> handler = GHandlerTemplate
         .Get(MainIsolate)
@@ -86,6 +86,7 @@ v8::Local<v8::Object> JSEngine::MakeHandler(v8::Local<v8::Context> Context, v8::
     v8::Puerts::FunctionInfo* functionInfo = new v8::Puerts::FunctionInfo();
     functionInfo->callback = Callback;
     functionInfo->bindData = (void *)Data;
+    functionInfo->isStatic = isStatic;
 
     handler->SetInternalField(0, v8::External::New(MainIsolate, (void*)functionInfo));
 
@@ -208,7 +209,7 @@ bool JSEngine::RegisterFunction(int ClassID, const char *Name, bool IsStatic, v8
     
     v8::Function* JSRegisterFunctionFunction = v8::Function::Cast(*GJSRegisterFunction.Get(MainIsolate));
     
-    v8::Local<v8::Object> handler = MakeHandler(Context, Callback, Data);
+    v8::Local<v8::Object> handler = MakeHandler(Context, Callback, Data, IsStatic);
 
     v8::Local<v8::Value> args[4];
     args[0] = v8::Number::New(MainIsolate, ClassID);
@@ -232,8 +233,8 @@ bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, v8
 
     v8::Function* JSRegisterPropertyFunction = v8::Function::Cast(*GJSRegisterProperty.Get(MainIsolate));
     
-    v8::Local<v8::Object> getterHandler = MakeHandler(Context, Getter, GetterData);
-    v8::Local<v8::Object> setterHandler = MakeHandler(Context, Setter, SetterData);
+    v8::Local<v8::Object> getterHandler = MakeHandler(Context, Getter, GetterData, IsStatic);
+    v8::Local<v8::Object> setterHandler = MakeHandler(Context, Setter, SetterData, IsStatic);
 
     v8::Local<v8::Value> args[6];
     args[0] = v8::Number::New(MainIsolate, ClassID);

@@ -45,6 +45,8 @@
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
 
+typedef void(*CSharpFunctionCallbackOld)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
+
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
@@ -53,9 +55,9 @@ namespace puerts
 {
 struct FCallbackInfo
 {
-    FCallbackInfo(bool InIsStatic, CSharpFunctionCallback InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
+    FCallbackInfo(bool InIsStatic, CSharpFunctionCallbackOld InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
     bool IsStatic;
-    CSharpFunctionCallback Callback;
+    CSharpFunctionCallbackOld Callback;
     int64_t Data;
 };
 
@@ -82,6 +84,8 @@ public:
     JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
 
     ~JSEngine();
+
+    void SetGlobalFunctionOld(const char *Name, CSharpFunctionCallbackOld Callback, int64_t Data);
 
     void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
@@ -158,6 +162,6 @@ private:
     V8Inspector* Inspector;
 
 private:
-    v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
+    v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallbackOld Callback, int64_t Data);
 };
 }
