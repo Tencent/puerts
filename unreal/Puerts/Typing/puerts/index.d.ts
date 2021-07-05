@@ -6,7 +6,7 @@
 */
 
 declare module "puerts" {
-    import {Object, $Ref, Class} from "ue"
+    import {Object, $Ref, Class, $Delegate} from "ue"
     
     function $ref<T>(x : T) : $Ref<T>;
     
