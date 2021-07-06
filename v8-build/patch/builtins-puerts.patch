@@ -1,5 +1,5 @@
 diff --git a/include/v8.h b/include/v8.h
-index 18d72f1630..22b692b59e 100644
+index 18d72f1630..b10ad0c9c4 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -38,6 +38,9 @@
@@ -20,7 +20,7 @@ index 18d72f1630..22b692b59e 100644
    template<class F> friend class PropertyCallbackInfo;
    friend class String;
    friend class Object;
-@@ -12038,6 +12042,60 @@ size_t SnapshotCreator::AddData(Local<T> object) {
+@@ -12038,6 +12042,53 @@ size_t SnapshotCreator::AddData(Local<T> object) {
   */
  
  
@@ -29,6 +29,7 @@ index 18d72f1630..22b692b59e 100644
 +  typedef void (*CallbackFunction)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
 +  
 +  struct FunctionInfo { 
++    bool isStatic;
 +    CallbackFunction callback;
 +    void* bindData;
 +  };
@@ -38,35 +39,27 @@ index 18d72f1630..22b692b59e 100644
 +        internal::Address* value_;
 +      public:
 +        ReturnValue(internal::Address* slot) : value_(slot) {}
-+        internal::Address* Get()
++        internal::Address* Get() 
 +        {
 +          return value_;
 +        }
 +        void Set(const Local<Value> handle);
-+        bool Setted() {
-+          return value_ != nullptr;
-+        }
 +    };
 +    private:
 +      internal::Address* return_value_;
 +      internal::Address* values_;
-+      internal::Address* this_;
 +      int length_;
 +    public:
-+      FunctionCallbackInfo(internal::Address* address, internal::Address* This, int length) {
++      FunctionCallbackInfo(internal::Address* address, internal::Address* returnValue, int length) {
 +        this->values_ = address;
 +        this->length_ = length;
-+        this->this_ = This;
-+        this->return_value_ = new internal::Address();
++        return_value_ = returnValue;
 +      }
 +      ReturnValue GetReturnValue() const {
 +        return ReturnValue(return_value_);
 +      }
 +      int Length() const {
 +        return length_;
-+      }
-+      Local<Value> This() const {
-+        return Local<Value>(reinterpret_cast<Value*>(this_));
 +      }
 +      Local<Value> operator[](int i) const {
 +      #ifdef V8_REVERSE_JSARGS
@@ -110,7 +103,7 @@ index 84ddf55f6f..67ec7315a0 100644
    /* Symbol */                                                                 \
    /* ES #sec-symbol-constructor */                                             \
 diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
-index 8a897765c8..40d49f5289 100644
+index 8a897765c8..5e4e786afd 100644
 --- a/src/builtins/builtins-string.cc
 +++ b/src/builtins/builtins-string.cc
 @@ -2,6 +2,7 @@
@@ -121,7 +114,7 @@ index 8a897765c8..40d49f5289 100644
  #include "src/builtins/builtins-utils-inl.h"
  #include "src/builtins/builtins.h"
  #include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
-@@ -484,5 +485,43 @@ BUILTIN(StringRaw) {
+@@ -484,5 +485,55 @@ BUILTIN(StringRaw) {
    RETURN_RESULT_OR_FAILURE(isolate, result_builder.Finish());
  }
  
@@ -145,17 +138,29 @@ index 8a897765c8..40d49f5289 100644
 +  ).foreign_address();
 +  
 +  int argLength = args.length() - 2;
-+  Puerts::FunctionCallbackInfo callbackInfo(args.address_of_arg_at(2), args.address_of_arg_at(1), argLength);
++  internal::Address returnValue = 0;
++  Puerts::FunctionCallbackInfo callbackInfo(
++    args.address_of_arg_at(2), 
++    &returnValue,
++    argLength
++  );
++  
 +  functionInfo->callback(
-+    reinterpret_cast<v8::Isolate*>(isolate), 
-+    callbackInfo, 
-+    GetPointer(callbackInfo.This()), 
-+    argLength, 
++    reinterpret_cast<v8::Isolate*>(isolate),
++    callbackInfo,
++    functionInfo->isStatic ? nullptr : reinterpret_cast<void*>(
++      internal::Internals::ReadExternalPointerField(
++        isolate,
++        args.at(1)->ptr(),
++        internal::Internals::kJSObjectHeaderSize
++      )
++    ),
++    argLength,
 +    (int64_t)functionInfo->bindData
-+    );
++  );
 +  // (v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData)
-+  if (callbackInfo.GetReturnValue().Setted()) {
-+    internal::Object ret(*(callbackInfo.GetReturnValue().Get()));
++  if (returnValue != 0) {
++    internal::Object ret(returnValue);
 +    return ret;
 +
 +  } else {
