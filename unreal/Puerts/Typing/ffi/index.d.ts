@@ -18,7 +18,7 @@ declare module "ffi" {
         
         read(pointer:Uint8Array, offset?: number): any;
 
-        write(pointer:Uint8Array, val: any, offset?: number)
+        write(pointer:Uint8Array, val: any, offset?: number): number;
         
         get(pointer:Uint8Array, index: number): any;
 
