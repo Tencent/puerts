@@ -113,7 +113,7 @@ index 84ddf55f6f..67ec7315a0 100644
    /* Symbol */                                                                 \
    /* ES #sec-symbol-constructor */                                             \
 diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
-index 8a897765c8..5106d6af4a 100644
+index 8a897765c8..ede261ce9d 100644
 --- a/src/builtins/builtins-string.cc
 +++ b/src/builtins/builtins-string.cc
 @@ -2,6 +2,7 @@
@@ -171,7 +171,7 @@ index 8a897765c8..5106d6af4a 100644
 +    (int64_t)functionInfo->bindData
 +  );
 +  // (v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData)
-+  if (returnValue != 0) {
++  if (isReturnValueSetted) {
 +    internal::Object ret(returnValue);
 +    return ret;
 +
