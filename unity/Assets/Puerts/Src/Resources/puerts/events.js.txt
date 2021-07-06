@@ -50,10 +50,10 @@
         } else if (typeof list !== 'function') {
             for (var i = list.length - 1; i >= 0; i--) {
                 if (list[i] === listener) { //found
-                    if (position === 0)
+                    if (i === 0)
                       list.shift();
                     else {
-                      spliceOne(list, position);
+                      spliceOne(list, i);
                     }
                     
                     if (list.length === 1)
