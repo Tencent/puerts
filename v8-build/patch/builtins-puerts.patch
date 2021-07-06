@@ -1,5 +1,5 @@
 diff --git a/include/v8.h b/include/v8.h
-index 18d72f1630..b10ad0c9c4 100644
+index 18d72f1630..5d0f4448f1 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -38,6 +38,9 @@
@@ -20,7 +20,7 @@ index 18d72f1630..b10ad0c9c4 100644
    template<class F> friend class PropertyCallbackInfo;
    friend class String;
    friend class Object;
-@@ -12038,6 +12042,53 @@ size_t SnapshotCreator::AddData(Local<T> object) {
+@@ -12038,6 +12042,62 @@ size_t SnapshotCreator::AddData(Local<T> object) {
   */
  
  
@@ -37,8 +37,10 @@ index 18d72f1630..b10ad0c9c4 100644
 +    class ReturnValue {
 +      protected:
 +        internal::Address* value_;
++        bool* is_return_value_setted_;
 +      public:
-+        ReturnValue(internal::Address* slot) : value_(slot) {}
++        ReturnValue(internal::Address* slot, bool* isReturnValueSetted) 
++          : value_(slot), is_return_value_setted_(isReturnValueSetted) {}
 +        internal::Address* Get() 
 +        {
 +          return value_;
@@ -47,16 +49,23 @@ index 18d72f1630..b10ad0c9c4 100644
 +    };
 +    private:
 +      internal::Address* return_value_;
++      bool* is_return_value_setted_;
 +      internal::Address* values_;
 +      int length_;
 +    public:
-+      FunctionCallbackInfo(internal::Address* address, internal::Address* returnValue, int length) {
++      FunctionCallbackInfo(
++        internal::Address* address, 
++        internal::Address* returnValue, 
++        bool* isReturnValueSetted,
++        int length
++      ) {
 +        this->values_ = address;
 +        this->length_ = length;
 +        return_value_ = returnValue;
++        is_return_value_setted_ = isReturnValueSetted;
 +      }
 +      ReturnValue GetReturnValue() const {
-+        return ReturnValue(return_value_);
++        return ReturnValue(return_value_, is_return_value_setted_);
 +      }
 +      int Length() const {
 +        return length_;
@@ -75,16 +84,17 @@ index 18d72f1630..b10ad0c9c4 100644
  
  #endif  // INCLUDE_V8_H_
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 93780bceec..681e3fb272 100644
+index 93780bceec..0b600916ad 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -11181,6 +11181,11 @@ void InvokeFinalizationRegistryCleanupFromTask(
+@@ -11181,6 +11181,12 @@ void InvokeFinalizationRegistryCleanupFromTask(
  #undef CALLBACK_SETTER
  
  }  // namespace internal
 +
 +void Puerts::FunctionCallbackInfo::ReturnValue::Set(const v8::Local<v8::Value> handle) {
-+    *value_ = *reinterpret_cast<internal::Address*>(*handle);
++  *is_return_value_setted_ = true;
++  *value_ = *reinterpret_cast<internal::Address*>(*handle);
 +}
 +
  }  // namespace v8
@@ -103,7 +113,7 @@ index 84ddf55f6f..67ec7315a0 100644
    /* Symbol */                                                                 \
    /* ES #sec-symbol-constructor */                                             \
 diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
-index 8a897765c8..5e4e786afd 100644
+index 8a897765c8..5106d6af4a 100644
 --- a/src/builtins/builtins-string.cc
 +++ b/src/builtins/builtins-string.cc
 @@ -2,6 +2,7 @@
@@ -114,7 +124,7 @@ index 8a897765c8..5e4e786afd 100644
  #include "src/builtins/builtins-utils-inl.h"
  #include "src/builtins/builtins.h"
  #include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
-@@ -484,5 +485,55 @@ BUILTIN(StringRaw) {
+@@ -484,5 +485,57 @@ BUILTIN(StringRaw) {
    RETURN_RESULT_OR_FAILURE(isolate, result_builder.Finish());
  }
  
@@ -139,9 +149,11 @@ index 8a897765c8..5e4e786afd 100644
 +  
 +  int argLength = args.length() - 2;
 +  internal::Address returnValue = 0;
++  bool isReturnValueSetted = false;
 +  Puerts::FunctionCallbackInfo callbackInfo(
 +    args.address_of_arg_at(2), 
 +    &returnValue,
++    &isReturnValueSetted,
 +    argLength
 +  );
 +  
