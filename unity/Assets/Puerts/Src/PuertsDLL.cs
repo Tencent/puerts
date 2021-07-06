@@ -82,18 +82,6 @@ namespace Puerts
         public static extern void DestroyJSEngine(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetGlobalFunctionOld(IntPtr isolate, string name, IntPtr v8FunctionCallback, long data);
-
-        public static void SetGlobalFunctionOld(IntPtr isolate, string name, V8FunctionCallback v8FunctionCallback, long data)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            GCHandle.Alloc(v8FunctionCallback);
-#endif
-            IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
-            SetGlobalFunctionOld(isolate, name, fn, data);
-        }
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetGlobalFunction(IntPtr isolate, string name, IntPtr v8FunctionCallback, long data);
 
         public static void SetGlobalFunction(IntPtr isolate, string name, V8FunctionCallback v8FunctionCallback, long data)

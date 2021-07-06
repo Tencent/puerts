@@ -124,7 +124,6 @@ namespace puerts
         JSObjectIdMap.Reset();
         JsPromiseRejectCallback.Reset();
 
-
         {
             auto Isolate = MainIsolate;
             v8::Isolate::Scope Isolatescope(Isolate);
@@ -278,42 +277,6 @@ namespace puerts
         delete InFunction;
     }
 
-    static void CSharpFunctionCallbackWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
-
-        FCallbackInfo* CallbackInfo = reinterpret_cast<FCallbackInfo*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-
-        void* Ptr = CallbackInfo->IsStatic ? nullptr : FV8Utils::GetPoninter(Info.Holder());
-
-        CallbackInfo->Callback(Isolate, Info, Ptr, Info.Length(), CallbackInfo->Data);
-    }
-
-    v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallbackOld Callback, int64_t Data)
-    {
-        auto Pos = CallbackInfos.size();
-        auto CallbackInfo = new FCallbackInfo(IsStatic, Callback, Data);
-        CallbackInfos.push_back(CallbackInfo);
-        return v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackInfos[Pos]));
-    }
-
-    void JSEngine::SetGlobalFunctionOld(const char *Name, CSharpFunctionCallbackOld Callback, int64_t Data)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        v8::Local<v8::Object> Global = Context->Global();
-
-        Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
-    }
-
     void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)
     {
         v8::Isolate* Isolate = MainIsolate;
@@ -375,92 +338,6 @@ namespace puerts
 
         return true;
     }
-
-    // int JSEngine::RegisterClass(const char *FullName, int BaseClassId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size)
-    // {
-    //     auto Iter = NameToTemplateID.find(FullName);
-    //     if (Iter != NameToTemplateID.end())
-    //     {
-    //         return Iter->second;
-    //     }
-
-    //     v8::Isolate* Isolate = MainIsolate;
-    //     v8::Isolate::Scope IsolateScope(Isolate);
-    //     v8::HandleScope HandleScope(Isolate);
-    //     v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-    //     v8::Context::Scope ContextScope(Context);
-
-    //     int ClassId = static_cast<int>(Templates.size());
-
-    //     auto Pos = LifeCycleInfos.size();
-    //     auto LifeCycleInfo = new FLifeCycleInfo(ClassId, Constructor, Destructor ? Destructor : GeneralDestructor, Data, Size);
-    //     LifeCycleInfos.push_back(LifeCycleInfo);
-        
-    //     auto Template = v8::FunctionTemplate::New(Isolate, NewWrap, v8::External::New(Isolate, LifeCycleInfos[Pos]));
-        
-    //     Template->InstanceTemplate()->SetInternalFieldCount(3);//1: object id, 2: type id, 3: magic
-    //     Templates.push_back(v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template));
-    //     NameToTemplateID[FullName] = ClassId;
-
-    //     if (BaseClassId >= 0)
-    //     {
-    //         Template->Inherit(Templates[BaseClassId].Get(Isolate));
-    //     }
-    //     return ClassId;
-    // }
-
-    // bool JSEngine::RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
-    // {
-    //     v8::Isolate* Isolate = MainIsolate;
-    //     v8::Isolate::Scope IsolateScope(Isolate);
-    //     v8::HandleScope HandleScope(Isolate);
-    //     v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-    //     v8::Context::Scope ContextScope(Context);
-
-    //     if (ClassID >= Templates.size()) return false;
-
-    //     if (IsStatic)
-    //     {
-    //         Templates[ClassID].Get(Isolate)->Set(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Callback, Data));
-    //     }
-    //     else
-    //     {
-    //         Templates[ClassID].Get(Isolate)->PrototypeTemplate()->Set(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Callback, Data));
-    //     }
-
-    //     return true;
-    // }
-
-    // bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete)
-    // {
-    //     v8::Isolate* Isolate = MainIsolate;
-    //     v8::Isolate::Scope IsolateScope(Isolate);
-    //     v8::HandleScope HandleScope(Isolate);
-    //     v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-    //     v8::Context::Scope ContextScope(Context);
-
-    //     if (ClassID >= Templates.size()) return false;
-
-    //     auto Attr = (Setter == nullptr) ? v8::ReadOnly : v8::None;
-
-    //     if (DontDelete)
-    //     {
-    //         Attr = (v8::PropertyAttribute)(Attr | v8::DontDelete);
-    //     }
-
-    //     if (IsStatic)
-    //     {
-    //         Templates[ClassID].Get(Isolate)->SetAccessorProperty(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Getter, GetterData)
-    //             , Setter == nullptr ? v8::Local<v8::FunctionTemplate>() : ToTemplate(Isolate, IsStatic, Setter, SetterData), Attr);
-    //     }
-    //     else
-    //     {
-    //         Templates[ClassID].Get(Isolate)->PrototypeTemplate()->SetAccessorProperty(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Getter, GetterData)
-    //             , Setter == nullptr ? v8::Local<v8::FunctionTemplate>() : ToTemplate(Isolate, IsStatic, Setter, SetterData), Attr);
-    //     }
-
-    //     return true;
-    // }
 
     v8::Local<v8::Value> JSEngine::GetClassConstructor(int ClassID)
     {
