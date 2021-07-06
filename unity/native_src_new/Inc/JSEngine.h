@@ -20,6 +20,7 @@
 #pragma warning(pop)
 
 #include "JSFunction.h"
+#include "JSEngine_NativeClasses.h"
 #include "V8InspectorImpl.h"
 
 #if defined(PLATFORM_WINDOWS)
@@ -38,28 +39,11 @@
 #include "Blob/macOS/SnapshotBlob.h"
 #elif defined(PLATFORM_IOS)
 #include "Blob/iOS/arm64/SnapshotBlob.h"
+#elif defined(PLATFORM_IOS_SIMULATOR)
+#include "Blob/iOS/x64/SnapshotBlob.h"
 #endif
 
-#pragma pack(8)
-union ValueUnion
-{
-    double Number;
-    bool Boolean;
-    int64_t BigInt;
-    void* Pointer;
-};
-
-struct CSharpToJsValue
-{
-    puerts::JsValueType Type;
-    int classIDOrValueLength;
-    ValueUnion Data;
-};
-#pragma pack()
-
-typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
-
-typedef void(*CSharpFunction)(v8::Isolate* Isolate, CSharpToJsValue* value, void* Self, int ParamLen, int64_t UserData);
+typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
 
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
 
@@ -67,13 +51,6 @@ typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
 namespace puerts
 {
-struct FCallbackInfo
-{
-    FCallbackInfo(bool InIsStatic, CSharpFunctionCallback InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
-    bool IsStatic;
-    CSharpFunctionCallback Callback;
-    int64_t Data;
-};
 
 struct FLifeCycleInfo
 {
@@ -92,6 +69,8 @@ v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_
 
 class JSEngine
 {
+JSENGINE_NATIVECLASS_DEFINE
+
 public:
     JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
 
@@ -99,15 +78,7 @@ public:
 
     void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
-    void SetGlobalFunction(const char *Name, CSharpFunction Callback, int64_t Data);
-
     bool Eval(const char *Code, const char* Path);
-
-    int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
-
-    bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
-
-    bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
 
     v8::Local<v8::Value> GetClassConstructor(int ClassID);
 
@@ -153,11 +124,7 @@ public:
 private:
     v8::Isolate::CreateParams CreateParams;
 
-    std::vector<FCallbackInfo*> CallbackInfos;
-
     std::vector<FLifeCycleInfo*> LifeCycleInfos;
-
-    std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
 
     std::map<std::string, int> NameToTemplateID;
 
@@ -178,10 +145,5 @@ private:
     std::mutex JSObjectsMutex;
 
     V8Inspector* Inspector;
-
-private:
-    v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
-
-    v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunction Callback, int64_t Data);
 };
 }
