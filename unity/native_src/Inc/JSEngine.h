@@ -45,39 +45,12 @@
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
 
-typedef void(*CSharpFunctionCallbackOld)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
-
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 
 namespace puerts
 {
-
-#pragma pack(8)
-union ValueUnion
-{
-    double Number;
-    bool Boolean;
-    int64_t BigInt;
-    void* Pointer;
-};
-
-struct CSharpJSValue
-{
-    puerts::JsValueType Type;
-    int classIDOrValueLength;
-    ValueUnion Data;
-};
-#pragma pack()
-
-struct FCallbackInfo
-{
-    FCallbackInfo(bool InIsStatic, CSharpFunctionCallbackOld InCallback, int64_t InData) : IsStatic(InIsStatic), Callback(InCallback), Data(InData) {}
-    bool IsStatic;
-    CSharpFunctionCallbackOld Callback;
-    int64_t Data;
-};
 
 struct FLifeCycleInfo
 {
@@ -102,8 +75,6 @@ public:
     JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
 
     ~JSEngine();
-
-    void SetGlobalFunctionOld(const char *Name, CSharpFunctionCallbackOld Callback, int64_t Data);
 
     void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
@@ -157,8 +128,6 @@ private:
 
     std::vector<FLifeCycleInfo*> LifeCycleInfos;
 
-    // std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
-
     std::map<std::string, int> NameToTemplateID;
 
     std::map<void*, v8::UniquePersistent<v8::Value>> ObjectMap;
@@ -178,8 +147,5 @@ private:
     std::mutex JSObjectsMutex;
 
     V8Inspector* Inspector;
-
-private:
-    v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallbackOld Callback, int64_t Data);
 };
 }

@@ -57,12 +57,6 @@ V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, CSharpF
     JsEngine->SetGlobalFunction(Name, Callback, Data);
 }
 
-V8_EXPORT void SetGlobalFunctionOld(v8::Isolate *Isolate, const char *Name, CSharpFunctionCallbackOld Callback, int64_t Data)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->SetGlobalFunctionOld(Name, Callback, Data);
-}
-
 V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
