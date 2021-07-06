@@ -124,8 +124,6 @@ public:
 private:
     v8::Isolate::CreateParams CreateParams;
 
-    std::vector<FCallbackInfo*> CallbackInfos;
-
     std::vector<FLifeCycleInfo*> LifeCycleInfos;
 
     std::map<std::string, int> NameToTemplateID;

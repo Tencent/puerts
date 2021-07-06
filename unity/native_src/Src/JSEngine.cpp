@@ -161,11 +161,6 @@ namespace puerts
         MainIsolate = nullptr;
         delete CreateParams.array_buffer_allocator;
 
-        for (int i = 0; i < CallbackInfos.size(); ++i)
-        {
-            delete CallbackInfos[i];
-        }
-
         for (int i = 0; i < LifeCycleInfos.size(); ++i)
         {
             delete LifeCycleInfos[i];
