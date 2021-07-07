@@ -285,45 +285,7 @@ namespace puerts
 
         CallbackInfo->Callback(Isolate, Info, Ptr, Info.Length(), CallbackInfo->Data);
     }
-    static double GetNumberFromValue(v8::Isolate* Isolate, v8::Value *Value, int IsOut)
-    {
-        if (IsOut)
-        {
-            auto Context = Isolate->GetCurrentContext();
-            auto Outer = Value->ToObject(Context).ToLocalChecked();
-            auto Realvalue = Outer->Get(Context, FV8Utils::V8String(Isolate, "value")).ToLocalChecked();
-            return GetNumberFromValue(Isolate, *Realvalue, false);
-        }
-        else
-        {
-            auto Context = Isolate->GetCurrentContext();
-            return Value->NumberValue(Context).ToChecked();
-        }
-    }
-    static void CSharpFunctionWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
-    {
-        v8::Isolate* Isolate = Info.GetIsolate();
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        v8::Context::Scope ContextScope(Context);
 
-        CSharpFunction Callback = reinterpret_cast<CSharpFunction>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-
-        CSharpToJsValue* ret = (CSharpToJsValue*)alloca(Info.Length() * sizeof(CSharpToJsValue));
-        for (int i = 0; i < Info.Length(); i++)
-        {
-            auto Context = Isolate->GetCurrentContext();
-            ret[i].Type = FV8Utils::GetType(Context, *Info[i]);
-            switch (ret[i].Type) 
-            {
-                case JsValueType::Number:
-                    ret[i].Data.Number = puerts::GetNumberFromValue(Isolate, *Info[i], false);
-                    break;
-            }
-        }
-        return Callback(Isolate, ret, nullptr, Info.Length(), 0);
-    }
     v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
     {
         auto Pos = CallbackInfos.size();
@@ -332,28 +294,7 @@ namespace puerts
         return v8::FunctionTemplate::New(Isolate, CSharpFunctionCallbackWrap, v8::External::New(Isolate, CallbackInfos[Pos]));
     }
 
-    v8::Local<v8::FunctionTemplate> JSEngine::ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunction Callback, int64_t Data)
-    {
-        // auto Pos = CallbackInfos.size();
-        // auto CallbackInfo = new FCallbackInfo(IsStatic, Callback, Data);
-        // CallbackInfos.push_back(CallbackInfo);
-        return v8::FunctionTemplate::New(Isolate, CSharpFunctionWrap, v8::External::New(Isolate, (void *)Callback));
-    }
-
     void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        v8::Local<v8::Object> Global = Context->Global();
-
-        Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
-    }
-
-    void JSEngine::SetGlobalFunction(const char *Name, CSharpFunction Callback, int64_t Data)
     {
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);

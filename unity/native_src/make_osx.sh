@@ -5,7 +5,6 @@ then
 else
     cmake -GXcode ../
 fi
-
 cd ..
 cmake --build build_osx --config Release
 mkdir -p ../Assets/Plugins/
