@@ -15,6 +15,7 @@
 #include "ISettingsSection.h"
 #include "Internationalization/Regex.h"
 #include "LevelEditor.h"
+#include "Misc/HotReloadInterface.h"
 #endif
 #include "Commandlets/Commandlet.h"
 
@@ -331,6 +332,15 @@ void FPuertsModule::StartupModule()
     FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
     LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
     RegisterSettings();
+
+    IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
+    HotReloadSupport.OnHotReload().AddLambda([&](bool )
+    {
+        if (Enabled)
+        {
+            MakeSharedJsEnv();
+        }
+    });
 #endif
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
