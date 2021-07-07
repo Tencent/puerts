@@ -433,13 +433,14 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                 }
                 TmpBuf << ": ";
 
-                const bool IsNullable = (CastFieldMacro<ObjectPropertyMacro>(Property) != nullptr) && !(Property->PropertyFlags & CPF_ReferenceParm);
-                 
+                const bool IsReference = !IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm));
+                const bool IsNullable = !(DefaultValuePtr != nullptr || IsReference) && (CastFieldMacro<ObjectPropertyMacro>(Property) != nullptr) && !(Property->PropertyFlags & CPF_ReferenceParm);
+                
                 if (IsNullable)
                 {
                     TmpBuf << "$Nullable<";
                 }
-                if (!IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm)))
+                if (IsReference)
                 {
                     if (ForceOneway) return false;
                     TmpBuf << "$Ref<";
@@ -448,7 +449,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                 {
                     return false;
                 }
-                if (!IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm)))
+                if (IsReference)
                 {
                     TmpBuf << ">";
                 }
