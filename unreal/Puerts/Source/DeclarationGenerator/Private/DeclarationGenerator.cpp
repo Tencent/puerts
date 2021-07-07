@@ -594,6 +594,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
         FStringBuffer TmpBuff;
         TmpBuff << "constructor(";
         bool First = true;
+        bool HasProperty = false;
         for (TFieldIterator<PropertyMacro> PropertyIt(Struct, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
         {
             auto Property = *PropertyIt;
@@ -617,8 +618,10 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             {
                 return;
             }
+            HasProperty = true;
         }
         TmpBuff << ")";
+        if (HasProperty) StringBuffer << "    constructor();\n";
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     };
     GenConstrutor();

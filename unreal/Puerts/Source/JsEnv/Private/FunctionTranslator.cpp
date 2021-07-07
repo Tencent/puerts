@@ -271,6 +271,7 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 
 void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, v8::Local<v8::Value> This, void *Params)
 {
+    Args.clear();
     for (int i = 0; i < Arguments.size(); ++i)
     {
         Args.push_back(Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false));
@@ -335,6 +336,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
         Stack.SkipCode(1);          // skip EX_EndFunctionParms
     }
 
+    Args.clear();
     for (int i = 0; i < Arguments.size(); ++i)
     {
         Args.push_back(Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false));
