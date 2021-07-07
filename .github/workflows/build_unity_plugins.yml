@@ -4,6 +4,7 @@ on:
   push:
     paths: 
       - unity/native_src/**
+      - unity/native_src_ourv8/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
