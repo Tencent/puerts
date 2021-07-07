@@ -81,10 +81,6 @@ namespace puerts
         }
     }
 
-    /*void JSFunction::SetResult(v8::MaybeLocal<v8::Value> maybeValue)
-    {
-
-    }*/
 
     bool JSFunction::Invoke(bool HasResult)
     {
