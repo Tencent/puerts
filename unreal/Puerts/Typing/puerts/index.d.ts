@@ -6,7 +6,7 @@
 */
 
 declare module "puerts" {
-    import {Object, $Ref, Class} from "ue"
+    import {Object, $Ref, Class, $Delegate} from "ue"
     
     function $ref<T>(x : T) : $Ref<T>;
     
@@ -21,7 +21,7 @@ declare module "puerts" {
     
     function merge(des: {}, src: {}): void;
     
-    function requestJitModuleMethod(moduleName: string, methodName: string, callback: (err: Error, result: any)=> void, ... args: any[]): void;
+    //function requestJitModuleMethod(moduleName: string, methodName: string, callback: (err: Error, result: any)=> void, ... args: any[]): void;
     
     function makeUClass(ctor: { new(): Object }): Class;
     
@@ -34,6 +34,10 @@ declare module "puerts" {
     function off(eventType: string, listener: Function) : void;
     
     function emit(eventType: string, ...args:any[]) : boolean;
+    
+    function toManualReleaseDelegate<T extends (...args: any) => any>(func: T): $Delegate<T>;
+    
+    function releaseManualReleaseDelegate<T extends (...args: any) => any>(func: T): void;
 
     /*function getProperties(obj: Object, ...propNames:string[]): any;
     function getPropertiesAsync(obj: Object, ...propNames:string[]): Promise<any>;

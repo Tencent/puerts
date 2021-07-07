@@ -198,4 +198,6 @@ var global = global || (function () { return this; }());
         "condition" : dummyDecorator
     }
     
+    puerts.toManualReleaseDelegate = (x) => x;
+    
 }(global));

@@ -271,6 +271,12 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->DumpStatisticsLog(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
+    Puerts->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+        Self->ReleaseManualReleaseDelegate(Info);
+    }, This)->GetFunction(Context).ToLocalChecked()).Check();
+
     ArrayTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FScriptArrayWrapper::ToFunctionTemplate(Isolate));
 
     SetTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FScriptSetWrapper::ToFunctionTemplate(Isolate));
@@ -308,11 +314,21 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ReloadJs.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(TBaseDelegate<bool, float>::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
+
+    ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+    for(int i = 0; i < ManualReleaseCallbackList.size(); i++)
+    {
+        if (ManualReleaseCallbackList[i].IsValid())
+        {
+            ManualReleaseCallbackList[i].Get()->JsFunction.Reset();
+        }
+    }
+    ManualReleaseCallbackMap.Reset();
     InspectorMessageHandler.Reset();
     Require.Reset();
     ReloadJs.Reset();
@@ -1445,6 +1461,65 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         }
     }
     return true;
+}
+
+FScriptDelegate FJsEnvImpl::NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction)
+{
+    auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
+    auto MaybeProxy = CallbacksMap->Get(Context, JsFunction);
+    UDynamicDelegateProxy *DelegateProxy = nullptr;
+    if (MaybeProxy.IsEmpty() || !MaybeProxy.ToLocalChecked()->IsExternal())
+    {
+        DelegateProxy = NewObject<UDynamicDelegateProxy>();
+        DelegateProxy->Owner = DelegateProxy;
+        DelegateProxy->SignatureFunction = SignatureFunction;
+        DelegateProxy->DynamicInvoker = DynamicInvoker;
+        DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
+            
+        SysObjectRetainer.Retain(DelegateProxy);
+        __USE(CallbacksMap->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy)));
+
+        ManualReleaseCallbackList.push_back(DelegateProxy);
+    }
+    else
+    {
+        DelegateProxy = Cast<UDynamicDelegateProxy>(static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
+    }
+
+    FScriptDelegate Delegate;
+    Delegate.BindUFunction(DelegateProxy, NAME_Fire);
+    return Delegate;
+}
+
+void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(Function);
+
+    auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
+    auto MaybeProxy = CallbacksMap->Get(Context, Info[0]);
+    if (!MaybeProxy.IsEmpty() && MaybeProxy.ToLocalChecked()->IsExternal())
+    {
+        __USE(CallbacksMap->Set(Context, Info[0], v8::Undefined(Isolate)));
+        auto DelegateProxy = Cast<UDynamicDelegateProxy>(static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
+        for ( auto it = ManualReleaseCallbackList.begin(); it != ManualReleaseCallbackList.end(); )
+        {
+            if (!it->IsValid())
+            {
+                it = ManualReleaseCallbackList.erase(it);
+            } else if (it->Get() == DelegateProxy) {
+                DelegateProxy->JsFunction.Reset();
+                it = ManualReleaseCallbackList.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
 }
 
 bool FJsEnvImpl::RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction)

@@ -679,10 +679,17 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
         FScriptDelegate *Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
-        auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPoninter(Context, Value, 0));
-        if (Des && Src)
+        if (Value->IsFunction())
         {
-            *Des = *Src;
+            *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewManualReleaseDelegate(Isolate, Context, Value.As<v8::Function>(), DelegateProperty->SignatureFunction);
+        }
+        else
+        {
+            auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPoninter(Context, Value, 0));
+            if (Des && Src)
+            {
+                *Des = *Src;
+            }
         }
         return true;
     }

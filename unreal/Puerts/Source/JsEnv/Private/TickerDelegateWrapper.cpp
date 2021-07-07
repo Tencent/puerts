@@ -68,11 +68,12 @@ bool FTickerDelegateWrapper::CallFunction(float)
         ExceptionHandler(GetIsolate(), &TryCatch);
     }
 
-    if (!FunctionContinue)
+    const bool Continue = FunctionContinue;
+    if (!Continue)
     {
         DelegateHandleCleaner(DelegateHandle);
     }
-    return FunctionContinue;
+    return Continue;
 }
 
 void FTickerDelegateWrapper::SetDelegateHandle(FDelegateHandle* Handle)
