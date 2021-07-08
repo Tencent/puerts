@@ -190,5 +190,9 @@ declare module "ue" {
     
         export function condition(f: ELifetimeCondition) : (target: Object, propertyKey: string) => void;
     }
+    
+    function edit_on_instance(): any;
+    
+    function no_blueprint(): any;
 
 }
