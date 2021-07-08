@@ -92,7 +92,7 @@ namespace Puerts
             IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
             SetGlobalFunction(isolate, name, fn, data);
         }
-
+        
         private static string GetStringFromNative(IntPtr str, int strlen)
         {
             if (str != IntPtr.Zero)

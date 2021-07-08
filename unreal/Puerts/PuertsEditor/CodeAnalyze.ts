@@ -1693,7 +1693,7 @@ function watch(configFilePath:string) {
                 const commentRanges = ts.getLeadingCommentRanges(
                     sourceFile.getFullText(), 
                     symbol.valueDeclaration.getFullStart());
-                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0));
+                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0)) || hasDecorator(symbol.valueDeclaration, "no_blueprint");
             }
 
             function tryGetAnnotation(valueDeclaration: ts.Node, key:string, leading: boolean): string {
@@ -1741,7 +1741,7 @@ function watch(configFilePath:string) {
                     decorators.forEach((decorator, index) => {
                         let expression = decorator.expression;
                         if (ts.isCallExpression(expression)) {
-                            if (expression.expression.getFullText().endsWith(posfix)) {
+                            if (expression.expression.getFullText() == posfix|| expression.expression.getFullText().endsWith('.' + posfix)) {
                                 expression.arguments.forEach((value, index) => {
                                     let e = value.getFullText().split("|").map(x => x.trim().replace(/^.*[\.]/, ''))
                                         .map(x => x in flagsDef ? BigInt(flagsDef[x]) : 0n)
@@ -1755,6 +1755,22 @@ function watch(configFilePath:string) {
                 } else {
                     return 0n;
                 }
+            }
+
+            function hasDecorator(valueDeclaration:ts.Node, posfix: string): boolean {
+                let ret = false;
+                if (valueDeclaration && valueDeclaration.decorators) {
+                    let decorators = valueDeclaration.decorators;
+                    decorators.forEach((decorator, index) => {
+                        let expression = decorator.expression;
+                        if (ts.isCallExpression(expression)) {
+                            if (expression.expression.getFullText() == posfix|| expression.expression.getFullText().endsWith('.' + posfix)) {
+                                ret = true;
+                            }
+                        }
+                    });
+                } 
+                return ret;
             }
 
             function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
@@ -1801,7 +1817,7 @@ function watch(configFilePath:string) {
                                 let flags = getFlagsValue(sflags, FunctionFlags);
 
                                 if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                    flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags));
+                                    flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "flags", FunctionFlags));
                                 }
                                 
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
@@ -1832,12 +1848,16 @@ function watch(configFilePath:string) {
                                     let flags:bigint = BigInt(getFlagsValue(sflags, PropertyFlags));
                                     let cond = 0;
                                     if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                        cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition));
+                                        cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "condition", ELifetimeCondition));
                                         if (cond != 0) {
                                             flags = flags | BigInt(PropertyFlags.CPF_Net);
                                         }
-                                        flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", PropertyFlags);
+                                        flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
                                     }
+                                    if (!hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
+                                        flags = flags | BigInt(PropertyFlags.CPF_DisableEditOnInstance);
+                                    }
+                                    
                                     bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond);
                                 }
                             }

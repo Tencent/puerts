@@ -198,6 +198,10 @@ var global = global || (function () { return this; }());
         "condition" : dummyDecorator
     }
     
+    cache.edit_on_instance = dummyDecorator;
+    
+    cache.no_blueprint = dummyDecorator;
+    
     puerts.toManualReleaseDelegate = (x) => x;
     
 }(global));
