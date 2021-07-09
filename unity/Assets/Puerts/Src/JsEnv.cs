@@ -562,35 +562,35 @@ namespace Puerts
         }
 #endif
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogCallback(string msg)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            System.Console.WriteLine(msg);
-#else
-            UnityEngine.Debug.Log(msg);
-#endif
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogWarningCallback(string msg)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            System.Console.WriteLine(msg);
-#else
-            UnityEngine.Debug.Log(msg);
-#endif
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogWarningCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogErrorCallback(string msg)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            System.Console.WriteLine(msg);
-#else
-            UnityEngine.Debug.Log(msg);
-#endif
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogErrorCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
         ~JsEnv()
         {
