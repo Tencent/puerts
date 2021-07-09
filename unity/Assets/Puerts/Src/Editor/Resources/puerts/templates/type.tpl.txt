@@ -15,6 +15,10 @@ const fixGet = {
     bool: 'GetBoolean',
     string: 'GetString',
     DateTime: 'GetDateTime',
+    'Puerts.ArrayBuffer': 'GetArrayBuffer',
+    'Puerts.GenericDelegate': 'GetGenericDelegate',
+    'Puerts.JSObject': 'GetJSObject',
+    'System.Object': 'GetSystemObject',
 };
 const fixReturn = {
     char: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
@@ -98,7 +102,11 @@ function getArgument(typeInfo, argHelper, idx) {
     } else if (typeName in fixGet) {
         return `${argHelper}.${fixGet[typeName]}(${isByRef})`;
     } else {
-        return `${argHelper}.Get<${typeName}>(${isByRef})`;
+        if (typeInfo.IsByRef) {
+            return `${argHelper}.GetRefType<${typeName}>(${isByRef})`;
+        } else if (!typeInfo.IsEnum){
+            return `${argHelper}.GetNonRefType<${typeName}>(${isByRef})`;
+        }
     }
 }
 function setReturn(typeInfo) {
