@@ -1,7 +1,5 @@
 /// <reference path="puerts.d.ts" />
 declare module "ue" {
-    type $Nullable<T> = T | null;
-
     class Guid {
         constructor();
         constructor(InA: number, InB: number, InC: number, InD: number);
