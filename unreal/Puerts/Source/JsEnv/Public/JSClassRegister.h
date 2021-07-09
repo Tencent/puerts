@@ -19,6 +19,7 @@ struct JSENV_API JSFunctionInfo
 {
     const char* Name;
     v8::FunctionCallback Callback;
+    void *Data = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo
@@ -26,6 +27,7 @@ struct JSENV_API JSPropertyInfo
     const char* Name;
     v8::AccessorNameGetterCallback Getter;
     v8::AccessorNameSetterCallback Setter;
+    void *Data = nullptr;
 };
 
 typedef void(*FinalizeFunc)(void* Ptr);

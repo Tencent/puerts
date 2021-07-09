@@ -676,6 +676,19 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
             NeedSave = true;
         }
 
+        if ((Variable.PropertyFlags & CPF_DisableEditOnInstance) != (InFlags & CPF_DisableEditOnInstance))
+        {
+            if( InFlags & CPF_DisableEditOnInstance )
+            {
+                Blueprint->NewVariables[VarIndex].PropertyFlags |= CPF_DisableEditOnInstance;
+            }
+            else
+            {
+                Blueprint->NewVariables[VarIndex].PropertyFlags &= ~CPF_DisableEditOnInstance;
+            }
+            NeedSave = true;
+        }
+
         if (InLifetimeCondition < COND_Max && Variable.ReplicationCondition != InLifetimeCondition)
         {
             Variable.ReplicationCondition = (ELifetimeCondition)InLifetimeCondition;

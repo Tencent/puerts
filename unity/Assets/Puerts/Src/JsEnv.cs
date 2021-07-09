@@ -59,7 +59,7 @@ namespace Puerts
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-            //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            // PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
             if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
             {
@@ -562,23 +562,35 @@ namespace Puerts
         }
 #endif
 
-        /*[MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogCallback(string msg)
-        {
-            UnityEngine.Debug.Log(msg);
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogWarningCallback(string msg)
-        {
-            UnityEngine.Debug.LogWarning(msg);
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogWarningCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogErrorCallback(string msg)
-        {
-            UnityEngine.Debug.LogError(msg);
-        }*/
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogErrorCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
         ~JsEnv()
         {

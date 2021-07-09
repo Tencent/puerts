@@ -30,8 +30,8 @@ public:
     AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 
 private:
-    std::map<const void*, JSClassDefinition> NameToClassDefinition;
-    std::map<FString, JSClassDefinition> StructNameToClassDefinition;
+    std::map<const void*, JSClassDefinition*> NameToClassDefinition;
+    std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
     std::map<FString, JSClassDefinition*> CDataNameToClassDefinition;
     std::map<FString, AddonRegisterFunc> AddonRegisterInfos;
 };
@@ -42,22 +42,33 @@ JSClassRegister::JSClassRegister()
 
 JSClassRegister::~JSClassRegister()
 {
+    for(auto & KV : NameToClassDefinition)
+    {
+        ::free(KV.second);
+    }
+    for(auto & KV : StructNameToClassDefinition)
+    {
+        ::free(KV.second);
+    }
     NameToClassDefinition.clear();
     StructNameToClassDefinition.clear();
 }
 
 void JSClassRegister::RegisterClass(const JSClassDefinition &ClassDefinition)
 {
+    auto CD = (JSClassDefinition *)::malloc(sizeof(JSClassDefinition));
+    ::memcpy(CD, &ClassDefinition, sizeof(JSClassDefinition));
+    
     if (ClassDefinition.UStructName)
     {
         FString SN = UTF8_TO_TCHAR(ClassDefinition.UStructName);
-        StructNameToClassDefinition[SN] = ClassDefinition;
+        StructNameToClassDefinition[SN] = CD;
     }
     else if (ClassDefinition.CDataName)
     {
-        NameToClassDefinition[ClassDefinition.CDataName] = ClassDefinition;
+        NameToClassDefinition[ClassDefinition.CDataName] = CD;
         FString SN = UTF8_TO_TCHAR(ClassDefinition.CDataName);
-        CDataNameToClassDefinition[SN] = &NameToClassDefinition[ClassDefinition.CDataName];
+        CDataNameToClassDefinition[SN] = NameToClassDefinition[ClassDefinition.CDataName];
     }
 }
 
@@ -75,7 +86,7 @@ const JSClassDefinition* JSClassRegister::FindClassByID(const char* Name)
     }
     else
     {
-        return &Iter->second;
+        return Iter->second;
     }
 }
 
@@ -102,7 +113,7 @@ const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
     }
     else
     {
-        return &Iter->second;
+        return Iter->second;
     }
 }
 
