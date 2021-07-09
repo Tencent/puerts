@@ -1,5 +1,16 @@
+diff --git a/.gitignore b/.gitignore
+index ffbf9ce355..c408c7d7c7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -104,3 +104,5 @@ turbo*.dot
+ turbo*.json
+ v8.ignition_dispatches_table.json
+ 
++build.sh
++puerts
+\ No newline at end of file
 diff --git a/include/v8.h b/include/v8.h
-index 18d72f1630..5d0f4448f1 100644
+index 18d72f1630..af2144ac99 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -38,6 +38,9 @@
@@ -20,7 +31,7 @@ index 18d72f1630..5d0f4448f1 100644
    template<class F> friend class PropertyCallbackInfo;
    friend class String;
    friend class Object;
-@@ -12038,6 +12042,62 @@ size_t SnapshotCreator::AddData(Local<T> object) {
+@@ -12038,6 +12042,69 @@ size_t SnapshotCreator::AddData(Local<T> object) {
   */
  
  
@@ -64,6 +75,13 @@ index 18d72f1630..5d0f4448f1 100644
 +        return_value_ = returnValue;
 +        is_return_value_setted_ = isReturnValueSetted;
 +      }
++      FunctionCallbackInfo(
++        v8::Local<v8::Value> address, 
++        int length
++      ) {
++        this->values_ = reinterpret_cast<internal::Address*>(*address);
++        this->length_ = length;
++      }
 +      ReturnValue GetReturnValue() const {
 +        return ReturnValue(return_value_, is_return_value_setted_);
 +      }
@@ -100,49 +118,20 @@ index 93780bceec..0b600916ad 100644
  }  // namespace v8
  
  #undef TRACE_BS
-diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
-index 84ddf55f6f..67ec7315a0 100644
---- a/src/builtins/builtins-definitions.h
-+++ b/src/builtins/builtins-definitions.h
-@@ -792,6 +792,7 @@ namespace internal {
-   TFJ(StringPrototypeTrimStart, kDontAdaptArgumentsSentinel)                   \
-   /* ES6 #sec-string.raw */                                                    \
-   CPP(StringRaw)                                                               \
-+  CPP(StringPuertsCallback)                                                  \
-                                                                                \
-   /* Symbol */                                                                 \
-   /* ES #sec-symbol-constructor */                                             \
-diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
-index 8a897765c8..ede261ce9d 100644
---- a/src/builtins/builtins-string.cc
-+++ b/src/builtins/builtins-string.cc
-@@ -2,6 +2,7 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+#include "src/api/api-inl.h"
- #include "src/builtins/builtins-utils-inl.h"
- #include "src/builtins/builtins.h"
- #include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
-@@ -484,5 +485,57 @@ BUILTIN(StringRaw) {
-   RETURN_RESULT_OR_FAILURE(isolate, result_builder.Finish());
+diff --git a/src/builtins/builtins-api.cc b/src/builtins/builtins-api.cc
+index 6eb6f87c74..993c799400 100644
+--- a/src/builtins/builtins-api.cc
++++ b/src/builtins/builtins-api.cc
+@@ -309,5 +309,53 @@ BUILTIN(HandleApiCallAsConstructor) {
+   return HandleApiCallAsFunctionOrConstructor(isolate, true, args);
  }
  
-+void* GetPointer(v8::Local<v8::Value> Value, int Index = 0)
-+{
-+  if (Value.IsEmpty() || !Value->IsObject() || Value->IsUndefined() || Value->IsNull())
-+  {
-+      return nullptr;
-+  }
-+  auto Object = v8::Object::Cast(*Value);
-+  return Object->InternalFieldCount() > Index ?
-+      Object->GetAlignedPointerFromInternalField(Index) : nullptr;
-+}
 +
-+BUILTIN(StringPuertsCallback) {
-+  
-+  Handle<JSObject> puertsThis = args.at<JSObject>(0);
-+
++V8_WARN_UNUSED_RESULT MaybeHandle<Object> PuertsCallHandler(
++  internal::Isolate* isolate, 
++  Handle<JSObject> puertsThis,
++  BuiltinArguments&  args
++) {
 +  Puerts::FunctionInfo* functionInfo = (Puerts::FunctionInfo*)Foreign::cast(
 +    JSObject::cast(puertsThis->GetEmbedderField(0)).GetEmbedderField(0)
 +  ).foreign_address();
@@ -170,15 +159,62 @@ index 8a897765c8..ede261ce9d 100644
 +    argLength,
 +    (int64_t)functionInfo->bindData
 +  );
-+  // (v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData)
++  RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
++
 +  if (isReturnValueSetted) {
-+    internal::Object ret(returnValue);
-+    return ret;
++    return MaybeHandle<Object>(internal::Object(returnValue), isolate);
 +
 +  } else {
-+    return *isolate->factory()->undefined_value();
++    return isolate->factory()->undefined_value();
 +  }
++
 +}
++
++BUILTIN(StringPuertsCallback) {
++  Handle<JSObject> puertsThis = args.at<JSObject>(0);
++  RETURN_RESULT_OR_FAILURE(isolate, PuertsCallHandler(isolate, puertsThis, args));
++}
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index 84ddf55f6f..67ec7315a0 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -792,6 +792,7 @@ namespace internal {
+   TFJ(StringPrototypeTrimStart, kDontAdaptArgumentsSentinel)                   \
+   /* ES6 #sec-string.raw */                                                    \
+   CPP(StringRaw)                                                               \
++  CPP(StringPuertsCallback)                                                  \
+                                                                                \
+   /* Symbol */                                                                 \
+   /* ES #sec-symbol-constructor */                                             \
+diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
+index 8a897765c8..4a6e54798f 100644
+--- a/src/builtins/builtins-string.cc
++++ b/src/builtins/builtins-string.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "src/api/api-inl.h"
+ #include "src/builtins/builtins-utils-inl.h"
+ #include "src/builtins/builtins.h"
+ #include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
+@@ -484,5 +485,17 @@ BUILTIN(StringRaw) {
+   RETURN_RESULT_OR_FAILURE(isolate, result_builder.Finish());
+ }
+ 
++void* GetPointer(v8::Local<v8::Value> Value, int Index = 0)
++{
++  if (Value.IsEmpty() || !Value->IsObject() || Value->IsUndefined() || Value->IsNull())
++  {
++      return nullptr;
++  }
++  auto Object = v8::Object::Cast(*Value);
++  return Object->InternalFieldCount() > Index ?
++      Object->GetAlignedPointerFromInternalField(Index) : nullptr;
++}
++
 +
  }  // namespace internal
  }  // namespace v8
