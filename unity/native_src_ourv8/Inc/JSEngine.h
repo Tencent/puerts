@@ -45,7 +45,7 @@
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);
 
-typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
+typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, int ParamLen, int64_t UserData);
 
 typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
 

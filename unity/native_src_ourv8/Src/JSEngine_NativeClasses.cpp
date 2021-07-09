@@ -147,7 +147,8 @@ static void NewWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
         }
         else // Call by js new
         {
-            if (LifeCycleInfo->Constructor) Ptr = LifeCycleInfo->Constructor(Isolate, Info, Info.Length(), LifeCycleInfo->Data);
+            int length = Info.Length();
+            if (LifeCycleInfo->Constructor) Ptr = LifeCycleInfo->Constructor(Isolate, v8::Puerts::FunctionCallbackInfo(Info[0], length), length, LifeCycleInfo->Data);
         }
         FV8Utils::IsolateData<JSEngine>(Isolate)->BindObject(LifeCycleInfo, Ptr, Self);
     }
