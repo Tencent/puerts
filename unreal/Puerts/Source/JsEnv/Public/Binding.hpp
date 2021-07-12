@@ -20,9 +20,9 @@
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
 #define MakeSetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::setter)
 #define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call)
-#define MakeCheckFunction(M) &(::puerts::CheckedFuncCallWrapper<decltype(M), M>::call)
-#define MakeOverload(SIGNATURE, M) &(::puerts::CheckedFuncCallWrapper<decltype(static_cast<SIGNATURE>(M)), static_cast<SIGNATURE>(M)>::callWithRet)
-#define CombineFunctions(...) &(::puerts::OverloadsRecursion<##__VA_ARGS__>::call)
+#define MakeCheckFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall)
+#define MakeOverload(SIGNATURE, M) &(::puerts::FuncCallWrapper<decltype(static_cast<SIGNATURE>(M)), static_cast<SIGNATURE>(M)>::overloadCall)
+#define CombineOverloads(...) &(::puerts::OverloadsRecursion<##__VA_ARGS__>::call)
 
 #define __DefScriptTTypeName(CLSNAME, CLS)                  \
     template<>                                              \
@@ -31,7 +31,7 @@
         return #CLSNAME;                                    \
     }
 
-#define PuertsUsing(CLS) \
+#define UsingCppClass(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
     __DefCDataPointerConverter(CLS)
 
@@ -250,32 +250,14 @@ struct FuncCallWrapper<Ret (*)(Args...), func>
 			std::pair<Ret, std::tuple<Args...>>, false>;
 		Helper::call(func, info);
 	}
-};
 
-template<typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...)>
-struct FuncCallWrapper<Ret (Inc::*)(Args...), func> 
-{
-	static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
-	{
-		using Helper = internal::FuncCallHelper<
-			std::pair<Ret, std::tuple<Args...>>, false>;
-		Helper::callMethod<Inc>(func, info);
-	}
-};
-
-template<typename Func, Func>
-struct CheckedFuncCallWrapper;
-
-template<typename Ret, typename... Args, Ret (*func)(Args...)>
-struct CheckedFuncCallWrapper<Ret (*)(Args...), func> 
-{
-	static bool callWithRet(const v8::FunctionCallbackInfo<v8::Value>& info)
+	static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
 		return Helper::call(func, info);
 	}
-	static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+	static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
@@ -289,15 +271,22 @@ struct CheckedFuncCallWrapper<Ret (*)(Args...), func>
 };
 
 template<typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...)>
-struct CheckedFuncCallWrapper<Ret (Inc::*)(Args...), func> 
+struct FuncCallWrapper<Ret (Inc::*)(Args...), func> 
 {
-	static bool callWithRet(const v8::FunctionCallbackInfo<v8::Value>& info)
+	static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		using Helper = internal::FuncCallHelper<
+			std::pair<Ret, std::tuple<Args...>>, false>;
+		Helper::callMethod<Inc>(func, info);
+	}
+
+	static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
 		return Helper::callMethod<Inc, decltype(func)>(func, info);
 	}
-	static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+	static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
