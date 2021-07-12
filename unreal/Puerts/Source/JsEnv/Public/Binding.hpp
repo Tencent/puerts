@@ -15,6 +15,7 @@
 #include "JSClassRegister.h"
 #include "DataTransfer.h"
 #include "Converter.hpp"
+#include "BindingTypeInfo.hpp"
 
 #define MakeConstructor(T, ...) &(::puerts::ConstructorWrapper<T, ##__VA_ARGS__>::call)
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
@@ -23,13 +24,6 @@
 #define MakeCheckFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall)
 #define MakeOverload(SIGNATURE, M) &(::puerts::FuncCallWrapper<decltype(static_cast<SIGNATURE>(M)), static_cast<SIGNATURE>(M)>::overloadCall)
 #define CombineOverloads(...) &(::puerts::OverloadsRecursion<##__VA_ARGS__>::call)
-
-#define __DefScriptTTypeName(CLSNAME, CLS)                  \
-    template<>                                              \
-    const char *::puerts::ScriptTypeName<CLS>::value()      \
-    {                                                       \
-        return #CLSNAME;                                    \
-    }
 
 #define UsingCppClass(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
@@ -408,27 +402,6 @@ struct PropertyWrapper<Ret Ins::*, member>
 		auto context = info.GetIsolate()->GetCurrentContext();
 		auto self = DataTransfer::GetPoninterFast<Ins>(info.This());
 		self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, value);
-	}
-};
-
-template<typename T>
-struct ScriptTypeName {
-	static const char *value();
-};
-
-template<typename T>
-struct ScriptTypeName<const T *> {
-	static const char *value()
-	{
-		return ScriptTypeName<T>::value();
-	}
-};
-
-template<typename T>
-struct ScriptTypeName<T *> {
-	static const char *value()
-	{
-		return ScriptTypeName<T>::value();
 	}
 };
 

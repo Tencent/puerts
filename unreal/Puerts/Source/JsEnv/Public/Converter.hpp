@@ -42,22 +42,130 @@ namespace converter
 template <typename T, typename Enable = void>
 struct Converter;
 
-template <>
-struct Converter<int32_t> {
-	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, int32_t value) { return v8::Integer::New(context->GetIsolate(), value); }
+template <typename T>
+struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8 && std::is_signed_v<T>>> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+	{
+		return v8::BigInt::New(context->GetIsolate(), value);
+	}
 
-	static int32_t toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value) { return value->Int32Value(context).ToChecked(); }
+	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return static_cast<T>(value->ToBigInt(context).ToLocalChecked()->Int64Value());
+	}
 
-	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value) { return value->IsInt32();}
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsBigInt();
+	}
+};
+
+template <typename T>
+struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8 && !std::is_signed_v<T>>> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+	{
+		return v8::BigInt::NewFromUnsigned(context->GetIsolate(), value);
+	}
+
+	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return static_cast<T>(value->ToBigInt(context).ToLocalChecked()->Uint64Value());
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsBigInt();
+	}
+};
+
+template <typename T>
+struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) < 8 && std::is_signed_v<T>>> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+	{
+		return v8::Integer::New(context->GetIsolate(), value);
+	}
+
+	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return static_cast<T>(value->Int32Value(context).ToChecked());
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsInt32();
+	}
+};
+
+template <typename T>
+struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) < 8 && !std::is_signed_v<T>>> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+	{
+		return v8::Integer::NewFromUnsigned(context->GetIsolate(), value);
+	}
+
+	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return static_cast<T>(value->Uint32Value(context).ToChecked());
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsUint32();
+	}
+};
+
+template <typename T>
+struct Converter<T, std::enable_if_t<std::is_floating_point_v<T>>> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+	{
+		return v8::Number::New(context->GetIsolate(), value);
+	}
+
+	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return static_cast<T>(value->NumberValue(context).ToChecked());
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsNumber();
+	}
 };
 
 template <>
 struct Converter<std::string> {
-	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::string value) { return v8::String::NewFromUtf8(context->GetIsolate(), value.c_str(), v8::NewStringType::kNormal).ToLocalChecked(); }
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::string value)
+	{
+		return v8::String::NewFromUtf8(context->GetIsolate(), value.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
+	}
 
-	static std::string toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value) { return *v8::String::Utf8Value(context->GetIsolate(), value); }
+	static std::string toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return *v8::String::Utf8Value(context->GetIsolate(), value);
+	}
 
-	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value) { return value->IsString();}
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsString();
+	}
+};
+
+template <>
+struct Converter<bool> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, bool value)
+	{
+		return v8::Boolean::New(context->GetIsolate(), value);
+	}
+
+	static bool toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->BooleanValue(context->GetIsolate());
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsBoolean();
+	}
 };
 	
 }
