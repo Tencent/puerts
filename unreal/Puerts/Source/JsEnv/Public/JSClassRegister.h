@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "functional"
+
 #include "CoreMinimal.h"
 
 #pragma warning(push, 0) 
@@ -34,6 +36,26 @@ typedef void(*FinalizeFunc)(void* Ptr);
 
 typedef void*(*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+class CFunctionInfo
+{
+public:
+    virtual const char* Return() const = 0;
+    virtual unsigned int ArgumentCount() const = 0;
+    virtual const char* Argument(unsigned int index) const = 0;
+};
+
+struct NamedFunctionInfo
+{
+    const char* Name;
+    const CFunctionInfo* Type;
+};
+
+struct NamedPropertyInfo
+{
+    const char* Name;
+    const char* Type;
+};
+
 struct JSENV_API JSClassDefinition
 {
     const char* CDataName;
@@ -45,6 +67,10 @@ struct JSENV_API JSClassDefinition
     JSPropertyInfo* Propertys;
     FinalizeFunc Finalize;
     //int InternalFieldCount;
+    NamedFunctionInfo* ConstructorInfos;
+    NamedFunctionInfo* MethodInfos;
+    NamedFunctionInfo* FunctionInfos;
+    NamedPropertyInfo* PropertyInfos;
 };
 
 typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
@@ -52,6 +78,8 @@ typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Co
 #define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0 }
 
 void JSENV_API RegisterClass(const JSClassDefinition &ClassDefinition);
+
+void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)>);
 
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
@@ -62,6 +90,7 @@ const JSClassDefinition* FindClassByType(UStruct* Type);
 const JSClassDefinition* FindCDataClassByName(const FString& Name);
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
+
 }
 
 #define PUERTS_MODULE(Name, RegFunc) \

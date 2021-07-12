@@ -17,13 +17,15 @@
 #include "Converter.hpp"
 #include "BindingTypeInfo.hpp"
 
-#define MakeConstructor(T, ...) &(::puerts::ConstructorWrapper<T, ##__VA_ARGS__>::call)
+#define MakeConstructor(T, ...) ::puerts::ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
 #define MakeSetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::setter)
-#define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call)
-#define MakeCheckFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall)
-#define MakeOverload(SIGNATURE, M) &(::puerts::FuncCallWrapper<decltype(static_cast<SIGNATURE>(M)), static_cast<SIGNATURE>(M)>::overloadCall)
-#define CombineOverloads(...) &(::puerts::OverloadsRecursion<##__VA_ARGS__>::call)
+#define MakeProperty(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter), &(::puerts::PropertyWrapper<decltype(M), M>::setter), ::puerts::PropertyWrapper<decltype(M), M>::info()
+#define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call), ::puerts::FuncCallWrapper<decltype(M), M>::info()
+#define MakeCheckFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall), ::puerts::FuncCallWrapper<decltype(M), M>::info()
+#define MakeOverload(SIGNATURE, M) puerts::FuncCallWrapper<decltype(static_cast<SIGNATURE>(M)), static_cast<SIGNATURE>(M)>
+#define CombineOverloads(...) &(::puerts::OverloadsCombiner<##__VA_ARGS__>::call), ::puerts::OverloadsCombiner<##__VA_ARGS__>::length, ::puerts::OverloadsCombiner<##__VA_ARGS__>::infos()
+#define CombineConstructors(...) &(::puerts::ConstructorsCombiner<##__VA_ARGS__>::call), ::puerts::ConstructorsCombiner<##__VA_ARGS__>::length, ::puerts::ConstructorsCombiner<##__VA_ARGS__>::infos()
 
 #define UsingCppClass(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
@@ -262,6 +264,10 @@ struct FuncCallWrapper<Ret (*)(Args...), func>
 				"invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
 		}
 	}
+	static const CFunctionInfo* info()
+	{
+		return CFunctionInfoImpl<Ret, Args...>::get();
+	}
 };
 
 template<typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...)>
@@ -291,6 +297,10 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func>
 				"invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
 		}
 	}
+	static const CFunctionInfo* info()
+	{
+		return CFunctionInfoImpl<Ret, Args...>::get();
+	}
 };
 
 template<typename T, typename... Args>
@@ -318,6 +328,10 @@ public:
 	static void *call(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		return call(info, std::make_index_sequence<ArgsLength>());
+	}
+	static const CFunctionInfo* info()
+	{
+		return CFunctionInfoImpl<T, Args...>::get();
 	}
 };
 
@@ -349,6 +363,23 @@ struct OverloadsRecursion<Func>
 	static bool _call(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		return Func(info);
+	}
+};
+
+template<typename...OverloadWraps>
+struct OverloadsCombiner
+{
+	static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		OverloadsRecursion<(&(OverloadWraps::overloadCall))...>::call(info);
+	}
+
+	static constexpr int length = sizeof...(OverloadWraps);
+
+	static const CFunctionInfo** infos()
+	{
+		static const CFunctionInfo* _infos[sizeof...(OverloadWraps)] = {OverloadWraps::info()...};
+		return _infos;
 	}
 };
 
@@ -384,6 +415,23 @@ struct ConstructorRecursion<Func>
 	}
 };
 
+template<typename...OverloadWraps>
+struct ConstructorsCombiner
+{
+	static void * call(const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		return ConstructorRecursion<(&(OverloadWraps::call))...>::call(info);
+	}
+
+	static constexpr int length = sizeof...(OverloadWraps);
+
+	static const CFunctionInfo** infos()
+	{
+		static const CFunctionInfo* _infos[sizeof...(OverloadWraps)] = {OverloadWraps::info()...};
+		return _infos;
+	}
+};
+
 template<typename T, T>
 struct PropertyWrapper;
 
@@ -402,6 +450,11 @@ struct PropertyWrapper<Ret Ins::*, member>
 		auto context = info.GetIsolate()->GetCurrentContext();
 		auto self = DataTransfer::GetPoninterFast<Ins>(info.This());
 		self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, value);
+	}
+
+	static const char* info()
+	{
+		return ScriptTypeName<Ret>::get();
 	}
 };
 
@@ -423,13 +476,18 @@ class ClassDefineBuilder
 
 	InitializeFunc constructor_{};
 
+	std::vector<NamedFunctionInfo> constructorInfos_{};
+	std::vector<NamedFunctionInfo> methodInfos_{};
+	std::vector<NamedFunctionInfo> functionInfos_{};
+	std::vector<NamedPropertyInfo> propertyInfos_{};
+
 public:
 	explicit ClassDefineBuilder(const char * className)
 		: className_(className) {}
 
 	template <typename S>
 	ClassDefineBuilder<T>& Extends() {
-		superClassName_ = ScriptTypeName<S>::value();
+		superClassName_ = ScriptTypeName<S>::get();
 		return *this;
 	}
 
@@ -437,26 +495,60 @@ public:
 	std::enable_if_t<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T>&>
 	Constructor() {
 		constructor_ = ConstructorWrapper<T, Args...>::call;
+		constructorInfos_.push_back(NamedFunctionInfo {"constructor", ConstructorWrapper<T, Args...>::info()});
 		return *this;
 	}
 
-	template<InitializeFunc... Args>
-	ClassDefineBuilder<T>& Constructors() {
-		constructor_ = ConstructorRecursion<Args...>::call;
+	ClassDefineBuilder<T>& Constructor(InitializeFunc constructor, int length, const CFunctionInfo** infos) {
+		for(int i = 0; i < length; i++)
+		{
+			constructorInfos_.push_back(NamedFunctionInfo {"constructor", infos[i]});
+		}
+		constructor_ = constructor;
 		return *this;
 	}
 
-	ClassDefineBuilder<T>& Function(const char* name, v8::FunctionCallback func) {
+	ClassDefineBuilder<T>& Function(const char* name, v8::FunctionCallback func, const CFunctionInfo* info) {
+		if (info)
+		{
+			functionInfos_.push_back(NamedFunctionInfo {name, info});
+		}
+		functions_.push_back(JSFunctionInfo {name, func, nullptr});
+		return *this;
+	}
+	
+	ClassDefineBuilder<T>& Function(const char* name, v8::FunctionCallback func, int length, const CFunctionInfo** infos) {
+		for(int i = 0; i < length; i++)
+		{
+			functionInfos_.push_back(NamedFunctionInfo {name, infos[i]});
+		}
 		functions_.push_back(JSFunctionInfo {name, func, nullptr});
 		return *this;
 	}
 
-	ClassDefineBuilder<T>& Method(const char* name, v8::FunctionCallback func) {
+	ClassDefineBuilder<T>& Method(const char* name, v8::FunctionCallback func, const CFunctionInfo* info) {
+		if (info)
+		{
+			methodInfos_.push_back(NamedFunctionInfo {name, info});
+		}
 		methods_.push_back(JSFunctionInfo {name, func, nullptr});
 		return *this;
 	}
 
-	ClassDefineBuilder<T>& Property(const char* name, v8::AccessorNameGetterCallback getter, v8::AccessorNameSetterCallback setter = nullptr) {
+	ClassDefineBuilder<T>& Method(const char* name, v8::FunctionCallback func, int length, const CFunctionInfo** infos) {
+		for(int i = 0; i < length; i++)
+		{
+			methodInfos_.push_back(NamedFunctionInfo {name, infos[i]});
+		}
+		methods_.push_back(JSFunctionInfo {name, func, nullptr});
+		return *this;
+	}
+
+	ClassDefineBuilder<T>& Property(const char* name, v8::AccessorNameGetterCallback getter, v8::AccessorNameSetterCallback setter = nullptr, const char* type = nullptr) {
+		if (type)
+		{
+			propertyInfos_.push_back(NamedPropertyInfo {name, type});
+		}
 		properties_.push_back(JSPropertyInfo {name, getter, setter, nullptr});
 		return *this;
 	}
@@ -465,7 +557,12 @@ public:
 	{
 		static std::vector<JSFunctionInfo> s_functions_{};
 		static std::vector<JSFunctionInfo> s_methods_{};
-		static std::vector<JSPropertyInfo> s_properties_{}; 
+		static std::vector<JSPropertyInfo> s_properties_{};
+
+		static std::vector<NamedFunctionInfo> s_constructorInfos_{};
+		static std::vector<NamedFunctionInfo> s_methodInfos_{};
+		static std::vector<NamedFunctionInfo> s_functionInfos_{};
+		static std::vector<NamedPropertyInfo> s_propertyInfos_{};
 		
 		puerts::JSClassDefinition ClassDef = JSClassEmptyDefinition;
 		ClassDef.CDataName = className_;
@@ -489,13 +586,29 @@ public:
 		s_properties_.push_back(JSPropertyInfo {nullptr, nullptr, nullptr, nullptr});
 		ClassDef.Propertys = s_properties_.data();
 
+		s_constructorInfos_ = std::move(constructorInfos_);
+		s_constructorInfos_.push_back(NamedFunctionInfo {nullptr, nullptr});
+		ClassDef.ConstructorInfos = s_constructorInfos_.data();
+
+		s_methodInfos_ = std::move(methodInfos_);
+		s_methodInfos_.push_back(NamedFunctionInfo {nullptr, nullptr});
+		ClassDef.MethodInfos = s_methodInfos_.data();
+
+		s_functionInfos_ = std::move(functionInfos_);
+		s_functionInfos_.push_back(NamedFunctionInfo {nullptr, nullptr});
+		ClassDef.FunctionInfos = s_functionInfos_.data();
+
+		s_propertyInfos_ = std::move(propertyInfos_);
+		s_propertyInfos_.push_back(NamedPropertyInfo {nullptr, nullptr});
+		ClassDef.PropertyInfos = s_propertyInfos_.data();
+
 		puerts::RegisterClass(ClassDef);
 	}
 };
 
 template <typename T>
 inline ClassDefineBuilder<T> DefineClass() {
-	return ClassDefineBuilder<T>(ScriptTypeName<T>::value());
+	return ClassDefineBuilder<T>(ScriptTypeName<T>::get());
 }
 
 }
