@@ -167,6 +167,24 @@ struct Converter<bool> {
 		return value->IsBoolean();
 	}
 };
+
+template <typename T>
+struct Converter<std::reference_wrapper<T>> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
+	{
+		return Converter<T>::toScript(context, value);
+	}
+
+	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return Converter<T>::toCpp(context, value);
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return Converter<T>::accept(context, value);
+	}
+};
 	
 }
 }
@@ -183,7 +201,7 @@ struct ConverterDecay {
 
 template <typename T>
 struct ConverterDecay<T, std::enable_if_t<std::is_lvalue_reference_v<T>>> {
-	using type = std::reference_wrapper<std::decay_t<T>>;
+	using type = std::remove_reference_t<std::decay_t<T>>;
 };
 
 template <typename T>

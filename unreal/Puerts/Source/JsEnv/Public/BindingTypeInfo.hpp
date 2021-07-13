@@ -41,6 +41,14 @@ struct ScriptTypeName<T *> {
 };
 
 template<typename T>
+struct ScriptTypeName<T &> {
+	static const char *get()
+	{
+		return ScriptTypeName<T>::get();
+	}
+};
+
+template<typename T>
 struct ScriptTypeName<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8>> {
 	static const char *get()
 	{

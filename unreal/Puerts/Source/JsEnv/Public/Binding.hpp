@@ -159,6 +159,7 @@ template <typename Ret, typename... Args, bool CheckArguments>
 struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments> {
 private:
     static constexpr auto ArgsLength = sizeof...(Args);
+	using ArgumentsTupleType = std::tuple<typename ConverterDecay<Args>::type...>;
 
     template <typename Func, size_t... index>
     static bool call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
@@ -175,14 +176,16 @@ private:
     			if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
     		}
     	}
+    	
+    	ArgumentsTupleType cppArgs = std::make_tuple<typename ConverterDecay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
         
         if constexpr (std::is_same_v<Ret, void>)
         {
-        	func(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        	func(std::get<index>(cppArgs)...);
         }
         else
         {
-        	auto ret = func(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        	auto ret = func(std::get<index>(cppArgs)...);
         	info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         }
         return true;
@@ -204,14 +207,16 @@ private:
     			if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
     		}
     	}
+
+    	ArgumentsTupleType cppArgs = std::make_tuple<typename ConverterDecay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
         
     	if constexpr (std::is_same_v<Ret, void>)
     	{
-    		(self->*func)(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+    		(self->*func)(std::get<index>(cppArgs)...);
     	}
     	else
     	{
-    		auto ret = (self->*func)(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+    		auto ret = (self->*func)(std::get<index>(cppArgs)...);
     		info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
     	}
     	return true;
