@@ -159,7 +159,7 @@ template <typename Ret, typename... Args, bool CheckArguments>
 struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments> {
 private:
     static constexpr auto ArgsLength = sizeof...(Args);
-	using ArgumentsTupleType = std::tuple<typename ConverterDecay<Args>::type...>;
+	using ArgumentsTupleType = std::tuple<std::decay_t<Args>...>;
 
     template <typename Func, size_t... index>
     static bool call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
@@ -177,7 +177,7 @@ private:
     		}
     	}
     	
-    	ArgumentsTupleType cppArgs = std::make_tuple<typename ConverterDecay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+    	ArgumentsTupleType cppArgs = std::make_tuple<std::decay_t<Args>...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
         
         if constexpr (std::is_same_v<Ret, void>)
         {
@@ -208,7 +208,7 @@ private:
     		}
     	}
 
-    	ArgumentsTupleType cppArgs = std::make_tuple<typename ConverterDecay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+    	ArgumentsTupleType cppArgs = std::make_tuple<std::decay_t<Args>...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
         
     	if constexpr (std::is_same_v<Ret, void>)
     	{

@@ -201,7 +201,7 @@ struct ConverterDecay {
 
 template <typename T>
 struct ConverterDecay<T, std::enable_if_t<std::is_lvalue_reference_v<T>>> {
-	using type = std::remove_reference_t<std::decay_t<T>>;
+	using type = std::reference_wrapper<std::decay_t<T>>;
 };
 
 template <typename T>
