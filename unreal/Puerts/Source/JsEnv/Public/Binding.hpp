@@ -161,6 +161,26 @@ private:
     static constexpr auto ArgsLength = sizeof...(Args);
 	using ArgumentsTupleType = std::tuple<std::decay_t<Args>...>;
 
+	template<typename  T, typename Enable = void>
+	struct RefValueSync
+	{
+		static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, std::decay_t<T> value) {}
+	};
+
+	template<typename T>
+	struct RefValueSync<T, std::enable_if_t<std::is_lvalue_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>>>
+	{
+		static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, std::decay_t<T> value)
+		{
+			if (holder->IsObject())
+			{
+				auto outer = holder->ToObject(context).ToLocalChecked();
+				auto _unused = outer->Set(context, converter::Converter<const char*>::toScript(context, "value"),
+					converter::Converter<decltype(value)>::toScript(context, value));
+			}
+		}
+	};
+
     template <typename Func, size_t... index>
     static bool call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
     {
@@ -188,6 +208,11 @@ private:
         	auto ret = func(std::get<index>(cppArgs)...);
         	info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         }
+    	
+    	if constexpr (ArgsLength > 0)
+    	{
+    		int _dummy[ArgsLength] = { (RefValueSync<Args>::template Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
+    	}
         return true;
     }
 
@@ -218,6 +243,11 @@ private:
     	{
     		auto ret = (self->*func)(std::get<index>(cppArgs)...);
     		info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
+    	}
+    	
+    	if constexpr (ArgsLength > 0)
+    	{
+    		int _dummy[ArgsLength] = { (RefValueSync<Args>::template Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
     	}
     	return true;
     }

@@ -151,6 +151,24 @@ struct Converter<std::string> {
 };
 
 template <>
+struct Converter<const char*> {
+	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const char* value)
+	{
+		return v8::String::NewFromUtf8(context->GetIsolate(), value, v8::NewStringType::kNormal).ToLocalChecked();
+	}
+
+	static const char* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return *v8::String::Utf8Value(context->GetIsolate(), value);
+	}
+
+	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+	{
+		return value->IsString();
+	}
+};
+
+template <>
 struct Converter<bool> {
 	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, bool value)
 	{
@@ -172,17 +190,29 @@ template <typename T>
 struct Converter<std::reference_wrapper<T>> {
 	static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
 	{
-		return Converter<T>::toScript(context, value);
+		auto result = v8::Object::New(context->GetIsolate());
+		auto _unused = result->Set(context, Converter<const char*>::toScript(context, "value")
+			, Converter<T>::toScript(context, value));
+		return result;
 	}
 
 	static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
 	{
-		return Converter<T>::toCpp(context, value);
+		if (value->IsObject())
+		{
+			auto outer = value->ToObject(context).ToLocalChecked();
+			auto realvalue = outer->Get(context, Converter<const char*>::toScript(context, "value")).ToLocalChecked();
+			return Converter<T>::toCpp(context, realvalue);
+		}
+		else
+		{
+			return {};
+		}
 	}
 
 	static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
 	{
-		return Converter<T>::accept(context, value);
+		return value->IsObject(); // do not checked inner
 	}
 };
 	
@@ -200,7 +230,7 @@ struct ConverterDecay {
 };
 
 template <typename T>
-struct ConverterDecay<T, std::enable_if_t<std::is_lvalue_reference_v<T>>> {
+struct ConverterDecay<T, std::enable_if_t<std::is_lvalue_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>>> {
 	using type = std::reference_wrapper<std::decay_t<T>>;
 };
 
