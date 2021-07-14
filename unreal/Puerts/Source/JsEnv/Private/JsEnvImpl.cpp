@@ -378,9 +378,9 @@ FJsEnvImpl::~FJsEnvImpl()
 
         for (auto Iter = ScriptStructTypeMap.begin(); Iter != ScriptStructTypeMap.end(); Iter++)
         {
-            if (Iter->second && Iter->second->IsValidLowLevelFast() && !Iter->second->IsPendingKill())
+            if (Iter->second.IsValid())
             {
-                Iter->second->DestroyStruct(Iter->first);
+                Iter->second.Get()->DestroyStruct(Iter->first);
                 FMemory::Free(Iter->first);
             }
         }
