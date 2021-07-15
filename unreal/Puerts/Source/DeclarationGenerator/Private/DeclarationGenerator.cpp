@@ -144,6 +144,7 @@ void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
     Output = {"", ""};
     Output << "/// <reference path=\"puerts.d.ts\" />\n";
     Output << "declare module \"" << ModuleName << "\" {\n";
+    Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
     Output.Indent(4);
 }
 

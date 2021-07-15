@@ -36,12 +36,21 @@ typedef void(*FinalizeFunc)(void* Ptr);
 
 typedef void*(*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+class CTypeInfo
+{
+public:
+    virtual const char* Name() const = 0;
+    virtual bool IsPointer() const = 0;
+    virtual bool IsRef() const = 0;
+    virtual bool IsConst() const = 0;
+};
+
 class CFunctionInfo
 {
 public:
-    virtual const char* Return() const = 0;
+    virtual const CTypeInfo* Return() const = 0;
     virtual unsigned int ArgumentCount() const = 0;
-    virtual const char* Argument(unsigned int index) const = 0;
+    virtual const CTypeInfo* Argument(unsigned int index) const = 0;
 };
 
 struct NamedFunctionInfo

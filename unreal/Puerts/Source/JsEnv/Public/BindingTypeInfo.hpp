@@ -89,24 +89,40 @@ struct ScriptTypeName<void> {
 	}
 };
 
+template <typename T>
+class CTypeInfoImpl : CTypeInfo
+{
+public:
+	virtual const char* Name() const override { return ScriptTypeName<T>::get(); }
+	virtual bool IsPointer() const override { return std::is_pointer_v<T>; };
+	virtual bool IsRef() const override { return std::is_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>; };
+	virtual bool IsConst() const override { return std::is_const_v<T>; };
+
+	static const CTypeInfo* get()
+	{
+		static CTypeInfoImpl instance;
+		return &instance;
+	}
+};
+
 template <typename Ret, typename... Args>
 class CFunctionInfoImpl : CFunctionInfo
 {
-	const char* return_;
+	const CTypeInfo* return_;
 	const unsigned int argCount_;
-	const char* arguments_[sizeof...(Args) + 1];
+	const CTypeInfo* arguments_[sizeof...(Args) + 1];
 
 	CFunctionInfoImpl():
-	    return_(ScriptTypeName<Ret>::get()),
+	    return_(CTypeInfoImpl<Ret>::get()),
 	    argCount_(sizeof...(Args)),
-	    arguments_{ScriptTypeName<Args>::get()...}
+	    arguments_{CTypeInfoImpl<Args>::get()...}
 	{
 	}
 
 public:
-	virtual const char* Return() const override { return return_; }
+	virtual const CTypeInfo* Return() const override { return return_; }
 	virtual unsigned int ArgumentCount() const override { return argCount_; }
-	virtual const char* Argument(unsigned int index) const override {
+	virtual const CTypeInfo* Argument(unsigned int index) const override {
 		return arguments_[index];
 	}
 	

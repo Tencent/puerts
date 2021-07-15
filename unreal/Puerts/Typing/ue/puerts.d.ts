@@ -6,14 +6,8 @@
 */
 
 declare module "ue" {
-    type $Nullable<T> = T | null;
-    
     type ArgumentTypes<T> = T extends (... args: infer U ) => infer R ? U: never;
 
-    interface $Ref<T> {
-        value: T
-    }
-    
     interface $CallbackID {}
     
     interface $Delegate<T extends (...args: any) => any> {

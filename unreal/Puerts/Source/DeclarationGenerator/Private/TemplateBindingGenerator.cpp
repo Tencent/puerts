@@ -12,6 +12,7 @@ struct FGenImp
 	void Begin()
 	{
 		Output << "declare module \"cpp\" {\n";
+		Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
 	}
 
 	void GenArguments(const puerts::CFunctionInfo* Type, FStringBuffer & Buff)
@@ -19,7 +20,31 @@ struct FGenImp
 		for(unsigned int i = 0; i < Type->ArgumentCount(); i++)
 		{
 		    if (i != 0) Buff << ", ";
-			Buff << FString::Printf(TEXT("p%d"), i) << ": " << Type->Argument(i);
+			auto argInfo = Type->Argument(i);
+			
+			Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+			
+			bool IsReference = argInfo->IsRef();
+			bool IsNullable = !IsReference && argInfo->IsPointer();
+			if (IsNullable)
+			{
+				Buff << "$Nullable<";
+			}
+			if (IsReference)
+			{
+				Buff << "$Ref<";
+			}
+			
+			Buff << Type->Argument(i)->Name();
+			
+			if (IsNullable)
+			{
+				Buff << ">";
+			}
+			if (IsReference)
+			{
+				Buff << ">";
+			}
 		}
 	}
 
@@ -62,7 +87,7 @@ struct FGenImp
 			FStringBuffer Tmp;
 			Tmp << "        static " << FunctionInfo->Name << "(";
 			GenArguments(FunctionInfo->Type, Tmp);
-			Tmp << ") :" << FunctionInfo->Type->Return() <<";\n";
+			Tmp << ") :" << FunctionInfo->Type->Return()->Name() <<";\n";
 			if (!AddedFunctions.Contains(Tmp.Buffer))
 			{
 				AddedFunctions.Add(Tmp.Buffer);
@@ -77,7 +102,7 @@ struct FGenImp
 			FStringBuffer Tmp;
 			Tmp << "        " << MethodInfo->Name << "(";
 			GenArguments(MethodInfo->Type, Tmp);
-			Tmp << ") :" << MethodInfo->Type->Return() <<";\n";
+			Tmp << ") :" << MethodInfo->Type->Return()->Name() <<";\n";
 			if (!AddedFunctions.Contains(Tmp.Buffer))
 			{
 				AddedFunctions.Add(Tmp.Buffer);
