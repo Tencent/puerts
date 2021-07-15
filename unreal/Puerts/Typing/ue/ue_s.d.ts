@@ -1,5 +1,7 @@
 /// <reference path="puerts.d.ts" />
 declare module "ue" {
+    import {$Ref, $Nullable} from "puerts"
+    
     class Guid {
         constructor();
         constructor(InA: number, InB: number, InC: number, InD: number);
