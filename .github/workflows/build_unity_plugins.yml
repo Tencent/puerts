@@ -300,3 +300,45 @@ jobs:
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_Quickjs
+  linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
+      - name: Build
+        run: |
+          cd unity/native_src
+          chmod 777 make_linux.sh
+          ./make_linux.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_V8
+  linux_ourv8:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_v8.yml
+          name: v8_bin
+          path: unity/native_src/
+      - name: Build
+        run: |
+          cd unity/native_src
+          chmod 777 make_linux.sh
+          ./make_linux.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_OUR_V8
