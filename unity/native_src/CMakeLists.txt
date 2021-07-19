@@ -208,7 +208,7 @@ elseif ( APPLE )
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
-elseif ( LINUX )
+elseif ( UNIX )
     target_link_libraries(puerts
         ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
     )
