@@ -5,10 +5,21 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#include "SceneComponentExtension.h"
+#include "CoreMinimal.h"
+#include "Binding.hpp"
+#include "UEDataBinding.hpp"
+
+UsingUClass(USceneComponent)
 
 
-void USceneComponentExtension::SetupAttachment(USceneComponent* InSelf, USceneComponent* InParent, FName InSocketName)
+struct AutoRegisterForUSceneComponent
 {
-    InSelf->SetupAttachment(InParent, InSocketName);
-}
+    AutoRegisterForUSceneComponent()
+    {
+        puerts::DefineClass<USceneComponent>()
+            .Method("SetupAttachment", MakeFunction(&USceneComponent::SetupAttachment))
+            .RegisterUEType();
+    }
+};
+
+AutoRegisterForUSceneComponent _AutoRegisterForUSceneComponent__;

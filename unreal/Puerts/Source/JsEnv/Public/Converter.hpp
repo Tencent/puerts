@@ -7,11 +7,9 @@
 
 #pragma once
 
-#include <cstdint>
 #include <type_traits>
 #include <string>
 #include <functional>
-#include "DataTransfer.h"
 
 #define __DefCDataPointerConverter(CLS)                                                                          \
 namespace puerts {                                                                                               \

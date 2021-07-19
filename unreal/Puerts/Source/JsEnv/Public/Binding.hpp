@@ -338,6 +338,40 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func>
 	}
 };
 
+//TODO: Similar logic...
+template<typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const>
+struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func> 
+{
+	static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		using Helper = internal::FuncCallHelper<
+			std::pair<Ret, std::tuple<Args...>>, false>;
+		Helper::callMethod<Inc>(func, info);
+	}
+
+	static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		using Helper = internal::FuncCallHelper<
+			std::pair<Ret, std::tuple<Args...>>, true>;
+		return Helper::callMethod<Inc, decltype(func)>(func, info);
+	}
+	static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		using Helper = internal::FuncCallHelper<
+			std::pair<Ret, std::tuple<Args...>>, true>;
+		if(!Helper::callMethod<Inc, decltype(func)>(func, info))
+		{
+			v8::Isolate* isolate = info.GetIsolate();
+			isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
+				"invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
+		}
+	}
+	static const CFunctionInfo* info()
+	{
+		return CFunctionInfoImpl<Ret, Args...>::get();
+	}
+};
+
 template<typename T, typename... Args>
 struct ConstructorWrapper
 {
@@ -588,7 +622,9 @@ public:
 		return *this;
 	}
 
-	void Register()
+	void RegisterUEType(){ Register(true); }
+
+	void Register(bool isUEType = false)
 	{
 		static std::vector<JSFunctionInfo> s_functions_{};
 		static std::vector<JSFunctionInfo> s_methods_{};
@@ -600,8 +636,16 @@ public:
 		static std::vector<NamedPropertyInfo> s_propertyInfos_{};
 		
 		puerts::JSClassDefinition ClassDef = JSClassEmptyDefinition;
-		ClassDef.CDataName = className_;
-		ClassDef.CDataSuperName = superClassName_;
+
+		if (isUEType)
+		{
+			ClassDef.UStructName = className_;
+		}
+		else
+		{
+			ClassDef.CDataName = className_;
+			ClassDef.CDataSuperName = superClassName_;
+		}
 
 		ClassDef.Initialize = constructor_;
 		ClassDef.Finalize = [](void *Ptr)

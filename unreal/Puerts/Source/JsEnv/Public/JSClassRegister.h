@@ -43,6 +43,7 @@ public:
     virtual bool IsPointer() const = 0;
     virtual bool IsRef() const = 0;
     virtual bool IsConst() const = 0;
+    virtual bool IsUEType() const = 0;
 };
 
 class CFunctionInfo
@@ -94,7 +95,7 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
 const JSClassDefinition* FindClassByID(const char* Name);
 
-const JSClassDefinition* FindClassByType(UStruct* Type);
+JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 const JSClassDefinition* FindCDataClassByName(const FString& Name);
 

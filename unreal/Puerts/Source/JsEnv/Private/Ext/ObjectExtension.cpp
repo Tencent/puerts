@@ -5,39 +5,31 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#include "ObjectExtension.h"
+#include "CoreMinimal.h"
+#include "Binding.hpp"
+#include "UEDataBinding.hpp"
 
-UObject* UObjectExtension::CreateDefaultSubobject(UObject *Object, FName SubobjectFName, UClass* ReturnType,
-    UClass* ClassToCreateByDefault, bool bIsRequired, bool bAbstract, bool bIsTransient)
+UsingUClass(UObject)
+UsingUClass(UWorld) // for return type
+UsingUClass(UClass)
+
+struct AutoRegisterForUObject
 {
+    AutoRegisterForUObject()
+    {
+        puerts::DefineClass<UObject>()
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
-    return Object->CreateDefaultSubobject(SubobjectFName, ReturnType, ClassToCreateByDefault, bIsRequired, bIsTransient);
+            .Method("CreateDefaultSubobject", MakeFunction(static_cast<UObject* (UObject::*)(FName, UClass*, UClass*, bool , bool)>(&UObject::CreateDefaultSubobject)))
 #else
-    return Object->CreateDefaultSubobject(SubobjectFName, ReturnType, ClassToCreateByDefault, bIsRequired, bAbstract, bIsTransient);
+            .Method("CreateDefaultSubobject", MakeFunction(static_cast<UObject* (UObject::*)(FName, UClass*, UClass*, bool, bool, bool)>(&UObject::CreateDefaultSubobject)))
 #endif
-}
+            .Method("GetName", MakeFunction(static_cast<FString (UObjectBaseUtility::*)() const>(&UObjectBaseUtility::GetName)))
+            .Method("GetOuter", MakeFunction(&UObject::GetOuter))
+            .Method("GetClass", MakeFunction(&UObject::GetClass))
+            .Method("GetWorld", MakeFunction(&UObject::GetWorld))
+            .RegisterUEType();
+    }
+};
 
-FString UObjectExtension::GetName(UObject *Object)
-{
-    return Object->GetName();
-}
+AutoRegisterForUObject _AutoRegisterForUObject__;
 
-bool UObjectExtension::IsValid(UObject *Object)
-{
-    return ::IsValid(Object);
-}
-
-UObject * UObjectExtension::GetOuter(UObject *Object)
-{
-    return Object->GetOuter();
-}
-
-UClass * UObjectExtension::GetClass(UObject *Object)
-{
-    return Object->GetClass();
-}
-
-UWorld * UObjectExtension::GetWorld(UObject *Object)
-{
-    return Object->GetWorld();
-}

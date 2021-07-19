@@ -16,6 +16,11 @@ namespace puerts
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddCData(Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
     }
 
+    v8::Local<v8::Value> DataTransfer::FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
+    {
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Class, UEObject);
+    }
+
     v8::Local<v8::Value> DataTransfer::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer)
     {
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
