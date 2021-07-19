@@ -211,6 +211,11 @@ elseif ( APPLE )
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
+elseif ( UNIX )
+    target_link_libraries(puerts
+        ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
+    )
+    target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
 endif ()
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
