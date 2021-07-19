@@ -157,6 +157,7 @@ var global = global || (function () { return this; }());
     
     const FunctionFlags = {
         "FUNC_Net"              : 0x00000040,   // Function is network-replicated.
+        "FUNC_NetReliable"      : 0x00000080,   // Function should be sent reliably on the network.
         "FUNC_NetMulticast"     : 0x00004000,	// Function is networked multicast Server -> All Clients
         "FUNC_NetServer"        : 0x00200000,	// Function is executed on servers (set by replication code if passes check)
         "FUNC_NetClient"        : 0x01000000,	// function is executed on clients
