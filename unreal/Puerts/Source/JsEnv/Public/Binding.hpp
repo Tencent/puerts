@@ -211,7 +211,7 @@ private:
     	
     	if constexpr (ArgsLength > 0)
     	{
-    		int _dummy[ArgsLength] = { (RefValueSync<Args>::template Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
+    		int _dummy[ArgsLength] = { (RefValueSync<Args>::Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
     	}
         return true;
     }
@@ -247,7 +247,7 @@ private:
     	
     	if constexpr (ArgsLength > 0)
     	{
-    		int _dummy[ArgsLength] = { (RefValueSync<Args>::template Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
+    		int _dummy[ArgsLength] = { (RefValueSync<Args>::Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
     	}
     	return true;
     }
@@ -312,20 +312,20 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func>
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, false>;
-		Helper::callMethod<Inc>(func, info);
+		Helper::template callMethod<Inc>(func, info);
 	}
 
 	static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
-		return Helper::callMethod<Inc, decltype(func)>(func, info);
+		return Helper::template callMethod<Inc, decltype(func)>(func, info);
 	}
 	static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
-		if(!Helper::callMethod<Inc, decltype(func)>(func, info))
+		if(!Helper::template callMethod<Inc, decltype(func)>(func, info))
 		{
 			v8::Isolate* isolate = info.GetIsolate();
 			isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
@@ -346,20 +346,20 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func>
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, false>;
-		Helper::callMethod<Inc>(func, info);
+		Helper::template callMethod<Inc>(func, info);
 	}
 
 	static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
-		return Helper::callMethod<Inc, decltype(func)>(func, info);
+		return Helper::template callMethod<Inc, decltype(func)>(func, info);
 	}
 	static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		using Helper = internal::FuncCallHelper<
 			std::pair<Ret, std::tuple<Args...>>, true>;
-		if(!Helper::callMethod<Inc, decltype(func)>(func, info))
+		if(!Helper::template callMethod<Inc, decltype(func)>(func, info))
 		{
 			v8::Isolate* isolate = info.GetIsolate();
 			isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
