@@ -124,9 +124,17 @@ struct IsArgsConvertibleHelper<
 template <typename T>
 constexpr bool isArgsConvertible = IsArgsConvertibleHelper<T>::value;
 
+template<int , typename...>
+struct ArgumentChecker
+{
+	static bool Check(const v8::FunctionCallbackInfo<v8::Value>& Info, v8::Local<v8::Context> Context)
+	{
+		return true;
+	}
+};
 
 template<int Pos, typename ArgType, typename... Rest>
-struct ArgumentChecker
+struct ArgumentChecker<Pos, ArgType, Rest...>
 {
 	static constexpr int NextPos = Pos + 1;
     
@@ -140,15 +148,6 @@ struct ArgumentChecker
 		{
 			return ArgumentChecker<NextPos, Rest...>::Check(Info, Context);
 		}
-	}
-};
-
-template<int Pos, typename ArgType>
-struct ArgumentChecker<Pos, ArgType>
-{
-	static bool Check(const v8::FunctionCallbackInfo<v8::Value>& Info, v8::Local<v8::Context> Context)
-	{
-		return TypeConverter<typename ConverterDecay<ArgType>::type>::accept(Context, Info[Pos]);
 	}
 };
 
@@ -190,11 +189,7 @@ private:
     	{
     		if (info.Length() != ArgsLength) return false;
 
-    		//bool paramAccpet[ArgsLength] = {TypeConverter<typename ConverterDecay<Args>::type>::accept(context, info[index])...};
-    		if constexpr (ArgsLength > 0)
-    		{
-    			if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
-    		}
+    		if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
     	}
     	
     	ArgumentsTupleType cppArgs = std::make_tuple<std::decay_t<Args>...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
@@ -227,10 +222,7 @@ private:
     	{
     		if (info.Length() != ArgsLength) return false;
 
-    		if constexpr (ArgsLength > 0)
-    		{
-    			if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
-    		}
+    		if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
     	}
 
     	ArgumentsTupleType cppArgs = std::make_tuple<std::decay_t<Args>...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
@@ -385,10 +377,7 @@ private:
 
 		if (info.Length() != ArgsLength) return nullptr;
 
-		if constexpr (ArgsLength > 0)
-		{
-			if (!internal::ArgumentChecker<0, Args...>::Check(info, context)) return nullptr;
-		}
+		if (!internal::ArgumentChecker<0, Args...>::Check(info, context)) return nullptr;
 
 		return new T(internal::TypeConverter<typename internal::ConverterDecay<Args>::type>::toCpp(context, info[index])...);
 	}
