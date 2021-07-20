@@ -21,72 +21,72 @@ namespace puerts
     
 template<typename T , typename Enable = void>
 struct ScriptTypeName {
-	static const char *get();
+    static const char *get();
 };
 
 template<typename T>
 struct ScriptTypeName<const T *> {
-	static const char *get()
-	{
-		return ScriptTypeName<T>::get();
-	}
+    static const char *get()
+    {
+        return ScriptTypeName<T>::get();
+    }
 };
 
 template<typename T>
 struct ScriptTypeName<T *> {
-	static const char *get()
-	{
-		return ScriptTypeName<T>::get();
-	}
+    static const char *get()
+    {
+        return ScriptTypeName<T>::get();
+    }
 };
 
 template<typename T>
 struct ScriptTypeName<T &> {
-	static const char *get()
-	{
-		return ScriptTypeName<T>::get();
-	}
+    static const char *get()
+    {
+        return ScriptTypeName<T>::get();
+    }
 };
 
 template<typename T>
 struct ScriptTypeName<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8>> {
-	static const char *get()
-	{
-		return "bigint";
-	}
+    static const char *get()
+    {
+        return "bigint";
+    }
 };
 
 template<typename T>
 struct ScriptTypeName<T, std::enable_if_t<std::is_floating_point_v<T> || (std::is_integral_v<T> && sizeof(T) < 8)>> {
-	static const char *get()
-	{
-		return "number";
-	}
+    static const char *get()
+    {
+        return "number";
+    }
 };
 
 
 template<>
 struct ScriptTypeName<std::string> {
-	static const char *get()
-	{
-		return "string";
-	}
+    static const char *get()
+    {
+        return "string";
+    }
 };
 
 template<>
 struct ScriptTypeName<bool> {
-	static const char *get()
-	{
-		return "boolean";
-	}
+    static const char *get()
+    {
+        return "boolean";
+    }
 };
 
 template<>
 struct ScriptTypeName<void> {
-	static const char *get()
-	{
-		return "void";
-	}
+    static const char *get()
+    {
+        return "void";
+    }
 };
 
 template<typename T>
@@ -96,45 +96,45 @@ template <typename T>
 class CTypeInfoImpl : CTypeInfo
 {
 public:
-	virtual const char* Name() const override { return ScriptTypeName<T>::get(); }
-	virtual bool IsPointer() const override { return std::is_pointer_v<T>; };
-	virtual bool IsRef() const override { return std::is_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>; };
-	virtual bool IsConst() const override { return std::is_const_v<T>; };
-	virtual bool IsUEType() const override { return is_uetype_v<std::remove_pointer_t<std::decay_t<T>>>; };
+    virtual const char* Name() const override { return ScriptTypeName<T>::get(); }
+    virtual bool IsPointer() const override { return std::is_pointer_v<T>; };
+    virtual bool IsRef() const override { return std::is_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>; };
+    virtual bool IsConst() const override { return std::is_const_v<T>; };
+    virtual bool IsUEType() const override { return is_uetype_v<std::remove_pointer_t<std::decay_t<T>>>; };
 
-	static const CTypeInfo* get()
-	{
-		static CTypeInfoImpl instance;
-		return &instance;
-	}
+    static const CTypeInfo* get()
+    {
+        static CTypeInfoImpl instance;
+        return &instance;
+    }
 };
 
 template <typename Ret, typename... Args>
 class CFunctionInfoImpl : CFunctionInfo
 {
-	const CTypeInfo* return_;
-	const unsigned int argCount_;
-	const CTypeInfo* arguments_[sizeof...(Args) + 1];
+    const CTypeInfo* return_;
+    const unsigned int argCount_;
+    const CTypeInfo* arguments_[sizeof...(Args) + 1];
 
-	CFunctionInfoImpl():
-	    return_(CTypeInfoImpl<Ret>::get()),
-	    argCount_(sizeof...(Args)),
-	    arguments_{CTypeInfoImpl<Args>::get()...}
-	{
-	}
+    CFunctionInfoImpl():
+        return_(CTypeInfoImpl<Ret>::get()),
+        argCount_(sizeof...(Args)),
+        arguments_{CTypeInfoImpl<Args>::get()...}
+    {
+    }
 
 public:
-	virtual const CTypeInfo* Return() const override { return return_; }
-	virtual unsigned int ArgumentCount() const override { return argCount_; }
-	virtual const CTypeInfo* Argument(unsigned int index) const override {
-		return arguments_[index];
-	}
-	
-	static const CFunctionInfo* get()
-	{
-		static CFunctionInfoImpl instance {};
-		return &instance;
-	}
+    virtual const CTypeInfo* Return() const override { return return_; }
+    virtual unsigned int ArgumentCount() const override { return argCount_; }
+    virtual const CTypeInfo* Argument(unsigned int index) const override {
+        return arguments_[index];
+    }
+    
+    static const CFunctionInfo* get()
+    {
+        static CFunctionInfoImpl instance {};
+        return &instance;
+    }
 };
 
 }
