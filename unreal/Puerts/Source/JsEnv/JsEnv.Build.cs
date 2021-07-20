@@ -58,6 +58,8 @@ public class JsEnv : ModuleRules
         }
         
         if (WithFFI) AddFFI(Target);
+        
+        CppStandard = CppStandardVersion.Cpp17;
 
         string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
         string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
