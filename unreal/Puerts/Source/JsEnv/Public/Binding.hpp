@@ -100,18 +100,6 @@ struct FunctionTrait<Func, std::enable_if_t<!std::is_same_v<Func, std::decay_t<F
 
 template <typename T>
 using FuncTrait = traits::FunctionTrait<T>;
-    
-struct StaticDefine {
-    struct FunctionDefine {
-        std::string name;
-        CheckArgsFunctionCallback callback;
-        std::string traceName = name;
-        v8::FunctionCallback rawCallback;
-
-        FunctionDefine(std::string name, CheckArgsFunctionCallback callback, std::string traceName, v8::FunctionCallback rawCallback)
-            : name(std::move(name)), callback(std::move(callback)), traceName(std::move(traceName)), rawCallback(rawCallback) {}
-    };
-};
 
 template <typename T, typename = void>
 struct IsArgsConvertibleHelper : std::false_type {};
@@ -180,8 +168,26 @@ private:
         }
     };
 
+    template<int , typename... >
+    struct RefValuesSync
+    {
+        static void Sync(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, ArgumentsTupleType &cppArgs)
+        {
+        }
+    };
+
+    template<int Pos, typename T, typename...Rest>
+    struct RefValuesSync<Pos, T, Rest...>
+    {
+        static void Sync(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, ArgumentsTupleType &cppArgs)
+        {
+            RefValueSync<T>::Sync(context, info[Pos], std::get<Pos>(cppArgs));
+            RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgs);
+        }
+    };
+
     template <typename Func, size_t... index>
-    static bool call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    static bool call(Func&& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
 
@@ -204,15 +210,13 @@ private:
             info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         }
         
-        if constexpr (ArgsLength > 0)
-        {
-            int _dummy[ArgsLength] = { (RefValueSync<Args>::Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
-        }
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        
         return true;
     }
 
     template <typename Ins, typename Func, size_t... index>
-    static bool callMethod(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    static bool callMethod(Func&& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
 
@@ -237,10 +241,8 @@ private:
             info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         }
         
-        if constexpr (ArgsLength > 0)
-        {
-            int _dummy[ArgsLength] = { (RefValueSync<Args>::Sync(context, info[index], std::get<index>(cppArgs)), 0)... };
-        }
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        
         return true;
     }
 
