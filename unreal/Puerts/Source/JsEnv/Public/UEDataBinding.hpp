@@ -94,7 +94,7 @@ struct Converter<FText> {
 };
 
 template <typename T>
-struct Converter<T*, std::enable_if_t<std::is_convertible_v<T*, const UObject *>>> {
+struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObject *>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
     {
         return ::puerts::DataTransfer::FindOrAddObject<T>(context->GetIsolate(), context, value);
@@ -114,10 +114,10 @@ struct Converter<T*, std::enable_if_t<std::is_convertible_v<T*, const UObject *>
 }
 
 template<typename T>
-struct ScriptTypeName<T, std::enable_if_t<std::is_convertible_v<T, const FString&>
-    || std::is_convertible_v<T, const FName&>
-    || std::is_convertible_v<T, const FText&>
-    || std::is_convertible_v<T, const TCHAR *>>> {
+struct ScriptTypeName<T, typename std::enable_if<std::is_convertible<T, const FString&>::value
+    || std::is_convertible<T, const FName&>::value
+    || std::is_convertible<T, const FText&>::value
+    || std::is_convertible<T, const TCHAR *>::value>::type> {
     static const char *get()
     {
         return "string";

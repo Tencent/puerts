@@ -22,8 +22,9 @@
 #define MakeSetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::setter)
 #define MakeProperty(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter), &(::puerts::PropertyWrapper<decltype(M), M>::setter), ::puerts::PropertyWrapper<decltype(M), M>::info()
 #define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call), ::puerts::FuncCallWrapper<decltype(M), M>::info()
+#define SelectFunction(SIGNATURE, M) &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
 #define MakeCheckFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall), ::puerts::FuncCallWrapper<decltype(M), M>::info()
-#define MakeOverload(SIGNATURE, M) puerts::FuncCallWrapper<decltype(static_cast<SIGNATURE>(M)), static_cast<SIGNATURE>(M)>
+#define MakeOverload(SIGNATURE, M) puerts::FuncCallWrapper<SIGNATURE, M>
 #define CombineOverloads(...) &(::puerts::OverloadsCombiner<##__VA_ARGS__>::call), ::puerts::OverloadsCombiner<##__VA_ARGS__>::length, ::puerts::OverloadsCombiner<##__VA_ARGS__>::infos()
 #define CombineConstructors(...) &(::puerts::ConstructorsCombiner<##__VA_ARGS__>::call), ::puerts::ConstructorsCombiner<##__VA_ARGS__>::length, ::puerts::ConstructorsCombiner<##__VA_ARGS__>::infos()
 
@@ -51,7 +52,7 @@ struct TupleTrait<std::tuple<HeadT, TailT...>> {
     static constexpr size_t count = 1 + sizeof...(TailT);
 
     template <size_t i>
-    using Arg = typename std::tuple_element_t<i, std::tuple<HeadT, TailT...>>;
+    using Arg = typename std::tuple_element<i, std::tuple<HeadT, TailT...>>::type;
 };
 
 template <>
@@ -83,7 +84,7 @@ struct FunctionTrait<Ret (C::*)(Args...) const volatile> : FunctionTrait<Ret (*)
 
 // functor and lambda
 template <typename Functor>
-struct FunctionTrait<Functor, std::void_t<decltype(&Functor::operator())>> {
+struct FunctionTrait<Functor, Void_t<decltype(&Functor::operator())>> {
 private:
     using FunctorTrait = FunctionTrait<decltype(&Functor::operator())>;
 
@@ -94,19 +95,37 @@ public:
 
 // decay: remove const, reference; function type to function pointer
 template <typename Func>
-struct FunctionTrait<Func, std::enable_if_t<!std::is_same_v<Func, std::decay_t<Func>>>>
-    : FunctionTrait<std::decay_t<Func>> {};
+struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>>::type>::type>
+    : FunctionTrait<typename std::decay<Func>::type> {};
 }  // namespace traits
 
 template <typename T>
 using FuncTrait = traits::FunctionTrait<T>;
+
+template <bool _First_value, class _First, class... _Rest>
+struct _Conjunction { // handle false trait or last trait
+    using type = _First;
+};
+
+template <class _True, class _Next, class... _Rest>
+struct _Conjunction<true, _True, _Next, _Rest...> { // the first trait is true, try the next one
+    using type = typename _Conjunction<_Next::value, _Next, _Rest...>::type;
+};
+
+template <class... _Traits>
+struct Conjunction : std::true_type {}; // If _Traits is empty, true_type
+
+template <class _First, class... _Rest>
+struct Conjunction<_First, _Rest...> : _Conjunction<_First::value, _First, _Rest...>::type {
+    // the first false trait in _Traits, or the last trait if none are false
+};
 
 template <typename T, typename = void>
 struct IsArgsConvertibleHelper : std::false_type {};
 
 template <typename... Args>
 struct IsArgsConvertibleHelper<
-    std::tuple<Args...>, std::enable_if_t<std::conjunction_v<IsConvertibleHelper<Args>...>, void>>
+    std::tuple<Args...>, typename  std::enable_if<Conjunction<IsConvertibleHelper<Args>...>::value>::type>
     : std::true_type {};
 
 template <typename T>
@@ -139,6 +158,35 @@ struct ArgumentChecker<Pos, ArgType, Rest...>
     }
 };
 
+template <bool Enable, typename... Args>
+struct ArgumentsChecker;
+
+template<typename... Args>
+struct ArgumentsChecker<true, Args...>
+{
+	static constexpr auto ArgsLength = sizeof...(Args);
+	
+	static bool Check(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		if (info.Length() != ArgsLength) return false;
+
+		if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
+
+		return true;
+	}
+};
+
+template<typename... Args>
+struct ArgumentsChecker<false, Args...>
+{
+	static constexpr auto ArgsLength = sizeof...(Args);
+	
+	static bool Check(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
+	{
+		return true;
+	}
+};
+
 template <typename, bool CheckArguments>
 struct FuncCallHelper {};
 
@@ -146,18 +194,18 @@ template <typename Ret, typename... Args, bool CheckArguments>
 struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments> {
 private:
     static constexpr auto ArgsLength = sizeof...(Args);
-    using ArgumentsTupleType = std::tuple<std::decay_t<Args>...>;
+    using ArgumentsTupleType = std::tuple<typename std::decay<Args>::type...>;
 
     template<typename  T, typename Enable = void>
     struct RefValueSync
     {
-        static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, std::decay_t<T> value) {}
+        static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, typename std::decay<T>::type value) {}
     };
 
     template<typename T>
-    struct RefValueSync<T, std::enable_if_t<std::is_lvalue_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>>>
+    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>>::type>::type>
     {
-        static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, std::decay_t<T> value)
+        static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, typename std::decay<T>::type value)
         {
             if (holder->IsObject())
             {
@@ -167,6 +215,7 @@ private:
             }
         }
     };
+
 
     template<int , typename... >
     struct RefValuesSync
@@ -187,28 +236,53 @@ private:
     };
 
     template <typename Func, size_t... index>
-    static bool call(Func&& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    static typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value,bool>::type
+    call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
 
-        if constexpr (CheckArguments)
-        {
-            if (info.Length() != ArgsLength) return false;
+        if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
+        
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
 
-            if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
-        }
+        func(std::get<index>(cppArgs)...);
         
-        ArgumentsTupleType cppArgs = std::make_tuple<std::decay_t<Args>...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
-        if constexpr (std::is_same_v<Ret, void>)
-        {
-            func(std::get<index>(cppArgs)...);
-        }
-        else
-        {
-            auto ret = func(std::get<index>(cppArgs)...);
-            info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
-        }
+        return true;
+    }
+
+    template <typename Func, size_t... index>
+    static typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
+    call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    {
+        auto context = info.GetIsolate()->GetCurrentContext();
+
+        if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
+        
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+
+        auto ret = func(std::get<index>(cppArgs)...);
+        info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
+        
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        
+        return true;
+    }
+    
+    template <typename Ins, typename Func, size_t... index>
+    static typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value,bool>::type
+    callMethod(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    {
+        auto context = info.GetIsolate()->GetCurrentContext();
+
+        auto self = DataTransfer::GetPoninterFast<Ins>(info.Holder());
+
+        if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
+
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        
+        (self->*func)(std::get<index>(cppArgs)...);
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -216,30 +290,19 @@ private:
     }
 
     template <typename Ins, typename Func, size_t... index>
-    static bool callMethod(Func&& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    static typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
+    callMethod(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
 
         auto self = DataTransfer::GetPoninterFast<Ins>(info.Holder());
 
-        if constexpr (CheckArguments)
-        {
-            if (info.Length() != ArgsLength) return false;
+        if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
-            if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
-        }
-
-        ArgumentsTupleType cppArgs = std::make_tuple<std::decay_t<Args>...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
         
-        if constexpr (std::is_same_v<Ret, void>)
-        {
-            (self->*func)(std::get<index>(cppArgs)...);
-        }
-        else
-        {
-            auto ret = (self->*func)(std::get<index>(cppArgs)...);
-            info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
-        }
+        auto ret = (self->*func)(std::get<index>(cppArgs)...);
+        info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         

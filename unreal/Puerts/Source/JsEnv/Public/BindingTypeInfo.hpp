@@ -49,7 +49,7 @@ struct ScriptTypeName<T &> {
 };
 
 template<typename T>
-struct ScriptTypeName<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8>> {
+struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type> {
     static const char *get()
     {
         return "bigint";
@@ -57,7 +57,7 @@ struct ScriptTypeName<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 
 };
 
 template<typename T>
-struct ScriptTypeName<T, std::enable_if_t<std::is_floating_point_v<T> || (std::is_integral_v<T> && sizeof(T) < 8)>> {
+struct ScriptTypeName<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> {
     static const char *get()
     {
         return "number";
@@ -97,10 +97,10 @@ class CTypeInfoImpl : CTypeInfo
 {
 public:
     virtual const char* Name() const override { return ScriptTypeName<T>::get(); }
-    virtual bool IsPointer() const override { return std::is_pointer_v<T>; };
-    virtual bool IsRef() const override { return std::is_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>; };
-    virtual bool IsConst() const override { return std::is_const_v<T>; };
-    virtual bool IsUEType() const override { return is_uetype_v<std::remove_pointer_t<std::decay_t<T>>>; };
+    virtual bool IsPointer() const override { return std::is_pointer<T>::value; };
+    virtual bool IsRef() const override { return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value; };
+    virtual bool IsConst() const override { return std::is_const<T>::value; };
+    virtual bool IsUEType() const override { return is_uetype_v<typename std::remove_pointer<typename std::decay<T>::type>::type>; };
 
     static const CTypeInfo* get()
     {

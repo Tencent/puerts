@@ -41,7 +41,7 @@ template <typename T, typename Enable = void>
 struct Converter;
 
 template <typename T>
-struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8 && std::is_signed_v<T>>> {
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && std::is_signed<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return v8::BigInt::New(context->GetIsolate(), value);
@@ -59,7 +59,7 @@ struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8 && 
 };
 
 template <typename T>
-struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8 && !std::is_signed_v<T>>> {
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && !std::is_signed<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return v8::BigInt::NewFromUnsigned(context->GetIsolate(), value);
@@ -77,7 +77,7 @@ struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) == 8 && 
 };
 
 template <typename T>
-struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) < 8 && std::is_signed_v<T>>> {
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) < 8 && std::is_signed<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return v8::Integer::New(context->GetIsolate(), value);
@@ -95,7 +95,7 @@ struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) < 8 && s
 };
 
 template <typename T>
-struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) < 8 && !std::is_signed_v<T>>> {
+struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) < 8 && !std::is_signed<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return v8::Integer::NewFromUnsigned(context->GetIsolate(), value);
@@ -113,7 +113,7 @@ struct Converter<T, std::enable_if_t<std::is_integral_v<T> && sizeof(T) < 8 && !
 };
 
 template <typename T>
-struct Converter<T, std::enable_if_t<std::is_floating_point_v<T>>> {
+struct Converter<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return v8::Number::New(context->GetIsolate(), value);
@@ -224,12 +224,12 @@ namespace internal {
 // except decay ScriptClass& to std::reference_wrapper<ScriptClass>
 template <typename T, typename = void>
 struct ConverterDecay {
-    using type = std::decay_t<T>;
+    using type = typename  std::decay<T>::type;
 };
 
 template <typename T>
-struct ConverterDecay<T, std::enable_if_t<std::is_lvalue_reference_v<T> && !std::is_const_v<std::remove_reference_t<T>>>> {
-    using type = std::reference_wrapper<std::decay_t<T>>;
+struct ConverterDecay<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename  std::remove_reference<T>::type>::value>::type> {
+    using type = std::reference_wrapper<typename std::decay<T>::type>;
 };
 
 template <typename T>
@@ -238,10 +238,13 @@ using TypeConverter = puerts::converter::Converter<typename ConverterDecay<T>::t
 template <typename T, typename = void>
 struct IsConvertibleHelper : std::false_type {};
 
+template< class... >
+using Void_t = void;
+
 template <typename T>
 struct IsConvertibleHelper<T,
                         // test if it has a function toScript
-                        std::void_t<decltype(&TypeConverter<T>::toScript)>> : std::true_type {};
+                        Void_t<decltype(&TypeConverter<T>::toScript)>> : std::true_type {};
 
 } 
 
