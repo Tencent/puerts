@@ -12,10 +12,11 @@
 UsingUClass(UObject)
 UsingUClass(UWorld) // for return type
 UsingUClass(UClass)
+UsingUClass(USceneComponent)
 
-struct AutoRegisterForUObject
+struct AutoRegisterForUE
 {
-    AutoRegisterForUObject()
+    AutoRegisterForUE()
     {
         puerts::DefineClass<UObject>()
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
@@ -28,8 +29,12 @@ struct AutoRegisterForUObject
             .Method("GetClass", MakeFunction(&UObject::GetClass))
             .Method("GetWorld", MakeFunction(&UObject::GetWorld))
             .RegisterUEType();
+
+    	puerts::DefineClass<USceneComponent>()
+			.Method("SetupAttachment", MakeFunction(&USceneComponent::SetupAttachment))
+			.RegisterUEType();
     }
 };
 
-AutoRegisterForUObject _AutoRegisterForUObject__;
+AutoRegisterForUE _AutoRegisterForUE__;
 
