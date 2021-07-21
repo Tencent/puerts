@@ -10,38 +10,60 @@
 #include <string>
 
 #define __DefScriptTTypeName(CLSNAME, CLS)                  \
-    template<>                                               \
-    constexpr const char* ::puerts::script_type_name_v<CLS> = #CLSNAME;
+namespace puerts {                      \
+template<>                                              \
+struct ScriptTypeName<CLS> {    \
+    static constexpr const char *value = #CLSNAME; \
+};    \
+}
 
 namespace puerts
 {
-
+    
 template<typename T , typename Enable = void>
-constexpr const char* script_type_name_v = "";
+struct ScriptTypeName {
+};
 
 template<typename T>
-constexpr const char* script_type_name_v<const T *> = script_type_name_v<T>;
+struct ScriptTypeName<const T *> {
+    static constexpr const char * value =  ScriptTypeName<T>::value;
+};
 
 template<typename T>
-constexpr const char* script_type_name_v<T *> = script_type_name_v<T>;
+struct ScriptTypeName<T *> {
+    static constexpr const char * value =  ScriptTypeName<T>::value;
+};
 
 template<typename T>
-constexpr const char* script_type_name_v<T &> = script_type_name_v<T>;
+struct ScriptTypeName<T &> {
+    static constexpr const char * value =  ScriptTypeName<T>::value;
+};
 
 template<typename T>
-constexpr const char* script_type_name_v<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type> = "bigint";
+struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type> {
+    static constexpr const char * value = "bigint";
+};
 
 template<typename T>
-constexpr const char* script_type_name_v<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> = "number";
+struct ScriptTypeName<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> {
+    static constexpr const char * value = "number";
+};
+
 
 template<>
-constexpr const char* script_type_name_v<std::string> = "string";
+struct ScriptTypeName<std::string> {
+    static constexpr const char * value = "string";
+};
 
 template<>
-constexpr const char* script_type_name_v<bool> = "boolean";
+struct ScriptTypeName<bool> {
+    static constexpr const char * value = "boolean";
+};
 
 template<>
-constexpr const char* script_type_name_v<void> = "void";
+struct ScriptTypeName<void> {
+    static constexpr const char * value = "void";
+};
 
 template<typename T>
 constexpr bool is_uetype_v = false;
@@ -50,7 +72,7 @@ template <typename T>
 class CTypeInfoImpl : CTypeInfo
 {
 public:
-    virtual const char* Name() const override { return script_type_name_v<T>; }
+    virtual const char* Name() const override { return ScriptTypeName<T>::value; }
     virtual bool IsPointer() const override { return std::is_pointer<T>::value; };
     virtual bool IsRef() const override { return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value; };
     virtual bool IsConst() const override { return std::is_const<T>::value; };
