@@ -1287,6 +1287,10 @@ function watch(configFilePath) {
                                 result.pinType.PinCategory = category;
                                 return result;
                             }
+                            else if (typeName == '$Ref') {
+                                result.pinType.bIsReference = true;
+                                return result;
+                            }
                             else if (typeName == 'TMap') {
                                 let valuePinType = tsTypeToPinType(typeArguments[1], undefined);
                                 if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
