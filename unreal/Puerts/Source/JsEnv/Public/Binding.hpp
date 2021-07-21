@@ -577,7 +577,7 @@ struct PropertyWrapper<Ret Ins::*, member>
 
     static const char* info()
     {
-        return ScriptTypeName<Ret>::get();
+        return script_type_name_v<Ret>;
     }
 };
 
@@ -610,7 +610,7 @@ public:
 
     template <typename S>
     ClassDefineBuilder<T>& Extends() {
-        superClassName_ = ScriptTypeName<S>::get();
+        superClassName_ = script_type_name_v<S>;
         return *this;
     }
 
@@ -741,7 +741,7 @@ public:
 
 template <typename T>
 inline ClassDefineBuilder<T> DefineClass() {
-    return ClassDefineBuilder<T>(ScriptTypeName<T>::get());
+    return ClassDefineBuilder<T>(script_type_name_v<T>);
 }
 
 }

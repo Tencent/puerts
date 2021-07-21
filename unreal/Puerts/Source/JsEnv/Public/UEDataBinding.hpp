@@ -114,14 +114,9 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
 }
 
 template<typename T>
-struct ScriptTypeName<T, typename std::enable_if<std::is_convertible<T, const FString&>::value
+constexpr const char* script_type_name_v<T, typename std::enable_if<std::is_convertible<T, const FString&>::value
     || std::is_convertible<T, const FName&>::value
     || std::is_convertible<T, const FText&>::value
-    || std::is_convertible<T, const TCHAR *>::value>::type> {
-    static const char *get()
-    {
-        return "string";
-    }
-};
+    || std::is_convertible<T, const TCHAR *>::value>::type> = "string";
 
 }
