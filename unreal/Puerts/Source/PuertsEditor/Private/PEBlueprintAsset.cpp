@@ -48,7 +48,7 @@ UClass* FindClass(const TCHAR* ClassName)
     return nullptr;
 }
 
-bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass)
+bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {
     FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
 
@@ -276,8 +276,16 @@ UClass* const GetOverrideFunctionClass(UBlueprint* Blueprint, const FName FuncNa
 }
 #endif
 
-void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags)
+void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags)
 {
+    InSetFlags &= ~InClearFlags;
+    InSetFlags &= ~FUNC_Native;
+    const int32 NetMask = FUNC_Net | FUNC_NetMulticast | FUNC_NetServer | FUNC_NetClient | FUNC_NetReliable;
+    if (InSetFlags & NetMask)
+    {
+        InSetFlags |= FUNC_Net;
+    }
+    
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
     UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
@@ -411,7 +419,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             NeedSave = true;
         }
     }
-    else if (InFlags & FUNC_Net)
+    else if (InSetFlags & FUNC_Net)
     {
         TArray<UK2Node_CustomEvent*> AllEvents;
         FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_CustomEvent>(Blueprint, AllEvents);
@@ -510,28 +518,24 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
     if (FunctionEntryNode)
     {
-        const int32 NetMask = FUNC_Net | FUNC_NetMulticast | FUNC_NetServer | FUNC_NetClient | FUNC_NetReliable;
-        int32 NetFlags = InFlags & NetMask;
-        NetFlags = NetFlags ? FUNC_Net | NetFlags : 0;
-
         if (UK2Node_FunctionEntry* TypedEntryNode = Cast<UK2Node_FunctionEntry>(FunctionEntryNode))
         {
             int32 ExtraFlags = TypedEntryNode->GetExtraFlags();
 
-            if ((ExtraFlags & NetMask) != NetFlags)
+            int32 NewExtraFlags = (ExtraFlags | InSetFlags) & ~InClearFlags;
+
+            if (ExtraFlags != NewExtraFlags)
             {
-                ExtraFlags &= ~NetMask;
-                ExtraFlags |= NetFlags;
-                TypedEntryNode->SetExtraFlags(ExtraFlags);
+                TypedEntryNode->SetExtraFlags(NewExtraFlags);
                 NeedSave = true;
             }
         }
         else if (UK2Node_CustomEvent* CustomEventNode = Cast<UK2Node_CustomEvent>(FunctionEntryNode))
         {
-            if ((CustomEventNode->FunctionFlags & NetMask) != NetFlags)
+            int32 NewFunctionFlags = (CustomEventNode->FunctionFlags | InSetFlags) & ~InClearFlags;
+            if (CustomEventNode->FunctionFlags  != NewFunctionFlags)
             {
-                CustomEventNode->FunctionFlags &= ~NetMask;
-                CustomEventNode->FunctionFlags |= NetFlags;
+                CustomEventNode->FunctionFlags = NewFunctionFlags;
                 NeedSave = true;
             }
         }

@@ -1551,7 +1551,7 @@ function watch(configFilePath:string) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
                         bp.Save();
                         return bp.GeneratedClass;
                     }
@@ -1779,7 +1779,7 @@ function watch(configFilePath:string) {
             function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
-                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
                 let hasConstructor = false;
                 checker.getPropertiesOfType(type)
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
@@ -1818,13 +1818,16 @@ function watch(configFilePath:string) {
                                 //console.log("add function", symbol.getName());
                                 let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                                 let flags = getFlagsValue(sflags, FunctionFlags);
+                                let clearFlags = 0;
 
                                 if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                    flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "flags", FunctionFlags));
+                                    flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "flags", FunctionFlags));
+                                    flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "set_flags", FunctionFlags));
+                                    clearFlags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "clear_flags", FunctionFlags));
                                 }
                                 
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
-                                    bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
+                                    bp.AddFunction(symbol.getName(), true, undefined, undefined, flags, clearFlags);
                                 } else {
                                     let returnType = signature.getReturnType();
                                     let resultPinType = tsTypeToPinType(returnType, getSymbolTypeNode(symbol));
@@ -1835,7 +1838,7 @@ function watch(configFilePath:string) {
                                     }
                                     postProcessPinType(symbol.valueDeclaration, resultPinType.pinType, true);
                                     
-                                    bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
+                                    bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags, clearFlags);
                                 }
                                 bp.ClearParameter();
 
