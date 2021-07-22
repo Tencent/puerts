@@ -36,6 +36,12 @@ const fixReturn = {
     string: 'Puerts.PuertsDLL.ReturnString(isolate, info, result)',
     DateTime: 'Puerts.PuertsDLL.ReturnDate(isolate, info, (result - new DateTime(1970, 1, 1)).TotalMilliseconds)',
 };
+
+const GeneralDelegateType = {
+    'System.Delegate': '',
+    'System.Action' : '',
+};
+
 const operatorMap = {
     op_Equality: '==',
     op_Inequality: '!=',
@@ -102,7 +108,7 @@ function getArgument(typeInfo, argHelper, idx) {
     } else if (typeName in fixGet) {
         return `${argHelper}.${fixGet[typeName]}(${isByRef})`;
     } else {
-        if (typeInfo.IsByRef) {
+        if (typeInfo.IsByRef || typeName in GeneralDelegateType) {
             return `${argHelper}.GetRefType<${typeName}>(${isByRef})`;
         } else if (!typeInfo.IsEnum){
             return `${argHelper}.GetNonRefType<${typeName}>(${isByRef})`;
