@@ -238,6 +238,8 @@ var global = global || (function () { return this; }());
     
     cache.clear_flags = dummyDecorator;
     
+    cache.FunctionFlags = FunctionFlags;
+    
     puerts.toManualReleaseDelegate = (x) => x;
     
 }(global));
