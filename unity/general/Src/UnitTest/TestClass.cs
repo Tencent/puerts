@@ -334,6 +334,11 @@ namespace Puerts.UnitTest
         {
             return obj;
         }
+
+        public object passThroughJSObjectInAnyFunction(object obj) 
+        {
+            return obj;
+        }
     }
 
     public class ArrayTest

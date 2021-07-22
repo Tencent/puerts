@@ -110,6 +110,13 @@ namespace Puerts.UnitTest
                 ].join('')
             ");
             Assert.AreEqual("truetrue", ret);
+            ret = jsEnv.Eval<string>(@"
+                [
+                    (obj.passThroughJSObjectInAnyFunction(jsObj) === obj.passThroughJSObjectInAnyFunction(jsObj)).toString(),
+                    (obj.passThroughJSObjectInAnyFunction(jsObj) === jsObj).toString()
+                ].join('')
+            ");
+            Assert.AreEqual("truetrue", ret);
         }
 
         [Test]
