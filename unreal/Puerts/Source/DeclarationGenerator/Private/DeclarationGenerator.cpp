@@ -207,7 +207,8 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
         if (Class->GetName().StartsWith("SKEL_")        ||
             Class->GetName().StartsWith("REINST_")      ||
             Class->GetName().StartsWith("TRASHCLASS_")  ||
-            Class->GetName().StartsWith("PLACEHOLDER_"))
+            Class->GetName().StartsWith("PLACEHOLDER_") ||
+            Class->GetName().StartsWith("HOTRELOADED_"))
         {
             continue;
         }
