@@ -58,7 +58,7 @@ namespace Puerts
         Date = 512,
         ArrayBuffer = 1024,
         Unknow = 2048,
-        Any = NullOrUndefined | BigInt | Number | String | Boolean | NativeObject | Array | Function | Date | ArrayBuffer,
+        Any = NullOrUndefined | BigInt | Number | String | Boolean | NativeObject | JsObject | Array | Function | Date | ArrayBuffer,
     };
 
     public class PuertsDLL

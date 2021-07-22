@@ -171,7 +171,6 @@ namespace Puerts
                 case JsValueType.Function:
                     return getValueApi.GetFunction(isolate, value, isByRef);
                 case JsValueType.JsObject:
-                    // return getValueApi.GetJSObject(isolate, value, isByRef);
                     return JSObjectTranslator(isolate, getValueApi, value, isByRef);
                 case JsValueType.NativeObject:
                     var typeId = getValueApi.GetTypeId(isolate, value, isByRef);
