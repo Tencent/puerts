@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -15,6 +15,7 @@
 #include "ISettingsSection.h"
 #include "Internationalization/Regex.h"
 #include "LevelEditor.h"
+#include "Misc/HotReloadInterface.h"
 #endif
 #include "Commandlets/Commandlet.h"
 
@@ -330,8 +331,22 @@ void FPuertsModule::StartupModule()
     //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
     FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
     LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
-    RegisterSettings();
 #endif
+
+	// NonPak Game 打包下, Puerts ini的加载时间晚于模块加载, 因此依然要显式的执行ini的读入, 去保证CDO里的值是正确的
+    RegisterSettings();
+
+#if WITH_HOT_RELOAD
+    IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
+    HotReloadSupport.OnHotReload().AddLambda([&](bool )
+    {
+        if (Enabled)
+        {
+            MakeSharedJsEnv();
+        }
+	});
+#endif
+
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
     if (Settings.AutoModeEnable)

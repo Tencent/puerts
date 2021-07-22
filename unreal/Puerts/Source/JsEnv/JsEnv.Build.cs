@@ -9,6 +9,7 @@ using UnrealBuildTool;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Reflection;
 
 public class JsEnv : ModuleRules
 {
@@ -33,6 +34,15 @@ public class JsEnv : ModuleRules
 
         bEnableExceptions = true;
         bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
+        var ContextField = GetType().GetField("Context", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (ContextField != null)
+        {
+            var bCanHotReloadField = ContextField.FieldType.GetField("bCanHotReload", BindingFlags.Instance | BindingFlags.Public);
+            if (bCanHotReloadField != null)
+            {
+                bCanHotReloadField.SetValue(ContextField.GetValue(this), false);
+            }
+        }
 
         if (UseNewV8)
         {

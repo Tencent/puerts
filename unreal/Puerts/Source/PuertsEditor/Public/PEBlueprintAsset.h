@@ -73,7 +73,7 @@ public:
     bool HasConstructor;
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass);
+    bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
@@ -82,7 +82,7 @@ public:
     void ClearParameter();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags);
+    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedFunction();

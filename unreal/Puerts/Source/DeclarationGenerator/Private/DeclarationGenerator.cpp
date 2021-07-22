@@ -29,6 +29,7 @@
 #include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
 #include "CodeGenerator.h"
+#include "JSClassRegister.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -144,6 +145,7 @@ void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
     Output = {"", ""};
     Output << "/// <reference path=\"puerts.d.ts\" />\n";
     Output << "declare module \"" << ModuleName << "\" {\n";
+    Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
     Output.Indent(4);
 }
 
@@ -432,7 +434,15 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                     TmpBuf << "?";
                 }
                 TmpBuf << ": ";
-                if (!IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm)))
+
+                const bool IsReference = !IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm));
+                const bool IsNullable = !(DefaultValuePtr != nullptr || IsReference) && (CastFieldMacro<ObjectPropertyMacro>(Property) != nullptr) && !(Property->PropertyFlags & CPF_ReferenceParm);
+                
+                if (IsNullable)
+                {
+                    TmpBuf << "$Nullable<";
+                }
+                if (IsReference)
                 {
                     if (ForceOneway) return false;
                     TmpBuf << "$Ref<";
@@ -441,7 +451,11 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                 {
                     return false;
                 }
-                if (!IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm)))
+                if (IsReference)
+                {
+                    TmpBuf << ">";
+                }
+                if (IsNullable)
                 {
                     TmpBuf << ">";
                 }
@@ -477,6 +491,104 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
     
     //OwnerBuffer << "    " << LocalBuffer.Buffer << ";\n";
     return true;
+}
+
+const FString GetName(const puerts::CTypeInfo* TypeInfo)
+{
+    FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
+    if (TypeInfo->IsUEType())
+    {
+        return Ret.Mid(1);
+    }
+    return Ret;
+}
+
+void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer & Buff)
+{
+    for(unsigned int i = 0; i < Type->ArgumentCount(); i++)
+    {
+        if (i != 0) Buff << ", ";
+        auto argInfo = Type->Argument(i);
+			
+        Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+			
+        bool IsReference = argInfo->IsRef();
+        bool IsNullable = !IsReference && argInfo->IsPointer();
+        if (IsNullable)
+        {
+            Buff << "$Nullable<";
+        }
+        if (IsReference)
+        {
+            Buff << "$Ref<";
+        }
+			
+        Buff << GetName(Type->Argument(i));
+			
+        if (IsNullable)
+        {
+            Buff << ">";
+        }
+        if (IsReference)
+        {
+            Buff << ">";
+        }
+    }
+}
+
+void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuffer& Buff)
+{
+    auto ClassDefinition = puerts::FindClassByType(Struct);
+    if (ClassDefinition)
+    {
+        TSet<FString> AddedFunctions;
+
+        puerts::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
+        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Type)
+        {
+            FStringBuffer Tmp;
+            Tmp << "    static " << FunctionInfo->Name << "(";
+            GenArgumentsForFunctionInfo(FunctionInfo->Type, Tmp);
+            Tmp << ") :" << GetName(FunctionInfo->Type->Return()) <<";\n";
+            if (!AddedFunctions.Contains(Tmp.Buffer))
+            {
+                AddedFunctions.Add(Tmp.Buffer);
+                Buff << Tmp;
+            }
+            ++FunctionInfo;
+        }
+
+        puerts::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
+        while (MethodInfo && MethodInfo->Name && MethodInfo->Type)
+        {
+            FStringBuffer Tmp;
+            Tmp << "    " << MethodInfo->Name << "(";
+            GenArgumentsForFunctionInfo(MethodInfo->Type, Tmp);
+            Tmp << ") :" << GetName(MethodInfo->Type->Return()) << ";\n";
+            if (!AddedFunctions.Contains(Tmp.Buffer))
+            {
+                AddedFunctions.Add(Tmp.Buffer);
+                Buff << Tmp;
+            }
+            ++MethodInfo;
+        }
+    }
+
+    auto ExtensionMethodsIter = ExtensionMethodsMap.find(Struct);
+    if (ExtensionMethodsIter != ExtensionMethodsMap.end())
+    {
+        for (auto Iter = ExtensionMethodsIter->second.begin(); Iter != ExtensionMethodsIter->second.end(); ++Iter)
+        {
+            UFunction* Function = *Iter;
+
+            FStringBuffer TmpBuff;
+            if (!GenFunction(TmpBuff, Function, true, false, false, true))
+            {
+                continue;
+            }
+            Buff << "    " << TmpBuff.Buffer << ";\n";
+        }
+    }
 }
 
 void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
@@ -525,21 +637,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     }
 
-    auto ExtensionMethodsIter = ExtensionMethodsMap.find(Class);
-    if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-    {
-        for (auto Iter = ExtensionMethodsIter->second.begin(); Iter != ExtensionMethodsIter->second.end(); ++Iter)
-        {
-            UFunction* Function = *Iter;
-
-            FStringBuffer TmpBuff;
-            if (!GenFunction(TmpBuff, Function, true, false, false, true))
-            {
-                continue;
-            }
-            StringBuffer << "    " << TmpBuff.Buffer << ";\n";
-        }
-    }
+    GenExtensions(Class, StringBuffer);
     
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
@@ -650,21 +748,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     }
 
-    auto ExtensionMethodsIter = ExtensionMethodsMap.find(Struct);
-    if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-    {
-        for (auto Iter = ExtensionMethodsIter->second.begin(); Iter != ExtensionMethodsIter->second.end(); ++Iter)
-        {
-            UFunction* Function = *Iter;
-
-            FStringBuffer TmpBuff;
-            if (!GenFunction(TmpBuff, Function, true, false, false, true))
-            {
-                continue;
-            }
-            StringBuffer << "    " << TmpBuff.Buffer << ";\n";
-        }
-    }
+    GenExtensions(Struct, StringBuffer);
 
     StringBuffer << "    static StaticClass(): Class;\n";
     

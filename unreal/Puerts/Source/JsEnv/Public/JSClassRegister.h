@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "functional"
+
 #include "CoreMinimal.h"
 
 #pragma warning(push, 0) 
@@ -19,6 +21,7 @@ struct JSENV_API JSFunctionInfo
 {
     const char* Name;
     v8::FunctionCallback Callback;
+    void *Data = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo
@@ -26,11 +29,42 @@ struct JSENV_API JSPropertyInfo
     const char* Name;
     v8::AccessorNameGetterCallback Getter;
     v8::AccessorNameSetterCallback Setter;
+    void *Data = nullptr;
 };
 
 typedef void(*FinalizeFunc)(void* Ptr);
 
 typedef void*(*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+class CTypeInfo
+{
+public:
+    virtual const char* Name() const = 0;
+    virtual bool IsPointer() const = 0;
+    virtual bool IsRef() const = 0;
+    virtual bool IsConst() const = 0;
+    virtual bool IsUEType() const = 0;
+};
+
+class CFunctionInfo
+{
+public:
+    virtual const CTypeInfo* Return() const = 0;
+    virtual unsigned int ArgumentCount() const = 0;
+    virtual const CTypeInfo* Argument(unsigned int index) const = 0;
+};
+
+struct NamedFunctionInfo
+{
+    const char* Name;
+    const CFunctionInfo* Type;
+};
+
+struct NamedPropertyInfo
+{
+    const char* Name;
+    const char* Type;
+};
 
 struct JSENV_API JSClassDefinition
 {
@@ -43,6 +77,10 @@ struct JSENV_API JSClassDefinition
     JSPropertyInfo* Propertys;
     FinalizeFunc Finalize;
     //int InternalFieldCount;
+    NamedFunctionInfo* ConstructorInfos;
+    NamedFunctionInfo* MethodInfos;
+    NamedFunctionInfo* FunctionInfos;
+    NamedPropertyInfo* PropertyInfos;
 };
 
 typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
@@ -51,15 +89,18 @@ typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Co
 
 void JSENV_API RegisterClass(const JSClassDefinition &ClassDefinition);
 
+void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)>);
+
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
 const JSClassDefinition* FindClassByID(const char* Name);
 
-const JSClassDefinition* FindClassByType(UStruct* Type);
+JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 const JSClassDefinition* FindCDataClassByName(const FString& Name);
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
+
 }
 
 #define PUERTS_MODULE(Name, RegFunc) \

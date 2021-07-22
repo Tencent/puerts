@@ -498,7 +498,7 @@ class TsTestActor extends UE.Actor {
 
     }
 
-    @rpc.flags(rpc.FunctionFlags.FUNC_Net | rpc.FunctionFlags.FUNC_NetServer)
+    @rpc.flags(rpc.FunctionFlags.FUNC_Net | rpc.FunctionFlags.FUNC_NetServer | rpc.FunctionFlags.FUNC_NetReliable)
     FireServer(): void {
 
     }

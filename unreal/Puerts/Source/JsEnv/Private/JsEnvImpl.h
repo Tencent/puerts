@@ -360,7 +360,7 @@ private:
     std::map<void*, v8::UniquePersistent<v8::Value> > CDataMap;
 
     std::map<void*, FinalizeFunc > CDataFinalizeMap;
-    std::map<void*, UScriptStruct* > ScriptStructTypeMap;
+    std::map<void*, TWeakObjectPtr<UScriptStruct>> ScriptStructTypeMap;
 
     v8::UniquePersistent<v8::FunctionTemplate> ArrayTemplate;
 

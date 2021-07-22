@@ -61,5 +61,3 @@
 #include "GameFramework/TouchInterface.h"
 #include "GameFramework/Volume.h"
 #include "GameFramework/WorldSettings.h"
-
-#include "SimpleClass.h"

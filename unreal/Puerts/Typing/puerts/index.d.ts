@@ -6,7 +6,13 @@
 */
 
 declare module "puerts" {
-    import {Object, $Ref, Class, $Delegate} from "ue"
+    import {Object, Class, $Delegate} from "ue"
+    
+    interface $Ref<T> {
+        value: T
+    }
+    
+    type $Nullable<T> = T | null;
     
     function $ref<T>(x : T) : $Ref<T>;
     

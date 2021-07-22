@@ -1551,7 +1551,7 @@ function watch(configFilePath:string) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
                         bp.Save();
                         return bp.GeneratedClass;
                     }
@@ -1642,6 +1642,9 @@ function watch(configFilePath:string) {
                                 let category:PinCategory = "softclass";
                                 result.pinType.PinCategory = category;
                                 return result;
+                            } else if (typeName ==  '$Ref') {
+                                result.pinType.bIsReference = true;
+                                return result;
                             } else if (typeName == 'TMap') {
                                 let valuePinType = tsTypeToPinType(typeArguments[1], undefined);
                                 if (!valuePinType || valuePinType.pinType.PinContainerType != UE.EPinContainerType.None) {
@@ -1693,7 +1696,7 @@ function watch(configFilePath:string) {
                 const commentRanges = ts.getLeadingCommentRanges(
                     sourceFile.getFullText(), 
                     symbol.valueDeclaration.getFullStart());
-                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0));
+                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0)) || hasDecorator(symbol.valueDeclaration, "no_blueprint");
             }
 
             function tryGetAnnotation(valueDeclaration: ts.Node, key:string, leading: boolean): string {
@@ -1741,7 +1744,7 @@ function watch(configFilePath:string) {
                     decorators.forEach((decorator, index) => {
                         let expression = decorator.expression;
                         if (ts.isCallExpression(expression)) {
-                            if (expression.expression.getFullText().endsWith(posfix)) {
+                            if (expression.expression.getFullText() == posfix|| expression.expression.getFullText().endsWith('.' + posfix)) {
                                 expression.arguments.forEach((value, index) => {
                                     let e = value.getFullText().split("|").map(x => x.trim().replace(/^.*[\.]/, ''))
                                         .map(x => x in flagsDef ? BigInt(flagsDef[x]) : 0n)
@@ -1757,10 +1760,26 @@ function watch(configFilePath:string) {
                 }
             }
 
+            function hasDecorator(valueDeclaration:ts.Node, posfix: string): boolean {
+                let ret = false;
+                if (valueDeclaration && valueDeclaration.decorators) {
+                    let decorators = valueDeclaration.decorators;
+                    decorators.forEach((decorator, index) => {
+                        let expression = decorator.expression;
+                        if (ts.isCallExpression(expression)) {
+                            if (expression.expression.getFullText() == posfix|| expression.expression.getFullText().endsWith('.' + posfix)) {
+                                ret = true;
+                            }
+                        }
+                    });
+                } 
+                return ret;
+            }
+
             function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
-                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
                 let hasConstructor = false;
                 checker.getPropertiesOfType(type)
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
@@ -1799,13 +1818,16 @@ function watch(configFilePath:string) {
                                 //console.log("add function", symbol.getName());
                                 let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                                 let flags = getFlagsValue(sflags, FunctionFlags);
+                                let clearFlags = 0;
 
                                 if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                    flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", FunctionFlags));
+                                    flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "flags", FunctionFlags));
+                                    flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "set_flags", FunctionFlags));
+                                    clearFlags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "clear_flags", FunctionFlags));
                                 }
                                 
                                 if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
-                                    bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
+                                    bp.AddFunction(symbol.getName(), true, undefined, undefined, flags, clearFlags);
                                 } else {
                                     let returnType = signature.getReturnType();
                                     let resultPinType = tsTypeToPinType(returnType, getSymbolTypeNode(symbol));
@@ -1816,7 +1838,7 @@ function watch(configFilePath:string) {
                                     }
                                     postProcessPinType(symbol.valueDeclaration, resultPinType.pinType, true);
                                     
-                                    bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
+                                    bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags, clearFlags);
                                 }
                                 bp.ClearParameter();
 
@@ -1832,12 +1854,16 @@ function watch(configFilePath:string) {
                                     let flags:bigint = BigInt(getFlagsValue(sflags, PropertyFlags));
                                     let cond = 0;
                                     if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                                        cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, ".condition", ELifetimeCondition));
+                                        cond = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "condition", ELifetimeCondition));
                                         if (cond != 0) {
                                             flags = flags | BigInt(PropertyFlags.CPF_Net);
                                         }
-                                        flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, ".flags", PropertyFlags);
+                                        flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
                                     }
+                                    if (!hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
+                                        flags = flags | BigInt(PropertyFlags.CPF_DisableEditOnInstance);
+                                    }
+                                    
                                     bp.AddMemberVariable(symbol.getName(), propPinType.pinType, propPinType.pinValueType, Number(flags & 0xffffffffn), Number(flags >> 32n), cond);
                                 }
                             }

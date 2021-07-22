@@ -93,24 +93,28 @@ var global = global || (function () {
     delete global.__tgjsRegisterTickHandler;
 
     function timerUpdate() {
-        const now = Date.now();
+        let now = null;
         while (true) {
             const time = timers.peek();
-            if (time && time.next_time <= now) {
+            if (!time) {
+               break;
+            }
+            if (!now){
+                now = Date.now();
+            }
+            if (time.next_time <= now) {
                 timers.pop();
                 if(removing_timers.has(time.id)){
-                    removing_timers.delete(time.id)
-                }
-                else {
+                    removing_timers.delete(time.id);
+                } else {
                     if (time.timeout) {
                         time.next_time = now + time.timeout;
                         timers.push(time);
                     }
                     time.handler(time.args);
                 }
-
             } else {
-                break;
+               break;
             }
         }
     }
