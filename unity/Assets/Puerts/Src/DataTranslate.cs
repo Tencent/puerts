@@ -25,16 +25,6 @@ namespace Puerts
 
         private Dictionary<Type, GeneralGetter> nullableTypeGeneralGetterMap = new Dictionary<Type, GeneralGetter>();
 
-        private GeneralGetter arrayBufferTranslator;
-
-        private GeneralGetter jsObjectTranslator;
-        
-        private GeneralGetter nativeObjectTranslator;
-
-        private GeneralGetter genericDelegateTranslator;
-
-        private GeneralGetter anyTranslator;
-
         internal GenericDelegateFactory genericDelegateFactory;
 
         internal GeneralGetterManager(JsEnv jsEnv)
@@ -43,11 +33,6 @@ namespace Puerts
             objectPool = jsEnv.objectPool;
             typeRegister = jsEnv.TypeRegister;
             genericDelegateFactory = jsEnv.genericDelegateFactory;
-            nativeObjectTranslator = NativeObjectTranslator;
-            arrayBufferTranslator = ArrayBufferTranslator;
-            jsObjectTranslator = JSObjectTranslator;
-            genericDelegateTranslator = GenericDelegateTranslator;
-            anyTranslator = AnyTranslator;
 
             generalGetterMap[typeof(char)] = CharTranslator;
             generalGetterMap[typeof(sbyte)] = SbyteTranslator;
@@ -64,10 +49,10 @@ namespace Puerts
             generalGetterMap[typeof(bool)] = BooleanTranslator;
             generalGetterMap[typeof(string)] = StringTranslator;
             generalGetterMap[typeof(DateTime)] = DateTranslator;
-            generalGetterMap[typeof(ArrayBuffer)] = arrayBufferTranslator;
-            generalGetterMap[typeof(GenericDelegate)] = genericDelegateTranslator;
-            generalGetterMap[typeof(JSObject)] = jsObjectTranslator;
-            generalGetterMap[typeof(object)] = anyTranslator;
+            generalGetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
+            generalGetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
+            generalGetterMap[typeof(JSObject)] = JSObjectTranslator;
+            generalGetterMap[typeof(object)] = AnyTranslator;
             //special type
             //translatorMap[typeof(LuaTable)] = getLuaTable;
             //translatorMap[typeof(LuaFunction)] = getLuaFunction;
@@ -168,17 +153,6 @@ namespace Puerts
             {
                 return AnyTranslator(isolate, getValueApi, value, isByRef);
             }
-        }
-        
-        internal object NativeObjectTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
-        {
-            if (getValueApi.GetJsValueType(isolate, value, isByRef) == JsValueType.NativeObject)
-            {
-                var objPtr = getValueApi.GetNativeObject(isolate, value, isByRef);
-                var obj = objectPool.Get(objPtr.ToInt32());
-                return obj;
-            }
-            return null;
         }
 
         internal object AnyTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
@@ -310,37 +284,7 @@ namespace Puerts
                 return jvt;
             }
         }
-        
-        public GeneralGetter GetArrayBufferTranslatorFunc
-        {
-            get { return arrayBufferTranslator; }
-            private set { }
-        }
-        
-        public GeneralGetter GetJSObjectTranslatorFunc
-        {
-            get { return jsObjectTranslator; }
-            private set { }
-        }
-        
-        public GeneralGetter GetNativeObjectTranslatorFunc
-        {
-            get { return nativeObjectTranslator; }
-            private set { }
-        }
-        
-        public GeneralGetter GetGenericDelegateTranslatorFunc
-        {
-            get { return genericDelegateTranslator; }
-            private set { }
-        }
 
-        public GeneralGetter GetAnyTranslatorFunc
-        {
-            get { return anyTranslator; }
-            private set { }
-        }
-        
         public void RegisterGetter(Type type, GeneralGetter generalGetter)
         {
             Type underlyingType = Nullable.GetUnderlyingType(type);
