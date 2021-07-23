@@ -35,19 +35,24 @@ namespace Puerts
             var jsType = this.valueType;
             if (jsType == JsValueType.JsObject)
             {
-                if ((expectJsType & jsType) == jsType)
+                if (isByRef) 
+                {
+                    if (isOut) return true;
+                    jsType = PuertsDLL.GetJsValueType(isolate, value, true);
+                } 
+                else if ((expectJsType & jsType) == jsType)
                 {
                     return true;
                 }
-                if (!isByRef) return false;
-                if (isOut) return true;
-                jsType = PuertsDLL.GetJsValueType(isolate, value, true);
-
-            } else {
-                if ((expectJsType & jsType) != jsType)
+                else 
                 {
                     return false;
                 }
+            } 
+            
+            if ((expectJsType & jsType) != jsType)
+            {
+                return false;
             }
             if (jsType == JsValueType.NativeObject)
             {
@@ -75,6 +80,7 @@ namespace Puerts
             }
             return true;
         }
+
 
 
         public char GetChar(bool isByRef)
