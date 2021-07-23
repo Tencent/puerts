@@ -1420,12 +1420,16 @@ void FJsEnvImpl::OnAsyncLoadingFlushUpdate()
             if (PendingConstructObjects[i].IsValid())
             {
                 auto PendingObject = PendingConstructObjects[i].Get();
-                auto Class = PendingObject->GetClass();
-                if (!Class->HasAnyFlags(RF_NeedPostLoad)
-                    && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
+                if (!PendingObject->HasAnyFlags(RF_NeedPostLoad)
+                    && !PendingObject->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
                 {
-                    ReadiedObjects.Add(PendingObject);
-                    PendingConstructObjects.RemoveAt(i);
+                    auto Class = PendingObject->GetClass();
+                    if (!Class->HasAnyFlags(RF_NeedPostLoad)
+                        && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
+                    {
+                        ReadiedObjects.Add(PendingObject);
+                        PendingConstructObjects.RemoveAt(i);
+                    }
                 }
             }
         }
