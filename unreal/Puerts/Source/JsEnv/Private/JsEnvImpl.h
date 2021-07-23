@@ -227,6 +227,8 @@ private:
 
     void OnAsyncLoadingFlushUpdate();
 
+    void ConstructPendingObject(UObject* PendingObject);
+
     struct ObjectMerger;
 
     std::unique_ptr<ObjectMerger>& GetObjectMerger(UStruct * Struct);

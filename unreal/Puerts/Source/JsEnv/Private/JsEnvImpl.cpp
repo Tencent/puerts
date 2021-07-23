@@ -1220,7 +1220,21 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
     
     if (BindInfoMap.find(Class) == BindInfoMap.end())
     {
-        MakeSureInject(Class, true, false);
+        //保证CDO先完成构造, 这样MakeSureInject也只需要在构造CDO时执行
+        UObject* CDO = Class->GetDefaultObject(false);
+        if (Object != CDO)
+        {
+            FScopeLock Lock(&PendingConstructLock);
+            if (PendingConstructObjects.Contains(CDO))
+            {
+                ConstructPendingObject(CDO);
+                PendingConstructObjects.Remove(CDO);
+            }
+        }
+        else
+        {
+            MakeSureInject(Class, true, false);
+        }
     }
 
     auto Iter = BindInfoMap.find(Class);
@@ -1396,32 +1410,45 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 void FJsEnvImpl::OnAsyncLoadingFlushUpdate()
 {
     FScopeLock Lock(&PendingConstructLock);
-    for (auto& ObjectPtr : PendingConstructObjects)
+    for (auto Iter = PendingConstructObjects.CreateIterator(); Iter; ++Iter)
     {
+        TWeakObjectPtr<UObject> ObjectPtr = *Iter;
         if (!ObjectPtr.IsValid())
         {
-            continue;
+            Iter.RemoveCurrent();
         }
-        UObject* PendingObject = ObjectPtr.Get();
-
-        TArray<UTypeScriptGeneratedClass*> SuperClasses;
-        UClass* Class = PendingObject->GetClass();
-        while (Class != nullptr)
+        else
         {
-            if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
+            UObject* PendingObject = ObjectPtr.Get();
+            auto Class = PendingObject->GetClass();
+            if (!Class->HasAnyFlags(RF_NeedPostLoad)
+                && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
             {
-                SuperClasses.Add(TypeScriptGeneratedClass);
+                ConstructPendingObject(PendingObject);
+                Iter.RemoveCurrent();
             }
-            Class = Class->GetSuperClass();
-        }
-
-        //从基类到派生类依次构造
-        for (int32 i = SuperClasses.Num()-1; i >= 0; --i)
-        {
-            TsConstruct(SuperClasses[i], PendingObject);
         }
     }
-    PendingConstructObjects.Empty();
+}
+
+void FJsEnvImpl::ConstructPendingObject(UObject* PendingObject)
+{
+    TArray<UTypeScriptGeneratedClass*> SuperClasses;
+    UClass* Class = PendingObject->GetClass();
+    while (Class != nullptr)
+    {
+        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
+        {
+            SuperClasses.Add(TypeScriptGeneratedClass);
+        }
+        Class = Class->GetSuperClass();
+    }
+
+    //从基类到派生类依次构造
+    for (int32 i = SuperClasses.Num() - 1; i >= 0; --i)
+    {
+        TsConstruct(SuperClasses[i], PendingObject);
+    }
 }
 
 void FJsEnvImpl::ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void *DelegatePtr)
