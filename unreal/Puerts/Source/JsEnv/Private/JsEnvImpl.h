@@ -469,7 +469,7 @@ private:
 
     FCriticalSection PendingConstructLock;
     
-    TSet<TWeakObjectPtr<UObject>> PendingConstructObjects;
+    TArray<TWeakObjectPtr<UObject>> PendingConstructObjects;
     
     FDelegateHandle AsyncLoadingFlushUpdateHandle;
 

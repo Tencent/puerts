@@ -1209,7 +1209,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
         {
             FScopeLock Lock(&PendingConstructLock);
-            PendingConstructObjects.Add(Object);
+            PendingConstructObjects.AddUnique(Object);
         }
         else
         {
@@ -1224,11 +1224,14 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         UObject* CDO = Class->GetDefaultObject(false);
         if (Object != CDO)
         {
-            FScopeLock Lock(&PendingConstructLock);
-            if (PendingConstructObjects.Contains(CDO))
+            bool bPending = false;
+            {
+                FScopeLock Lock(&PendingConstructLock);
+                bPending = PendingConstructObjects.RemoveSingle(CDO) > 0;
+            }
+            if (bPending)
             {
                 ConstructPendingObject(CDO);
-                PendingConstructObjects.Remove(CDO);
             }
         }
         else
@@ -1409,25 +1412,28 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 
 void FJsEnvImpl::OnAsyncLoadingFlushUpdate()
 {
-    FScopeLock Lock(&PendingConstructLock);
-    for (auto Iter = PendingConstructObjects.CreateIterator(); Iter; ++Iter)
+    TArray<UObject*> ReadiedObjects;
     {
-        TWeakObjectPtr<UObject> ObjectPtr = *Iter;
-        if (!ObjectPtr.IsValid())
+        FScopeLock Lock(&PendingConstructLock);
+        for (auto i = PendingConstructObjects.Num() - 1; i >= 0; --i)
         {
-            Iter.RemoveCurrent();
-        }
-        else
-        {
-            UObject* PendingObject = ObjectPtr.Get();
-            auto Class = PendingObject->GetClass();
-            if (!Class->HasAnyFlags(RF_NeedPostLoad)
-                && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
+            if (PendingConstructObjects[i].IsValid())
             {
-                ConstructPendingObject(PendingObject);
-                Iter.RemoveCurrent();
+                auto PendingObject = PendingConstructObjects[i].Get();
+                auto Class = PendingObject->GetClass();
+                if (!Class->HasAnyFlags(RF_NeedPostLoad)
+                    && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
+                {
+                    ReadiedObjects.Add(PendingObject);
+                    PendingConstructObjects.RemoveAt(i);
+                }
             }
         }
+    }
+
+    for (auto i = ReadiedObjects.Num() - 1; i >= 0; --i)
+    {
+        ConstructPendingObject(ReadiedObjects[i]);
     }
 }
 
