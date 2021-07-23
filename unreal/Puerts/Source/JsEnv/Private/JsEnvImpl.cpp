@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -316,11 +316,15 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(TBaseDelegate<bool, float>::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
+
+    AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+    FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
+
     for(int i = 0; i < ManualReleaseCallbackList.size(); i++)
     {
         if (ManualReleaseCallbackList[i].IsValid())
@@ -1199,6 +1203,43 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
 
 void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 {
+    //蓝图类的CDO会在后台线程构造, 需要将其延迟到主线程执行
+    if (!IsInGameThread())
+    {
+        if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+        {
+            FScopeLock Lock(&PendingConstructLock);
+            PendingConstructObjects.AddUnique(Object);
+        }
+        else
+        {
+            Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), (void*)Object));
+        }
+        return;
+    }
+    
+    if (BindInfoMap.find(Class) == BindInfoMap.end())
+    {
+        //保证CDO先完成构造, 这样MakeSureInject也只需要在构造CDO时执行
+        UObject* CDO = Class->GetDefaultObject(false);
+        if (Object != CDO)
+        {
+            bool bPending = false;
+            {
+                FScopeLock Lock(&PendingConstructLock);
+                bPending = PendingConstructObjects.RemoveSingle(CDO) > 0;
+            }
+            if (bPending)
+            {
+                ConstructPendingObject(CDO);
+            }
+        }
+        else
+        {
+            MakeSureInject(Class, true, false);
+        }
+    }
+
     auto Iter = BindInfoMap.find(Class);
     if (Iter != BindInfoMap.end())
     {
@@ -1358,7 +1399,66 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
-    MakeSureInject(Class, true, false);
+    if (IsInGameThread())
+    {
+        MakeSureInject(Class, true, false);
+    }
+    else
+    {
+        //蓝图类加载时会在后台线程Bind, 此时只接管其ClassConstructor即可, 在其初次构造时再Inject
+        Class->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+    }
+}
+
+void FJsEnvImpl::OnAsyncLoadingFlushUpdate()
+{
+    TArray<UObject*> ReadiedObjects;
+    {
+        FScopeLock Lock(&PendingConstructLock);
+        for (auto i = PendingConstructObjects.Num() - 1; i >= 0; --i)
+        {
+            if (PendingConstructObjects[i].IsValid())
+            {
+                auto PendingObject = PendingConstructObjects[i].Get();
+                if (!PendingObject->HasAnyFlags(RF_NeedPostLoad)
+                    && !PendingObject->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
+                {
+                    auto Class = PendingObject->GetClass();
+                    if (!Class->HasAnyFlags(RF_NeedPostLoad)
+                        && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
+                    {
+                        ReadiedObjects.Add(PendingObject);
+                        PendingConstructObjects.RemoveAt(i);
+                    }
+                }
+            }
+        }
+    }
+
+    for (auto i = ReadiedObjects.Num() - 1; i >= 0; --i)
+    {
+        ConstructPendingObject(ReadiedObjects[i]);
+    }
+}
+
+void FJsEnvImpl::ConstructPendingObject(UObject* PendingObject)
+{
+    TArray<UTypeScriptGeneratedClass*> SuperClasses;
+    UClass* Class = PendingObject->GetClass();
+    while (Class != nullptr)
+    {
+        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
+        {
+            SuperClasses.Add(TypeScriptGeneratedClass);
+        }
+        Class = Class->GetSuperClass();
+    }
+
+    //从基类到派生类依次构造
+    for (int32 i = SuperClasses.Num() - 1; i >= 0; --i)
+    {
+        TsConstruct(SuperClasses[i], PendingObject);
+    }
 }
 
 void FJsEnvImpl::ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void *DelegatePtr)

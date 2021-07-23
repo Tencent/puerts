@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -224,6 +224,10 @@ private:
     void SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> &Info);
 
     void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value> &Info);
+
+    void OnAsyncLoadingFlushUpdate();
+
+    void ConstructPendingObject(UObject* PendingObject);
 
     struct ObjectMerger;
 
@@ -462,6 +466,13 @@ private:
     v8::Global<v8::Map> ManualReleaseCallbackMap;
 
     std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
+
+    FCriticalSection PendingConstructLock;
+    
+    TArray<TWeakObjectPtr<UObject>> PendingConstructObjects;
+    
+    FDelegateHandle AsyncLoadingFlushUpdateHandle;
+
 };
 
 }
