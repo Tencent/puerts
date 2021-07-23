@@ -12,6 +12,7 @@ declare module "ue" {
     
     interface $Delegate<T extends (...args: any) => any> {
         Bind(fn : T): void;
+        Bind(target: Object, methodName: string): void;
         Unbind(): void;
         IsBound(): boolean;
         Execute(...a: ArgumentTypes<T>) : ReturnType<T>;
@@ -19,6 +20,7 @@ declare module "ue" {
 
     interface $MulticastDelegate<T extends (...args: any) => any> {
         Add(fn : T): void;
+        Add(target: Object, methodName: string): void;
         Remove(fn : T): void;
         Broadcast(...a: ArgumentTypes<T>) : ReturnType<T>;
         Clear(): void;

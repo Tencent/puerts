@@ -1562,6 +1562,16 @@ bool FJsEnvImpl::AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     return true;
 }
 
+PropertyMacro *FJsEnvImpl::FindDelegateProperty(void *DelegatePtr)
+{
+    auto Iter = DelegateMap.find(DelegatePtr);
+    if (Iter == DelegateMap.end())
+    {
+        return nullptr;
+    }
+    return Iter->second.DelegateProperty ? (PropertyMacro *)Iter->second.DelegateProperty : (PropertyMacro *)Iter->second.MulticastDelegateProperty;
+}
+
 FScriptDelegate FJsEnvImpl::NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction)
 {
     auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
