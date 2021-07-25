@@ -9,6 +9,7 @@
 
 #include "Converter.hpp"
 #include "DataTransfer.h"
+#include "ExtensionMethods.h"
 
 #define UsingUClass(CLS) \
     __DefScriptTTypeName(CLS, CLS)\
@@ -93,6 +94,39 @@ struct Converter<FText> {
     }
 };
 
+template <>
+struct Converter<FArrayBuffer> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBuffer value)
+    {
+        return v8::ArrayBuffer::New(context->GetIsolate(), value.Data, value.Length);
+    }
+
+    static FArrayBuffer toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        FArrayBuffer Ret = {nullptr, 0};
+        if (value->IsArrayBufferView())
+        {
+            
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto ABC = BuffView->Buffer()->GetContents();
+            Ret.Data = static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+            Ret.Length = BuffView->ByteLength();
+        }
+        else if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local <v8::ArrayBuffer>::Cast(value);
+            Ret.Data = Ab->GetContents().Data();
+            Ret.Length = Ab->GetContents().ByteLength();
+        }
+        return Ret;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
 template <typename T>
 struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObject *>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
@@ -119,6 +153,11 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_convertible<T, const FS
     || std::is_convertible<T, const FText&>::value
     || std::is_convertible<T, const TCHAR *>::value>::type> {
     static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<FArrayBuffer> {
+    static constexpr const char * value = "ArrayBuffer";
 };
 
 namespace internal
