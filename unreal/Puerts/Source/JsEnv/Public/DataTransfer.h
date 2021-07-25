@@ -22,13 +22,12 @@ FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR *Name)
     return FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name);
 }
 
-template< class T >
+template< class T, typename Enable = void>
 struct TScriptStructTraits
 {
-    static UScriptStruct* Get() { return T::StaticStruct(); }
 };
 
-template<> struct  TScriptStructTraits<FVector>
+template<> struct TScriptStructTraits<FVector>
 {
     static UScriptStruct* Get() { return TBaseStructure<FVector>::Get(); }
 };
@@ -91,6 +90,21 @@ template<> struct TScriptStructTraits<FIntVector>
 template<> struct TScriptStructTraits<FPlane>
 {
     static UScriptStruct* Get() { return GetScriptStructInCoreUObject(TEXT("Plane")); }
+};
+
+template< class... >
+using ToVoid = void;
+
+template <typename T, typename = void>
+struct HasStaticStructHelper : std::false_type {};
+
+template <typename T>
+struct HasStaticStructHelper<T, ToVoid<decltype(&T::StaticStruct)>> : std::true_type {};
+
+template<typename T>
+struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::value>::type>
+{
+    static UScriptStruct* Get() { return T::StaticStruct(); }
 };
 
 class JSENV_API DataTransfer

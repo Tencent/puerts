@@ -121,4 +121,53 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_convertible<T, const FS
     static constexpr const char * value = "string";
 };
 
+namespace internal
+{
+    template <typename T, typename = void>
+    struct IsUStructHelper : std::false_type {};
+
+    template <typename T>
+    struct IsUStructHelper<T, Void_t<decltype(&TScriptStructTraits<T>::Get)>> : std::true_type {};
+}
+
+namespace converter
+{
+template <typename T>
+struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObject *>::value && internal::IsUStructHelper<T>::value>::type> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
+    {
+        return ::puerts::DataTransfer::FindOrAddStruct<T>(context->GetIsolate(), context, value, true);
+    }
+
+    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return ::puerts::DataTransfer::GetPoninterFast<T>(value.As<v8::Object>()); ;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
+    }
+};
+
+template <typename T>
+struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>::type> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+    {
+        return ::puerts::DataTransfer::FindOrAddStruct<T>(context->GetIsolate(), context, new T(value), false);
+    }
+
+    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return *::puerts::DataTransfer::GetPoninterFast<T>(value.As<v8::Object>()); ;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
+    }
+};
+
+}
+
 }
