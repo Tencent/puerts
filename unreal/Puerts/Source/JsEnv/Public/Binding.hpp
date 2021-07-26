@@ -17,7 +17,7 @@
 #include "Converter.hpp"
 #include "BindingTypeInfo.hpp"
 
-#define MakeConstructor(T, ...) ::puerts::ConstructorWrapper<T, ##__VA_ARGS__>
+#define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
 #define MakeSetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::setter)
 #define MakeProperty(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter), &(::puerts::PropertyWrapper<decltype(M), M>::setter), ::puerts::PropertyWrapper<decltype(M), M>::info()
@@ -25,8 +25,8 @@
 #define SelectFunction(SIGNATURE, M) &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
 #define MakeCheckFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall), ::puerts::FuncCallWrapper<decltype(M), M>::info()
 #define MakeOverload(SIGNATURE, M) puerts::FuncCallWrapper<SIGNATURE, M>
-#define CombineOverloads(...) &(::puerts::OverloadsCombiner<##__VA_ARGS__>::call), ::puerts::OverloadsCombiner<##__VA_ARGS__>::length, ::puerts::OverloadsCombiner<##__VA_ARGS__>::infos()
-#define CombineConstructors(...) &(::puerts::ConstructorsCombiner<##__VA_ARGS__>::call), ::puerts::ConstructorsCombiner<##__VA_ARGS__>::length, ::puerts::ConstructorsCombiner<##__VA_ARGS__>::infos()
+#define CombineOverloads(...) &::puerts::OverloadsCombiner<__VA_ARGS__>::call, ::puerts::OverloadsCombiner<__VA_ARGS__>::length, ::puerts::OverloadsCombiner<__VA_ARGS__>::infos()
+#define CombineConstructors(...) &::puerts::ConstructorsCombiner<__VA_ARGS__>::call, ::puerts::ConstructorsCombiner<__VA_ARGS__>::length, ::puerts::ConstructorsCombiner<__VA_ARGS__>::infos()
 
 #define UsingCppClass(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
@@ -494,7 +494,7 @@ struct OverloadsCombiner
 {
     static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        OverloadsRecursion<(&(OverloadWraps::overloadCall))...>::call(info);
+        OverloadsRecursion<(&OverloadWraps::overloadCall)...>::call(info);
     }
 
     static constexpr int length = sizeof...(OverloadWraps);
@@ -543,7 +543,7 @@ struct ConstructorsCombiner
 {
     static void * call(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        return ConstructorRecursion<(&(OverloadWraps::call))...>::call(info);
+        return ConstructorRecursion<(&OverloadWraps::call)...>::call(info);
     }
 
     static constexpr int length = sizeof...(OverloadWraps);
