@@ -40,6 +40,9 @@ ninja -C out.gn/x64.release v8
 node $GITHUB_WORKSPACE/v8-build/genBlobHeader.js "osx 64" out.gn/x64.release/snapshot_blob.bin
 
 mkdir -p output/v8/Lib/macOSdylib
-cp out.gn/x64.release/*.dylib output/v8/Lib/macOSdylib/
+cp out.gn/x64.release/libv8.dylib output/v8/Lib/macOSdylib/
+cp out.gn/x64.release/libv8_libplatform.dylib output/v8/Lib/macOSdylib/
+cp out.gn/x64.release/libv8_libbase.dylib output/v8/Lib/macOSdylib/
+cp out.gn/x64.release/libchrome_zlib.dylib output/v8/Lib/macOSdylib/
 mkdir -p output/v8/Inc/Blob/macOSdylib
 cp SnapshotBlob.h output/v8/Inc/Blob/macOSdylib/
