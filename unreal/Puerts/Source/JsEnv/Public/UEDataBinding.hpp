@@ -14,8 +14,7 @@
 #define UsingUClass(CLS) \
     __DefScriptTTypeName(CLS, CLS)\
     namespace puerts{\
-        template<>  \
-        constexpr bool is_uetype_v<CLS> = true;\
+        template<> struct is_uetype<CLS> : public std::true_type {}; \
     }
 
 #define UsingUStruct(CLS) UsingUClass(CLS)

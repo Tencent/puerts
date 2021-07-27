@@ -28,11 +28,11 @@ struct AutoRegisterForUE
             .Method("GetOuter", MakeFunction(&UObject::GetOuter))
             .Method("GetClass", MakeFunction(&UObject::GetClass))
             .Method("GetWorld", MakeFunction(&UObject::GetWorld))
-            .RegisterUEType();
+            .Register();
 
     	puerts::DefineClass<USceneComponent>()
 			.Method("SetupAttachment", MakeFunction(&USceneComponent::SetupAttachment))
-			.RegisterUEType();
+			.Register();
     }
 };
 
