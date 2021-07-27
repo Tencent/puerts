@@ -9,7 +9,7 @@
 
 #include "Converter.hpp"
 #include "DataTransfer.h"
-#include "ExtensionMethods.h"
+#include "ArrayBuffer.h"
 
 #define UsingUClass(CLS) \
     __DefScriptTTypeName(CLS, CLS)\
@@ -17,6 +17,8 @@
         template<>  \
         constexpr bool is_uetype_v<CLS> = true;\
     }
+
+#define UsingUStruct(CLS) UsingUClass(CLS)
 
 namespace puerts
 {
