@@ -676,10 +676,9 @@ public:
         return *this;
     }
 
-    void RegisterUEType(){ Register(true); }
-
-    void Register(bool isUEType = false)
+    void Register()
     {
+        const bool isUEType = puerts::is_uetype<T>::value;
         static std::vector<JSFunctionInfo> s_functions_{};
         static std::vector<JSFunctionInfo> s_methods_{};
         static std::vector<JSPropertyInfo> s_properties_{};
