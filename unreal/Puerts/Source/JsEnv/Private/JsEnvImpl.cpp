@@ -61,11 +61,7 @@
 #else
 
 #if PLATFORM_WINDOWS
-#if WITH_EDITOR
-#include "Blob/Win64DLL/SnapshotBlob.h"
-#else
 #include "Blob/Win64MD/SnapshotBlob.h"
-#endif
 #elif PLATFORM_ANDROID_ARM
 #include "Blob/Android/armv7a/SnapshotBlob.h"
 #elif PLATFORM_ANDROID_ARM64
