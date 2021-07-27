@@ -269,6 +269,15 @@ public class JsEnv : ModuleRules
             "zlib.dll"
         }, V8LibraryPath, false);
     }
+    
+    void MacDylib(string LibraryPath)
+    {
+        string V8LibraryPath = Path.Combine(LibraryPath, "macOSdylib");
+        PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8.dylib"));
+        PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.dylib"));
+        PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.dylib"));
+        PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libchrome_zlib.dylib"));
+    }
 
     void ThirdParty(ReadOnlyTargetRules Target)
     {
@@ -300,10 +309,17 @@ public class JsEnv : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            // PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
-            PublicFrameworks.AddRange(new string[] { "WebKit" });
-            string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+            //PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
+            //PublicFrameworks.AddRange(new string[] { "WebKit" });
+            if (!Target.bBuildEditor)
+            {
+                string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+            }
+            else
+            {
+                MacDylib(LibraryPath);
+            }
         }
         else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
