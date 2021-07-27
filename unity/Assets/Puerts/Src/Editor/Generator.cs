@@ -598,6 +598,7 @@ namespace Puerts.Editor
             public TsTypeGenInfo[] interfaces;
             public bool IsEnum;
             public string EnumKeyValues;
+            public TsTypeGenInfo DeclaringType;
             public TsMethodGenInfo[] ExtensionMethods;
             public bool IsCheckOk = false;
             public string FullName
@@ -698,8 +699,14 @@ namespace Puerts.Editor
                 IsDelegate = (IsDelegate(type) && type != typeof(Delegate)),
                 IsInterface = type.IsInterface,
                 Namespace = type.Namespace,
+                DeclaringType = null,
                 ExtensionMethods = GetExtensionMethods(type, genTypeSet).Select(m => ToTsMethodGenInfo(m, type.IsGenericTypeDefinition, true)).ToArray()
             };
+
+            if (type.DeclaringType != null) 
+            {
+                result.DeclaringType = ToTsTypeGenInfo(type.DeclaringType, genTypeSet);
+            }
 
             if (result.IsGenericTypeDefinition)
             {
@@ -730,8 +737,13 @@ namespace Puerts.Editor
                     {
                         Name = interfaces[i].IsGenericType ? GetTsTypeName(interfaces[i]) : interfaces[i].Name.Replace('`', '$'),
                         Document = DocResolver.GetTsDocument(interfaces[i]),
+                        DeclaringType = null,
                         Namespace = interfaces[i].Namespace
                     };
+                    if (interfaces[i].DeclaringType != null) 
+                    {
+                        interfaceTypeGenInfo.DeclaringType = ToTsTypeGenInfo(interfaces[i].DeclaringType, genTypeSet);
+                    }
                     if (interfaces[i].IsGenericType && interfaces[i].Namespace != null)
                     {
                         interfaceTypeGenInfo.Name = interfaceTypeGenInfo.Name.Substring(interfaces[i].Namespace.Length + 1);
@@ -767,8 +779,13 @@ namespace Puerts.Editor
                 {
                     Name = type.BaseType.IsGenericType ? GetTsTypeName(type.BaseType) : type.BaseType.Name.Replace('`', '$'),
                     Document = DocResolver.GetTsDocument(type.BaseType),
+                    DeclaringType = null,
                     Namespace = type.BaseType.Namespace
                 };
+                if (type.BaseType.DeclaringType != null) 
+                {
+                    result.BaseType.DeclaringType = ToTsTypeGenInfo(type.BaseType.DeclaringType, genTypeSet);
+                }
                 if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)
                 {
                     result.BaseType.Name = result.BaseType.Name.Substring(type.BaseType.Namespace.Length + 1);
