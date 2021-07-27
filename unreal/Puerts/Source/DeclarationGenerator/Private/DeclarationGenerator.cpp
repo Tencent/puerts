@@ -138,6 +138,23 @@ void FStringBuffer::Indent(int Num)
     }
 }
 
+TArray<UClass*>& GetSortedClasses()
+{
+    static TArray<UClass*> SortedClasses;
+    if (SortedClasses.Num() == 0)
+    {
+        for (TObjectIterator<UClass> It; It; ++It)
+        {
+            SortedClasses.Add(*It);
+        }
+
+        SortedClasses.Sort([&](const UClass &ClassA, const UClass &ClassB) -> bool {
+            return ClassA.GetName() < ClassB.GetName();
+        });
+    }
+    return SortedClasses;
+}
+
 
 void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
 {
@@ -158,7 +175,7 @@ bool IsChildOf(UClass *Class, const FString& Name)
 
 void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 {
-    for (TObjectIterator<UClass> It; It; ++It)
+    for (TArray<UClass*>::RangedForIteratorType It = GetSortedClasses().begin(); It != GetSortedClasses().end(); ++It)
     {
         UClass* Class = *It;
         bool IsExtensionMethod = IsChildOf(Class, "ExtensionMethods");
@@ -200,7 +217,7 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
 {
     Begin();
-    for (TObjectIterator<UClass> It; It; ++It)
+    for (TArray<UClass*>::RangedForIteratorType It = GetSortedClasses().begin(); It != GetSortedClasses().end(); ++It)
     {
         UClass* Class = *It;
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
@@ -789,7 +806,7 @@ private:
         LoadAllWidgetBlueprint();
         GenTypeScriptDeclaration();
 
-        for (TObjectIterator<UClass> It; It; ++It)
+        for (TArray<UClass*>::RangedForIteratorType It = GetSortedClasses().begin(); It != GetSortedClasses().end(); ++It)
         {
             UClass* Class = *It;
             if (Class->ImplementsInterface(UCodeGenerator::StaticClass()))
