@@ -138,20 +138,18 @@ void FStringBuffer::Indent(int Num)
     }
 }
 
-TArray<UClass*>& GetSortedClasses()
+TArray<UClass*> GetSortedClasses()
 {
-    static TArray<UClass*> SortedClasses;
-    if (SortedClasses.Num() == 0)
+    TArray<UClass*> SortedClasses;
+    for (TObjectIterator<UClass> It; It; ++It)
     {
-        for (TObjectIterator<UClass> It; It; ++It)
-        {
-            SortedClasses.Add(*It);
-        }
-
-        SortedClasses.Sort([&](const UClass &ClassA, const UClass &ClassB) -> bool {
-            return ClassA.GetName() < ClassB.GetName();
-        });
+        SortedClasses.Add(*It);
     }
+
+    SortedClasses.Sort([&](const UClass &ClassA, const UClass &ClassB) -> bool {
+        return ClassA.GetName() < ClassB.GetName();
+    });
+    
     return SortedClasses;
 }
 
@@ -175,7 +173,8 @@ bool IsChildOf(UClass *Class, const FString& Name)
 
 void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 {
-    for (TArray<UClass*>::RangedForIteratorType It = GetSortedClasses().begin(); It != GetSortedClasses().end(); ++It)
+    TArray<UClass*> SortedClasses(GetSortedClasses());
+    for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
     {
         UClass* Class = *It;
         bool IsExtensionMethod = IsChildOf(Class, "ExtensionMethods");
@@ -217,7 +216,8 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
 {
     Begin();
-    for (TArray<UClass*>::RangedForIteratorType It = GetSortedClasses().begin(); It != GetSortedClasses().end(); ++It)
+    TArray<UClass*> SortedClasses(GetSortedClasses());
+    for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
     {
         UClass* Class = *It;
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
@@ -806,7 +806,8 @@ private:
         LoadAllWidgetBlueprint();
         GenTypeScriptDeclaration();
 
-        for (TArray<UClass*>::RangedForIteratorType It = GetSortedClasses().begin(); It != GetSortedClasses().end(); ++It)
+        TArray<UClass*> SortedClasses(GetSortedClasses());
+        for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
         {
             UClass* Class = *It;
             if (Class->ImplementsInterface(UCodeGenerator::StaticClass()))
