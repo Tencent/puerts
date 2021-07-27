@@ -50,8 +50,13 @@ function typeDeclaration(type, level1) {
     if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
         result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(interface=> typeDeclaration(interface)).join(', '))
     }
-    if (!level1 && type.Namespace) {
-        result = type.Namespace + "." + result;
+    if (!level1) {
+        if (type.DeclaringType != null) {
+            result = typeDeclaration(type.DeclaringType) + "." + result;
+
+        } else {
+            result = type.Namespace + "." + result;
+        }
     }
     return result;
 }
