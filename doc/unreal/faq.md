@@ -29,7 +29,7 @@ ts类是没有StaticClass方法的，所以StaticClass调用其实是继承链�
 
 正确的做法应该是通过UE.Class.Load("path/to/your/blueprint/file")去加载。
 
-## mac下提示“无法打开libv8.dylib，因为服务验证开发者”
+## mac下提示“无法打开libv8.dylib，因为无法验证开发者”
 
 进入该dylib文件所在目录（通常是：youproject/Plugins/Puerts/ThirdParty/v8/Lib/macOSdylib），执行如下命令：
 
