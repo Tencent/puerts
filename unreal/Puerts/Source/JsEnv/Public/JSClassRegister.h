@@ -87,7 +87,7 @@ typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Co
 
 #define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0 }
 
-void JSENV_API RegisterClass(const JSClassDefinition &ClassDefinition);
+void JSENV_API RegisterJSClass(const JSClassDefinition &ClassDefinition);
 
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)>);
 

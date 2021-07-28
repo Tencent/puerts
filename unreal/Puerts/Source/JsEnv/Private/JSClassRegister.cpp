@@ -150,7 +150,7 @@ JSClassRegister* GetJSClassRegister()
     return &S_JSClassRegister;
 }
 
-void RegisterClass(const JSClassDefinition &ClassDefinition)
+void RegisterJSClass(const JSClassDefinition &ClassDefinition)
 {
     GetJSClassRegister()->RegisterClass(ClassDefinition);
 }
