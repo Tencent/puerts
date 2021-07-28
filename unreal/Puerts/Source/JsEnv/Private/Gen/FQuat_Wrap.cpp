@@ -2006,7 +2006,7 @@ struct AutoRegisterForFQuat
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };
