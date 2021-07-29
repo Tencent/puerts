@@ -734,7 +734,7 @@ public:
         s_propertyInfos_.push_back(NamedPropertyInfo {nullptr, nullptr});
         ClassDef.PropertyInfos = s_propertyInfos_.data();
 
-        puerts::RegisterClass(ClassDef);
+        puerts::RegisterJSClass(ClassDef);
     }
 };
 
