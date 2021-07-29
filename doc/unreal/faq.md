@@ -28,3 +28,11 @@ ts类是没有StaticClass方法的，所以StaticClass调用其实是继承链�
 没理解这点可能会导致一些误解：比如我创建的对象为啥没子类方法，必然CreateDefaultSubobject报错说类是abstract的，无法创建等。
 
 正确的做法应该是通过UE.Class.Load("path/to/your/blueprint/file")去加载。
+
+## mac下提示“无法打开libv8.dylib，因为无法验证开发者”
+
+进入该dylib文件所在目录（通常是：youproject/Plugins/Puerts/ThirdParty/v8/Lib/macOSdylib），执行如下命令：
+
+~~~bash
+sudo xattr -r -d com.apple.quarantine *.dylib
+~~~

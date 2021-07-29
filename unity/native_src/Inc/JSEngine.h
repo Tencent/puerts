@@ -40,6 +40,8 @@
 #include "Blob/iOS/arm64/SnapshotBlob.h"
 #elif defined(PLATFORM_IOS_SIMULATOR)
 #include "Blob/iOS/x64/SnapshotBlob.h"
+#elif defined(PLATFORM_LINUX)
+#include "Blob/Linux/SnapshotBlob.h"
 #endif
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
@@ -144,14 +146,12 @@ private:
 
     std::map<void*, v8::UniquePersistent<v8::Value>> ObjectMap;
 
-    // 把已生成的JSFunction存起来，让重复的JSFunction传进来的时候可以复用
     std::vector<JSFunction*> JSFunctions;
 
-    // 记录js对象到id的映射
     v8::UniquePersistent<v8::Map> JSObjectIdMap;
-    // id到c++ jsobject对象的映射
+
     std::map<int32_t, JSObject*> JSObjectMap;
-    // 从map里删除元素后，会产生一些空余的id，下次创建时从此处取出使用
+
     std::vector<int32_t> ObjectMapFreeIndex;
 
     std::mutex JSFunctionsMutex;
