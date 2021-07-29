@@ -113,6 +113,24 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 };
 
 template <typename T>
+struct Converter<T, typename std::enable_if<std::is_enum<T>::value>::type> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+    {
+        return v8::Integer::New(context->GetIsolate(), static_cast<int>(value));
+    }
+
+    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return static_cast<T>(value->Int32Value(context).ToChecked());
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsInt32();
+    }
+};
+
+template <typename T>
 struct Converter<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {

@@ -28,10 +28,9 @@
 #define CombineOverloads(...) &::puerts::OverloadsCombiner<__VA_ARGS__>::call, ::puerts::OverloadsCombiner<__VA_ARGS__>::length, ::puerts::OverloadsCombiner<__VA_ARGS__>::infos()
 #define CombineConstructors(...) &::puerts::ConstructorsCombiner<__VA_ARGS__>::call, ::puerts::ConstructorsCombiner<__VA_ARGS__>::length, ::puerts::ConstructorsCombiner<__VA_ARGS__>::infos()
 
-#define UsingCppClass(CLS) \
+#define UsingCppType(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
     __DefCDataPointerConverter(CLS)
-
 
 namespace puerts
 {

@@ -45,10 +45,14 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && s
 };
 
 template<typename T>
-struct ScriptTypeName<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> {
+struct ScriptTypeName<T, typename std::enable_if<std::is_enum<T>::value>::type> {
     static constexpr const char * value = "number";
 };
 
+template<typename T>
+struct ScriptTypeName<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> {
+    static constexpr const char * value = "number";
+};
 
 template<>
 struct ScriptTypeName<std::string> {
