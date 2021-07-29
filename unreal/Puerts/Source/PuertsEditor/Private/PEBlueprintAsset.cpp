@@ -325,6 +325,15 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
             if (!ExistingNode && !Function)
             {
+                if (OverrideFuncClass == GeneratedClass)
+                {
+                    ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, UObject::StaticClass(), EventName);
+                    if (ExistingNode && !ExistingNode->IsNodeEnabled())
+                    {
+                        EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {return GraphNode == ExistingNode;});
+                        FBlueprintEditorUtils::RemoveNode(Blueprint, ExistingNode);
+                    }
+                }
                 UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(
                     EventGraph,
                     EventGraph->GetGoodPlaceForNewNode(),
