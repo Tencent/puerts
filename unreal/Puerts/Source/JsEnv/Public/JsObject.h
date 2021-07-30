@@ -48,7 +48,7 @@ public:
     }
 
     template<typename T>
-    T Get(const char* Key)
+    T Get(const char* Key) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -79,7 +79,7 @@ public:
     }
 
     template<typename... Args>
-    void Action(Args... cppArgs)
+    void Action(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -106,7 +106,7 @@ public:
     }
 
     template<typename Ret, typename... Args>
-    Ret Func(Args... cppArgs)
+    Ret Func(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -153,6 +153,11 @@ struct ScriptTypeName<FJsObject> {
     static constexpr const char * value = "object";
 };
 
+template<typename R, typename... Args>
+struct ScriptTypeName<std::function<R(Args...)>> {
+    static constexpr const char * value = "Function";
+};
+
 namespace converter
 {
 template <>
@@ -170,6 +175,50 @@ struct Converter<FJsObject> {
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return value->IsObject();
+    }
+};
+
+template<typename R, typename... Args>
+struct Converter<std::function<R(Args...)>> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<R(Args...)> value)
+    {
+        return v8::Undefined(context->GetIsolate());
+    }
+
+    static std::function<R(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        FJsObject PF(context, value.As<v8::Object>());
+        return [=](Args... cppArgs) -> R
+        {
+            return PF.Func<R>(cppArgs...);
+        };
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsFunction();
+    }
+};
+
+template<typename... Args>
+struct Converter<std::function<void(Args...)>> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<void(Args...)> value)
+    {
+        return v8::Undefined(context->GetIsolate());
+    }
+
+    static std::function<void(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        FJsObject PF(context, value.As<v8::Object>());
+        return [=](Args... cppArgs) -> void
+        {
+            PF.Action(cppArgs...);
+        };
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsFunction();
     }
 };
 }   
