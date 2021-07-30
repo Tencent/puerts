@@ -34,6 +34,9 @@ strip_debug_info = true
 symbol_level=0
 libcxx_abi_unstable = false
 v8_enable_pointer_compression=false
+is_clang = true
+use_custom_libcxx_for_host=false
+use_custom_libcxx=false
 '
 
 ninja -C out.gn/x64.release -t clean
