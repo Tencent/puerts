@@ -164,6 +164,45 @@ public:
         return true;
     }
 
+    FORCEINLINE static FString TryCatchToString(v8::Isolate* Isolate, v8::TryCatch* TryCatch)
+    {
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::String::Utf8Value Exception(Isolate, TryCatch->Exception());
+        FString ExceptionStr(*Exception);
+        v8::Local<v8::Message> Message = TryCatch->Message();
+        if (Message.IsEmpty())
+        {
+            // 如果没有提供更详细的信息，直接输出Exception
+            return ExceptionStr;
+        }
+        else
+        {
+            v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
+
+            // 输出 (filename):(line number): (message).
+            v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
+            int LineNum = Message->GetLineNumber(Context).FromJust();
+            FString FileNameStr(*FileName);
+            FString LineNumStr = FString::FromInt(LineNum);
+            FString FileInfoStr;
+            FileInfoStr.Append(FileNameStr).Append(":").Append(LineNumStr).Append(": ").Append(ExceptionStr);
+
+            FString FinalReport;
+            FinalReport.Append(FileInfoStr).Append("\n");
+
+            // 输出调用栈信息
+            v8::Local<v8::Value> StackTrace;
+            if (TryCatch->StackTrace(Context).ToLocal(&StackTrace))
+            {
+                v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
+                FString StackTraceStr(*StackTraceVal);
+                FinalReport.Append("\n").Append(StackTraceStr);
+            }
+            return FinalReport;
+        }
+    }
+
     FORCEINLINE static bool CheckArguement(const v8::FunctionCallbackInfo<v8::Value>& Info, const std::vector<ArgType> &TypesExpect)
     {
         if (Info.Length() < TypesExpect.size())

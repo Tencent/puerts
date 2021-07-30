@@ -169,8 +169,6 @@ public:
     void TryReleaseType(UStruct *Struct);
 
 private:
-    FString GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch);
-
     bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data, FString &ErrInfo);
 
     void ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor = nullptr);

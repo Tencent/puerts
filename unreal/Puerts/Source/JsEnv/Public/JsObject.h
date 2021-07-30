@@ -12,6 +12,8 @@
 #pragma warning(pop)
 
 #include "Binding.hpp"
+#include "JSLogger.h"
+#include "V8Utils.h"
 
 #include "CoreMinimal.h"
 #include "JsObject.generated.h"
@@ -76,10 +78,84 @@ public:
 			puerts::converter::Converter<T>::toScript(Context, Val));
 	}
 
-public:
+	void SetLogger(std::shared_ptr<puerts::ILogger> InLogger)
+	{
+		Logger = InLogger;
+	}
+
+	template<typename... Args>
+	void Action(Args... cppArgs)
+	{
+		v8::Isolate::Scope IsolateScope(Isolate);
+		v8::HandleScope HandleScope(Isolate);
+		auto Context = GContext.Get(Isolate);
+		v8::Context::Scope ContextScope(Context);
+
+		auto Object = GObject.Get(Isolate);
+
+		if (!Object->IsFunction())
+		{
+			if (Logger) Logger->Error(TEXT("call a non-function object!"));
+			return;
+		}
+
+		v8::TryCatch TryCatch(Isolate);
+
+		v8::Local<v8::Value> Argv[sizeof...(Args)] {puerts::converter::Converter<Args>::toScript(Context, cppArgs)...};
+		auto _UnUsed = Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+
+		if (TryCatch.HasCaught())
+		{
+			if (Logger)
+			{
+				Logger->Error(FString::Printf(TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+			}
+		}
+	}
+
+	template<typename Ret, typename... Args>
+	Ret Func(Args... cppArgs)
+	{
+		v8::Isolate::Scope IsolateScope(Isolate);
+		v8::HandleScope HandleScope(Isolate);
+		auto Context = GContext.Get(Isolate);
+		v8::Context::Scope ContextScope(Context);
+
+		auto Object = GObject.Get(Isolate);
+
+		if (!Object->IsFunction())
+		{
+			if (Logger) Logger->Error(TEXT("call a non-function object!"));
+			return {};
+		}
+
+		v8::TryCatch TryCatch(Isolate);
+
+		v8::Local<v8::Value> Argv[sizeof...(Args)] {puerts::converter::Converter<Args>::toScript(Context, cppArgs)...};
+		auto MaybeRet = Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+
+		if (TryCatch.HasCaught())
+		{
+			if (Logger)
+			{
+				Logger->Error(FString::Printf(TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+			}
+		}
+
+		if (!MaybeRet.IsEmpty())
+		{
+			return puerts::converter::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
+		}
+		return {};
+	}
+
+private:
 	v8::Isolate *Isolate;
 	v8::Global<v8::Context> GContext;
 	v8::Global<v8::Object> GObject;
+	std::shared_ptr<puerts::ILogger> Logger;
+
+	friend struct puerts::converter::Converter<FJsObject>;
 };
 
 namespace puerts

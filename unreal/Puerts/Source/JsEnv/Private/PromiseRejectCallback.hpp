@@ -59,7 +59,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
-//TODO: ºóĞø±¾ÎÄ¼şÓ¦¸Ã»»¸öÃû×Ö
+//TODO: åç»­æœ¬æ–‡ä»¶åº”è¯¥æ¢ä¸ªåå­—
 #ifndef WITH_QUICKJS
 std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
