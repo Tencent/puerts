@@ -271,12 +271,13 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 
 void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, v8::Local<v8::Value> This, void *Params)
 {
-    Args.clear();
+    v8::Local<v8::Value> *Args = static_cast<v8::Local<v8::Value> *>(FMemory_Alloca(sizeof(v8::Local<v8::Value>) * Arguments.size()));
+    FMemory::Memset(Args, 0, sizeof(v8::Local<v8::Value>) * Arguments.size());
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        Args.push_back(Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false));
+        Args[i] = Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false);
     }
-    auto Result = JsFunction->Call(Context, This, Args.size(), Args.data());
+    auto Result = JsFunction->Call(Context, This, Arguments.size(), Args);
 
     if (!Result.IsEmpty()) // empty mean exception
     {
@@ -290,7 +291,6 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             Arguments[i]->JsToUEOutInContainer(Isolate, Context, Args[i], Params, false);
         }
     }
-    Args.clear();
 }
 
 static FOutParmRec* GetMatchOutParmRec(FOutParmRec *OutParam, PropertyMacro *OutProperty)
@@ -336,12 +336,13 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
         Stack.SkipCode(1);          // skip EX_EndFunctionParms
     }
 
-    Args.clear();
+    v8::Local<v8::Value> *Args = static_cast<v8::Local<v8::Value> *>(FMemory_Alloca(sizeof(v8::Local<v8::Value>) * Arguments.size()));
+    FMemory::Memset(Args, 0, sizeof(v8::Local<v8::Value>) * Arguments.size());
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        Args.push_back(Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false));
+        Args[i] = Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false);
     }
-    auto Result = JsFunction->Call(Context, This, Args.size(), Args.data());
+    auto Result = JsFunction->Call(Context, This, Arguments.size(), Args);
 
     if (!Result.IsEmpty()) // empty mean exception
     {
@@ -360,7 +361,6 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             }
         }
     }
-    Args.clear();
 }
 
 FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction *InFunction) : FFunctionTranslator(InFunction)
