@@ -211,8 +211,11 @@ elseif ( APPLE )
 elseif (UNIX)
     target_link_libraries(puerts
         ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
+	    pthread
     )
     target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
+    set(CMAKE_CXX_COMPILER "clang++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 endif ()
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
