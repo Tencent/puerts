@@ -8,8 +8,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include <functional>
-#include <memory>
+
+DECLARE_LOG_CATEGORY_EXTERN(Puerts, Log, All);
 
 namespace puerts
 {
