@@ -654,10 +654,10 @@ struct AutoRegisterForFIntVector
             {0, 0}
         };
 
-        Def.UStructName = "FIntVector";
+        Def.UETypeName = "FIntVector";
 
         Def.Initialize = _FIntVectorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

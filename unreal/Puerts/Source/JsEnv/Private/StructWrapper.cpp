@@ -22,7 +22,7 @@ namespace puerts
         TSet<FString> AddedProperties;
         if (ClassDefinition)
         {
-            JSPropertyInfo* PropertyInfo = ClassDefinition->Propertys;
+            JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
             while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
             {
                 AddedProperties.Add(UTF8_TO_TCHAR(PropertyInfo->Name));

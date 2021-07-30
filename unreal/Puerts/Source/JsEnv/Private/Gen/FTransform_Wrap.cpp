@@ -2666,10 +2666,10 @@ struct AutoRegisterForFTransform
             {0, 0}
         };
 
-        Def.UStructName = "FTransform";
+        Def.UETypeName = "FTransform";
 
         Def.Initialize = _FTransformNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

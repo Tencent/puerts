@@ -1512,10 +1512,10 @@ struct AutoRegisterForFVector2D
             {0, 0}
         };
 
-        Def.UStructName = "FVector2D";
+        Def.UETypeName = "FVector2D";
 
         Def.Initialize = _FVector2DNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

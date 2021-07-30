@@ -1999,10 +1999,10 @@ struct AutoRegisterForFQuat
             {0, 0}
         };
 
-        Def.UStructName = "FQuat";
+        Def.UETypeName = "FQuat";
 
         Def.Initialize = _FQuatNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

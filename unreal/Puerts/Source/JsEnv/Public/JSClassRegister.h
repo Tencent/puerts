@@ -68,13 +68,13 @@ struct NamedPropertyInfo
 
 struct JSENV_API JSClassDefinition
 {
-    const char* CDataName;
-    const char* CDataSuperName;
-    const char* UStructName;
+    const char* CPPTypeName;
+    const char* CPPSuperTypeName;
+    const char* UETypeName;
     InitializeFunc Initialize;
     JSFunctionInfo* Methods;    //成员方法
     JSFunctionInfo* Functions;  //静态方法
-    JSPropertyInfo* Propertys;
+    JSPropertyInfo* Properties;
     FinalizeFunc Finalize;
     //int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
@@ -85,7 +85,7 @@ struct JSENV_API JSClassDefinition
 
 typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
-#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0 }
+#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition &ClassDefinition);
 

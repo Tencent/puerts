@@ -1220,10 +1220,10 @@ struct AutoRegisterForFVector4
             {0, 0}
         };
 
-        Def.UStructName = "FVector4";
+        Def.UETypeName = "FVector4";
 
         Def.Initialize = _FVector4New_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

@@ -691,12 +691,12 @@ public:
 
         if (isUEType)
         {
-            ClassDef.UStructName = className_;
+            ClassDef.UETypeName = className_;
         }
         else
         {
-            ClassDef.CDataName = className_;
-            ClassDef.CDataSuperName = superClassName_;
+            ClassDef.CPPTypeName = className_;
+            ClassDef.CPPSuperTypeName = superClassName_;
         }
 
         ClassDef.Initialize = constructor_;
@@ -715,7 +715,7 @@ public:
 
         s_properties_ = std::move(properties_);
         s_properties_.push_back(JSPropertyInfo {nullptr, nullptr, nullptr, nullptr});
-        ClassDef.Propertys = s_properties_.data();
+        ClassDef.Properties = s_properties_.data();
 
         s_constructorInfos_ = std::move(constructorInfos_);
         s_constructorInfos_.push_back(NamedFunctionInfo {nullptr, nullptr});

@@ -1849,7 +1849,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
 void FJsEnvImpl::BindCData(JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
     FV8Utils::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    FV8Utils::SetPointer(MainIsolate, JSObject, const_cast<char*>(ClassDefinition->CDataName), 1);
+    FV8Utils::SetPointer(MainIsolate, JSObject, const_cast<char*>(ClassDefinition->CPPTypeName), 1);
 
     if(!PassByPointer)//指针传递不用处理GC
     {
@@ -2029,7 +2029,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(const JSClassDefi
 {
     check(ClassDefinition);
     auto Isolate = MainIsolate;
-    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->CDataName);
+    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->CPPTypeName);
     if (Iter == CDataNameToTemplateMap.end())
     {
         v8::EscapableHandleScope HandleScope(Isolate);
@@ -2037,7 +2037,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(const JSClassDefi
         auto Template = v8::FunctionTemplate::New(Isolate, CDataNew, v8::External::New(Isolate, const_cast<void *>(reinterpret_cast<const void*>(ClassDefinition))));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-        JSPropertyInfo* PropertyInfo = ClassDefinition->Propertys;
+        JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
         while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
         {
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
@@ -2062,15 +2062,15 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(const JSClassDefi
             ++FunctionInfo;
         }
 
-        if (ClassDefinition->CDataSuperName)
+        if (ClassDefinition->CPPSuperTypeName)
         {
-            if (auto SuperDefinition = FindClassByID(ClassDefinition->CDataSuperName))
+            if (auto SuperDefinition = FindClassByID(ClassDefinition->CPPSuperTypeName))
             {
                 Template->Inherit(GetTemplateOfClass(SuperDefinition));
             }
         }
 
-        CDataNameToTemplateMap[ClassDefinition->CDataName] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
+        CDataNameToTemplateMap[ClassDefinition->CPPTypeName] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
 
         return HandleScope.Escape(Template);
     }
