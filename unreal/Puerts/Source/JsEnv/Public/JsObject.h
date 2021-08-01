@@ -66,7 +66,7 @@ public:
     }
 
     template<typename T>
-    void Set(const char* Key, T Val)
+    void Set(const char* Key, T Val) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -91,13 +91,12 @@ public:
         if (!Object->IsFunction())
         {
             UE_LOG(Puerts, Error, TEXT("call a non-function object!"));
-            return {};
+            return;
         }
 
         v8::TryCatch TryCatch(Isolate);
 
-        v8::Local<v8::Value> Argv[sizeof...(Args)] {puerts::converter::Converter<Args>::toScript(Context, cppArgs)...};
-        auto _UnUsed = Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+        auto _UnUsed = InvokeHelper(Context, Object, cppArgs ... );
 
         if (TryCatch.HasCaught())
         {
@@ -123,8 +122,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        v8::Local<v8::Value> Argv[sizeof...(Args)] {puerts::converter::Converter<Args>::toScript(Context, cppArgs)...};
-        auto MaybeRet = Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+        auto MaybeRet = InvokeHelper(Context, Object, cppArgs ... );
 
         if (TryCatch.HasCaught())
         {
@@ -137,6 +135,19 @@ public:
         }
         return {};
     }
+
+private:
+    template <typename ... Args>
+    FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args ... CppArgs) const
+    {
+        v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
+        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);;
+    };
+
+    FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
+    {
+        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), 0, nullptr);
+    };
 
 private:
     v8::Isolate *Isolate;

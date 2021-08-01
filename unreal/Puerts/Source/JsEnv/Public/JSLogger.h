@@ -9,7 +9,7 @@
 
 #include "CoreMinimal.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(Puerts, Log, All);
+JSENV_API DECLARE_LOG_CATEGORY_EXTERN(Puerts, Log, All);
 
 namespace puerts
 {
