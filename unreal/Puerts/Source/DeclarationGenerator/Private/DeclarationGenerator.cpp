@@ -321,11 +321,18 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-        if (StructProperty->Struct->GetName() != "ArrayBuffer")
+        if (StructProperty->Struct->GetName() != TEXT("ArrayBuffer") && StructProperty->Struct->GetName() != TEXT("JsObject"))
         {
             AddToGen.Add(StructProperty->Struct);
         }
-        StringBuffer << SafeName(StructProperty->Struct->GetName());
+        if (StructProperty->Struct->GetName() == TEXT("JsObject"))
+        {
+            StringBuffer << "object";
+        }
+        else
+        {
+            StringBuffer << SafeName(StructProperty->Struct->GetName());
+        }
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
     {

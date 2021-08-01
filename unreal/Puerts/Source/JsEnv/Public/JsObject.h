@@ -136,6 +136,18 @@ public:
         return {};
     }
 
+    FORCEINLINE v8::Local<v8::Object> GetObject() const
+    {
+        if (!GObject.IsEmpty())
+        {
+            return GObject.Get(Isolate);
+        }
+        else
+        {
+            return {};
+        }
+    }
+
 private:
     template <typename ... Args>
     FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args ... CppArgs) const
