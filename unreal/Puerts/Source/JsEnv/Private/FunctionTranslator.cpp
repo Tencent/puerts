@@ -134,31 +134,31 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
                             {
                                 FVector* Vector = (FVector*)PropValuePtr;
                                 FDefaultValueHelper::ParseVector(**DefaultValuePtr, *Vector);
-                                return;
+                                continue;
                             }
                             else if (StructProp->Struct == TBaseStructure<FVector2D>::Get())
                             {
                                 FVector2D* Vector2D = (FVector2D*)PropValuePtr;
                                 FDefaultValueHelper::ParseVector2D(**DefaultValuePtr, *Vector2D);
-                                return;
+                                continue;
                             }
                             else if (StructProp->Struct == TBaseStructure<FRotator>::Get())
                             {
                                 FRotator* Rotator = (FRotator*)PropValuePtr;
                                 FDefaultValueHelper::ParseRotator(**DefaultValuePtr, *Rotator);
-                                return;
+                                continue;
                             }
                             else if (StructProp->Struct == TBaseStructure<FColor>::Get())
                             {
                                 FColor* Color = (FColor*)PropValuePtr;
                                 FDefaultValueHelper::ParseColor(**DefaultValuePtr, *Color);
-                                return;
+                                continue;
                             }
                             else if (StructProp->Struct == TBaseStructure<FLinearColor>::Get())
                             {
                                 FLinearColor* LinearColor = (FLinearColor*)PropValuePtr;
                                 FDefaultValueHelper::ParseLinearColor(**DefaultValuePtr, *LinearColor);
-                                return;
+                                continue;
                             }
                         }
 
