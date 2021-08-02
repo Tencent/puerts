@@ -15,7 +15,7 @@
 #include "JSClassRegister.h"
 #include "DataTransfer.h"
 #include "Converter.hpp"
-#include "BindingTypeInfo.hpp"
+#include "TypeInfo.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
