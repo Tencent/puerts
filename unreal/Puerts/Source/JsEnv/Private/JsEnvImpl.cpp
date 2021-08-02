@@ -318,6 +318,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
     AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
+
+    UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
+    SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
 }
 
 // #lizard forgives

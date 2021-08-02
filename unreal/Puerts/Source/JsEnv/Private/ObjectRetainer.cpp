@@ -35,6 +35,11 @@ namespace puerts
         Collector.AddReferencedObjects(RetainedObjects);
     }
 
+    FString FObjectRetainer::GetReferencerName() const
+    {
+        return Name;
+    }
+
     FObjectRetainer::~FObjectRetainer()
     {
         Clear();
