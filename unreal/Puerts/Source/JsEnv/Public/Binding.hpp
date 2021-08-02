@@ -30,7 +30,15 @@
 
 #define UsingCppType(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
+    __DefObjectType(CLS) \
     __DefCDataPointerConverter(CLS)
+
+#define UsingCppTypeByValue(CLS) \
+    __DefScriptTTypeName(CLS, CLS) \
+    __DefObjectType(CLS) \
+    __DefCDataConverter(CLS)
+
+
 
 namespace puerts
 {

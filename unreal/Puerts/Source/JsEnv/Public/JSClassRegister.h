@@ -50,6 +50,7 @@ public:
     virtual bool IsRef() const = 0;
     virtual bool IsConst() const = 0;
     virtual bool IsUEType() const = 0;
+    virtual bool IsObjectType() const = 0;
 };
 
 class CFunctionInfo

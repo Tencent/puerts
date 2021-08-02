@@ -523,7 +523,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
 
 const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
 {
-    return TypeInfo->IsPointer() && !TypeInfo->IsUEType() ? "cpp." : "";    
+    return TypeInfo->IsObjectType() ? "cpp." : "";    
 }
 
 const FString GetName(const puerts::CTypeInfo* TypeInfo)
