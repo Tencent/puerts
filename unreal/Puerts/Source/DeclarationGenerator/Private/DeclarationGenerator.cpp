@@ -521,6 +521,11 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
     return true;
 }
 
+const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+{
+    return TypeInfo->IsPointer() && !TypeInfo->IsUEType() ? "cpp." : "";    
+}
+
 const FString GetName(const puerts::CTypeInfo* TypeInfo)
 {
     FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
@@ -551,7 +556,7 @@ void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffe
             Buff << "$Ref<";
         }
 			
-        Buff << GetName(Type->Argument(i));
+        Buff << GetNamePrefix(argInfo) << GetName(argInfo);
 			
         if (IsNullable)
         {
@@ -578,7 +583,7 @@ void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuff
             Tmp << "    static " << FunctionInfo->Name << "(";
             GenArgumentsForFunctionInfo(FunctionInfo->Type, Tmp);
             const auto Return = FunctionInfo->Type->Return();
-            Tmp << ") : " << (Return->IsPointer() && !Return->IsUEType() ? "cpp." : "") << GetName(Return) <<";\n";
+            Tmp << ") : " << GetNamePrefix(Return) << GetName(Return) <<";\n";
             if (!AddedFunctions.Contains(Tmp.Buffer))
             {
                 AddedFunctions.Add(Tmp.Buffer);
@@ -594,7 +599,7 @@ void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuff
             Tmp << "    " << MethodInfo->Name << "(";
             GenArgumentsForFunctionInfo(MethodInfo->Type, Tmp);
             const auto Return = MethodInfo->Type->Return();
-            Tmp << ") : " << (Return->IsPointer() && !Return->IsUEType() ? "cpp." : "") << GetName(Return) <<";\n";
+            Tmp << ") : " << GetNamePrefix(Return) << GetName(Return) <<";\n";
             if (!AddedFunctions.Contains(Tmp.Buffer))
             {
                 AddedFunctions.Add(Tmp.Buffer);
