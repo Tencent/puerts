@@ -25,18 +25,13 @@ struct ScriptTypeName {
 };
 
 template<typename T>
-struct ScriptTypeName<const T *> {
-    static constexpr const char * value =  ScriptTypeName<T>::value;
-};
-
-template<typename T>
 struct ScriptTypeName<T *> {
-    static constexpr const char * value =  ScriptTypeName<T>::value;
+    static constexpr const char * value =  ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template<typename T>
 struct ScriptTypeName<T &> {
-    static constexpr const char * value =  ScriptTypeName<T>::value;
+    static constexpr const char * value =  ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template<typename T>

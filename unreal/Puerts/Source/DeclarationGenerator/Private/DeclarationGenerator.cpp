@@ -216,6 +216,9 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
 {
     Begin();
+
+    Output << "    import * as cpp from \"cpp\"\n\n";
+    
     TArray<UClass*> SortedClasses(GetSortedClasses());
     for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
     {
@@ -574,7 +577,8 @@ void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuff
             FStringBuffer Tmp;
             Tmp << "    static " << FunctionInfo->Name << "(";
             GenArgumentsForFunctionInfo(FunctionInfo->Type, Tmp);
-            Tmp << ") :" << GetName(FunctionInfo->Type->Return()) <<";\n";
+            const auto Return = FunctionInfo->Type->Return();
+            Tmp << ") : " << (Return->IsPointer() && !Return->IsUEType() ? "cpp." : "") << GetName(Return) <<";\n";
             if (!AddedFunctions.Contains(Tmp.Buffer))
             {
                 AddedFunctions.Add(Tmp.Buffer);
@@ -589,7 +593,8 @@ void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuff
             FStringBuffer Tmp;
             Tmp << "    " << MethodInfo->Name << "(";
             GenArgumentsForFunctionInfo(MethodInfo->Type, Tmp);
-            Tmp << ") :" << GetName(MethodInfo->Type->Return()) << ";\n";
+            const auto Return = MethodInfo->Type->Return();
+            Tmp << ") : " << (Return->IsPointer() && !Return->IsUEType() ? "cpp." : "") << GetName(Return) <<";\n";
             if (!AddedFunctions.Contains(Tmp.Buffer))
             {
                 AddedFunctions.Add(Tmp.Buffer);
