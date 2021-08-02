@@ -9,7 +9,13 @@
 
 #include "functional"
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#else
+#define JSENV_API
+#define FORCEINLINE V8_INLINE
+#define UPTRINT uintptr_t
+#endif
 
 #pragma warning(push, 0) 
 #include "v8.h"
@@ -95,11 +101,13 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
 const JSClassDefinition* FindClassByID(const char* Name);
 
+#if USING_IN_UNREAL_ENGINE
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 const JSClassDefinition* FindCDataClassByName(const FString& Name);
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
+#endif
 
 }
 

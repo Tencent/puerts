@@ -59,7 +59,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
-//TODO: 后续本文件应该换个名字
+//TODO: rename this file
 #ifndef WITH_QUICKJS
 std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {

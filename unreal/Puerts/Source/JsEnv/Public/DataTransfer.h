@@ -7,7 +7,9 @@
 
 #pragma once
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#endif
 
 #pragma warning(push, 0) 
 #include "v8.h"
@@ -16,6 +18,7 @@
 namespace puerts
 {
 
+#if USING_IN_UNREAL_ENGINE
 FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR *Name)
 {
     static UPackage *CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
@@ -106,6 +109,7 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
 {
     static UScriptStruct* Get() { return T::StaticStruct(); }
 };
+#endif
 
 class JSENV_API DataTransfer
 {
@@ -138,6 +142,7 @@ public:
 
     static v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer);
 
+#if USING_IN_UNREAL_ENGINE
     template<typename T>
     static v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, T *UEObject)
     {
@@ -161,10 +166,11 @@ public:
     }
 
     static bool IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject);
+    
+    static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value);
+#endif
 
     static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
-
-    static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value);
 
     static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
 
