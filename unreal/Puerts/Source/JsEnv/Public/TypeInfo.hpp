@@ -65,7 +65,10 @@ struct ScriptTypeName<void> {
 };
 
 template<typename T>
-struct is_uetype : public std::false_type {};
+    struct is_uetype : public std::false_type {};
+    
+template<typename T>
+    struct is_objecttype : public std::false_type {};
 
 template <typename T>
 class CTypeInfoImpl : CTypeInfo
@@ -76,6 +79,7 @@ public:
     virtual bool IsRef() const override { return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value; };
     virtual bool IsConst() const override { return std::is_const<T>::value; };
     virtual bool IsUEType() const override { return is_uetype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value; };
+    virtual bool IsObjectType() const override { return is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value; };
 
     static const CTypeInfo* get()
     {

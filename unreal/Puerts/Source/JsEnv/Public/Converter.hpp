@@ -11,6 +11,9 @@
 #include <string>
 #include <functional>
 
+#define __DefObjectType(CLS) \
+    namespace puerts { template<> struct is_objecttype<CLS> : public std::true_type {}; }
+
 #define __DefCDataPointerConverter(CLS)                                                                          \
 namespace puerts {                                                                                               \
 namespace converter {                                                                                            \
@@ -31,6 +34,28 @@ namespace converter {                                                           
     };                                                                                                           \
 }                                                                                                                \
 }
+
+#define __DefCDataConverter(CLS)                                                                                        \
+namespace puerts {                                                                                                      \
+namespace converter {                                                                                                   \
+    template <>                                                                                                         \
+    struct Converter<CLS> {                                                                                             \
+        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS value)                                 \
+        {                                                                                                               \
+            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, #CLS, new CLS(value), false); \
+        }                                                                                                               \
+        static CLS toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                             \
+        {                                                                                                               \
+            return *::puerts::DataTransfer::GetPoninterFast<CLS>(value.As<v8::Object>());                               \
+        }                                                                                                               \
+        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                           \
+        {                                                                                                               \
+            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), #CLS, value.As<v8::Object>());           \
+        }                                                                                                               \
+    };                                                                                                                  \
+}                                                                                                                       \
+}
+
 
 namespace puerts
 {
