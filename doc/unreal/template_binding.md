@@ -2,14 +2,15 @@
 
 ## 简述
 
-支持反射的UE API（所有蓝图以及C++中标记了UCLASS，USTRUCT，UPPROPERTY，UFUNCTION，UENUM的部分）不用额外操作即可直接用typescript调用，如果是普通的C++ class/struct，或者是UCLASS，USTRUCT中未标记UPPROPERTY，UFUNCTION成员，要按照本指引手动声明后可以用typescript调用。
+支持反射的UE API（所有蓝图以及C++中标记了UCLASS，USTRUCT，UPPROPERTY，UFUNCTION，UENUM的部分）不用额外操作即可直接用typescript调用，如果是普通的C++ class/struct，或者是UCLASS，USTRUCT中未标记UPPROPERTY，UFUNCTION成员，按照本指引手动声明后可以用typescript调用。
 
-特性：
+支持特性：
+
 * 构造函数
 * 静态函数
 * 成员变量
 * 成员函数
-* 构造函数/静态函数/成员函数均支持重载
+* 构造函数/静态函数/成员函数，均支持重载
 * 支持继承
 * 可生成typescript声明
 * UE类型未标记UPPROPERTY，UFUNCTION成员声明后，会无缝出现于原类声明中
@@ -19,7 +20,7 @@
 
 ## !！注意
 
-如果希望在JsEnv之外的地方使用改特性，需要使用动态库版本的v8库，方法：
+如果希望在JsEnv之外的地方使用该特性，比如游戏模块，需要使用动态库版本的v8库，切换方法：
 
 * 到puerts官网下载和puerts配套的v8库，解压于：“Plugins/Puerts/ThirdParty/”目录下
 
