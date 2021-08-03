@@ -148,8 +148,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::Context::Scope ContextScope(Context);
     v8::Local<v8::Object> Global = Context->Global();
 
-    v8::Local<v8::Object> Puerts = v8::Object::New(Isolate);
-    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), Puerts)
+    v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
+    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), PuertsObj)
         .Check();
 
     auto This = v8::External::New(Isolate, this);
@@ -271,7 +271,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->DumpStatisticsLog(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
-    Puerts->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+    PuertsObj->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
         Self->ReleaseManualReleaseDelegate(Info);
@@ -309,9 +309,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/jit_stub.js");
     ExecuteModule("puerts/hot_reload.js");
 
-    Require.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
+    Require.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
 
-    ReloadJs.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+    ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 
