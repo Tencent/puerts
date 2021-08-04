@@ -937,10 +937,6 @@ namespace Puerts.Editor
                                 Document = DocResolver.GetTsDocument(interfaces[i]),
                                 Namespace = interfaces[i].Namespace
                             };
-                            if (interfaces[i].IsGenericType && interfaces[i].Namespace != null)
-                            {
-                                interfaceTypeGenInfo.Name = interfaceTypeGenInfo.Name.Substring(interfaces[i].Namespace.Length + 1);
-                            }
                             if (interfaces[i].IsNested)
                             {
                                 List<string> p = new List<string>();
@@ -959,6 +955,10 @@ namespace Puerts.Editor
                                 {
                                     interfaceTypeGenInfo.Namespace = string.Join(".", p.ToArray());
                                 }
+                            }
+                            if (interfaces[i].IsGenericType && interfaces[i].Namespace != null)
+                            {
+                                interfaceTypeGenInfo.Name = interfaceTypeGenInfo.Name.Substring(interfaceTypeGenInfo.Namespace.Length + 1);
                             }
                             genInfoList.Add(interfaceTypeGenInfo);
                         }
@@ -993,10 +993,6 @@ namespace Puerts.Editor
                             Document = DocResolver.GetTsDocument(type.BaseType),
                             Namespace = type.BaseType.Namespace
                         };
-                        if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)
-                        {
-                            result.BaseType.Name = result.BaseType.Name.Substring(type.BaseType.Namespace.Length + 1);
-                        }
                         if (type.BaseType.IsNested)
                         {
                             List<string> p = new List<string>();
@@ -1015,6 +1011,10 @@ namespace Puerts.Editor
                             {
                                 result.BaseType.Namespace = string.Join(".", p.ToArray());
                             }
+                        }
+                        if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)
+                        {
+                            result.BaseType.Name = result.BaseType.Name.Substring(result.BaseType.Namespace.Length + 1);
                         }
                     }
 
