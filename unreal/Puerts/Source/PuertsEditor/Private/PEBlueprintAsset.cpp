@@ -141,7 +141,7 @@ bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction*
 
 static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
-    if ((EPinContainerType)InGraphPinType.PinContainerType == EPinContainerType::None && InGraphPinType.PinSubCategoryObject && InGraphPinType.PinCategory == UEdGraphSchema_K2::PC_Object)
+    if (InGraphPinType.PinSubCategoryObject && InGraphPinType.PinCategory == UEdGraphSchema_K2::PC_Object)
     {
         if (InGraphPinType.PinSubCategoryObject->IsA<UScriptStruct>())
         {
