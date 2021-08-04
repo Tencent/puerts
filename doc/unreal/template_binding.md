@@ -35,7 +35,7 @@
 class Calc
 {
 public:
-	static int32_t Add(int32_t a, int32_t b)
+    static int32_t Add(int32_t a, int32_t b)
     {
         return a + b;
     }
@@ -108,8 +108,8 @@ CombineOverloads(
 class TestClass
 {
 public:
-	int32_t X;
-	int32_t Y;
+    int32_t X;
+    int32_t Y;
 };
 ~~~
 
@@ -127,9 +127,9 @@ puerts::DefineClass<TestClass>()
 class TestClass
 {
 public:
-	TestClass();
-	
-	TestClass(int32_t InX, int32_t InY);
+    TestClass();
+    
+    TestClass(int32_t InX, int32_t InY);
 };
 ~~~
 
@@ -156,15 +156,15 @@ puerts::DefineClass<AdvanceTestClass>()
 class TestClass
 {
 public:
-	int32_t OverloadMethod();
+    int32_t OverloadMethod();
 
-	int32_t OverloadMethod(int32_t a);
+    int32_t OverloadMethod(int32_t a);
 
-	uint32_t OverloadMethod(uint32_t a);
+    uint32_t OverloadMethod(uint32_t a);
 
-	int64_t OverloadMethod(int64_t a);
+    int64_t OverloadMethod(int64_t a);
 
-	TestClass *GetSelf();
+    TestClass *GetSelf();
 };
 ~~~
 
@@ -188,7 +188,7 @@ puerts::DefineClass<TestClass>()
 class BaseClass
 {
 public:
-	void Foo(int p);
+    void Foo(int p);
 };
 
 class TestClass : public BaseClass
@@ -219,14 +219,14 @@ class AdvanceTestClass
 public:
     AdvanceTestClass(int A);
 
-	void JsObjectTest(FJsObject Object);
+    void JsObjectTest(FJsObject Object);
 };
 
 void AdvanceTestClass::JsObjectTest(FJsObject Object)
 {
-	auto P = Object.Get<int>("p");
-	UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::JsObjectTest({p:%d})"), P);
-	Object.Set<std::string>("q", "john");
+    auto P = Object.Get<int>("p");
+    UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::JsObjectTest({p:%d})"), P);
+    Object.Set<std::string>("q", "john");
 }
 ~~~
 
@@ -248,8 +248,8 @@ console.log(j.q);
 //class decl ...
 void AdvanceTestClass::CallJsObjectTest(FJsObject Object)
 {
-	auto Ret = Object.Func<float>(1024, "che");
-	UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::CallJsObjectTest Callback Ret %f"), Ret);
+    auto Ret = Object.Func<float>(1024, "che");
+    UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::CallJsObjectTest Callback Ret %f"), Ret);
 }
 
 ~~~
@@ -270,8 +270,8 @@ obj.CallJsObjectTest((i, str) => {
 //class decl ...
 void AdvanceTestClass::StdFunctionTest(std::function<int(int, int)> Func)
 {
-	int Ret = Func(88, 99);
-	UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::StdFunctionTest Callback Ret %d"), Ret);
+    int Ret = Func(88, 99);
+    UE_LOG(LogTemp, Warning, TEXT("AdvanceTestClass::StdFunctionTest Callback Ret %d"), Ret);
 }
 ~~~
 
