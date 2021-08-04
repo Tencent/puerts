@@ -55,7 +55,19 @@ jobs:
       with:
         name: v8_bin
         path: ~/v8/v8/output/**/*
-        
+  build_android_x86:
+    name: Android (x86)
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      run: |
+        cd $GITHUB_WORKSPACE
+        sh ./v8-build/android_x86.sh ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: v8_bin
+        path: ~/v8/v8/output/**/*       
   build_linux:
     name: Linux
     runs-on: ubuntu-18.04
