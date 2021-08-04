@@ -140,6 +140,18 @@ public:
         }
     }
 
+    //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
+    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, void *Ptr, int Index)
+    {
+        //Object->SetInternalField(Index, v8::External::New(Isolate, Ptr));
+        //Object->SetAlignedPointerInInternalField(Index, Ptr);
+        UPTRINT High;
+        UPTRINT Low;
+        SplitAddressToHighPartOfTwo(Ptr, High, Low);
+        Object->SetAlignedPointerInInternalField(Index * 2, reinterpret_cast<void*>(High));
+        Object->SetAlignedPointerInInternalField(Index * 2 + 1, reinterpret_cast<void*>(Low));
+    }
+
     static v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer);
 
 #if USING_IN_UNREAL_ENGINE

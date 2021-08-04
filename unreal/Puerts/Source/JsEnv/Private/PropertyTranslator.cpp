@@ -47,7 +47,7 @@ void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
     else
     {
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, FV8Utils::GetPoninter(Info.This()), true));
+        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, FV8Utils::GetPointer(Info.This()), true));
     }
 }
 
@@ -82,7 +82,7 @@ void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
     else
     {
-        JsToUEInContainer(Isolate, Context, Value, FV8Utils::GetPoninter(Info.This()), true);
+        JsToUEInContainer(Isolate, Context, Value, FV8Utils::GetPointer(Info.This()), true);
     }
 }
 
@@ -418,7 +418,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
-        void * Ptr = FV8Utils::GetPoninter(Context, Value);
+        void * Ptr = FV8Utils::GetPointer(Context, Value);
 
         if (Ptr)
         {
@@ -563,7 +563,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPoninter(Context, Value);
+        auto Ptr = FV8Utils::GetPointer(Context, Value);
         if (Ptr)
         {
             ArrayProperty->CopyCompleteValue(ValuePtr, Ptr);
@@ -599,7 +599,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPoninter(Context, Value);
+        auto Ptr = FV8Utils::GetPointer(Context, Value);
         if (Ptr)
         {
             SetProperty->CopyCompleteValue(ValuePtr, Ptr);
@@ -635,7 +635,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
-        auto Ptr = FV8Utils::GetPoninter(Context, Value);
+        auto Ptr = FV8Utils::GetPointer(Context, Value);
         if (Ptr)
         {
             MapProperty->CopyCompleteValue(ValuePtr, Ptr);
@@ -721,7 +721,7 @@ public:
         }
         else
         {
-            auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPoninter(Context, Value, 0));
+            auto Src = static_cast<FScriptDelegate*>(FV8Utils::GetPointer(Context, Value, 0));
             if (Des && Src)
             {
                 *Des = *Src;

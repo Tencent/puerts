@@ -558,12 +558,12 @@ void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     auto Des = Info[0]->ToObject(Context).ToLocalChecked();
     auto Src = Info[1]->ToObject(Context).ToLocalChecked();
-    if (FV8Utils::GetPoninterFast<void>(Des, 1)) //struct
+    if (FV8Utils::GetPointerFast<void>(Des, 1)) //struct
     {
         auto Struct = Cast<UScriptStruct>(FV8Utils::GetUObject(Des, 1));
         if (Struct)
         {
-            Merge(Isolate, Context, Src, Struct, FV8Utils::GetPoninter(Des));
+            Merge(Isolate, Context, Src, Struct, FV8Utils::GetPointer(Des));
             return;
         }
     }
@@ -975,8 +975,8 @@ FString FJsEnvImpl::CurrentStackTrace()
 void FJsEnvImpl::Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) // Just call in FClassReflection::Call, new a Object
 {
     UserObjectRetainer.Retain(UEObject);
-    FV8Utils::SetPointer(MainIsolate, JSObject, UEObject, 0);
-    FV8Utils::SetPointer(MainIsolate, JSObject, nullptr, 1);
+    DataTransfer::SetPointer(MainIsolate, JSObject, UEObject, 0);
+    DataTransfer::SetPointer(MainIsolate, JSObject, nullptr, 1);
     ObjectMap[UEObject] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
     ObjectMap[UEObject].SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
 }
@@ -994,7 +994,7 @@ void FJsEnvImpl::UnBind(UClass *Class, UObject *UEObject, bool ResetPointer)
             auto Context = DefaultContext.Get(Isolate);
             v8::Context::Scope ContextScope(Context);
 
-            FV8Utils::SetPointer(MainIsolate, Iter->second.Get(Isolate).As<v8::Object>(), RELEASED_UOBJECT, 0);
+            DataTransfer::SetPointer(MainIsolate, Iter->second.Get(Isolate).As<v8::Object>(), RELEASED_UOBJECT, 0);
         }
         ObjectMap.erase(UEObject);
         UserObjectRetainer.Release(UEObject);
@@ -1080,8 +1080,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddCData(v8::Isolate* Isolate, v8::Local<
     else
     {
         auto Result = PointerConstrutor.Get(Isolate)->NewInstance(Context, 0, nullptr).ToLocalChecked();
-        FV8Utils::SetPointer(Isolate, Result, Ptr, 0);
-        FV8Utils::SetPointer(Isolate, Result, const_cast<char*>(CDataName), 1);
+        DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
+        DataTransfer::SetPointer(Isolate, Result, const_cast<char*>(CDataName), 1);
         return Result;
     }
 }
@@ -1116,7 +1116,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         //UE_LOG(LogTemp, Warning, TEXT("FindOrAddDelegate -- new %s"), *Property->GetName());
         auto Constructor = (Property->IsA<DelegatePropertyMacro>() ? DelegateTemplate : MulticastDelegateTemplate).Get(Isolate)->GetFunction(Context).ToLocalChecked();
         auto JSObject = Constructor->NewInstance(Context).ToLocalChecked();
-        FV8Utils::SetPointer(Isolate, JSObject, DelegatePtr, 0);
+        DataTransfer::SetPointer(Isolate, JSObject, DelegatePtr, 0);
         auto ReturnVal = JSObject->Set(Context, 0, v8::Map::New(Isolate));
         UFunction *Function = nullptr;
         DelegatePropertyMacro *DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property);
@@ -1145,8 +1145,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
 v8::Local<v8::Value> FJsEnvImpl::CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr)
 {
     auto Array = FixSizeArrayTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked()->NewInstance(Context).ToLocalChecked();
-    FV8Utils::SetPointer(Isolate, Array, ArrayPtr, 0);
-    FV8Utils::SetPointer(Isolate, Array, Property, 1);
+    DataTransfer::SetPointer(Isolate, Array, ArrayPtr, 0);
+    DataTransfer::SetPointer(Isolate, Array, Property, 1);
     return Array;
 }
 
@@ -1301,8 +1301,8 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         v8::Context::Scope ContextScope(Context);
 
         auto JSObject = Iter->second.Get(Isolate)->ToObject(Context).ToLocalChecked();
-        FV8Utils::SetPointer(Isolate, JSObject, nullptr, 0);
-        FV8Utils::SetPointer(Isolate, JSObject, nullptr, 1);
+        DataTransfer::SetPointer(Isolate, JSObject, nullptr, 0);
+        DataTransfer::SetPointer(Isolate, JSObject, nullptr, 1);
         GeneratedObjectMap.erase(ObjectBase);
     }
     
@@ -1808,8 +1808,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
     v8::Handle<v8::Value> Args[] = { BindTo, v8::Boolean::New(Isolate, PassByPointer) };
     auto Result = Constructor->NewInstance(Context, 2, Args).ToLocalChecked();
-    FV8Utils::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property1), 1);
-    if (Property2) FV8Utils::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property2), 2);
+    DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property1), 1);
+    if (Property2) DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property2), 2);
     return Result;
 }
 
@@ -1830,8 +1830,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 
 void FJsEnvImpl::BindStruct(UScriptStruct* ScriptStruct, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
-    FV8Utils::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    FV8Utils::SetPointer(MainIsolate, JSObject, ScriptStruct, 1);// add type info
+    DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
+    DataTransfer::SetPointer(MainIsolate, JSObject, ScriptStruct, 1);// add type info
         
     if (!PassByPointer)
     {
@@ -1851,8 +1851,8 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
 
 void FJsEnvImpl::BindCData(JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
-    FV8Utils::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    FV8Utils::SetPointer(MainIsolate, JSObject, const_cast<char*>(ClassDefinition->CPPTypeName), 1);
+    DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
+    DataTransfer::SetPointer(MainIsolate, JSObject, const_cast<char*>(ClassDefinition->CPPTypeName), 1);
 
     if(!PassByPointer)//指针传递不用处理GC
     {
@@ -1876,7 +1876,7 @@ void FJsEnvImpl::UnBindCData(JSClassDefinition* ClassDefinition, void *Ptr)
 
 void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void(*Callback)(const v8::WeakCallbackInfo<void>& data))
 {
-    FV8Utils::SetPointer(MainIsolate, JSObject, Ptr, 0);
+    DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
     StructMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
     StructMap[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
 }
@@ -1993,7 +1993,7 @@ bool FJsEnvImpl::IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject)
 
 bool FJsEnvImpl::IsInstanceOf(const char* CDataName, v8::Local<v8::Object> JsObject)
 {
-    return FV8Utils::GetPoninterFast<const char>(JsObject, 1) == CDataName;
+    return FV8Utils::GetPointerFast<const char>(JsObject, 1) == CDataName;
 }
 
 static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)

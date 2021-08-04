@@ -79,7 +79,7 @@ public:
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<T>(Info.Holder());
+        auto Self = FV8Utils::GetPointerFast<T>(Info.Holder());
         Info.GetReturnValue().Set(Self->Num());
     }
 };

@@ -49,52 +49,40 @@ public:
         Isolate->ThrowException(v8::Exception::Error(ExceptionStr));
     }
 
-    //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
-    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, void *Ptr, int Index)
-    {
-        //Object->SetInternalField(Index, v8::External::New(Isolate, Ptr));
-        //Object->SetAlignedPointerInInternalField(Index, Ptr);
-        UPTRINT High;
-        UPTRINT Low;
-        DataTransfer::SplitAddressToHighPartOfTwo(Ptr, High, Low);
-        Object->SetAlignedPointerInInternalField(Index * 2, reinterpret_cast<void*>(High));
-        Object->SetAlignedPointerInInternalField(Index * 2 + 1, reinterpret_cast<void*>(Low));
-    }
-
-    FORCEINLINE static void * GetPoninter(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
+    FORCEINLINE static void * GetPointer(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
         if (Value.IsEmpty() || !Value->IsObject() || Value->IsUndefined() || Value->IsNull())
         {
             return nullptr;
         }
         auto Object = Value->ToObject(Context).ToLocalChecked();
-        return GetPoninterFast<void>(Object, Index);
+        return GetPointerFast<void>(Object, Index);
     }
 
-    FORCEINLINE static void * GetPoninter(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static void * GetPointer(v8::Local<v8::Object> Object, int Index = 0)
     {
         if (Object.IsEmpty() || Object->IsUndefined() || Object->IsNull())
         {
             return nullptr;
         }
-        return GetPoninterFast<void>(Object, Index);
+        return GetPointerFast<void>(Object, Index);
     }
 
     template<typename T>
-    FORCEINLINE static T * GetPoninterFast(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static T * GetPointerFast(v8::Local<v8::Object> Object, int Index = 0)
     {
         return DataTransfer::GetPoninterFast<T>(Object, Index);
     }
 
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
-        auto UEObject = reinterpret_cast<UObject*>(GetPoninter(Context, Value, Index));
+        auto UEObject = reinterpret_cast<UObject*>(GetPointer(Context, Value, Index));
         return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())) ? UEObject : RELEASED_UOBJECT;
     }
 
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Object> Object, int Index = 0)
     {
-        auto UEObject = reinterpret_cast<UObject*>(GetPoninter(Object, Index));
+        auto UEObject = reinterpret_cast<UObject*>(GetPointer(Object, Index));
         return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())) ? UEObject : RELEASED_UOBJECT;
     }
 
@@ -203,7 +191,7 @@ public:
         }
     }
 
-    FORCEINLINE static bool CheckArguement(const v8::FunctionCallbackInfo<v8::Value>& Info, const std::vector<ArgType> &TypesExpect)
+    FORCEINLINE static bool CheckArgument(const v8::FunctionCallbackInfo<v8::Value>& Info, const std::vector<ArgType> &TypesExpect)
     {
         if (Info.Length() < TypesExpect.size())
         {
@@ -293,7 +281,7 @@ if (!FV8Utils::CheckArgumentLength(Info, Length)) \
 
 #define CHECK_V8_ARGS(...) \
 static std::vector<ArgType> ArgExpect = { __VA_ARGS__ }; \
-if (!FV8Utils::CheckArguement(Info, ArgExpect)) \
+if (!FV8Utils::CheckArgument(Info, ArgExpect)) \
 { \
     return; \
 }

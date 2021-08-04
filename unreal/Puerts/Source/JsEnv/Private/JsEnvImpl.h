@@ -256,7 +256,7 @@ private:
             if (auto Class = Cast<UClass>(Struct))
             {
                 UObject *Object = reinterpret_cast<UObject *>(Ptr);
-                if (!Object->IsValidLowLevel() || Object->IsPendingKill() || Object->GetClass() != Class || FV8Utils::GetPoninter(JsObject))
+                if (!Object->IsValidLowLevel() || Object->IsPendingKill() || Object->GetClass() != Class || FV8Utils::GetPointer(JsObject))
                 {
                     return;
                 }
@@ -275,7 +275,7 @@ private:
                         if (Value->IsObject())
                         {
                             auto JsObjectField = Value->ToObject(Context).ToLocalChecked();
-                            if (!FV8Utils::GetPoninterFast<void>(JsObjectField))
+                            if (!FV8Utils::GetPointerFast<void>(JsObjectField))
                             {
                                 UStruct *FieldStruct = nullptr;
                                 if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(Iter->second->Property))

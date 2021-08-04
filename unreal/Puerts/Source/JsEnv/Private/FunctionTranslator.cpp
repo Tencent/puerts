@@ -434,7 +434,7 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
     if (!IsUObject)// FScriptStruct, so copy back
     {
         auto StructProperty = Arguments[0]->StructProperty;
-        StructProperty->CopySingleValue(FV8Utils::GetPoninter(Info.Holder()), StructProperty->ContainerPtrToValuePtr<void>(Params));
+        StructProperty->CopySingleValue(FV8Utils::GetPointer(Info.Holder()), StructProperty->ContainerPtrToValuePtr<void>(Params));
     }
 
     if (Params) Function->DestroyStruct(Params);

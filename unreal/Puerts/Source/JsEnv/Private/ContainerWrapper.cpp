@@ -47,8 +47,8 @@ namespace puerts
 
         if (Info.Length() > 0)
         {
-            auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
-            auto Inner = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+            auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+            auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
             
             int32 Index = AddUninitialized(Self, Inner->Property->GetSize(), Info.Length());
             for (int i = 0; i < Info.Length(); ++i)
@@ -69,8 +69,8 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
-        auto Inner = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+        auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
             
         int Index = Info[0]->Int32Value(Context).ToChecked();
         if (Index < 0 || Index >= Self->Num())
@@ -90,8 +90,8 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(2);
         
-        auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
-        auto Inner = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+        auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         
         int Index = Info[0]->Int32Value(Context).ToChecked();
         if (Index < 0 || Index >= Self->Num())
@@ -126,8 +126,8 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
         
-        auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
@@ -151,7 +151,7 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
+        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
         Info.GetReturnValue().Set(Self->IsValidIndex(Index));
     }
@@ -162,8 +162,8 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         Destruct(Self, PropertyTranslator, 0, Self->Num());
@@ -208,8 +208,8 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptArray>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         void* Dest = FMemory_Alloca(Property->GetSize());
@@ -261,8 +261,8 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         void* DataPtr = FMemory_Alloca(Property->GetSize());
@@ -291,8 +291,8 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
@@ -330,8 +330,8 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
@@ -354,7 +354,7 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
         uint32 Result = Self->GetMaxIndex();
         Info.GetReturnValue().Set(Result);
     }
@@ -367,7 +367,7 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
         uint32 Result = Self->IsValidIndex(Index);
         Info.GetReturnValue().Set(Result);
@@ -379,8 +379,8 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
@@ -409,8 +409,8 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptSet>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         void* DataPtr = FMemory_Alloca(Property->GetSize());
@@ -457,10 +457,10 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(2);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
-        auto KeyPropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
+        auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto KeyProperty = KeyPropertyTranslator->Property;
-        auto ValuePropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 2);
+        auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
         auto ValueProperty = ValuePropertyTranslator->Property;
 
         void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
@@ -512,10 +512,10 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
-        auto KeyPropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
+        auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto KeyProperty = KeyPropertyTranslator->Property;
-        auto ValuePropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 2);
+        auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
         auto ValueProperty = ValuePropertyTranslator->Property;
 
         void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
@@ -549,10 +549,10 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
-        auto KeyPropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
+        auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto KeyProperty = KeyPropertyTranslator->Property;
-        auto ValuePropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 2);
+        auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
         auto ValueProperty = ValuePropertyTranslator->Property;
 
         void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
@@ -582,7 +582,7 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
         int32 Result = Self->GetMaxIndex();
         Info.GetReturnValue().Set(Result);
     }
@@ -595,7 +595,7 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
         Info.GetReturnValue().Set(Self->IsValidIndex(Index));
     }
@@ -608,7 +608,7 @@ namespace puerts
 
         CHECK_V8_ARGS_LEN(1);
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
         int32 Index = Info[0]->Int32Value(Context).ToChecked();
         if (Self->IsValidIndex(Index) == false)
         {
@@ -617,9 +617,9 @@ namespace puerts
         }
         else
         {
-            auto KeyPropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+            auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
             auto KeyProperty = KeyPropertyTranslator->Property;
-            auto ValuePropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 2);
+            auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
             auto ValueProperty = ValuePropertyTranslator->Property;
             auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
             uint8* Data = reinterpret_cast<uint8*>(Self->GetData(Index, ScriptLayout));
@@ -634,10 +634,10 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<FScriptMap>(Info.Holder(), 0);
-        auto KeyPropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
+        auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto KeyProperty = KeyPropertyTranslator->Property;
-        auto ValuePropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 2);
+        auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
         auto ValueProperty = ValuePropertyTranslator->Property;
         auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
         Destruct(Self, KeyPropertyTranslator, ValuePropertyTranslator, 0, Self->Num());
@@ -690,7 +690,7 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         Info.GetReturnValue().Set(PropertyTranslator->Property->ArrayDim);
     }
 
@@ -700,8 +700,8 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<uint8>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<uint8>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         int32 Index = -1;
@@ -728,8 +728,8 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-        auto Self = FV8Utils::GetPoninterFast<uint8>(Info.Holder(), 0);
-        auto PropertyTranslator = FV8Utils::GetPoninterFast<FPropertyTranslator>(Info.Holder(), 1);
+        auto Self = FV8Utils::GetPointerFast<uint8>(Info.Holder(), 0);
+        auto PropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
         auto Property = PropertyTranslator->Property;
 
         int32 Index = -1;

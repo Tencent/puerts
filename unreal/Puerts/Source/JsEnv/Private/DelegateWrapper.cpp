@@ -37,7 +37,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<FScriptDelegate>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<FScriptDelegate>(Info.Holder(), 0);
 
         Info.GetReturnValue().Set(DelegatePtr->IsBound());
     }
@@ -52,7 +52,7 @@ namespace puerts
 
         if (Info.Length() == 1 && Info[0]->IsFunction())
         {
-            auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddToDelegate(Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
             return;
         }
@@ -60,7 +60,7 @@ namespace puerts
         {
             if (auto Object = FV8Utils::GetUObject(Info[0].As<v8::Object>()))
             {
-                auto DelegatePtr = FV8Utils::GetPoninterFast<FScriptDelegate>(Info.Holder(), 0);
+                auto DelegatePtr = FV8Utils::GetPointerFast<FScriptDelegate>(Info.Holder(), 0);
                 FScriptDelegate Delegate;
                 Delegate.BindUFunction(Object, FName(*FV8Utils::ToFString(Isolate, Info[1])));
                 *DelegatePtr = Delegate;
@@ -78,7 +78,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ClearDelegate(Isolate, Context, DelegatePtr);
     }
 
@@ -90,7 +90,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
     }
 
@@ -122,7 +122,7 @@ namespace puerts
 
         if (Info.Length() == 1 && Info[0]->IsFunction())
         {
-            auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddToDelegate(Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
             return;
         }
@@ -130,7 +130,7 @@ namespace puerts
         {
             if (auto Object = FV8Utils::GetUObject(Info[0].As<v8::Object>()))
             {
-                auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+                auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
                 if (auto Property = CastFieldMacro<MulticastDelegatePropertyMacro>(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindDelegateProperty(DelegatePtr)))
                 {
                     FScriptDelegate Delegate;
@@ -163,7 +163,7 @@ namespace puerts
 
         if (Info.Length() == 1 && Info[0]->IsFunction())
         {
-            auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->RemoveFromDelegate(Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
         }
         else
@@ -180,7 +180,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ClearDelegate(Isolate, Context, DelegatePtr);
     }
 
@@ -192,7 +192,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
     }
 }
