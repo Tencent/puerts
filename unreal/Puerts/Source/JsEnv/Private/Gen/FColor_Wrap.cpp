@@ -599,10 +599,10 @@ struct AutoRegisterForFColor
             {0, 0}
         };
 
-        Def.UStructName = "FColor";
+        Def.UETypeName = "FColor";
 
         Def.Initialize = _FColorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

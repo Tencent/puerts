@@ -745,10 +745,10 @@ struct AutoRegisterForFIntPoint
             {0, 0}
         };
 
-        Def.UStructName = "FIntPoint";
+        Def.UETypeName = "FIntPoint";
 
         Def.Initialize = _FIntPointNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

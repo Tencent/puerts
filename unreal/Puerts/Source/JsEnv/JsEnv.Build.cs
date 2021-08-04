@@ -20,6 +20,7 @@ public class JsEnv : ModuleRules
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
 
         PublicDependencyModuleNames.AddRange(new string[]
         {

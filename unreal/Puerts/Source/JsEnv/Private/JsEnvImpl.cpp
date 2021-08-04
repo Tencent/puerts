@@ -148,8 +148,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::Context::Scope ContextScope(Context);
     v8::Local<v8::Object> Global = Context->Global();
 
-    v8::Local<v8::Object> Puerts = v8::Object::New(Isolate);
-    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), Puerts)
+    v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
+    Global->Set(Context, FV8Utils::InternalString(Isolate, "puerts"), PuertsObj)
         .Check();
 
     auto This = v8::External::New(Isolate, this);
@@ -271,7 +271,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Self->DumpStatisticsLog(Info);
     }, This)->GetFunction(Context).ToLocalChecked()).Check();
 
-    Puerts->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+    PuertsObj->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
         Self->ReleaseManualReleaseDelegate(Info);
@@ -309,15 +309,18 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ExecuteModule("puerts/jit_stub.js");
     ExecuteModule("puerts/hot_reload.js");
 
-    Require.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
+    Require.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
 
-    ReloadJs.Reset(Isolate, Puerts->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+    ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
     AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
+
+    UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
+    SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
 }
 
 // #lizard forgives
@@ -701,7 +704,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
             if (TryCatch.HasCaught())
             {
-                Logger->Error(FString::Printf(TEXT("load module [%s] exception %s"), *ModuleName, *GetExecutionException(Isolate, &TryCatch)));
+                Logger->Error(FString::Printf(TEXT("load module [%s] exception %s"), *ModuleName, *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
                 return;
             }
 
@@ -866,7 +869,7 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 
         if (TryCatch.HasCaught())
         {
-            Logger->Error(FString::Printf(TEXT("reload module exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+            Logger->Error(FString::Printf(TEXT("reload module exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
         }
     }
     else
@@ -1167,7 +1170,7 @@ void FJsEnvImpl::InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms)
 
     if (TryCatch.HasCaught())
     {
-        Logger->Error(FString::Printf(TEXT("js callback exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+        Logger->Error(FString::Printf(TEXT("js callback exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
     }
 }
 
@@ -1197,7 +1200,7 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
 
     if (TryCatch.HasCaught())
     {
-        Logger->Error(FString::Printf(TEXT("js callback exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+        Logger->Error(FString::Printf(TEXT("js callback exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
     }
 }
 
@@ -1276,7 +1279,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         }
         if (TryCatch.HasCaught())
         {
-            Logger->Error(FString::Printf(TEXT("js callback exception %s"), *GetExecutionException(Isolate, &TryCatch)));
+            Logger->Error(FString::Printf(TEXT("js callback exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
         }
     }
     else if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
@@ -1356,7 +1359,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
     if (TryCatch.HasCaught())
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject, *GetExecutionException(Isolate, &TryCatch)));
+            *Function->GetName(), ContextObject, *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
     }
 }
 
@@ -1392,7 +1395,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
         if (TryCatch.HasCaught())
         {
             Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
-                *Function->GetName(), ContextObject, *GetExecutionException(Isolate, &TryCatch)));
+                *Function->GetName(), ContextObject, *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
         }
     }
 }
@@ -1849,7 +1852,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
 void FJsEnvImpl::BindCData(JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
     FV8Utils::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    FV8Utils::SetPointer(MainIsolate, JSObject, const_cast<char*>(ClassDefinition->CDataName), 1);
+    FV8Utils::SetPointer(MainIsolate, JSObject, const_cast<char*>(ClassDefinition->CPPTypeName), 1);
 
     if(!PassByPointer)//指针传递不用处理GC
     {
@@ -2029,7 +2032,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(const JSClassDefi
 {
     check(ClassDefinition);
     auto Isolate = MainIsolate;
-    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->CDataName);
+    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->CPPTypeName);
     if (Iter == CDataNameToTemplateMap.end())
     {
         v8::EscapableHandleScope HandleScope(Isolate);
@@ -2037,7 +2040,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(const JSClassDefi
         auto Template = v8::FunctionTemplate::New(Isolate, CDataNew, v8::External::New(Isolate, const_cast<void *>(reinterpret_cast<const void*>(ClassDefinition))));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
 
-        JSPropertyInfo* PropertyInfo = ClassDefinition->Propertys;
+        JSPropertyInfo* PropertyInfo = ClassDefinition->Properties;
         while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
         {
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
@@ -2062,15 +2065,15 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(const JSClassDefi
             ++FunctionInfo;
         }
 
-        if (ClassDefinition->CDataSuperName)
+        if (ClassDefinition->CPPSuperTypeName)
         {
-            if (auto SuperDefinition = FindClassByID(ClassDefinition->CDataSuperName))
+            if (auto SuperDefinition = FindClassByID(ClassDefinition->CPPSuperTypeName))
             {
                 Template->Inherit(GetTemplateOfClass(SuperDefinition));
             }
         }
 
-        CDataNameToTemplateMap[ClassDefinition->CDataName] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
+        CDataNameToTemplateMap[ClassDefinition->CPPTypeName] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
 
         return HandleScope.Escape(Template);
     }
@@ -2351,45 +2354,6 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
-FString FJsEnvImpl::GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch)
-{
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::String::Utf8Value Exception(Isolate, TryCatch->Exception());
-    FString ExceptionStr(*Exception);
-    v8::Local<v8::Message> Message = TryCatch->Message();
-    if (Message.IsEmpty())
-    {
-        // 如果没有提供更详细的信息，直接输出Exception
-        return ExceptionStr;
-    }
-    else
-    {
-        v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
-
-        // 输出 (filename):(line number): (message).
-        v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
-        int LineNum = Message->GetLineNumber(Context).FromJust();
-        FString FileNameStr(*FileName);
-        FString LineNumStr = FString::FromInt(LineNum);
-        FString FileInfoStr;
-        FileInfoStr.Append(FileNameStr).Append(":").Append(LineNumStr).Append(": ").Append(ExceptionStr);
-
-        FString FinalReport;
-        FinalReport.Append(FileInfoStr).Append("\n");
-
-        // 输出调用栈信息
-        v8::Local<v8::Value> StackTrace;
-        if (TryCatch->StackTrace(Context).ToLocal(&StackTrace))
-        {
-            v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
-            FString StackTraceStr(*StackTraceVal);
-            FinalReport.Append("\n").Append(StackTraceStr);
-        }
-        return FinalReport;
-    }
-}
-
 void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor)
 {
     FString OutPath;
@@ -2433,13 +2397,13 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
         if (CompiledScript.IsEmpty())
         {
-            Logger->Error(GetExecutionException(Isolate, &TryCatch));
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
             return;
         }
         auto ReturnVal = CompiledScript.ToLocalChecked()->Run(Context);
         if (TryCatch.HasCaught())
         {
-            Logger->Error(GetExecutionException(Isolate, &TryCatch));
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
             return;
         }
     }
@@ -2588,7 +2552,7 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
 
 void FJsEnvImpl::ReportExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch, std::function<void(const JSError*)> CompletionHandler)
 {
-    const JSError Error(GetExecutionException(Isolate, TryCatch));
+    const JSError Error(FV8Utils::TryCatchToString(Isolate, TryCatch));
     if (CompletionHandler)
     {
         CompletionHandler(&Error);
@@ -2786,7 +2750,7 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
                 __USE(Handler->Call(ContextInner, ContextInner->Global(), 1, Args));
                 if (TryCatch.HasCaught())
                 {
-                    Logger->Error(FString::Printf(TEXT("inspector callback exception %s"), *GetExecutionException(MainIsolate, &TryCatch)));
+                    Logger->Error(FString::Printf(TEXT("inspector callback exception %s"), *FV8Utils::TryCatchToString(MainIsolate, &TryCatch)));
                 }
             });
     }

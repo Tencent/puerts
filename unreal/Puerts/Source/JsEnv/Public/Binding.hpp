@@ -15,7 +15,7 @@
 #include "JSClassRegister.h"
 #include "DataTransfer.h"
 #include "Converter.hpp"
-#include "BindingTypeInfo.hpp"
+#include "TypeInfo.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
@@ -28,9 +28,11 @@
 #define CombineOverloads(...) &::puerts::OverloadsCombiner<__VA_ARGS__>::call, ::puerts::OverloadsCombiner<__VA_ARGS__>::length, ::puerts::OverloadsCombiner<__VA_ARGS__>::infos()
 #define CombineConstructors(...) &::puerts::ConstructorsCombiner<__VA_ARGS__>::call, ::puerts::ConstructorsCombiner<__VA_ARGS__>::length, ::puerts::ConstructorsCombiner<__VA_ARGS__>::infos()
 
-#define UsingCppClass(CLS) \
+#define UsingCppType(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
-    __DefCDataPointerConverter(CLS)
+    __DefObjectType(CLS) \
+    __DefCDataPointerConverter(CLS) \
+    __DefCDataConverter(CLS)
 
 
 namespace puerts
@@ -692,12 +694,12 @@ public:
 
         if (isUEType)
         {
-            ClassDef.UStructName = className_;
+            ClassDef.UETypeName = className_;
         }
         else
         {
-            ClassDef.CDataName = className_;
-            ClassDef.CDataSuperName = superClassName_;
+            ClassDef.CPPTypeName = className_;
+            ClassDef.CPPSuperTypeName = superClassName_;
         }
 
         ClassDef.Initialize = constructor_;
@@ -716,7 +718,7 @@ public:
 
         s_properties_ = std::move(properties_);
         s_properties_.push_back(JSPropertyInfo {nullptr, nullptr, nullptr, nullptr});
-        ClassDef.Propertys = s_properties_.data();
+        ClassDef.Properties = s_properties_.data();
 
         s_constructorInfos_ = std::move(constructorInfos_);
         s_constructorInfos_.push_back(NamedFunctionInfo {nullptr, nullptr});

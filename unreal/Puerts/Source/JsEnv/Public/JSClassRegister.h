@@ -9,7 +9,13 @@
 
 #include "functional"
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#else
+#define JSENV_API
+#define FORCEINLINE V8_INLINE
+#define UPTRINT uintptr_t
+#endif
 
 #pragma warning(push, 0) 
 #include "v8.h"
@@ -44,6 +50,7 @@ public:
     virtual bool IsRef() const = 0;
     virtual bool IsConst() const = 0;
     virtual bool IsUEType() const = 0;
+    virtual bool IsObjectType() const = 0;
 };
 
 class CFunctionInfo
@@ -68,13 +75,13 @@ struct NamedPropertyInfo
 
 struct JSENV_API JSClassDefinition
 {
-    const char* CDataName;
-    const char* CDataSuperName;
-    const char* UStructName;
+    const char* CPPTypeName;
+    const char* CPPSuperTypeName;
+    const char* UETypeName;
     InitializeFunc Initialize;
     JSFunctionInfo* Methods;    //成员方法
     JSFunctionInfo* Functions;  //静态方法
-    JSPropertyInfo* Propertys;
+    JSPropertyInfo* Properties;
     FinalizeFunc Finalize;
     //int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
@@ -85,7 +92,7 @@ struct JSENV_API JSClassDefinition
 
 typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
-#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0 }
+#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition &ClassDefinition);
 
@@ -95,11 +102,13 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
 const JSClassDefinition* FindClassByID(const char* Name);
 
+#if USING_IN_UNREAL_ENGINE
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 const JSClassDefinition* FindCDataClassByName(const FString& Name);
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
+#endif
 
 }
 

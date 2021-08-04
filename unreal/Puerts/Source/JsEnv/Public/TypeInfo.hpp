@@ -25,18 +25,13 @@ struct ScriptTypeName {
 };
 
 template<typename T>
-struct ScriptTypeName<const T *> {
-    static constexpr const char * value =  ScriptTypeName<T>::value;
-};
-
-template<typename T>
 struct ScriptTypeName<T *> {
-    static constexpr const char * value =  ScriptTypeName<T>::value;
+    static constexpr const char * value =  ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template<typename T>
 struct ScriptTypeName<T &> {
-    static constexpr const char * value =  ScriptTypeName<T>::value;
+    static constexpr const char * value =  ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template<typename T>
@@ -45,10 +40,14 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && s
 };
 
 template<typename T>
-struct ScriptTypeName<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> {
+struct ScriptTypeName<T, typename std::enable_if<std::is_enum<T>::value>::type> {
     static constexpr const char * value = "number";
 };
 
+template<typename T>
+struct ScriptTypeName<T, typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type> {
+    static constexpr const char * value = "number";
+};
 
 template<>
 struct ScriptTypeName<std::string> {
@@ -66,7 +65,10 @@ struct ScriptTypeName<void> {
 };
 
 template<typename T>
-struct is_uetype : public std::false_type {};
+    struct is_uetype : public std::false_type {};
+    
+template<typename T>
+    struct is_objecttype : public std::false_type {};
 
 template <typename T>
 class CTypeInfoImpl : CTypeInfo
@@ -77,6 +79,7 @@ public:
     virtual bool IsRef() const override { return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value; };
     virtual bool IsConst() const override { return std::is_const<T>::value; };
     virtual bool IsUEType() const override { return is_uetype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value; };
+    virtual bool IsObjectType() const override { return is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value; };
 
     static const CTypeInfo* get()
     {

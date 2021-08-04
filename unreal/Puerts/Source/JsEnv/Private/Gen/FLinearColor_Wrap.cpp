@@ -1224,10 +1224,10 @@ struct AutoRegisterForFLinearColor
             {0, 0}
         };
 
-        Def.UStructName = "FLinearColor";
+        Def.UETypeName = "FLinearColor";
 
         Def.Initialize = _FLinearColorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 

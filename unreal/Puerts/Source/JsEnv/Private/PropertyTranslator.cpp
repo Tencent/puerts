@@ -11,6 +11,7 @@
 #include "StructWrapper.h"
 #include "Engine/UserDefinedStruct.h"
 #include "ArrayBuffer.h"
+#include "JsObject.h"
 
 namespace puerts
 {
@@ -400,20 +401,12 @@ public:
     explicit FScriptStructPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
         ScriptStruct = StructProperty->Struct;
-        IsArrayBuffer = (ScriptStruct == FArrayBuffer::StaticStruct());
     }
 
     v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override //还是得有个指针模式，否则不能通过obj.xx.xx直接修改struct值，倒是和性能无关，应该强制js测不许保存指针型对象的引用（从native侧进入，最后一层退出时清空？）
     {
         void *Ptr = const_cast<void *>(ValuePtr);
-
-        if (IsArrayBuffer)
-        {
-            FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
-            v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
-            return Ab;
-        }
-
+        
         if (!PassByPointer)
         {
             Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
@@ -425,27 +418,7 @@ public:
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
     {
-        FArrayBuffer ArrayBuffer;
-        void * Ptr = nullptr;
-        if (IsArrayBuffer && Value->IsArrayBufferView())
-        {
-            v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
-            auto ABC = BuffView->Buffer()->GetContents();
-            ArrayBuffer.Data = static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
-            ArrayBuffer.Length = BuffView->ByteLength();
-            Ptr = &ArrayBuffer;
-        }
-        else if (IsArrayBuffer && Value->IsArrayBuffer())
-        {
-            auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
-            ArrayBuffer.Data = Ab->GetContents().Data();
-            ArrayBuffer.Length = Ab->GetContents().ByteLength();
-            Ptr = &ArrayBuffer;
-        }
-        else
-        {
-            Ptr = FV8Utils::GetPoninter(Context, Value);
-        }
+        void * Ptr = FV8Utils::GetPoninter(Context, Value);
 
         if (Ptr)
         {
@@ -460,8 +433,72 @@ public:
 
 private:
     UScriptStruct *ScriptStruct;
+};
 
-    bool IsArrayBuffer;
+class FArrayBufferPropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FArrayBufferPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
+
+    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    {
+        void *Ptr = const_cast<void *>(ValuePtr);
+
+        FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+        return Ab;
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    {
+        FArrayBuffer ArrayBuffer;
+        if (Value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
+            auto ABC = BuffView->Buffer()->GetContents();
+            ArrayBuffer.Data = static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+            ArrayBuffer.Length = BuffView->ByteLength();
+        }
+        else if (Value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
+            ArrayBuffer.Data = Ab->GetContents().Data();
+            ArrayBuffer.Length = Ab->GetContents().ByteLength();
+        }
+       
+        StructProperty->CopySingleValue(ValuePtr, &ArrayBuffer);
+        
+        return true;
+    }
+};
+
+class FJsObjectPropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FJsObjectPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
+
+    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    {
+        if (!ValuePtr) return v8::Undefined(Isolate);
+        const FJsObject * JsObject = static_cast<const FJsObject *>(ValuePtr);
+        return JsObject->GetObject();
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    {
+        if (Value->IsObject())
+        {
+            auto Object = Value.As<v8::Object>();
+            FJsObject JsObject(Context, Object);
+            *static_cast<FJsObject*>(ValuePtr) = JsObject;
+        }
+        
+        return true;
+    }
 };
 
 class FClassPropertyTranslator : public FObjectPropertyTranslator
@@ -834,7 +871,19 @@ std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *
     }
     else if (InProperty->IsA<StructPropertyMacro>())
     {
-        return TCreate<FScriptStructPropertyTranslator>(InProperty, IgnoreOut);
+        auto StructProperty = CastFieldMacro<StructPropertyMacro>(InProperty);
+        if(StructProperty->Struct == FArrayBuffer::StaticStruct())
+        {
+            return TCreate<FArrayBufferPropertyTranslator>(InProperty, IgnoreOut);
+        }
+        else if (StructProperty->Struct == FJsObject::StaticStruct())
+        {
+            return TCreate<FJsObjectPropertyTranslator>(InProperty, IgnoreOut);
+        }
+        else
+        {
+            return TCreate<FScriptStructPropertyTranslator>(InProperty, IgnoreOut);
+        }
     }
     else if (InProperty->IsA<InterfacePropertyMacro>())
     {

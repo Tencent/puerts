@@ -216,6 +216,9 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
 {
     Begin();
+
+    Output << "    import * as cpp from \"cpp\"\n\n";
+    
     TArray<UClass*> SortedClasses(GetSortedClasses());
     for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
     {
@@ -321,11 +324,18 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-        if (StructProperty->Struct->GetName() != "ArrayBuffer")
+        if (StructProperty->Struct->GetName() != TEXT("ArrayBuffer") && StructProperty->Struct->GetName() != TEXT("JsObject"))
         {
             AddToGen.Add(StructProperty->Struct);
         }
-        StringBuffer << SafeName(StructProperty->Struct->GetName());
+        if (StructProperty->Struct->GetName() == TEXT("JsObject"))
+        {
+            StringBuffer << "object";
+        }
+        else
+        {
+            StringBuffer << SafeName(StructProperty->Struct->GetName());
+        }
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
     {
@@ -511,6 +521,11 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
     return true;
 }
 
+const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+{
+    return TypeInfo->IsObjectType() ? "cpp." : "";    
+}
+
 const FString GetName(const puerts::CTypeInfo* TypeInfo)
 {
     FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
@@ -541,7 +556,7 @@ void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffe
             Buff << "$Ref<";
         }
 			
-        Buff << GetName(Type->Argument(i));
+        Buff << GetNamePrefix(argInfo) << GetName(argInfo);
 			
         if (IsNullable)
         {
@@ -567,7 +582,8 @@ void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuff
             FStringBuffer Tmp;
             Tmp << "    static " << FunctionInfo->Name << "(";
             GenArgumentsForFunctionInfo(FunctionInfo->Type, Tmp);
-            Tmp << ") :" << GetName(FunctionInfo->Type->Return()) <<";\n";
+            const auto Return = FunctionInfo->Type->Return();
+            Tmp << ") : " << GetNamePrefix(Return) << GetName(Return) <<";\n";
             if (!AddedFunctions.Contains(Tmp.Buffer))
             {
                 AddedFunctions.Add(Tmp.Buffer);
@@ -582,7 +598,8 @@ void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuff
             FStringBuffer Tmp;
             Tmp << "    " << MethodInfo->Name << "(";
             GenArgumentsForFunctionInfo(MethodInfo->Type, Tmp);
-            Tmp << ") :" << GetName(MethodInfo->Type->Return()) << ";\n";
+            const auto Return = MethodInfo->Type->Return();
+            Tmp << ") : " << GetNamePrefix(Return) << GetName(Return) <<";\n";
             if (!AddedFunctions.Contains(Tmp.Buffer))
             {
                 AddedFunctions.Add(Tmp.Buffer);

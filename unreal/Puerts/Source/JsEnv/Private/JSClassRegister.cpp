@@ -61,16 +61,16 @@ void JSClassRegister::RegisterClass(const JSClassDefinition &ClassDefinition)
     auto CD = (JSClassDefinition *)::malloc(sizeof(JSClassDefinition));
     ::memcpy(CD, &ClassDefinition, sizeof(JSClassDefinition));
     
-    if (ClassDefinition.UStructName)
+    if (ClassDefinition.UETypeName)
     {
-        FString SN = UTF8_TO_TCHAR(ClassDefinition.UStructName);
+        FString SN = UTF8_TO_TCHAR(ClassDefinition.UETypeName);
         StructNameToClassDefinition[SN] = CD;
     }
-    else if (ClassDefinition.CDataName)
+    else if (ClassDefinition.CPPTypeName)
     {
-        NameToClassDefinition[ClassDefinition.CDataName] = CD;
-        FString SN = UTF8_TO_TCHAR(ClassDefinition.CDataName);
-        CDataNameToClassDefinition[SN] = NameToClassDefinition[ClassDefinition.CDataName];
+        NameToClassDefinition[ClassDefinition.CPPTypeName] = CD;
+        FString SN = UTF8_TO_TCHAR(ClassDefinition.CPPTypeName);
+        CDataNameToClassDefinition[SN] = NameToClassDefinition[ClassDefinition.CPPTypeName];
     }
 }
 

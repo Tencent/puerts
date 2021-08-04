@@ -36,3 +36,8 @@ ts类是没有StaticClass方法的，所以StaticClass调用其实是继承链�
 ~~~bash
 sudo xattr -r -d com.apple.quarantine *.dylib
 ~~~
+
+## 纯蓝图工程下加入puerts插件，提示"XXXProject counld not compiled. Try rebuilding from source manually"
+
+对于纯蓝图工程，双击uproject文件，UE可能不会自动编译第三方的C++ Plugins。需要手动生成vs工程（mac下xcode工程），然后在ide编译。
+

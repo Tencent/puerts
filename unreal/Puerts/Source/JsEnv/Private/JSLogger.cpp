@@ -7,7 +7,7 @@
 
 #include "JSLogger.h"
 
-DEFINE_LOG_CATEGORY_STATIC(Puerts, Log, All);
+DEFINE_LOG_CATEGORY(Puerts);
 
 namespace puerts
 {

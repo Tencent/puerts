@@ -21,12 +21,20 @@ public:
 
     void Clear();
 
-    void AddReferencedObjects(FReferenceCollector& Collector) override;
+    virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
 
-    ~FObjectRetainer();
+    virtual ~FObjectRetainer() override;
+
+    FORCEINLINE void SetName(FString InName)
+    {
+        Name = InName;
+    }
+
+    virtual FString GetReferencerName() const override;
 
 private:
     TSet<UObject*> RetainedObjects;
 
+    FString Name = TEXT("FObjectRetainer");
 };
 }
