@@ -19,10 +19,10 @@ public:
     GENERATED_USTRUCT_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
      
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     UObject* PinSubCategoryObject;
 };
 
@@ -33,16 +33,16 @@ public:
     GENERATED_USTRUCT_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
      
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     UObject* PinSubCategoryObject;
     
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     int PinContainerType;
         
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     bool bIsReference;
 };
 
@@ -57,16 +57,16 @@ class PUERTSEDITOR_API UPEBlueprintAsset : public UObject
 	
 public:
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     UClass* GeneratedClass;
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     UBlueprint* Blueprint;
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     UPackage* Package;
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     bool NeedSave;
 
     UPROPERTY()
