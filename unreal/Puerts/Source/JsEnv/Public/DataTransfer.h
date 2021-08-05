@@ -9,11 +9,17 @@
 
 #if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#else
+#include "JSClassRegister.h"
 #endif
 
 #pragma warning(push, 0) 
 #include "v8.h"
 #pragma warning(pop)
+
+#if !defined(MAPPER_ISOLATE_DATA_POS)
+#define MAPPER_ISOLATE_DATA_POS 0
+#endif
 
 namespace puerts
 {
@@ -128,11 +134,11 @@ public:
     }
 
     template<typename T>
-    FORCEINLINE static T * GetPoninterFast(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static T * GetPointerFast(v8::Local<v8::Object> Object, int Index = 0)
     {
         if (Object->InternalFieldCount() > (Index * 2 + 1))
         {
-            return reinterpret_cast<T*>(MakeAddressWithHighPartOfTwo(Object->GetAlignedPointerFromInternalField(Index * 2), Object->GetAlignedPointerFromInternalField(Index * 2 + 1)));
+            return static_cast<T*>(MakeAddressWithHighPartOfTwo(Object->GetAlignedPointerFromInternalField(Index * 2), Object->GetAlignedPointerFromInternalField(Index * 2 + 1)));
         }
         else
         {
@@ -152,7 +158,19 @@ public:
         Object->SetAlignedPointerInInternalField(Index * 2 + 1, reinterpret_cast<void*>(Low));
     }
 
+    template<typename T>
+    FORCEINLINE static T* IsolateData(v8::Isolate* Isolate)
+    {
+        return static_cast<T*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
+    }
+
     static v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer);
+
+    static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
+
+    static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
+
+    static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
 
 #if USING_IN_UNREAL_ENGINE
     template<typename T>
@@ -180,14 +198,8 @@ public:
     static bool IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject);
     
     static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value);
-#endif
-
-    static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
-
-    static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
-
-    static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
 
     static void ThrowException(v8::Isolate* Isolate, const char * Message);
+#endif
 };
 }

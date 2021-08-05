@@ -12,8 +12,8 @@
 #include <type_traits>
 #include <string>
 #include <functional>
-#include "JSClassRegister.h"
 #include "DataTransfer.h"
+#include "JSClassRegister.h"
 #include "Converter.hpp"
 #include "TypeInfo.hpp"
 
@@ -278,7 +278,7 @@ private:
     {
         auto context = info.GetIsolate()->GetCurrentContext();
 
-        auto self = DataTransfer::GetPoninterFast<Ins>(info.Holder());
+        auto self = DataTransfer::GetPointerFast<Ins>(info.Holder());
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
@@ -297,7 +297,7 @@ private:
     {
         auto context = info.GetIsolate()->GetCurrentContext();
 
-        auto self = DataTransfer::GetPoninterFast<Ins>(info.Holder());
+        auto self = DataTransfer::GetPointerFast<Ins>(info.Holder());
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
@@ -566,14 +566,14 @@ struct PropertyWrapper<Ret Ins::*, member>
     static void getter(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
-        auto self = DataTransfer::GetPoninterFast<Ins>(info.This());
+        auto self = DataTransfer::GetPointerFast<Ins>(info.This());
         info.GetReturnValue().Set(internal::TypeConverter<Ret>::toScript(context, self->*member));
     }
 
     static void setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
-        auto self = DataTransfer::GetPoninterFast<Ins>(info.This());
+        auto self = DataTransfer::GetPointerFast<Ins>(info.This());
         self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, value);
     }
 

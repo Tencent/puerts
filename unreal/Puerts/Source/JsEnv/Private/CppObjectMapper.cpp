@@ -11,6 +11,13 @@
 namespace puerts
 {
 
+static void ThrowException(v8::Isolate* Isolate, const char * Message)
+{
+    auto ExceptionStr = v8::String::NewFromUtf8(Isolate, Message,
+        v8::NewStringType::kNormal).ToLocalChecked();
+    Isolate->ThrowException(v8::Exception::Error(ExceptionStr));
+}
+
 void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -21,7 +28,7 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
 
     if (!Info[0]->IsString())
     {
-        DataTransfer::ThrowException(Isolate, "#0 argument expect a string");
+        ThrowException(Isolate, "#0 argument expect a string");
         return;
     }
 
@@ -35,7 +42,7 @@ void FCppObjectMapper::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& In
     else
     {
         const std::string ErrMsg = "can not find type: " + TypeName;
-        DataTransfer::ThrowException(Isolate, ErrMsg.c_str());
+        ThrowException(Isolate, ErrMsg.c_str());
     }
 }
 
@@ -86,7 +93,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(v8::Isolate* Isolate, 
 	
 bool FCppObjectMapper::IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject)
 {
-    return DataTransfer::GetPoninterFast<const char>(JsObject, 1) == CDataName;
+    return DataTransfer::GetPointerFast<const char>(JsObject, 1) == CDataName;
 }
 
 
@@ -114,11 +121,11 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             if(ClassDefinition->Initialize) Ptr = ClassDefinition->Initialize(Info);
         }
-        static_cast<ICppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS))->BindCppObject(Isolate, ClassDefinition, Ptr, Self, PassByPointer);
+        DataTransfer::IsolateData<ICppObjectMapper>(Isolate)->BindCppObject(Isolate, ClassDefinition, Ptr, Self, PassByPointer);
     }
     else
     {
-        DataTransfer::ThrowException(Isolate, "only call as Construct is supported!");
+        ThrowException(Isolate, "only call as Construct is supported!");
     }
 }
 
@@ -180,7 +187,7 @@ static void CDataGarbageCollectedWithFree(const v8::WeakCallbackInfo<JSClassDefi
     JSClassDefinition *ClassDefinition = Data.GetParameter();
     void *Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     if (ClassDefinition->Finalize) ClassDefinition->Finalize(Ptr);
-    static_cast<ICppObjectMapper*>(Data.GetIsolate()->GetData(MAPPER_ISOLATE_DATA_POS))->UnBindCppObject(ClassDefinition, Ptr);
+    DataTransfer::IsolateData<ICppObjectMapper>(Data.GetIsolate())->UnBindCppObject(ClassDefinition, Ptr);
 }
 
 void FCppObjectMapper::BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)

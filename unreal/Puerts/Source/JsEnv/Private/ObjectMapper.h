@@ -7,12 +7,13 @@
 
 #pragma once
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
 #include "PropertyTranslator.h"
+#endif
 #include "JSClassRegister.h"
 
 #pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
 

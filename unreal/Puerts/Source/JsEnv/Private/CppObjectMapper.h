@@ -15,10 +15,6 @@
 #include "JSClassRegister.h"
 #include "ObjectMapper.h"
 
-#if !defined(MAPPER_ISOLATE_DATA_POS)
-#define MAPPER_ISOLATE_DATA_POS 0
-#endif
-
 namespace puerts
 {
 

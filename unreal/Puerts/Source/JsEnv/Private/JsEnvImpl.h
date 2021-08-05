@@ -139,7 +139,7 @@ public:
 
     v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
 
-    void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms);
+    void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms);
 
     void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype);
 
@@ -401,7 +401,7 @@ private:
 
         void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms) override
         {
-            if (Parent) Parent->InvokeJsCallabck(Proxy, Parms);
+            if (Parent) Parent->InvokeJsCallback(Proxy, Parms);
         }
 
         void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype) override

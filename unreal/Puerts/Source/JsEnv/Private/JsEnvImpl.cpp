@@ -1101,7 +1101,7 @@ v8::Local<v8::Value> FJsEnvImpl::CreateArray(v8::Isolate* Isolate, v8::Local<v8:
     return Array;
 }
 
-void FJsEnvImpl::InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms)
+void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 {
     auto SignatureFunction = Proxy->SignatureFunction;
     auto Iter = JsCallbackPrototypeMap.find(SignatureFunction);

@@ -137,7 +137,7 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::DataTransfer::GetPoninterFast<T>(value.As<v8::Object>()); ;
+        return ::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>()); ;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -181,7 +181,7 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::DataTransfer::GetPoninterFast<T>(value.As<v8::Object>()); ;
+        return ::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>()); ;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -199,7 +199,7 @@ struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return *::puerts::DataTransfer::GetPoninterFast<T>(value.As<v8::Object>()); ;
+        return *::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>()); ;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)

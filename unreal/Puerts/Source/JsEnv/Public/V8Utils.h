@@ -71,7 +71,7 @@ public:
     template<typename T>
     FORCEINLINE static T * GetPointerFast(v8::Local<v8::Object> Object, int Index = 0)
     {
-        return DataTransfer::GetPoninterFast<T>(Object, Index);
+        return DataTransfer::GetPointerFast<T>(Object, Index);
     }
 
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
@@ -139,7 +139,7 @@ public:
     template<typename T>
     FORCEINLINE static T* IsolateData(v8::Isolate* Isolate)
     {
-        return reinterpret_cast<T*>(Isolate->GetData(0));
+        return DataTransfer::IsolateData<T>(Isolate);
     }
 
     FORCEINLINE static bool CheckArgumentLength(const v8::FunctionCallbackInfo<v8::Value>& Info, int32 Length)

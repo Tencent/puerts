@@ -25,7 +25,7 @@ namespace converter {                                                           
         }                                                                                                        \
         static CLS * toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                    \
         {                                                                                                        \
-            return ::puerts::DataTransfer::GetPoninterFast<CLS>(value.As<v8::Object>());                         \
+            return ::puerts::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());                         \
         }                                                                                                        \
         static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                    \
         {                                                                                                        \
@@ -46,7 +46,7 @@ namespace converter {                                                           
         }                                                                                                               \
         static CLS toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                             \
         {                                                                                                               \
-            return *::puerts::DataTransfer::GetPoninterFast<CLS>(value.As<v8::Object>());                               \
+            return *::puerts::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());                               \
         }                                                                                                               \
         static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                           \
         {                                                                                                               \

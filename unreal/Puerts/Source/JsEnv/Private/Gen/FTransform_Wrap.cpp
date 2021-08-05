@@ -67,7 +67,7 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
             FTransform* Obj = new FTransform(*Arg0);
             
             
@@ -84,7 +84,7 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
             FTransform* Obj = new FTransform(*Arg0);
             
             
@@ -101,7 +101,7 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
             FTransform* Obj = new FTransform(*Arg0);
             
             
@@ -126,9 +126,9 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg2 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg1 = puerts::DataTransfer::GetPointerFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg2 = puerts::DataTransfer::GetPointerFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
             FTransform* Obj = new FTransform(*Arg0, *Arg1, *Arg2);
             
             
@@ -153,9 +153,9 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg2 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg1 = puerts::DataTransfer::GetPointerFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg2 = puerts::DataTransfer::GetPointerFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
             FTransform* Obj = new FTransform(*Arg0, *Arg1, *Arg2);
             
             
@@ -198,10 +198,10 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg2 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg3 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[3]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg1 = puerts::DataTransfer::GetPointerFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg2 = puerts::DataTransfer::GetPointerFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg3 = puerts::DataTransfer::GetPointerFast<FVector>(Info[3]->ToObject(Context).ToLocalChecked());
             FTransform* Obj = new FTransform(*Arg0, *Arg1, *Arg2, *Arg3);
             
             
@@ -223,7 +223,7 @@ static void FTransformM_DiagnosticCheckNaN_Translate(const v8::FunctionCallbackI
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_DiagnosticCheckNaN_Translate] Attempt to access a NULL self pointer");
@@ -247,7 +247,7 @@ static void FTransformM_DiagnosticCheckNaN_Rotate(const v8::FunctionCallbackInfo
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_DiagnosticCheckNaN_Rotate] Attempt to access a NULL self pointer");
@@ -271,7 +271,7 @@ static void FTransformM_DiagnosticCheckNaN_Scale3D(const v8::FunctionCallbackInf
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_DiagnosticCheckNaN_Scale3D] Attempt to access a NULL self pointer");
@@ -295,7 +295,7 @@ static void FTransformM_DiagnosticCheckNaN_All(const v8::FunctionCallbackInfo<v8
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_DiagnosticCheckNaN_All] Attempt to access a NULL self pointer");
@@ -319,7 +319,7 @@ static void FTransformM_DiagnosticCheck_IsValid(const v8::FunctionCallbackInfo<v
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_DiagnosticCheck_IsValid] Attempt to access a NULL self pointer");
@@ -343,7 +343,7 @@ static void FTransformM_DebugPrint(const v8::FunctionCallbackInfo<v8::Value>& In
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_DebugPrint] Attempt to access a NULL self pointer");
@@ -367,7 +367,7 @@ static void FTransformM_ToHumanReadableString(const v8::FunctionCallbackInfo<v8:
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_ToHumanReadableString] Attempt to access a NULL self pointer");
@@ -393,7 +393,7 @@ static void FTransformM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_ToString] Attempt to access a NULL self pointer");
@@ -421,7 +421,7 @@ static void FTransformM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>
         {
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_InitFromString] Attempt to access a NULL self pointer");
@@ -447,7 +447,7 @@ static void FTransformM_Inverse(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Inverse] Attempt to access a NULL self pointer");
@@ -485,10 +485,10 @@ static void FTransformM_Blend(const v8::FunctionCallbackInfo<v8::Value>& Info)
             Info[2]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform* Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
             float Arg2 = Info[2]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Blend] Attempt to access a NULL self pointer");
@@ -517,9 +517,9 @@ static void FTransformM_BlendWith(const v8::FunctionCallbackInfo<v8::Value>& Inf
             Info[1]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_BlendWith] Attempt to access a NULL self pointer");
@@ -547,8 +547,8 @@ static void FTransformM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_op_Addition] Attempt to access a NULL self pointer");
@@ -581,8 +581,8 @@ static void FTransformM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_op_Multiply] Attempt to access a NULL self pointer");
@@ -607,8 +607,8 @@ static void FTransformM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_op_Multiply] Attempt to access a NULL self pointer");
@@ -645,8 +645,8 @@ static void FTransformS_AnyHasNegativeScale(const v8::FunctionCallbackInfo<v8::V
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg1 = puerts::DataTransfer::GetPointerFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FTransform::AnyHasNegativeScale(*Arg0, *Arg1);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -671,8 +671,8 @@ static void FTransformM_ScaleTranslation(const v8::FunctionCallbackInfo<v8::Valu
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_ScaleTranslation] Attempt to access a NULL self pointer");
@@ -690,7 +690,7 @@ static void FTransformM_ScaleTranslation(const v8::FunctionCallbackInfo<v8::Valu
         {
             
             const float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_ScaleTranslation] Attempt to access a NULL self pointer");
@@ -716,7 +716,7 @@ static void FTransformM_RemoveScaling(const v8::FunctionCallbackInfo<v8::Value>&
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_RemoveScaling] Attempt to access a NULL self pointer");
@@ -740,7 +740,7 @@ static void FTransformM_GetMaximumAxisScale(const v8::FunctionCallbackInfo<v8::V
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetMaximumAxisScale] Attempt to access a NULL self pointer");
@@ -766,7 +766,7 @@ static void FTransformM_GetMinimumAxisScale(const v8::FunctionCallbackInfo<v8::V
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetMinimumAxisScale] Attempt to access a NULL self pointer");
@@ -796,8 +796,8 @@ static void FTransformM_GetRelativeTransform(const v8::FunctionCallbackInfo<v8::
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetRelativeTransform] Attempt to access a NULL self pointer");
@@ -830,8 +830,8 @@ static void FTransformM_GetRelativeTransformReverse(const v8::FunctionCallbackIn
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetRelativeTransformReverse] Attempt to access a NULL self pointer");
@@ -864,8 +864,8 @@ static void FTransformM_SetToRelativeTransform(const v8::FunctionCallbackInfo<v8
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetToRelativeTransform] Attempt to access a NULL self pointer");
@@ -893,8 +893,8 @@ static void FTransformM_TransformFVector4(const v8::FunctionCallbackInfo<v8::Val
             )
         {
             
-            const FVector4* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector4* Arg0 = puerts::DataTransfer::GetPointerFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformFVector4] Attempt to access a NULL self pointer");
@@ -927,8 +927,8 @@ static void FTransformM_TransformFVector4NoScale(const v8::FunctionCallbackInfo<
             )
         {
             
-            const FVector4* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector4* Arg0 = puerts::DataTransfer::GetPointerFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformFVector4NoScale] Attempt to access a NULL self pointer");
@@ -961,8 +961,8 @@ static void FTransformM_TransformPosition(const v8::FunctionCallbackInfo<v8::Val
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformPosition] Attempt to access a NULL self pointer");
@@ -995,8 +995,8 @@ static void FTransformM_TransformPositionNoScale(const v8::FunctionCallbackInfo<
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformPositionNoScale] Attempt to access a NULL self pointer");
@@ -1029,8 +1029,8 @@ static void FTransformM_InverseTransformPosition(const v8::FunctionCallbackInfo<
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_InverseTransformPosition] Attempt to access a NULL self pointer");
@@ -1063,8 +1063,8 @@ static void FTransformM_InverseTransformPositionNoScale(const v8::FunctionCallba
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_InverseTransformPositionNoScale] Attempt to access a NULL self pointer");
@@ -1097,8 +1097,8 @@ static void FTransformM_TransformVector(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformVector] Attempt to access a NULL self pointer");
@@ -1131,8 +1131,8 @@ static void FTransformM_TransformVectorNoScale(const v8::FunctionCallbackInfo<v8
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformVectorNoScale] Attempt to access a NULL self pointer");
@@ -1165,8 +1165,8 @@ static void FTransformM_InverseTransformVector(const v8::FunctionCallbackInfo<v8
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_InverseTransformVector] Attempt to access a NULL self pointer");
@@ -1199,8 +1199,8 @@ static void FTransformM_InverseTransformVectorNoScale(const v8::FunctionCallback
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_InverseTransformVectorNoScale] Attempt to access a NULL self pointer");
@@ -1233,8 +1233,8 @@ static void FTransformM_TransformRotation(const v8::FunctionCallbackInfo<v8::Val
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TransformRotation] Attempt to access a NULL self pointer");
@@ -1267,8 +1267,8 @@ static void FTransformM_InverseTransformRotation(const v8::FunctionCallbackInfo<
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_InverseTransformRotation] Attempt to access a NULL self pointer");
@@ -1299,7 +1299,7 @@ static void FTransformM_GetScaled(const v8::FunctionCallbackInfo<v8::Value>& Inf
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetScaled] Attempt to access a NULL self pointer");
@@ -1324,8 +1324,8 @@ static void FTransformM_GetScaled(const v8::FunctionCallbackInfo<v8::Value>& Inf
             )
         {
             
-            FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetScaled] Attempt to access a NULL self pointer");
@@ -1356,7 +1356,7 @@ static void FTransformM_GetScaledAxis(const v8::FunctionCallbackInfo<v8::Value>&
         {
             
             EAxis::Type Arg0 = EAxis::Type(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetScaledAxis] Attempt to access a NULL self pointer");
@@ -1387,7 +1387,7 @@ static void FTransformM_GetUnitAxis(const v8::FunctionCallbackInfo<v8::Value>& I
         {
             
             EAxis::Type Arg0 = EAxis::Type(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetUnitAxis] Attempt to access a NULL self pointer");
@@ -1420,7 +1420,7 @@ static void FTransformM_Mirror(const v8::FunctionCallbackInfo<v8::Value>& Info)
             
             EAxis::Type Arg0 = EAxis::Type(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
             EAxis::Type Arg1 = EAxis::Type(Info[1]->ToInt32(Context).ToLocalChecked()->Value());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Mirror] Attempt to access a NULL self pointer");
@@ -1449,7 +1449,7 @@ static void FTransformS_GetSafeScaleReciprocal(const v8::FunctionCallbackInfo<v8
             Info[1]->IsNumber())
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FTransform::GetSafeScaleReciprocal(*Arg0, Arg1);
             void* Ptr = new FVector(MethodResult);
@@ -1474,7 +1474,7 @@ static void FTransformM_GetLocation(const v8::FunctionCallbackInfo<v8::Value>& I
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetLocation] Attempt to access a NULL self pointer");
@@ -1503,7 +1503,7 @@ static void FTransformM_Rotator(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Rotator] Attempt to access a NULL self pointer");
@@ -1532,7 +1532,7 @@ static void FTransformM_GetDeterminant(const v8::FunctionCallbackInfo<v8::Value>
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetDeterminant] Attempt to access a NULL self pointer");
@@ -1562,8 +1562,8 @@ static void FTransformM_SetLocation(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetLocation] Attempt to access a NULL self pointer");
@@ -1587,7 +1587,7 @@ static void FTransformM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& I
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_ContainsNaN] Attempt to access a NULL self pointer");
@@ -1613,7 +1613,7 @@ static void FTransformM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_IsValid] Attempt to access a NULL self pointer");
@@ -1648,8 +1648,8 @@ static void FTransformS_AreRotationsEqual(const v8::FunctionCallbackInfo<v8::Val
             Info[2]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform* Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
             float Arg2 = Info[2]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FTransform::AreRotationsEqual(*Arg0, *Arg1, Arg2);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
@@ -1680,8 +1680,8 @@ static void FTransformS_AreTranslationsEqual(const v8::FunctionCallbackInfo<v8::
             Info[2]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform* Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
             float Arg2 = Info[2]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FTransform::AreTranslationsEqual(*Arg0, *Arg1, Arg2);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
@@ -1712,8 +1712,8 @@ static void FTransformS_AreScale3DsEqual(const v8::FunctionCallbackInfo<v8::Valu
             Info[2]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform* Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
             float Arg2 = Info[2]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FTransform::AreScale3DsEqual(*Arg0, *Arg1, Arg2);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
@@ -1740,9 +1740,9 @@ static void FTransformM_RotationEquals(const v8::FunctionCallbackInfo<v8::Value>
             Info[1]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_RotationEquals] Attempt to access a NULL self pointer");
@@ -1773,9 +1773,9 @@ static void FTransformM_TranslationEquals(const v8::FunctionCallbackInfo<v8::Val
             Info[1]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_TranslationEquals] Attempt to access a NULL self pointer");
@@ -1806,9 +1806,9 @@ static void FTransformM_Scale3DEquals(const v8::FunctionCallbackInfo<v8::Value>&
             Info[1]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Scale3DEquals] Attempt to access a NULL self pointer");
@@ -1839,9 +1839,9 @@ static void FTransformM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
             Info[1]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Equals] Attempt to access a NULL self pointer");
@@ -1872,9 +1872,9 @@ static void FTransformM_EqualsNoScale(const v8::FunctionCallbackInfo<v8::Value>&
             Info[1]->IsNumber())
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_EqualsNoScale] Attempt to access a NULL self pointer");
@@ -1912,9 +1912,9 @@ static void FTransformS_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info
                 )
         {
             
-            FTransform * Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform * Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
-            const FTransform * Arg2 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[2]->ToObject(Context).ToLocalChecked());
+            FTransform * Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform * Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform * Arg2 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[2]->ToObject(Context).ToLocalChecked());
             FTransform::Multiply(Arg0, Arg1, Arg2);
             
             return;
@@ -1945,10 +1945,10 @@ static void FTransformM_SetComponents(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg2 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg1 = puerts::DataTransfer::GetPointerFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg2 = puerts::DataTransfer::GetPointerFast<FVector>(Info[2]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetComponents] Attempt to access a NULL self pointer");
@@ -1972,7 +1972,7 @@ static void FTransformM_SetIdentity(const v8::FunctionCallbackInfo<v8::Value>& I
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetIdentity] Attempt to access a NULL self pointer");
@@ -2000,8 +2000,8 @@ static void FTransformM_MultiplyScale3D(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_MultiplyScale3D] Attempt to access a NULL self pointer");
@@ -2029,8 +2029,8 @@ static void FTransformM_SetTranslation(const v8::FunctionCallbackInfo<v8::Value>
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetTranslation] Attempt to access a NULL self pointer");
@@ -2058,8 +2058,8 @@ static void FTransformM_CopyTranslation(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_CopyTranslation] Attempt to access a NULL self pointer");
@@ -2087,8 +2087,8 @@ static void FTransformM_ConcatenateRotation(const v8::FunctionCallbackInfo<v8::V
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_ConcatenateRotation] Attempt to access a NULL self pointer");
@@ -2116,8 +2116,8 @@ static void FTransformM_AddToTranslation(const v8::FunctionCallbackInfo<v8::Valu
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_AddToTranslation] Attempt to access a NULL self pointer");
@@ -2149,8 +2149,8 @@ static void FTransformS_AddTranslations(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform* Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FTransform::AddTranslations(*Arg0, *Arg1);
             void* Ptr = new FVector(MethodResult);
                 
@@ -2182,8 +2182,8 @@ static void FTransformS_SubtractTranslations(const v8::FunctionCallbackInfo<v8::
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FTransform* Arg1 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FTransform* Arg1 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FTransform::SubtractTranslations(*Arg0, *Arg1);
             void* Ptr = new FVector(MethodResult);
                 
@@ -2211,8 +2211,8 @@ static void FTransformM_SetRotation(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetRotation] Attempt to access a NULL self pointer");
@@ -2240,8 +2240,8 @@ static void FTransformM_CopyRotation(const v8::FunctionCallbackInfo<v8::Value>& 
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_CopyRotation] Attempt to access a NULL self pointer");
@@ -2269,8 +2269,8 @@ static void FTransformM_SetScale3D(const v8::FunctionCallbackInfo<v8::Value>& In
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetScale3D] Attempt to access a NULL self pointer");
@@ -2298,8 +2298,8 @@ static void FTransformM_CopyScale3D(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_CopyScale3D] Attempt to access a NULL self pointer");
@@ -2331,9 +2331,9 @@ static void FTransformM_SetTranslationAndScale3D(const v8::FunctionCallbackInfo<
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg1 = puerts::DataTransfer::GetPointerFast<FVector>(Info[1]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_SetTranslationAndScale3D] Attempt to access a NULL self pointer");
@@ -2361,8 +2361,8 @@ static void FTransformM_Accumulate(const v8::FunctionCallbackInfo<v8::Value>& In
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_Accumulate] Attempt to access a NULL self pointer");
@@ -2386,7 +2386,7 @@ static void FTransformM_NormalizeRotation(const v8::FunctionCallbackInfo<v8::Val
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_NormalizeRotation] Attempt to access a NULL self pointer");
@@ -2410,7 +2410,7 @@ static void FTransformM_IsRotationNormalized(const v8::FunctionCallbackInfo<v8::
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_IsRotationNormalized] Attempt to access a NULL self pointer");
@@ -2436,7 +2436,7 @@ static void FTransformM_GetRotation(const v8::FunctionCallbackInfo<v8::Value>& I
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetRotation] Attempt to access a NULL self pointer");
@@ -2465,7 +2465,7 @@ static void FTransformM_GetTranslation(const v8::FunctionCallbackInfo<v8::Value>
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetTranslation] Attempt to access a NULL self pointer");
@@ -2494,7 +2494,7 @@ static void FTransformM_GetScale3D(const v8::FunctionCallbackInfo<v8::Value>& In
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_GetScale3D] Attempt to access a NULL self pointer");
@@ -2527,8 +2527,8 @@ static void FTransformM_CopyRotationPart(const v8::FunctionCallbackInfo<v8::Valu
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_CopyRotationPart] Attempt to access a NULL self pointer");
@@ -2556,8 +2556,8 @@ static void FTransformM_CopyTranslationAndScale3D(const v8::FunctionCallbackInfo
             )
         {
             
-            const FTransform* Arg0 = puerts::DataTransfer::GetPoninterFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FTransform>(Info.Holder());
+            const FTransform* Arg0 = puerts::DataTransfer::GetPointerFast<FTransform>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FTransform>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FTransform::M_CopyTranslationAndScale3D] Attempt to access a NULL self pointer");

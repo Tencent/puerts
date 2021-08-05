@@ -7,38 +7,20 @@
 
 #include "DataTransfer.h"
 #include "ObjectMapper.h"
+#if USING_IN_UNREAL_ENGINE
 #include "V8Utils.h"
+#endif
 
 namespace puerts
 {
     v8::Local<v8::Value> DataTransfer::FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer)
     {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddCppObject(Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
-    }
-
-    v8::Local<v8::Value> DataTransfer::FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
-    {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Class, UEObject);
-    }
-
-    v8::Local<v8::Value> DataTransfer::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer)
-    {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
-    }
-
-    bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject)
-    {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject);
+        return IsolateData<ICppObjectMapper>(Isolate)->FindOrAddCppObject(Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
     }
 
     bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject)
     {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOfCppObject(CDataName, JsObject);
-    }
-
-    FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
-    {
-        return FV8Utils::ToFString(Isolate, Value);
+        return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(CDataName, JsObject);
     }
 
     v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)
@@ -65,8 +47,30 @@ namespace puerts
         auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, ObjectValueKey, Value);
     }
 
+#if USING_IN_UNREAL_ENGINE
+    FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+    {
+        return FV8Utils::ToFString(Isolate, Value);
+    }
+
+    v8::Local<v8::Value> DataTransfer::FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
+    {
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Class, UEObject);
+    }
+
+    v8::Local<v8::Value> DataTransfer::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer)
+    {
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
+    }
+
+    bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject)
+    {
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(Struct, JsObject);
+    }
+
     void DataTransfer::ThrowException(v8::Isolate* Isolate, const char * Message)
     {
         FV8Utils::ThrowException(Isolate, Message);
     }
+#endif
 }
