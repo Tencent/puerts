@@ -13,7 +13,7 @@ namespace puerts
 {
     v8::Local<v8::Value> DataTransfer::FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer)
     {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddCData(Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddCppObject(Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
     }
 
     v8::Local<v8::Value> DataTransfer::FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject)
@@ -33,7 +33,7 @@ namespace puerts
 
     bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject)
     {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOf(CDataName, JsObject);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->IsInstanceOfCppObject(CDataName, JsObject);
     }
 
     FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
