@@ -75,7 +75,7 @@ console.log(Calc.Add(12, 34));
 
 说明：
 
-* 使用到的C++类用UsingCppType提前声明
+* 使用到的C++类用UsingCppType前置声明
 
 * 注册类的成员信息，基本模式是：puerts::DefineClass<YouClass>().Function/Method/Property().Register();
 
@@ -292,6 +292,15 @@ obj.StdFunctionTest((x:number, y:number) => {
 添加如下声明：
 
 ~~~c++
+#include "CoreMinimal.h"
+#include "Binding.hpp"
+#include "UEDataBinding.hpp"
+
+UsingUClass(UObject)
+UsingUClass(UWorld) // for return type
+UsingUClass(UClass)
+UsingUClass(USceneComponent)
+
 puerts::DefineClass<UObject>()
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
     .Method("CreateDefaultSubobject", SelectFunction(UObject* (UObject::*)(FName, UClass*, UClass*, bool , bool), &UObject::CreateDefaultSubobject))
@@ -304,6 +313,8 @@ puerts::DefineClass<UObject>()
     .Method("GetWorld", MakeFunction(&UObject::GetWorld))
     .Register();
 ~~~
+
+注意：和普通c++类不一样，如果是一个UClass，需要使用UsingUClass前置声明，类似的如果是UStruct，需要用UsingUStruct
 
 重新生成ue.d.ts，可以看到上述方法已经添加到UE.Object的声明
 
@@ -322,4 +333,4 @@ class Object {
 }
 ~~~
 
-后续可以直接在Object对象上使用上述方法
+后续可以直接在Object对象上使用上述方法。
