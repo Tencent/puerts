@@ -52,6 +52,29 @@ public:
     bool bIsReference;
 };
 
+/**
+ * @brief the utility function collection for meta data
+ */
+struct FPEMetaDataUtils
+{
+
+	/**
+	 * @brief validate the format of specific meta data
+	 * @param InField
+	 * @param InKey
+	 * @param InValue
+	 * @param OutMessage
+	 * @return
+	 */
+	static bool ValidateFormat(FFieldVariant InField, FName InKey, const FString& InValue, FString& OutMessage);
+
+	/**
+	 * @brief add specific meta data to ufield
+	 * @param InField
+	 * @param InMetaData
+	 */
+	static void AddMetaData(UField* InField, TMap<FName, FString>& InMetaData);
+};
 
 /**
  *
