@@ -9,9 +9,17 @@
 
 #include "functional"
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#else
+#define JSENV_API
+#define FORCEINLINE V8_INLINE
+#define UPTRINT uintptr_t
+#endif
 
 #pragma warning(push, 0) 
+#include <string>
+
 #include "v8.h"
 #pragma warning(pop)
 
@@ -43,6 +51,8 @@ public:
     virtual bool IsPointer() const = 0;
     virtual bool IsRef() const = 0;
     virtual bool IsConst() const = 0;
+    virtual bool IsUEType() const = 0;
+    virtual bool IsObjectType() const = 0;
 };
 
 class CFunctionInfo
@@ -67,13 +77,13 @@ struct NamedPropertyInfo
 
 struct JSENV_API JSClassDefinition
 {
-    const char* CDataName;
-    const char* CDataSuperName;
-    const char* UStructName;
+    const char* CPPTypeName;
+    const char* CPPSuperTypeName;
+    const char* UETypeName;
     InitializeFunc Initialize;
     JSFunctionInfo* Methods;    //成员方法
     JSFunctionInfo* Functions;  //静态方法
-    JSPropertyInfo* Propertys;
+    JSPropertyInfo* Properties;
     FinalizeFunc Finalize;
     //int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
@@ -82,23 +92,25 @@ struct JSENV_API JSClassDefinition
     NamedPropertyInfo* PropertyInfos;
 };
 
-typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
+#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
-#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0 }
-
-void JSENV_API RegisterClass(const JSClassDefinition &ClassDefinition);
+void JSENV_API RegisterJSClass(const JSClassDefinition &ClassDefinition);
 
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)>);
 
-void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
-
 const JSClassDefinition* FindClassByID(const char* Name);
 
-const JSClassDefinition* FindClassByType(UStruct* Type);
+const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
-const JSClassDefinition* FindCDataClassByName(const FString& Name);
+#if USING_IN_UNREAL_ENGINE
+typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
+
+void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
+
+JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 
 AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
+#endif
 
 }
 

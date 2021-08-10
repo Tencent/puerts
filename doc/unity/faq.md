@@ -97,6 +97,8 @@ puerts.registerBuildinModule("fs", {
 (function () {
     let global = this ?? globalThis;
     global["Buffer"] = global["Buffer"] ?? {};
+    //使用inline-source-map模式, 需要额外安装buffer模块
+    //global["Buffer"] = global["Buffer"] ?? require("buffer").Buffer;
 })();
 require('source-map-support').install();
 ```

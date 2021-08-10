@@ -49,6 +49,8 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     virtual bool GenTypeDecl(FStringBuffer& StringBuffer, PropertyMacro* Property, TArray<UObject *> &AddToGen, bool ArrayDimProcessed = false, bool TreatAsRawFunction = false);
     
     virtual bool GenFunction(FStringBuffer& OwnerBuffer,UFunction* Function, bool WithName = true, bool ForceOneway = false, bool IgnoreOut = false, bool IsExtensionMethod = false);
+
+    void GenExtensions(UStruct *Struct, FStringBuffer& Buff);
     
     virtual void GenClass(UClass* Class);
     

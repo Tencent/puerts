@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
@@ -10,6 +10,7 @@
 #include "JsEnv.h"
 #include "DynamicDelegateProxy.h"
 #include "StructWrapper.h"
+#include "CppObjectMapper.h"
 #include "V8Utils.h"
 #include "Engine/Engine.h"
 #include "ObjectMapper.h"
@@ -92,13 +93,13 @@ public:
 
     void UnBindStruct(UScriptStruct* ScriptStruct, void *Ptr) override;
 
-    void UnBindCData(JSClassDefinition* ClassDefinition, void *Ptr) override;
+    void UnBindCppObject(JSClassDefinition* ClassDefinition, void *Ptr) override;
 
     v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer) override;
 
-    void BindCData(JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
+    void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
 
-    v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void *Ptr, bool PassByPointer) override;
+    v8::Local<v8::Value> FindOrAddCppObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void *Ptr, bool PassByPointer) override;
 
     void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) override;
 
@@ -118,6 +119,8 @@ public:
 
     bool AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
 
+    PropertyMacro *FindDelegateProperty(void *DelegatePtr) override;
+
     FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) override;
 
     void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
@@ -130,13 +133,13 @@ public:
 
     bool IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject) override;
 
-    bool IsInstanceOf(const char* CDataName, v8::Local<v8::Object> JsObject) override;
+    bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) override;
 
     bool CheckDelegateProxys(float tick);
 
     v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
 
-    void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms);
+    void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms);
 
     void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype);
 
@@ -167,8 +170,6 @@ public:
     void TryReleaseType(UStruct *Struct);
 
 private:
-    FString GetExecutionException(v8::Isolate* Isolate, v8::TryCatch* TryCatch);
-
     bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath, TArray<uint8>& Data, FString &ErrInfo);
 
     void ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor = nullptr);
@@ -181,8 +182,6 @@ private:
 
     void LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void LoadCDataType(const v8::FunctionCallbackInfo<v8::Value>& Info);
-
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     bool GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro ** PropertyPtr);
@@ -192,8 +191,6 @@ private:
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct *Class, bool &Existed);
 
     v8::Local<v8::Function> GetJsClass(UStruct *Class, v8::Local<v8::Context> Context);
-
-    v8::Local<v8::FunctionTemplate> GetTemplateOfClass(const JSClassDefinition* ClassDefinition);
 
     FPropertyTranslator* GetContainerPropertyTranslator(PropertyMacro* Property);
 
@@ -225,6 +222,10 @@ private:
 
     void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value> &Info);
 
+    void OnAsyncLoadingFlushUpdate();
+
+    void ConstructPendingObject(UObject* PendingObject);
+
     struct ObjectMerger;
 
     std::unique_ptr<ObjectMerger>& GetObjectMerger(UStruct * Struct);
@@ -252,7 +253,7 @@ private:
             if (auto Class = Cast<UClass>(Struct))
             {
                 UObject *Object = reinterpret_cast<UObject *>(Ptr);
-                if (!Object->IsValidLowLevel() || Object->IsPendingKill() || Object->GetClass() != Class || FV8Utils::GetPoninter(JsObject))
+                if (!Object->IsValidLowLevel() || Object->IsPendingKill() || Object->GetClass() != Class || FV8Utils::GetPointer(JsObject))
                 {
                     return;
                 }
@@ -271,7 +272,7 @@ private:
                         if (Value->IsObject())
                         {
                             auto JsObjectField = Value->ToObject(Context).ToLocalChecked();
-                            if (!FV8Utils::GetPoninterFast<void>(JsObjectField))
+                            if (!FV8Utils::GetPointerFast<void>(JsObjectField))
                             {
                                 UStruct *FieldStruct = nullptr;
                                 if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(Iter->second->Property))
@@ -349,17 +350,15 @@ private:
 
     std::map<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
 
-    std::map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;
-
     std::map<UStruct*, std::pair<std::unique_ptr<FStructWrapper>, int>> TypeReflectionMap;
 
     std::map<UObject*, v8::UniquePersistent<v8::Value> > ObjectMap;
     std::map<const class UObjectBase*, v8::UniquePersistent<v8::Value> > GeneratedObjectMap;
 
     std::map<void*, v8::UniquePersistent<v8::Value> > StructMap;
-    std::map<void*, v8::UniquePersistent<v8::Value> > CDataMap;
 
-    std::map<void*, FinalizeFunc > CDataFinalizeMap;
+    FCppObjectMapper CppObjectMapper;
+    
     std::map<void*, TWeakObjectPtr<UScriptStruct>> ScriptStructTypeMap;
 
     v8::UniquePersistent<v8::FunctionTemplate> ArrayTemplate;
@@ -369,8 +368,6 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> MapTemplate;
 
     v8::UniquePersistent<v8::FunctionTemplate> FixSizeArrayTemplate;
-
-    v8::UniquePersistent<v8::Function> PointerConstrutor;
 
     std::map<PropertyMacro*, std::unique_ptr<FPropertyTranslator>> ContainerPropertyMap;
 
@@ -404,7 +401,7 @@ private:
 
         void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms) override
         {
-            if (Parent) Parent->InvokeJsCallabck(Proxy, Parms);
+            if (Parent) Parent->InvokeJsCallback(Proxy, Parms);
         }
 
         void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype) override
@@ -462,6 +459,13 @@ private:
     v8::Global<v8::Map> ManualReleaseCallbackMap;
 
     std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
+
+    FCriticalSection PendingConstructLock;
+    
+    TArray<TWeakObjectPtr<UObject>> PendingConstructObjects;
+    
+    FDelegateHandle AsyncLoadingFlushUpdateHandle;
+
 };
 
 }

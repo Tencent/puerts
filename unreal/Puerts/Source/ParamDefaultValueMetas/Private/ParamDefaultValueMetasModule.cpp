@@ -63,6 +63,10 @@ public:
                 if(ValuePtr)
                 {
                     FString EscapeValue = (*ValuePtr).Replace(TEXT("\""), TEXT("\\\""));
+                    if (Property->IsA<BoolPropertyMacro>())
+                    {
+                        EscapeValue = EscapeValue.Replace(TEXT("true"), TEXT("True")).Replace(TEXT("false"), TEXT("False"));
+                    }
                     MakesureFunctinMeteExisted(Class, Function);
                     GeneratedFileContent += FString::Printf(TEXT("PF->Add(TEXT(\"%s\"), TEXT(\"%s\"));\r\n"), *Property->GetName(), *EscapeValue);
                 }

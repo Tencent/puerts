@@ -50,10 +50,10 @@ struct FGenImp
 
 	void GenClass(const puerts::JSClassDefinition *ClassDefinition)
 	{
-		Output << "    class " << ClassDefinition->CDataName;
-		if (ClassDefinition->CDataSuperName)
+		Output << "    class " << ClassDefinition->CPPTypeName;
+		if (ClassDefinition->CPPSuperTypeName)
 		{
-			Output << " extends " << ClassDefinition->CDataSuperName;
+			Output << " extends " << ClassDefinition->CPPSuperTypeName;
 		}
 		Output << " {\n";
 
@@ -128,7 +128,7 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 	
 	puerts::ForeachRegisterClass([&](const puerts::JSClassDefinition *ClassDefinition)
 	{
-		if (ClassDefinition->CDataName)
+		if (ClassDefinition->CPPTypeName)
 		{
 			Gen.GenClass(ClassDefinition);
 		}

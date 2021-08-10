@@ -95,7 +95,7 @@ static void* _FRotatorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FQuat* Arg0 = puerts::DataTransfer::GetPoninterFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FQuat* Arg0 = puerts::DataTransfer::GetPointerFast<FQuat>(Info[0]->ToObject(Context).ToLocalChecked());
             FRotator* Obj = new FRotator(*Arg0);
             
             
@@ -117,7 +117,7 @@ static void FRotatorM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Valu
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_DiagnosticCheckNaN] Attempt to access a NULL self pointer");
@@ -145,8 +145,8 @@ static void FRotatorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Inf
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_op_Addition] Attempt to access a NULL self pointer");
@@ -179,8 +179,8 @@ static void FRotatorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& 
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_op_Subtraction] Attempt to access a NULL self pointer");
@@ -211,7 +211,7 @@ static void FRotatorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Inf
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_op_Multiply] Attempt to access a NULL self pointer");
@@ -244,8 +244,8 @@ static void FRotatorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Inf
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_op_Equality] Attempt to access a NULL self pointer");
@@ -275,8 +275,8 @@ static void FRotatorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_op_Inequality] Attempt to access a NULL self pointer");
@@ -304,7 +304,7 @@ static void FRotatorM_IsNearlyZero(const v8::FunctionCallbackInfo<v8::Value>& In
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_IsNearlyZero] Attempt to access a NULL self pointer");
@@ -330,7 +330,7 @@ static void FRotatorM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_IsZero] Attempt to access a NULL self pointer");
@@ -361,9 +361,9 @@ static void FRotatorM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
             Info[1]->IsNumber())
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Equals] Attempt to access a NULL self pointer");
@@ -395,7 +395,7 @@ static void FRotatorM_Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
             float Arg2 = Info[2]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Add] Attempt to access a NULL self pointer");
@@ -424,7 +424,7 @@ static void FRotatorM_GetInverse(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetInverse] Attempt to access a NULL self pointer");
@@ -457,8 +457,8 @@ static void FRotatorM_GridSnap(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GridSnap] Attempt to access a NULL self pointer");
@@ -487,7 +487,7 @@ static void FRotatorM_Vector(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Vector] Attempt to access a NULL self pointer");
@@ -516,7 +516,7 @@ static void FRotatorM_Quaternion(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Quaternion] Attempt to access a NULL self pointer");
@@ -545,7 +545,7 @@ static void FRotatorM_Euler(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Euler] Attempt to access a NULL self pointer");
@@ -578,8 +578,8 @@ static void FRotatorM_RotateVector(const v8::FunctionCallbackInfo<v8::Value>& In
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_RotateVector] Attempt to access a NULL self pointer");
@@ -612,8 +612,8 @@ static void FRotatorM_UnrotateVector(const v8::FunctionCallbackInfo<v8::Value>& 
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_UnrotateVector] Attempt to access a NULL self pointer");
@@ -642,7 +642,7 @@ static void FRotatorM_Clamp(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Clamp] Attempt to access a NULL self pointer");
@@ -671,7 +671,7 @@ static void FRotatorM_GetNormalized(const v8::FunctionCallbackInfo<v8::Value>& I
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetNormalized] Attempt to access a NULL self pointer");
@@ -700,7 +700,7 @@ static void FRotatorM_GetDenormalized(const v8::FunctionCallbackInfo<v8::Value>&
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetDenormalized] Attempt to access a NULL self pointer");
@@ -731,7 +731,7 @@ static void FRotatorM_GetComponentForAxis(const v8::FunctionCallbackInfo<v8::Val
         {
             
             EAxis::Type Arg0 = EAxis::Type(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetComponentForAxis] Attempt to access a NULL self pointer");
@@ -761,7 +761,7 @@ static void FRotatorM_SetComponentForAxis(const v8::FunctionCallbackInfo<v8::Val
             
             EAxis::Type Arg0 = EAxis::Type(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_SetComponentForAxis] Attempt to access a NULL self pointer");
@@ -785,7 +785,7 @@ static void FRotatorM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_Normalize] Attempt to access a NULL self pointer");
@@ -817,9 +817,9 @@ static void FRotatorM_GetWindingAndRemainder(const v8::FunctionCallbackInfo<v8::
             )
         {
             
-            FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
-            FRotator* Arg1 = puerts::DataTransfer::GetPoninterFast<FRotator>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
+            FRotator* Arg1 = puerts::DataTransfer::GetPointerFast<FRotator>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetWindingAndRemainder] Attempt to access a NULL self pointer");
@@ -847,8 +847,8 @@ static void FRotatorM_GetManhattanDistance(const v8::FunctionCallbackInfo<v8::Va
             )
         {
             
-            const FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            const FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetManhattanDistance] Attempt to access a NULL self pointer");
@@ -874,7 +874,7 @@ static void FRotatorM_GetEquivalentRotator(const v8::FunctionCallbackInfo<v8::Va
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_GetEquivalentRotator] Attempt to access a NULL self pointer");
@@ -907,8 +907,8 @@ static void FRotatorM_SetClosestToMe(const v8::FunctionCallbackInfo<v8::Value>& 
             )
         {
             
-            FRotator* Arg0 = puerts::DataTransfer::GetPoninterFast<FRotator>(puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            FRotator* Arg0 = puerts::DataTransfer::GetPointerFast<FRotator>(puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_SetClosestToMe] Attempt to access a NULL self pointer");
@@ -932,7 +932,7 @@ static void FRotatorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_ToString] Attempt to access a NULL self pointer");
@@ -958,7 +958,7 @@ static void FRotatorM_ToCompactString(const v8::FunctionCallbackInfo<v8::Value>&
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_ToCompactString] Attempt to access a NULL self pointer");
@@ -986,7 +986,7 @@ static void FRotatorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& 
         {
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_InitFromString] Attempt to access a NULL self pointer");
@@ -1012,7 +1012,7 @@ static void FRotatorM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& Inf
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FRotator::M_ContainsNaN] Attempt to access a NULL self pointer");
@@ -1174,7 +1174,7 @@ static void FRotatorS_MakeFromEuler(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FRotator::MakeFromEuler(*Arg0);
             void* Ptr = new FRotator(MethodResult);
                 
@@ -1194,7 +1194,7 @@ static void _FRotatorPitchGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->Pitch);
     Info.GetReturnValue().Set(V8Result);
@@ -1205,7 +1205,7 @@ static void _FRotatorPitchSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
 
     Self->Pitch =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1215,7 +1215,7 @@ static void _FRotatorYawGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->Yaw);
     Info.GetReturnValue().Set(V8Result);
@@ -1226,7 +1226,7 @@ static void _FRotatorYawSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> 
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
 
     Self->Yaw =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1236,7 +1236,7 @@ static void _FRotatorRollGet_(v8::Local<v8::Name> Property, const v8::PropertyCa
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->Roll);
     Info.GetReturnValue().Set(V8Result);
@@ -1247,7 +1247,7 @@ static void _FRotatorRollSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value>
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
 
     Self->Roll =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1311,14 +1311,14 @@ struct AutoRegisterForFRotator
             {0, 0}
         };
 
-        Def.UStructName = "FRotator";
+        Def.UETypeName = "FRotator";
 
         Def.Initialize = _FRotatorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };

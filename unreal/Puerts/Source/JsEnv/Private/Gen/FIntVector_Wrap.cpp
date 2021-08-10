@@ -102,7 +102,7 @@ static void* _FIntVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
             FIntVector* Obj = new FIntVector(*Arg0);
             
             
@@ -140,7 +140,7 @@ static void FIntVectorM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_get_Item] Attempt to access a NULL self pointer");
@@ -168,7 +168,7 @@ static void FIntVectorM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_set_Item] Attempt to access a NULL self pointer");
@@ -196,8 +196,8 @@ static void FIntVectorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FIntVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            const FIntVector* Arg0 = puerts::DataTransfer::GetPointerFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_op_Equality] Attempt to access a NULL self pointer");
@@ -227,8 +227,8 @@ static void FIntVectorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FIntVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            const FIntVector* Arg0 = puerts::DataTransfer::GetPointerFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_op_Inequality] Attempt to access a NULL self pointer");
@@ -256,7 +256,7 @@ static void FIntVectorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& I
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_op_Multiply] Attempt to access a NULL self pointer");
@@ -287,7 +287,7 @@ static void FIntVectorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& I
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_op_Division] Attempt to access a NULL self pointer");
@@ -320,8 +320,8 @@ static void FIntVectorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& I
             )
         {
             
-            const FIntVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            const FIntVector* Arg0 = puerts::DataTransfer::GetPointerFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_op_Addition] Attempt to access a NULL self pointer");
@@ -354,8 +354,8 @@ static void FIntVectorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>
             )
         {
             
-            const FIntVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            const FIntVector* Arg0 = puerts::DataTransfer::GetPointerFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_op_Subtraction] Attempt to access a NULL self pointer");
@@ -384,7 +384,7 @@ static void FIntVectorM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_IsZero] Attempt to access a NULL self pointer");
@@ -410,7 +410,7 @@ static void FIntVectorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_GetMax] Attempt to access a NULL self pointer");
@@ -436,7 +436,7 @@ static void FIntVectorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_GetMin] Attempt to access a NULL self pointer");
@@ -462,7 +462,7 @@ static void FIntVectorM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_Size] Attempt to access a NULL self pointer");
@@ -488,7 +488,7 @@ static void FIntVectorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::M_ToString] Attempt to access a NULL self pointer");
@@ -519,7 +519,7 @@ static void FIntVectorS_DivideAndRoundUp(const v8::FunctionCallbackInfo<v8::Valu
             Info[1]->IsNumber())
         {
             
-            FIntVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            FIntVector* Arg0 = puerts::DataTransfer::GetPointerFast<FIntVector>(Info[0]->ToObject(Context).ToLocalChecked());
             int32 Arg1 = Info[1]->ToInteger(Context).ToLocalChecked()->Value();
             auto MethodResult = FIntVector::DivideAndRoundUp(*Arg0, Arg1);
             void* Ptr = new FIntVector(MethodResult);
@@ -560,7 +560,7 @@ static void _FIntVectorXGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
@@ -571,7 +571,7 @@ static void _FIntVectorXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> 
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
 
     Self->X =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -581,7 +581,7 @@ static void _FIntVectorYGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
@@ -592,7 +592,7 @@ static void _FIntVectorYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> 
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
 
     Self->Y =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -602,7 +602,7 @@ static void _FIntVectorZGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->Z);
     Info.GetReturnValue().Set(V8Result);
@@ -613,7 +613,7 @@ static void _FIntVectorZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> 
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FIntVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
 
     Self->Z =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -654,14 +654,14 @@ struct AutoRegisterForFIntVector
             {0, 0}
         };
 
-        Def.UStructName = "FIntVector";
+        Def.UETypeName = "FIntVector";
 
         Def.Initialize = _FIntVectorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };

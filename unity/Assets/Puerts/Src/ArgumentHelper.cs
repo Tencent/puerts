@@ -35,10 +35,21 @@ namespace Puerts
             var jsType = this.valueType;
             if (jsType == JsValueType.JsObject)
             {
-                if (!isByRef) return false;
-                if (isOut) return true;
-                jsType = PuertsDLL.GetJsValueType(isolate, value, true);
-            }
+                if (isByRef) 
+                {
+                    if (isOut) return true;
+                    jsType = PuertsDLL.GetJsValueType(isolate, value, true);
+                } 
+                else if ((expectJsType & jsType) == jsType)
+                {
+                    return true;
+                }
+                else 
+                {
+                    return false;
+                }
+            } 
+            
             if ((expectJsType & jsType) != jsType)
             {
                 return false;
@@ -69,6 +80,8 @@ namespace Puerts
             }
             return true;
         }
+
+
 
         public char GetChar(bool isByRef)
         {
@@ -206,60 +219,15 @@ namespace Puerts
             return (new DateTime(1970, 1, 1)).AddMilliseconds(ticks);
         }
 
-        public ArrayBuffer GetArrayBuffer(bool isByRef)
-        {
-            if (obj != null) return (ArrayBuffer)obj;
-            obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetArrayBufferTranslatorFunc(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
-            if (obj != null)
-            {
-                return (ArrayBuffer)obj;
-            }
-            return default(ArrayBuffer);
-        }
-        
-        public GenericDelegate GetGenericDelegate(bool isByRef)
-        {
-            if (obj != null) return (GenericDelegate)obj;
-            obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetGenericDelegateTranslatorFunc(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
-            if (obj != null)
-            {
-                return (GenericDelegate)obj;
-            }
-            return default(GenericDelegate);
-        }
-        
-        public JSObject GetJSObject(bool isByRef)
-        {
-            if (obj != null) return (JSObject)obj;
-            obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetJSObjectTranslatorFunc(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
-            if (obj != null)
-            {
-                return (JSObject)obj;
-            }
-            return default(JSObject);
-        }
-
-        public object GetSystemObject(bool isByRef)
-        {
-            if (obj != null) return obj;
-            return JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetAnyTranslatorFunc(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
-        }
-
         public void SetByRefValue(DateTime val)
         {
             PuertsDLL.SetDateToOutValue(isolate, value, (val - new DateTime(1970, 1, 1)).TotalMilliseconds);
         }
 
-        public T GetRefType<T>(bool isByRef)
+        public T Get<T>(bool isByRef)
         {
             if (obj != null) return (T)obj;
             return StaticTranslate<T>.Get(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
-        }
-        
-        public T GetNonRefType<T>(bool isByRef)
-        {
-            if (obj != null) return (T)obj;
-            return StaticTranslate<T>.GetNonRefTranslator(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public T[] GetParams<T>(IntPtr info, int start, int end)

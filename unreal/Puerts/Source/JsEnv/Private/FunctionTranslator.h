@@ -58,8 +58,6 @@ protected:
 
     void *ArgumentDefaultValues;
 
-    std::vector< v8::Local<v8::Value>> Args;
-
 private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
 

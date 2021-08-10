@@ -29,6 +29,7 @@
 #include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
 #include "CodeGenerator.h"
+#include "JSClassRegister.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -137,6 +138,21 @@ void FStringBuffer::Indent(int Num)
     }
 }
 
+TArray<UClass*> GetSortedClasses()
+{
+    TArray<UClass*> SortedClasses;
+    for (TObjectIterator<UClass> It; It; ++It)
+    {
+        SortedClasses.Add(*It);
+    }
+
+    SortedClasses.Sort([&](const UClass &ClassA, const UClass &ClassB) -> bool {
+        return ClassA.GetName() < ClassB.GetName();
+    });
+    
+    return SortedClasses;
+}
+
 
 void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
 {
@@ -157,7 +173,8 @@ bool IsChildOf(UClass *Class, const FString& Name)
 
 void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 {
-    for (TObjectIterator<UClass> It; It; ++It)
+    TArray<UClass*> SortedClasses(GetSortedClasses());
+    for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
     {
         UClass* Class = *It;
         bool IsExtensionMethod = IsChildOf(Class, "ExtensionMethods");
@@ -199,14 +216,19 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
 {
     Begin();
-    for (TObjectIterator<UClass> It; It; ++It)
+
+    Output << "    import * as cpp from \"cpp\"\n\n";
+    
+    TArray<UClass*> SortedClasses(GetSortedClasses());
+    for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
     {
         UClass* Class = *It;
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
         if (Class->GetName().StartsWith("SKEL_")        ||
             Class->GetName().StartsWith("REINST_")      ||
             Class->GetName().StartsWith("TRASHCLASS_")  ||
-            Class->GetName().StartsWith("PLACEHOLDER_"))
+            Class->GetName().StartsWith("PLACEHOLDER-") ||
+            Class->GetName().StartsWith("HOTRELOADED_"))
         {
             continue;
         }
@@ -302,11 +324,18 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-        if (StructProperty->Struct->GetName() != "ArrayBuffer")
+        if (StructProperty->Struct->GetName() != TEXT("ArrayBuffer") && StructProperty->Struct->GetName() != TEXT("JsObject"))
         {
             AddToGen.Add(StructProperty->Struct);
         }
-        StringBuffer << SafeName(StructProperty->Struct->GetName());
+        if (StructProperty->Struct->GetName() == TEXT("JsObject"))
+        {
+            StringBuffer << "object";
+        }
+        else
+        {
+            StringBuffer << SafeName(StructProperty->Struct->GetName());
+        }
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
     {
@@ -492,6 +521,111 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
     return true;
 }
 
+const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+{
+    return TypeInfo->IsObjectType() ? "cpp." : "";    
+}
+
+const FString GetName(const puerts::CTypeInfo* TypeInfo)
+{
+    FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
+    if (TypeInfo->IsUEType())
+    {
+        return Ret.Mid(1);
+    }
+    return Ret;
+}
+
+void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer & Buff)
+{
+    for(unsigned int i = 0; i < Type->ArgumentCount(); i++)
+    {
+        if (i != 0) Buff << ", ";
+        auto argInfo = Type->Argument(i);
+			
+        Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+			
+        bool IsReference = argInfo->IsRef();
+        bool IsNullable = !IsReference && argInfo->IsPointer();
+        if (IsNullable)
+        {
+            Buff << "$Nullable<";
+        }
+        if (IsReference)
+        {
+            Buff << "$Ref<";
+        }
+			
+        Buff << GetNamePrefix(argInfo) << GetName(argInfo);
+			
+        if (IsNullable)
+        {
+            Buff << ">";
+        }
+        if (IsReference)
+        {
+            Buff << ">";
+        }
+    }
+}
+
+void FTypeScriptDeclarationGenerator::GenExtensions(UStruct *Struct, FStringBuffer& Buff)
+{
+    auto ClassDefinition = puerts::FindClassByType(Struct);
+    if (ClassDefinition)
+    {
+        TSet<FString> AddedFunctions;
+
+        puerts::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
+        while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Type)
+        {
+            FStringBuffer Tmp;
+            Tmp << "    static " << FunctionInfo->Name << "(";
+            GenArgumentsForFunctionInfo(FunctionInfo->Type, Tmp);
+            const auto Return = FunctionInfo->Type->Return();
+            Tmp << ") : " << GetNamePrefix(Return) << GetName(Return) <<";\n";
+            if (!AddedFunctions.Contains(Tmp.Buffer))
+            {
+                AddedFunctions.Add(Tmp.Buffer);
+                Buff << Tmp;
+            }
+            ++FunctionInfo;
+        }
+
+        puerts::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
+        while (MethodInfo && MethodInfo->Name && MethodInfo->Type)
+        {
+            FStringBuffer Tmp;
+            Tmp << "    " << MethodInfo->Name << "(";
+            GenArgumentsForFunctionInfo(MethodInfo->Type, Tmp);
+            const auto Return = MethodInfo->Type->Return();
+            Tmp << ") : " << GetNamePrefix(Return) << GetName(Return) <<";\n";
+            if (!AddedFunctions.Contains(Tmp.Buffer))
+            {
+                AddedFunctions.Add(Tmp.Buffer);
+                Buff << Tmp;
+            }
+            ++MethodInfo;
+        }
+    }
+
+    auto ExtensionMethodsIter = ExtensionMethodsMap.find(Struct);
+    if (ExtensionMethodsIter != ExtensionMethodsMap.end())
+    {
+        for (auto Iter = ExtensionMethodsIter->second.begin(); Iter != ExtensionMethodsIter->second.end(); ++Iter)
+        {
+            UFunction* Function = *Iter;
+
+            FStringBuffer TmpBuff;
+            if (!GenFunction(TmpBuff, Function, true, false, false, true))
+            {
+                continue;
+            }
+            Buff << "    " << TmpBuff.Buffer << ";\n";
+        }
+    }
+}
+
 void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 {
     if (Class->ImplementsInterface(UTypeScriptObject::StaticClass())) return;
@@ -538,21 +672,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     }
 
-    auto ExtensionMethodsIter = ExtensionMethodsMap.find(Class);
-    if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-    {
-        for (auto Iter = ExtensionMethodsIter->second.begin(); Iter != ExtensionMethodsIter->second.end(); ++Iter)
-        {
-            UFunction* Function = *Iter;
-
-            FStringBuffer TmpBuff;
-            if (!GenFunction(TmpBuff, Function, true, false, false, true))
-            {
-                continue;
-            }
-            StringBuffer << "    " << TmpBuff.Buffer << ";\n";
-        }
-    }
+    GenExtensions(Class, StringBuffer);
     
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
@@ -663,21 +783,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     }
 
-    auto ExtensionMethodsIter = ExtensionMethodsMap.find(Struct);
-    if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-    {
-        for (auto Iter = ExtensionMethodsIter->second.begin(); Iter != ExtensionMethodsIter->second.end(); ++Iter)
-        {
-            UFunction* Function = *Iter;
-
-            FStringBuffer TmpBuff;
-            if (!GenFunction(TmpBuff, Function, true, false, false, true))
-            {
-                continue;
-            }
-            StringBuffer << "    " << TmpBuff.Buffer << ";\n";
-        }
-    }
+    GenExtensions(Struct, StringBuffer);
 
     StringBuffer << "    static StaticClass(): Class;\n";
     
@@ -717,7 +823,8 @@ private:
         LoadAllWidgetBlueprint();
         GenTypeScriptDeclaration();
 
-        for (TObjectIterator<UClass> It; It; ++It)
+        TArray<UClass*> SortedClasses(GetSortedClasses());
+        for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
         {
             UClass* Class = *It;
             if (Class->ImplementsInterface(UCodeGenerator::StaticClass()))

@@ -79,6 +79,8 @@ if (!fs.existsSync(jsBasePath)) {
 if (!fs.existsSync(tsconfigFilePath)) {
     console.log('emit tsconfig.json');
     fs.writeFileSync(tsconfigFilePath, JSON.stringify(jsDefaultConfig, null, 4));
+} else {
+    throw new Error(tsconfigFilePath + " existed!");
 }
 
 if (!fs.existsSync(puertsConfigPath)) {

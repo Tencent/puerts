@@ -1201,7 +1201,7 @@ function watch(configFilePath) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
                         bp.Save();
                         return bp.GeneratedClass;
                     }
@@ -1285,6 +1285,10 @@ function watch(configFilePath) {
                             else if (typeName == 'TSoftClassPtr') {
                                 let category = "softclass";
                                 result.pinType.PinCategory = category;
+                                return result;
+                            }
+                            else if (typeName == '$Ref') {
+                                result.pinType.bIsReference = true;
                                 return result;
                             }
                             else if (typeName == 'TMap') {
@@ -1415,7 +1419,7 @@ function watch(configFilePath) {
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let bp = new UE.PEBlueprintAsset();
-                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass);
+                bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
                 let hasConstructor = false;
                 checker.getPropertiesOfType(type)
                     .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
@@ -1451,11 +1455,14 @@ function watch(configFilePath) {
                         //console.log("add function", symbol.getName());
                         let sflags = tryGetAnnotation(symbol.valueDeclaration, "flags", true);
                         let flags = getFlagsValue(sflags, FunctionFlags);
+                        let clearFlags = 0;
                         if (symbol.valueDeclaration && symbol.valueDeclaration.decorators) {
-                            flags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "flags", FunctionFlags));
+                            flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "flags", FunctionFlags));
+                            flags |= Number(getDecoratorFlagsValue(symbol.valueDeclaration, "set_flags", FunctionFlags));
+                            clearFlags = Number(getDecoratorFlagsValue(symbol.valueDeclaration, "clear_flags", FunctionFlags));
                         }
                         if (symbol.valueDeclaration.type && (ts.SyntaxKind.VoidKeyword === symbol.valueDeclaration.type.kind)) {
-                            bp.AddFunction(symbol.getName(), true, undefined, undefined, flags);
+                            bp.AddFunction(symbol.getName(), true, undefined, undefined, flags, clearFlags);
                         }
                         else {
                             let returnType = signature.getReturnType();
@@ -1466,7 +1473,7 @@ function watch(configFilePath) {
                                 return;
                             }
                             postProcessPinType(symbol.valueDeclaration, resultPinType.pinType, true);
-                            bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags);
+                            bp.AddFunction(symbol.getName(), false, resultPinType.pinType, resultPinType.pinValueType, flags, clearFlags);
                         }
                         bp.ClearParameter();
                     }

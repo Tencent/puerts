@@ -7,19 +7,34 @@
 
 #pragma once
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
-#include "CoreUObject.h"
 #include "PropertyTranslator.h"
+#endif
 #include "JSClassRegister.h"
 
 #pragma warning(push, 0)  
-#include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
 
 namespace puerts
 {
-class IObjectMapper
+class ICppObjectMapper
+{
+public:
+    virtual void BindCppObject(v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
+
+    virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void *Ptr) = 0;
+
+    virtual v8::Local<v8::Value> FindOrAddCppObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void *Ptr, bool PassByPointer) = 0;
+
+    virtual bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) = 0;
+
+    virtual ~ICppObjectMapper () {}
+};
+
+#if USING_IN_UNREAL_ENGINE
+class IObjectMapper: public ICppObjectMapper
 {
 public:
     virtual void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) = 0;
@@ -33,12 +48,6 @@ public:
     virtual void UnBindStruct(UScriptStruct* ScriptStruct, void *Ptr) = 0;
 
     virtual v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer) = 0;
-
-    virtual void BindCData(JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
-
-    virtual void UnBindCData(JSClassDefinition* ClassDefinition, void *Ptr) = 0;
-
-    virtual v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void *Ptr, bool PassByPointer) = 0;
 
     virtual void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) = 0;
 
@@ -56,6 +65,8 @@ public:
 
     virtual bool AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) = 0;
 
+    virtual PropertyMacro *FindDelegateProperty(void *DelegatePtr) = 0;
+
     virtual FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) = 0;
 
     virtual bool RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) = 0;
@@ -67,7 +78,7 @@ public:
     virtual v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) = 0;
 
     virtual bool IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject) = 0;
-
-    virtual bool IsInstanceOf(const char* CDataName, v8::Local<v8::Object> JsObject) = 0;
 };
+#endif
+
 }

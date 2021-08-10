@@ -78,7 +78,8 @@ bool UTypeScriptGeneratedClass::NotSupportInject()
     return (GetName().StartsWith("SKEL_") ||
         GetName().StartsWith("REINST_") ||
         GetName().StartsWith("TRASHCLASS_") ||
-        GetName().StartsWith("PLACEHOLDER_"));
+        GetName().StartsWith("PLACEHOLDER-") ||
+        GetName().StartsWith("HOTRELOADED_"));
 }
 
 void UTypeScriptGeneratedClass::Bind()

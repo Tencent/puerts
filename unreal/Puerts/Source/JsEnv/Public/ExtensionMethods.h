@@ -11,17 +11,6 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ExtensionMethods.generated.h"
 
-USTRUCT(BlueprintType)
-struct FArrayBuffer //暂时放这里吧
-{
-public:
-    GENERATED_USTRUCT_BODY()
-
-public:
-    void* Data;
-    size_t Length;
-};
-
 /**
  * 
  */

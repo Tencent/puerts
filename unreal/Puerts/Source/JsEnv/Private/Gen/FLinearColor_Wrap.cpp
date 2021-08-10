@@ -92,7 +92,7 @@ static void* _FLinearColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
             FLinearColor* Obj = new FLinearColor(*Arg0);
             
             
@@ -109,7 +109,7 @@ static void* _FLinearColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
             FLinearColor* Obj = new FLinearColor(*Arg0);
             
             
@@ -126,7 +126,7 @@ static void* _FLinearColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector4* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector4* Arg0 = puerts::DataTransfer::GetPointerFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
             FLinearColor* Obj = new FLinearColor(*Arg0);
             
             
@@ -148,7 +148,7 @@ static void FLinearColorM_ToRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_ToRGBE] Attempt to access a NULL self pointer");
@@ -181,7 +181,7 @@ static void FLinearColorS_FromSRGBColor(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            const FColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FLinearColor::FromSRGBColor(*Arg0);
             void* Ptr = new FLinearColor(MethodResult);
                 
@@ -209,7 +209,7 @@ static void FLinearColorS_FromPow22Color(const v8::FunctionCallbackInfo<v8::Valu
             )
         {
             
-            const FColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FLinearColor::FromPow22Color(*Arg0);
             void* Ptr = new FLinearColor(MethodResult);
                 
@@ -235,7 +235,7 @@ static void FLinearColorM_Component(const v8::FunctionCallbackInfo<v8::Value>& I
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_Component] Attempt to access a NULL self pointer");
@@ -255,7 +255,7 @@ static void FLinearColorM_Component(const v8::FunctionCallbackInfo<v8::Value>& I
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_Component] Attempt to access a NULL self pointer");
@@ -285,8 +285,8 @@ static void FLinearColorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Addition] Attempt to access a NULL self pointer");
@@ -319,8 +319,8 @@ static void FLinearColorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Valu
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Subtraction] Attempt to access a NULL self pointer");
@@ -353,8 +353,8 @@ static void FLinearColorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Multiply] Attempt to access a NULL self pointer");
@@ -377,7 +377,7 @@ static void FLinearColorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>&
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Multiply] Attempt to access a NULL self pointer");
@@ -410,8 +410,8 @@ static void FLinearColorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Division] Attempt to access a NULL self pointer");
@@ -434,7 +434,7 @@ static void FLinearColorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>&
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Division] Attempt to access a NULL self pointer");
@@ -467,7 +467,7 @@ static void FLinearColorM_GetClamped(const v8::FunctionCallbackInfo<v8::Value>& 
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_GetClamped] Attempt to access a NULL self pointer");
@@ -500,8 +500,8 @@ static void FLinearColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Equality] Attempt to access a NULL self pointer");
@@ -531,8 +531,8 @@ static void FLinearColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_op_Inequality] Attempt to access a NULL self pointer");
@@ -563,9 +563,9 @@ static void FLinearColorM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info
             Info[1]->IsNumber())
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_Equals] Attempt to access a NULL self pointer");
@@ -593,7 +593,7 @@ static void FLinearColorM_CopyWithNewOpacity(const v8::FunctionCallbackInfo<v8::
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_CopyWithNewOpacity] Attempt to access a NULL self pointer");
@@ -678,8 +678,8 @@ static void FLinearColorS_Dist(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FLinearColor* Arg1 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FLinearColor* Arg1 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FLinearColor::Dist(*Arg0, *Arg1);
             auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -700,7 +700,7 @@ static void FLinearColorM_LinearRGBToHSV(const v8::FunctionCallbackInfo<v8::Valu
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_LinearRGBToHSV] Attempt to access a NULL self pointer");
@@ -729,7 +729,7 @@ static void FLinearColorM_HSVToLinearRGB(const v8::FunctionCallbackInfo<v8::Valu
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_HSVToLinearRGB] Attempt to access a NULL self pointer");
@@ -767,8 +767,8 @@ static void FLinearColorS_LerpUsingHSV(const v8::FunctionCallbackInfo<v8::Value>
             Info[2]->IsNumber())
         {
             
-            const FLinearColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FLinearColor* Arg1 = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FLinearColor* Arg0 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FLinearColor* Arg1 = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info[1]->ToObject(Context).ToLocalChecked());
             const float Arg2 = Info[2]->ToNumber(Context).ToLocalChecked()->Value();
             auto MethodResult = FLinearColor::LerpUsingHSV(*Arg0, *Arg1, Arg2);
             void* Ptr = new FLinearColor(MethodResult);
@@ -793,7 +793,7 @@ static void FLinearColorM_Quantize(const v8::FunctionCallbackInfo<v8::Value>& In
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_Quantize] Attempt to access a NULL self pointer");
@@ -822,7 +822,7 @@ static void FLinearColorM_QuantizeRound(const v8::FunctionCallbackInfo<v8::Value
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_QuantizeRound] Attempt to access a NULL self pointer");
@@ -853,7 +853,7 @@ static void FLinearColorM_ToFColor(const v8::FunctionCallbackInfo<v8::Value>& In
         {
             
             const bool Arg0 = Info[0]->ToBoolean(Isolate)->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_ToFColor] Attempt to access a NULL self pointer");
@@ -884,7 +884,7 @@ static void FLinearColorM_Desaturate(const v8::FunctionCallbackInfo<v8::Value>& 
         {
             
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_Desaturate] Attempt to access a NULL self pointer");
@@ -913,7 +913,7 @@ static void FLinearColorM_ComputeLuminance(const v8::FunctionCallbackInfo<v8::Va
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_ComputeLuminance] Attempt to access a NULL self pointer");
@@ -939,7 +939,7 @@ static void FLinearColorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_GetMax] Attempt to access a NULL self pointer");
@@ -965,7 +965,7 @@ static void FLinearColorM_IsAlmostBlack(const v8::FunctionCallbackInfo<v8::Value
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_IsAlmostBlack] Attempt to access a NULL self pointer");
@@ -991,7 +991,7 @@ static void FLinearColorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_GetMin] Attempt to access a NULL self pointer");
@@ -1017,7 +1017,7 @@ static void FLinearColorM_GetLuminance(const v8::FunctionCallbackInfo<v8::Value>
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_GetLuminance] Attempt to access a NULL self pointer");
@@ -1043,7 +1043,7 @@ static void FLinearColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& In
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_ToString] Attempt to access a NULL self pointer");
@@ -1071,7 +1071,7 @@ static void FLinearColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Valu
         {
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::M_InitFromString] Attempt to access a NULL self pointer");
@@ -1093,7 +1093,7 @@ static void _FLinearColorRGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->R);
     Info.GetReturnValue().Set(V8Result);
@@ -1104,7 +1104,7 @@ static void _FLinearColorRSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     Self->R =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1114,7 +1114,7 @@ static void _FLinearColorGGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->G);
     Info.GetReturnValue().Set(V8Result);
@@ -1125,7 +1125,7 @@ static void _FLinearColorGSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     Self->G =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1135,7 +1135,7 @@ static void _FLinearColorBGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->B);
     Info.GetReturnValue().Set(V8Result);
@@ -1146,7 +1146,7 @@ static void _FLinearColorBSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     Self->B =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1156,7 +1156,7 @@ static void _FLinearColorAGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     auto V8Result =v8::Number::New(Isolate, Self->A);
     Info.GetReturnValue().Set(V8Result);
@@ -1167,7 +1167,7 @@ static void _FLinearColorASet_(v8::Local<v8::Name> Property, v8::Local<v8::Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FLinearColor>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
 
     Self->A =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
@@ -1224,14 +1224,14 @@ struct AutoRegisterForFLinearColor
             {0, 0}
         };
 
-        Def.UStructName = "FLinearColor";
+        Def.UETypeName = "FLinearColor";
 
         Def.Initialize = _FLinearColorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };

@@ -208,11 +208,23 @@ elseif ( APPLE )
         )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
+<<<<<<< HEAD
 elseif ( UNIX )
     target_link_libraries(puerts
         ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
     )
     target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
+=======
+elseif (UNIX)
+    target_link_libraries(puerts
+        ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
+	    pthread
+    )
+    target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
+    set(CMAKE_CXX_COMPILER "clang++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+>>>>>>> 9195866a522b97bedfae42b1c43784cd7f8acc54
 endif ()
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)

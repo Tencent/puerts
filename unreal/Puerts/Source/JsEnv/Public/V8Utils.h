@@ -49,52 +49,40 @@ public:
         Isolate->ThrowException(v8::Exception::Error(ExceptionStr));
     }
 
-    //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
-    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, void *Ptr, int Index)
-    {
-        //Object->SetInternalField(Index, v8::External::New(Isolate, Ptr));
-        //Object->SetAlignedPointerInInternalField(Index, Ptr);
-        UPTRINT High;
-        UPTRINT Low;
-        DataTransfer::SplitAddressToHighPartOfTwo(Ptr, High, Low);
-        Object->SetAlignedPointerInInternalField(Index * 2, reinterpret_cast<void*>(High));
-        Object->SetAlignedPointerInInternalField(Index * 2 + 1, reinterpret_cast<void*>(Low));
-    }
-
-    FORCEINLINE static void * GetPoninter(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
+    FORCEINLINE static void * GetPointer(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
         if (Value.IsEmpty() || !Value->IsObject() || Value->IsUndefined() || Value->IsNull())
         {
             return nullptr;
         }
         auto Object = Value->ToObject(Context).ToLocalChecked();
-        return GetPoninterFast<void>(Object, Index);
+        return GetPointerFast<void>(Object, Index);
     }
 
-    FORCEINLINE static void * GetPoninter(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static void * GetPointer(v8::Local<v8::Object> Object, int Index = 0)
     {
         if (Object.IsEmpty() || Object->IsUndefined() || Object->IsNull())
         {
             return nullptr;
         }
-        return GetPoninterFast<void>(Object, Index);
+        return GetPointerFast<void>(Object, Index);
     }
 
     template<typename T>
-    FORCEINLINE static T * GetPoninterFast(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static T * GetPointerFast(v8::Local<v8::Object> Object, int Index = 0)
     {
-        return DataTransfer::GetPoninterFast<T>(Object, Index);
+        return DataTransfer::GetPointerFast<T>(Object, Index);
     }
 
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
-        auto UEObject = reinterpret_cast<UObject*>(GetPoninter(Context, Value, Index));
+        auto UEObject = reinterpret_cast<UObject*>(GetPointer(Context, Value, Index));
         return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())) ? UEObject : RELEASED_UOBJECT;
     }
 
     FORCEINLINE static UObject * GetUObject(v8::Local<v8::Object> Object, int Index = 0)
     {
-        auto UEObject = reinterpret_cast<UObject*>(GetPoninter(Object, Index));
+        auto UEObject = reinterpret_cast<UObject*>(GetPointer(Object, Index));
         return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())) ? UEObject : RELEASED_UOBJECT;
     }
 
@@ -151,7 +139,7 @@ public:
     template<typename T>
     FORCEINLINE static T* IsolateData(v8::Isolate* Isolate)
     {
-        return reinterpret_cast<T*>(Isolate->GetData(0));
+        return DataTransfer::IsolateData<T>(Isolate);
     }
 
     FORCEINLINE static bool CheckArgumentLength(const v8::FunctionCallbackInfo<v8::Value>& Info, int32 Length)
@@ -164,7 +152,46 @@ public:
         return true;
     }
 
-    FORCEINLINE static bool CheckArguement(const v8::FunctionCallbackInfo<v8::Value>& Info, const std::vector<ArgType> &TypesExpect)
+    FORCEINLINE static FString TryCatchToString(v8::Isolate* Isolate, v8::TryCatch* TryCatch)
+    {
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::String::Utf8Value Exception(Isolate, TryCatch->Exception());
+        FString ExceptionStr(*Exception);
+        v8::Local<v8::Message> Message = TryCatch->Message();
+        if (Message.IsEmpty())
+        {
+            // 如果没有提供更详细的信息，直接输出Exception
+            return ExceptionStr;
+        }
+        else
+        {
+            v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
+
+            // 输出 (filename):(line number): (message).
+            v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
+            int LineNum = Message->GetLineNumber(Context).FromJust();
+            FString FileNameStr(*FileName);
+            FString LineNumStr = FString::FromInt(LineNum);
+            FString FileInfoStr;
+            FileInfoStr.Append(FileNameStr).Append(":").Append(LineNumStr).Append(": ").Append(ExceptionStr);
+
+            FString FinalReport;
+            FinalReport.Append(FileInfoStr).Append("\n");
+
+            // 输出调用栈信息
+            v8::Local<v8::Value> StackTrace;
+            if (TryCatch->StackTrace(Context).ToLocal(&StackTrace))
+            {
+                v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
+                FString StackTraceStr(*StackTraceVal);
+                FinalReport.Append("\n").Append(StackTraceStr);
+            }
+            return FinalReport;
+        }
+    }
+
+    FORCEINLINE static bool CheckArgument(const v8::FunctionCallbackInfo<v8::Value>& Info, const std::vector<ArgType> &TypesExpect)
     {
         if (Info.Length() < TypesExpect.size())
         {
@@ -254,7 +281,7 @@ if (!FV8Utils::CheckArgumentLength(Info, Length)) \
 
 #define CHECK_V8_ARGS(...) \
 static std::vector<ArgType> ArgExpect = { __VA_ARGS__ }; \
-if (!FV8Utils::CheckArguement(Info, ArgExpect)) \
+if (!FV8Utils::CheckArgument(Info, ArgExpect)) \
 { \
     return; \
 }

@@ -7,28 +7,36 @@
 
 #pragma once
 
+#if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#else
+#include "JSClassRegister.h"
+#endif
 
 #pragma warning(push, 0) 
 #include "v8.h"
 #pragma warning(pop)
 
+#if !defined(MAPPER_ISOLATE_DATA_POS)
+#define MAPPER_ISOLATE_DATA_POS 0
+#endif
+
 namespace puerts
 {
 
+#if USING_IN_UNREAL_ENGINE
 FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR *Name)
 {
     static UPackage *CoreUObjectPkg = FindObjectChecked<UPackage>(nullptr, TEXT("/Script/CoreUObject"));
     return FindObjectChecked<UScriptStruct>(CoreUObjectPkg, Name);
 }
 
-template< class T >
+template< class T, typename Enable = void>
 struct TScriptStructTraits
 {
-    static UScriptStruct* Get() { return T::StaticStruct(); }
 };
 
-template<> struct  TScriptStructTraits<FVector>
+template<> struct TScriptStructTraits<FVector>
 {
     static UScriptStruct* Get() { return TBaseStructure<FVector>::Get(); }
 };
@@ -93,6 +101,22 @@ template<> struct TScriptStructTraits<FPlane>
     static UScriptStruct* Get() { return GetScriptStructInCoreUObject(TEXT("Plane")); }
 };
 
+template< class... >
+using ToVoid = void;
+
+template <typename T, typename = void>
+struct HasStaticStructHelper : std::false_type {};
+
+template <typename T>
+struct HasStaticStructHelper<T, ToVoid<decltype(&T::StaticStruct)>> : std::true_type {};
+
+template<typename T>
+struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::value>::type>
+{
+    static UScriptStruct* Get() { return T::StaticStruct(); }
+};
+#endif
+
 class JSENV_API DataTransfer
 {
 public:
@@ -110,11 +134,11 @@ public:
     }
 
     template<typename T>
-    FORCEINLINE static T * GetPoninterFast(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static T * GetPointerFast(v8::Local<v8::Object> Object, int Index = 0)
     {
         if (Object->InternalFieldCount() > (Index * 2 + 1))
         {
-            return reinterpret_cast<T*>(MakeAddressWithHighPartOfTwo(Object->GetAlignedPointerFromInternalField(Index * 2), Object->GetAlignedPointerFromInternalField(Index * 2 + 1)));
+            return static_cast<T*>(MakeAddressWithHighPartOfTwo(Object->GetAlignedPointerFromInternalField(Index * 2), Object->GetAlignedPointerFromInternalField(Index * 2 + 1)));
         }
         else
         {
@@ -122,7 +146,40 @@ public:
         }
     }
 
+    //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
+    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, void *Ptr, int Index)
+    {
+        //Object->SetInternalField(Index, v8::External::New(Isolate, Ptr));
+        //Object->SetAlignedPointerInInternalField(Index, Ptr);
+        UPTRINT High;
+        UPTRINT Low;
+        SplitAddressToHighPartOfTwo(Ptr, High, Low);
+        Object->SetAlignedPointerInInternalField(Index * 2, reinterpret_cast<void*>(High));
+        Object->SetAlignedPointerInInternalField(Index * 2 + 1, reinterpret_cast<void*>(Low));
+    }
+
+    template<typename T>
+    FORCEINLINE static T* IsolateData(v8::Isolate* Isolate)
+    {
+        return static_cast<T*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
+    }
+
     static v8::Local<v8::Value> FindOrAddCData(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void *Ptr, bool PassByPointer);
+
+    static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
+
+    static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
+
+    static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
+
+#if USING_IN_UNREAL_ENGINE
+    template<typename T>
+    static v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, T *UEObject)
+    {
+        return FindOrAddObject(Isolate, Context, UEObject == nullptr ? T::StaticClass() : UEObject->GetClass(), UEObject);
+    }
+    
+    static v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject);
 
     template<typename T>
     static v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void *Ptr, bool PassByPointer)
@@ -139,15 +196,10 @@ public:
     }
 
     static bool IsInstanceOf(v8::Isolate* Isolate, UStruct *Struct, v8::Local<v8::Object> JsObject);
-
-    static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
-
+    
     static FString ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value);
 
-    static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
-
-    static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
-
     static void ThrowException(v8::Isolate* Isolate, const char * Message);
+#endif
 };
 }

@@ -37,7 +37,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<FScriptDelegate>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<FScriptDelegate>(Info.Holder(), 0);
 
         Info.GetReturnValue().Set(DelegatePtr->IsBound());
     }
@@ -52,13 +52,22 @@ namespace puerts
 
         if (Info.Length() == 1 && Info[0]->IsFunction())
         {
-            auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddToDelegate(Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
+            return;
         }
-        else
+        if (Info.Length() == 2 && Info[0]->IsObject() && Info[1]->IsString() )
         {
-            FV8Utils::ThrowException(Isolate, "invalid arguments");
+            if (auto Object = FV8Utils::GetUObject(Info[0].As<v8::Object>()))
+            {
+                auto DelegatePtr = FV8Utils::GetPointerFast<FScriptDelegate>(Info.Holder(), 0);
+                FScriptDelegate Delegate;
+                Delegate.BindUFunction(Object, FName(*FV8Utils::ToFString(Isolate, Info[1])));
+                *DelegatePtr = Delegate;
+                return;
+            }
         }
+        FV8Utils::ThrowException(Isolate, "invalid arguments");
     }
 
     void FDelegateWrapper::Unbind(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -69,7 +78,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ClearDelegate(Isolate, Context, DelegatePtr);
     }
 
@@ -81,7 +90,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
     }
 
@@ -113,13 +122,35 @@ namespace puerts
 
         if (Info.Length() == 1 && Info[0]->IsFunction())
         {
-            auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddToDelegate(Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
+            return;
         }
-        else
+        if (Info.Length() == 2 && Info[0]->IsObject() && Info[1]->IsString() )
         {
-            FV8Utils::ThrowException(Isolate, "invalid arguments");
+            if (auto Object = FV8Utils::GetUObject(Info[0].As<v8::Object>()))
+            {
+                auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
+                if (auto Property = CastFieldMacro<MulticastDelegatePropertyMacro>(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindDelegateProperty(DelegatePtr)))
+                {
+                    FScriptDelegate Delegate;
+                    Delegate.BindUFunction(Object, FName(*FV8Utils::ToFString(Isolate, Info[1])));
+                    
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+                    if (Property->IsA<MulticastSparseDelegatePropertyMacro>())
+                    {
+                        Property->AddDelegate(MoveTemp(Delegate), Object, DelegatePtr);
+                    }
+                    else
+#endif
+                    {
+                        static_cast<FMulticastScriptDelegate*>(DelegatePtr)->AddUnique(Delegate);
+                    }
+                    return;
+                }
+            }
         }
+        FV8Utils::ThrowException(Isolate, "invalid arguments");
     }
 
     void FMulticastDelegateWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -132,7 +163,7 @@ namespace puerts
 
         if (Info.Length() == 1 && Info[0]->IsFunction())
         {
-            auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+            auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
             FV8Utils::IsolateData<IObjectMapper>(Isolate)->RemoveFromDelegate(Isolate, Context, DelegatePtr, v8::Local<v8::Function>::Cast(Info[0]));
         }
         else
@@ -149,7 +180,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ClearDelegate(Isolate, Context, DelegatePtr);
     }
 
@@ -161,7 +192,7 @@ namespace puerts
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
         v8::Context::Scope ContextScope(Context);
 
-        auto DelegatePtr = FV8Utils::GetPoninterFast<void>(Info.Holder(), 0);
+        auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
         FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
     }
 }

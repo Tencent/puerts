@@ -96,7 +96,7 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_DWColor] Attempt to access a NULL self pointer");
@@ -114,7 +114,7 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_DWColor] Attempt to access a NULL self pointer");
@@ -144,8 +144,8 @@ static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_op_Equality] Attempt to access a NULL self pointer");
@@ -175,8 +175,8 @@ static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
             )
         {
             
-            const FColor* Arg0 = puerts::DataTransfer::GetPoninterFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_op_Inequality] Attempt to access a NULL self pointer");
@@ -202,7 +202,7 @@ static void FColorM_FromRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_FromRGBE] Attempt to access a NULL self pointer");
@@ -331,7 +331,7 @@ static void FColorM_WithAlpha(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             uint8 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_WithAlpha] Attempt to access a NULL self pointer");
@@ -360,7 +360,7 @@ static void FColorM_ReinterpretAsLinear(const v8::FunctionCallbackInfo<v8::Value
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ReinterpretAsLinear] Attempt to access a NULL self pointer");
@@ -389,7 +389,7 @@ static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToHex] Attempt to access a NULL self pointer");
@@ -415,7 +415,7 @@ static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToString] Attempt to access a NULL self pointer");
@@ -443,7 +443,7 @@ static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& In
         {
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_InitFromString] Attempt to access a NULL self pointer");
@@ -469,7 +469,7 @@ static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedARGB] Attempt to access a NULL self pointer");
@@ -495,7 +495,7 @@ static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedABGR] Attempt to access a NULL self pointer");
@@ -521,7 +521,7 @@ static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedRGBA] Attempt to access a NULL self pointer");
@@ -547,7 +547,7 @@ static void FColorM_ToPackedBGRA(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FColor>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedBGRA] Attempt to access a NULL self pointer");
@@ -599,14 +599,14 @@ struct AutoRegisterForFColor
             {0, 0}
         };
 
-        Def.UStructName = "FColor";
+        Def.UETypeName = "FColor";
 
         Def.Initialize = _FColorNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };

@@ -19,10 +19,10 @@ public:
     GENERATED_USTRUCT_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
      
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     UObject* PinSubCategoryObject;
 };
 
@@ -33,16 +33,16 @@ public:
     GENERATED_USTRUCT_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
      
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     UObject* PinSubCategoryObject;
     
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     int PinContainerType;
         
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     bool bIsReference;
 };
 
@@ -57,23 +57,23 @@ class PUERTSEDITOR_API UPEBlueprintAsset : public UObject
 	
 public:
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     UClass* GeneratedClass;
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     UBlueprint* Blueprint;
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     UPackage* Package;
 
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
     bool NeedSave;
 
     UPROPERTY()
     bool HasConstructor;
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass);
+    bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
@@ -82,7 +82,7 @@ public:
     void ClearParameter();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
-    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InFlags);
+    void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedFunction();

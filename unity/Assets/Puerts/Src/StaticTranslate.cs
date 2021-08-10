@@ -42,16 +42,6 @@ namespace Puerts
             Set = pushFunc;
             Get = getFunc;
         }
-
-        public static T GetNonRefTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
-        {
-            object obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetNativeObjectTranslatorFunc(isolate, getValueApi, value, isByRef);
-            if (obj != null)
-            {
-                return (T)obj;
-            }
-            return default(T);
-        }
     }
 
     public static class PrimitiveTypeTranslate

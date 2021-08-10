@@ -37,14 +37,10 @@ call gn gen out.gn\x64.release -args="target_os=""win"" target_cpu=""x64"" v8_us
 call ninja -C out.gn\x64.release -t clean
 call ninja -C out.gn\x64.release v8
 
-node %~dp0\genBlobHeader.js "window x64" out.gn\x64.release\snapshot_blob.bin
-
-md output\v8\Lib\Win64MD
-copy /Y out.gn\x64.release\v8.dll.lib output\v8\Lib\Win64MD\
-copy /Y out.gn\x64.release\v8_libplatform.dll.lib output\v8\Lib\Win64MD\
-copy /Y out.gn\x64.release\v8.dll output\v8\Lib\Win64MD\
-copy /Y out.gn\x64.release\v8_libbase.dll output\v8\Lib\Win64MD\
-copy /Y out.gn\x64.release\v8_libplatform.dll output\v8\Lib\Win64MD\
-copy /Y out.gn\x64.release\zlib.dll output\v8\Lib\Win64MD\
-md output\v8\Inc\Blob\Win64MD
-copy SnapshotBlob.h output\v8\Inc\Blob\Win64MD\
+md output\v8\Lib\Win64DLL
+copy /Y out.gn\x64.release\v8.dll.lib output\v8\Lib\Win64DLL\
+copy /Y out.gn\x64.release\v8_libplatform.dll.lib output\v8\Lib\Win64DLL\
+copy /Y out.gn\x64.release\v8.dll output\v8\Lib\Win64DLL\
+copy /Y out.gn\x64.release\v8_libbase.dll output\v8\Lib\Win64DLL\
+copy /Y out.gn\x64.release\v8_libplatform.dll output\v8\Lib\Win64DLL\
+copy /Y out.gn\x64.release\zlib.dll output\v8\Lib\Win64DLL\

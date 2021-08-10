@@ -64,8 +64,8 @@ static void* _FBox2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector2D* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg1 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
             FBox2D* Obj = new FBox2D(*Arg0, *Arg1);
             
             
@@ -83,7 +83,7 @@ static void* _FBox2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             Info[1]->IsNumber())
         {
             
-            const FVector2D * Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D * Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
             const int32 Arg1 = Info[1]->ToInteger(Context).ToLocalChecked()->Value();
             FBox2D* Obj = new FBox2D(Arg0, Arg1);
             
@@ -110,8 +110,8 @@ static void FBox2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FBox2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FBox2D* Arg0 = puerts::DataTransfer::GetPointerFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_op_Equality] Attempt to access a NULL self pointer");
@@ -141,8 +141,8 @@ static void FBox2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
             )
         {
             
-            const FBox2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FBox2D* Arg0 = puerts::DataTransfer::GetPointerFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_op_Inequality] Attempt to access a NULL self pointer");
@@ -172,8 +172,8 @@ static void FBox2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_op_Addition] Attempt to access a NULL self pointer");
@@ -198,8 +198,8 @@ static void FBox2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FBox2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FBox2D* Arg0 = puerts::DataTransfer::GetPointerFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_op_Addition] Attempt to access a NULL self pointer");
@@ -230,7 +230,7 @@ static void FBox2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_set_Item] Attempt to access a NULL self pointer");
@@ -258,8 +258,8 @@ static void FBox2DM_ComputeSquaredDistanceToPoint(const v8::FunctionCallbackInfo
             )
         {
             
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_ComputeSquaredDistanceToPoint] Attempt to access a NULL self pointer");
@@ -287,7 +287,7 @@ static void FBox2DM_ExpandBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             const float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_ExpandBy] Attempt to access a NULL self pointer");
@@ -316,7 +316,7 @@ static void FBox2DM_GetArea(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_GetArea] Attempt to access a NULL self pointer");
@@ -342,7 +342,7 @@ static void FBox2DM_GetCenter(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_GetCenter] Attempt to access a NULL self pointer");
@@ -379,9 +379,9 @@ static void FBox2DM_GetCenterAndExtents(const v8::FunctionCallbackInfo<v8::Value
             )
         {
             
-            FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
-            FVector2D* Arg1 = puerts::DataTransfer::GetPoninterFast<FVector2D>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
+            FVector2D* Arg1 = puerts::DataTransfer::GetPointerFast<FVector2D>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_GetCenterAndExtents] Attempt to access a NULL self pointer");
@@ -409,8 +409,8 @@ static void FBox2DM_GetClosestPointTo(const v8::FunctionCallbackInfo<v8::Value>&
             )
         {
             
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_GetClosestPointTo] Attempt to access a NULL self pointer");
@@ -439,7 +439,7 @@ static void FBox2DM_GetExtent(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_GetExtent] Attempt to access a NULL self pointer");
@@ -468,7 +468,7 @@ static void FBox2DM_GetSize(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_GetSize] Attempt to access a NULL self pointer");
@@ -497,7 +497,7 @@ static void FBox2DM_Init(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_Init] Attempt to access a NULL self pointer");
@@ -525,8 +525,8 @@ static void FBox2DM_Intersect(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FBox2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FBox2D* Arg0 = puerts::DataTransfer::GetPointerFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_Intersect] Attempt to access a NULL self pointer");
@@ -556,8 +556,8 @@ static void FBox2DM_IsInside(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_IsInside] Attempt to access a NULL self pointer");
@@ -579,8 +579,8 @@ static void FBox2DM_IsInside(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FBox2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FBox2D* Arg0 = puerts::DataTransfer::GetPointerFast<FBox2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_IsInside] Attempt to access a NULL self pointer");
@@ -610,8 +610,8 @@ static void FBox2DM_ShiftBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
             )
         {
             
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPoninterFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_ShiftBy] Attempt to access a NULL self pointer");
@@ -640,7 +640,7 @@ static void FBox2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::M_ToString] Attempt to access a NULL self pointer");
@@ -662,7 +662,7 @@ static void _FBox2DMinGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
 
     auto V8Result =
     puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, &(Self->Min), true);
@@ -675,9 +675,9 @@ static void _FBox2DMinSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Va
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
 
-    Self->Min =*puerts::DataTransfer::GetPoninterFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
+    Self->Min =*puerts::DataTransfer::GetPointerFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
 }
 static void _FBox2DMaxGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
@@ -685,7 +685,7 @@ static void _FBox2DMaxGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
 
     auto V8Result =
     puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, &(Self->Max), true);
@@ -698,9 +698,9 @@ static void _FBox2DMaxSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Va
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
 
-    Self->Max =*puerts::DataTransfer::GetPoninterFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
+    Self->Max =*puerts::DataTransfer::GetPointerFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
 }
 static void _FBox2DbIsValidGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
 {
@@ -708,7 +708,7 @@ static void _FBox2DbIsValidGet_(v8::Local<v8::Name> Property, const v8::Property
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
 
     auto V8Result =v8::Boolean::New(Isolate, Self->bIsValid);
     Info.GetReturnValue().Set(V8Result);
@@ -719,7 +719,7 @@ static void _FBox2DbIsValidSet_(v8::Local<v8::Name> Property, v8::Local<v8::Valu
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
 
     Self->bIsValid =Value->ToBoolean(Isolate)->Value();
 }
@@ -762,14 +762,14 @@ struct AutoRegisterForFBox2D
             {0, 0}
         };
 
-        Def.UStructName = "FBox2D";
+        Def.UETypeName = "FBox2D";
 
         Def.Initialize = _FBox2DNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };

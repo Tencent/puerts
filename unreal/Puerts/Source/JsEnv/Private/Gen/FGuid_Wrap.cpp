@@ -67,7 +67,7 @@ static void FGuidM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_set_Item] Attempt to access a NULL self pointer");
@@ -93,7 +93,7 @@ static void FGuidM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_get_Item] Attempt to access a NULL self pointer");
@@ -119,7 +119,7 @@ static void FGuidM_Invalidate(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_Invalidate] Attempt to access a NULL self pointer");
@@ -143,7 +143,7 @@ static void FGuidM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_IsValid] Attempt to access a NULL self pointer");
@@ -169,7 +169,7 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (true)
         {
             
-            auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_ToString] Attempt to access a NULL self pointer");
@@ -189,7 +189,7 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             EGuidFormats Arg0 = EGuidFormats(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
-            auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.Holder());
+            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
                 puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_ToString] Attempt to access a NULL self pointer");
@@ -244,7 +244,7 @@ static void FGuidS_Parse(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            FGuid* Arg1 = puerts::DataTransfer::GetPoninterFast<FGuid>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
+            FGuid* Arg1 = puerts::DataTransfer::GetPointerFast<FGuid>(puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
             auto MethodResult = FGuid::Parse(Arg0, *Arg1);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -273,7 +273,7 @@ static void FGuidS_ParseExact(const v8::FunctionCallbackInfo<v8::Value>& Info)
             
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
             EGuidFormats Arg1 = EGuidFormats(Info[1]->ToInt32(Context).ToLocalChecked()->Value());
-            FGuid* Arg2 = puerts::DataTransfer::GetPoninterFast<FGuid>(puerts::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked());
+            FGuid* Arg2 = puerts::DataTransfer::GetPointerFast<FGuid>(puerts::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked());
             auto MethodResult = FGuid::ParseExact(Arg0, Arg1, *Arg2);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -290,7 +290,7 @@ static void _FGuidAGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->A);
     Info.GetReturnValue().Set(V8Result);
@@ -301,7 +301,7 @@ static void _FGuidASet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     Self->A =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -311,7 +311,7 @@ static void _FGuidBGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->B);
     Info.GetReturnValue().Set(V8Result);
@@ -322,7 +322,7 @@ static void _FGuidBSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     Self->B =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -332,7 +332,7 @@ static void _FGuidCGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->C);
     Info.GetReturnValue().Set(V8Result);
@@ -343,7 +343,7 @@ static void _FGuidCSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     Self->C =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -353,7 +353,7 @@ static void _FGuidDGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     auto V8Result =v8::Integer::New(Isolate, Self->D);
     Info.GetReturnValue().Set(V8Result);
@@ -364,7 +364,7 @@ static void _FGuidDSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPoninterFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
 
     Self->D =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
@@ -399,14 +399,14 @@ struct AutoRegisterForFGuid
             {0, 0}
         };
 
-        Def.UStructName = "FGuid";
+        Def.UETypeName = "FGuid";
 
         Def.Initialize = _FGuidNew_;
-        Def.Propertys = Properties;
+        Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterClass(Def);
+        puerts::RegisterJSClass(Def);
         
     }
 };
