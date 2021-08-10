@@ -3535,7 +3535,7 @@ function watch(configFilePath:string) {
                             return markInvalidSince(`${value.Specifier} should be a meta key`);
                         }
 
-                        PropertyFlags + PropertyFlags | BigInt(UE.PropertyFlags.CPF_SkipSerialization);
+                        PropertyFlags = PropertyFlags | BigInt(UE.PropertyFlags.CPF_SkipSerialization);
                         break;
                     default:
                         markInvalidSince(`${value.Specifier} is not a valid specifier`);
