@@ -30,6 +30,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
+#include "utility"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
@@ -56,246 +57,7 @@ const TCHAR* UPEClassMetaData::NAME_AutoCollapseCategories{TEXT("AutoCollapseCat
 const TCHAR* UPEClassMetaData::NAME_ClassGroupNames{TEXT("ClassGroupNames")};
 const TCHAR* UPEClassMetaData::NAME_SparseClassDataTypes{TEXT("SparseClassDataTypes")};
 
-bool FPEMetaDataUtils::ValidateFormat(FFieldVariant InField, FName InKey, const FString& InValue, FString& OutMessage)
-{	//	currently hard code to consist with code in HeaderParser.cpp, may be a well defined checker is better ?
-
-	//	name pre define
-	static const FName NAME_BlueprintProtected = TEXT("BlueprintProtected");
-	static const FName NAME_ClampMax = TEXT("ClampMax");
-	static const FName NAME_ClampMin = TEXT("ClampMin");
-	static const FName NAME_CommutativeAssociativeBinaryOperator = TEXT("CommutativeAssociativeBinaryOperator");
-	static const FName NAME_DevelopmentStatus = TEXT("DevelopmentStatus");
-	static const FName NAME_DocumentationPolicy = TEXT("DocumentationPolicy");
-	static const FName NAME_ExpandBoolAsExecs = TEXT("ExpandBoolAsExecs");
-	static const FName NAME_ExpandEnumAsExecs = TEXT("ExpandEnumAsExecs");
-	static const FName NAME_UIMax = TEXT("UIMax");
-	static const FName NAME_UIMin = TEXT("UIMin");
-	static const FName NAME_Units = TEXT("Units");
-
-	//	a helper function used to check a function is well defined blueprint protected
-	static const auto ValidateFunctionBlueprintProtected = [](UFunction* InFunction)
-	{
-		if (!IsValid(InFunction))
-		{
-			return false;
-		}
-
-		if (InFunction->HasAnyFunctionFlags(FUNC_Static))
-		{
-			// Determine if it's a function library
-			UClass* Class = InFunction->GetOuterUClass();
-			while (Class != nullptr && Class->GetSuperClass() != UObject::StaticClass())
-			{
-				Class = Class->GetSuperClass();
-			}
-
-			if (Class != nullptr && Class->GetName() == TEXT("BlueprintFunctionLibrary"))
-			{
-				return false;
-			}
-		}
-		return true;
-	};
-
-	//	a helper function used to check a function is well defined binary operator
-	static const auto ValidateFunctionCommutativeAssociativeBinaryOperator = [](UFunction* InFunction)
-	{
-		if (!IsValid(InFunction))
-		{
-			return false;
-		}
-
-		bool bGoodParams = (InFunction->NumParms == 3);
-		if (bGoodParams)
-		{
-			PropertyMacro* FirstParam = nullptr;
-			PropertyMacro* SecondParam = nullptr;
-			PropertyMacro* ReturnValue = nullptr;
-
-			TFieldIterator<PropertyMacro> It(InFunction);
-
-			auto GetNextParam = [&]()
-			{
-				if (It)
-				{
-					if (It->HasAnyPropertyFlags(CPF_ReturnParm))
-					{
-						ReturnValue = *It;
-					}
-					else
-					{
-						if (FirstParam == nullptr)
-						{
-							FirstParam = *It;
-						}
-						else if (SecondParam == nullptr)
-						{
-							SecondParam = *It;
-						}
-					}
-					++It;
-				}
-			};
-
-			GetNextParam();
-			GetNextParam();
-			GetNextParam();
-			ensure(!It);
-
-			if (ReturnValue == nullptr || SecondParam == nullptr || !SecondParam->SameType(FirstParam))
-			{
-				bGoodParams = false;
-			}
-		}
-
-		return bGoodParams;
-	};
-
-	//	a helper function sued to check a function is well defined as execs
-	static const auto ValidateFunctionExpandAsExecs = [](UFunction* InFunction, const FString& InValue)
-	{
-		if (!IsValid(InFunction))
-		{
-			return false;
-		}
-
-		// multiple entry parsing in the same format as eg SetParam.
-		TArray<FString> RawGroupings;
-		InValue.ParseIntoArray(RawGroupings, TEXT(","), false);
-
-		PropertyMacro* FirstInput = nullptr;
-		for (const FString& RawGroup : RawGroupings)
-		{
-			TArray<FString> IndividualEntries;
-			RawGroup.ParseIntoArray(IndividualEntries, TEXT("|"));
-
-			for (const FString& Entry : IndividualEntries)
-			{
-				if (Entry.IsEmpty())
-				{
-					continue;
-				}
-				auto FoundField = FindUFieldOrFProperty(InFunction, *Entry);
-				if (!FoundField)
-				{
-					return false;
-				}
-
-				if (PropertyMacro* Prop = FoundField.Get<PropertyMacro>())
-				{
-					if (!Prop->HasAnyPropertyFlags(CPF_ReturnParm) &&
-
-						(!Prop->HasAnyPropertyFlags(CPF_OutParm) ||
-						Prop->HasAnyPropertyFlags(CPF_ReferenceParm)))
-					{
-						if (!FirstInput)
-						{
-							FirstInput = Prop;
-						}
-						else
-						{
-							return false;
-						}
-					}
-				}
-			}
-		}
-		return true;
-	};
-
-
-	//	function body
-
-	//	check numeric keys
-	if (InKey == NAME_UIMin || InKey == NAME_UIMax || InKey == NAME_ClampMin || InKey == NAME_ClampMax)
-	{
-		if (!InValue.IsNumeric())
-		{
-			OutMessage = FString::Printf(TEXT("Metadata value for '%s' is non-numeric : '%s'"), *InKey.ToString(), *InValue);
-			return false;
-		}
-		return true;
-	}
-
-	//	check blueprint protected function
-	if (InKey == NAME_BlueprintProtected)
-	{
-		if (!ValidateFunctionBlueprintProtected(InField.Get<UFunction>()))
-		{
-			OutMessage = FString::Printf(TEXT("%s doesn't make sense on static method '%s' in a blueprint function library"), *InKey.ToString(), *InField.GetFullName());
-			return false;
-		}
-		return true;
-	}
-
-	//	check binary operator function
-	if (InKey == NAME_CommutativeAssociativeBinaryOperator)
-	{
-		if (!ValidateFunctionCommutativeAssociativeBinaryOperator(InField.Get<UFunction>()))
-		{
-			OutMessage = TEXT("Commutative asssociative binary operators must have exactly 2 parameters of the same type and a return value.");
-			return false;
-		}
-
-		return true;
-	}
-
-	//	check expand as execs
-	if (InKey == NAME_ExpandBoolAsExecs || InKey == NAME_ExpandEnumAsExecs)
-	{
-		if (!ValidateFunctionExpandAsExecs(InField.Get<UFunction>(), InValue))
-		{
-			OutMessage = TEXT("invalid meta data for expand as execs");
-			return false;
-		}
-		return true;
-	}
-
-	//	check development status
-	if (InKey == NAME_DevelopmentStatus)
-	{
-		const FString EarlyAccessValue(TEXT("EarlyAccess"));
-		const FString ExperimentalValue(TEXT("Experimental"));
-		if ((InValue != EarlyAccessValue) && (InValue != ExperimentalValue))
-		{
-			OutMessage = FString::Printf(TEXT("'%s' metadata was '%s' but it must be %s or %s"), *InKey.ToString(), *InValue, *ExperimentalValue, *EarlyAccessValue);
-			return false;
-		}
-		return true;
-	}
-
-	//	check units
-	if (InKey == NAME_Units)
-	{
-		// Check for numeric property
-		auto* MaybeProperty = InField.Get<NumericPropertyMacro>();
-		if (MaybeProperty == nullptr && !MaybeProperty->IsA<StructPropertyMacro>())
-		{
-			OutMessage = TEXT("'Units' meta data can only be applied to numeric and struct properties");
-			return false;
-		}
-
-		if (!FUnitConversion::UnitFromString(*InValue))
-		{
-			OutMessage = FString::Printf(TEXT("Unrecognized units (%s) specified for property '%s'"), *InValue, *InField.GetFullName());
-			return false;
-		}
-		return true;
-	}
-
-	//	check documentation policy
-	if (InKey == NAME_DocumentationPolicy)
-	{
-		const TCHAR* StrictValue = TEXT("Strict");
-		if (InValue != StrictValue)
-		{
-			OutMessage = FString::Printf(TEXT("'%s' metadata was '%s' but it must be %s"), *InKey.ToString(), *InValue, StrictValue);
-			return false;
-		}
-		return true;
-	}
-	return true;
-}
+FPEMetaDataUtils::TFormatValidator<class FFieldVariant> FPEMetaDataUtils::ValidateFormat;
 
 void FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMetaData)
 {
@@ -590,11 +352,12 @@ TArray<FString> UPEClassMetaData::GetClassMetaDataValues(UClass* InClass, const 
 		return Result;
 	}
 
-	if (const auto MetaDataPtr = InClass->FindMetaData(InMetaDataKey))
+	if (!InClass->HasMetaData(InMetaDataKey))
 	{
-		MetaDataPtr->ParseIntoArray(Result, InDelimiter, bInCullEmpty);
+		return Result;
 	}
 
+	InClass->GetMetaData(InMetaDataKey).ParseIntoArray(Result, InDelimiter, bInCullEmpty);
 	return Result;
 }
 
@@ -744,6 +507,11 @@ void UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
 	}
 }
 
+void UPEFunctionMetaData::ApplyCustomEventMetaData(const TMap<FName, FString>&, ...)
+{
+	UE_LOG(LogTemp, Log, TEXT("the user defined meta data is not supported in current engine"));
+}
+
 void UPEFunctionMetaData::Apply(UK2Node_CustomEvent* InCustomEvent) const
 {
 	if (!IsValid(InCustomEvent))
@@ -753,18 +521,8 @@ void UPEFunctionMetaData::Apply(UK2Node_CustomEvent* InCustomEvent) const
 
 	//	the function flags
 	InCustomEvent->FunctionFlags |= FunctionFlags;
-
-	//	meta data, seem most of the meta data could not set for the blueprint function,
-	auto& MetaDataToSet = InCustomEvent->GetUserDefinedMetaData();
-	if (MetaData.Contains(TEXT("CallInEditor")))
-	{
-		MetaDataToSet.bCallInEditor = true;
-	}
-
-	if (MetaData.Contains(TEXT("Keywords")))
-	{
-		MetaDataToSet.Keywords = FText::FromString(MetaData[TEXT("Keywords")]);
-	}
+	//	add meta data
+	ApplyCustomEventMetaData(MetaData, InCustomEvent);
 }
 
 
