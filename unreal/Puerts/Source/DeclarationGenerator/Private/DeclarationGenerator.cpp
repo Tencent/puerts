@@ -174,9 +174,9 @@ bool IsChildOf(UClass *Class, const FString& Name)
 void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 {
     TArray<UClass*> SortedClasses(GetSortedClasses());
-    for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
+    for (int i = 0; i < SortedClasses.Num(); ++i)
     {
-        UClass* Class = *It;
+        UClass* Class = SortedClasses[i];
         bool IsExtensionMethod = IsChildOf(Class, "ExtensionMethods");
         if (IsExtensionMethod)
         {
@@ -220,9 +220,9 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
     Output << "    import * as cpp from \"cpp\"\n\n";
     
     TArray<UClass*> SortedClasses(GetSortedClasses());
-    for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
+    for (int i = 0; i < SortedClasses.Num(); ++i)
     {
-        UClass* Class = *It;
+        UClass* Class = SortedClasses[i];
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
         if (Class->GetName().StartsWith("SKEL_")        ||
             Class->GetName().StartsWith("REINST_")      ||
@@ -824,9 +824,9 @@ private:
         GenTypeScriptDeclaration();
 
         TArray<UClass*> SortedClasses(GetSortedClasses());
-        for (TArray<UClass*>::RangedForIteratorType It = SortedClasses.begin(); It != SortedClasses.end(); ++It)
+        for (int i = 0; i < SortedClasses.Num(); ++i)
         {
-            UClass* Class = *It;
+            UClass* Class = SortedClasses[i];
             if (Class->ImplementsInterface(UCodeGenerator::StaticClass()))
             {
                 ICodeGenerator::Execute_Gen(Class->GetDefaultObject());
