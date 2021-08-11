@@ -16,17 +16,6 @@
 #include "PEBlueprintAsset.generated.h"
 
 
-<<<<<<< HEAD
-=======
-/**
-* @brief since the void_t defined in converter.hpp will introduce v8
-*		define a temporary void_t here
-*/
-template<class ... >
-using Void_t = void;
->>>>>>> f3877a4 ([unreal] 修复低版本ue的编译错误)
-
-
 USTRUCT(BlueprintType)
 struct FPEGraphTerminalType
 {
