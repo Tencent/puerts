@@ -78,7 +78,7 @@ struct FPEMetaDataUtils
 		{
 			//	if the field variant is not exist, currently don't do further check
 			UE_LOG(LogTemp, VeryVerbose, TEXT("FFieldVarient is not implemented in current engine"));
-			return false;
+			return true;
 		}
 	};
 
@@ -97,7 +97,7 @@ struct FPEMetaDataUtils
 		 * @param OutMessage
 		 * @return
 		 */
-		bool operator()(FFieldVariant InField, FName InKey, const FString& InValue, FString& OutMessage) const
+		bool operator()(T InField, FName InKey, const FString& InValue, FString& OutMessage) const
 		{
 			//	name pre define
 			static const FName NAME_BlueprintProtected = TEXT("BlueprintProtected");
