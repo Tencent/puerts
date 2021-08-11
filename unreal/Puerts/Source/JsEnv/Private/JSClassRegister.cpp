@@ -35,7 +35,7 @@ public:
     AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 #endif
 private:
-    std::map<const void*, JSClassDefinition*> NameToClassDefinition;
+    std::map<std::string, JSClassDefinition*> NameToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
 #if USING_IN_UNREAL_ENGINE
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
