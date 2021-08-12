@@ -46,7 +46,7 @@ class MetaSpecifier {
      * @param metaData
      */
     ApplyInIdentity(metaData) {
-        if (this.Specifier == '' || (this.Values != null && this.Values.length != 1)) {
+        if (this.Specifier == '') {
             return null;
         }
         if (!MetaSpecifier.CommonMetaData.has(this.Specifier)) { // unknown specifier, need context to parse, don't do here
@@ -1614,25 +1614,33 @@ function watch(configFilePath) {
              * @param regExp
              * @returns
              */
-            function extractMetaSpecifierFromCallExpression(expression, prefix, regExp) {
-                const execRegExp = regExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)\.assign$`) : regExp;
-                const execResult = execRegExp.exec(expression.expression.getText().trim());
+            function extractMetaSpecifierFromBinaryExpression(expression, prefix, regExp) {
+                const execRegExp = regExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : regExp;
+                const execResult = execRegExp.exec(expression.left.getText().trim());
                 if (execResult == null) {
                     return null;
                 }
-                let bValidExpression = true;
                 let values = new Array();
-                expression.arguments.forEach((value) => {
-                    if (!bValidExpression) { // we don't need parse more 
-                        return;
+                if (ts.isStringLiteral(expression.right)) { // specifier = value
+                    values.push(expression.right.text);
+                }
+                else if (ts.isArrayLiteralExpression(expression.right)) { // specifier = [value1, value2, value3]
+                    let bValid = true;
+                    expression.right.elements.forEach((value) => {
+                        if (!bValid) {
+                            return;
+                        }
+                        if (!ts.isStringLiteral(value)) {
+                            bValid = false;
+                            return;
+                        }
+                        values.push(value.text);
+                    });
+                    if (!bValid) {
+                        return null;
                     }
-                    if (!ts.isStringLiteral(value)) { // the value of the meta data should always be string literal
-                        bValidExpression = false;
-                        return;
-                    }
-                    values.push(value.text);
-                });
-                if (!bValidExpression) {
+                }
+                else { // invalid format
                     return null;
                 }
                 return new MetaSpecifier(execResult[1], values);
@@ -1648,12 +1656,12 @@ function watch(configFilePath) {
              * @param keyValueRegExp
              */
             function collectMetaDataFromIdentifyDecorator(expressions, prefix, specifiers, metaData, keyRegExp, keyValueRegExp) {
-                const MetaKeyValueRegExp = keyValueRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)\.assign$`) : keyValueRegExp;
+                const MetaKeyValueRegExp = keyValueRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyValueRegExp;
                 const MetaKeyRegExp = keyRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyRegExp;
                 expressions.forEach((value) => {
                     let metaSpecifier;
-                    if (ts.isCallExpression(value)) { // should be the meta key value or , ${prefix}.identifier.assign(value);
-                        metaSpecifier = extractMetaSpecifierFromCallExpression(value, prefix, MetaKeyValueRegExp);
+                    if (ts.isBinaryExpression(value)) { // should be the meta key value or , ${prefix}.identifier = (value);
+                        metaSpecifier = extractMetaSpecifierFromBinaryExpression(value, prefix, MetaKeyValueRegExp);
                     }
                     else { // should be the meta key
                         metaSpecifier = extractMetaSpecifierFromExpression(value, prefix, MetaKeyRegExp);
@@ -1682,12 +1690,12 @@ function watch(configFilePath) {
              * @param keyValueRegExp
              */
             function collectMetaDataFromMetaDecorator(expressions, prefix, specifiers, metaData, keyRegExp, keyValueRegExp) {
-                const MetaKeyValueRegExp = keyValueRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)\.assign$`) : keyValueRegExp;
+                const MetaKeyValueRegExp = keyValueRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyValueRegExp;
                 const MetaKeyRegExp = keyRegExp == null ? new RegExp(`^${prefix}\.([A-Za-z]+)$`) : keyRegExp;
                 expressions.forEach((value) => {
                     let metaSpecifier;
-                    if (ts.isCallExpression(value)) { // should be the meta key value or , ${prefix}.identifier.assign(value);
-                        metaSpecifier = extractMetaSpecifierFromCallExpression(value, prefix, MetaKeyValueRegExp);
+                    if (ts.isBinaryExpression(value)) { // should be the meta key value or , ${prefix}.identifier.assign(value);
+                        metaSpecifier = extractMetaSpecifierFromBinaryExpression(value, prefix, MetaKeyValueRegExp);
                     }
                     else { // should be the meta key
                         metaSpecifier = extractMetaSpecifierFromExpression(value, prefix, MetaKeyRegExp);

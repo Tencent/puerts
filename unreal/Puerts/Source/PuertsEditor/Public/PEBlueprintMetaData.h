@@ -40,7 +40,7 @@ struct FPEMetaDataUtils
 		{
 			//	if the field variant is not exist, currently don't do further check
 			UE_LOG(LogTemp, VeryVerbose, TEXT("FFieldVarient is not implemented in current engine"));
-			return false;
+			return true;
 		}
 	};
 

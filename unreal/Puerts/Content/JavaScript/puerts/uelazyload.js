@@ -378,16 +378,9 @@ var global = global || (function () { return this; }());
         "condition" : dummyDecorator
     }
     
-    class MetaData
-    {   
-        assign() {}
-    };
-
-    const MetaDataInst = new MetaData();
+    const MetaDataInst = '';
     
     cache.uclass = {
-        //  type of class specifier
-        "ClassKey": MetaData,
         //  the class specifier
         "ClassGroup": MetaDataInst,
         "Within": MetaDataInst,
@@ -432,9 +425,6 @@ var global = global || (function () { return this; }());
         "CustomThunkTemplates": MetaDataInst,
         //  decorator to add class specifier
         "uclass": dummyDecorator,
-        //  type of meta data specifier
-        "MetaKey": MetaData,
-        "MetaKeyValue": MetaData,
         //  meta data of class
         "ToolTip": MetaDataInst,
         "ShortTooltip": MetaDataInst,
@@ -461,8 +451,6 @@ var global = global || (function () { return this; }());
     }
 
     cache.ufunction = {
-        //  type of function specifier
-        "FunctionKey": MetaData,
         //  the function specifier
         "BlueprintImplementableEvent": MetaDataInst,
         "BlueprintNativeEvent": MetaDataInst,
@@ -492,8 +480,6 @@ var global = global || (function () { return this; }());
         //  decorator to add function specifier
         "ufunction": dummyDecorator,
         //  type of meta data specifier
-        "MetaKey": MetaData,
-        //  meta data of function
         "ToolTip": MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
@@ -546,8 +532,6 @@ var global = global || (function () { return this; }());
     }
 
     cache.uproperty = {
-        //  property specifier 
-        "PropertyKey": MetaData,
         //  the specifiers
         "Const": MetaDataInst,
         "Config": MetaDataInst,
@@ -589,8 +573,6 @@ var global = global || (function () { return this; }());
         "HideSelfPin": MetaDataInst,
         //  decorator
         "uproperty": dummyDecorator,
-        //  type
-        "MetaKey": MetaData,
         //  specifier
         "ToolTip":  MetaDataInst,
         "ShortTooltip": MetaDataInst,
@@ -664,8 +646,6 @@ var global = global || (function () { return this; }());
 
     cache.uparam =
     {
-        //  property specifier 
-        "ParamKey": MetaData,
         //  the specifiers
         "Const": MetaDataInst,
         "Ref": MetaDataInst,
@@ -673,8 +653,6 @@ var global = global || (function () { return this; }());
         "DisplayName": MetaDataInst,
         //  decorator
         "uparam": dummyDecorator,
-        //  type
-        "MetaKey": MetaData,
         //  specifier
         "ToolTip":  MetaDataInst,
         "ShortTooltip": MetaDataInst,
