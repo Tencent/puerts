@@ -2,7 +2,9 @@
 
 ## 简述
 
-支持反射的UE API（所有蓝图以及C++中标记了UCLASS，USTRUCT，UPPROPERTY，UFUNCTION，UENUM的部分）不用额外操作即可直接用typescript调用，如果是普通的C++ class/struct，或者是UCLASS，USTRUCT中未标记UPPROPERTY，UFUNCTION成员，按照本指引手动声明后可以用typescript调用。
+本文档介绍的是是普通的C++ class/struct，或者是UCLASS，USTRUCT中未标记UPPROPERTY，UFUNCTION的属性、方法的调用。
+
+本文档也适用于非UE环境下（比如服务器，Unity等），C++ class/struct的访问。
 
 支持特性：
 
