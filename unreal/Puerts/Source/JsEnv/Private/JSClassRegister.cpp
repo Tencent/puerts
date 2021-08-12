@@ -35,7 +35,7 @@ public:
     AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 #endif
 private:
-    std::map<std::string, JSClassDefinition*> NameToClassDefinition;
+    std::map<const void*, JSClassDefinition*> NameToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
 #if USING_IN_UNREAL_ENGINE
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
@@ -145,7 +145,7 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const FString& Name)
     
 void JSClassRegister::ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)> Callback)
 {
-    for(auto & KV : NameToClassDefinition)
+    for(auto & KV : CDataNameToClassDefinition)
     {
         Callback(KV.second);
     }
