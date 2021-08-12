@@ -2,6 +2,7 @@
 
 #include "K2Node_FunctionEntry.h"
 #include "UObject/MetaData.h"
+#include "MetaData.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
 
