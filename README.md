@@ -93,9 +93,9 @@ console.log(actor.K2_GetActorLocation().ToString());
 ## 使用文档
 
 * [unreal手册](doc/unreal/manual.md)
-* [UE下脚本和引擎交互](doc/unreal/interact_with_uclass.md)
 * [unity手册](doc/unity/manual.md)
-* [基于模板的静态绑定](doc/unreal/template_binding.md)
+* [unreal下脚本和引擎交互](doc/unreal/interact_with_uclass.md)
+* [纯c++api的支持](doc/unreal/template_binding.md)
 
 ## 支持的引擎，平台
 
