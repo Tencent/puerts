@@ -438,6 +438,7 @@ declare module "ue" {
          *      Exposes this class as a type that can be used for variables in blueprints
          */
         let BlueprintType: ClassKey;
+
         
         /**
          * @brief
@@ -1508,7 +1509,7 @@ declare module "ue" {
 		 *      This property has an accessor to set the value. Implies BlueprintReadWrite. (usage: BlueprintSetter=FunctionName).
          */
         let BlueprintSetter: PropertyKey;
-
+        
         /**
          * @brief
 		 *      The AssetRegistrySearchable keyword indicates that this property and it's value will be automatically added
