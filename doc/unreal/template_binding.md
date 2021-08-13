@@ -22,11 +22,17 @@
 
 ## !！注意
 
-如果希望在JsEnv之外的地方使用该特性，比如游戏模块，需要使用动态库版本的v8库，切换方法：
+如果希望在JsEnv之外的地方使用该特性，比如游戏模块，需要：
 
-* 到puerts官网下载和puerts配套的v8库，解压于：“Plugins/Puerts/ThirdParty/”目录下
+* 使用动态库版本的v8库，切换方法：
 
-* 找到JsEnv.Build.cs文件，将UseNewV8变量改为true
+    - 到puerts官网下载和puerts配套的v8库，解压于：“Plugins/Puerts/ThirdParty/”目录下
+
+    - 找到JsEnv.Build.cs文件，将UseNewV8变量改为true
+
+* 在该模块的“.Build.cs”文件中加入对JsEnv模块的依赖
+
+* 该模块的“.Build.cs”文件中，将bEnableUndefinedIdentifierWarnings设置为false
 
 ## helloworld
 
