@@ -14,7 +14,7 @@ let world: UE.World;
 function deepEquals(x: any, y: any) {
     if ( x === y ) return true;
 
-    if ( ! ( x instanceof Object ) || ! ( y instanceof Object ) ) return false;
+    if (  typeof x !== 'object' || x === null  ||  typeof y !== 'object' || y === null  ) return false;
 
     for (var p in x) { // all x[p] in y
         if (p == 'children' || p == 'Slot') continue;
