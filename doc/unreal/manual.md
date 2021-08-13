@@ -256,4 +256,4 @@ puerts同时支持V8和quickjs两种虚拟机，而V8目前有两套版本
 
 希望使用8.4.371.19的v8的话，先到[这里](https://github.com/Tencent/puerts/actions/workflows/build_v8.yml)下载编译好的V8，解压到Plugins/Puerts/ThirdParty下，然后把[JsEnv.Build.cs](../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)的UseNewV8修改为true
 
-希望使用quickjs的话，先到[这里](https://github.com/Tencent/puerts/actions/workflows//build_quickjs.yml)下载编译好的V8，解压到Plugins/Puerts/ThirdParty下，然后把[JsEnv.Build.cs](../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)的UseQuickjs修改为true
+希望使用quickjs的话，先到[这里](https://github.com/Tencent/puerts/actions/workflows//build_quickjs.yml)下载编译好的quickjs，解压到Plugins/Puerts/ThirdParty下，然后把[JsEnv.Build.cs](../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)的UseQuickjs修改为true
