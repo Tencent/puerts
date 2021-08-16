@@ -16,7 +16,7 @@ FJsEnv::FJsEnv(const FString &ScriptRoot)
     GameScript = std::make_unique<FJsEnvImpl>(ScriptRoot);
 }
 
-FJsEnv::FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
     void* InExternalRuntime, void* InExternalContext)
 {
     GameScript = std::make_unique<FJsEnvImpl>(std::move(InModuleLoader), InLogger, InDebugPort, InExternalRuntime, InExternalContext);

@@ -50,7 +50,7 @@ class JSENV_API FJsEnv// : public TSharedFromThis<FJsEnv> // only a wrapper
 public:
     explicit FJsEnv(const FString &ScriptRoot = TEXT("JavaScript"));
 
-    FJsEnv(std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
+    FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
         void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments = TArray<TPair<FString, UObject*>>());
