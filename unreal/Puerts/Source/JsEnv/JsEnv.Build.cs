@@ -361,6 +361,16 @@ public class JsEnv : ModuleRules
                 "libnode.dll",
             }, V8LibraryPath, false);
         }
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.dylib"));
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux) 
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.so"));
+        }
     }
 
     void ThirdPartyQJS(ReadOnlyTargetRules Target)

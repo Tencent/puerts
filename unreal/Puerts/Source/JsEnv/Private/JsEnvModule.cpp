@@ -191,7 +191,8 @@ void FJsEnvModule::StartupModule()
 
 #if defined(WITH_NODEJS)
     int Argc = 1;
-    char* ArgvIn[] = {"puerts"};
+    char* ArgvIn[1];
+    ArgvIn[0] = const_cast<char*>("puerts");
     char ** Argv = uv_setup_args(Argc, ArgvIn);
     std::vector<std::string> Args(Argv, Argv + Argc);
     std::vector<std::string> ExecArgs;

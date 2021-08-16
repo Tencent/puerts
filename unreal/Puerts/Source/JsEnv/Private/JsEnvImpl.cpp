@@ -6,6 +6,7 @@
 */
 
 #include "JsEnvImpl.h"
+#include "JsEnvModule.h"
 #include "DynamicDelegateProxy.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -145,7 +146,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #endif
 #else
     int Argc = 1;
-    char* Argv[] = {"puerts"};
+    const char* Argv[] = {"puerts"};
     std::vector<std::string> Args(Argv, Argv + Argc);
     std::vector<std::string> ExecArgs;
     std::vector<std::string> Errors;
@@ -159,7 +160,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     }
 
     CreateParams.array_buffer_allocator = nullptr;
-    NodeArrayBufferAllocator = std::move(node::ArrayBufferAllocator::Create());
+    NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
     MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &Loop,
