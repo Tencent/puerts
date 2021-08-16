@@ -224,7 +224,7 @@ struct FPEMetaDataUtils
 			//	check blueprint protected function
 			if (InKey == NAME_BlueprintProtected)
 			{
-				if (!ValidateFunctionBlueprintProtected(InField.Get<UFunction>()))
+				if (!ValidateFunctionBlueprintProtected(InField.template Get<UFunction>()))
 				{
 					OutMessage = FString::Printf(TEXT("%s doesn't make sense on static method '%s' in a blueprint function library"), *InKey.ToString(), *InField.GetFullName());
 					return false;
@@ -235,7 +235,7 @@ struct FPEMetaDataUtils
 			//	check binary operator function
 			if (InKey == NAME_CommutativeAssociativeBinaryOperator)
 			{
-				if (!ValidateFunctionCommutativeAssociativeBinaryOperator(InField.Get<UFunction>()))
+				if (!ValidateFunctionCommutativeAssociativeBinaryOperator(InField.template Get<UFunction>()))
 				{
 					OutMessage = TEXT("Commutative asssociative binary operators must have exactly 2 parameters of the same type and a return value.");
 					return false;
@@ -247,7 +247,7 @@ struct FPEMetaDataUtils
 			//	check expand as execs
 			if (InKey == NAME_ExpandBoolAsExecs || InKey == NAME_ExpandEnumAsExecs)
 			{
-				if (!ValidateFunctionExpandAsExecs(InField.Get<UFunction>(), InValue))
+				if (!ValidateFunctionExpandAsExecs(InField.template Get<UFunction>(), InValue))
 				{
 					OutMessage = TEXT("invalid meta data for expand as execs");
 					return false;
@@ -272,8 +272,8 @@ struct FPEMetaDataUtils
 			if (InKey == NAME_Units)
 			{
 				// Check for numeric property
-				auto* MaybeProperty = InField.Get<NumericPropertyMacro>();
-				if (MaybeProperty == nullptr && !MaybeProperty->IsA<StructPropertyMacro>())
+				auto* MaybeProperty = InField.template Get<NumericPropertyMacro>();
+				if (MaybeProperty == nullptr && !MaybeProperty->template IsA<StructPropertyMacro>())
 				{
 					OutMessage = TEXT("'Units' meta data can only be applied to numeric and struct properties");
 					return false;
