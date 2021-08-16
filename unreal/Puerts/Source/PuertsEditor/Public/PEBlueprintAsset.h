@@ -8,8 +8,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "K2Node_CustomEvent.h"
+#include "PropertyMacros.h"
 #include "UObject/NoExportTypes.h"
+#include "PEBlueprintMetaData.h"
 #include "PEBlueprintAsset.generated.h"
+
+
 
 
 USTRUCT(BlueprintType)
@@ -21,7 +27,7 @@ public:
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
-     
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     UObject* PinSubCategoryObject;
 };
@@ -35,26 +41,26 @@ public:
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
-     
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     UObject* PinSubCategoryObject;
-    
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     int PinContainerType;
-        
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     bool bIsReference;
 };
 
 
 /**
- * 
+ *
  */
 UCLASS()
 class PUERTSEDITOR_API UPEBlueprintAsset : public UObject
 {
 	GENERATED_BODY()
-	
+
 public:
 
     UPROPERTY(BlueprintReadOnly, Category = "PEBlueprintAsset")
@@ -75,8 +81,31 @@ public:
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags);
 
+	/**
+	 * @brief create the class with given meta data
+	 * @param InName
+	 * @param InPath
+	 * @param InParentClass
+	 * @param InSetFlags
+	 * @param InClearFlags
+	 * @param InMetaData
+	 * @return
+	 */
+	UFUNCTION(BlueprintCallable, Category="PEBlueprintAsset")
+	bool LoadOrCreateWithMetaData(const FString& InName, const FString& InPath, UClass* InParentClass, int32 InSetFlags, int32 InClearFlags, UPEClassMetaData* InMetaData);
+
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType);
+
+	/**
+	 * @brief add parameter with given meta data
+	 * @param InParameterName
+	 * @param InGraphPinType
+	 * @param InPinValueType
+	 * @param InMetaData
+	 */
+	UFUNCTION(BlueprintCallable, Category="PEBlueprintAsset")
+	void AddParameterWithMetaData(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, UPEParamMetaData* InMetaData);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void ClearParameter();
@@ -84,11 +113,37 @@ public:
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddFunction(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags);
 
+	/**
+	 * @brief create the function with given meta data
+	 * @param InName
+	 * @param IsVoid
+	 * @param InGraphPinType
+	 * @param InPinValueType
+	 * @param InSetFlags
+	 * @param InClearFlags
+	 * @param InMetaData
+	 */
+	UFUNCTION(BlueprintCallable, Category="PEBlueprintAsset")
+	void AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags, UPEFunctionMetaData* InMetaData);
+
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedFunction();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InLFlags, int32 InHFlags, int32 InLifetimeCondition);
+
+	/**
+	 * @brief create the property with given meta data
+	 * @param InNewVarName
+	 * @param InGraphPinType
+	 * @param InPinValueType
+	 * @param InLFlags
+	 * @param InHFLags
+	 * @param InLifetimeCondition
+	 * @param InMetaData
+	 */
+	UFUNCTION(BlueprintCallable, Category=  "PEBlueprintAsset")
+	void AddMemberVariableWithMetaData(FName InNewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InLFlags,  int32 InHFLags, int32 InLifetimeCondition, UPEPropertyMetaData* InMetaData);
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void RemoveNotExistedMemberVariable();

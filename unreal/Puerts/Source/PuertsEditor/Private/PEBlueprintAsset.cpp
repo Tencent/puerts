@@ -30,6 +30,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
+#include "utility"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
@@ -47,6 +48,7 @@ UClass* FindClass(const TCHAR* ClassName)
 
     return nullptr;
 }
+
 
 bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {
@@ -118,6 +120,26 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     }
 }
 
+bool UPEBlueprintAsset::LoadOrCreateWithMetaData(const FString& InName, const FString& InPath, UClass* InParentClass, int32 InSetFlags, int32 InClearFlags, UPEClassMetaData* InMetaData)
+{
+	if (!IsValid(InParentClass))
+	{	// the parent class should be valid
+		return false;
+	}
+
+	if (!LoadOrCreate(InName, InPath, InParentClass, InSetFlags, InClearFlags))
+	{	//	create the class
+		return false;
+	}
+
+	if (IsValid(InMetaData))
+	{	//	apply the meta data
+		InMetaData->Apply(GeneratedClass);
+		NeedSave = true;
+	}
+	return true;
+}
+
 bool IsImplementationDesiredAsFunction(UBlueprint* InBlueprint, const UFunction* OverrideFunc)
 {
     // If the original function was created in a parent blueprint, then prefer a BP function
@@ -187,6 +209,17 @@ void UPEBlueprintAsset::AddParameter(FName InParameterName, FPEGraphPinType InGr
 {
     ParameterNames.Add(InParameterName);
     ParameterTypes.Add(ToFEdGraphPinType(InGraphPinType, InPinValueType));
+}
+
+void UPEBlueprintAsset::AddParameterWithMetaData(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, UPEParamMetaData* InMetaData)
+{
+	ParameterNames.Add(InParameterName);
+	FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
+	if (IsValid(InMetaData))
+	{
+		InMetaData->Apply(PinType);
+	}
+	ParameterTypes.Add(PinType);
 }
 
 static TArray<UK2Node_EditablePinBase*> GatherAllResultNodes(UK2Node_EditablePinBase* TargetNode)
@@ -285,7 +318,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     {
         InSetFlags |= FUNC_Net;
     }
-    
+
     UClass* SuperClass = GeneratedClass->GetSuperClass();
 
     UFunction* ParentFunction = SuperClass->FindFunctionByName(InName);
@@ -631,6 +664,87 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     ParameterTypes.Empty();
 }
 
+void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags, UPEFunctionMetaData* InMetaData)
+{
+	//	a helper function used to find custom event by name
+	static const auto FindCustomEvent = [](UBlueprint* InBlueprint, FName InName)->UK2Node_CustomEvent*
+	{
+		if (!IsValid(InBlueprint))
+		{
+			return nullptr;
+		}
+
+		TArray<UK2Node_CustomEvent*> Result;
+		FBlueprintEditorUtils::GetAllNodesOfClass<UK2Node_CustomEvent>(InBlueprint, Result);
+
+		const auto pFindResult = Result.FindByPredicate([Name = InName](const UK2Node_CustomEvent* InEvent)->bool
+		{
+			return InEvent->CustomFunctionName == Name;
+		});
+
+		return pFindResult == nullptr ? nullptr : *pFindResult;
+	};
+
+	//	a helper function used to find function entry of a function
+	static const auto FindFunctionEntry = [](UBlueprint* InBlueprint, FName InName)->UK2Node_FunctionEntry*
+	{
+		if (!IsValid(InBlueprint))
+		{
+			return nullptr;
+		}
+
+		TArray<UEdGraph*> Graphs;
+		InBlueprint->GetAllGraphs(Graphs);
+
+		const auto pFunctionGraph = Graphs.FindByPredicate([Name = InName](const UEdGraph* InGraph){return InGraph->GetFName() == Name;});
+		if (pFunctionGraph == nullptr)
+		{
+			return nullptr;
+		}
+
+		TArray<UK2Node_FunctionEntry*> Entries;
+		(*pFunctionGraph)->GetNodesOfClass(Entries);
+		if (Entries.Num() == 1)
+		{
+			return Entries[0];
+		}
+		return nullptr;
+	};
+
+	/**
+	 * @brief
+	 *		function body
+	 */
+	if (IsValid(InMetaData))
+	{
+		InSetFlags |= static_cast<int32>(InMetaData->FunctionFlags);
+		InClearFlags &= ~static_cast<int32>(InMetaData->FunctionFlags);
+	}
+
+	AddFunction(InName, IsVoid, InGraphPinType, InPinValueType, InSetFlags, InClearFlags);
+
+	if (!IsValid(InMetaData))
+	{
+		return;
+	}
+
+	//	check if input function is custom event
+	if (UK2Node_CustomEvent* CustomEvent = FindCustomEvent(Blueprint, InName))
+	{
+		InMetaData->Apply(CustomEvent);
+		NeedSave = true;
+	}
+	else if (UK2Node_FunctionEntry* FunctionEntry = FindFunctionEntry(Blueprint, InName))
+	{
+		InMetaData->Apply(FunctionEntry);
+		NeedSave = true;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Currently, Only Custom Event and Function Graph Support MetaData"));
+	}
+}
+
 void UPEBlueprintAsset::ClearParameter()
 {
     ParameterNames.Empty();
@@ -711,6 +825,34 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     MemberVariableAdded.Add(NewVarName);
 }
 
+void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InLFlags, int32 InHFLags, int32 InLifetimeCondition, UPEPropertyMetaData* InMetaData)
+{
+	if (IsValid(InMetaData))
+	{//	handle the conflict here
+		EPropertyFlags InputFlags = static_cast<EPropertyFlags>((static_cast<uint64>(InHFLags) << 32) + InLFlags);
+
+		InputFlags |= InMetaData->PropertyFlags;
+		//	meta data has instanced specifier
+		if (InMetaData->MetaData.Contains(TEXT("EditInline")))
+		{
+			InputFlags &= ~CPF_DisableEditOnInstance;
+		}
+
+		InLFlags = (static_cast<uint64>(InputFlags) & 0xffffffff);
+		InHFLags = (static_cast<uint64>(InputFlags) >> 32);
+	}
+	AddMemberVariable(InNewVarName, InGraphPinType, InPinValueType, InLFlags, InHFLags, InLifetimeCondition);
+	const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, InNewVarName);
+	if (VarIndex == INDEX_NONE || !IsValid(InMetaData))
+	{
+		return;
+	}
+
+	//	currently the replicated behaviour is different from cpp
+	InMetaData->Apply(Blueprint->NewVariables[VarIndex]);
+	NeedSave = true;
+}
+
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
     if (Blueprint)
@@ -751,7 +893,7 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
             }
             FunctionAdded.Add(UEdGraphSchema_K2::FN_UserConstructionScript);
         }
-        
+
         auto RemovedFunction = Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return !FunctionAdded.Contains(Graph->GetFName()); });
         NeedSave = NeedSave || (RemovedFunction > 0);
 
@@ -797,3 +939,4 @@ void UPEBlueprintAsset::Save()
         }
     }
 }
+
