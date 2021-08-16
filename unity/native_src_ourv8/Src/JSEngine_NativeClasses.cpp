@@ -3,7 +3,8 @@
 namespace puerts {
 
 const char* JSEngine::NativeClassesJS = "                                               \
-const classes = [function() { throw Error('invalid class') }];                                                                     \
+var global = global || (function () { return this; }());                              \
+const classes = [function() { throw Error('invalid class') }];                          \
                                                                                         \
 function inherit(subcls, basecls) {                                                     \
     const bridge = function () { };                                                     \
@@ -30,28 +31,20 @@ const ClassManager = {                                                          
                                                                                         \
     registerFunction(classid, name, static, handler) {                                  \
         if (static) {                                                                   \
-            classes[classid][name] = function (...args) {                               \
-                return PuertsV8.callback.call(handler, this, ...args)                   \
-            };                                                                          \
+            classes[classid][name] = PuertsV8.makeCallback(name, handler)               \
                                                                                         \
         } else {                                                                        \
-            classes[classid].prototype[name] = function (...args) {                     \
-                return PuertsV8.callback.call(handler, this, ...args);                  \
-            };                                                                          \
+            classes[classid].prototype[name] = PuertsV8.makeCallback(name, handler);    \
         }                                                                               \
     },                                                                                  \
                                                                                         \
     registerProperty(classid, name, static, getter, setter, dontdelete) {               \
         const accessor = {};                                                            \
         if (getter) {                                                                   \
-            accessor.get = function (...args) {                                         \
-                return PuertsV8.callback.call(getter, this, ...args)                    \
-            }                                                                           \
+            accessor.get = PuertsV8.makeCallback(name, getter);                         \
         }                                                                               \
         if (setter) {                                                                   \
-            accessor.set = function (...args) {                                         \
-                PuertsV8.callback.call(setter, this, ...args)                           \
-            }                                                                           \
+            accessor.set = PuertsV8.makeCallback(name, setter);                         \
         }                                                                               \
         if (dontdelete) {                                                               \
             accessor.configurable = false;                                              \
@@ -68,6 +61,10 @@ const ClassManager = {                                                          
                                                                                         \
     newObject(classid, ...args) {                                                       \
         return new classes[classid](...args);                                           \
+    },                                                                                  \
+                                                                                        \
+    makeGlobalFunction(name, handler) {                                                 \
+        global[name] = PuertsV8.makeCallback(name, handler);                            \
     }                                                                                   \
 };                                                                                      \
                                                                                         \
@@ -125,6 +122,9 @@ void JSEngine::InitNativeClasses(v8::Local<v8::Context> Context)
     );
     GJSGetNextClassID.Reset(MainIsolate, 
         JSClassManager->Get(Context, FV8Utils::V8String(MainIsolate, "getNextClassID")).ToLocalChecked()
+    );
+    GJSMakeGlobalFunction.Reset(MainIsolate, 
+        JSClassManager->Get(Context, FV8Utils::V8String(MainIsolate, "makeGlobalFunction")).ToLocalChecked()
     );
 }
 
@@ -250,5 +250,31 @@ bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, v8
         .ToLocalChecked();
 
     return true;
+}
+void JSEngine::SetGlobalFunction(
+    const char *Name, 
+    CSharpFunctionCallback Callback, 
+    int64_t Data
+)
+{
+    v8::Isolate* Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    v8::Local<v8::Object> handler = MakeHandler(
+        Context, Callback, Data, true
+    );
+
+    v8::Local<v8::Value> args[2];
+    args[0] = FV8Utils::V8String(MainIsolate, Name);
+    args[1] = handler;
+
+    v8::Function* JSMakeGlobalFunction = v8::Function::Cast(*GJSMakeGlobalFunction.Get(MainIsolate));
+
+    JSMakeGlobalFunction
+        ->Call(Context, Context->Global(), 2, args)
+        .ToLocalChecked();
 }
 }
