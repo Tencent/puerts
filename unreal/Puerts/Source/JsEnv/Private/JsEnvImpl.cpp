@@ -36,6 +36,8 @@
 
 #include "V8InspectorImpl.h"
 
+#if !defined(WITH_NODEJS)
+
 #if V8_MAJOR_VERSION < 8
 
 #if PLATFORM_WINDOWS
@@ -76,6 +78,8 @@
 
 #endif
 
+#endif
+
 namespace puerts
 {
 
@@ -99,6 +103,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
+#if !defined(WITH_NODEJS)
 #if V8_MAJOR_VERSION < 8
     std::unique_ptr<v8::StartupData> NativesBlob;
     if (!NativesBlob)
@@ -138,9 +143,75 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #else
     v8::Local<v8::Context> Context = v8::Context::New(Isolate);
 #endif
+#else
+    int Argc = 1;
+    char* Argv[] = {"puerts"};
+    std::vector<std::string> Args(Argv, Argv + Argc);
+    std::vector<std::string> ExecArgs;
+    std::vector<std::string> Errors;
+
+    const int Ret = uv_loop_init(&Loop);
+    if (Ret != 0)
+    {
+        Logger->Error(FString::Printf(TEXT("Failed to initialize loop: %s\n"),
+                UTF8_TO_TCHAR(uv_err_name(Ret))));
+        return;
+    }
+
+    CreateParams.array_buffer_allocator = nullptr;
+    NodeArrayBufferAllocator = std::move(node::ArrayBufferAllocator::Create());
+
+    auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
+    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &Loop,
+        Platform);
+
+    auto Isolate = MainIsolate;
+    Isolate->SetData(0, static_cast<IObjectMapper*>(this));//直接传this会有问题，强转后地址会变
+
+    //v8::Locker locker(Isolate);
+    //difference from embedding example, if lock, blow check fail:  
+    //Utils::ApiCheck(
+    //!v8::Locker::IsActive() ||
+    //    internal_isolate->thread_manager()->IsLockedByCurrentThread() ||
+    //    internal_isolate->serializer_enabled(),
+    //"HandleScope::HandleScope",
+    //"Entering the V8 API without proper locking in place");
+
+    v8::Isolate::Scope Isolatescope(Isolate);
+
+    Isolate_Data = node::CreateIsolateData(Isolate, &Loop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+
+    v8::HandleScope HandleScope(Isolate);
+
+    v8::Local<v8::Context> Context = node::NewContext(Isolate);
+    
+#endif
+
     DefaultContext.Reset(Isolate, Context);
 
     v8::Context::Scope ContextScope(Context);
+
+#if defined(WITH_NODEJS)
+    //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
+    Env = CreateEnvironment(Isolate_Data, Context, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+
+    v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
+        Env,
+        "const publicRequire ="
+        "  require('module').createRequire(process.cwd() + '/');"
+        "globalThis.require = publicRequire;"
+        "globalThis.embedVars = { nön_ascıı: '🏳️‍🌈' };"
+        "require('vm').runInThisContext(process.argv[1]);");
+
+    if (LoadenvRet.IsEmpty())  // There has been a JS exception.
+    {
+        return;
+    }
+
+    //the same as raw v8
+    Isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+#endif
+    
     v8::Local<v8::Object> Global = Context->Global();
 
     v8::Local<v8::Object> PuertsObj = v8::Object::New(Isolate);
@@ -292,7 +363,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     Inspector = CreateV8Inspector(InDebugPort, &Context);
 
     ExecuteModule("puerts/first_run.js");
+#if !defined(WITH_NODEJS)
     ExecuteModule("puerts/polyfill.js");
+#endif
     ExecuteModule("puerts/log.js");
     ExecuteModule("puerts/modular.js");
     ExecuteModule("puerts/uelazyload.js");
@@ -435,6 +508,16 @@ FJsEnvImpl::~FJsEnvImpl()
                 }
             }
         }
+
+#if defined(WITH_NODEJS)
+        node::EmitExit(Env);
+        node::Stop(Env);
+        node::FreeEnvironment(Env);
+        node::FreeIsolateData(Isolate_Data);
+
+        auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
+        Platform->UnregisterIsolate(Isolate);
+#endif
     }
 
     if (InspectorChannel)

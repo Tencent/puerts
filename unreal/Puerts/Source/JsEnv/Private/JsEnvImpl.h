@@ -26,6 +26,13 @@
 
 #include "V8InspectorImpl.h"
 
+#if defined(WITH_NODEJS)
+#pragma warning(push, 0) 
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+#endif
+
 namespace puerts
 {
 class JSError
@@ -339,6 +346,16 @@ private:
 
 private:
     v8::Isolate::CreateParams CreateParams;
+
+#if defined(WITH_NODEJS)
+    uv_loop_t Loop;
+    
+    std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
+
+    node::IsolateData* Isolate_Data;
+
+    node::Environment* Env;
+#endif
 
     v8::Isolate* MainIsolate;
 

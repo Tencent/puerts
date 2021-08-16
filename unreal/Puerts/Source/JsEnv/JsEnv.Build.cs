@@ -13,6 +13,8 @@ public class JsEnv : ModuleRules
 {
     private bool UseNewV8 = false;
 
+    private bool UseNodejs = false;
+
     private bool UseQuickjs = false;
 
     private bool WithFFI = false;
@@ -42,6 +44,10 @@ public class JsEnv : ModuleRules
         if (UseNewV8)
         {
             ThirdParty(Target);
+        }
+        else if (UseNodejs)
+        {
+            ThirdPartyNodejs(Target);
         }
         else if (UseQuickjs)
         {
@@ -332,6 +338,28 @@ public class JsEnv : ModuleRules
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+        }
+    }
+    
+    void ThirdPartyNodejs(ReadOnlyTargetRules Target)
+    {
+        PrivateDefinitions.Add("WITHOUT_INSPECTOR");//node already had one
+        PrivateDefinitions.Add("WITH_NODEJS");
+        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "libnode"));
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "include") });
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "deps", "v8", "include") });
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "deps", "uv", "include") });
+
+        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "libnode", "lib"));
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            string V8LibraryPath = Path.Combine(LibraryPath, "Win64");
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.lib"));
+
+            AddRuntimeDependencies(new string[]
+            {
+                "libnode.dll",
+            }, V8LibraryPath, false);
         }
     }
 

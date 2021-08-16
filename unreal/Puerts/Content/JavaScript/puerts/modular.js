@@ -29,6 +29,8 @@ var global = global || (function () { return this; }());
     }
     global.__tgjsLoadModule = undefined;
     
+    let org_require = global.require;
+    
     let findModule = global.__tgjsFindModule;
     global.__tgjsFindModule = undefined;
     
@@ -85,6 +87,11 @@ var global = global || (function () { return this; }());
             if (nativeModule) {
                 buildinModule[moduleName] = nativeModule;
                 return nativeModule;
+            }
+            if (org_require) {
+                try {
+                    return org_require(moduleName);
+                } catch (e) {}
             }
             let moduleInfo = loadModule(moduleName, requiringDir);
             let split = moduleInfo.indexOf('\n');

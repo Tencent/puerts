@@ -8,6 +8,12 @@
 #include "JsEnvModule.h"
 //#include "TGameJSCorePCH.h"
 #include "HAL/MemoryBase.h"
+#if defined(WITH_NODEJS)
+#pragma warning(push, 0) 
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+#endif
 
 class FMallocWrapper final
     : public FMalloc
@@ -174,9 +180,27 @@ void FJsEnvModule::StartupModule()
     
     // This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
+#if defined(WITH_NODEJS)
+    platform_ = node::MultiIsolatePlatform::Create(4);
+#else
     platform_ = v8::platform::NewDefaultPlatform();
+#endif
     v8::V8::InitializePlatform(platform_.get());
     v8::V8::Initialize();
+#endif
+
+#if defined(WITH_NODEJS)
+    int Argc = 1;
+    char* ArgvIn[] = {"puerts"};
+    char ** Argv = uv_setup_args(Argc, ArgvIn);
+    std::vector<std::string> Args(Argv, Argv + Argc);
+    std::vector<std::string> ExecArgs;
+    std::vector<std::string> Errors;
+    int ExitCode = node::InitializeNodeWithArgs(&Args, &ExecArgs, &Errors);
+    for (const std::string& error : Errors)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Initialize Node:  %s"), UTF8_TO_TCHAR(error.c_str()));
+    }
 #endif
 }
 
