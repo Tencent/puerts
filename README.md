@@ -90,10 +90,12 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [unreal faq](doc/unreal/faq.md)
 * [unity faq](doc/unity/faq.md)
 
-## 使用手册
+## 使用文档
 
-* [unreal](doc/unreal/manual.md)
-* [unity](doc/unity/manual.md)
+* [unreal手册](doc/unreal/manual.md)
+* [unity手册](doc/unity/manual.md)
+* [unreal下脚本和引擎交互](doc/unreal/interact_with_uclass.md)
+* [纯c++api的支持](doc/unreal/template_binding.md)
 
 ## 支持的引擎，平台
 

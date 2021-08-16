@@ -42,7 +42,7 @@ public:
     bool HandleSettingsSaved();
     void HandleMapChanged(UWorld* InWorld, EMapChangeType InMapChangeType)
     {
-        if (Enabled && EMapChangeType::TearDownWorld == InMapChangeType)
+        if (Enabled && EMapChangeType::TearDownWorld == InMapChangeType && IsInGameThread())
         {
             MakeSharedJsEnv();
         }

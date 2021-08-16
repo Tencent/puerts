@@ -145,7 +145,7 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const FString& Name)
     
 void JSClassRegister::ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)> Callback)
 {
-    for(auto & KV : NameToClassDefinition)
+    for(auto & KV : CDataNameToClassDefinition)
     {
         Callback(KV.second);
     }

@@ -2,7 +2,9 @@
 
 ## 简述
 
-支持反射的UE API（所有蓝图以及C++中标记了UCLASS，USTRUCT，UPPROPERTY，UFUNCTION，UENUM的部分）不用额外操作即可直接用typescript调用，如果是普通的C++ class/struct，或者是UCLASS，USTRUCT中未标记UPPROPERTY，UFUNCTION成员，按照本指引手动声明后可以用typescript调用。
+本文档介绍的是是普通的C++ class/struct，或者是UCLASS，USTRUCT中未标记UPPROPERTY，UFUNCTION的属性、方法的调用。
+
+本文档也适用于非UE环境下（比如服务器，Unity等），C++ class/struct的访问。
 
 支持特性：
 
@@ -20,11 +22,17 @@
 
 ## !！注意
 
-如果希望在JsEnv之外的地方使用该特性，比如游戏模块，需要使用动态库版本的v8库，切换方法：
+如果希望在JsEnv之外的地方使用该特性，比如游戏模块，需要：
 
-* 到puerts官网下载和puerts配套的v8库，解压于：“Plugins/Puerts/ThirdParty/”目录下
+* 使用动态库版本的v8库，切换方法：
 
-* 找到JsEnv.Build.cs文件，将UseNewV8变量改为true
+    - 到puerts官网下载和puerts配套的v8库，解压于：“Plugins/Puerts/ThirdParty/”目录下
+
+    - 找到JsEnv.Build.cs文件，将UseNewV8变量改为true
+
+* 在该模块的“.Build.cs”文件中加入对JsEnv模块的依赖
+
+* 该模块的“.Build.cs”文件中，将bEnableUndefinedIdentifierWarnings设置为false
 
 ## helloworld
 
