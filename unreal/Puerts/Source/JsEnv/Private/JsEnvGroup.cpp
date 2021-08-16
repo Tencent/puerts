@@ -58,7 +58,7 @@ FJsEnvGroup::FJsEnvGroup(int Size, const FString &ScriptRoot)
     Init();
 }
 
-FJsEnvGroup::FJsEnvGroup(int Size, std::unique_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
+FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
     void* InExternalRuntime, void* InExternalContext)
 {
     check(Size > 1);
