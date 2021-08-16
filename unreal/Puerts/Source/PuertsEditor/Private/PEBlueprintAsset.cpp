@@ -97,7 +97,11 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
 
     //UE_LOG(LogTemp, Warning, TEXT("Name: %s, PackageName: %s, InName:%s, InPath:%s"), *Name, *PackageName, *InName, *InPath);
 
+#if ENGINE_MINOR_VERSION < 26 && ENGINE_MAJOR_VERSION <= 4
     Package = CreatePackage(NULL, *PackageName);
+#else
+    Package = CreatePackage(*PackageName);
+#endif
     check(Package);
 
     // Create and init a new Blueprint
