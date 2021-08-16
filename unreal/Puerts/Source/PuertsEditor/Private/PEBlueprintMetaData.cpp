@@ -1,7 +1,7 @@
 #include "PEBlueprintMetaData.h"
 
 #include "K2Node_FunctionEntry.h"
-#include "MetaData.h"
+#include "UObject/MetaData.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
 

@@ -6,6 +6,9 @@
 */
 
 #pragma once
+
+#include "PropertyMacros.h"
+#include "Math/UnitConversion.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionEntry.h"
 #include "Engine/Blueprint.h"
