@@ -239,19 +239,6 @@ index 8a897765c8..4a6e54798f 100644
 +
  }  // namespace internal
  }  // namespace v8
-diff --git a/src/compiler/typer.cc b/src/compiler/typer.cc
-index 6d53531f1c..76a73068b6 100644
---- a/src/compiler/typer.cc
-+++ b/src/compiler/typer.cc
-@@ -1663,6 +1663,8 @@ Type Typer::Visitor::JSCallTyper(Type fun, Typer* t) {
-     case Builtins::kStringPrototypeEndsWith:
-     case Builtins::kStringPrototypeIncludes:
-       return Type::Boolean();
-+    case Builtins::kStringPuertsCallback:
-+      return Type::Number();
-     case Builtins::kStringRaw:
-     case Builtins::kStringRepeat:
-     case Builtins::kStringPrototypeSlice:
 diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
 index f4049e328e..5b41e1ceed 100644
 --- a/src/init/bootstrapper.cc
