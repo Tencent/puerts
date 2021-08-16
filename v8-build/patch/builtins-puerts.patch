@@ -119,28 +119,28 @@ index 93780bceec..0b600916ad 100644
  
  #undef TRACE_BS
 diff --git a/src/builtins/builtins-api.cc b/src/builtins/builtins-api.cc
-index 6eb6f87c74..993c799400 100644
+index 6eb6f87c74..c7b185d30d 100644
 --- a/src/builtins/builtins-api.cc
 +++ b/src/builtins/builtins-api.cc
-@@ -309,5 +309,53 @@ BUILTIN(HandleApiCallAsConstructor) {
+@@ -309,5 +309,73 @@ BUILTIN(HandleApiCallAsConstructor) {
    return HandleApiCallAsFunctionOrConstructor(isolate, true, args);
  }
  
 +
 +V8_WARN_UNUSED_RESULT MaybeHandle<Object> PuertsCallHandler(
 +  internal::Isolate* isolate, 
-+  Handle<JSObject> puertsThis,
++  internal::JSObject puertsThis,
 +  BuiltinArguments&  args
 +) {
 +  Puerts::FunctionInfo* functionInfo = (Puerts::FunctionInfo*)Foreign::cast(
-+    JSObject::cast(puertsThis->GetEmbedderField(0)).GetEmbedderField(0)
++    JSObject::cast(puertsThis.GetEmbedderField(0)).GetEmbedderField(0)
 +  ).foreign_address();
 +  
-+  int argLength = args.length() - 2;
++  int argLength = args.length() - 1;
 +  internal::Address returnValue = 0;
 +  bool isReturnValueSetted = false;
 +  Puerts::FunctionCallbackInfo callbackInfo(
-+    args.address_of_arg_at(2), 
++    args.address_of_arg_at(1), 
 +    &returnValue,
 +    &isReturnValueSetted,
 +    argLength
@@ -152,7 +152,7 @@ index 6eb6f87c74..993c799400 100644
 +    functionInfo->isStatic ? nullptr : reinterpret_cast<void*>(
 +      internal::Internals::ReadExternalPointerField(
 +        isolate,
-+        args.at(1)->ptr(),
++        args.at(0)->ptr(),
 +        internal::Internals::kJSObjectHeaderSize
 +      )
 +    ),
@@ -170,21 +170,42 @@ index 6eb6f87c74..993c799400 100644
 +
 +}
 +
-+BUILTIN(StringPuertsCallback) {
-+  Handle<JSObject> puertsThis = args.at<JSObject>(0);
-+  RETURN_RESULT_OR_FAILURE(isolate, PuertsCallHandler(isolate, puertsThis, args));
++BUILTIN(ApiPuertsCallback) {
++  Handle<JSFunction> callbackFun = args.target();
++  RETURN_RESULT_OR_FAILURE(
++    isolate, 
++    PuertsCallHandler(
++      isolate, 
++      JSObject::cast(callbackFun->shared().function_data()),
++      args
++    )
++  );
++}
++
++BUILTIN(ApiPuertsMakeCallback) {
++  Handle<String> internalized_name = args.at<String>(1);
++
++  NewFunctionArgs funArgs = NewFunctionArgs::ForBuiltinWithoutPrototype(
++      internalized_name, Builtins::kApiPuertsCallback, LanguageMode::kStrict);
++  Handle<JSFunction> fun = isolate->factory()->NewFunction(funArgs);
++  fun->shared().set_native(true);
++  fun->shared().DontAdaptArguments();
++  fun->shared().set_function_data(*args.at(2), WriteBarrierMode::UPDATE_WRITE_BARRIER);
++
++  return *fun;
 +}
  }  // namespace internal
  }  // namespace v8
 diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
-index 84ddf55f6f..67ec7315a0 100644
+index 84ddf55f6f..5df968e57d 100644
 --- a/src/builtins/builtins-definitions.h
 +++ b/src/builtins/builtins-definitions.h
-@@ -792,6 +792,7 @@ namespace internal {
+@@ -792,6 +792,8 @@ namespace internal {
    TFJ(StringPrototypeTrimStart, kDontAdaptArgumentsSentinel)                   \
    /* ES6 #sec-string.raw */                                                    \
    CPP(StringRaw)                                                               \
-+  CPP(StringPuertsCallback)                                                  \
++  CPP(ApiPuertsCallback)                                                  \
++  CPP(ApiPuertsMakeCallback)                                                  \
                                                                                 \
    /* Symbol */                                                                 \
    /* ES #sec-symbol-constructor */                                             \
@@ -218,21 +239,8 @@ index 8a897765c8..4a6e54798f 100644
 +
  }  // namespace internal
  }  // namespace v8
-diff --git a/src/compiler/typer.cc b/src/compiler/typer.cc
-index 6d53531f1c..76a73068b6 100644
---- a/src/compiler/typer.cc
-+++ b/src/compiler/typer.cc
-@@ -1663,6 +1663,8 @@ Type Typer::Visitor::JSCallTyper(Type fun, Typer* t) {
-     case Builtins::kStringPrototypeEndsWith:
-     case Builtins::kStringPrototypeIncludes:
-       return Type::Boolean();
-+    case Builtins::kStringPuertsCallback:
-+      return Type::Number();
-     case Builtins::kStringRaw:
-     case Builtins::kStringRepeat:
-     case Builtins::kStringPrototypeSlice:
 diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
-index f4049e328e..c1d31e7bd2 100644
+index f4049e328e..5b41e1ceed 100644
 --- a/src/init/bootstrapper.cc
 +++ b/src/init/bootstrapper.cc
 @@ -1917,6 +1917,14 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
@@ -245,7 +253,7 @@ index f4049e328e..c1d31e7bd2 100644
 +        factory->NewJSObject(isolate_->object_function(), AllocationType::kOld);
 +    JSObject::AddProperty(isolate_, global, "PuertsV8", puerts_object, DONT_ENUM);
 +
-+    SimpleInstallFunction(isolate_, puerts_object, "callback", Builtins::kStringPuertsCallback, 1, false);
++    SimpleInstallFunction(isolate_, puerts_object, "makeCallback", Builtins::kApiPuertsMakeCallback, 1, false);
 +
      // Create the %StringPrototype%
      Handle<JSPrimitiveWrapper> prototype = Handle<JSPrimitiveWrapper>::cast(

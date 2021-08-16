@@ -41,6 +41,8 @@
 #include "Blob/iOS/arm64/SnapshotBlob.h"
 #elif defined(PLATFORM_IOS_SIMULATOR)
 #include "Blob/iOS/x64/SnapshotBlob.h"
+#elif defined(PLATFORM_LINUX)
+#include "Blob/Linux/SnapshotBlob.h"
 #endif
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::Puerts::FunctionCallbackInfo& Info, void* Self, int ParamLen, int64_t UserData);

@@ -272,34 +272,6 @@ namespace puerts
         delete InFunction;
     }
 
-    void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-        char code[1024];
-        std::snprintf(
-            code, 
-            sizeof(code),
-            "(function() { const handler = new __PuertsCallbackHandler__(); this['%s'] = (function() { const callback = PuertsV8.callback.bind(handler); return function (...args) { return callback(this, ...args) } })(); return handler; })()",
-            Name, Name
-        );
-
-        v8::Local<v8::Value> puertsHandler = v8::Script::Compile(
-            Context,
-            FV8Utils::V8String(Isolate, code)
-        ).ToLocalChecked()->Run(Context).ToLocalChecked();
-
-        v8::Puerts::FunctionInfo* functionInfo = new v8::Puerts::FunctionInfo();
-        functionInfo->callback = Callback;
-        functionInfo->bindData = (void*)Data;
-        functionInfo->isStatic = true;
-        
-        v8::Object::Cast(*puertsHandler)->SetInternalField(0, v8::External::New(Isolate, (void*)functionInfo));
-    }
-
     bool JSEngine::Eval(const char *Code, const char* Path)
     {
         v8::Isolate* Isolate = MainIsolate;
