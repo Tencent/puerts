@@ -1,5 +1,6 @@
 #include "PEBlueprintMetaData.h"
 
+#include "AnyOf.h"
 #include "K2Node_FunctionEntry.h"
 #include "UObject/MetaData.h"
 #include "MetaData.h"
@@ -16,7 +17,7 @@ const TCHAR* UPEClassMetaData::NAME_SparseClassDataTypes{ TEXT("SparseClassDataT
 
 FPEMetaDataUtils::TFormatValidator<class FFieldVariant> FPEMetaDataUtils::ValidateFormat;
 
-void FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMetaData)
+bool FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMetaData)
 {
 	// only add if we have some!
 	if (InMetaData.Num())
@@ -28,19 +29,28 @@ void FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMeta
 		TMap<FName, FString>* ExistingMetaData = MetaData->GetMapForObject(InField);
 		if (ExistingMetaData && ExistingMetaData->Num())
 		{
+			//	check if meta data changed
+			const bool bChanged = Algo::AnyOf(InMetaData, [ExistingMetaData](const TPair<FName, FString>& InNewData)
+			{
+				return !ExistingMetaData->Contains(InNewData.Key) || ExistingMetaData->operator[](InNewData.Key) != InNewData.Value;
+			});
+
 			// Merge the existing metadata
 			TMap<FName, FString> MergedMetaData;
 			MergedMetaData.Reserve(InMetaData.Num() + ExistingMetaData->Num());
 			MergedMetaData.Append(*ExistingMetaData);
 			MergedMetaData.Append(InMetaData);
 			MetaData->SetObjectValues(InField, MoveTemp(MergedMetaData));
+
+			return bChanged;
 		}
-		else
-		{
-			// set the metadata for this field
-			MetaData->SetObjectValues(InField, MoveTemp(InMetaData));
-		}
+
+		// set the metadata for this field
+		MetaData->SetObjectValues(InField, MoveTemp(InMetaData));
+		return true;
 	}
+
+	return false;
 }
 
 void UPEClassMetaData::SetClassFlags(int32 InFlags, bool bInPlaceable)
@@ -114,11 +124,12 @@ void UPEClassMetaData::AddSparseDataType(const FString& InType)
 	SparseClassDataTypes.AddUnique(InType);
 }
 
-void UPEClassMetaData::Apply(UClass* InClass)
+bool UPEClassMetaData::Apply(UClass* InClass)
 {
 	MergeClassCategories(InClass);
-	MergeAndValidateClassFlags(InClass);
-	SetClassMetaData(InClass);
+	const bool bFlagsChanged = MergeAndValidateClassFlags(InClass);
+	const bool bMetaDataChanged = SetClassMetaData(InClass);
+	return bFlagsChanged || bMetaDataChanged;
 }
 
 void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
@@ -234,25 +245,28 @@ void UPEClassMetaData::MergeClassCategories(UClass* InParentClass)
 	}
 }
 
-void UPEClassMetaData::MergeAndValidateClassFlags(UClass* InClass)
+bool UPEClassMetaData::MergeAndValidateClassFlags(UClass* InClass)
 {
 	if (!IsValid(InClass))
 	{
-		return;
+		return false;
 	}
 
+	const EClassFlags OldFlags = InClass->ClassFlags;
 	if (bWantsToBePlaceable)
 	{
 		if (!(InClass->ClassFlags & CLASS_NotPlaceable))
 		{
 			UE_LOG(LogTemp, Error, TEXT("The 'placeable' specifier is only allowed on classes which have a base class that's marked as not placeable. Classes are assumed to be placeable by default."));
-			return;
+			return false;
 		}
 		InClass->ClassFlags &= ~CLASS_NotPlaceable;
 		bWantsToBePlaceable = false;
 	}
 
 	InClass->ClassFlags |= ClassFlags;
+	const auto OldWithInClass = InClass->ClassWithin;
+	const auto OldConfigName = InClass->ClassConfigName;
 	InClass->ClassConfigName = FName(*ConfigName);
 
 	SetAndValidateWithinClass(InClass);
@@ -261,16 +275,19 @@ void UPEClassMetaData::MergeAndValidateClassFlags(UClass* InClass)
 	if (!!(InClass->ClassFlags & CLASS_EditInlineNew) && InClass->IsChildOf(AActor::StaticClass()))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid class attribute: Creating actor instances via the property window is not allowed"));
-		return;
+		return false;
 	}
 
 	if (InClass->HasAllClassFlags(CLASS_MinimalAPI | CLASS_RequiredAPI))
 	{
 		UE_LOG(LogTemp, Error, TEXT("MinimalAPI cannot be specified when the class is fully exported using a MODULENAME_API macro"));
+		return false;
 	}
+
+	return OldFlags != InClass->ClassFlags || OldWithInClass != InClass->ClassWithin || OldConfigName != InClass->ClassConfigName;
 }
 
-void UPEClassMetaData::SetClassMetaData(UClass* InClass)
+bool UPEClassMetaData::SetClassMetaData(UClass* InClass)
 {
 	// Evaluate any key redirects on the passed in pairs
 	for (TPair<FName, FString>& Pair : MetaData)
@@ -292,12 +309,12 @@ void UPEClassMetaData::SetClassMetaData(UClass* InClass)
 		if (!FPEMetaDataUtils::ValidateFormat(InClass, Pair.Key, Pair.Value, Message))
 		{
 			UE_LOG(LogTemp, Error, TEXT("failed set meta data: %s"), *Message);
-			return;
+			return false;
 		}
 
 	}
 
-	FPEMetaDataUtils::AddMetaData(InClass, MetaData);
+	return FPEMetaDataUtils::AddMetaData(InClass, MetaData);
 }
 
 TArray<FString> UPEClassMetaData::GetClassMetaDataValues(UClass* InClass, const TCHAR* InMetaDataKey, const TCHAR* InDelimiter, bool bInCullEmpty)
@@ -442,44 +459,50 @@ void UPEFunctionMetaData::SetForceBlueprintImpure(bool bInForceBlueprintImpure)
 	bForceBlueprintImpure = bInForceBlueprintImpure;
 }
 
-void UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
+bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
 {
 	if (!IsValid(InFunctionEntry))
 	{
-		return;
+		return false;
 	}
 
 	// make sure native flags is removed
+	const auto OldFlags = InFunctionEntry->GetExtraFlags();
 	InFunctionEntry->SetExtraFlags(InFunctionEntry->GetExtraFlags() | FunctionFlags);
+	const bool bFlagsChanged = InFunctionEntry->GetExtraFlags() != OldFlags;
 
+	bool bMetaDataChanged = false;
 	auto& MetaDataToSet = InFunctionEntry->MetaData;
 	if (MetaData.Contains(TEXT("CallInEditor")))
 	{
+		bMetaDataChanged = !MetaDataToSet.bCallInEditor ? true : bMetaDataChanged;
 		MetaDataToSet.bCallInEditor = true;
 	}
 
 	if (MetaData.Contains(TEXT("Keywords")))
 	{
-		MetaDataToSet.Keywords = FText::FromString(MetaData[TEXT("Keywords")]);
+		const FText NewKeywords = FText::FromString(MetaData[TEXT("Keywords")]);
+		bMetaDataChanged = !NewKeywords.EqualTo(MetaDataToSet.Keywords) ? true : bMetaDataChanged;
+		MetaDataToSet.Keywords = NewKeywords;
 	}
+	return bFlagsChanged || bMetaDataChanged;
 }
 
-void UPEFunctionMetaData::ApplyCustomEventMetaData(const TMap<FName, FString>&, ...)
-{
-	UE_LOG(LogTemp, Log, TEXT("the user defined meta data is not supported in current engine"));
-}
-
-void UPEFunctionMetaData::Apply(UK2Node_CustomEvent* InCustomEvent) const
+bool UPEFunctionMetaData::Apply(UK2Node_CustomEvent* InCustomEvent) const
 {
 	if (!IsValid(InCustomEvent))
 	{
-		return;
+		return false;
 	}
 
 	//	the function flags
+	const auto Oldflags = InCustomEvent->FunctionFlags;
 	InCustomEvent->FunctionFlags |= FunctionFlags;
+	const bool bFlagsChanged = Oldflags != InCustomEvent->FunctionFlags;
 	//	add meta data
-	ApplyCustomEventMetaData(MetaData, InCustomEvent);
+	bool bMetaChanged;
+	ApplyCustomEventMetaData(bMetaChanged, MetaData, InCustomEvent);
+	return bFlagsChanged || bMetaChanged;
 }
 
 
@@ -493,11 +516,16 @@ void UPEParamMetaData::SetMetaData(const FString& InName, const FString& InValue
 	MetaData.FindOrAdd(*InName) = InValue;
 }
 
-void UPEParamMetaData::Apply(FEdGraphPinType& PinType) const
+bool UPEParamMetaData::Apply(FEdGraphPinType& PinType) const
 {
 	//	most meta data could not set in blueprint, should have a way to apply on related FProperty after blueprint compilation?
+	bool bChanged = false;
+	bChanged = PinType.bIsConst != !!(ParamFlags & CPF_ConstParm) ? true : bChanged;
 	PinType.bIsConst = !!(ParamFlags & CPF_ConstParm);
+	bChanged = PinType.bIsReference != !!(ParamFlags & CPF_ReferenceParm) ? true : bChanged;
 	PinType.bIsReference = !!(ParamFlags & CPF_ReferenceParm);
+
+	return bChanged;
 }
 
 void UPEPropertyMetaData::SetPropertyFlags(int32 InHighBits, int32 InLowBits)
@@ -515,29 +543,39 @@ void UPEPropertyMetaData::SetRepCallbackName(const FString& InName)
 	RepCallbackName = InName;
 }
 
-void UPEPropertyMetaData::Apply(FBPVariableDescription& Element) const
+bool UPEPropertyMetaData::Apply(FBPVariableDescription& Element) const
 {
 	//	should do more check here?
 
+	const auto OldFlags = Element.PropertyFlags;
 	//	set flags, since the default create blueprint variable could not edit instance, so modify it if needed
 	Element.PropertyFlags |= PropertyFlags;
+	const bool bFlagsChanged = OldFlags != Element.PropertyFlags;
 
 	//	set meta data
+	bool bMetaDataChanged = false;
 	for (const auto Pair : MetaData)
 	{
-		if (auto MetaDataEntryPtr = Element.MetaDataArray.FindByPredicate([Key = Pair.Key](const FBPVariableMetaDataEntry& InEntry) {return InEntry.DataKey == Key; }))
+		if (const auto MetaDataEntryPtr = Element.MetaDataArray.FindByPredicate([Key = Pair.Key](const FBPVariableMetaDataEntry& InEntry) {return InEntry.DataKey == Key; }))
 		{
+			bMetaDataChanged = MetaDataEntryPtr->DataValue != Pair.Value ? true : bMetaDataChanged;
 			MetaDataEntryPtr->DataValue = Pair.Value;
 		}
 		else
 		{
+			bMetaDataChanged = true;
 			Element.MetaDataArray.Emplace(Pair.Key, Pair.Value);
 		}
 	}
 
 	//	if needed set notify function, we don't check the existence of the notify function here
+	bool bRepFunctionChanged = false;
 	if (PropertyFlags & CPF_RepNotify)
 	{
-		Element.RepNotifyFunc = RepCallbackName.IsEmpty() ? *FString::Printf(TEXT("OnRep_%s"), *Element.VarName.ToString()) : *RepCallbackName;
+		const FName NewRepNotifyFunc = RepCallbackName.IsEmpty() ? *FString::Printf(TEXT("OnRep_%s"), *Element.VarName.ToString()) : *RepCallbackName;
+		bRepFunctionChanged = NewRepNotifyFunc != Element.RepNotifyFunc;
+		Element.RepNotifyFunc = NewRepNotifyFunc;
 	}
+
+	return bFlagsChanged || bMetaDataChanged || bRepFunctionChanged;
 }
