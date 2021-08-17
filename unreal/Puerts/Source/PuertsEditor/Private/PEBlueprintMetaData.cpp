@@ -3,7 +3,6 @@
 #include "AnyOf.h"
 #include "K2Node_FunctionEntry.h"
 #include "UObject/MetaData.h"
-#include "MetaData.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
 
@@ -19,38 +18,17 @@ FPEMetaDataUtils::TFormatValidator<class FFieldVariant> FPEMetaDataUtils::Valida
 
 bool FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMetaData)
 {
-	// only add if we have some!
-	if (InMetaData.Num())
+	//	check if meta data changed
+	const bool bChanged = Algo::AnyOf(InMetaData, [InField](const TPair<FName, FString>& InNewData)
 	{
-		check(InField);
+		return !InField->HasMetaData(InNewData.Key) || InField->GetMetaData(InNewData.Key) != InNewData.Value;
+	});
 
-		// get (or create) a metadata object for this package
-		UMetaData* MetaData = InField->GetOutermost()->GetMetaData();
-		TMap<FName, FString>* ExistingMetaData = MetaData->GetMapForObject(InField);
-		if (ExistingMetaData && ExistingMetaData->Num())
-		{
-			//	check if meta data changed
-			const bool bChanged = Algo::AnyOf(InMetaData, [ExistingMetaData](const TPair<FName, FString>& InNewData)
-			{
-				return !ExistingMetaData->Contains(InNewData.Key) || ExistingMetaData->operator[](InNewData.Key) != InNewData.Value;
-			});
+	// set the metadata for this field, since blueprint compilation will handle parent issue, we set meta data directly
+	UMetaData* MetaData = InField->GetOutermost()->GetMetaData();
+	MetaData->SetObjectValues(InField, MoveTemp(InMetaData));
 
-			// Merge the existing metadata
-			TMap<FName, FString> MergedMetaData;
-			MergedMetaData.Reserve(InMetaData.Num() + ExistingMetaData->Num());
-			MergedMetaData.Append(*ExistingMetaData);
-			MergedMetaData.Append(InMetaData);
-			MetaData->SetObjectValues(InField, MoveTemp(MergedMetaData));
-
-			return bChanged;
-		}
-
-		// set the metadata for this field
-		MetaData->SetObjectValues(InField, MoveTemp(InMetaData));
-		return true;
-	}
-
-	return false;
+	return bChanged;
 }
 
 void UPEClassMetaData::SetClassFlags(int32 InFlags, bool bInPlaceable)
@@ -124,11 +102,12 @@ void UPEClassMetaData::AddSparseDataType(const FString& InType)
 	SparseClassDataTypes.AddUnique(InType);
 }
 
-bool UPEClassMetaData::Apply(UClass* InClass)
+bool UPEClassMetaData::Apply(UClass* InClass, UBlueprint* InBlueprint)
 {
 	MergeClassCategories(InClass);
 	const bool bFlagsChanged = MergeAndValidateClassFlags(InClass);
 	const bool bMetaDataChanged = SetClassMetaData(InClass);
+	SyncClassToBlueprint(InClass, InBlueprint);
 	return bFlagsChanged || bMetaDataChanged;
 }
 
@@ -283,7 +262,7 @@ bool UPEClassMetaData::MergeAndValidateClassFlags(UClass* InClass)
 		UE_LOG(LogTemp, Error, TEXT("MinimalAPI cannot be specified when the class is fully exported using a MODULENAME_API macro"));
 		return false;
 	}
-
+	
 	return OldFlags != InClass->ClassFlags || OldWithInClass != InClass->ClassWithin || OldConfigName != InClass->ClassConfigName;
 }
 
@@ -333,6 +312,25 @@ TArray<FString> UPEClassMetaData::GetClassMetaDataValues(UClass* InClass, const 
 
 	InClass->GetMetaData(InMetaDataKey).ParseIntoArray(Result, InDelimiter, bInCullEmpty);
 	return Result;
+}
+
+void UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBlueprint)
+{
+	if (!IsValid(InClass) || !IsValid(InBlueprint))
+	{
+		return;
+	}
+
+	InBlueprint->bDeprecate = InClass->ClassFlags & CLASS_Deprecated;
+	InBlueprint->bGenerateAbstractClass = InClass->ClassFlags & CLASS_Abstract;
+	InBlueprint->BlueprintDescription = InClass->HasMetaData(TEXT("Tooltip")) ? InClass->GetMetaData(TEXT("Tooltip")) : FString{};
+	InBlueprint->BlueprintDisplayName = InClass->HasMetaData(TEXT("DisplayName")) ? InClass->GetMetaData(TEXT("DisplayName")) : FString{};
+	InBlueprint->BlueprintType = (InClass->ClassFlags & CLASS_Const) ? BPTYPE_Const : BPTYPE_Normal;
+	InBlueprint->BlueprintCategory = InClass->HasMetaData(TEXT("Category")) ? InClass->GetMetaData(TEXT("Category")) : FString{};
+	if (InClass->HasMetaData(TEXT("HideCategories")))
+	{
+		InClass->GetMetaData(TEXT("HideCategories")).ParseIntoArray(InBlueprint->HideCategories, TEXT(" "), true);
+	}
 }
 
 void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
@@ -461,6 +459,33 @@ void UPEFunctionMetaData::SetForceBlueprintImpure(bool bInForceBlueprintImpure)
 
 bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
 {
+	//	a helper function used to update text value, and return if the value is updated by a new value
+	static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue)->bool
+	{
+		const FText NewValue = InMetaData.Contains(InKey) ?  FText::FromString(InMetaData[InKey]) : FText{};
+		const bool bChanged = !NewValue.EqualTo(InOutValue);
+		InOutValue = NewValue;
+		return bChanged;
+	};
+
+	//	a helper function used to update boolean value, and return if the value is updated by the new value
+	static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, bool& InOutValue)->bool
+	{
+		const bool NewValue = InMetaData.Contains(InKey) ? true : false;
+		const bool bChanged = NewValue != InOutValue;
+		InOutValue = bChanged;
+		return bChanged;
+	};
+
+	//	a helper function sued update string value, return return if the value is updated by the new value
+	static const auto UpdateStringMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FString& InOutValue)->bool
+	{
+		const FString NewValue = InMetaData.Contains(InKey) ? InMetaData[InKey] : FString{};
+		const bool bChanged = NewValue != InOutValue;
+		InOutValue = NewValue;
+		return bChanged;
+	};
+	
 	if (!IsValid(InFunctionEntry))
 	{
 		return false;
@@ -473,18 +498,15 @@ bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
 
 	bool bMetaDataChanged = false;
 	auto& MetaDataToSet = InFunctionEntry->MetaData;
-	if (MetaData.Contains(TEXT("CallInEditor")))
-	{
-		bMetaDataChanged = !MetaDataToSet.bCallInEditor ? true : bMetaDataChanged;
-		MetaDataToSet.bCallInEditor = true;
-	}
 
-	if (MetaData.Contains(TEXT("Keywords")))
-	{
-		const FText NewKeywords = FText::FromString(MetaData[TEXT("Keywords")]);
-		bMetaDataChanged = !NewKeywords.EqualTo(MetaDataToSet.Keywords) ? true : bMetaDataChanged;
-		MetaDataToSet.Keywords = NewKeywords;
-	}
+	bMetaDataChanged = UpdateBooleanMetaData(TEXT("CallInEditor"), MetaData, MetaDataToSet.bCallInEditor) || bMetaDataChanged;
+	bMetaDataChanged = UpdateTextMetaData(TEXT("Category"), MetaData, MetaDataToSet.Category) || bMetaDataChanged;
+	bMetaDataChanged = UpdateTextMetaData(TEXT("Keywords"), MetaData, MetaDataToSet.Keywords) || bMetaDataChanged;
+	bMetaDataChanged = UpdateTextMetaData(TEXT("CompactNodeTitle"), MetaData, MetaDataToSet.CompactNodeTitle) || bMetaDataChanged;
+	bMetaDataChanged = UpdateTextMetaData(TEXT("ToolTip"), MetaData, MetaDataToSet.ToolTip) || bMetaDataChanged;
+	bMetaDataChanged = UpdateBooleanMetaData(TEXT("DeprecatedFunction"), MetaData, MetaDataToSet.bIsDeprecated) || bMetaDataChanged;
+	bMetaDataChanged = UpdateStringMetaData(TEXT("DeprecationMessage"), MetaData, MetaDataToSet.DeprecationMessage) || bMetaDataChanged;
+	 
 	return bFlagsChanged || bMetaDataChanged;
 }
 
@@ -520,9 +542,9 @@ bool UPEParamMetaData::Apply(FEdGraphPinType& PinType) const
 {
 	//	most meta data could not set in blueprint, should have a way to apply on related FProperty after blueprint compilation?
 	bool bChanged = false;
-	bChanged = PinType.bIsConst != !!(ParamFlags & CPF_ConstParm) ? true : bChanged;
+	bChanged = (PinType.bIsConst != !!(ParamFlags & CPF_ConstParm)) || bChanged;
 	PinType.bIsConst = !!(ParamFlags & CPF_ConstParm);
-	bChanged = PinType.bIsReference != !!(ParamFlags & CPF_ReferenceParm) ? true : bChanged;
+	bChanged = (PinType.bIsReference != !!(ParamFlags & CPF_ReferenceParm)) || bChanged;
 	PinType.bIsReference = !!(ParamFlags & CPF_ReferenceParm);
 
 	return bChanged;
@@ -558,7 +580,7 @@ bool UPEPropertyMetaData::Apply(FBPVariableDescription& Element) const
 	{
 		if (const auto MetaDataEntryPtr = Element.MetaDataArray.FindByPredicate([Key = Pair.Key](const FBPVariableMetaDataEntry& InEntry) {return InEntry.DataKey == Key; }))
 		{
-			bMetaDataChanged = MetaDataEntryPtr->DataValue != Pair.Value ? true : bMetaDataChanged;
+			bMetaDataChanged = MetaDataEntryPtr->DataValue != Pair.Value || bMetaDataChanged;
 			MetaDataEntryPtr->DataValue = Pair.Value;
 		}
 		else

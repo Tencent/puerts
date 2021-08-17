@@ -435,9 +435,10 @@ public:
 	 * @brief apply the meta data to specific class, this should only call at most once
 	 *		since this function will change the internal status of the meta data
 	 * @param InClass
+	 * @param InBlueprint
 	 * @return
 	 */
-	UE_NODISCARD bool Apply(UClass* InClass);
+	UE_NODISCARD bool Apply(UClass* InClass, UBlueprint* InBlueprint);
 private:
 	/**
 	 * @brief the helper function used to get the value array like meta data from the given class
@@ -449,6 +450,12 @@ private:
 	 */
 	static TArray<FString> GetClassMetaDataValues(UClass* InClass, const TCHAR* InMetaDataKey, const TCHAR* InDelimiter = TEXT(" "), bool bInCullEmpty = true);
 
+	/**
+	* @brief since blueprint compilation will reset class meta data, so make blueprint sync with class
+	* @param InClass
+	* @param InBlueprint
+	*/
+	static void SyncClassToBlueprint(UClass* InClass, UBlueprint* InBlueprint);
 private:
 
 	/**
@@ -700,21 +707,43 @@ private:
 	{
 		check(IsValid(InCustomEvent));
 
-		bOutChanged = false;
-		//	meta data, seem most of the meta data could not set for the blueprint function,
-		auto& MetaDataToSet = InCustomEvent->GetUserDefinedMetaData();
-		if (InMetaData.Contains(TEXT("CallInEditor")))
+		//	a helper function used to update text value, and return if the value is updated by a new value
+		static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue)->bool
 		{
-			bOutChanged = !MetaDataToSet.bCallInEditor ? true : bOutChanged;
-			MetaDataToSet.bCallInEditor = true;
-		}
+			const FText NewValue = InMetaData.Contains(InKey) ?  FText::FromString(InMetaData[InKey]) : FText{};
+			const bool bChanged = !NewValue.EqualTo(InOutValue);
+			InOutValue = NewValue;
+			return bChanged;
+		};
+		//	a helper function used to update boolean value, and return if the value is updated by the new value
+		static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, bool& InOutValue)->bool
+		{
+			const bool NewValue = InMetaData.Contains(InKey) ? true : false;
+			const bool bChanged = NewValue != InOutValue;
+			InOutValue = bChanged;
+			return bChanged;
+		};
+		//	a helper function sued update string value, return return if the value is updated by the new value
+		static const auto UpdateStringMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FString& InOutValue)->bool
+		{
+			const FString NewValue = InMetaData.Contains(InKey) ? InMetaData[InKey] : FString{};
+			const bool bChanged = NewValue != InOutValue;
+			InOutValue = NewValue;
+			return bChanged;
+		};
 
-		if (InMetaData.Contains(TEXT("Keywords")))
-		{
-			const FText NewKeywords = FText::FromString(InMetaData[TEXT("Keywords")]);
-			bOutChanged = NewKeywords.EqualTo(MetaDataToSet.Keywords) ? true : bOutChanged;
-			MetaDataToSet.Keywords = NewKeywords;
-		}
+		bool bMetaDataChanged = false;
+		auto& MetaDataToSet = InCustomEvent->GetUserDefinedMetaData();
+		
+		bMetaDataChanged = UpdateBooleanMetaData(TEXT("CallInEditor"), InMetaData, MetaDataToSet.bCallInEditor) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("Category"), InMetaData, MetaDataToSet.Category) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("Keywords"), InMetaData, MetaDataToSet.Keywords) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("CompactNodeTitle"), InMetaData, MetaDataToSet.CompactNodeTitle) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("ToolTip"), InMetaData, MetaDataToSet.ToolTip) || bMetaDataChanged;
+		bMetaDataChanged = UpdateBooleanMetaData(TEXT("DeprecatedFunction"), InMetaData, MetaDataToSet.bIsDeprecated) || bMetaDataChanged;
+		bMetaDataChanged = UpdateStringMetaData(TEXT("DeprecationMessage"), InMetaData, MetaDataToSet.DeprecationMessage) || bMetaDataChanged;
+
+		bOutChanged = bMetaDataChanged;
 	}
 public:
 

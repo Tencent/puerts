@@ -138,7 +138,7 @@ bool UPEBlueprintAsset::LoadOrCreateWithMetaData(const FString& InName, const FS
 
 	if (IsValid(InMetaData))
 	{	//	apply the meta data
-		NeedSave = InMetaData->Apply(GeneratedClass) ? true : NeedSave;
+		NeedSave = InMetaData->Apply(GeneratedClass, Blueprint) || NeedSave;
 	}
 	return true;
 }
@@ -222,7 +222,7 @@ void UPEBlueprintAsset::AddParameterWithMetaData(FName InParameterName, FPEGraph
 	{
 		if (InMetaData->Apply(PinType))
 		{
-			UE_LOG(LogTemp, Verbose, TEXT("Currently Parameter Type Don't Affect NeedSava In Add Parameter Process"))
+			// "Currently Parameter Type Don't Affect NeedSava In Add Parameter Process"
 		}
 	}
 	ParameterTypes.Add(PinType);
@@ -737,11 +737,11 @@ void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGr
 	//	check if input function is custom event
 	if (UK2Node_CustomEvent* CustomEvent = FindCustomEvent(Blueprint, InName))
 	{
-		NeedSave = InMetaData->Apply(CustomEvent) ? true : NeedSave;
+		NeedSave = InMetaData->Apply(CustomEvent) || NeedSave;
 	}
 	else if (UK2Node_FunctionEntry* FunctionEntry = FindFunctionEntry(Blueprint, InName))
 	{
-		NeedSave = InMetaData->Apply(FunctionEntry) ? true : NeedSave;
+		NeedSave = InMetaData->Apply(FunctionEntry) || NeedSave;
 	}
 	else
 	{
@@ -853,7 +853,7 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
 	}
 
 	//	currently the replicated behaviour is different from cpp
-	NeedSave = InMetaData->Apply(Blueprint->NewVariables[VarIndex]) ? true : NeedSave;
+	NeedSave = InMetaData->Apply(Blueprint->NewVariables[VarIndex]) || NeedSave;
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()

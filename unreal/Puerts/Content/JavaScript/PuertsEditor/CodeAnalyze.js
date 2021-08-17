@@ -1920,7 +1920,7 @@ function watch(configFilePath) {
                             }
                             ConfigName = value.Values[0];
                             break;
-                        case 'DefaultConfig':
+                        case 'DefaultConfig'.toLowerCase():
                             if (!value.IsMetaKey()) {
                                 return markInvalidSpecifier(`${value.Specifier}`);
                             }
@@ -2018,7 +2018,7 @@ function watch(configFilePath) {
                             }
                             metaData.set('AdvancedClassDisplay', 'true');
                             break;
-                        case 'ConversionRoot':
+                        case 'ConversionRoot'.toLowerCase():
                             if (!value.IsMetaKey()) {
                                 return markInvalidSpecifier(`${value.Specifier}`);
                             }
