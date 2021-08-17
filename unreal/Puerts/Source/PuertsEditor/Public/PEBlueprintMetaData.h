@@ -11,8 +11,6 @@
 #include "Math/UnitConversion.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionEntry.h"
-#include "PropertyMacros.h"
-#include "UnitConversion.h"
 #include "Engine/Blueprint.h"
 
 #include "PEBlueprintMetaData.generated.h"
