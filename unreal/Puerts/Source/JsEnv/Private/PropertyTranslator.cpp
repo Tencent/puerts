@@ -363,6 +363,10 @@ public:
 private:
 };
 
+#ifdef GetObject
+#undef GetObject
+#endif
+
 class FInterfacePropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
