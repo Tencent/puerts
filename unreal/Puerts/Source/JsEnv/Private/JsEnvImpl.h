@@ -348,13 +348,17 @@ private:
     v8::Isolate::CreateParams CreateParams;
 
 #if defined(WITH_NODEJS)
-    uv_loop_t Loop;
+    uv_loop_t NodeUVLoop;
     
     std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
 
-    node::IsolateData* Isolate_Data;
+    node::IsolateData* NodeIsolateData;
 
-    node::Environment* Env;
+    node::Environment* NodeEnv;
+
+    const float UV_LOOP_DELAY  = 0.1;
+    
+    FDelegateHandle UVLoopCallbackHandler;
 #endif
 
     v8::Isolate* MainIsolate;

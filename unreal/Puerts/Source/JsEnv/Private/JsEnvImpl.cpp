@@ -151,7 +151,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     std::vector<std::string> ExecArgs;
     std::vector<std::string> Errors;
 
-    const int Ret = uv_loop_init(&Loop);
+    const int Ret = uv_loop_init(&NodeUVLoop);
     if (Ret != 0)
     {
         Logger->Error(FString::Printf(TEXT("Failed to initialize loop: %s\n"),
@@ -163,7 +163,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
-    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &Loop,
+    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop,
         Platform);
 
     auto Isolate = MainIsolate;
@@ -180,7 +180,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     v8::Isolate::Scope Isolatescope(Isolate);
 
-    Isolate_Data = node::CreateIsolateData(Isolate, &Loop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+    NodeIsolateData = node::CreateIsolateData(Isolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
 
     v8::HandleScope HandleScope(Isolate);
 
@@ -194,10 +194,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
 #if defined(WITH_NODEJS)
     //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
-    Env = CreateEnvironment(Isolate_Data, Context, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+    NodeEnv = CreateEnvironment(NodeIsolateData, Context, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
 
     v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
-        Env,
+        NodeEnv,
         "const publicRequire ="
         "  require('module').createRequire(process.cwd() + '/');"
         "globalThis.require = publicRequire;"
@@ -382,6 +382,14 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 
+#if defined(WITH_NODEJS)
+    UVLoopCallbackHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float) -> bool
+    {
+        uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT);
+        return true;
+    }), UV_LOOP_DELAY);
+#endif
+
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
     AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
@@ -407,6 +415,10 @@ FJsEnvImpl::~FJsEnvImpl()
     Require.Reset();
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
+
+#if defined(WITH_NODEJS)
+    FTicker::GetCoreTicker().RemoveTicker(UVLoopCallbackHandler);
+#endif
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
 
@@ -511,10 +523,10 @@ FJsEnvImpl::~FJsEnvImpl()
         }
 
 #if defined(WITH_NODEJS)
-        node::EmitExit(Env);
-        node::Stop(Env);
-        node::FreeEnvironment(Env);
-        node::FreeIsolateData(Isolate_Data);
+        node::EmitExit(NodeEnv);
+        node::Stop(NodeEnv);
+        node::FreeEnvironment(NodeEnv);
+        node::FreeIsolateData(NodeIsolateData);
 
         auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
         Platform->UnregisterIsolate(Isolate);
