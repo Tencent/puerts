@@ -427,7 +427,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint's class group is always 'Custom'
          */
-        // let ClassGroup: ClassKey;
+        let ClassGroup: ClassKey;
 
         /**
          * @brief 
@@ -435,7 +435,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint's class with in always come from parent class, otherwise Object
          */
-        // let Within: ClassKey; /* =OuterClassName */
+        let Within: ClassKey; /* =OuterClassName */
 
         /**
          * @brief
@@ -450,7 +450,7 @@ declare module "ue" {
          *     Prevents this class from being used for variables in blueprints
          * @deprecated
          */
-        // let NotBlueprintType: ClassKey;
+        let NotBlueprintType: ClassKey;
 
         /**
          * @brief
@@ -472,7 +472,7 @@ declare module "ue" {
          * @deprecated
          *      the export issue is not work for blueprint, the blueprint is more or less an asset issue
          */
-        // let MinimalAPI: ClassKey;
+        let MinimalAPI: ClassKey;
 
         /**
          * @brief   
@@ -480,7 +480,7 @@ declare module "ue" {
          * @deprecated
          *      useless
          */
-        // let customConstructor: ClassKey;
+        let customConstructor: ClassKey;
 
         /**
          * @brief
@@ -489,7 +489,7 @@ declare module "ue" {
          * @deprecated
          *      blueprint never could be intrinsic
          */
-        // let Intrinsic: ClassKey;
+        let Intrinsic: ClassKey;
 
         /**
          * @brief
@@ -498,7 +498,7 @@ declare module "ue" {
          * @deprecated
          *      blueprint has no export issue 
          */
-        // let noexport: ClassKey;
+        let noexport: ClassKey;
 
         /**
          * @brief 
@@ -506,7 +506,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let placeable: ClassKey;
+        let placeable: ClassKey;
 
         /**
          * @brief 
@@ -514,7 +514,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let notplaceable: ClassKey;
+        let notplaceable: ClassKey;
 
         /**
          * @brief 
@@ -522,7 +522,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let DefaultToInstanced: ClassKey;
+        let DefaultToInstanced: ClassKey;
 
         /**
          * @brief 
@@ -548,7 +548,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let Transient: ClassKey;
+        let Transient: ClassKey;
 
         /**
          * @brief 
@@ -556,7 +556,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let nonTransient: ClassKey;
+        let nonTransient: ClassKey;
 
         /**
          * @brief 
@@ -565,7 +565,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint is always config from its parent
          */
-        // let config: ClassKey;
+        let config: ClassKey;
             
         /**
          * @brief
@@ -573,7 +573,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let perObjectConfig: ClassKey;
+        let perObjectConfig: ClassKey;
             
         /**
          * @brief 
@@ -581,7 +581,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let configdonotcheckdefaults: ClassKey;
+        let configdonotcheckdefaults: ClassKey;
 
         /**
          * @brief
@@ -589,7 +589,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let defaultconfig: ClassKey;
+        let defaultconfig: ClassKey;
 
         /**
          * @brief
@@ -598,7 +598,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let editinlinenew: ClassKey;
+        let editinlinenew: ClassKey;
 
         /**
          * @brief
@@ -606,7 +606,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let noteditinlinenew: ClassKey;
+        let noteditinlinenew: ClassKey;
 
         /**
          * @brief
@@ -614,7 +614,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint flag is reset by compile process, useless
          */
-        // let hidedropdown: ClassKey;
+        let hidedropdown: ClassKey;
 
         /**
          * @brief
@@ -622,7 +622,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint showCategories will be clear in compilation
          */
-        // let showCategories: ClassKey;
+        let showCategories: ClassKey;
 
         /**
          * @brief
@@ -642,7 +642,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint showFunctions will be clear in compilation
          */
-        // let showFunctions: ClassKey;
+        let showFunctions: ClassKey;
 
         /**
          * @brief
@@ -650,7 +650,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint hideFunctions will be clear in compilation
          */
-        // let hideFunctions: ClassKey;
+        let hideFunctions: ClassKey;
 
         /**
          * @brief
@@ -658,7 +658,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint autoExpandCategories will be clear in compilation
          */
-        // let autoExpandCategories: ClassKey;
+        let autoExpandCategories: ClassKey;
 
         /**
          * @brief
@@ -666,7 +666,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint autoCollapseCategories will be clear in compilation
          */
-        // let autoCollapseCategories: ClassKey;
+        let autoCollapseCategories: ClassKey;
 
         /**
          * @brief
@@ -674,7 +674,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint dontAutoCollapseCategories will be clear in compilation
          */
-        // let dontAutoCollapseCategories: ClassKey;
+        let dontAutoCollapseCategories: ClassKey;
 
         /**
          * @brief
@@ -682,7 +682,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint collapseCategories will be clear in compilation
          */
-        // let collapseCategories: ClassKey;
+        let collapseCategories: ClassKey;
 
         /**
          * @brief
@@ -690,7 +690,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint dontCollapseCategories will be clear in compilation
          */
-        // let dontCollapseCategories: ClassKey;
+        let dontCollapseCategories: ClassKey;
 
         /**
          * @brief
@@ -728,7 +728,7 @@ declare module "ue" {
          * @deprecated
          *      the blueprint custom chunk is meaningless
          */
-        // let CustomThunkTemplates: ClassKey;
+        let CustomThunkTemplates: ClassKey;
 
         /**
          * decorator used to add class specifier
@@ -963,7 +963,7 @@ declare module "ue" {
          * @deprecated
          *      metadata "BlueprintGetter" will be discarded
          */
-        // let BlueprintGetter: FunctionKey;
+        let BlueprintGetter: FunctionKey;
 
         /**
          * @brief 
@@ -971,7 +971,7 @@ declare module "ue" {
          * @deprecated
          *      metadata "BlueprintSetter" will be discarded
          */
-        // let BlueprintSetter: FunctionKey;
+        let BlueprintSetter: FunctionKey;
 
         /**
          * @brief
@@ -997,7 +997,7 @@ declare module "ue" {
          * @deprecated
          *      currently custom thunk is meaningless for ufunction
          */
-        // let CustomThunk: FunctionKey;
+        let CustomThunk: FunctionKey;
 
         /**
          * @brief
@@ -1012,7 +1012,7 @@ declare module "ue" {
          * @deprecated
          *      metadata for WithValidation is discarded
          */
-        // let WithValidation: FunctionKey;
+        let WithValidation: FunctionKey;
 
         /**
          * @brief
@@ -1020,7 +1020,7 @@ declare module "ue" {
          * @deprecated
          *      no way to inject information to uht
          */
-        // let ServiceRequest: FunctionKey;
+        let ServiceRequest: FunctionKey;
 
         /**
          * @brief
@@ -1028,7 +1028,7 @@ declare module "ue" {
          * @deprecated
          *      no way to inject information to uht
          */
-        // let ServiceResponse: FunctionKey;
+        let ServiceResponse: FunctionKey;
 		
         /**
          * @brief
@@ -1037,7 +1037,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported
          */
-        // let Variadic: FunctionKey;
+        let Variadic: FunctionKey;
 
         /**
          * @brief
@@ -1045,7 +1045,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported
          */
-        // let ReturnDisplayName: FunctionKey;
+        let ReturnDisplayName: FunctionKey;
 
         /**
          * @brief
@@ -1053,7 +1053,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported
          */
-        // let InternalUseParam: FunctionKey;
+        let InternalUseParam: FunctionKey;
 
         /**
          * decorator used to add function specifier
@@ -1073,7 +1073,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported
          */
-        // let BlueprintInternalUseOnly: MetaKey;
+        let BlueprintInternalUseOnly: MetaKey;
 
         /**
          * @brief
@@ -1087,7 +1087,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported
          */
-        // let ShortTooltip: MetaKey;
+        let ShortTooltip: MetaKey;
 
         /**
          * @brief
@@ -1095,24 +1095,24 @@ declare module "ue" {
          * @deprecated
          *      currently not supported
          */
-        // let DocumentationPolicy: MetaKey;
+        let DocumentationPolicy: MetaKey;
 
         /**
          * @brief
          *      [FunctionMetadata] Used with a comma-separated list of parameter names that should show up as advanced pins (requiring UI expansion).
-	 *      Alternatively you can set a number, which is the number of parameters from the start that should *not* be marked as advanced (eg 'AdvancedDisplay="2"' will mark all but the first two advanced).
+         *      Alternatively you can set a number, which is the number of parameters from the start that should *not* be marked as advanced (eg 'AdvancedDisplay="2"' will mark all but the first two advanced).
          * @deprecated
          *      currently not supported
          */
-        // let AdvancedDisplay: MetaKey;
+        let AdvancedDisplay: MetaKey;
 
         /**
          * @brief
-	 *      [FunctionMetadata] Indicates that a BlueprintCallable function should use a Call Array Function node and that the parameters specified in the comma delimited list should be treated as wild card array properties.
+	     *      [FunctionMetadata] Indicates that a BlueprintCallable function should use a Call Array Function node and that the parameters specified in the comma delimited list should be treated as wild card array properties.
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ArrayParm: MetaKey;
+        let ArrayParm: MetaKey;
 
         /**
          * @brief
@@ -1120,7 +1120,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ArrayTypeDependentParams: MetaKey;
+        let ArrayTypeDependentParams: MetaKey;
 
         /**
          * @brief
@@ -1129,7 +1129,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let AutoCreateRefTerm: MetaKey;
+        let AutoCreateRefTerm: MetaKey;
 
         /**
          * @brief
@@ -1137,7 +1137,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let BlueprintProtected: MetaKey;
+        let BlueprintProtected: MetaKey;
 
         /**
          * @brief
@@ -1145,7 +1145,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let CallableWithoutWorldContext: MetaKey;
+        let CallableWithoutWorldContext: MetaKey;
 
         /**
          * @brief
@@ -1153,7 +1153,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let CommutativeAssociativeBinaryOperator: MetaKey;
+        let CommutativeAssociativeBinaryOperator: MetaKey;
 
         /**
          * @brief
@@ -1167,7 +1167,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let CustomStructureParam: MetaKey;
+        let CustomStructureParam: MetaKey;
 
         /**
          * @brief
@@ -1175,7 +1175,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let DefaultToSelf: MetaKey;
+        let DefaultToSelf: MetaKey;
 
         /**
          * @brief
@@ -1196,7 +1196,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ExpandEnumAsExecs: MetaKey;
+        let ExpandEnumAsExecs: MetaKey;
 
         /**
          * @brief
@@ -1204,7 +1204,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ExpandBoolAsExecs: MetaKey;
+        let ExpandBoolAsExecs: MetaKey;
 
         /**
          * @brief
@@ -1212,7 +1212,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let DisplayName: MetaKey; //, (Commented out so as to avoid duplicate name with version in the Class section, but still show in the function section)
+        let DisplayName: MetaKey; //, (Commented out so as to avoid duplicate name with version in the Class section, but still show in the function section)
 
         /**
          * @brief
@@ -1220,7 +1220,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ScriptName: MetaKey; // (Commented out so as to avoid duplicate name with version in the Class section, but still show in the function section)
+        let ScriptName: MetaKey; // (Commented out so as to avoid duplicate name with version in the Class section, but still show in the function section)
 
         /**
          * @brief
@@ -1228,7 +1228,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-	// let ScriptNoExport: MetaKey; //, (Commented out so as to avoid duplicate name with version in the Property section, but still show in the function section)
+	    let ScriptNoExport: MetaKey; //, (Commented out so as to avoid duplicate name with version in the Property section, but still show in the function section)
 
         /**
          * @brief
@@ -1237,7 +1237,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ScriptMethod: MetaKey;
+        let ScriptMethod: MetaKey;
 
         /**
          * @brief
@@ -1245,7 +1245,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ScriptMethodSelfReturn: MetaKey;
+        let ScriptMethodSelfReturn: MetaKey;
 
         /**
          * @brief
@@ -1265,7 +1265,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ScriptOperator: MetaKey;
+        let ScriptOperator: MetaKey;
 
         /**
          * @brief
@@ -1275,7 +1275,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ScriptConstant: MetaKey;
+        let ScriptConstant: MetaKey;
 
         /**
          * @brief
@@ -1283,7 +1283,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ScriptConstantHost: MetaKey;
+        let ScriptConstantHost: MetaKey;
 
         /**
          * @brief
@@ -1291,7 +1291,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let HidePin: MetaKey;
+        let HidePin: MetaKey;
 
         /**
          * @brief
@@ -1299,7 +1299,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let HideSpawnParms: MetaKey;
+        let HideSpawnParms: MetaKey;
 
         /**
          * @brief
@@ -1313,7 +1313,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let Latent: MetaKey;
+        let Latent: MetaKey;
 
         /**
          * @brief
@@ -1321,7 +1321,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let LatentInfo: MetaKey;
+        let LatentInfo: MetaKey;
 
         /**
          * @brief
@@ -1329,7 +1329,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let MaterialParameterCollectionFunction: MetaKey;
+        let MaterialParameterCollectionFunction: MetaKey;
 
         /**
          * @brief
@@ -1337,7 +1337,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let NativeBreakFunc: MetaKey;
+        let NativeBreakFunc: MetaKey;
 
         /**
          * @brief
@@ -1345,7 +1345,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let NativeMakeFunc: MetaKey;
+        let NativeMakeFunc: MetaKey;
 
         /**
          * @brief
@@ -1353,7 +1353,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let UnsafeDuringActorConstruction: MetaKey;
+        let UnsafeDuringActorConstruction: MetaKey;
 
         /**
          * @brief
@@ -1361,7 +1361,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let WorldContext: MetaKey;
+        let WorldContext: MetaKey;
 
         /**
          * @brief
@@ -1369,7 +1369,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let BlueprintAutocast: MetaKey;
+        let BlueprintAutocast: MetaKey;
 
         /**
          * @brief
@@ -1377,7 +1377,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let NotBlueprintThreadSafe: MetaKey;
+        let NotBlueprintThreadSafe: MetaKey;
 
         /**
          * @brief
@@ -1385,7 +1385,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let DeterminesOutputType: MetaKey;
+        let DeterminesOutputType: MetaKey;
 
         /**
          * @brief
@@ -1393,7 +1393,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let DynamicOutputParam: MetaKey;
+        let DynamicOutputParam: MetaKey;
 
         /**
          * @brief
@@ -1401,7 +1401,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let DataTablePin: MetaKey;
+        let DataTablePin: MetaKey;
 
         /**
          * @brief
@@ -1409,7 +1409,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let SetParam: MetaKey;
+        let SetParam: MetaKey;
 
         /**
          * @brief
@@ -1417,7 +1417,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let MapParam: MetaKey;
+        let MapParam: MetaKey;
 
         /**
          * @brief
@@ -1425,7 +1425,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let MapKeyParam: MetaKey;
+        let MapKeyParam: MetaKey;
 
         /**
          * @brief
@@ -1433,7 +1433,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let MapValueParam: MetaKey;
+        let MapValueParam: MetaKey;
 
         /// [FunctionMetadata] [InterfaceMetadata] Metadata that identifies an integral property as a bitmask.
         // Bitmask, for property
@@ -1453,7 +1453,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let AnimBlueprintFunction: MetaKey;
+        let AnimBlueprintFunction: MetaKey;
 
         /**
          * @brief
@@ -1461,7 +1461,7 @@ declare module "ue" {
          * @deprecated
          *      currently not supported by blueprint function
          */
-        // let ArrayParam: MetaKey;
+        let ArrayParam: MetaKey;
 
         /**
          * the decorator used to add meta data to function
@@ -2174,7 +2174,7 @@ declare module "ue" {
          * @deprecated
          *      ServiceRequest/ServiceResponse is not supported
          */
-        // let NotReplicated: ParamKey;
+        let NotReplicated: ParamKey;
         
         /**
          * @brief
@@ -2182,7 +2182,7 @@ declare module "ue" {
          * @deprecated
          *      no where to add this to pin type
          */
-        // let DisplayName: ParamKey;
+        let DisplayName: ParamKey;
 
         /**
          * decorator to add parameters metadata
