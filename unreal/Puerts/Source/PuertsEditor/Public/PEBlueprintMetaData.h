@@ -312,8 +312,9 @@ struct FPEMetaDataUtils
 	 * @brief add specific meta data to ufield
 	 * @param InField
 	 * @param InMetaData
+	 * @return
 	 */
-	static void AddMetaData(UField* InField, TMap<FName, FString>& InMetaData);
+	static bool AddMetaData(UField* InField, TMap<FName, FString>& InMetaData);
 };
 
 /**
@@ -434,8 +435,10 @@ public:
 	 * @brief apply the meta data to specific class, this should only call at most once
 	 *		since this function will change the internal status of the meta data
 	 * @param InClass
+	 * @param InBlueprint
+	 * @return
 	 */
-	void Apply(UClass* InClass);
+	UE_NODISCARD bool Apply(UClass* InClass, UBlueprint* InBlueprint);
 private:
 	/**
 	 * @brief the helper function used to get the value array like meta data from the given class
@@ -447,6 +450,12 @@ private:
 	 */
 	static TArray<FString> GetClassMetaDataValues(UClass* InClass, const TCHAR* InMetaDataKey, const TCHAR* InDelimiter = TEXT(" "), bool bInCullEmpty = true);
 
+	/**
+	* @brief since blueprint compilation will reset class meta data, so make blueprint sync with class
+	* @param InClass
+	* @param InBlueprint
+	*/
+	static void SyncClassToBlueprint(UClass* InClass, UBlueprint* InBlueprint);
 private:
 
 	/**
@@ -456,16 +465,18 @@ private:
 	void MergeClassCategories(UClass* InClass);
 
 	/**
-	* @brief Merge and validate the class flags, the input class is the class to set meta data
-	* @param InClass
-	*/
-	void MergeAndValidateClassFlags(UClass* InClass);
+	 * @brief Merge and validate the class flags, the input class is the class to set meta data
+	 * @param InClass
+	 * @return if the class flags is changed
+	 */
+	bool MergeAndValidateClassFlags(UClass* InClass);
 
 	/**
 	 * @brief set the class meta data
 	 * @param InClass
+	 * @return
 	 */
-	void SetClassMetaData(UClass* InClass);
+	bool SetClassMetaData(UClass* InClass);
 
 	/**
 	 * @brief set and check with class
@@ -660,13 +671,13 @@ public:
 	 * @brief apply to a custom event
 	 * @param InCustomEvent
 	 */
-	void Apply(UK2Node_CustomEvent* InCustomEvent) const;
+	UE_NODISCARD bool Apply(UK2Node_CustomEvent* InCustomEvent) const;
 
 	/**
 	 * @brief apply to a normal function
 	 * @param InFunctionEntry
 	 */
-	void Apply(UK2Node_FunctionEntry* InFunctionEntry) const;
+	UE_NODISCARD bool Apply(UK2Node_FunctionEntry* InFunctionEntry) const;
 
 private:
 
@@ -674,33 +685,65 @@ private:
 	/**
 	 * @brief
 	 *		fallback if the custom event not support the user defined meta data
+	 * @param bOutChanged
 	 * @param ...
 	 */
-	static void ApplyCustomEventMetaData(const TMap<FName, FString>&, ...);
+	template<typename... Args>
+	static void ApplyCustomEventMetaData(bool& bOutChanged, Args&&...)
+	{
+		bOutChanged = false;
+	};
 
 	/**
 	 * @brief add user defined meta data for custom event
 	 * @tparam CustomEvent
+	 * @param bOutChanged
 	 * @param InMetaData
 	 * @param InCustomEvent
 	 * @return
 	 */
 	template <typename CustomEvent>
-	static auto ApplyCustomEventMetaData(const TMap<FName, FString>& InMetaData, CustomEvent* InCustomEvent) -> typename std::enable_if<true, Void_t<decltype(std::declval<CustomEvent>().GetUserDefinedMetaData())>>::type
+	static auto ApplyCustomEventMetaData(bool& bOutChanged, const TMap<FName, FString>& InMetaData, CustomEvent* InCustomEvent) -> typename std::enable_if<true, Void_t<decltype(std::declval<CustomEvent>().GetUserDefinedMetaData())>>::type
 	{
 		check(IsValid(InCustomEvent));
 
-		//	meta data, seem most of the meta data could not set for the blueprint function,
-		auto& MetaDataToSet = InCustomEvent->GetUserDefinedMetaData();
-		if (InMetaData.Contains(TEXT("CallInEditor")))
+		//	a helper function used to update text value, and return if the value is updated by a new value
+		static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue)->bool
 		{
-			MetaDataToSet.bCallInEditor = true;
-		}
+			const FText NewValue = InMetaData.Contains(InKey) ?  FText::FromString(InMetaData[InKey]) : FText{};
+			const bool bChanged = !NewValue.EqualTo(InOutValue);
+			InOutValue = NewValue;
+			return bChanged;
+		};
+		//	a helper function used to update boolean value, and return if the value is updated by the new value
+		static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, bool& InOutValue)->bool
+		{
+			const bool NewValue = InMetaData.Contains(InKey) ? true : false;
+			const bool bChanged = NewValue != InOutValue;
+			InOutValue = bChanged;
+			return bChanged;
+		};
+		//	a helper function sued update string value, return return if the value is updated by the new value
+		static const auto UpdateStringMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FString& InOutValue)->bool
+		{
+			const FString NewValue = InMetaData.Contains(InKey) ? InMetaData[InKey] : FString{};
+			const bool bChanged = NewValue != InOutValue;
+			InOutValue = NewValue;
+			return bChanged;
+		};
 
-		if (InMetaData.Contains(TEXT("Keywords")))
-		{
-			MetaDataToSet.Keywords = FText::FromString(InMetaData[TEXT("Keywords")]);
-		}
+		bool bMetaDataChanged = false;
+		auto& MetaDataToSet = InCustomEvent->GetUserDefinedMetaData();
+		
+		bMetaDataChanged = UpdateBooleanMetaData(TEXT("CallInEditor"), InMetaData, MetaDataToSet.bCallInEditor) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("Category"), InMetaData, MetaDataToSet.Category) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("Keywords"), InMetaData, MetaDataToSet.Keywords) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("CompactNodeTitle"), InMetaData, MetaDataToSet.CompactNodeTitle) || bMetaDataChanged;
+		bMetaDataChanged = UpdateTextMetaData(TEXT("ToolTip"), InMetaData, MetaDataToSet.ToolTip) || bMetaDataChanged;
+		bMetaDataChanged = UpdateBooleanMetaData(TEXT("DeprecatedFunction"), InMetaData, MetaDataToSet.bIsDeprecated) || bMetaDataChanged;
+		bMetaDataChanged = UpdateStringMetaData(TEXT("DeprecationMessage"), InMetaData, MetaDataToSet.DeprecationMessage) || bMetaDataChanged;
+
+		bOutChanged = bMetaDataChanged;
 	}
 public:
 
@@ -790,8 +833,9 @@ public:
 	/**
 	 * @brief apply to pin type
 	 * @param PinType
+	 * @return
 	 */
-	void Apply(FEdGraphPinType& PinType) const;
+	UE_NODISCARD bool Apply(FEdGraphPinType& PinType) const;
 
 private:
 
@@ -846,7 +890,7 @@ public:
 	 * @brief apply the meta data to the property
 	 * @param Element
 	 */
-	void Apply(FBPVariableDescription& Element) const;
+	UE_NODISCARD bool Apply(FBPVariableDescription& Element) const;
 private:
 
 	/**
