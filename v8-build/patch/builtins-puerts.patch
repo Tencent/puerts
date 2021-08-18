@@ -119,10 +119,10 @@ index 93780bceec..0b600916ad 100644
  
  #undef TRACE_BS
 diff --git a/src/builtins/builtins-api.cc b/src/builtins/builtins-api.cc
-index 6eb6f87c74..c7b185d30d 100644
+index 6eb6f87c74..bcbe8c8c58 100644
 --- a/src/builtins/builtins-api.cc
 +++ b/src/builtins/builtins-api.cc
-@@ -309,5 +309,73 @@ BUILTIN(HandleApiCallAsConstructor) {
+@@ -309,5 +309,74 @@ BUILTIN(HandleApiCallAsConstructor) {
    return HandleApiCallAsFunctionOrConstructor(isolate, true, args);
  }
  
@@ -171,6 +171,7 @@ index 6eb6f87c74..c7b185d30d 100644
 +}
 +
 +BUILTIN(ApiPuertsCallback) {
++  HandleScope scope(isolate);
 +  Handle<JSFunction> callbackFun = args.target();
 +  RETURN_RESULT_OR_FAILURE(
 +    isolate, 
@@ -209,36 +210,6 @@ index 84ddf55f6f..5df968e57d 100644
                                                                                 \
    /* Symbol */                                                                 \
    /* ES #sec-symbol-constructor */                                             \
-diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
-index 8a897765c8..4a6e54798f 100644
---- a/src/builtins/builtins-string.cc
-+++ b/src/builtins/builtins-string.cc
-@@ -2,6 +2,7 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-+#include "src/api/api-inl.h"
- #include "src/builtins/builtins-utils-inl.h"
- #include "src/builtins/builtins.h"
- #include "src/heap/heap-inl.h"  // For ToBoolean. TODO(jkummerow): Drop.
-@@ -484,5 +485,17 @@ BUILTIN(StringRaw) {
-   RETURN_RESULT_OR_FAILURE(isolate, result_builder.Finish());
- }
- 
-+void* GetPointer(v8::Local<v8::Value> Value, int Index = 0)
-+{
-+  if (Value.IsEmpty() || !Value->IsObject() || Value->IsUndefined() || Value->IsNull())
-+  {
-+      return nullptr;
-+  }
-+  auto Object = v8::Object::Cast(*Value);
-+  return Object->InternalFieldCount() > Index ?
-+      Object->GetAlignedPointerFromInternalField(Index) : nullptr;
-+}
-+
-+
- }  // namespace internal
- }  // namespace v8
 diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
 index f4049e328e..5b41e1ceed 100644
 --- a/src/init/bootstrapper.cc
