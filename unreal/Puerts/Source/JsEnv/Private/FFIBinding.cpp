@@ -462,8 +462,10 @@ static void UTF8Length(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Info.GetReturnValue().Set(utf8Str.length());
 }
 
-static void Init(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports)
+static void Init(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports)
 {
+    v8::Isolate* Isolate = Context->GetIsolate();
+    
     Exports->Set(Context, puerts::FV8Utils::ToV8String(Isolate, "ffi_prep_cif"), v8::FunctionTemplate::New(Isolate, FFIPrepCif)->GetFunction(Context).ToLocalChecked()).Check();
     
     Exports->Set(Context, puerts::FV8Utils::ToV8String(Isolate, "ffi_prep_cif_var"), v8::FunctionTemplate::New(Isolate, FFIPrepCifVar)->GetFunction(Context).ToLocalChecked()).Check();

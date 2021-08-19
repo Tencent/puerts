@@ -2626,14 +2626,14 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     CHECK_V8_ARGS(String);
 
-    auto Name = FV8Utils::ToFString(Isolate, Info[0]);
+    std::string Name = *(v8::String::Utf8Value(Isolate, Info[0]));
 
     auto Func = FindAddonRegisterFunc(Name);
 
     if (Func)
     {
         auto Exports = v8::Object::New(Isolate);
-        Func(Isolate, Context, Exports);
+        Func(Context, Exports);
         Info.GetReturnValue().Set(Exports);
     }
 }
