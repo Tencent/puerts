@@ -52,6 +52,11 @@ namespace Puerts
         }
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
+            : this(loader, debugPort, 0, externalRuntime, externalContext)
+        {
+        }
+
+        public JsEnv(ILoader loader, int debugPort, int mode, IntPtr externalRuntime, IntPtr externalContext)
         {
             const int libVersionExpect = 11;
             int libVersion = PuertsDLL.GetLibVersion();
