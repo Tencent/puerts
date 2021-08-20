@@ -48,6 +48,11 @@ include_directories(
     Inc
     ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
 )
+if ( WITH_NODE )
+    include_directories(    
+        ${CMAKE_SOURCE_DIR}/node/include/node
+    )
+endif()
 
 set ( PUERTS_INC
     Inc/Log.h
@@ -87,7 +92,7 @@ source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_INC)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_SRC)
 
 if ( APPLE )
-    if ( IOS)
+    if ( IOS )
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
         add_library(puerts STATIC
            ${PUERTS_SRC} ${PUERTS_INC}
@@ -98,7 +103,7 @@ if ( APPLE )
         # 某些mac机器上会默认开始编译arm64版本，暂时先写死x86版本，后续再支持arm64
         set(CMAKE_OSX_ARCHITECTURES x86_64)
 
-        if ( FOR_UT STREQUAL "1")
+        if ( FOR_UT )
             add_library(puerts SHARED
                 ${PUERTS_SRC} ${PUERTS_INC}
             )
@@ -203,9 +208,22 @@ elseif ( APPLE )
             target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
         endif ()
     else ()
-        target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
-        )
+        if ( WITH_NODE )
+            add_library(node SHARED IMPORTED)
+            set_target_properties(node PROPERTIES
+                IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/node/lib/libnode.83.dylib
+            )
+            target_compile_definitions (puerts PRIVATE WITH_NODE)
+            target_link_libraries(puerts 
+                node
+                ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
+            )
+
+        else ()
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
+            )
+        endif()
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
 elseif (UNIX)

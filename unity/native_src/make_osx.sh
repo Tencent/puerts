@@ -1,9 +1,9 @@
 mkdir -p build_osx && cd build_osx
 if [ "$1" == "-ut" ]
 then
-    cmake -DFOR_UT=1 -GXcode ../
+    cmake -DFOR_UT=ON -DWITH_NODE=ON -GXcode ../
 else
-    cmake -GXcode ../
+    cmake -GXcode -DWITH_NODE=ON ../
 fi
 cd ..
 cmake --build build_osx --config Release

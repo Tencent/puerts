@@ -11,6 +11,7 @@
 #include <memory>
 #include "PromiseRejectCallback.hpp"
 
+
 namespace puerts
 {
     v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size)
@@ -55,12 +56,38 @@ namespace puerts
     {
         GeneralDestructor = nullptr;
         Inspector = nullptr;
+
+    #if defined(WITH_NODE)
+        int Argc = 1;
+        char* ArgvIn[] = {"puerts"};
+        char ** Argv = uv_setup_args(Argc, ArgvIn);
+        std::vector<std::string> Args(Argv, Argv + Argc);
+        std::vector<std::string> ExecArgs;
+        std::vector<std::string> Errors;
+    #endif
+
         if (!GPlatform)
         {
-            GPlatform = v8::platform::NewDefaultPlatform();
+            #if defined(WITH_NODE)
+                GPlatform = node::MultiIsolatePlatform::Create(4);
+            #else
+                GPlatform = v8::platform::NewDefaultPlatform();
+            #endif
             v8::V8::InitializePlatform(GPlatform.get());
             v8::V8::Initialize();
+
+            #if defined(WITH_NODE)
+                int ExitCode = node::InitializeNodeWithArgs(&Args, &ExecArgs, &Errors);
+                for (const std::string& error : Errors)
+                {
+                    printf("InitializeNodeWithArgs failed\n");
+                }
+            #endif 
         }
+        
+
+#if !defined(WITH_NODE)
+
 #if PLATFORM_IOS
         std::string Flags = "--jitless";
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
@@ -80,7 +107,6 @@ namespace puerts
 #endif
         auto Isolate = MainIsolate;
         ResultInfo.Isolate = MainIsolate;
-        Isolate->SetData(0, this);
 
         v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -90,8 +116,63 @@ namespace puerts
 #else
         v8::Local<v8::Context> Context = v8::Context::New(Isolate);
 #endif
+
+#else
+        NodeUVLoop = new uv_loop_t;
+        const int Ret = uv_loop_init(NodeUVLoop);
+        if (Ret != 0)
+        {
+            // TODO log
+            printf("uv_loop_init failed\n");
+            return;
+        }
+
+        // CreateParams.array_buffer_allocator = nullptr;
+        /*std::unique_ptr<node::ArrayBufferAllocator> */NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
+
+        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+        MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
+            Platform);
+        ResultInfo.Isolate = MainIsolate;
+        // printf("platform&isolate: %lld %lld\n", Platform, MainIsolate);
+
+        auto Isolate = MainIsolate;
+        ResultInfo.Isolate = MainIsolate;
+
+        v8::Isolate::Scope Isolatescope(Isolate);
+
+        NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+
+        v8::HandleScope HandleScope(Isolate);
+
+        v8::Local<v8::Context> Context = node::NewContext(Isolate);
+#endif 
+
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(Isolate, Context);
+
+#if defined(WITH_NODE)
+        //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
+        NodeEnv = CreateEnvironment(NodeIsolateData, Context, Args, ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+
+        v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
+            NodeEnv,
+            "const publicRequire ="
+            "  require('module').createRequire(process.cwd() + '/');"
+            "globalThis.require = publicRequire;"
+            "globalThis.embedVars = { nön_ascıı: '🏳️‍🌈' };"
+            "require('vm').runInThisContext(process.argv[1]);");
+
+        if (LoadenvRet.IsEmpty())  // There has been a JS exception.
+        {
+            return;
+        }
+
+        //the same as raw v8
+        Isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+#endif
+
+        Isolate->SetData(0, this);
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
@@ -141,7 +222,6 @@ namespace puerts
                 Iter->second.Reset();
             }
         }
-
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
             for (auto Iter = JSFunctions.begin(); Iter != JSFunctions.end(); ++Iter)
@@ -149,11 +229,30 @@ namespace puerts
                 delete *Iter;
             }
         }
+        
+#if defined(WITH_NODE)
+        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+        // printf("platform&isolate: %lld %lld\n", Platform, MainIsolate);
+        Platform->UnregisterIsolate(MainIsolate);
+        // printf("Platform->UnregisterIsolate\n");
+
+        node::EmitExit(NodeEnv);
+        node::Stop(NodeEnv);
+        node::FreeEnvironment(NodeEnv);
+        node::FreeIsolateData(NodeIsolateData);
+
+        int err = uv_loop_close(NodeUVLoop);
+        assert(err == 0);
+        delete NodeUVLoop;
+#endif
 
         ResultInfo.Context.Reset();
-        MainIsolate->Dispose();
-        MainIsolate = nullptr;
+        // TODO DEBUG下一次new的时候会报错的问题
+        // MainIsolate->Dispose();
+        // MainIsolate = nullptr;
+#if !defined(WITH_NODE)
         delete CreateParams.array_buffer_allocator;
+#endif
 
         for (int i = 0; i < CallbackInfos.size(); ++i)
         {
@@ -571,6 +670,9 @@ namespace puerts
         {
             return Inspector->Tick();
         }
+#if defined(WITH_NODE)
+        uv_run(NodeUVLoop, UV_RUN_NOWAIT);
+#endif
         return true;
     }
 }
