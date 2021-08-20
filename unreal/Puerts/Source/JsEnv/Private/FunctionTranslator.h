@@ -25,7 +25,7 @@ namespace puerts
 class FFunctionTranslator
 {
 public:
-    explicit FFunctionTranslator(UFunction *InFunction);
+    explicit FFunctionTranslator(UFunction *InFunction, bool IsDelegate);
 
     virtual ~FFunctionTranslator()
     {

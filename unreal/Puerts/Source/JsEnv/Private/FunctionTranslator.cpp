@@ -74,7 +74,7 @@ public:
 static GlobalBufferAutoRelease Dummy;
 #endif
 
-FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
+FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
 {
     check(InFunction);
     Function = InFunction;
@@ -85,9 +85,17 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
     RequireBuffer(ParamsBufferSize);
 #endif
 
-    UClass *OuterClass = InFunction->GetOuterUClass();
-    IsInterfaceFunction = (OuterClass->HasAnyClassFlags(CLASS_Interface) && OuterClass != UInterface::StaticClass());
-    BindObject = InFunction->HasAnyFunctionFlags(FUNC_Static) ? OuterClass->GetDefaultObject() : nullptr;
+    if (IsDelegate)
+    {
+        IsInterfaceFunction = false;
+        BindObject = nullptr;
+    }
+    else
+    {
+        UClass *OuterClass = InFunction->GetOuterUClass();
+        IsInterfaceFunction = (OuterClass->HasAnyClassFlags(CLASS_Interface) && OuterClass != UInterface::StaticClass());
+        BindObject = InFunction->HasAnyFunctionFlags(FUNC_Static) ? OuterClass->GetDefaultObject() : nullptr;
+    }
 
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
     {
@@ -104,65 +112,68 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction)
 
     ArgumentDefaultValues = nullptr;
 
-    TMap<FName, FString> *MetaMap = GetParamDefaultMetaFor(InFunction);
-    if (MetaMap)
+    if (!IsDelegate)
     {
-        for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
+        TMap<FName, FString> *MetaMap = GetParamDefaultMetaFor(InFunction);
+        if (MetaMap)
         {
-            auto Property = *ParamIt;
-            if (Property->PropertyFlags & CPF_Parm)
+            for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
             {
-                if (!(Property->PropertyFlags & CPF_ReturnParm))
+                auto Property = *ParamIt;
+                if (Property->PropertyFlags & CPF_Parm)
                 {
-                    //const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
-                    FString *DefaultValuePtr = nullptr;
-                    DefaultValuePtr = MetaMap->Find(Property->GetFName());
-                    if (DefaultValuePtr && !DefaultValuePtr->IsEmpty())
+                    if (!(Property->PropertyFlags & CPF_ReturnParm))
                     {
-                        //UE_LOG(LogTemp, Warning, TEXT("Meta %s %s"), *Property->GetFName().ToString(), **DefaultValuePtr);
-                        if (!ArgumentDefaultValues)
+                        //const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
+                        FString *DefaultValuePtr = nullptr;
+                        DefaultValuePtr = MetaMap->Find(Property->GetFName());
+                        if (DefaultValuePtr && !DefaultValuePtr->IsEmpty())
                         {
-                            ArgumentDefaultValues = FMemory::Malloc(ParamsBufferSize, 16);
-                            InFunction->InitializeStruct(ArgumentDefaultValues);
+                            //UE_LOG(LogTemp, Warning, TEXT("Meta %s %s"), *Property->GetFName().ToString(), **DefaultValuePtr);
+                            if (!ArgumentDefaultValues)
+                            {
+                                ArgumentDefaultValues = FMemory::Malloc(ParamsBufferSize, 16);
+                                InFunction->InitializeStruct(ArgumentDefaultValues);
+                            }
+
+                            void *PropValuePtr = Property->ContainerPtrToValuePtr<void>(ArgumentDefaultValues);
+
+                            if (const StructPropertyMacro* StructProp = CastFieldMacro<StructPropertyMacro>(Property))
+                            {
+                                if (StructProp->Struct == TBaseStructure<FVector>::Get())
+                                {
+                                    FVector* Vector = (FVector*)PropValuePtr;
+                                    FDefaultValueHelper::ParseVector(**DefaultValuePtr, *Vector);
+                                    continue;
+                                }
+                                else if (StructProp->Struct == TBaseStructure<FVector2D>::Get())
+                                {
+                                    FVector2D* Vector2D = (FVector2D*)PropValuePtr;
+                                    FDefaultValueHelper::ParseVector2D(**DefaultValuePtr, *Vector2D);
+                                    continue;
+                                }
+                                else if (StructProp->Struct == TBaseStructure<FRotator>::Get())
+                                {
+                                    FRotator* Rotator = (FRotator*)PropValuePtr;
+                                    FDefaultValueHelper::ParseRotator(**DefaultValuePtr, *Rotator);
+                                    continue;
+                                }
+                                else if (StructProp->Struct == TBaseStructure<FColor>::Get())
+                                {
+                                    FColor* Color = (FColor*)PropValuePtr;
+                                    FDefaultValueHelper::ParseColor(**DefaultValuePtr, *Color);
+                                    continue;
+                                }
+                                else if (StructProp->Struct == TBaseStructure<FLinearColor>::Get())
+                                {
+                                    FLinearColor* LinearColor = (FLinearColor*)PropValuePtr;
+                                    FDefaultValueHelper::ParseLinearColor(**DefaultValuePtr, *LinearColor);
+                                    continue;
+                                }
+                            }
+
+                            Property->ImportText(**DefaultValuePtr, PropValuePtr, PPF_None, nullptr);
                         }
-
-                        void *PropValuePtr = Property->ContainerPtrToValuePtr<void>(ArgumentDefaultValues);
-
-                        if (const StructPropertyMacro* StructProp = CastFieldMacro<StructPropertyMacro>(Property))
-                        {
-                            if (StructProp->Struct == TBaseStructure<FVector>::Get())
-                            {
-                                FVector* Vector = (FVector*)PropValuePtr;
-                                FDefaultValueHelper::ParseVector(**DefaultValuePtr, *Vector);
-                                continue;
-                            }
-                            else if (StructProp->Struct == TBaseStructure<FVector2D>::Get())
-                            {
-                                FVector2D* Vector2D = (FVector2D*)PropValuePtr;
-                                FDefaultValueHelper::ParseVector2D(**DefaultValuePtr, *Vector2D);
-                                continue;
-                            }
-                            else if (StructProp->Struct == TBaseStructure<FRotator>::Get())
-                            {
-                                FRotator* Rotator = (FRotator*)PropValuePtr;
-                                FDefaultValueHelper::ParseRotator(**DefaultValuePtr, *Rotator);
-                                continue;
-                            }
-                            else if (StructProp->Struct == TBaseStructure<FColor>::Get())
-                            {
-                                FColor* Color = (FColor*)PropValuePtr;
-                                FDefaultValueHelper::ParseColor(**DefaultValuePtr, *Color);
-                                continue;
-                            }
-                            else if (StructProp->Struct == TBaseStructure<FLinearColor>::Get())
-                            {
-                                FLinearColor* LinearColor = (FLinearColor*)PropValuePtr;
-                                FDefaultValueHelper::ParseLinearColor(**DefaultValuePtr, *LinearColor);
-                                continue;
-                            }
-                        }
-
-                        Property->ImportText(**DefaultValuePtr, PropValuePtr, PPF_None, nullptr);
                     }
                 }
             }
@@ -363,7 +374,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
 }
 
-FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction *InFunction) : FFunctionTranslator(InFunction)
+FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction *InFunction) : FFunctionTranslator(InFunction, false)
 {
     TFieldIterator<PropertyMacro> It(InFunction);
     PropertyMacro *Property = *It;

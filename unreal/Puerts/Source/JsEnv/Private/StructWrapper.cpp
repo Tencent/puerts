@@ -99,7 +99,7 @@ namespace puerts
                     continue;
                 }
 
-                auto FunctionTranslator = std::make_unique<FFunctionTranslator>(Function);
+                auto FunctionTranslator = std::make_unique<FFunctionTranslator>(Function, false);
 
                 auto Key = FV8Utils::InternalString(Isolate, Function->GetName());
 
