@@ -35,8 +35,8 @@ struct JSENV_API JSFunctionInfo
 struct JSENV_API JSPropertyInfo
 {
     const char* Name;
-    v8::AccessorNameGetterCallback Getter;
-    v8::AccessorNameSetterCallback Setter;
+    v8::FunctionCallback Getter;
+    v8::FunctionCallback Setter;
     void *Data = nullptr;
 };
 

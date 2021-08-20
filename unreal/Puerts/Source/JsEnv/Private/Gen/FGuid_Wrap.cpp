@@ -284,7 +284,7 @@ static void FGuidS_ParseExact(const v8::FunctionCallbackInfo<v8::Value>& Info)
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FGuidAGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FGuidAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -295,17 +295,18 @@ static void _FGuidAGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Integer::New(Isolate, Self->A);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FGuidASet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FGuidASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Value = Info[0];
 
     Self->A =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
-static void _FGuidBGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FGuidBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -316,17 +317,18 @@ static void _FGuidBGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Integer::New(Isolate, Self->B);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FGuidBSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FGuidBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Value = Info[0];
 
     Self->B =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
-static void _FGuidCGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FGuidCGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -337,17 +339,18 @@ static void _FGuidCGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Integer::New(Isolate, Self->C);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FGuidCSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FGuidCSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Value = Info[0];
 
     Self->C =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
-static void _FGuidDGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FGuidDGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -358,13 +361,14 @@ static void _FGuidDGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Integer::New(Isolate, Self->D);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FGuidDSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FGuidDSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Value = Info[0];
 
     Self->D =Value->ToInteger(Context).ToLocalChecked()->Value();
 }

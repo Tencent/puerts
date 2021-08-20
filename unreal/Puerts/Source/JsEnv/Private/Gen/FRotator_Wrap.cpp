@@ -1188,7 +1188,7 @@ static void FRotatorS_MakeFromEuler(const v8::FunctionCallbackInfo<v8::Value>& I
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FRotatorPitchGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FRotatorPitchGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1199,17 +1199,18 @@ static void _FRotatorPitchGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     auto V8Result =v8::Number::New(Isolate, Self->Pitch);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FRotatorPitchSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FRotatorPitchSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Value = Info[0];
 
     Self->Pitch =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FRotatorYawGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FRotatorYawGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1220,17 +1221,18 @@ static void _FRotatorYawGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     auto V8Result =v8::Number::New(Isolate, Self->Yaw);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FRotatorYawSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FRotatorYawSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Value = Info[0];
 
     Self->Yaw =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FRotatorRollGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FRotatorRollGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1241,13 +1243,14 @@ static void _FRotatorRollGet_(v8::Local<v8::Name> Property, const v8::PropertyCa
     auto V8Result =v8::Number::New(Isolate, Self->Roll);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FRotatorRollSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FRotatorRollSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Value = Info[0];
 
     Self->Roll =Value->ToNumber(Context).ToLocalChecked()->Value();
 }

@@ -1083,7 +1083,7 @@ static void FVector4M_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Valu
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FVector4XGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FVector4XGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1094,17 +1094,18 @@ static void _FVector4XGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
     auto V8Result =v8::Number::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FVector4XSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FVector4XSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector4>(Info.This());
+    auto Value = Info[0];
 
     Self->X =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FVector4YGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FVector4YGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1115,17 +1116,18 @@ static void _FVector4YGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
     auto V8Result =v8::Number::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FVector4YSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FVector4YSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector4>(Info.This());
+    auto Value = Info[0];
 
     Self->Y =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FVector4ZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FVector4ZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1136,17 +1138,18 @@ static void _FVector4ZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
     auto V8Result =v8::Number::New(Isolate, Self->Z);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FVector4ZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FVector4ZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector4>(Info.This());
+    auto Value = Info[0];
 
     Self->Z =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FVector4WGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FVector4WGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1157,13 +1160,14 @@ static void _FVector4WGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
     auto V8Result =v8::Number::New(Isolate, Self->W);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FVector4WSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FVector4WSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector4>(Info.This());
+    auto Value = Info[0];
 
     Self->W =Value->ToNumber(Context).ToLocalChecked()->Value();
 }

@@ -1839,7 +1839,7 @@ static void FQuatS_CalcTangents(const v8::FunctionCallbackInfo<v8::Value>& Info)
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FQuatXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FQuatXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1850,17 +1850,18 @@ static void _FQuatXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Number::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FQuatXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FQuatXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FQuat>(Info.This());
+    auto Value = Info[0];
 
     Self->X =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FQuatYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FQuatYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1871,17 +1872,18 @@ static void _FQuatYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Number::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FQuatYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FQuatYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FQuat>(Info.This());
+    auto Value = Info[0];
 
     Self->Y =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FQuatZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FQuatZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1892,17 +1894,18 @@ static void _FQuatZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Number::New(Isolate, Self->Z);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FQuatZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FQuatZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FQuat>(Info.This());
+    auto Value = Info[0];
 
     Self->Z =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FQuatWGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FQuatWGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1913,13 +1916,14 @@ static void _FQuatWGet_(v8::Local<v8::Name> Property, const v8::PropertyCallback
     auto V8Result =v8::Number::New(Isolate, Self->W);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FQuatWSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FQuatWSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FQuat>(Info.This());
+    auto Value = Info[0];
 
     Self->W =Value->ToNumber(Context).ToLocalChecked()->Value();
 }

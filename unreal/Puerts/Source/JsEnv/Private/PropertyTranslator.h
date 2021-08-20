@@ -83,15 +83,15 @@ public:
 
     bool OwnerIsClass;
 
-    static void Getter(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info);
+    static void Getter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::PropertyCallbackInfo<v8::Value>& Info);
+    void Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    static void Setter(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info);
+    static void Setter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info);
+    void Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    static void DelegateGetter(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info);
+    static void DelegateGetter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template);
 };

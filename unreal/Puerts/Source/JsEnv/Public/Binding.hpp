@@ -37,8 +37,6 @@
 
 namespace puerts
 {
-using CheckArgsFunctionCallback = std::function<bool(const v8::FunctionCallbackInfo<v8::Value>& info)>;
-
 namespace internal
 {
 namespace traits {
@@ -563,18 +561,18 @@ struct PropertyWrapper;
 template<class Ins, class Ret, Ret Ins::*member>
 struct PropertyWrapper<Ret Ins::*, member>
 {
-    static void getter(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info)
+    static void getter(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
         auto self = DataTransfer::GetPointerFast<Ins>(info.This());
         info.GetReturnValue().Set(internal::TypeConverter<Ret>::toScript(context, self->*member));
     }
 
-    static void setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+    static void setter(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
         auto context = info.GetIsolate()->GetCurrentContext();
         auto self = DataTransfer::GetPointerFast<Ins>(info.This());
-        self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, value);
+        self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, info[0]);
     }
 
     static const char* info()
@@ -669,7 +667,7 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T>& Property(const char* name, v8::AccessorNameGetterCallback getter, v8::AccessorNameSetterCallback setter = nullptr, const char* type = nullptr) {
+    ClassDefineBuilder<T>& Property(const char* name, v8::FunctionCallback getter, v8::FunctionCallback setter = nullptr, const char* type = nullptr) {
         if (type)
         {
             propertyInfos_.push_back(NamedPropertyInfo {name, type});
