@@ -1,0 +1,54 @@
+{
+  "name": "v8.hotload.tool",
+  "version": "1.0.0",
+  "author": "",
+  "scripts": {
+    "start": "electron ./index.js",
+    "tsc:watch": "tsc -w -p tsconfig.json",
+    "package:win32": "electron-packager ./ --overwrite --platform=win32 --arch=x64 --icon=./assets/icon/logo.ico --out=./dist --asar --app-version=1.0.0",
+    "builder": " electron-builder --dir ",
+    "builder:win64": " electron-builder --win --x64",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "@types/chrome-remote-interface": "^0.31.2",
+    "@types/node": "^12.20.4",
+    "@types/request": "^2.48.5",
+    "electron": "^9.1.1",
+    "electron-builder": "^22.7.0",
+    "electron-packager": "^12.2.0",
+    "electron-rebuild": "^1.11.0",
+    "typescript": "^4.2.2"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.2",
+    "chrome-remote-interface": "^0.31.0"
+  },
+  "build": {
+    "appId": "v8.hotload.tool",
+    "productName": "v8-hotload-tool",
+    "compression": "maximum",
+    "asar": true,
+    "files": [
+      "index.js",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "output": "./dist",
+      "app": "./",
+      "buildResources": "./assets"
+    },
+    "win": {
+      "icon": "./assets/icon/logo.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}

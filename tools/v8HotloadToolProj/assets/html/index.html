@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>v8 hotload tool</title>
+    <!-- import css -->
+    <link rel="stylesheet" href="./element/element-ui.css">
+    <!-- import sections -->
+    <link rel="import" href="./sections/window.html">
+</head>
+
+<body id="bodyLayer">
+</body>
+
+<!-- import element-->
+<script src="./element/vue.js"></script>
+<script src="./element/element-ui.js"></script>
+
+<script>
+    require("./imports.js");
+    require("../js/renderer-process/sections/window");
+</script>
+
+</html>

@@ -1,0 +1,25 @@
+{
+  //编译目录
+  "include": [
+    "src/*.ts",
+    "src/**/*.ts"
+  ],
+  "compilerOptions": {
+    // 目标语言的版本
+    "target": "ES6",
+    // 生成代码的模板标准
+    "module": "commonjs",
+    // 不允许隐式的any类型
+    "noImplicitAny": true,
+    "sourceMap": true,
+    // 指定输出目录
+    "outDir": "./assets/js",
+    /*"baseUrl": "./src",
+    "paths": {
+      "*": [
+        "node_modules/*"
+      ]
+    }
+    //*/
+  }
+}
