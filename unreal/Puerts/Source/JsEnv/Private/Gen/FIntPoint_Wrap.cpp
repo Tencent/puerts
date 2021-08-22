@@ -664,7 +664,7 @@ static void FIntPointS_Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FIntPointXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FIntPointXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -675,17 +675,18 @@ static void _FIntPointXGet_(v8::Local<v8::Name> Property, const v8::PropertyCall
     auto V8Result =v8::Integer::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FIntPointXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FIntPointXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.This());
+    auto Value = Info[0];
 
     Self->X =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
-static void _FIntPointYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FIntPointYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -696,13 +697,14 @@ static void _FIntPointYGet_(v8::Local<v8::Name> Property, const v8::PropertyCall
     auto V8Result =v8::Integer::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FIntPointYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FIntPointYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.This());
+    auto Value = Info[0];
 
     Self->Y =Value->ToInteger(Context).ToLocalChecked()->Value();
 }

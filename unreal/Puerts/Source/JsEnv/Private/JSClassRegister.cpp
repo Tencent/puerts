@@ -27,19 +27,20 @@ public:
 
     const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
-#if USING_IN_UNREAL_ENGINE
-    void RegisterAddon(const FString&Name, AddonRegisterFunc RegisterFunc);
+    void RegisterAddon(const std::string&Name, AddonRegisterFunc RegisterFunc);
 
+    AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
+
+#if USING_IN_UNREAL_ENGINE
     const JSClassDefinition* FindClassByType(UStruct* Type);
-    
-    AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 #endif
+
 private:
     std::map<const void*, JSClassDefinition*> NameToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
+    std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
 #if USING_IN_UNREAL_ENGINE
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
-    std::map<FString, AddonRegisterFunc> AddonRegisterInfos;
 #endif
 };
 
@@ -109,17 +110,15 @@ const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const std::stri
     }
 }
 
-#if USING_IN_UNREAL_ENGINE
-void JSClassRegister::RegisterAddon(const FString& Name, AddonRegisterFunc RegisterFunc)
+void JSClassRegister::RegisterAddon(const std::string& Name, AddonRegisterFunc RegisterFunc)
 {
     AddonRegisterInfos[Name] = RegisterFunc;
 }
 
-const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
+AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const std::string& Name)
 {
-    FString Name = FString::Printf(TEXT("%s%s"), Type->GetPrefixCPP(), *Type->GetName());
-    auto Iter = StructNameToClassDefinition.find(Name);
-    if (Iter == StructNameToClassDefinition.end())
+    auto Iter = AddonRegisterInfos.find(Name);
+    if (Iter == AddonRegisterInfos.end())
     {
         return nullptr;
     }
@@ -129,10 +128,12 @@ const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
     }
 }
 
-AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const FString& Name)
+#if USING_IN_UNREAL_ENGINE
+const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 {
-    auto Iter = AddonRegisterInfos.find(Name);
-    if (Iter == AddonRegisterInfos.end())
+    FString Name = FString::Printf(TEXT("%s%s"), Type->GetPrefixCPP(), *Type->GetName());
+    auto Iter = StructNameToClassDefinition.find(Name);
+    if (Iter == StructNameToClassDefinition.end())
     {
         return nullptr;
     }
@@ -182,22 +183,21 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
 {
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
-
-#if USING_IN_UNREAL_ENGINE
+    
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
 {
-    FString SN = UTF8_TO_TCHAR(Name);
-    GetJSClassRegister()->RegisterAddon(SN, RegisterFunc);
+    GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);
+}
+    
+AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name)
+{
+    return GetJSClassRegister()->FindAddonRegisterFunc(Name);
 }
 
+#if USING_IN_UNREAL_ENGINE
 const JSClassDefinition* FindClassByType(UStruct* Type)
 {
     return GetJSClassRegister()->FindClassByType(Type);
-}
-
-AddonRegisterFunc FindAddonRegisterFunc(const FString& Name)
-{
-    return GetJSClassRegister()->FindAddonRegisterFunc(Name);
 }
 #endif
 

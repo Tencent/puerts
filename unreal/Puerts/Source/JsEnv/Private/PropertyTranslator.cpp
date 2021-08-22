@@ -16,7 +16,7 @@
 namespace puerts
 {
 
-void FPropertyTranslator::Getter(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Isolate::Scope IsolateScope(Isolate);
@@ -24,11 +24,11 @@ void FPropertyTranslator::Getter(v8::Local<v8::Name> Property, const v8::Propert
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    FPropertyTranslator* This = reinterpret_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FPropertyTranslator* This = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     This->Getter(Isolate, Context, Info);
 }
 
-void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::PropertyCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     if (OwnerIsClass)
     {
@@ -51,7 +51,7 @@ void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
 }
 
-void FPropertyTranslator::Setter(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Isolate::Scope IsolateScope(Isolate);
@@ -59,11 +59,11 @@ void FPropertyTranslator::Setter(v8::Local<v8::Name> Property, v8::Local<v8::Val
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    FPropertyTranslator* This = reinterpret_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-    This->Setter(Isolate, Context, Value, Info);
+    FPropertyTranslator* This = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    This->Setter(Isolate, Context, Info[0], Info);
 }
 
-void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     if (OwnerIsClass)
     {
@@ -86,7 +86,7 @@ void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
 }
 
-void FPropertyTranslator::DelegateGetter(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Isolate::Scope IsolateScope(Isolate);
@@ -94,7 +94,7 @@ void FPropertyTranslator::DelegateGetter(v8::Local<v8::Name> Property, const v8:
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    FPropertyTranslator* PropertyTranslator = reinterpret_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FPropertyTranslator* PropertyTranslator = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     auto Object = FV8Utils::GetUObject(Info.This());
     if (!Object)
     {
@@ -123,21 +123,24 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
     {
         if (Property->GetOwnerStruct()->IsA<UClass>()) // only uobject support
         {
-            Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, Property->GetName()), DelegateGetter, nullptr,
-                v8::External::New(Isolate, this), v8::DEFAULT, (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
+            auto DelegateGetterTemplate = v8::FunctionTemplate::New(Isolate, DelegateGetter, v8::External::New(Isolate, this));
+            Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()), DelegateGetterTemplate,
+                v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
         }
     }
     else
     {
         auto OwnerStruct = Property->GetOwnerStruct();
-        Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
+        auto Self = v8::External::New(Isolate, this);
+        auto GetterTemplate = v8::FunctionTemplate::New(Isolate, Getter, Self);
+        auto SetterTemplate = v8::FunctionTemplate::New(Isolate, Setter, Self);
+        Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
             Property->GetAuthoredName()
 #else
             Property->GetDisplayNameText().ToString()
 #endif
-            : Property->GetName()), Getter, Setter,
-            v8::External::New(Isolate, this), v8::DEFAULT, v8::DontDelete);
+            : Property->GetName()), GetterTemplate, SetterTemplate, v8::DontDelete);
     }
 }
 

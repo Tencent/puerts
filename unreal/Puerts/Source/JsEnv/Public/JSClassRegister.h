@@ -35,8 +35,8 @@ struct JSENV_API JSFunctionInfo
 struct JSENV_API JSPropertyInfo
 {
     const char* Name;
-    v8::AccessorNameGetterCallback Getter;
-    v8::AccessorNameSetterCallback Setter;
+    v8::FunctionCallback Getter;
+    v8::FunctionCallback Setter;
     void *Data = nullptr;
 };
 
@@ -102,14 +102,14 @@ const JSClassDefinition* FindClassByID(const char* Name);
 
 const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
-#if USING_IN_UNREAL_ENGINE
-typedef void(*AddonRegisterFunc)(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
+typedef void(*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
+
+AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
+#if USING_IN_UNREAL_ENGINE
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
-
-AddonRegisterFunc FindAddonRegisterFunc(const FString& Name);
 #endif
 
 }

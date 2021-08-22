@@ -858,7 +858,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                     TsFunctionMap.erase(Function);
                                     TsFunctionMap[Function] = {
                                         v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
-                                        std::make_unique<puerts::FFunctionTranslator>(Function)
+                                        std::make_unique<puerts::FFunctionTranslator>(Function, false)
                                     };
                                     TypeScriptGeneratedClass->RedirectToTypeScript(Function);
                                     overrided.Add(FunctionFName);
@@ -1203,7 +1203,7 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
     auto Iter = JsCallbackPrototypeMap.find(SignatureFunction);
     if (Iter == JsCallbackPrototypeMap.end())
     {
-        JsCallbackPrototypeMap[SignatureFunction] = std::make_unique<FFunctionTranslator>(Proxy->SignatureFunction);
+        JsCallbackPrototypeMap[SignatureFunction] = std::make_unique<FFunctionTranslator>(Proxy->SignatureFunction, true);
     }
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
@@ -1521,7 +1521,7 @@ void FJsEnvImpl::ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     auto SignatureFunction = Iter->second.SignatureFunction;
     if (JsCallbackPrototypeMap.find(SignatureFunction) == JsCallbackPrototypeMap.end())
     {
-        JsCallbackPrototypeMap[SignatureFunction] = std::make_unique<FFunctionTranslator>(SignatureFunction);
+        JsCallbackPrototypeMap[SignatureFunction] = std::make_unique<FFunctionTranslator>(SignatureFunction, true);
     }
 
     if (Iter->second.DelegateProperty)
@@ -2626,14 +2626,14 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     CHECK_V8_ARGS(String);
 
-    auto Name = FV8Utils::ToFString(Isolate, Info[0]);
+    std::string Name = *(v8::String::Utf8Value(Isolate, Info[0]));
 
     auto Func = FindAddonRegisterFunc(Name);
 
     if (Func)
     {
         auto Exports = v8::Object::New(Isolate);
-        Func(Isolate, Context, Exports);
+        Func(Context, Exports);
         Info.GetReturnValue().Set(Exports);
     }
 }

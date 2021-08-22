@@ -28,8 +28,11 @@ namespace puerts
                 AddedProperties.Add(UTF8_TO_TCHAR(PropertyInfo->Name));
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter) PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-                Template->PrototypeTemplate()->SetAccessor(FV8Utils::InternalString(Isolate, PropertyInfo->Name), PropertyInfo->Getter, PropertyInfo->Setter,
-                    PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data)): v8::Local<v8::Value>(), v8::DEFAULT, PropertyAttribute);
+                auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data)): v8::Local<v8::Value>();
+                
+                Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
+                    v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data), v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data),
+                    PropertyAttribute);
                 ++PropertyInfo;
             }
         }
@@ -99,7 +102,7 @@ namespace puerts
                     continue;
                 }
 
-                auto FunctionTranslator = std::make_unique<FFunctionTranslator>(Function);
+                auto FunctionTranslator = std::make_unique<FFunctionTranslator>(Function, false);
 
                 auto Key = FV8Utils::InternalString(Isolate, Function->GetName());
 

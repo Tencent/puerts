@@ -554,7 +554,7 @@ static void FIntVectorS_Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FIntVectorXGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FIntVectorXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -565,17 +565,18 @@ static void _FIntVectorXGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     auto V8Result =v8::Integer::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FIntVectorXSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FIntVectorXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
+    auto Value = Info[0];
 
     Self->X =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
-static void _FIntVectorYGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FIntVectorYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -586,17 +587,18 @@ static void _FIntVectorYGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     auto V8Result =v8::Integer::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FIntVectorYSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FIntVectorYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
+    auto Value = Info[0];
 
     Self->Y =Value->ToInteger(Context).ToLocalChecked()->Value();
 }
-static void _FIntVectorZGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FIntVectorZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -607,13 +609,14 @@ static void _FIntVectorZGet_(v8::Local<v8::Name> Property, const v8::PropertyCal
     auto V8Result =v8::Integer::New(Isolate, Self->Z);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FIntVectorZSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FIntVectorZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.This());
+    auto Value = Info[0];
 
     Self->Z =Value->ToInteger(Context).ToLocalChecked()->Value();
 }

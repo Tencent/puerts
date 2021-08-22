@@ -656,7 +656,7 @@ static void FBox2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FBox2DMinGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FBox2DMinGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -669,17 +669,18 @@ static void _FBox2DMinGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
         
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FBox2DMinSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FBox2DMinSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Value = Info[0];
 
     Self->Min =*puerts::DataTransfer::GetPointerFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
 }
-static void _FBox2DMaxGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FBox2DMaxGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -692,17 +693,18 @@ static void _FBox2DMaxGet_(v8::Local<v8::Name> Property, const v8::PropertyCallb
         
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FBox2DMaxSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FBox2DMaxSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Value = Info[0];
 
     Self->Max =*puerts::DataTransfer::GetPointerFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
 }
-static void _FBox2DbIsValidGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FBox2DbIsValidGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -713,13 +715,14 @@ static void _FBox2DbIsValidGet_(v8::Local<v8::Name> Property, const v8::Property
     auto V8Result =v8::Boolean::New(Isolate, Self->bIsValid);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FBox2DbIsValidSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FBox2DbIsValidSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Value = Info[0];
 
     Self->bIsValid =Value->ToBoolean(Isolate)->Value();
 }

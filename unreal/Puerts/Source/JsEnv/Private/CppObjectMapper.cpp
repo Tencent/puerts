@@ -144,8 +144,10 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         {
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
             if (!PropertyInfo->Setter) PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
-            Template->PrototypeTemplate()->SetAccessor(v8::String::NewFromUtf8(Isolate, PropertyInfo->Name).ToLocalChecked(), PropertyInfo->Getter, PropertyInfo->Setter,
-                PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data)): v8::Local<v8::Value>(), v8::DEFAULT, PropertyAttribute);
+            auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data)): v8::Local<v8::Value>();
+            Template->PrototypeTemplate()->SetAccessorProperty(v8::String::NewFromUtf8(Isolate, PropertyInfo->Name).ToLocalChecked(),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data), v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data),
+                PropertyAttribute);
             ++PropertyInfo;
         }
 

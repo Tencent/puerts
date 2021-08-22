@@ -1087,7 +1087,7 @@ static void FLinearColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Valu
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
-static void _FLinearColorRGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FLinearColorRGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1098,17 +1098,18 @@ static void _FLinearColorRGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     auto V8Result =v8::Number::New(Isolate, Self->R);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FLinearColorRSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FLinearColorRSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
+    auto Value = Info[0];
 
     Self->R =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FLinearColorGGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FLinearColorGGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1119,17 +1120,18 @@ static void _FLinearColorGGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     auto V8Result =v8::Number::New(Isolate, Self->G);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FLinearColorGSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FLinearColorGSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
+    auto Value = Info[0];
 
     Self->G =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FLinearColorBGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FLinearColorBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1140,17 +1142,18 @@ static void _FLinearColorBGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     auto V8Result =v8::Number::New(Isolate, Self->B);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FLinearColorBSet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FLinearColorBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
+    auto Value = Info[0];
 
     Self->B =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
-static void _FLinearColorAGet_(v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+static void _FLinearColorAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
@@ -1161,13 +1164,14 @@ static void _FLinearColorAGet_(v8::Local<v8::Name> Property, const v8::PropertyC
     auto V8Result =v8::Number::New(Isolate, Self->A);
     Info.GetReturnValue().Set(V8Result);
 }
-static void _FLinearColorASet_(v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<void>& Info)
+static void _FLinearColorASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.This());
+    auto Value = Info[0];
 
     Self->A =Value->ToNumber(Context).ToLocalChecked()->Value();
 }
