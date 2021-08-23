@@ -109,9 +109,8 @@ if (app.isPackaged) {   //重定向console方法
     }
     function send(eventName: string, ...args: any[]) {
         let _agrs = pkg(args);
-        for (let key of Object.keys(globalWindows)) {
-            let window = (<any>globalWindows)[key];
-            if (window instanceof BrowserWindow && !window.isDestroyed()) {
+        for (let window of BrowserWindow.getAllWindows()) {
+            if (window && !window.isDestroyed()) {
                 window.webContents.send(eventName, "nodejs::console", ..._agrs);
             }
         }

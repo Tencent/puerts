@@ -98,19 +98,21 @@ export class Debugger extends EventEmitter {
         let scriptId = this._scriptParsed[filepath];
         if (scriptId && fs.existsSync(filepath) && fs.lstatSync(filepath).isFile()) {
             let scriptSource = fs.readFileSync(filepath).toString("utf-8");
-            scriptSource = ("(function (exports, require, module, __filename, __dirname) { \n" + scriptSource + "\n});");
+            scriptSource = ("(function (exports, require, module, __filename, __dirname) { " + scriptSource + "\n});");
 
             let lock = await this._lock(scriptId);
             if (!this._debugger)
                 return;
 
+            if (this._trace) console.log(`check: \t${scriptId}:${filepath}`);
             let exist = await this._debugger.getScriptSource({ scriptId });
             if (!exist || exist.scriptSource === scriptSource || !this._debugger)
                 return;
 
+            if (this._trace) console.log(`send: \t${scriptId}:${filepath}`);
             let response = await this._debugger.setScriptSource({ scriptId, scriptSource });
             if (this._trace) {
-                console.log(`pushCompleted: \t${scriptId}:${filepath}` /**| \t${JSON.stringify(response)} */);
+                console.log(`completed: \t${scriptId}:${filepath}` /** + `| \t${JSON.stringify(response)}` */);
             }
 
             lock.release();
