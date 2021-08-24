@@ -203,7 +203,7 @@ private:
     };
 
     template<typename T>
-    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>>::type>::type>
+    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value>::type>
     {
         static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, typename std::decay<T>::type value)
         {
