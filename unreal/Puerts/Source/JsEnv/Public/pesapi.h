@@ -91,7 +91,7 @@ PESAPI_EXTERN pesapi_value pesapi_get_arg(pesapi_callback_info info, int index);
 PESAPI_EXTERN pesapi_env pesapi_get_env(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_this(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_holder(pesapi_callback_info info);
-PESAPI_EXTERN void pesapi_set_return(pesapi_callback_info info, pesapi_value value);
+PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value value);
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_env env, const char* msg);
 
 //#ifdef __cplusplus

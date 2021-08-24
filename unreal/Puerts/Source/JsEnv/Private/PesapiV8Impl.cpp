@@ -315,7 +315,7 @@ pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
 	return v8impl::PesapiValueFromV8LocalValue((*info).Holder());
 }
 
-void pesapi_set_return(pesapi_callback_info pinfo, pesapi_value value)
+void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
 {
 	auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
 	(*info).GetReturnValue().Set(v8impl::V8LocalValueFromPesapiValue(value));

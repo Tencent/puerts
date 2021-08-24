@@ -98,7 +98,7 @@ namespace puerts
 
     inline void SetReturn(pesapi_callback_info info, pesapi_value value)
     {
-        pesapi_set_return(info, value);
+        pesapi_add_return(info, value);
     }
 
     inline void UpdateRefValue(pesapi_env env, pesapi_value holder, pesapi_value value)
