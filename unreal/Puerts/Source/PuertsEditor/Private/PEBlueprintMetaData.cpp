@@ -473,7 +473,7 @@ bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
 	{
 		const bool NewValue = InMetaData.Contains(InKey) ? true : false;
 		const bool bChanged = NewValue != InOutValue;
-		InOutValue = bChanged;
+		InOutValue = NewValue;
 		return bChanged;
 	};
 

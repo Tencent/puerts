@@ -10,11 +10,12 @@
 #include <sstream>
 #include <tuple>
 #include <type_traits>
-#include <string>
-#include <functional>
-#include "DataTransfer.h"
 #include "JSClassRegister.h"
+#if BUILDING_PES_EXTENSION
+#include "PesapiConverter.hpp"
+#else
 #include "Converter.hpp"
+#endif
 #include "TypeInfo.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
@@ -34,6 +35,42 @@
     __DefCDataPointerConverter(CLS) \
     __DefCDataConverter(CLS)
 
+
+namespace puerts {
+namespace internal {
+template <typename T, typename = void>
+struct ConverterDecay {
+    using type = typename  std::decay<T>::type;
+};
+
+template <typename T>
+struct ConverterDecay<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value>::type> {
+    using type = std::reference_wrapper<typename std::decay<T>::type>;
+};
+
+template <typename T>
+using TypeConverter = puerts::converter::Converter<typename ConverterDecay<T>::type>;
+
+template <typename T, typename = void>
+struct IsConvertibleHelper : std::false_type {};
+
+template< class... >
+using Void_t = void;
+
+template <typename T>
+struct IsConvertibleHelper<T,
+                        // test if it has a function toScript
+                        Void_t<decltype(&TypeConverter<T>::toScript)>> : std::true_type {};
+
+} 
+
+namespace converter {
+
+template <typename T>
+constexpr bool isConvertible = internal::IsConvertibleHelper<T>::value;
+
+}
+}
 
 namespace puerts
 {
@@ -134,7 +171,7 @@ constexpr bool isArgsConvertible = IsArgsConvertibleHelper<T>::value;
 template<int , typename...>
 struct ArgumentChecker
 {
-    static bool Check(const v8::FunctionCallbackInfo<v8::Value>& Info, v8::Local<v8::Context> Context)
+    static bool Check(CallbackInfoType Info, ContextType Context)
     {
         return true;
     }
@@ -145,9 +182,9 @@ struct ArgumentChecker<Pos, ArgType, Rest...>
 {
     static constexpr int NextPos = Pos + 1;
     
-    static bool Check(const v8::FunctionCallbackInfo<v8::Value>& Info, v8::Local<v8::Context> Context)
+    static bool Check(CallbackInfoType Info, ContextType Context)
     {
-        if (!TypeConverter<typename ConverterDecay<ArgType>::type>::accept(Context, Info[Pos]))
+        if (!TypeConverter<typename ConverterDecay<ArgType>::type>::accept(Context, GetArg(Info, Pos)))
         {
             return false;
         }
@@ -166,9 +203,9 @@ struct ArgumentsChecker<true, Args...>
 {
 	static constexpr auto ArgsLength = sizeof...(Args);
 	
-	static bool Check(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
+	static bool Check(ContextType context, CallbackInfoType info)
 	{
-		if (info.Length() != ArgsLength) return false;
+		if (GetArgsLen(info) != ArgsLength) return false;
 
 		if (!ArgumentChecker<0, Args...>::Check(info, context)) return false;
 
@@ -181,7 +218,7 @@ struct ArgumentsChecker<false, Args...>
 {
 	static constexpr auto ArgsLength = sizeof...(Args);
 	
-	static bool Check(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info)
+	static bool Check(ContextType context, CallbackInfoType info)
 	{
 		return true;
 	}
@@ -199,20 +236,15 @@ private:
     template<typename  T, typename Enable = void>
     struct RefValueSync
     {
-        static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, typename std::decay<T>::type value) {}
+        static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value) {}
     };
 
     template<typename T>
-    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>>::type>::type>
+    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value>::type>
     {
-        static void Sync(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, typename std::decay<T>::type value)
+        static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value)
         {
-            if (holder->IsObject())
-            {
-                auto outer = holder->ToObject(context).ToLocalChecked();
-                auto _unused = outer->Set(context, converter::Converter<const char*>::toScript(context, "value"),
-                    converter::Converter<decltype(value)>::toScript(context, value));
-            }
+            UpdateRefValue(context, holder, converter::Converter<decltype(value)>::toScript(context, value));
         }
     };
 
@@ -220,7 +252,7 @@ private:
     template<int , typename... >
     struct RefValuesSync
     {
-        static void Sync(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, ArgumentsTupleType &cppArgs)
+        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType &cppArgs)
         {
         }
     };
@@ -228,22 +260,22 @@ private:
     template<int Pos, typename T, typename...Rest>
     struct RefValuesSync<Pos, T, Rest...>
     {
-        static void Sync(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, ArgumentsTupleType &cppArgs)
+        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType &cppArgs)
         {
-            RefValueSync<T>::Sync(context, info[Pos], std::get<Pos>(cppArgs));
+            RefValueSync<T>::Sync(context, GetArg(info, Pos), std::get<Pos>(cppArgs));
             RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgs);
         }
     };
 
     template <typename Func, size_t... index>
     static typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value,bool>::type
-    call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    call(Func& func, CallbackInfoType info, std::index_sequence<index...>)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
+        auto context = GetContext(info);
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
         
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
 
         func(std::get<index>(cppArgs)...);
         
@@ -254,16 +286,16 @@ private:
 
     template <typename Func, size_t... index>
     static typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-    call(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    call(Func& func, CallbackInfoType info, std::index_sequence<index...>)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
+        auto context = GetContext(info);
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
         
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info,index))...);
 
         auto ret = func(std::get<index>(cppArgs)...);
-        info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
+        SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -272,15 +304,15 @@ private:
     
     template <typename Ins, typename Func, size_t... index>
     static typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value,bool>::type
-    callMethod(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
+        auto context = GetContext(info);
 
-        auto self = DataTransfer::GetPointerFast<Ins>(info.Holder());
+        auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
         
         (self->*func)(std::get<index>(cppArgs)...);
         
@@ -291,18 +323,18 @@ private:
 
     template <typename Ins, typename Func, size_t... index>
     static typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-    callMethod(Func& func, const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
+        auto context = GetContext(info);
 
-        auto self = DataTransfer::GetPointerFast<Ins>(info.Holder());
+        auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
         
         auto ret = (self->*func)(std::get<index>(cppArgs)...);
-        info.GetReturnValue().Set(TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
+        SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -311,13 +343,13 @@ private:
 
  public:
     template <typename Func>
-    static bool call(Func&& func, const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool call(Func&& func, CallbackInfoType info)
     {
         return call(func, info, std::make_index_sequence<ArgsLength>());
     }
     
     template <typename Ins, typename Func>
-    static bool callMethod(Func&& func, const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool callMethod(Func&& func, CallbackInfoType info)
     {
         return callMethod<Ins>(func, info, std::make_index_sequence<ArgsLength>());
     }
@@ -332,28 +364,26 @@ struct FuncCallWrapper;
 template<typename Ret, typename... Args, Ret (*func)(Args...)>
 struct FuncCallWrapper<Ret (*)(Args...), func> 
 {
-    static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void call(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, false>;
         Helper::call(func, info);
     }
 
-    static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool overloadCall(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, true>;
         return Helper::call(func, info);
     }
-    static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void checkedCall(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, true>;
         if(!Helper::call(func, info))
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
-                "invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
+            ThrowException(GetContext(info), "invalid parameter!");
         }
     }
     static const CFunctionInfo* info()
@@ -365,28 +395,26 @@ struct FuncCallWrapper<Ret (*)(Args...), func>
 template<typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...)>
 struct FuncCallWrapper<Ret (Inc::*)(Args...), func> 
 {
-    static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void call(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, false>;
         Helper::template callMethod<Inc>(func, info);
     }
 
-    static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool overloadCall(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, true>;
         return Helper::template callMethod<Inc, decltype(func)>(func, info);
     }
-    static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void checkedCall(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, true>;
         if(!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
-                "invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
+            ThrowException(GetContext(info), "invalid parameter!");
         }
     }
     static const CFunctionInfo* info()
@@ -399,28 +427,26 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func>
 template<typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const>
 struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func> 
 {
-    static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void call(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, false>;
         Helper::template callMethod<Inc>(func, info);
     }
 
-    static bool overloadCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool overloadCall(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, true>;
         return Helper::template callMethod<Inc, decltype(func)>(func, info);
     }
-    static void checkedCall(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void checkedCall(CallbackInfoType info)
     {
         using Helper = internal::FuncCallHelper<
             std::pair<Ret, std::tuple<Args...>>, true>;
         if(!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
-                "invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
+            ThrowException(GetContext(info), "invalid parameter!");
         }
     }
     static const CFunctionInfo* info()
@@ -436,19 +462,19 @@ private:
     static constexpr auto ArgsLength = sizeof...(Args);
 
     template <size_t... index>
-    static void *call(const v8::FunctionCallbackInfo<v8::Value>& info, std::index_sequence<index...>)
+    static void *call(CallbackInfoType info, std::index_sequence<index...>)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
+        auto context = GetContext(info);
 
-        if (info.Length() != ArgsLength) return nullptr;
+        if (GetArgsLen(info) != ArgsLength) return nullptr;
 
         if (!internal::ArgumentChecker<0, Args...>::Check(info, context)) return nullptr;
 
-        return new T(internal::TypeConverter<typename internal::ConverterDecay<Args>::type>::toCpp(context, info[index])...);
+        return new T(internal::TypeConverter<typename internal::ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
     }
 
 public:
-    static void *call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void *call(CallbackInfoType info)
     {
         return call(info, std::make_index_sequence<ArgsLength>());
     }
@@ -458,24 +484,22 @@ public:
     }
 };
 
-typedef bool (*V8FunctionCallbackWithBoolRet)(const v8::FunctionCallbackInfo<v8::Value>& info);
+typedef bool (*V8FunctionCallbackWithBoolRet)(CallbackInfoType info);
 
 template<V8FunctionCallbackWithBoolRet Func, V8FunctionCallbackWithBoolRet... Rest>
 struct OverloadsRecursion
 {
-    static bool _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool _call(CallbackInfoType info)
     {
         if (Func(info)) return true;
         else return OverloadsRecursion<Rest...>::_call(info);
     }
     
-    static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void call(CallbackInfoType info)
     {
         if(!_call(info))
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
-                "invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
+            ThrowException(GetContext(info), "invalid parameter!");
         }
     }
 };
@@ -483,7 +507,7 @@ struct OverloadsRecursion
 template<V8FunctionCallbackWithBoolRet Func>
 struct OverloadsRecursion<Func>
 {
-    static bool _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static bool _call(CallbackInfoType info)
     {
         return Func(info);
     }
@@ -492,7 +516,7 @@ struct OverloadsRecursion<Func>
 template<typename...OverloadWraps>
 struct OverloadsCombiner
 {
-    static void call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void call(CallbackInfoType info)
     {
         OverloadsRecursion<(&OverloadWraps::overloadCall)...>::call(info);
     }
@@ -506,33 +530,31 @@ struct OverloadsCombiner
     }
 };
 
-template<InitializeFunc Func, InitializeFunc... Rest>
+template<InitializeFuncType Func, InitializeFuncType... Rest>
 struct ConstructorRecursion
 {
-    static void * _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void * _call(CallbackInfoType info)
     {
         auto Ret = Func(info);
         if (Ret) return Ret;
         else return ConstructorRecursion<Rest...>::_call(info);
     }
 
-    static void * call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void * call(CallbackInfoType info)
     {
         auto Ret = _call(info);
         if (!Ret)
         {
-            v8::Isolate* isolate = info.GetIsolate();
-            isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate,
-                "invalid parameter!", v8::NewStringType::kNormal).ToLocalChecked()));
+            ThrowException(GetContext(info), "invalid parameter!");
         }
         return Ret;
     }
 };
 
-template<InitializeFunc Func>
+template<InitializeFuncType Func>
 struct ConstructorRecursion<Func>
 {
-    static void * _call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void * _call(CallbackInfoType info)
     {
         return Func(info);
     }
@@ -541,7 +563,7 @@ struct ConstructorRecursion<Func>
 template<typename...OverloadWraps>
 struct ConstructorsCombiner
 {
-    static void * call(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void * call(CallbackInfoType info)
     {
         return ConstructorRecursion<(&OverloadWraps::call)...>::call(info);
     }
@@ -561,18 +583,18 @@ struct PropertyWrapper;
 template<class Ins, class Ret, Ret Ins::*member>
 struct PropertyWrapper<Ret Ins::*, member>
 {
-    static void getter(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void getter(CallbackInfoType info)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
-        auto self = DataTransfer::GetPointerFast<Ins>(info.This());
-        info.GetReturnValue().Set(internal::TypeConverter<Ret>::toScript(context, self->*member));
+        auto context = GetContext(info);
+        auto self = FastGetNativeObjectPointer<Ins>(context, GetThis(info));
+        SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
     }
 
-    static void setter(const v8::FunctionCallbackInfo<v8::Value>& info)
+    static void setter(CallbackInfoType info)
     {
-        auto context = info.GetIsolate()->GetCurrentContext();
-        auto self = DataTransfer::GetPointerFast<Ins>(info.This());
-        self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, info[0]);
+        auto context = GetContext(info);
+        auto self = FastGetNativeObjectPointer<Ins>(context, GetThis(info));
+        self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, GetArg(info, 0));
     }
 
     static const char* info()
@@ -617,62 +639,63 @@ public:
     template<typename... Args>
     std::enable_if_t<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T>&>
     Constructor() {
-        constructor_ = ConstructorWrapper<T, Args...>::call;
+        InitializeFuncType constructor = ConstructorWrapper<T, Args...>::call;
+        constructor_ = reinterpret_cast<InitializeFunc>(constructor);
         constructorInfos_.push_back(NamedFunctionInfo {"constructor", ConstructorWrapper<T, Args...>::info()});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Constructor(InitializeFunc constructor, int length, const CFunctionInfo** infos) {
+    ClassDefineBuilder<T>& Constructor(InitializeFuncType constructor, int length, const CFunctionInfo** infos) {
         for(int i = 0; i < length; i++)
         {
             constructorInfos_.push_back(NamedFunctionInfo {"constructor", infos[i]});
         }
-        constructor_ = constructor;
+        constructor_ = reinterpret_cast<InitializeFunc>(constructor);
         return *this;
     }
 
-    ClassDefineBuilder<T>& Function(const char* name, v8::FunctionCallback func, const CFunctionInfo* info) {
+    ClassDefineBuilder<T>& Function(const char* name, FunctionCallbackType func, const CFunctionInfo* info) {
         if (info)
         {
             functionInfos_.push_back(NamedFunctionInfo {name, info});
         }
-        functions_.push_back(JSFunctionInfo {name, func, nullptr});
+        functions_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
         return *this;
     }
     
-    ClassDefineBuilder<T>& Function(const char* name, v8::FunctionCallback func, int length, const CFunctionInfo** infos) {
+    ClassDefineBuilder<T>& Function(const char* name, FunctionCallbackType func, int length, const CFunctionInfo** infos) {
         for(int i = 0; i < length; i++)
         {
             functionInfos_.push_back(NamedFunctionInfo {name, infos[i]});
         }
-        functions_.push_back(JSFunctionInfo {name, func, nullptr});
+        functions_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Method(const char* name, v8::FunctionCallback func, const CFunctionInfo* info) {
+    ClassDefineBuilder<T>& Method(const char* name, FunctionCallbackType func, const CFunctionInfo* info) {
         if (info)
         {
             methodInfos_.push_back(NamedFunctionInfo {name, info});
         }
-        methods_.push_back(JSFunctionInfo {name, func, nullptr});
+        methods_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Method(const char* name, v8::FunctionCallback func, int length, const CFunctionInfo** infos) {
+    ClassDefineBuilder<T>& Method(const char* name, FunctionCallbackType func, int length, const CFunctionInfo** infos) {
         for(int i = 0; i < length; i++)
         {
             methodInfos_.push_back(NamedFunctionInfo {name, infos[i]});
         }
-        methods_.push_back(JSFunctionInfo {name, func, nullptr});
+        methods_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Property(const char* name, v8::FunctionCallback getter, v8::FunctionCallback setter = nullptr, const char* type = nullptr) {
+    ClassDefineBuilder<T>& Property(const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const char* type = nullptr) {
         if (type)
         {
             propertyInfos_.push_back(NamedPropertyInfo {name, type});
         }
-        properties_.push_back(JSPropertyInfo {name, getter, setter, nullptr});
+        properties_.push_back(JSPropertyInfo {name, reinterpret_cast<v8::FunctionCallback>(getter), reinterpret_cast<v8::FunctionCallback>(setter), nullptr});
         return *this;
     }
 
