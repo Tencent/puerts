@@ -80,7 +80,9 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
     Function = InFunction;
 
     ParamsBufferSize = InFunction->PropertiesSize > InFunction->ParmsSize ? InFunction->PropertiesSize : InFunction->ParmsSize;
-
+#if WITH_EDITOR
+    FunctionName = InFunction->GetFName();
+#endif
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     RequireBuffer(ParamsBufferSize);
 #endif
@@ -219,7 +221,12 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 #else
     void *Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
-
+#if WITH_EDITOR
+    if (!CallFunction || !CallFunction->IsValidLowLevelFast() || CallFunction->IsPendingKill())
+    {
+        CallFunction = CallObject->GetClass()->FindFunctionByName(FunctionName);
+    }
+#endif
     if (Params) CallFunction->InitializeStruct(Params);
     for (int i = 0; i < Arguments.size(); ++i)
     {

@@ -57,6 +57,9 @@ protected:
     uint32 ParamsBufferSize;
 
     void *ArgumentDefaultValues;
+#if WITH_EDITOR
+    FName FunctionName;
+#endif
 
 private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
