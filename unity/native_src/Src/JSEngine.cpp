@@ -231,13 +231,13 @@ namespace puerts
         }
         
 #if defined(WITH_NODE)
-        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-        Platform->UnregisterIsolate(MainIsolate);
-
         node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
         node::FreeEnvironment(NodeEnv);
         node::FreeIsolateData(NodeIsolateData);
+
+        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+        Platform->UnregisterIsolate(MainIsolate);
 
         int err = uv_loop_close(NodeUVLoop);
         // assert(err == 0);
