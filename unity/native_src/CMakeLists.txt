@@ -40,19 +40,26 @@ set(ThirdParty ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 set(WEBSOCKET_INC ${ThirdParty}/Include/websocketpp)
 set(ASIO_INC ${ThirdParty}/Include/asio)
 
-include_directories(
-    ${CMAKE_SOURCE_DIR}
-    ${V8_INC}
-    ${WEBSOCKET_INC}
-    ${ASIO_INC}
-    Inc
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
-)
 if ( WITH_NODE )
     include_directories(    
         ${CMAKE_SOURCE_DIR}/nodejs/include/
         ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include/
         ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include/
+        ${CMAKE_SOURCE_DIR}
+        ${WEBSOCKET_INC}
+        ${ASIO_INC}
+        Inc
+        ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
+    
+    )
+else ()
+    include_directories(
+        ${CMAKE_SOURCE_DIR}
+        ${V8_INC}
+        ${WEBSOCKET_INC}
+        ${ASIO_INC}
+        Inc
+        ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
     )
 endif()
 
