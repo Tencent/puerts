@@ -50,7 +50,9 @@ include_directories(
 )
 if ( WITH_NODE )
     include_directories(    
-        ${CMAKE_SOURCE_DIR}/node/include/node
+        ${CMAKE_SOURCE_DIR}/nodejs/include/
+        ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include/
+        ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include/
     )
 endif()
 
@@ -211,12 +213,11 @@ elseif ( APPLE )
         if ( WITH_NODE )
             add_library(node SHARED IMPORTED)
             set_target_properties(node PROPERTIES
-                IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/node/lib/libnode.83.dylib
+                IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/nodejs/lib/macOS/libnode.83.dylib
             )
             target_compile_definitions (puerts PRIVATE WITH_NODE)
             target_link_libraries(puerts 
                 node
-                ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
             )
 
         else ()
