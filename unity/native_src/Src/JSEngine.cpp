@@ -232,9 +232,7 @@ namespace puerts
         
 #if defined(WITH_NODE)
         auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-        // printf("platform&isolate: %lld %lld\n", Platform, MainIsolate);
         Platform->UnregisterIsolate(MainIsolate);
-        // printf("Platform->UnregisterIsolate\n");
 
         node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
@@ -242,14 +240,14 @@ namespace puerts
         node::FreeIsolateData(NodeIsolateData);
 
         int err = uv_loop_close(NodeUVLoop);
-        assert(err == 0);
+        // assert(err == 0);
         delete NodeUVLoop;
 #endif
 
         ResultInfo.Context.Reset();
         // TODO DEBUG下一次new的时候会报错的问题
-        // MainIsolate->Dispose();
-        // MainIsolate = nullptr;
+        MainIsolate->Dispose();
+        MainIsolate = nullptr;
 #if !defined(WITH_NODE)
         delete CreateParams.array_buffer_allocator;
 #endif
