@@ -136,5 +136,5 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
 	Gen.End();
 
-	FFileHelper::SaveStringToFile(Gen.Output.Buffer, *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts")));
+	FFileHelper::SaveStringToFile(Gen.Output.Buffer, *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts")), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
