@@ -11,6 +11,7 @@ else
 fi
 mkdir -p ../Assets/Plugins/
 cp -r build_osx_nodejs/Release/puerts.bundle ../Assets/Plugins/
+cp -r nodejs/lib/macOS/libnode.83.dylib ../Assets/Plugins/
 if [ "$1" == "-ut" ]
 then
     cp -r build_osx_nodejs/Release/libpuerts.dylib ../general/Bin/
