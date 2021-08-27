@@ -35,6 +35,7 @@ elseif ( JS_ENGINE STREQUAL "nodejs")
     endif()
 
     include_directories(    
+        ${CMAKE_SOURCE_DIR}/nodejs/include
         ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include
         ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include
     )
