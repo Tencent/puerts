@@ -193,11 +193,15 @@ namespace puerts
     {
         GeneralDestructor = nullptr;
         Inspector = nullptr;
+#if WITH_NODEJS
         this->withNode = withNode;
-#if !WITH_NODEJS
-        JSEngineWithoutNode(external_quickjs_runtime, external_quickjs_context);
-#else
         JSEngineWithNode();
+#else
+        if (withNode) 
+        {
+            throw "does not support withNode in this backend";
+        }
+        JSEngineWithoutNode(external_quickjs_runtime, external_quickjs_context);
 #endif
     }
 
