@@ -4,7 +4,6 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
-
 #include "JSEngine.h"
 #include "V8Utils.h"
 #include "Log.h"
@@ -139,6 +138,7 @@ namespace puerts
 
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
+#if !defined(WITH_NODEJS)
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
@@ -187,6 +187,7 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
+#endif
     }
 
     JSEngine::JSEngine(bool withNode, void* external_quickjs_runtime, void* external_quickjs_context)
