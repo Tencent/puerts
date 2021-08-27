@@ -169,7 +169,6 @@ elseif ( WIN32 )
     elseif (JS_ENGINE STREQUAL "nodejs")
         if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win32/libnode.dll
                 ${V8_ENGINE}/Lib/Win32/libnode.lib
                 winmm.lib
                 dbghelp.lib
@@ -177,7 +176,6 @@ elseif ( WIN32 )
             )
         else ()
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win64/libnode.dll
                 ${V8_ENGINE}/Lib/Win64/libnode.lib
                 winmm.lib
                 dbghelp.lib

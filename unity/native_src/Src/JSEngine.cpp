@@ -139,6 +139,7 @@ namespace puerts
 
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
+#if !defined(WITH_NODEJS)
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
@@ -187,6 +188,7 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
+#endif
     }
 
     JSEngine::JSEngine(bool withNode, void* external_quickjs_runtime, void* external_quickjs_context)
