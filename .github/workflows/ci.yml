@@ -117,7 +117,7 @@ jobs:
         run: |
           md unity\general\Bin
           cd unity\native_src
-          .\make_win64_nodejs.bat
+          .\make_win64_node.bat
           copy build64nodejs\Release\puerts.dll ..\general\Bin
           copy nodejs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
