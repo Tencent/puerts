@@ -1,6 +1,7 @@
 name: build unity plugins
 
 on: 
+  workflow_dispatch:
   push:
     paths: 
       - unity/native_src/**
