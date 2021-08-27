@@ -30,14 +30,20 @@ V8_EXPORT int GetLibVersion()
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
 {
-    auto JsEngine = new JSEngine(nullptr, nullptr);
+    auto JsEngine = new JSEngine(false, nullptr, nullptr);
+    return JsEngine->MainIsolate;
+}
+
+V8_EXPORT v8::Isolate *CreateJSEngineWithNode()
+{
+    auto JsEngine = new JSEngine(true, nullptr, nullptr);
     return JsEngine->MainIsolate;
 }
 
 V8_EXPORT v8::Isolate *CreateJSEngineWithExternalEnv(void* external_quickjs_runtime, void* external_quickjs_context)
 {
 #if WITH_QUICKJS
-    auto JsEngine = new JSEngine(external_quickjs_runtime, external_quickjs_context);
+    auto JsEngine = new JSEngine(false, external_quickjs_runtime, external_quickjs_context);
     return JsEngine->MainIsolate;
 #else
     return nullptr;

@@ -22,7 +22,7 @@
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
 
-#if defined(WITH_NODE)
+#if defined(WITH_NODEJS)
 #pragma warning(push, 0)
 #include "node.h"
 #include "uv.h"
@@ -86,8 +86,11 @@ v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_
 
 class JSEngine
 {
+private: 
+    void JSEngineWithNode();
+    void JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context);
 public:
-    JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
+    JSEngine(bool withNode, void* external_quickjs_runtime, void* external_quickjs_context);
 
     ~JSEngine();
 
@@ -144,7 +147,9 @@ public:
 
 private:
 
-#if defined(WITH_NODE)
+#if defined(WITH_NODEJS)
+    bool withNode;
+
     uv_loop_t* NodeUVLoop;
 
     std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
@@ -154,9 +159,12 @@ private:
     node::Environment* NodeEnv;
 
     const float UV_LOOP_DELAY = 0.1;
-#else 
-    v8::Isolate::CreateParams CreateParams;
+
+    std::vector<std::string>* Args;
+    std::vector<std::string>* ExecArgs;
+    std::vector<std::string>* Errors;
 #endif
+    v8::Isolate::CreateParams* CreateParams;
 
     std::vector<FCallbackInfo*> CallbackInfos;
 

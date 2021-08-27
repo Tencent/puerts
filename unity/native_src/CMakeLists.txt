@@ -27,6 +27,17 @@ MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
 if ( JS_ENGINE STREQUAL "quickjs")
     set(LIB_FILE_NAME libquickjs.a)
+
+elseif ( JS_ENGINE STREQUAL "nodejs")
+
+    if ( APPLE )
+        set(LIB_FILE_NAME libnode.83.dylib)
+    endif()
+
+    include_directories(    
+        ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include
+        ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include
+    )
 else()
     set(JS_ENGINE v8)
     set(LIB_FILE_NAME libwee8.a)
@@ -40,28 +51,14 @@ set(ThirdParty ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 set(WEBSOCKET_INC ${ThirdParty}/Include/websocketpp)
 set(ASIO_INC ${ThirdParty}/Include/asio)
 
-if ( WITH_NODE )
-    include_directories(    
-        ${CMAKE_SOURCE_DIR}/nodejs/include/
-        ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include/
-        ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include/
-        ${CMAKE_SOURCE_DIR}
-        ${WEBSOCKET_INC}
-        ${ASIO_INC}
-        Inc
-        ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
-    
-    )
-else ()
-    include_directories(
-        ${CMAKE_SOURCE_DIR}
-        ${V8_INC}
-        ${WEBSOCKET_INC}
-        ${ASIO_INC}
-        Inc
-        ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
-    )
-endif()
+include_directories(
+    ${CMAKE_SOURCE_DIR}
+    ${V8_INC}
+    ${WEBSOCKET_INC}
+    ${ASIO_INC}
+    Inc
+    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
+)
 
 set ( PUERTS_INC
     Inc/Log.h
@@ -136,6 +133,8 @@ endif ()
 if ( JS_ENGINE STREQUAL "quickjs")
     target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
     target_compile_definitions (puerts PRIVATE WITH_QUICKJS)
+elseif (JS_ENGINE STREQUAL "nodejs")
+    target_compile_definitions (puerts PRIVATE WITH_NODEJS)
 endif ()
 
 if ( MSYS )
@@ -217,21 +216,9 @@ elseif ( APPLE )
             target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
         endif ()
     else ()
-        if ( WITH_NODE )
-            add_library(node SHARED IMPORTED)
-            set_target_properties(node PROPERTIES
-                IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/nodejs/lib/macOS/libnode.83.dylib
-            )
-            target_compile_definitions (puerts PRIVATE WITH_NODE)
-            target_link_libraries(puerts 
-                node
-            )
-
-        else ()
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
-            )
-        endif()
+        target_link_libraries(puerts
+            ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
+        )
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
 elseif (UNIX)
