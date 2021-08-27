@@ -81,6 +81,11 @@ struct FLifeCycleInfo
 };
 
 static std::unique_ptr<v8::Platform> GPlatform;
+#if defined(WITH_NODEJS)
+static std::vector<std::string>* Args;
+static std::vector<std::string>* ExecArgs;
+static std::vector<std::string>* Errors;
+#endif
 
 v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size);
 
@@ -159,10 +164,6 @@ private:
     node::Environment* NodeEnv;
 
     const float UV_LOOP_DELAY = 0.1;
-
-    std::vector<std::string>* Args;
-    std::vector<std::string>* ExecArgs;
-    std::vector<std::string>* Errors;
 #endif
     v8::Isolate::CreateParams* CreateParams;
 
