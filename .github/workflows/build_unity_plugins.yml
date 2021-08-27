@@ -337,7 +337,7 @@ jobs:
         run: |
           cd unity\native_src
           .\make_win64_node.bat
-          .\make_win32_node.bat
+          # .\make_win32_node.bat
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
