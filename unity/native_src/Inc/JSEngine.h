@@ -89,6 +89,13 @@ static std::vector<std::string>* Errors;
 
 v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size);
 
+enum JSEngineBackend
+{
+    Default     = 0,
+    Node        = 1,
+    External    = 2,
+};
+
 class JSEngine
 {
 private: 

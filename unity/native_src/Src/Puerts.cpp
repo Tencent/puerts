@@ -49,6 +49,15 @@ V8_EXPORT v8::Isolate *CreateJSEngineWithExternalEnv(void* external_quickjs_runt
 #endif
 }
 
+V8_EXPORT bool IsJSEngineBackendSupported(puerts::JSEngineBackend mode) {
+#if !WITH_NODEJS
+    if (mode == puerts::JSEngineBackend::Node) {
+        return false;
+    }
+#endif
+    return true;
+}
+
 V8_EXPORT void DestroyJSEngine(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
