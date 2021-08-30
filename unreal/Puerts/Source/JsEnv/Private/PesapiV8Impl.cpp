@@ -496,7 +496,7 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
 
 	if (object->IsObject())
 	{
-		object.As<v8::Object>()->Set(context,
+		auto _un_used = object.As<v8::Object>()->Set(context,
 			v8::String::NewFromUtf8(context->GetIsolate(), key).ToLocalChecked(), value);
 	}
 }
@@ -505,11 +505,15 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
 											const pesapi_value argv[])
 {
 	auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-	v8::Local<v8::Value> recv = this_object? v8impl::V8LocalValueFromPesapiValue(this_object) : v8::Undefined(context->GetIsolate());
+	v8::Local<v8::Value> recv = v8::Undefined(context->GetIsolate());
+	if (this_object)
+	{
+		recv = v8impl::V8LocalValueFromPesapiValue(this_object);
+	}
 	v8::Local<v8::Function> func = v8impl::V8LocalValueFromPesapiValue(pfunc).As<v8::Function>();
 
 	auto maybe_ret = func->Call(context, recv, argc,
-	reinterpret_cast<v8::Local<v8::Value>*>(const_cast<pesapi_value*>(argv)));
+	    reinterpret_cast<v8::Local<v8::Value>*>(const_cast<pesapi_value*>(argv)));
 	if (maybe_ret.IsEmpty())
 	{
 		return nullptr;
