@@ -144,6 +144,8 @@ public:
 
     bool InspectorTick();
 
+    void LogicTick();
+
     v8::Isolate* MainIsolate;
 
     std::vector<char> StrBuffer;

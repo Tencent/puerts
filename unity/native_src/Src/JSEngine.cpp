@@ -689,18 +689,22 @@ namespace puerts
         }
     }
 
-    bool JSEngine::InspectorTick()
+    void JSEngine::LogicTick()
     {
-        if (Inspector != nullptr)
-        {
-            return Inspector->Tick();
-        }
 #if defined(WITH_NODEJS)
         if (withNode) 
         {
             uv_run(NodeUVLoop, UV_RUN_NOWAIT);
         }
 #endif
+    }
+
+    bool JSEngine::InspectorTick()
+    {
+        if (Inspector != nullptr)
+        {
+            return Inspector->Tick();
+        }
         return true;
     }
 }

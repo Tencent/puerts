@@ -544,6 +544,7 @@ namespace Puerts
                 }
 #endif
             }
+            PuertsDLL.LogicTick(isolate);
             tickHandler.ForEach(fn =>
             {
                 IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);

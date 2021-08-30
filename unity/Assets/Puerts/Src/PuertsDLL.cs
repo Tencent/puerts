@@ -504,6 +504,9 @@ namespace Puerts
         public static extern bool InspectorTick(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void LogicTick(IntPtr isolate);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetLogCallback(IntPtr log, IntPtr logWarning, IntPtr logError);
 
         public static void SetLogCallback(LogCallback log, LogCallback logWarning, LogCallback logError)

@@ -860,6 +860,12 @@ V8_EXPORT int InspectorTick(v8::Isolate *Isolate)
     return JsEngine->InspectorTick() ? 1 : 0;
 }
 
+V8_EXPORT void LogicTick(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->LogicTick();
+}
+
 //-------------------------- end debug --------------------------
 
 #ifdef __cplusplus
