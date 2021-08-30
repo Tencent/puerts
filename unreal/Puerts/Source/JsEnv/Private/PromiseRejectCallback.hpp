@@ -64,7 +64,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
 std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
     std::ostringstream stm;
-    for (int i = 0; i < InStack->GetFrameCount() - 1; i++)
+    for (int i = 0; i < InStack->GetFrameCount(); i++)
     {
         v8::Local<v8::StackFrame> StackFrame = InStack->GetFrame(InIsolate, i);
         v8::String::Utf8Value FuncName(InIsolate, StackFrame->GetFunctionName());
