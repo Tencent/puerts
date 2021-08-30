@@ -4,7 +4,6 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
-
 #include "JSEngine.h"
 #include <cstring>
 #include "V8Utils.h"
@@ -30,14 +29,20 @@ V8_EXPORT int GetLibVersion()
 
 V8_EXPORT v8::Isolate *CreateJSEngine()
 {
-    auto JsEngine = new JSEngine(nullptr, nullptr);
+    auto JsEngine = new JSEngine(false, nullptr, nullptr);
+    return JsEngine->MainIsolate;
+}
+
+V8_EXPORT v8::Isolate *CreateJSEngineWithNode()
+{
+    auto JsEngine = new JSEngine(true, nullptr, nullptr);
     return JsEngine->MainIsolate;
 }
 
 V8_EXPORT v8::Isolate *CreateJSEngineWithExternalEnv(void* external_quickjs_runtime, void* external_quickjs_context)
 {
 #if WITH_QUICKJS
-    auto JsEngine = new JSEngine(external_quickjs_runtime, external_quickjs_context);
+    auto JsEngine = new JSEngine(false, external_quickjs_runtime, external_quickjs_context);
     return JsEngine->MainIsolate;
 #else
     return nullptr;
@@ -69,7 +74,7 @@ V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char*
     }
 }
 
-V8_EXPORT int RegisterClass(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data)
+V8_EXPORT int _RegisterClass(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     return JsEngine->RegisterClass(FullName, BaseTypeId, Constructor, Destructor, Data, 0);

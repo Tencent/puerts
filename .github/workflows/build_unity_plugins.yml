@@ -1,6 +1,7 @@
 name: build unity plugins
 
 on: 
+  workflow_dispatch:
   push:
     paths: 
       - unity/native_src/**
@@ -213,6 +214,28 @@ jobs:
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_OUR_V8
+  osx_node:
+    runs-on: macos-10.15
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_nodejs.yml
+          name: nodejs_bin
+          path: unity/native_src/
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
+      - name: Build
+        run: |
+          cd unity/native_src
+          sh ./make_osx_node.sh
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_Nodejs
   osx_qjs:
     runs-on: macos-10.15
 
@@ -222,7 +245,6 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build_quickjs.yml
-          #run_id: ${{env.RUNID}}
           name: qjs_v8_bin
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
@@ -300,6 +322,27 @@ jobs:
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_Quickjs
+  windows_node:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_nodejs.yml
+          name: nodejs_bin
+          path: unity/native_src/
+      - name: Build
+        run: |
+          cd unity\native_src
+          .\make_win64_node.bat
+          # .\make_win32_node.bat
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./unity/Assets/Plugins/**/*
+          name: Unity_Plugins_Nodejs
           
   linux64:
     runs-on: ubuntu-latest
