@@ -16,6 +16,12 @@ namespace Puerts
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
 
+    public enum JsEnvMode {
+        Default = 0,
+        Node = 1,
+        External = 2
+    }
+
     public class JsEnv : IDisposable
     {
         internal readonly int Idx;
@@ -38,25 +44,27 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
-        public JsEnv() : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
+        public JsEnv(JsEnvMode mode = JsEnvMode.Default) 
+            : this(new DefaultLoader(), -1, mode, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort = -1) : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
+        public JsEnv(ILoader loader, int debugPort = -1)
+             : this(loader, debugPort, JsEnvMode.Default, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
         public JsEnv(ILoader loader, IntPtr externalRuntime, IntPtr externalContext)
-            : this(loader, -1, externalRuntime, externalContext)
+            : this(loader, -1, JsEnvMode.External, externalRuntime, externalContext)
         {
         }
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
-            : this(loader, debugPort, 0, externalRuntime, externalContext)
+            : this(loader, debugPort, JsEnvMode.External, externalRuntime, externalContext)
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort, int mode, IntPtr externalRuntime, IntPtr externalContext)
+        public JsEnv(ILoader loader, int debugPort, JsEnvMode mode, IntPtr externalRuntime, IntPtr externalContext)
         {
             const int libVersionExpect = 11;
             int libVersion = PuertsDLL.GetLibVersion();
@@ -66,9 +74,13 @@ namespace Puerts
             }
             // PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
-            if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
+            if (mode == JsEnvMode.External)
             {
                 isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
+            }
+            else if (mode == JsEnvMode.Node)
+            {
+                isolate = PuertsDLL.CreateJSEngineWithNode();
             }
             else
             {
@@ -532,6 +544,7 @@ namespace Puerts
                 }
 #endif
             }
+            PuertsDLL.LogicTick(isolate);
             tickHandler.ForEach(fn =>
             {
                 IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
