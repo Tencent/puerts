@@ -80,7 +80,6 @@ namespace Puerts
             }
             else if (mode == JsEnvMode.Node)
             {
-                UnityEngine.Debug.Log("CreateJSEngineWithNode");
                 isolate = PuertsDLL.CreateJSEngineWithNode();
             }
             else
