@@ -720,7 +720,7 @@ private:
 		{
 			const bool NewValue = InMetaData.Contains(InKey) ? true : false;
 			const bool bChanged = NewValue != InOutValue;
-			InOutValue = bChanged;
+			InOutValue = NewValue;
 			return bChanged;
 		};
 		//	a helper function sued update string value, return return if the value is updated by the new value
