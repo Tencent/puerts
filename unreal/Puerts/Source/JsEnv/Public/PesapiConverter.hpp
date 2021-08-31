@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <string>
 #include <functional>
+#include <vector>
 #include "Pesapi.h"
 
 #define __DefObjectType(CLS) \
@@ -264,6 +265,24 @@ struct Converter<std::string> {
 };
 
 template <>
+struct Converter<const char*> {
+    static pesapi_value toScript(pesapi_env env, const char* value)
+    {
+        return pesapi_create_string_utf8(env, value, strlen(value));
+    }
+
+    static const char* toCpp(pesapi_env env, pesapi_value value)
+    {
+        return nullptr;
+    }
+
+    static bool accept(pesapi_env env, pesapi_value value)
+    {
+        return pesapi_is_string(env, value);
+    }
+};
+
+template <>
 struct Converter<bool> {
     static pesapi_value toScript(pesapi_env env, bool value)
     {
@@ -283,7 +302,7 @@ struct Converter<bool> {
 
 template <typename T>
 struct Converter<std::reference_wrapper<T>> {
-    static v8::Local<v8::Value> toScript(pesapi_env env, const T& value)
+    static pesapi_value toScript(pesapi_env env, const T& value)
     {
         return pesapi_create_ref(env, Converter<T>::toScript(env, value));
     }

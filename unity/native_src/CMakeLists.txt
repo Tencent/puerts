@@ -9,7 +9,7 @@ cmake_policy(SET CMP0091 NEW)
 
 project(PuertsPlugin)
 
-set (CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
 
 if ( IOS )
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")
@@ -21,12 +21,24 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
     PATHS 
     ${CMAKE_SOURCE_DIR}
     NO_DEFAULT_PATH
-    )
+)
 
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
 if ( JS_ENGINE STREQUAL "quickjs")
     set(LIB_FILE_NAME libquickjs.a)
+
+elseif ( JS_ENGINE STREQUAL "nodejs")
+
+    if ( APPLE )
+        set(LIB_FILE_NAME libnode.83.dylib)
+    endif()
+
+    include_directories(    
+        ${CMAKE_SOURCE_DIR}/nodejs/include
+        ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include
+        ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include
+    )
 else()
     set(JS_ENGINE v8)
     set(LIB_FILE_NAME libwee8.a)
@@ -87,7 +99,7 @@ source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_INC)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_SRC)
 
 if ( APPLE )
-    if ( IOS)
+    if ( IOS )
         set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)")
         add_library(puerts STATIC
            ${PUERTS_SRC} ${PUERTS_INC}
@@ -98,16 +110,11 @@ if ( APPLE )
         # 某些mac机器上会默认开始编译arm64版本，暂时先写死x86版本，后续再支持arm64
         set(CMAKE_OSX_ARCHITECTURES x86_64)
 
-        if ( FOR_UT STREQUAL "1")
-            add_library(puerts SHARED
-                ${PUERTS_SRC} ${PUERTS_INC}
-            )
-        else ()
-            add_library(puerts MODULE
-                ${PUERTS_SRC} ${PUERTS_INC}
-            )
-            set_target_properties ( puerts PROPERTIES BUNDLE TRUE )
-        endif ()
+        set(CMAKE_SKIP_RPATH FALSE)    
+        set(CMAKE_INSTALL_RPATH "@loader_path/")
+        add_library(puerts SHARED
+            ${PUERTS_SRC} ${PUERTS_INC}
+        )
     endif ()
 else ()
     add_library(puerts SHARED
@@ -122,6 +129,8 @@ endif ()
 if ( JS_ENGINE STREQUAL "quickjs")
     target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
     target_compile_definitions (puerts PRIVATE WITH_QUICKJS)
+elseif (JS_ENGINE STREQUAL "nodejs")
+    target_compile_definitions (puerts PRIVATE WITH_NODEJS)
 endif ()
 
 if ( MSYS )
@@ -147,6 +156,22 @@ elseif ( WIN32 )
         else ()
             target_link_libraries(puerts
                 ${V8_ENGINE}/Lib/Win64/quickjs.dll.lib
+                winmm.lib
+                dbghelp.lib
+                shlwapi.lib
+            )
+        endif ()
+    elseif (JS_ENGINE STREQUAL "nodejs")
+        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win32/libnode.lib
+                winmm.lib
+                dbghelp.lib
+                shlwapi.lib
+            )
+        else ()
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win64/libnode.lib
                 winmm.lib
                 dbghelp.lib
                 shlwapi.lib
@@ -223,3 +248,5 @@ if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) 
 	set_property(TARGET puerts PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
+
+install(TARGETS puerts DESTINATION bin)

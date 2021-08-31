@@ -9,9 +9,25 @@ struct FGenImp
 {
 	FStringBuffer Output {"", ""};
 
+	FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+	{
+		return TypeInfo->IsUEType() ? "UE." : "";    
+	}
+	
+	FString GetName(const puerts::CTypeInfo* TypeInfo)
+	{
+		FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
+		if (TypeInfo->IsUEType())
+		{
+			return Ret.Mid(1);
+		}
+		return Ret;
+	}
+	
 	void Begin()
 	{
 		Output << "declare module \"cpp\" {\n";
+		Output << "    import * as UE from \"ue\"\n";
 		Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
 	}
 
@@ -34,8 +50,9 @@ struct FGenImp
 			{
 				Buff << "$Ref<";
 			}
-			
-			Buff << Type->Argument(i)->Name();
+
+			const puerts::CTypeInfo* TypeInfo = Type->Argument(i);
+			Buff << GetNamePrefix(TypeInfo) << GetName(TypeInfo);
 			
 			if (IsNullable)
 			{
@@ -87,7 +104,8 @@ struct FGenImp
 			FStringBuffer Tmp;
 			Tmp << "        static " << FunctionInfo->Name << "(";
 			GenArguments(FunctionInfo->Type, Tmp);
-			Tmp << ") :" << FunctionInfo->Type->Return()->Name() <<";\n";
+			const puerts::CTypeInfo* ReturnType = FunctionInfo->Type->Return();
+			Tmp << ") :" << GetNamePrefix(ReturnType) << GetName(ReturnType) <<";\n";
 			if (!AddedFunctions.Contains(Tmp.Buffer))
 			{
 				AddedFunctions.Add(Tmp.Buffer);
@@ -102,7 +120,8 @@ struct FGenImp
 			FStringBuffer Tmp;
 			Tmp << "        " << MethodInfo->Name << "(";
 			GenArguments(MethodInfo->Type, Tmp);
-			Tmp << ") :" << MethodInfo->Type->Return()->Name() <<";\n";
+			const puerts::CTypeInfo* ReturnType = MethodInfo->Type->Return();
+			Tmp << ") :" << GetNamePrefix(ReturnType) << GetName(ReturnType) <<";\n";
 			if (!AddedFunctions.Contains(Tmp.Buffer))
 			{
 				AddedFunctions.Add(Tmp.Buffer);
@@ -136,5 +155,5 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
 	Gen.End();
 
-	FFileHelper::SaveStringToFile(Gen.Output.Buffer, *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts")));
+	FFileHelper::SaveStringToFile(Gen.Output.Buffer, *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts")), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
