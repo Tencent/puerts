@@ -11,11 +11,7 @@
 #include <tuple>
 #include <type_traits>
 #include "JSClassRegister.h"
-#if BUILDING_PES_EXTENSION
-#include "PesapiConverter.hpp"
-#else
 #include "Converter.hpp"
-#endif
 #include "TypeInfo.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
