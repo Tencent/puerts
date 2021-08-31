@@ -9,7 +9,7 @@ cmake_policy(SET CMP0091 NEW)
 
 project(PuertsPlugin)
 
-set (CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
 
 if ( IOS )
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")
@@ -21,7 +21,7 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
     PATHS 
     ${CMAKE_SOURCE_DIR}
     NO_DEFAULT_PATH
-    )
+)
 
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
@@ -110,16 +110,11 @@ if ( APPLE )
         # 某些mac机器上会默认开始编译arm64版本，暂时先写死x86版本，后续再支持arm64
         set(CMAKE_OSX_ARCHITECTURES x86_64)
 
-        if ( FOR_UT )
-            add_library(puerts SHARED
-                ${PUERTS_SRC} ${PUERTS_INC}
-            )
-        else ()
-            add_library(puerts MODULE
-                ${PUERTS_SRC} ${PUERTS_INC}
-            )
-            set_target_properties ( puerts PROPERTIES BUNDLE TRUE )
-        endif ()
+        set(CMAKE_SKIP_RPATH FALSE)    
+        set(CMAKE_INSTALL_RPATH "@loader_path/")
+        add_library(puerts SHARED
+            ${PUERTS_SRC} ${PUERTS_INC}
+        )
     endif ()
 else ()
     add_library(puerts SHARED
@@ -253,3 +248,5 @@ if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) 
 	set_property(TARGET puerts PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
+
+install(TARGETS puerts DESTINATION bin)
