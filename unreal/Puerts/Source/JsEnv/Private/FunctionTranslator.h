@@ -48,7 +48,7 @@ protected:
 
     std::unique_ptr<FPropertyTranslator> Return;
 
-    UFunction *Function;
+    TWeakObjectPtr<UFunction> Function;
 
     bool IsInterfaceFunction;
 
@@ -60,11 +60,12 @@ protected:
 #if WITH_EDITOR
     FName FunctionName;
 #endif
-
 private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void Init(UFunction *InFunction, bool IsDelegate);
 };
 
 class FExtensionMethodTranslator : public FFunctionTranslator

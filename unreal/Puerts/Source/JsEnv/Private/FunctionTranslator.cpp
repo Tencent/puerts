@@ -76,13 +76,17 @@ static GlobalBufferAutoRelease Dummy;
 
 FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
 {
+    Init(InFunction,IsDelegate);
+}
+void FFunctionTranslator::Init(UFunction *InFunction, bool IsDelegate)
+{
     check(InFunction);
     Function = InFunction;
-
-    ParamsBufferSize = InFunction->PropertiesSize > InFunction->ParmsSize ? InFunction->PropertiesSize : InFunction->ParmsSize;
 #if WITH_EDITOR
-    FunctionName = InFunction->GetFName();
+    FunctionName = Function->GetFName();
 #endif
+    ParamsBufferSize = InFunction->PropertiesSize > InFunction->ParmsSize ? InFunction->PropertiesSize : InFunction->ParmsSize;
+
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     RequireBuffer(ParamsBufferSize);
 #endif
@@ -98,7 +102,7 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
         IsInterfaceFunction = (OuterClass->HasAnyClassFlags(CLASS_Interface) && OuterClass != UInterface::StaticClass());
         BindObject = InFunction->HasAnyFunctionFlags(FUNC_Static) ? OuterClass->GetDefaultObject() : nullptr;
     }
-
+    Arguments.clear();
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
     {
         PropertyMacro *Property = *It;
@@ -119,7 +123,7 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
         TMap<FName, FString> *MetaMap = GetParamDefaultMetaFor(InFunction);
         if (MetaMap)
         {
-            for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
+            for (TFieldIterator<PropertyMacro> ParamIt(InFunction); ParamIt; ++ParamIt)
             {
                 auto Property = *ParamIt;
                 if (Property->PropertyFlags & CPF_Parm)
@@ -214,7 +218,7 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
-    UFunction *CallFunction = !IsInterfaceFunction ? 
+    TWeakObjectPtr<UFunction> CallFunction = !IsInterfaceFunction ? 
         Function : (CallObject->GetClass()->FindFunctionByName(Function->GetFName()));
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void *Params = Buffer;
@@ -222,9 +226,10 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     void *Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
 #if WITH_EDITOR
-    if (!CallFunction || !CallFunction->IsValidLowLevelFast() || CallFunction->IsPendingKill())
+    if(!CallFunction.IsValid())
     {
         CallFunction = CallObject->GetClass()->FindFunctionByName(FunctionName);
+        Init(CallFunction.Get(),false);
     }
 #endif
     if (Params) CallFunction->InitializeStruct(Params);
@@ -240,7 +245,7 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         }
     }
 
-    CallObject->UObject::ProcessEvent(CallFunction, Params);
+    CallObject->UObject::ProcessEvent(CallFunction.Get(), Params);
 
     if (Return)
     {
@@ -341,7 +346,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
         if (Params)
         {
             Function->InitializeStruct(Params);
-            for (TFieldIterator<PropertyMacro> It(Function); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
+            for (TFieldIterator<PropertyMacro> It(Function.Get()); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
             {
                 Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
             }
@@ -436,7 +441,7 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
         }
     }
 
-    BindObject->UObject::ProcessEvent(Function, Params);
+    BindObject->UObject::ProcessEvent(Function.Get(), Params);
 
     if (Return)
     {
