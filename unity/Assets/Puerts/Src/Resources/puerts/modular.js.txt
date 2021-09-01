@@ -18,6 +18,7 @@ var global = global || (function () { return this; }());
     
     let moduleCache = Object.create(null); // key to sid
     let tmpModuleStorage = []; // sid to module
+    let nodeRequire = global.require;
 
     function addModule(m) {
         for (var i = 0; i < tmpModuleStorage.length; i++) {
@@ -59,7 +60,14 @@ var global = global || (function () { return this; }());
             if (moduleName in buildinModule) return buildinModule[moduleName];
             
             let fullPath = puerts.searchModule(requiringDir, moduleName);
-            if (!fullPath) throw new Error("can not find " + moduleName);
+            if (!fullPath) {
+                try {
+                    return nodeRequire(moduleName);
+                    
+                } catch(e) {
+                    throw new Error("can not find " + moduleName);
+                }
+            }
 
             let key = fullPath;
             if (key in moduleCache) {

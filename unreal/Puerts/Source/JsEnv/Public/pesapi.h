@@ -39,13 +39,16 @@ __attribute__((__import_module__("pesapi")))
 # define PESAPI_NO_RETURN
 #endif
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct pesapi_env__* pesapi_env;
+typedef struct pesapi_env_holder__* pesapi_env_holder;
 typedef struct pesapi_value__* pesapi_value;
+typedef struct pesapi_value_holder__* pesapi_value_holder;
 typedef struct pesapi_callback_info__* pesapi_callback_info;
+typedef struct pesapi_scope__* pesapi_scope;
 
 //value process
 PESAPI_EXTERN pesapi_value pesapi_create_null(pesapi_env env);
@@ -76,6 +79,7 @@ PESAPI_EXTERN bool pesapi_is_uint64(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_double(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_string(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_object(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN bool pesapi_is_function(pesapi_env env, pesapi_value value);
 
 PESAPI_EXTERN pesapi_value pesapi_create_native_object(pesapi_env env, void* class_id, void* object_ptr, bool copy);
 PESAPI_EXTERN void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value);
@@ -94,8 +98,29 @@ PESAPI_EXTERN pesapi_value pesapi_get_holder(pesapi_callback_info info);
 PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value value);
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_env env, const char* msg);
 
-//#ifdef __cplusplus
-//}
-//#endif
+PESAPI_EXTERN pesapi_env_holder pesapi_hold_env(pesapi_env env);
+PESAPI_EXTERN pesapi_env pesapi_get_env_from_holder(pesapi_env_holder env_holder);
+PESAPI_EXTERN pesapi_env_holder pesapi_duplicate_env_holder(pesapi_env_holder env_holder);
+PESAPI_EXTERN void pesapi_release_env_holder(pesapi_env_holder env_holder);
+
+PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder);
+PESAPI_EXTERN bool pesapi_has_caught(pesapi_scope scope);
+PESAPI_EXTERN const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack);
+PESAPI_EXTERN void pesapi_close_scope(pesapi_scope scope);
+
+PESAPI_EXTERN pesapi_value_holder pesapi_hold_value(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN pesapi_value_holder pesapi_duplicate_value_holder(pesapi_value_holder value_holder);
+PESAPI_EXTERN void pesapi_release_value_holder(pesapi_value_holder value_holder);
+PESAPI_EXTERN pesapi_value pesapi_get_value_from_holder(pesapi_env env, pesapi_value_holder value_holder);
+
+PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
+PESAPI_EXTERN void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
+
+PESAPI_EXTERN pesapi_value pesapi_call_function(pesapi_env env, pesapi_value func, pesapi_value this_object, int argc,
+											const pesapi_value argv[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

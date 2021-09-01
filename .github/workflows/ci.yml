@@ -41,35 +41,7 @@ jobs:
           nuget restore Puerts.sln
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
-
-  ci-v8-ours:
-    runs-on: windows-2019
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build_v8.yml
-          name: v8_bin_win64
-          path: unity/native_src_ourv8/
-      - name: Build plugin
-        run: |
-          md unity\general\Bin
-          cd unity\native_src_ourv8
-          .\make_win64.bat
-          copy build64\Release\puerts.dll ..\general\Bin
-      - name: UnitTest
-        run: |
-          cd unity\general\vs2013
-          nuget restore Puerts.sln
-          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
-          msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
-          
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll   
   ci-quickjs:
     runs-on: windows-2019
 
@@ -91,6 +63,35 @@ jobs:
           .\make_win64_qjs.bat
           copy build64qjs\Release\puerts.dll ..\general\Bin
           copy quickjs\Lib\Win64\*.dll ..\general\Bin
+      - name: UnitTest
+        run: |
+          cd unity\general\vs2013
+          nuget restore Puerts.sln
+          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
+          msbuild /property:Configuration=Release Puerts.sln
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
+          
+  ci-nodejs:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build_nodejs.yml
+          #run_id: ${{env.RUNID}}
+          name: nodejs_bin
+          path: unity/native_src/
+      - name: Build plugin
+        run: |
+          md unity\general\Bin
+          cd unity\native_src
+          .\make_win64_node.bat
+          copy build64nodejs\Release\puerts.dll ..\general\Bin
+          copy nodejs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
         run: |
           cd unity\general\vs2013
