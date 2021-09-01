@@ -22,6 +22,13 @@
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
 
+#if defined(WITH_NODEJS)
+#pragma warning(push, 0)
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+#else
+
 #if defined(PLATFORM_WINDOWS)
 
 #if _WIN64
@@ -42,6 +49,8 @@
 #include "Blob/iOS/x64/SnapshotBlob.h"
 #elif defined(PLATFORM_LINUX)
 #include "Blob/Linux/SnapshotBlob.h"
+#endif
+
 #endif
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
@@ -72,13 +81,28 @@ struct FLifeCycleInfo
 };
 
 static std::unique_ptr<v8::Platform> GPlatform;
+#if defined(WITH_NODEJS)
+static std::vector<std::string>* Args;
+static std::vector<std::string>* ExecArgs;
+static std::vector<std::string>* Errors;
+#endif
 
 v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size);
 
+enum JSEngineBackend
+{
+    Default     = 0,
+    Node        = 1,
+    External    = 2,
+};
+
 class JSEngine
 {
+private: 
+    void JSEngineWithNode();
+    void JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context);
 public:
-    JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
+    JSEngine(bool withNode, void* external_quickjs_runtime, void* external_quickjs_context);
 
     ~JSEngine();
 
@@ -120,6 +144,8 @@ public:
 
     bool InspectorTick();
 
+    void LogicTick();
+
     v8::Isolate* MainIsolate;
 
     std::vector<char> StrBuffer;
@@ -134,7 +160,21 @@ public:
     }
 
 private:
-    v8::Isolate::CreateParams CreateParams;
+
+#if defined(WITH_NODEJS)
+    bool withNode;
+
+    uv_loop_t* NodeUVLoop;
+
+    std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
+
+    node::IsolateData* NodeIsolateData;
+
+    node::Environment* NodeEnv;
+
+    const float UV_LOOP_DELAY = 0.1;
+#endif
+    v8::Isolate::CreateParams* CreateParams;
 
     std::vector<FCallbackInfo*> CallbackInfos;
 

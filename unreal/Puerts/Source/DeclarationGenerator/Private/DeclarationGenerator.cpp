@@ -236,7 +236,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
     }
     End();
 
-    FFileHelper::SaveStringToFile(ToString(), *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")));
+    FFileHelper::SaveStringToFile(ToString(), *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
 void FTypeScriptDeclarationGenerator::Gen(UObject *ToGen)

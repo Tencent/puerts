@@ -1142,7 +1142,14 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         auto Iter = DelegateMap.find(DelegatePtr);
         if (Iter != DelegateMap.end())
         {
-            return Iter->second.JSObject.Get(Isolate);
+            if (Iter->second.Owner.IsValid())
+            {
+                return Iter->second.JSObject.Get(Isolate);
+            }
+            else
+            {
+                ClearDelegate(Isolate, Context, DelegatePtr);
+            }
         }
     }
     else
