@@ -142,20 +142,149 @@ var global = global || (function () { return this; }());
         }
     }
     
-    function extension(cls, extension) {
-	var parentPrototype = Object.getPrototypeOf(cls.prototype);
-        Object.keys(extension).forEach(key=> {
-            var func = extension[key];
-            if (typeof func == 'function' && key != 'constructor') {
-		var parentFunc = parentPrototype ? parentPrototype[key] : undefined;
-                parentFunc = typeof parentFunc === "function" ? parentFunc : undefined;
-                Object.defineProperty(cls.prototype, key, {
-                    value: bindThisToFirstArgument(func, parentFunc),
-                    writable: false,
-                    configurable: false
-                });
+    function csharpToMatchType(type) {
+        switch (type.FullName) {
+            case "System.Int64":
+            case "System.UInt64":
+                return "bigint";
+            case "System.Byte":
+            case "System.SByte":
+            case "System.Char":
+            case "System.Int16":
+            case "System.Int32":
+            case "System.UInt16":
+            case "System.UInt32":
+            case "System.Single":
+            case "System.Double":
+                return "number";
+            case "System.Boolean":
+                return "boolean";
+            case "System.String":
+                return "string";
+            case "System.DateTime":
+                return "Date";
+            case "Puerts.ArrayBuffer":
+                return "ArrayBuffer";
+            case "Puerts.JSObject":
+                return "JSObject";
+            case "System.Object":
+                return "any";
+        }
+        if (getType(require("csharp").System.Delegate).IsAssignableFrom(type)) {
+            return "function";
+        }
+        return type;
+    }
+    function jsToMatchType(arg) {
+        let type = typeof arg;
+        if (type === "object") {
+            if (arg instanceof require("csharp").System.Object)
+                return csharpToMatchType(arg.GetType());
+            if (arg instanceof ArrayBuffer) {
+                return "ArrayBuffer";
             }
-        })
+            else if (arg instanceof Date) {
+                return "Date";
+            }
+            return "JSObject";
+        }
+        if (type === "undefined") {
+            return "any";
+        }
+        return type;
+    }
+    const methodFlags = 8 | 16, extensionCompleted = Symbol("%method extensions infos%");
+    function creatMatchInfos(matchInfos, cls, extension) {
+        let clsType = getType(cls), extensionType = getType(extension);
+        let methodInfos = extensionType.GetMethods(methodFlags);
+        for (let i = 0; i < methodInfos.Length; i++) {
+            let methodInfo = methodInfos.get_Item(i), params = methodInfo.GetParameters();
+            if (methodInfo.IsGenericMethod || params.Length === 0 || params.get_Item(0).ParameterType !== clsType)
+                continue;
+            let matchParams = new Array();
+            for (let i = 1; i < params.Length; i++) {
+                matchParams.push(csharpToMatchType(params.get_Item(i).ParameterType));
+            }
+            let matchInfo = matchInfos.get(methodInfo.Name);
+            if (!matchInfo) {
+                matchInfo = {
+                    match: function (args) {
+                        let len = args.length;
+                        let matchParams = this[len];
+                        if (!matchParams)
+                            return false;
+                        if (len === 0)
+                            return true;
+                        let argTypes = args.map(arg => jsToMatchType(arg));
+                        for (let _matchParams of matchParams) {
+                            for (let i = 0; i < len; i++) {
+                                let mp = _matchParams[i], ap = argTypes[i];
+                                if (typeof mp === "string" && typeof ap === "string") {
+                                    if (mp !== ap)
+                                        break;
+                                }
+                                else if (typeof mp === "object" && typeof ap === "object") {
+                                    if (!mp.IsAssignableFrom(ap))
+                                        break;
+                                }
+                                if (i === len - 1)
+                                    return true;
+                            }
+                        }
+                        return false;
+                    }
+                };
+                matchInfos.set(methodInfo.Name, matchInfo);
+            }
+            let matchLen = matchInfo[matchParams.length];
+            if (!matchLen) {
+                matchLen = matchInfo[matchParams.length] = [];
+            }
+            matchLen.push(matchParams);
+        }
+    }
+    function isMatch(matchInfos, cls, extension, methodName, args) {
+        let completedInfos = cls[extensionCompleted];
+        if (!completedInfos) {
+            completedInfos = cls[extensionCompleted] = new Array();
+        }
+        if (completedInfos.indexOf(extension) < 0) {
+            completedInfos.push(extension);
+            creatMatchInfos(matchInfos, cls, extension);
+        }
+        let matchInfo = matchInfos.get(methodName);
+        if (matchInfo) {
+            return matchInfo.match(args);
+        }
+        return false;
+    }
+    function extension(cls, extension) {
+        let matchInfos = new Map();
+        Object.keys(extension).forEach(key => {
+            let func = extension[key];
+            if (typeof (func) !== "function" || key === "constructor")
+                return;
+            let proto = cls.prototype, pFunc;
+            if ((pFunc = proto[key])) {
+                proto = Object.create(proto);
+                cls.prototype = proto;
+            }
+            Object.defineProperty(proto, key, {
+                value: function (...args) {
+                    if (isMatch(matchInfos, cls, extension, key, args)) {
+                        func.apply(null, [this, ...args]);
+                    }
+                    else if (pFunc) {
+                        pFunc.apply(this, args);
+                    }
+                    else {
+                        throw new Error(" invalid arguments to MethodA");
+                    }
+                },
+                writable: false,
+                configurable: false
+            });
+        });
     }
     
     puerts.$ref = ref;
