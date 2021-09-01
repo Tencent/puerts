@@ -190,12 +190,9 @@ v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isol
 void FFunctionTranslator::Call(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
-    FFunctionTranslator* This = reinterpret_cast<FFunctionTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FFunctionTranslator* This = static_cast<FFunctionTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     This->Call(Isolate, Context, Info);
 }
 
