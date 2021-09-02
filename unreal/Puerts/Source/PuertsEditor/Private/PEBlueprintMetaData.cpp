@@ -576,7 +576,7 @@ bool UPEPropertyMetaData::Apply(FBPVariableDescription& Element) const
 
 	//	set meta data
 	bool bMetaDataChanged = false;
-	for (const auto Pair : MetaData)
+	for (const auto &Pair : MetaData)
 	{
 		if (const auto MetaDataEntryPtr = Element.MetaDataArray.FindByPredicate([Key = Pair.Key](const FBPVariableMetaDataEntry& InEntry) {return InEntry.DataKey == Key; }))
 		{
