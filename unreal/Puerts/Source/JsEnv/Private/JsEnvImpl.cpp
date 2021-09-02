@@ -1829,20 +1829,22 @@ bool FJsEnvImpl::CheckDelegateProxys(float tick)
 FPropertyTranslator* FJsEnvImpl::GetContainerPropertyTranslator(PropertyMacro* Property)
 {
     auto Iter = ContainerPropertyMap.find(Property);
-    if (Iter == ContainerPropertyMap.end())
+    //TODO: 如果脚本一直持有蓝图里头的Map，还是有可能有问题的，需要统筹考虑一套机制解决这类问题
+    if (Iter == ContainerPropertyMap.end() || !Iter->second.PropertyWeakPtr.IsValid())
     {
-        ContainerPropertyMap[Property] = FPropertyTranslator::Create(Property);
+        ContainerPropertyInfo Temp {Property, FPropertyTranslator::Create(Property)};
+        ContainerPropertyMap[Property] = std::move(Temp);
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         if (!Property->IsNative())
         {
             SysObjectRetainer.Retain(Property);
         }
 #endif
-        return ContainerPropertyMap[Property].get();
+        return ContainerPropertyMap[Property].PropertyTranslator.get();
     }
     else
     {
-        return Iter->second.get();
+        return Iter->second.PropertyTranslator.get();
     }
 }
 
