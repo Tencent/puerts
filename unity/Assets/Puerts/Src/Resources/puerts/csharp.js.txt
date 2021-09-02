@@ -127,21 +127,6 @@ var global = global || (function () { return this; }());
         return cls.__p_innerType;
     }
     
-    function bindThisToFirstArgument(func, parentFunc) {
-	if (parentFunc) {
-            return function (...args) {
-                try {
-                    return func.apply(null, [this, ...args]);
-                } catch {
-                    return parentFunc.call(this, ...args);
-                };
-            }
-        }
-        return function(...args) {
-            return func.apply(null, [this, ...args]);
-        }
-    }
-    
     function csharpToMatchType(type) {
         switch (type.FullName) {
             case "System.Int64":
@@ -195,16 +180,24 @@ var global = global || (function () { return this; }());
     }
     const methodFlags = 8 | 16, extensionCompleted = Symbol("%method extensions infos%");
     function creatMatchInfos(matchInfos, cls, extension) {
+        function pushLen(matchInfo, matchParams) {
+            let matchLen = matchInfo[matchParams.length];
+            if (!matchLen) {
+                matchLen = matchInfo[matchParams.length] = [];
+            }
+            matchLen.push(matchParams);
+        }
+        ;
         let clsType = getType(cls), extensionType = getType(extension);
         let methodInfos = extensionType.GetMethods(methodFlags);
         for (let i = 0; i < methodInfos.Length; i++) {
             let methodInfo = methodInfos.get_Item(i), params = methodInfo.GetParameters();
-            if (methodInfo.IsGenericMethod || params.Length === 0 || params.get_Item(0).ParameterType !== clsType)
+            if (params.Length === 0)
                 continue;
-            let matchParams = new Array();
-            for (let i = 1; i < params.Length; i++) {
-                matchParams.push(csharpToMatchType(params.get_Item(i).ParameterType));
-            }
+            let firstParam = params.get_Item(0);
+            if (!(clsType.IsAssignableFrom(firstParam.ParameterType) ||
+                methodInfo.IsGenericMethod && firstParam.ParameterType.IsGenericParameter))
+                continue;
             let matchInfo = matchInfos.get(methodInfo.Name);
             if (!matchInfo) {
                 matchInfo = {
@@ -236,11 +229,17 @@ var global = global || (function () { return this; }());
                 };
                 matchInfos.set(methodInfo.Name, matchInfo);
             }
-            let matchLen = matchInfo[matchParams.length];
-            if (!matchLen) {
-                matchLen = matchInfo[matchParams.length] = [];
+            let matchParams = new Array();
+            for (let i = 1; i < params.Length; i++) {
+                let param = params.get_Item(i);
+                if (param.IsOptional) {
+                    pushLen(matchInfo, matchParams);
+                    matchParams = [...matchParams];
+                }
+                ;
+                matchParams.push(csharpToMatchType(param.ParameterType));
             }
-            matchLen.push(matchParams);
+            pushLen(matchInfo, matchParams);
         }
     }
     function isMatch(matchInfos, cls, extension, methodName, args) {
@@ -264,21 +263,22 @@ var global = global || (function () { return this; }());
             let func = extension[key];
             if (typeof (func) !== "function" || key === "constructor")
                 return;
-            let proto = cls.prototype, pFunc;
-            if ((pFunc = proto[key])) {
-                proto = Object.create(proto);
-                cls.prototype = proto;
+            let proto = cls.prototype, srcFunc;
+            if ((srcFunc = proto[key])) {
+                let newProto = Object.create(Object.getPrototypeOf(proto));
+                Object.setPrototypeOf(proto, newProto);
+                proto = newProto;
             }
             Object.defineProperty(proto, key, {
                 value: function (...args) {
                     if (isMatch(matchInfos, cls, extension, key, args)) {
-                        func.apply(null, [this, ...args]);
+                        return func.call(null, this, ...args);
                     }
-                    else if (pFunc) {
-                        pFunc.apply(this, args);
+                    else if (srcFunc) {
+                        return srcFunc.apply(this, args);
                     }
                     else {
-                        throw new Error(" invalid arguments to MethodA");
+                        throw new Error(`invalid arguments to ${key}`);
                     }
                 },
                 writable: false,
