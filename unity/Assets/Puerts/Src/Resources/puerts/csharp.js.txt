@@ -25,7 +25,7 @@ var global = global || (function () { return this; }());
                     Object.defineProperty(cls, key, {
                         value: val,
                         writable: false,
-                        configurable: false
+                        configurable: true
                     });
                     if (cls.__p_isEnum && (typeof val) == 'number') {
                         cls[val] = key;
@@ -265,9 +265,7 @@ var global = global || (function () { return this; }());
                 return;
             let proto = cls.prototype, srcFunc;
             if ((srcFunc = proto[key])) {
-                let newProto = Object.create(Object.getPrototypeOf(proto));
-                Object.setPrototypeOf(proto, newProto);
-                proto = newProto;
+                delete proto[key];      //the property has been defined, must configurable true
             }
             Object.defineProperty(proto, key, {
                 value: function (...args) {
@@ -282,7 +280,7 @@ var global = global || (function () { return this; }());
                     }
                 },
                 writable: false,
-                configurable: false
+                configurable: true
             });
         });
     }
