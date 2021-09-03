@@ -438,7 +438,7 @@ public:
 	 * @param InBlueprint
 	 * @return
 	 */
-	UE_NODISCARD bool Apply(UClass* InClass, UBlueprint* InBlueprint);
+	bool Apply(UClass* InClass, UBlueprint* InBlueprint);
 private:
 	/**
 	 * @brief the helper function used to get the value array like meta data from the given class
@@ -671,13 +671,13 @@ public:
 	 * @brief apply to a custom event
 	 * @param InCustomEvent
 	 */
-	UE_NODISCARD bool Apply(UK2Node_CustomEvent* InCustomEvent) const;
+	bool Apply(UK2Node_CustomEvent* InCustomEvent) const;
 
 	/**
 	 * @brief apply to a normal function
 	 * @param InFunctionEntry
 	 */
-	UE_NODISCARD bool Apply(UK2Node_FunctionEntry* InFunctionEntry) const;
+	bool Apply(UK2Node_FunctionEntry* InFunctionEntry) const;
 
 private:
 
@@ -835,7 +835,7 @@ public:
 	 * @param PinType
 	 * @return
 	 */
-	UE_NODISCARD bool Apply(FEdGraphPinType& PinType) const;
+	bool Apply(FEdGraphPinType& PinType) const;
 
 private:
 
@@ -890,7 +890,7 @@ public:
 	 * @brief apply the meta data to the property
 	 * @param Element
 	 */
-	UE_NODISCARD bool Apply(FBPVariableDescription& Element) const;
+	bool Apply(FBPVariableDescription& Element) const;
 private:
 
 	/**

@@ -19,10 +19,7 @@ namespace puerts
 void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     FPropertyTranslator* This = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     This->Getter(Isolate, Context, Info);
@@ -54,10 +51,7 @@ void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     FPropertyTranslator* This = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     This->Setter(Isolate, Context, Info[0], Info);

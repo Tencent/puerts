@@ -19,6 +19,10 @@
 #include "TypeScriptGeneratedClass.h"
 #include "ContainerMeta.h"
 
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+#include "UObject/WeakFieldPtr.h"
+#endif
+
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
 #include "v8.h"
@@ -390,7 +394,17 @@ private:
 
     v8::UniquePersistent<v8::FunctionTemplate> FixSizeArrayTemplate;
 
-    std::map<PropertyMacro*, std::unique_ptr<FPropertyTranslator>> ContainerPropertyMap;
+    struct ContainerPropertyInfo
+    {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+        TWeakObjectPtr<PropertyMacro> PropertyWeakPtr;
+#else
+        TWeakFieldPtr<PropertyMacro> PropertyWeakPtr;
+#endif
+        std::unique_ptr<FPropertyTranslator> PropertyTranslator;
+    };
+    
+    std::map<PropertyMacro*, ContainerPropertyInfo> ContainerPropertyMap;
 
     std::map<UFunction*, std::unique_ptr<FFunctionTranslator>> JsCallbackPrototypeMap;
 
