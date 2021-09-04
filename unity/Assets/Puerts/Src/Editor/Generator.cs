@@ -334,6 +334,7 @@ namespace Puerts.Editor
             {
                 public string Name;
                 public string WrapClassName;
+                public string[] Namespaces;
                 public MethodGenInfo[] Methods;
                 public bool IsValueType;
                 public MethodGenInfo Constructor;
@@ -349,7 +350,13 @@ namespace Puerts.Editor
                     var methodGroups = type.GetMethods(Utils.Flags).Where(m => !Utils.isFiltered(m))
                         .Where(m => !m.IsSpecialName && Puerts.Utils.IsSupportedMethod(m))
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
-                        .Select(i => i.Cast<MethodBase>().ToList());
+                        .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList());
+                    var extensionMethods = Puerts.Utils.GetExtensionMethodsOf(type);
+                    var extensionMethodGroup = extensionMethods != null ? extensionMethods.Where(m => !Utils.isFiltered(m))
+                        .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m))
+                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = false })
+                        .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList()) : new Dictionary<MethodKey, List<MethodBase>>();
+
                     var indexs = type.GetProperties(Utils.Flags).Where(m => !Utils.isFiltered(m))
                         .Where(p => p.GetIndexParameters().GetLength(0) == 1).Select(p => IndexGenInfo.FromPropertyInfo(p)).ToArray();
                     var operatorGroups = type.GetMethods(Utils.Flags)
@@ -363,8 +370,22 @@ namespace Puerts.Editor
                     return new TypeGenInfo
                     {
                         WrapClassName = Utils.GetWrapTypeName(type),
+                        Namespaces = (extensionMethods != null ? extensionMethods
+                            .Select(m => m.DeclaringType.Namespace)
+                            .Where(name => !string.IsNullOrEmpty(name)) : new string[0])
+                            .Concat(new[] { "System" })
+                            .Distinct()
+                            .ToArray(),
                         Name = type.GetFriendlyName(),
-                        Methods = methodGroups.Select(m => MethodGenInfo.FromType(type, false, m)).ToArray(),
+                        Methods = methodGroups
+                            .Select(kv =>
+                            {
+                                List<MethodBase> exOverloads = null;
+                                extensionMethodGroup.TryGetValue(kv.Key, out exOverloads);
+                                extensionMethodGroup.Remove(kv.Key);
+                                return MethodGenInfo.FromType(type, false, kv.Value, exOverloads);
+                            })
+                            .Concat(extensionMethodGroup.Select(kv => MethodGenInfo.FromType(type, false, null, kv.Value))).ToArray(),
                         IsValueType = type.IsValueType,
                         Constructor = !type.IsAbstract ? MethodGenInfo.FromType(type, true, constructors) : null,
                         Properties = type.GetProperties(Utils.Flags)
@@ -506,22 +527,23 @@ namespace Puerts.Editor
                 public bool IsVoid;
                 public bool HasParams;
 
-                public static List<OverloadGenInfo> FromMethodBase(MethodBase methodBase)
+                public static List<OverloadGenInfo> FromMethodBase(MethodBase methodBase, bool extensionMethod = false)
                 {
                     List<OverloadGenInfo> ret = new List<OverloadGenInfo>();
                     if (methodBase is MethodInfo)
                     {
                         var methodInfo = methodBase as MethodInfo;
+                        var parameters = methodInfo.GetParameters().Skip(extensionMethod ? 1 : 0).ToArray();
                         OverloadGenInfo mainInfo = new OverloadGenInfo()
                         {
-                            ParameterInfos = methodInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
+                            ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                             TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                             IsVoid = methodInfo.ReturnType == typeof(void)
                         };
                         Utils.FillEnumInfo(mainInfo, methodInfo.ReturnType);
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
                         ret.Add(mainInfo);
-                        var ps = methodInfo.GetParameters();
+                        var ps = parameters;
                         for (int i = ps.Length - 1; i >= 0; i--)
                         {
                             OverloadGenInfo optionalInfo = null;
@@ -529,7 +551,7 @@ namespace Puerts.Editor
                             {
                                 optionalInfo = new OverloadGenInfo()
                                 {
-                                    ParameterInfos = methodInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
+                                    ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
                                     TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                                     IsVoid = methodInfo.ReturnType == typeof(void)
                                 };
@@ -592,12 +614,22 @@ namespace Puerts.Editor
                 public bool HasOverloads;
                 public int OverloadCount;
                         
-                public static MethodGenInfo FromType(Type type, bool isCtor, List<MethodBase> overloads)
+                public static MethodGenInfo FromType(Type type, bool isCtor, List<MethodBase> overloads, List<MethodBase> extensionOverloads = null)
                 {
                     var ret = new List<OverloadGenInfo>();
-                    foreach (var iBase in overloads)
+                    if (overloads != null)
                     {
-                        ret.AddRange(OverloadGenInfo.FromMethodBase(iBase));
+                        foreach (var iBase in overloads)
+                        {
+                            ret.AddRange(OverloadGenInfo.FromMethodBase(iBase));
+                        }
+                    }
+                    if (extensionOverloads != null)
+                    {
+                        foreach (var iBase in extensionOverloads)
+                        {
+                            ret.AddRange(OverloadGenInfo.FromMethodBase(iBase, true));
+                        }
                     }
 
                     string name;
@@ -621,10 +653,15 @@ namespace Puerts.Editor
                         isStatic = false;
 
                     }
-                    else
+                    else if (overloads != null)
                     {
                         name = overloads[0].Name;
                         isStatic = overloads[0].IsStatic;
+                    }
+                    else
+                    {
+                        name = extensionOverloads[0].Name;
+                        isStatic = false;
                     }
 
                     var result = new MethodGenInfo()
