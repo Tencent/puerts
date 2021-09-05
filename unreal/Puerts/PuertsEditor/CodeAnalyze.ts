@@ -3711,10 +3711,33 @@ function watch(configFilePath:string) {
 
             function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
+                let lsFunctionLibrary:boolean =  baseTypeUClass && baseTypeUClass.GetName() === "BlueprintFunctionLibrary";
                 let bp = new UE.PEBlueprintAsset();
                 bp.LoadOrCreateWithMetaData(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0, compileClassMetaData(type));
                 let hasConstructor = false;
-                checker.getPropertiesOfType(type)
+                let properties: ts.Symbol[] = [];
+                type.symbol.valueDeclaration.forEachChild(x  => {
+                    if (ts.isMethodDeclaration(x)) {
+                        let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
+                        if (isStatic && !lsFunctionLibrary) {
+                            console.warn(`do not static function [${x.name.getText()}]`);
+                            return;
+                        } 
+                        if (!isStatic && lsFunctionLibrary) {
+                            console.warn(`do not non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
+                            return;
+                        }
+                        properties.push(checker.getSymbolAtLocation(x.name));
+                    } else if (ts.isPropertyDeclaration(x)) {
+                        let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
+                        if (isStatic) {
+                            console.warn("static property:" + x.name.getText() + ' not support');
+                            return;
+                        }
+                        properties.push(checker.getSymbolAtLocation(x.name));
+                    }
+                })
+                properties
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                         .filter(x => !manualSkip(x))
                         .forEach((symbol) => {

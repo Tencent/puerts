@@ -52,7 +52,9 @@ protected:
 
     bool IsInterfaceFunction;
 
-    UObject *BindObject;
+    TWeakObjectPtr<UObject> BindObject;
+
+    bool IsStatic;
 
     uint32 ParamsBufferSize;
 

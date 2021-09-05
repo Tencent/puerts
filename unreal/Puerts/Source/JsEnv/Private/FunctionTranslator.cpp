@@ -94,13 +94,13 @@ void FFunctionTranslator::Init(UFunction *InFunction, bool IsDelegate)
     if (IsDelegate)
     {
         IsInterfaceFunction = false;
-        BindObject = nullptr;
+        IsStatic = false;
     }
     else
     {
         UClass *OuterClass = InFunction->GetOuterUClass();
         IsInterfaceFunction = (OuterClass->HasAnyClassFlags(CLASS_Interface) && OuterClass != UInterface::StaticClass());
-        BindObject = InFunction->HasAnyFunctionFlags(FUNC_Static) ? OuterClass->GetDefaultObject() : nullptr;
+        IsStatic = InFunction->HasAnyFunctionFlags(FUNC_Static);
     }
     Arguments.clear();
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
@@ -204,11 +204,19 @@ void FFunctionTranslator::Call(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    UObject * CallObject = BindObject ? BindObject : FV8Utils::GetUObject(Info.Holder());
+    UObject * CallObject = IsStatic ? BindObject.Get() : FV8Utils::GetUObject(Info.Holder());
     if (!CallObject)
     {
-        FV8Utils::ThrowException(Isolate, "access a null object");
-        return;
+        if (IsStatic) //延时初始化
+        {
+            CallObject = Function->GetOuterUClass()->GetDefaultObject();
+            BindObject = CallObject;
+        }
+        if (!CallObject)
+        {
+            FV8Utils::ThrowException(Isolate, "access a null object");
+            return;
+        }
     }
     if (FV8Utils::IsReleasedPtr(CallObject))
     {
@@ -436,6 +444,11 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
         {
             return;
         }
+    }
+
+    if (!BindObject.IsValid())
+    {
+        BindObject = Function->GetOuterUClass()->GetDefaultObject();
     }
 
     BindObject->UObject::ProcessEvent(Function.Get(), Params);

@@ -104,8 +104,9 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
 #endif
     check(Package);
 
+    EBlueprintType BlueprintType = ParentClass && ParentClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()) ? BPTYPE_FunctionLibrary : BPTYPE_Normal;
     // Create and init a new Blueprint
-    Blueprint = FKismetEditorUtilities::CreateBlueprint(ParentClass, Package, *InName, BPTYPE_Normal, BlueprintClass, BlueprintGeneratedClass, FName("LevelEditorActions"));
+    Blueprint = FKismetEditorUtilities::CreateBlueprint(ParentClass, Package, *InName, BlueprintType, BlueprintClass, BlueprintGeneratedClass, FName("PuertsAutoGen"));
     if (Blueprint)
     {
         //static FName InterfaceClassName = FName(TEXT("TypeScriptObject"));
