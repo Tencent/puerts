@@ -345,15 +345,24 @@ namespace Puerts.Editor
                 public EventGenInfo[] Events;
                 public bool BlittableCopy;
 
-                public static TypeGenInfo FromType(Type type)
+                public static TypeGenInfo FromType(Type type, List<Type> genTypes)
                 {
                     var methodGroups = type.GetMethods(Utils.Flags).Where(m => !Utils.isFiltered(m))
                         .Where(m => !m.IsSpecialName && Puerts.Utils.IsSupportedMethod(m))
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList());
                     var extensionMethods = Puerts.Utils.GetExtensionMethodsOf(type);
-                    var extensionMethodGroup = extensionMethods != null ? extensionMethods.Where(m => !Utils.isFiltered(m))
-                        .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m))
+                    if (extensionMethods != null)
+                    {
+                        extensionMethods = extensionMethods
+                            .Where(m => !Utils.isFiltered(m))
+                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m));
+                        if (genTypes != null)
+                        {
+                            extensionMethods = extensionMethods.Where(m => genTypes.Contains(m.DeclaringType));
+                        }
+                    }
+                    var extensionMethodGroup = extensionMethods != null ? extensionMethods
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = false })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList()) : new Dictionary<MethodKey, List<MethodBase>>();
 
@@ -371,7 +380,6 @@ namespace Puerts.Editor
                     {
                         WrapClassName = Utils.GetWrapTypeName(type),
                         Namespaces = (extensionMethods != null ? extensionMethods
-                            .Where(m => !Utils.isFiltered(m)).Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m))
                             .Select(m => m.DeclaringType.Namespace)
                             .Where(name => !string.IsNullOrEmpty(name)) : new string[0])
                             .Concat(new[] { "System" })
@@ -1362,7 +1370,8 @@ namespace Puerts.Editor
                     .Where(o => o is Type)
                     .Cast<Type>()
                     .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
-                    .Distinct();
+                    .Distinct()
+                    .ToList();
 
                 var blittableCopyTypes = new HashSet<Type>(configure["Puerts.BlittableCopyAttribute"].Select(kv => kv.Key)
                     .Where(o => o is Type)
@@ -1390,7 +1399,7 @@ namespace Puerts.Editor
                         foreach (var type in genTypes)
                         {
                             if (type.IsEnum || type.IsArray || (Generator.Utils.IsDelegate(type) && type != typeof(Delegate))) continue;
-                            GenClass.TypeGenInfo typeGenInfo = GenClass.TypeGenInfo.FromType(type);
+                            GenClass.TypeGenInfo typeGenInfo = GenClass.TypeGenInfo.FromType(type, genTypes);
                             typeGenInfo.BlittableCopy = blittableCopyTypes.Contains(type);
                             typeGenInfos.Add(typeGenInfo);
                             string filePath = saveTo + typeGenInfo.WrapClassName + ".cs";
