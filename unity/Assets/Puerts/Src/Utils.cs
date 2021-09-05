@@ -15,8 +15,6 @@ namespace Puerts
 {
     public static class Utils
     {
-        private static volatile Dictionary<Type, IEnumerable<MethodInfo>> extensionMethodMap = null;
-
         public static long TwoIntToLong(int a, int b)
         {
             return (long)a << 32 | b & 0xFFFFFFFFL;
@@ -80,7 +78,7 @@ namespace Puerts
         
         public static IEnumerable<MethodInfo> GetExtensionMethodsOf(Type type_to_be_extend)
         {
-            if (extensionMethodMap == null)
+            if (Utils_Internal.extensionMethodMap == null)
             {
                 List<Type> type_def_extention_method = new List<Type>();
 
@@ -126,7 +124,7 @@ namespace Puerts
                 }
                 enumerator.Dispose();
 
-                extensionMethodMap = (from type in type_def_extention_method.Distinct()
+                Utils_Internal.extensionMethodMap = (from type in type_def_extention_method.Distinct()
 #if UNITY_EDITOR
                                       where !type.Assembly.Location.Contains("Editor")
 #endif
@@ -135,7 +133,7 @@ namespace Puerts
                                       group method by GetExtendedType(method)).ToDictionary(g => g.Key, g => g as IEnumerable<MethodInfo>);
             }
             IEnumerable<MethodInfo> ret = null;
-            extensionMethodMap.TryGetValue(type_to_be_extend, out ret);
+            Utils_Internal.extensionMethodMap.TryGetValue(type_to_be_extend, out ret);
             return ret;
         }
 
@@ -228,5 +226,9 @@ namespace Puerts
             return allTypes;
         }
 #endif
+    }
+    internal static class Utils_Internal
+    {
+        internal static volatile Dictionary<Type, IEnumerable<MethodInfo>> extensionMethodMap = null;
     }
 }
