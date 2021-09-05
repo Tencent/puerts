@@ -371,6 +371,7 @@ namespace Puerts.Editor
                     {
                         WrapClassName = Utils.GetWrapTypeName(type),
                         Namespaces = (extensionMethods != null ? extensionMethods
+                            .Where(m => !Utils.isFiltered(m)).Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m))
                             .Select(m => m.DeclaringType.Namespace)
                             .Where(name => !string.IsNullOrEmpty(name)) : new string[0])
                             .Concat(new[] { "System" })
