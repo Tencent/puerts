@@ -248,11 +248,17 @@ jobs:
         with:
           name: Unity_Plugins_Quickjs
           path: Quickjs/Plugins/
+
+      - uses: actions/download-artifact@v1
+        with:
+          name: Unity_Plugins_Nodejs
+          path: Nodejs/Plugins/
           
       - name: Create Release Asset
         run: |
           cd V8/ && tar cvfz ../Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
           cd Quickjs/ && tar cvfz ../Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
+          cd Nodejs/ && tar cvfz ../Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
           
       - name: Create Release
         id: create_release
@@ -285,5 +291,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
           asset_name: Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_content_type: application/tgz
+          
+      - name: Upload Nodejs Plugins
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_name: Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz
           asset_content_type: application/tgz
    
