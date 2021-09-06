@@ -640,6 +640,7 @@ var global = global || (function () { return this; }());
         "GetOptions": MetaDataInst,    
         "Bitmask": MetaDataInst,
         "BitmaskEnum": MetaDataInst,
+        "ForceSerialization": MetaDataInst,
         //  decorator
         "umeta": dummyDecorator,
     }

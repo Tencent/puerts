@@ -101,7 +101,9 @@ void UTypeScriptGeneratedClass::Bind()
         for (TFieldIterator<PropertyMacro> PropertyIt(this, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
         {
             PropertyMacro *Property = *PropertyIt;
-            Property->SetPropertyFlags(CPF_SkipSerialization | CPF_Transient | CPF_InstancedReference);
+            
+            const auto Flags = Property->HasMetaData(TEXT("ForceSerialization")) ? (CPF_Transient | CPF_InstancedReference) : (CPF_SkipSerialization | CPF_Transient | CPF_InstancedReference);
+			Property->SetPropertyFlags(Flags);        	
         }
 
         //可避免非CDO的在PostConstructInit从基类拷贝值
