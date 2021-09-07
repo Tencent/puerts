@@ -144,7 +144,58 @@ namespace puerts
 
         Result->Set(FV8Utils::InternalString(Isolate, "StaticClass"), v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
 
-        
+#ifndef WITH_QUICKJS
+        Result->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration([](v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+        {
+            auto Isolate = Info.GetIsolate();
+            auto Context = Isolate->GetCurrentContext();
+            auto This = Info.This();
+            FName RequiredFName(*FV8Utils::ToFString(Info.GetIsolate(), Property));
+            auto FixedPropertyName = FV8Utils::ToV8String(Isolate, RequiredFName);
+            if (This->GetPrototype()->IsObject())
+            {
+                auto Proto = This->GetPrototype().As<v8::Object>();
+                if (Proto->HasOwnProperty(Context, FixedPropertyName).FromMaybe(false))
+                {
+                    Info.GetReturnValue().Set(This->Get(Context, FixedPropertyName).ToLocalChecked());
+                    auto DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
+                    if (DescriptorVal->IsObject())
+                    {
+                        auto Descriptor = DescriptorVal.As<v8::Object>();
+                        Proto->SetAccessorProperty(Property,
+                            Descriptor->Get(Context, FV8Utils::ToV8String(Isolate, "get")).ToLocalChecked().As<v8::Function>(),
+                            Descriptor->Get(Context, FV8Utils::ToV8String(Isolate, "set")).ToLocalChecked().As<v8::Function>());
+                    }
+                }
+            }
+        },
+        [](v8::Local<v8::Name> Property, v8::Local<v8::Value> Value,const v8::PropertyCallbackInfo<v8::Value>& Info)
+        {
+            auto Isolate = Info.GetIsolate();
+            auto Context = Isolate->GetCurrentContext();
+            auto This = Info.This();
+            FName RequiredFName(*FV8Utils::ToFString(Info.GetIsolate(), Property));
+            auto FixedPropertyName = FV8Utils::ToV8String(Isolate, RequiredFName);
+            if (This->GetPrototype()->IsObject())
+            {
+                auto Proto = This->GetPrototype().As<v8::Object>();
+                if (Proto->HasOwnProperty(Context, FixedPropertyName).FromMaybe(false))
+                {
+                    auto _UnUsed = This->Set(Context, FixedPropertyName, Value);
+                    auto DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
+                    if (DescriptorVal->IsObject())
+                    {
+                        auto Descriptor = DescriptorVal.As<v8::Object>();
+                        //set first, mush set accessor of object
+                        This->SetAccessorProperty(Property,
+                            Descriptor->Get(Context, FV8Utils::ToV8String(Isolate, "get")).ToLocalChecked().As<v8::Function>(),
+                            Descriptor->Get(Context, FV8Utils::ToV8String(Isolate, "set")).ToLocalChecked().As<v8::Function>());
+                    }
+                }
+            }
+        }, 
+        nullptr, nullptr, nullptr, v8::Local<v8::Value>(), v8::PropertyHandlerFlags::kNonMasking));
+#endif
 
         return HandleScope.Escape(Result);
     }
