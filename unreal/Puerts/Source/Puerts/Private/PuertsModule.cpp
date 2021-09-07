@@ -327,10 +327,13 @@ void FPuertsModule::UnregisterSettings()
 void FPuertsModule::StartupModule()
 {
 #if WITH_EDITOR
-    FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
-    //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
-    FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-    LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
+    if(!IsRunningGame())
+    {
+        FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+        //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
+        FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+        LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
+    }
 #endif
 
 	// NonPak Game 打包下, Puerts ini的加载时间晚于模块加载, 因此依然要显式的执行ini的读入, 去保证CDO里的值是正确的

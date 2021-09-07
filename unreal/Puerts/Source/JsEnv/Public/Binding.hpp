@@ -180,7 +180,7 @@ struct ArgumentChecker<Pos, ArgType, Rest...>
     
     static bool Check(CallbackInfoType Info, ContextType Context)
     {
-        if (!TypeConverter<typename ConverterDecay<ArgType>::type>::accept(Context, GetArg(Info, Pos)))
+        if (!TypeConverter<ArgType>::accept(Context, GetArg(Info, Pos)))
         {
             return false;
         }
@@ -271,7 +271,7 @@ private:
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
         
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
 
         func(std::get<index>(cppArgs)...);
         
@@ -288,7 +288,7 @@ private:
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
         
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info,index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info,index))...);
 
         auto ret = func(std::get<index>(cppArgs)...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
@@ -308,7 +308,7 @@ private:
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
         
         (self->*func)(std::get<index>(cppArgs)...);
         
@@ -327,7 +327,7 @@ private:
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
-        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<typename ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
         
         auto ret = (self->*func)(std::get<index>(cppArgs)...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
@@ -466,7 +466,7 @@ private:
 
         if (!internal::ArgumentChecker<0, Args...>::Check(info, context)) return nullptr;
 
-        return new T(internal::TypeConverter<typename internal::ConverterDecay<Args>::type>::toCpp(context, GetArg(info, index))...);
+        return new T(internal::TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
     }
 
 public:
@@ -590,7 +590,7 @@ struct PropertyWrapper<Ret Ins::*, member>
     {
         auto context = GetContext(info);
         auto self = FastGetNativeObjectPointer<Ins>(context, GetThis(info));
-        self->*member = internal::TypeConverter<typename internal::ConverterDecay<Ret>::type>::toCpp(context, GetArg(info, 0));
+        self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
     }
 
     static const char* info()

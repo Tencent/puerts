@@ -76,9 +76,15 @@ static GlobalBufferAutoRelease Dummy;
 
 FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
 {
+    Init(InFunction,IsDelegate);
+}
+void FFunctionTranslator::Init(UFunction *InFunction, bool IsDelegate)
+{
     check(InFunction);
     Function = InFunction;
-
+#if WITH_EDITOR
+    FunctionName = Function->GetFName();
+#endif
     ParamsBufferSize = InFunction->PropertiesSize > InFunction->ParmsSize ? InFunction->PropertiesSize : InFunction->ParmsSize;
 
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
@@ -88,15 +94,15 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
     if (IsDelegate)
     {
         IsInterfaceFunction = false;
-        BindObject = nullptr;
+        IsStatic = false;
     }
     else
     {
         UClass *OuterClass = InFunction->GetOuterUClass();
         IsInterfaceFunction = (OuterClass->HasAnyClassFlags(CLASS_Interface) && OuterClass != UInterface::StaticClass());
-        BindObject = InFunction->HasAnyFunctionFlags(FUNC_Static) ? OuterClass->GetDefaultObject() : nullptr;
+        IsStatic = InFunction->HasAnyFunctionFlags(FUNC_Static);
     }
-
+    Arguments.clear();
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
     {
         PropertyMacro *Property = *It;
@@ -117,7 +123,7 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
         TMap<FName, FString> *MetaMap = GetParamDefaultMetaFor(InFunction);
         if (MetaMap)
         {
-            for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
+            for (TFieldIterator<PropertyMacro> ParamIt(InFunction); ParamIt; ++ParamIt)
             {
                 auto Property = *ParamIt;
                 if (Property->PropertyFlags & CPF_Parm)
@@ -190,36 +196,47 @@ v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isol
 void FFunctionTranslator::Call(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
-    FFunctionTranslator* This = reinterpret_cast<FFunctionTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FFunctionTranslator* This = static_cast<FFunctionTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     This->Call(Isolate, Context, Info);
 }
 
 void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    UObject * CallObject = BindObject ? BindObject : FV8Utils::GetUObject(Info.Holder());
+    UObject * CallObject = IsStatic ? BindObject.Get() : FV8Utils::GetUObject(Info.Holder());
     if (!CallObject)
     {
-        FV8Utils::ThrowException(Isolate, "access a null object");
-        return;
+        if (IsStatic) //延时初始化
+        {
+            CallObject = Function->GetOuterUClass()->GetDefaultObject();
+            BindObject = CallObject;
+        }
+        if (!CallObject)
+        {
+            FV8Utils::ThrowException(Isolate, "access a null object");
+            return;
+        }
     }
     if (FV8Utils::IsReleasedPtr(CallObject))
     {
         FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
-    UFunction *CallFunction = !IsInterfaceFunction ? 
+    TWeakObjectPtr<UFunction> CallFunction = !IsInterfaceFunction ? 
         Function : (CallObject->GetClass()->FindFunctionByName(Function->GetFName()));
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
     void *Params = Buffer;
 #else
     void *Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
-
+#if WITH_EDITOR
+    if(!CallFunction.IsValid())
+    {
+        CallFunction = CallObject->GetClass()->FindFunctionByName(FunctionName);
+        Init(CallFunction.Get(),false);
+    }
+#endif
     if (Params) CallFunction->InitializeStruct(Params);
     for (int i = 0; i < Arguments.size(); ++i)
     {
@@ -233,7 +250,7 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         }
     }
 
-    CallObject->UObject::ProcessEvent(CallFunction, Params);
+    CallObject->UObject::ProcessEvent(CallFunction.Get(), Params);
 
     if (Return)
     {
@@ -334,7 +351,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
         if (Params)
         {
             Function->InitializeStruct(Params);
-            for (TFieldIterator<PropertyMacro> It(Function); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
+            for (TFieldIterator<PropertyMacro> It(Function.Get()); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
             {
                 Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
             }
@@ -429,7 +446,12 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
         }
     }
 
-    BindObject->UObject::ProcessEvent(Function, Params);
+    if (!BindObject.IsValid())
+    {
+        BindObject = Function->GetOuterUClass()->GetDefaultObject();
+    }
+
+    BindObject->UObject::ProcessEvent(Function.Get(), Params);
 
     if (Return)
     {

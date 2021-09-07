@@ -724,6 +724,23 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
+static void FinishInjection(UClass* InClass)
+{
+    while (InClass && !InClass->IsNative())
+    {
+        auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
+        if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
+            {
+            for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            {
+                auto Function = *FuncIt;
+                Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+            }
+            TempTypeScriptGeneratedClass->InjectNotFinished = false;
+            }
+        InClass = InClass->GetSuperClass();
+    }
+}
 
 void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
 {
@@ -847,10 +864,11 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 }
                             }
                             auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
-                            if (!overrided.Contains(FunctionFName) && Proto->HasOwnProperty(Context, V8Name).ToChecked() && 
+                            v8::Local<v8::Object> FuncsObj = Function->HasAnyFunctionFlags(FUNC_Static) ? static_cast<v8::Local<v8::Object>>(Func) : Proto;
+                            if (!overrided.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
                                 (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
                             {
-                                auto MaybeValue = Proto->Get(Context, V8Name);
+                                auto MaybeValue = FuncsObj->Get(Context, V8Name);
                                 if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
                                 {
                                     //Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(), *Function->GetName()));
@@ -903,6 +921,11 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
                                 UnBind(TypeScriptGeneratedClass, Object);
                             }
+                        }
+
+                        if (TypeScriptGeneratedClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
+                        {
+                            FinishInjection(TypeScriptGeneratedClass);
                         }
                     }
                 }
@@ -958,24 +981,6 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 {
     //Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     JsHotReload(ModuleName, JsSource);
-}
-
-static void FinishInjection(UClass* InClass)
-{
-    while (InClass && !InClass->IsNative())
-    {
-        auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
-        if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
-        {
-            for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
-            {
-                auto Function = *FuncIt;
-                Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
-            }
-            TempTypeScriptGeneratedClass->InjectNotFinished = false;
-        }
-        InClass = InClass->GetSuperClass();
-    }
 }
 
 void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
@@ -1142,7 +1147,14 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
         auto Iter = DelegateMap.find(DelegatePtr);
         if (Iter != DelegateMap.end())
         {
-            return Iter->second.JSObject.Get(Isolate);
+            if (Iter->second.Owner.IsValid())
+            {
+                return Iter->second.JSObject.Get(Isolate);
+            }
+            else
+            {
+                ClearDelegate(Isolate, Context, DelegatePtr);
+            }
         }
     }
     else
@@ -1412,15 +1424,8 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
 
 void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM)
 {
-    if (GeneratedObjectMap.find(ContextObject) == GeneratedObjectMap.end())
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
-            *Function->GetName(), ContextObject));
-        return;
-    }
-
-    auto Iter = TsFunctionMap.find(Function);
-    if (Iter == TsFunctionMap.end())
+    auto FuncIter = TsFunctionMap.find(Function);
+    if (FuncIter == TsFunctionMap.end())
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
@@ -1433,11 +1438,25 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
         v8::HandleScope HandleScope(Isolate);
         auto Context = DefaultContext.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
+        
+        v8::Local<v8::Value> ThisObj = v8::Undefined(Isolate);
+
+        if (!Function->HasAnyFunctionFlags(FUNC_Static))
+        {
+            const auto ObjIter = GeneratedObjectMap.find(ContextObject);
+            if (ObjIter == GeneratedObjectMap.end())
+            {
+                Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
+                    *Function->GetName(), ContextObject));
+                return;
+            }
+            ThisObj = ObjIter->second.Get(Isolate);
+        }
 
         v8::TryCatch TryCatch(Isolate);
 
-        Iter->second.FunctionTranslator->CallJs(Isolate, Context, Iter->second.JsFunction.Get(Isolate),
-            GeneratedObjectMap[ContextObject].Get(Isolate), ContextObject, Stack, RESULT_PARAM);
+        FuncIter->second.FunctionTranslator->CallJs(Isolate, Context, FuncIter->second.JsFunction.Get(Isolate),
+            ThisObj, ContextObject, Stack, RESULT_PARAM);
 
         if (TryCatch.HasCaught())
         {
@@ -1822,20 +1841,22 @@ bool FJsEnvImpl::CheckDelegateProxys(float tick)
 FPropertyTranslator* FJsEnvImpl::GetContainerPropertyTranslator(PropertyMacro* Property)
 {
     auto Iter = ContainerPropertyMap.find(Property);
-    if (Iter == ContainerPropertyMap.end())
+    //TODO: 如果脚本一直持有蓝图里头的Map，还是有可能有问题的，需要统筹考虑一套机制解决这类问题
+    if (Iter == ContainerPropertyMap.end() || !Iter->second.PropertyWeakPtr.IsValid())
     {
-        ContainerPropertyMap[Property] = FPropertyTranslator::Create(Property);
+        ContainerPropertyInfo Temp {Property, FPropertyTranslator::Create(Property)};
+        ContainerPropertyMap[Property] = std::move(Temp);
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         if (!Property->IsNative())
         {
             SysObjectRetainer.Retain(Property);
         }
 #endif
-        return ContainerPropertyMap[Property].get();
+        return ContainerPropertyMap[Property].PropertyTranslator.get();
     }
     else
     {
-        return Iter->second.get();
+        return Iter->second.PropertyTranslator.get();
     }
 }
 
