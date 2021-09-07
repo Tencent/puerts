@@ -49,5 +49,5 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 而打包后，如果在你访问这个蓝图前，已经有另外一个地方初始化了一个“Count”字段，那么你访问这个蓝图时，该字段会是"Count"，因为FName.ToString返回的是第一次构造该FName输入的字符串，后面只要转成小写后和第一次一样的FName，都是重用第一次的。
 
-所有你在脚本 访问的count字段会不存在（只有Count字段）。
+所以你在脚本访问的count字段会不存在（变成了Count字段）。
 
