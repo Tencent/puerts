@@ -145,7 +145,7 @@ namespace puerts
 
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
-#if WITH_NODEJS
+#if !WITH_NODEJS
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
