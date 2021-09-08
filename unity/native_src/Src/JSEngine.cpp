@@ -118,7 +118,6 @@ namespace puerts
                 "const publicRequire ="
                 "  require('module').createRequire(process.cwd() + '/');"
                 "globalThis.require = publicRequire;"
-                "globalThis.embedVars = { nön_ascıı: '🏳️‍🌈' };"
                 "require('vm').runInThisContext(process.argv[1]);");
 
             if (LoadenvRet.IsEmpty())  // There has been a JS exception.
