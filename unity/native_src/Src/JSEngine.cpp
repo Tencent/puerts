@@ -679,41 +679,44 @@ namespace puerts
 
     void JSEngine::CreateInspector(int32_t Port)
     {
-        if (!withNode) {
-            v8::Isolate* Isolate = MainIsolate;
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-            v8::Context::Scope ContextScope(Context);
-
-            if (Inspector == nullptr)
-            {
-                Inspector = CreateV8Inspector(Port, &Context);
-            }
-        }
-        else
-        {
+#if WITH_NODEJS
+        if (withNode) {
             static char SCodeBuffer[1024];
             std::snprintf(SCodeBuffer, sizeof(SCodeBuffer), "require('inspector').open(%d)\n", Port);
             Eval(SCodeBuffer, "");
+            return;
+        }
+#endif
+        v8::Isolate* Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        if (Inspector == nullptr)
+        {
+            Inspector = CreateV8Inspector(Port, &Context);
         }
     }
 
     void JSEngine::DestroyInspector()
     {
-        if (!withNode) 
+#if WITH_NODEJS
+        if (withNode) 
         {
-            v8::Isolate* Isolate = MainIsolate;
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-            v8::Context::Scope ContextScope(Context);
+            return;
+        }
+#endif
+        v8::Isolate* Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
 
-            if (Inspector != nullptr)
-            {
-                delete Inspector;
-                Inspector = nullptr;
-            }
+        if (Inspector != nullptr)
+        {
+            delete Inspector;
+            Inspector = nullptr;
         }
     }
 
