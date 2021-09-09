@@ -1312,6 +1312,10 @@ function watch(configFilePath) {
                                     return;
                                 let baseTypeUClass = getUClassOfType(baseTypes[0]);
                                 if (baseTypeUClass) {
+                                    if (isSubclassOf(type, "Subsystem")) {
+                                        console.warn("do not support Subsystem " + checker.typeToString(type));
+                                        return;
+                                    }
                                     foundType = type;
                                     foundBaseTypeUClass = baseTypeUClass;
                                 }
@@ -1333,6 +1337,15 @@ function watch(configFilePath) {
                 else {
                     return node.right.text;
                 }
+            }
+            function isSubclassOf(type, baseTypeName) {
+                let baseTypes = type.getBaseTypes();
+                if (baseTypes.length != 1)
+                    return false;
+                if (baseTypes[0].getSymbol().getName() == baseTypeName) {
+                    return true;
+                }
+                return isSubclassOf(baseTypes[0], baseTypeName);
             }
             function getUClassOfType(type) {
                 if (!type)
@@ -2910,11 +2923,11 @@ function watch(configFilePath) {
                     if (ts.isMethodDeclaration(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic && !lsFunctionLibrary) {
-                            console.warn(`do not static function [${x.name.getText()}]`);
+                            console.warn(`do not support static function [${x.name.getText()}]`);
                             return;
                         }
                         if (!isStatic && lsFunctionLibrary) {
-                            console.warn(`do not non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
+                            console.warn(`do not support non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
                             return;
                         }
                         properties.push(checker.getSymbolAtLocation(x.name));

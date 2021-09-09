@@ -9,7 +9,7 @@
 #include "Log.h"
 #include <memory>
 #include "PromiseRejectCallback.hpp"
-
+#include <stdarg.h>
 
 namespace puerts
 {
@@ -53,11 +53,13 @@ namespace puerts
 
     void JSEngine::JSEngineWithNode()
     {
-#if defined(WITH_NODEJS)
+#if WITH_NODEJS
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]start");
         if (!GPlatform)
         {
+            // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
             int Argc = 1;
-            char* ArgvIn[] = {"puerts"};
+            char* ArgvIn[] = {"--trace-uncaught"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
@@ -72,6 +74,7 @@ namespace puerts
                 printf("InitializeNodeWithArgs failed\n");
             }
         }
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform done");
         
         NodeUVLoop = new uv_loop_t;
         const int Ret = uv_loop_init(NodeUVLoop);
@@ -83,6 +86,7 @@ namespace puerts
         }
 
         NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
 
         auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
         MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
@@ -96,12 +100,14 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
 
         v8::Local<v8::Context> Context = node::NewContext(Isolate);
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]context");
 
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(MainIsolate, Context);
 
         if (withNode) 
         {
+            // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
             NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
         
             //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
@@ -112,7 +118,6 @@ namespace puerts
                 "const publicRequire ="
                 "  require('module').createRequire(process.cwd() + '/');"
                 "globalThis.require = publicRequire;"
-                "globalThis.embedVars = { nön_ascıı: '🏳️‍🌈' };"
                 "require('vm').runInThisContext(process.argv[1]);");
 
             if (LoadenvRet.IsEmpty())  // There has been a JS exception.
@@ -120,6 +125,7 @@ namespace puerts
                 return;
             }
         }
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
 
         MainIsolate->SetData(0, this);
         v8::Local<v8::Object> Global = Context->Global();
@@ -138,7 +144,7 @@ namespace puerts
 
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
-#if !defined(WITH_NODEJS)
+#if !WITH_NODEJS
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
@@ -253,7 +259,7 @@ namespace puerts
             }
         }
         
-#if defined(WITH_NODEJS)
+#if WITH_NODEJS
         if (withNode) 
         {
             node::EmitExit(NodeEnv);
@@ -262,11 +268,11 @@ namespace puerts
             node::FreeIsolateData(NodeIsolateData);
         } 
         auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+        bool platform_finished = false;
+        Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
+            *static_cast<bool*>(data) = true;
+        }, &platform_finished);
         Platform->UnregisterIsolate(MainIsolate);
-
-        int err = uv_loop_close(NodeUVLoop);
-        // assert(err == 0);
-        delete NodeUVLoop;
 #endif
 
         ResultInfo.Context.Reset();
@@ -274,7 +280,17 @@ namespace puerts
         MainIsolate->Dispose();
         MainIsolate = nullptr;
 
-#if !defined(WITH_NODEJS)
+#if WITH_NODEJS
+        // Wait until the platform has cleaned up all relevant resources.
+        while (!platform_finished)
+        {
+            uv_run(NodeUVLoop, UV_RUN_ONCE);
+        }
+
+        int err = uv_loop_close(NodeUVLoop);
+        assert(err == 0);
+        delete NodeUVLoop;
+#else
         delete CreateParams->array_buffer_allocator;
         delete CreateParams;
 #endif
@@ -662,6 +678,14 @@ namespace puerts
 
     void JSEngine::CreateInspector(int32_t Port)
     {
+#if WITH_NODEJS
+        if (withNode) {
+            static char SCodeBuffer[1024];
+            std::snprintf(SCodeBuffer, sizeof(SCodeBuffer), "require('inspector').open(%d)\n", Port);
+            Eval(SCodeBuffer, "");
+            return;
+        }
+#endif
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -676,6 +700,12 @@ namespace puerts
 
     void JSEngine::DestroyInspector()
     {
+#if WITH_NODEJS
+        if (withNode) 
+        {
+            return;
+        }
+#endif
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
