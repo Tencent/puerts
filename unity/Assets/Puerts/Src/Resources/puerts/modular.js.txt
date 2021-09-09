@@ -52,8 +52,8 @@ var global = global || (function () { return this; }());
         return module.exports;
     }
     
+    let localModuleCache = Object.create(null);
     function genRequire(requiringDir) {
-        let localModuleCache = Object.create(null);
         function require(moduleName) {
             moduleName = moduleName.startsWith('./') ? moduleName.substr(2) : moduleName;
             if (moduleName in localModuleCache) return localModuleCache[moduleName].exports;
