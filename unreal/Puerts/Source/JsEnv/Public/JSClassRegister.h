@@ -17,9 +17,9 @@
 #define UPTRINT uintptr_t
 #endif
 
-#pragma warning(push, 0) 
 #include <string>
 
+#pragma warning(push, 0) 
 #include "v8.h"
 #pragma warning(pop)
 

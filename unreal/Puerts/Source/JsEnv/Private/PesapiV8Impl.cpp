@@ -7,9 +7,11 @@
 
 #include "pesapi.h"
 #include "DataTransfer.h"
+#include "JSClassRegister.h"
 
 #include <string>
 #include <sstream>
+#include <vector>
 
 #pragma warning(push, 0) 
 #include "v8.h"
@@ -76,9 +78,7 @@ namespace v8impl
 	}
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+EXTERN_C_START
 
 //value process
 pesapi_value pesapi_create_null(pesapi_env env)
@@ -524,6 +524,56 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
 	}
 }
 
-#ifdef __cplusplus
+void pesapi_define_class(const char* type_name, const char* super_type_name,
+	pesapi_constructor constructor, pesapi_finalize finalize, int property_count,
+	const pesapi_property_descriptor* properties)
+{
+	puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
+	classDef.CPPTypeName = type_name;
+	classDef.CPPSuperTypeName  = super_type_name;
+
+	std::vector<puerts::JSFunctionInfo> p_methods;
+	std::vector<puerts::JSFunctionInfo> p_functions;
+	std::vector<puerts::JSPropertyInfo> p_properties;
+
+	for (int i = 0; i < property_count; i++)
+	{
+		const pesapi_property_descriptor* p = properties + i;
+		if (p->getter != nullptr || p->setter != nullptr)
+		{
+			p_properties.push_back({
+				p->name,
+				static_cast<v8::FunctionCallback>(static_cast<void*>(p->getter)),
+				static_cast<v8::FunctionCallback>(static_cast<void*>(p->setter)),
+				p->data}
+				);
+		}
+		else if (p->method != nullptr)
+		{
+			puerts::JSFunctionInfo finfo {p->name, static_cast<v8::FunctionCallback>(static_cast<void*>(p->method)), p->data };
+			if (p->is_static)
+			{
+				p_functions.push_back(finfo);
+			}
+			else
+			{
+				p_methods.push_back(finfo);
+			}
+		}
+	}
+	
+	p_methods.push_back({nullptr, nullptr, nullptr});
+	p_functions.push_back({nullptr, nullptr, nullptr});
+	p_properties.push_back( {nullptr, nullptr, nullptr, nullptr});
+	
+	classDef.Methods = new puerts::JSFunctionInfo[p_methods.size()];
+	memcpy(classDef.Methods, p_methods.data(), sizeof(puerts::JSFunctionInfo) * p_methods.size());
+	classDef.Functions = new puerts::JSFunctionInfo[p_functions.size()];
+	memcpy(classDef.Functions, p_functions.data(), sizeof(puerts::JSFunctionInfo) * p_functions.size());
+	classDef.Properties = new puerts::JSPropertyInfo[p_properties.size()];
+	memcpy(classDef.Properties, p_properties.data(), sizeof(puerts::JSPropertyInfo) * p_properties.size());
+	
+	puerts::RegisterJSClass(classDef);
 }
-#endif
+
+EXTERN_C_END
