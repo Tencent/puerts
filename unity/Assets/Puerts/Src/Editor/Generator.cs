@@ -692,6 +692,13 @@ namespace Puerts.Editor
 
             }
 
+            public class TsMethodGenInfoComparer : IEqualityComparer<TsMethodGenInfo>
+            {
+                public bool Equals(TsMethodGenInfo x, TsMethodGenInfo y) => x.Equals(y);
+
+                public int GetHashCode(TsMethodGenInfo obj) => 0;
+            }
+
             public class TsMethodGenInfo
             {
                 public string Name;
@@ -803,7 +810,7 @@ namespace Puerts.Editor
                             }
                         }
                     }
-                    return result.Distinct().ToArray();
+                    return result.Distinct(new TsMethodGenInfoComparer()).ToArray();
                 }
             }
 
@@ -1219,6 +1226,7 @@ namespace Puerts.Editor
                         }
                         info.Methods = selectMethods.ToArray();
                     }
+                    info.Methods = info.Methods.Distinct(new TsMethodGenInfoComparer()).ToArray();
                 }
 
                 static void AddRefType(HashSet<Type> workTypes, HashSet<Type> refTypes, Type type)
