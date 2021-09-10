@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
@@ -12,17 +12,40 @@ namespace Puerts
     public class ArrayBuffer
     {
         public byte[] Bytes;
+        public int Count;
 
         public ArrayBuffer(byte[] bytes)
         {
             Bytes = bytes;
+            if (Bytes != null)
+            {
+                Count = Bytes.Length;
+            }
         }
+
+        public ArrayBuffer(byte[] bytes, int count)
+        {
+            Bytes = bytes;
+            if (Bytes != null)
+            {
+                if (count > 0 && count < Bytes.Length)
+                {
+                    Count = count;
+                }
+                else
+                {
+                    Count = Bytes.Length;
+                }
+            }
+        }
+
 
         public ArrayBuffer(IntPtr ptr, int length)
         {
             if (ptr != IntPtr.Zero)
             {
                 Bytes = new byte[length];
+                Count = length;
                 System.Runtime.InteropServices.Marshal.Copy(ptr, Bytes, 0, length);
             }
         }
@@ -219,7 +242,7 @@ namespace Puerts
             }
             else
             {
-                PuertsDLL.ReturnArrayBuffer(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+                PuertsDLL.ReturnArrayBuffer(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Count);
             }
         }
 
@@ -279,7 +302,7 @@ namespace Puerts
             }
             else
             {
-                PuertsDLL.SetArrayBufferToOutValue(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+                PuertsDLL.SetArrayBufferToOutValue(isolate, holder, arrayBuffer.Bytes, arrayBuffer.Count);
             }
         }
 
@@ -340,7 +363,7 @@ namespace Puerts
             }
             else
             {
-                PuertsDLL.PushArrayBufferForJSFunction(holder, arrayBuffer.Bytes, arrayBuffer.Bytes.Length);
+                PuertsDLL.PushArrayBufferForJSFunction(holder, arrayBuffer.Bytes, arrayBuffer.Count);
             }
         }
 
@@ -389,5 +412,4 @@ namespace Puerts
             PuertsDLL.PushStringForJSFunction(holder, str);
         }
     }
-
 }
