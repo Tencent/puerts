@@ -7,7 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace Puerts
@@ -248,14 +247,12 @@ namespace Puerts
         GeneralGetterManager generalGetterManager = null;
 
         GeneralSetter resultSetter = null;
-        bool extensionMethod = false;
 
-        public OverloadReflectionWrap(MethodBase methodBase, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager, bool extensionMethod = false)
+        public OverloadReflectionWrap(MethodBase methodBase, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager)
         {
-            parameters = new Parameters(methodBase.GetParameters().Skip(extensionMethod ? 1 : 0).ToArray(), generalGetterManager, generalSetterManager);
+            parameters = new Parameters(methodBase.GetParameters(), generalGetterManager, generalSetterManager);
             
             this.generalGetterManager = generalGetterManager;
-            this.extensionMethod = extensionMethod;
 
             if (methodBase.IsConstructor)
             {
@@ -289,12 +286,7 @@ namespace Puerts
             try
             {
                 object target = methodInfo.IsStatic ? null : generalGetterManager.GetSelf(callInfo.Self);
-                object[] args = parameters.GetArguments(callInfo);
-                if (this.extensionMethod)
-                {
-                    args = new object[] { generalGetterManager.GetSelf(callInfo.Self) }.Concat(args).ToArray();
-                }
-                object ret = methodInfo.Invoke(target, args);
+                object ret = methodInfo.Invoke(target, parameters.GetArguments(callInfo));
                 parameters.FillByRefParameters(callInfo);
                 resultSetter(callInfo.Isolate, NativeValueApi.SetValueToResult, callInfo.Info, ret);
             }

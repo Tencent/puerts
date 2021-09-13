@@ -1,6 +1,4 @@
-{{?it.Namespaces}}{{~it.Namespaces :name}}
-using {{=name}};{{~}}
-{{?}}
+using System;
 {{
 const fixGet = {
     char: 'GetChar',
