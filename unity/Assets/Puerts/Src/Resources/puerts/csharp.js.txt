@@ -128,7 +128,7 @@ var global = global || (function () { return this; }());
     }
     
     function bindThisToFirstArgument(func, parentFunc) {
-		if (parentFunc) {
+	if (parentFunc) {
             return function (...args) {
                 try {
                     return func.apply(null, [this, ...args]);
@@ -143,8 +143,7 @@ var global = global || (function () { return this; }());
     }
     
     function extension(cls, extension) {
-		return;
-		var parentPrototype = Object.getPrototypeOf(cls.prototype);
+	var parentPrototype = Object.getPrototypeOf(cls.prototype);
         Object.keys(extension).forEach(key=> {
             var func = extension[key];
             if (typeof func == 'function' && key != 'constructor') {
