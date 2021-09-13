@@ -12,6 +12,7 @@
 #include <functional>
 #include <vector>
 #include "Pesapi.h"
+#include "TypeInfo.hpp"
 
 #define __DefObjectType(CLS) \
     namespace puerts { template<> struct is_objecttype<CLS> : public std::true_type {}; }
@@ -67,6 +68,32 @@ namespace puerts
     typedef pesapi_value ValueType;
     typedef void (*FunctionCallbackType)(pesapi_callback_info info);
     typedef void*(*InitializeFuncType)(pesapi_callback_info Info);
+    struct GeneralFunctionInfo
+    {
+        const char* Name;
+        FunctionCallbackType Callback;
+        void *Data = nullptr;
+    };
+
+    struct GeneralPropertyInfo
+    {
+        const char* Name;
+        FunctionCallbackType Getter;
+        FunctionCallbackType Setter;
+        void *Data = nullptr;
+    };
+
+    struct GeneralFunctionReflectionInfo
+    {
+        const char* Name;
+        const CFunctionInfo* Type;
+    };
+
+    struct GeneralPropertyReflectionInfo
+    {
+        const char* Name;
+        const char* Type;
+    };
 
     inline int GetArgsLen(pesapi_callback_info info)
     {
