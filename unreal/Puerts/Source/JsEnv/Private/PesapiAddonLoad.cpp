@@ -7,12 +7,14 @@
 
 #include "pesapi.h"
 #include "CoreMinimal.h"
-#if PLATFORM_WINDOWS
-#include <windows.h>
-#endif
+
+#include <map>
+#include <string>
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
+
+std::map<std::string, void*> GHandlers;
 
 EXTERN_C_START
 
@@ -75,33 +77,35 @@ static void* funcs[] = {
 
 int pesapi_load_addon(const char* path, const char* module_name)
 {
-#if PLATFORM_WINDOWS
-	wchar_t filename_w[32768];
-	
-	if (MultiByteToWideChar(CP_UTF8,
-							0,
-							path,
-							-1,
-							filename_w,
-							sizeof(filename_w)/sizeof(wchar_t))) {
-		const HMODULE handle = LoadLibraryExW(filename_w, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
-		if (handle)
-		{
-			char name[1024];
-			snprintf(name, sizeof(name), STRINGIFY(PESAPI_MODULE_INITIALIZER(%s)), module_name);
-		    auto init = (void(*)(void**))(uintptr_t) GetProcAddress(handle, name);
-			if (!init)
-			{
-				return -1;
-			}
-			init(funcs);
-		}
+	if (GHandlers.find(path) != GHandlers.end())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Try load dll already loaded: %s"), UTF8_TO_TCHAR(path));
+		return 0;
 	}
-	return GetLastError();
+#if PLATFORM_WINDOWS
+	void* Handle = FPlatformProcess::GetDllHandle(UTF8_TO_TCHAR(path));
+	if (Handle)
+	{
+		char EntryName[1024];
+		snprintf(EntryName, sizeof(EntryName), STRINGIFY(PESAPI_MODULE_INITIALIZER(%s)), module_name);
+		
+		auto Init = (void(*)(void**))(uintptr_t)FPlatformProcess::GetDllExport(Handle, UTF8_TO_TCHAR(EntryName));
+		if (Init)
+		{
+			Init(funcs);
+			GHandlers[path] = Handle;
+			return 0;
+		}
+		UE_LOG(LogTemp, Error, TEXT("Could not find entry for: %s"), UTF8_TO_TCHAR(path));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not load dll: %s"), UTF8_TO_TCHAR(path));
+	}
 #else
 	//not implemented yet
-	return -1;
 #endif
+	return -1;
 }
 
 EXTERN_C_END
