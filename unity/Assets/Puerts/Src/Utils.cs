@@ -117,7 +117,7 @@ namespace Puerts
                             var types = prop.GetValue(null, null) as IEnumerable<Type>;
                             if (types != null)
                             {
-                                type_def_extention_method.AddRange(types.Where(t => t != null && t.IsDefined(typeof(ExtensionAttribute), false)));
+                                type_def_extention_method.AddRange(types.Where(t => t != null  && t.IsDefined(typeof(ExtensionAttribute), false)));
                             }
                         }
                     }
