@@ -566,12 +566,9 @@ void pesapi_define_class(const char* type_name, const char* super_type_name,
 	p_functions.push_back({nullptr, nullptr, nullptr});
 	p_properties.push_back( {nullptr, nullptr, nullptr, nullptr});
 	
-	classDef.Methods = new puerts::JSFunctionInfo[p_methods.size()];
-	memcpy(classDef.Methods, p_methods.data(), sizeof(puerts::JSFunctionInfo) * p_methods.size());
-	classDef.Functions = new puerts::JSFunctionInfo[p_functions.size()];
-	memcpy(classDef.Functions, p_functions.data(), sizeof(puerts::JSFunctionInfo) * p_functions.size());
-	classDef.Properties = new puerts::JSPropertyInfo[p_properties.size()];
-	memcpy(classDef.Properties, p_properties.data(), sizeof(puerts::JSPropertyInfo) * p_properties.size());
+	classDef.Methods = p_methods.data();
+	classDef.Functions = p_functions.data();
+	classDef.Properties = p_properties.data();
 	
 	puerts::RegisterJSClass(classDef);
 }
