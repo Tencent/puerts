@@ -79,17 +79,17 @@ int pesapi_load_addon(const char* path, const char* module_name)
 {
 	if (GHandlers.find(path) != GHandlers.end())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Try load dll already loaded: %s"), UTF8_TO_TCHAR(path));
+		UE_LOG(LogTemp, Warning, TEXT("Try load addon already loaded: %s"), UTF8_TO_TCHAR(path));
 		return 0;
 	}
-#if PLATFORM_WINDOWS
+#if !PLATFORM_IOS
 	void* Handle = FPlatformProcess::GetDllHandle(UTF8_TO_TCHAR(path));
 	if (Handle)
 	{
-		char EntryName[1024];
-		snprintf(EntryName, sizeof(EntryName), STRINGIFY(PESAPI_MODULE_INITIALIZER(%s)), module_name);
+		FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(%s)));
+		EntryName = EntryName.Replace(TEXT("%s"), UTF8_TO_TCHAR(module_name));
 		
-		auto Init = (void(*)(void**))(uintptr_t)FPlatformProcess::GetDllExport(Handle, UTF8_TO_TCHAR(EntryName));
+		auto Init = (void(*)(void**))(uintptr_t)FPlatformProcess::GetDllExport(Handle, *EntryName);
 		if (Init)
 		{
 			Init(funcs);
@@ -100,7 +100,7 @@ int pesapi_load_addon(const char* path, const char* module_name)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Could not load dll: %s"), UTF8_TO_TCHAR(path));
+		UE_LOG(LogTemp, Error, TEXT("Could not load addon: %s"), UTF8_TO_TCHAR(path));
 	}
 #else
 	//not implemented yet
