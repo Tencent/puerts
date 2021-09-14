@@ -9,23 +9,11 @@
 #define PS_API_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#ifdef BUILDING_PES_EXTENSION
-#ifdef _WIN32
-	#define PESAPI_EXTERN __declspec(dllimport)
-#elif defined(__wasm32__)
-	#define PESAPI_EXTERN __attribute__((__import_module__("pesapi")))
-#endif
-#else
-#ifdef _WIN32
-#define PESAPI_EXTERN __declspec(dllexport)
-#elif defined(__wasm32__)
-#define PESAPI_EXTERN __attribute__((visibility("default")))                \
-__attribute__((__import_module__("pesapi")))
-#else
-#define PESAPI_EXTERN __attribute__((visibility("default")))
-#endif
-#endif
+#define PESAPI_VERSION  1
+
+#define PESAPI_EXTERN
 
 #ifdef _WIN32
 # define PESAPI_MODULE_EXPORT __declspec(dllexport)
@@ -49,25 +37,26 @@ __attribute__((__import_module__("pesapi")))
 #define EXTERN_C_END
 #endif
 
-#if defined(_MSC_VER)
-#pragma section(".CRT$XCU", read)
-#define PESAPI_C_CTOR(fn)                                                     \
-static void __cdecl fn(void);                                             \
-__declspec(dllexport, allocate(".CRT$XCU")) void(__cdecl * fn##_)(void) = \
-fn;                                                                   \
-static void __cdecl fn(void)
-#else
-#define PESAPI_C_CTOR(fn)                              \
-static void fn(void) __attribute__((constructor)); \
-static void fn(void)
-#endif
+#define PESAPI_MODULE_INITIALIZER_X(base, module, version)                               \
+    PESAPI_MODULE_INITIALIZER_X_HELPER(base, module, version)
 
-#define PESAPI_MODULE(modname, regfunc)                                 \
-  EXTERN_C_START                                                        \
-    PESAPI_C_CTOR(_register_ ## modname) {                              \
-        regfunc();                                                      \
-    }                                                                   \
-  EXTERN_C_END
+#define PESAPI_MODULE_INITIALIZER_X_HELPER(base, module, version) base##module##_v##version
+
+#define PESAPI_MODULE_INITIALIZER_BASE pesapi_register_
+
+#define PESAPI_MODULE_INITIALIZER(modname)                                       \
+  PESAPI_MODULE_INITIALIZER_X(PESAPI_MODULE_INITIALIZER_BASE, modname,      \
+    PESAPI_VERSION)
+
+#define PESAPI_MODULE(modname, initfunc)                                                     \
+    EXTERN_C_START                                                                           \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (void** func_ptr_array);    \
+    EXTERN_C_END                                                                             \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (void** func_ptr_array) {   \
+        pesapi_init(func_ptr_array);                                                         \
+        initfunc();                                                                          \
+    }                                                                                        \
+  
 
 EXTERN_C_START
 
@@ -88,7 +77,7 @@ struct pesapi_type_info__ {
 typedef struct pesapi_type_info__* pesapi_type_info;
 
 struct pesapi_signature_info__ {
-	pesapi_type_info__ return_type;
+	struct pesapi_type_info__ return_type;
 	int parameter_count;
 	pesapi_type_info parameter_types;
 };
@@ -110,6 +99,12 @@ typedef struct {
 	} info;
 } pesapi_property_descriptor;
 
+#ifdef BUILDING_PES_EXTENSION
+PESAPI_EXTERN void pesapi_init(void** func_array);
+#else
+PESAPI_MODULE_EXPORT int pesapi_load_addon(const char* path, const char* module_name);
+#endif
+
 //value process
 PESAPI_EXTERN pesapi_value pesapi_create_null(pesapi_env env);
 PESAPI_EXTERN pesapi_value pesapi_create_undefined(pesapi_env env);
@@ -120,7 +115,6 @@ PESAPI_EXTERN pesapi_value pesapi_create_int64(pesapi_env env, int64_t value);
 PESAPI_EXTERN pesapi_value pesapi_create_uint64(pesapi_env env, uint64_t value);
 PESAPI_EXTERN pesapi_value pesapi_create_double(pesapi_env env, double value);
 PESAPI_EXTERN pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t length);
-//PESAPI_EXTERN pesapi_value pesapi_create_object(pesapi_env env);
 
 PESAPI_EXTERN bool pesapi_get_value_bool(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN int32_t pesapi_get_value_int32(pesapi_env env, pesapi_value value);
@@ -183,7 +177,7 @@ PESAPI_EXTERN pesapi_value pesapi_call_function(pesapi_env env, pesapi_value fun
 typedef void*(*pesapi_constructor)(pesapi_callback_info info);
 typedef void(*pesapi_finalize)(void* Ptr);
 PESAPI_EXTERN void pesapi_define_class(const char* type_name, const char* super_type_name,
-	pesapi_constructor constructor, pesapi_finalize finalize, int property_count,
+	pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count,
 	const pesapi_property_descriptor* properties);
 
 EXTERN_C_END

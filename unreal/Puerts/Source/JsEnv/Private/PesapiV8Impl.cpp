@@ -525,7 +525,7 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
 }
 
 void pesapi_define_class(const char* type_name, const char* super_type_name,
-	pesapi_constructor constructor, pesapi_finalize finalize, int property_count,
+	pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count,
 	const pesapi_property_descriptor* properties)
 {
 	puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
