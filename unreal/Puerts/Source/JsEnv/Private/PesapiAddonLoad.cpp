@@ -6,8 +6,10 @@
 */
 
 #include "pesapi.h"
-#include <windows.h>
 #include "CoreMinimal.h"
+#if PLATFORM_WINDOWS
+#include <windows.h>
+#endif
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
