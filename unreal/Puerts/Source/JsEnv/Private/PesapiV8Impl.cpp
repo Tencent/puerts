@@ -262,11 +262,11 @@ bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
 	return value->IsFunction();
 }
 
-pesapi_value pesapi_create_native_object(pesapi_env env, void* class_id, void* object_ptr, bool copy)
+pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
 {
 	auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 	return v8impl::PesapiValueFromV8LocalValue(::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context,
-		static_cast<char*>(class_id), object_ptr, copy));
+		static_cast<const char*>(class_id), object_ptr, copy));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
@@ -277,12 +277,12 @@ void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
 	return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
 }
 
-bool pesapi_is_native_object(pesapi_env env, void* class_id, pesapi_value pvalue)
+bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value pvalue)
 {
 	auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 	auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
 	return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(),
-		static_cast<char*>(class_id), value.As<v8::Object>());
+		static_cast<const char*>(class_id), value.As<v8::Object>());
 }
 
 pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value pvalue)

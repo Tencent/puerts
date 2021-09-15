@@ -46,6 +46,7 @@ static void* funcs[] = {
 	&pesapi_is_object,
 	&pesapi_is_function,
 	&pesapi_create_native_object,
+	&pesapi_get_native_object_ptr,
 	&pesapi_is_native_object,
 	&pesapi_create_ref,
 	&pesapi_get_value_ref,

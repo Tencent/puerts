@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define PESAPI_VERSION  1
 
@@ -136,9 +137,9 @@ PESAPI_EXTERN bool pesapi_is_string(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_object(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_function(pesapi_env env, pesapi_value value);
 
-PESAPI_EXTERN pesapi_value pesapi_create_native_object(pesapi_env env, void* class_id, void* object_ptr, bool copy);
+PESAPI_EXTERN pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy);
 PESAPI_EXTERN void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value);
-PESAPI_EXTERN bool pesapi_is_native_object(pesapi_env env, void* class_id, pesapi_value value);
+PESAPI_EXTERN bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value value);
 
 PESAPI_EXTERN pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN pesapi_value pesapi_get_value_ref(pesapi_env env, pesapi_value value);
