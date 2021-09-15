@@ -347,7 +347,7 @@ namespace Puerts.Editor
 
                 public static TypeGenInfo FromType(Type type, List<Type> genTypes)
                 {
-                    var methodGroups = type.GetMethods(Utils.Flags).Where(m => !Utils.isFiltered(m))
+                    var methodGroups = Puerts.Utils.GetMethodAndOverrideMethod(type, Utils.Flags).Where(m => !Utils.isFiltered(m))
                         .Where(m => !m.IsSpecialName && Puerts.Utils.IsSupportedMethod(m))
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList());
@@ -807,7 +807,7 @@ namespace Puerts.Editor
                     var methodNames = declMethods.Select(m => m.Name).ToArray();
 
                     //var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
-                    var methods = type.GetMethods(Utils.Flags)
+                    var methods = Puerts.Utils.GetMethodAndOverrideMethod(type, Utils.Flags)
                         .Where(m => genTypeSet.Contains(m.DeclaringType) && methodNames.Contains(m.Name))
                         .Concat(declMethods)
                         .Where(m => !Utils.isFiltered(m, true) && !Utils.IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))

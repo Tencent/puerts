@@ -76,6 +76,25 @@ namespace Puerts
             return hasValidGenericParameter && returnTypeValid;
         }
         
+        public static MethodInfo[] GetMethodAndOverrideMethod(Type type, BindingFlags flag)
+        {
+            MethodInfo[] allMethods = type.GetMethods(flag);
+            string[] methodNames = allMethods.Select(m=> m.Name).ToArray();
+
+            Type objType = typeof(Object);
+            while (type.BaseType != null && type.BaseType != objType)
+            {
+                type = type.BaseType;
+                MethodInfo[] methods = type.GetMethods(flag).Where(m=> Array.IndexOf<string>(methodNames, m.Name) != -1).ToArray();
+                if (methods.Length > 0) 
+                {
+                    allMethods = allMethods.Concat(methods).ToArray();
+                }
+            }
+
+            return allMethods;
+        }
+
         public static IEnumerable<MethodInfo> GetExtensionMethodsOf(Type type_to_be_extend)
         {
             if (Utils_Internal.extensionMethodMap == null)

@@ -441,7 +441,7 @@ namespace Puerts
                 flag = flag | BindingFlags.NonPublic;
             }
 
-            MethodInfo[] methods = type.GetMethods(flag);
+            MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
             Dictionary<MethodKey, List<MethodInfo>> methodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
             Dictionary<string, ProperyMethods> propertyGroup = new Dictionary<string, ProperyMethods>();
 
