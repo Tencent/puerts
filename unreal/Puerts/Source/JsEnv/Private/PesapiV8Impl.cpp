@@ -543,14 +543,14 @@ void pesapi_define_class(const char* type_name, const char* super_type_name,
 		{
 			p_properties.push_back({
 				p->name,
-				static_cast<v8::FunctionCallback>(static_cast<void*>(p->getter)),
-				static_cast<v8::FunctionCallback>(static_cast<void*>(p->setter)),
+                reinterpret_cast<v8::FunctionCallback>(p->getter),
+                reinterpret_cast<v8::FunctionCallback>(p->setter),
 				p->data}
 				);
 		}
 		else if (p->method != nullptr)
 		{
-			puerts::JSFunctionInfo finfo {p->name, static_cast<v8::FunctionCallback>(static_cast<void*>(p->method)), p->data };
+			puerts::JSFunctionInfo finfo {p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data };
 			if (p->is_static)
 			{
 				p_functions.push_back(finfo);

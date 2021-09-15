@@ -100,8 +100,10 @@ typedef struct {
 	} info;
 } pesapi_property_descriptor;
 
+typedef void(*pesapi_func_ptr)(void);
+
 #ifdef BUILDING_PES_EXTENSION
-PESAPI_EXTERN void pesapi_init(void** func_array);
+PESAPI_EXTERN void pesapi_init(pesapi_func_ptr* func_array);
 #else
 PESAPI_MODULE_EXPORT int pesapi_load_addon(const char* path, const char* module_name);
 #endif

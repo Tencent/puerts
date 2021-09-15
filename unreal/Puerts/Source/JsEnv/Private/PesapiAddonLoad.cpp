@@ -18,63 +18,66 @@ std::map<std::string, void*> GHandlers;
 
 EXTERN_C_START
 
-static void* funcs[] = {
-	&pesapi_create_null,
-	&pesapi_create_undefined,
-	&pesapi_create_boolean,
-	&pesapi_create_int32,
-	&pesapi_create_uint32,
-	&pesapi_create_int64,
-	&pesapi_create_uint64,
-	&pesapi_create_double,
-	&pesapi_create_string_utf8,
-	&pesapi_get_value_bool,
-	&pesapi_get_value_int32,
-	&pesapi_get_value_uint32,
-	&pesapi_get_value_int64,
-	&pesapi_get_value_uint64,
-	&pesapi_get_value_double,
-	&pesapi_is_null,
-	&pesapi_is_undefined,
-	&pesapi_is_boolean,
-	&pesapi_is_int32,
-	&pesapi_is_uint32,
-	&pesapi_is_int64,
-	&pesapi_is_uint64,
-	&pesapi_is_double,
-	&pesapi_is_string,
-	&pesapi_is_object,
-	&pesapi_is_function,
-	&pesapi_create_native_object,
-	&pesapi_get_native_object_ptr,
-	&pesapi_is_native_object,
-	&pesapi_create_ref,
-	&pesapi_get_value_ref,
-	&pesapi_update_value_ref,
-	&pesapi_is_ref,
-	&pesapi_get_args_len,
-	&pesapi_get_arg,
-	&pesapi_get_env,
-	&pesapi_get_this,
-	&pesapi_get_holder,
-	&pesapi_add_return,
-	&pesapi_throw_by_string,
-	&pesapi_hold_env,
-	&pesapi_get_env_from_holder,
-	&pesapi_duplicate_env_holder,
-	&pesapi_release_env_holder,
-	&pesapi_open_scope,
-	&pesapi_has_caught,
-	&pesapi_close_scope,
-	&pesapi_hold_value,
-	&pesapi_duplicate_value_holder,
-	&pesapi_release_value_holder,
-	&pesapi_get_value_from_holder,
-	&pesapi_get_property,
-	&pesapi_set_property,
-	&pesapi_call_function,
-	&pesapi_define_class
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191)) 
+static pesapi_func_ptr funcs[] = {
+	(pesapi_func_ptr)&pesapi_create_null,
+	(pesapi_func_ptr)&pesapi_create_undefined,
+	(pesapi_func_ptr)&pesapi_create_boolean,
+	(pesapi_func_ptr)&pesapi_create_int32,
+	(pesapi_func_ptr)&pesapi_create_uint32,
+	(pesapi_func_ptr)&pesapi_create_int64,
+	(pesapi_func_ptr)&pesapi_create_uint64,
+	(pesapi_func_ptr)&pesapi_create_double,
+	(pesapi_func_ptr)&pesapi_create_string_utf8,
+	(pesapi_func_ptr)&pesapi_get_value_bool,
+	(pesapi_func_ptr)&pesapi_get_value_int32,
+	(pesapi_func_ptr)&pesapi_get_value_uint32,
+	(pesapi_func_ptr)&pesapi_get_value_int64,
+	(pesapi_func_ptr)&pesapi_get_value_uint64,
+	(pesapi_func_ptr)&pesapi_get_value_double,
+	(pesapi_func_ptr)&pesapi_is_null,
+	(pesapi_func_ptr)&pesapi_is_undefined,
+	(pesapi_func_ptr)&pesapi_is_boolean,
+	(pesapi_func_ptr)&pesapi_is_int32,
+	(pesapi_func_ptr)&pesapi_is_uint32,
+	(pesapi_func_ptr)&pesapi_is_int64,
+	(pesapi_func_ptr)&pesapi_is_uint64,
+	(pesapi_func_ptr)&pesapi_is_double,
+	(pesapi_func_ptr)&pesapi_is_string,
+	(pesapi_func_ptr)&pesapi_is_object,
+	(pesapi_func_ptr)&pesapi_is_function,
+	(pesapi_func_ptr)&pesapi_create_native_object,
+	(pesapi_func_ptr)&pesapi_get_native_object_ptr,
+	(pesapi_func_ptr)&pesapi_is_native_object,
+	(pesapi_func_ptr)&pesapi_create_ref,
+	(pesapi_func_ptr)&pesapi_get_value_ref,
+	(pesapi_func_ptr)&pesapi_update_value_ref,
+	(pesapi_func_ptr)&pesapi_is_ref,
+	(pesapi_func_ptr)&pesapi_get_args_len,
+	(pesapi_func_ptr)&pesapi_get_arg,
+	(pesapi_func_ptr)&pesapi_get_env,
+	(pesapi_func_ptr)&pesapi_get_this,
+	(pesapi_func_ptr)&pesapi_get_holder,
+	(pesapi_func_ptr)&pesapi_add_return,
+	(pesapi_func_ptr)&pesapi_throw_by_string,
+	(pesapi_func_ptr)&pesapi_hold_env,
+	(pesapi_func_ptr)&pesapi_get_env_from_holder,
+	(pesapi_func_ptr)&pesapi_duplicate_env_holder,
+	(pesapi_func_ptr)&pesapi_release_env_holder,
+	(pesapi_func_ptr)&pesapi_open_scope,
+	(pesapi_func_ptr)&pesapi_has_caught,
+	(pesapi_func_ptr)&pesapi_close_scope,
+	(pesapi_func_ptr)&pesapi_hold_value,
+	(pesapi_func_ptr)&pesapi_duplicate_value_holder,
+	(pesapi_func_ptr)&pesapi_release_value_holder,
+	(pesapi_func_ptr)&pesapi_get_value_from_holder,
+	(pesapi_func_ptr)&pesapi_get_property,
+	(pesapi_func_ptr)&pesapi_set_property,
+	(pesapi_func_ptr)&pesapi_call_function,
+	(pesapi_func_ptr)&pesapi_define_class
 };
+MSVC_PRAGMA(warning(pop))
 
 int pesapi_load_addon(const char* path, const char* module_name)
 {
@@ -87,10 +90,10 @@ int pesapi_load_addon(const char* path, const char* module_name)
 	void* Handle = FPlatformProcess::GetDllHandle(UTF8_TO_TCHAR(path));
 	if (Handle)
 	{
-		FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(%s)));
-		EntryName = EntryName.Replace(TEXT("%s"), UTF8_TO_TCHAR(module_name));
+		FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(___magic_module_name_xx___)));
+		EntryName = EntryName.Replace(TEXT("___magic_module_name_xx___"), UTF8_TO_TCHAR(module_name));
 		
-		auto Init = (void(*)(void**))(uintptr_t)FPlatformProcess::GetDllExport(Handle, *EntryName);
+		auto Init = (void(*)(pesapi_func_ptr*))(uintptr_t)FPlatformProcess::GetDllExport(Handle, *EntryName);
 		if (Init)
 		{
 			Init(funcs);
