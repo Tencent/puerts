@@ -51,9 +51,9 @@
 
 #define PESAPI_MODULE(modname, initfunc)                                                     \
     EXTERN_C_START                                                                           \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (void** func_ptr_array);    \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (pesapi_func_ptr* func_ptr_array);    \
     EXTERN_C_END                                                                             \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (void** func_ptr_array) {   \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (pesapi_func_ptr* func_ptr_array) {   \
         pesapi_init(func_ptr_array);                                                         \
         initfunc();                                                                          \
     }                                                                                        \

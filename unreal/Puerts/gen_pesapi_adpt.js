@@ -39,7 +39,7 @@ for(var i = 0; i < lines.length; i++) {
             apiImpl += '}\n\n';
             
             ptrSetter += `    ${functionName}_ptr = func_array[${funcIndex++}];\n`;
-            ptrGetter.push(`&${functionName}`);
+            ptrGetter.push(`(pesapi_func_ptr)&${functionName}`);
         }
     }
 }
