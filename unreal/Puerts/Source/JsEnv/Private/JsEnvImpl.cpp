@@ -2678,10 +2678,10 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
         InspectorChannel->OnMessage([this](std::string Message)
             {
                 //UE_LOG(LogTemp, Warning, TEXT("<-- %s"), UTF8_TO_TCHAR(Message.c_str()));
-                v8::Isolate::Scope Isolatescope(MainIsolate);
-                v8::HandleScope HandleScope(MainIsolate);
+                v8::Isolate::Scope IsolatescopeObject(MainIsolate);
+                v8::HandleScope HandleScopeObject(MainIsolate);
                 v8::Local<v8::Context> ContextInner = DefaultContext.Get(MainIsolate);
-                v8::Context::Scope ContextScope(ContextInner);
+                v8::Context::Scope ContextScopeObject(ContextInner);
 
                 auto Handler = InspectorMessageHandler.Get(MainIsolate);
 
