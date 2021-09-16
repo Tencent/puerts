@@ -16,7 +16,9 @@
 
 static std::map<std::string, void*> GHandlers;
 
+#if PLATFORM_IOS
 int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray);
+#endif
 
 EXTERN_C_START
 

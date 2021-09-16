@@ -5,7 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-//#if PLATFORM_IOS
+#if PLATFORM_IOS
 
 #import <Foundation/Foundation.h>
 #include <pesapi.h>
@@ -50,11 +50,11 @@
 
 @end
 
-//#endif
-
 int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray)
 {
     NSString* p1 = [NSString stringWithUTF8String:frameworkName.c_str()];
     NSString* p2 = [NSString stringWithUTF8String:entryClassName.c_str()];
     return [PesapiFrameworkLoader load:p1 entryClassName:p2 funcPtrArray:funcPtrArray];
 }
+
+#endif
