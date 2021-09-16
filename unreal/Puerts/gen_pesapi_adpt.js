@@ -32,20 +32,21 @@ for(var i = 0; i < lines.length; i++) {
         let [_, returnType, functionName, paramertsDef] = m;
         functionName = functionName.trim();
         if (functionName != "pesapi_init") {
-            apiImpl += `static ${returnType} (*${functionName}_ptr)${paramertsDef};\n`;
+            apiImpl += `typedef ${returnType} (*${functionName}Type)${paramertsDef};\n`;
+            apiImpl += `static ${functionName}Type ${functionName}_ptr;\n`;
             apiImpl += `${returnType} ${functionName} ${paramertsDef} {\n`;
             let argsList = paramertsDef.split(',').map(x=>x.trim().replace(/.+\s+(\w+)/, '$1').replace('[]', '')).join(', ');
             apiImpl += '    ' + (returnType.trim() == 'void' ? '' : 'return ') + `${functionName}_ptr(${argsList};\n`;
             apiImpl += '}\n\n';
             
-            ptrSetter += `    ${functionName}_ptr = func_array[${funcIndex++}];\n`;
+            ptrSetter += `    ${functionName}_ptr = (${functionName}Type)func_array[${funcIndex++}];\n`;
             ptrGetter.push(`(pesapi_func_ptr)&${functionName}`);
         }
     }
 }
 
-var pesapi_adpt = '#include <pesapi.h>\n\nEXTERN_C_START\n\n' + apiImpl
-                  + '\nvoid pesapi_init(void** func_array){'
+var pesapi_adpt = '#define PESAPI_ADPT_C\n\n#include <pesapi.h>\n\nEXTERN_C_START\n\n' + apiImpl
+                  + '\nvoid pesapi_init(pesapi_func_ptr* func_array){'
                   + ptrSetter + '}\n\nEXTERN_C_END\n';
                   
 fs.writeFileSync('pesapi_adpt.c', pesapi_adpt);
