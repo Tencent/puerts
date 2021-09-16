@@ -16,6 +16,17 @@
 
 #define PESAPI_EXTERN
 
+#if defined(__APPLE__) && defined(BUILDING_PES_EXTENSION) && !defined(PESAPI_ADPT_C)
+#include "TargetConditionals.h"
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#define USING_OBJC_REFLECTION
+#endif
+#endif
+
+#ifdef USING_OBJC_REFLECTION
+#import <Foundation/Foundation.h>
+#endif
+
 #ifdef _WIN32
 # define PESAPI_MODULE_EXPORT __declspec(dllexport)
 #else
@@ -49,6 +60,20 @@
   PESAPI_MODULE_INITIALIZER_X(PESAPI_MODULE_INITIALIZER_BASE, modname,      \
     PESAPI_VERSION)
 
+#ifdef USING_OBJC_REFLECTION
+
+#define PESAPI_MODULE(modname, initfunc)                                                     \
+@interface PESAPI_MODULE_INITIALIZER(modname) : NSObject                                     \
+@end                                                                                         \
+@implementation PESAPI_MODULE_INITIALIZER(modname)                                           \
++ (void)initlib:(pesapi_func_ptr*)func_ptr_array {                                           \
+    pesapi_init(func_ptr_array);                                                             \
+    initfunc();                                                                              \
+}                                                                                            \
+@end
+
+#else
+
 #define PESAPI_MODULE(modname, initfunc)                                                     \
     EXTERN_C_START                                                                           \
     PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname) (pesapi_func_ptr* func_ptr_array);    \
@@ -57,7 +82,8 @@
         pesapi_init(func_ptr_array);                                                         \
         initfunc();                                                                          \
     }                                                                                        \
-  
+
+#endif
 
 EXTERN_C_START
 

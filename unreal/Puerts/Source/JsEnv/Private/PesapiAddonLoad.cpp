@@ -14,7 +14,9 @@
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-std::map<std::string, void*> GHandlers;
+static std::map<std::string, void*> GHandlers;
+
+int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray);
 
 EXTERN_C_START
 
@@ -83,7 +85,7 @@ int pesapi_load_addon(const char* path, const char* module_name)
 {
 	if (GHandlers.find(path) != GHandlers.end())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Try load addon already loaded: %s"), UTF8_TO_TCHAR(path));
+		//UE_LOG(LogTemp, Warning, TEXT("Try load addon already loaded: %s"), UTF8_TO_TCHAR(path));
 		return 0;
 	}
 #if !PLATFORM_IOS
@@ -106,10 +108,12 @@ int pesapi_load_addon(const char* path, const char* module_name)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Could not load addon: %s"), UTF8_TO_TCHAR(path));
 	}
+    return -1;
 #else
-	//not implemented yet
+    FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(___magic_module_name_xx___)));
+    EntryName = EntryName.Replace(TEXT("___magic_module_name_xx___"), UTF8_TO_TCHAR(module_name));
+    return PesapiLoadFramework(module_name, TCHAR_TO_UTF8(*EntryName), funcs);
 #endif
-	return -1;
 }
 
 EXTERN_C_END
