@@ -49,7 +49,7 @@ namespace Puerts
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort = -1)
+        public JsEnv(ILoader loader, int debugPort = -1, JsEnvMode mode = JsEnvMode.Default)
              : this(loader, debugPort, JsEnvMode.Default, IntPtr.Zero, IntPtr.Zero)
         {
         }
