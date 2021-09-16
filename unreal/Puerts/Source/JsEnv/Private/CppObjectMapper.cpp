@@ -145,7 +145,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
             if (!PropertyInfo->Setter) PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
             auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data)): v8::Local<v8::Value>();
-            Template->PrototypeTemplate()->SetAccessorProperty(v8::String::NewFromUtf8(Isolate, PropertyInfo->Name).ToLocalChecked(),
+            Template->PrototypeTemplate()->SetAccessorProperty(v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                 v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data), v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data),
                 PropertyAttribute);
             ++PropertyInfo;
@@ -154,14 +154,14 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-            Template->PrototypeTemplate()->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
+            Template->PrototypeTemplate()->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
                 FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data)): v8::Local<v8::Value>()));
             ++FunctionInfo;
         }
         FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
-            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
+            Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(), v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
                 FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data)): v8::Local<v8::Value>()));
             ++FunctionInfo;
         }
