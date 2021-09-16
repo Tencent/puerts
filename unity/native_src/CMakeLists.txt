@@ -16,10 +16,9 @@ if ( IOS )
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode")
 endif ()
 
-
 find_path(PUERTS_PROJECT_DIR NAMES SConstruct
     PATHS 
-    ${CMAKE_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}
     NO_DEFAULT_PATH
 )
 
@@ -35,30 +34,30 @@ elseif ( JS_ENGINE STREQUAL "nodejs")
     endif()
 
     include_directories(    
-        ${CMAKE_SOURCE_DIR}/nodejs/include
-        ${CMAKE_SOURCE_DIR}/nodejs/deps/v8/include
-        ${CMAKE_SOURCE_DIR}/nodejs/deps/uv/include
+        ${PROJECT_SOURCE_DIR}/nodejs/include
+        ${PROJECT_SOURCE_DIR}/nodejs/deps/v8/include
+        ${PROJECT_SOURCE_DIR}/nodejs/deps/uv/include
     )
 else()
     set(JS_ENGINE v8)
     set(LIB_FILE_NAME libwee8.a)
 endif()
 
-set(V8_ENGINE ${CMAKE_SOURCE_DIR}/${JS_ENGINE})
+set(V8_ENGINE ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
 
 set(V8_INC ${V8_ENGINE}/Inc)
 
-set(ThirdParty ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
+set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 set(WEBSOCKET_INC ${ThirdParty}/Include/websocketpp)
 set(ASIO_INC ${ThirdParty}/Include/asio)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}
     ${V8_INC}
     ${WEBSOCKET_INC}
     ${ASIO_INC}
     Inc
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
 )
 
 set ( PUERTS_INC
@@ -66,8 +65,8 @@ set ( PUERTS_INC
     Inc/JSEngine.h
     Inc/V8Utils.h
     Inc/JSFunction.h
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
 )
 
 set ( PUERTS_SRC
@@ -75,7 +74,7 @@ set ( PUERTS_SRC
     Src/Log.cpp
     Src/JSEngine.cpp
     Src/JSFunction.cpp
-    ${CMAKE_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
 macro(source_group_by_dir proj_dir source_files)
@@ -97,6 +96,7 @@ endmacro(source_group_by_dir)
 
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_INC)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} PUERTS_SRC)
+
 
 if ( APPLE )
     if ( IOS )

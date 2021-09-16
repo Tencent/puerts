@@ -721,9 +721,15 @@ namespace puerts
 
     void JSEngine::LogicTick()
     {
-#if defined(WITH_NODEJS)
+#if WITH_NODEJS
         if (withNode) 
         {
+            v8::Isolate* Isolate = MainIsolate;
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+            v8::Context::Scope ContextScope(Context);
+
             uv_run(NodeUVLoop, UV_RUN_NOWAIT);
         }
 #endif

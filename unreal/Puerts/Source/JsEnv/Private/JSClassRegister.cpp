@@ -13,6 +13,46 @@
 
 namespace puerts
 {
+template<class T>
+static T* PropertyInfoDuplicate(T * Arr)
+{
+    if (Arr == nullptr) return nullptr;
+    int Count = 0;;
+    while(true)
+    {
+        if (Arr[Count++].Name == nullptr) break;
+    }
+    T *Ret = new T[Count];
+    ::memcpy(Ret, Arr, sizeof(T) * Count);
+    return Ret;
+}
+    
+JSClassDefinition * JSClassDefinitionDuplicate(const JSClassDefinition *ClassDefinition)
+{
+    auto Ret = new JSClassDefinition;
+    ::memcpy(Ret, ClassDefinition, sizeof(JSClassDefinition));
+    Ret->Methods = PropertyInfoDuplicate(ClassDefinition->Methods);
+    Ret->Functions = PropertyInfoDuplicate(ClassDefinition->Functions);
+    Ret->Properties = PropertyInfoDuplicate(ClassDefinition->Properties);
+    Ret->ConstructorInfos = PropertyInfoDuplicate(ClassDefinition->ConstructorInfos);
+    Ret->MethodInfos = PropertyInfoDuplicate(ClassDefinition->MethodInfos);
+    Ret->FunctionInfos = PropertyInfoDuplicate(ClassDefinition->FunctionInfos);
+    Ret->PropertyInfos = PropertyInfoDuplicate(ClassDefinition->PropertyInfos);
+    return Ret;
+}
+
+void JSClassDefinitionDelete(JSClassDefinition *ClassDefinition)
+{
+    delete [] ClassDefinition->Methods;
+    delete [] ClassDefinition->Functions;
+    delete [] ClassDefinition->Properties;
+    delete [] ClassDefinition->ConstructorInfos;
+    delete [] ClassDefinition->MethodInfos;
+    delete [] ClassDefinition->FunctionInfos;
+    delete [] ClassDefinition->PropertyInfos;
+    delete ClassDefinition;
+}
+
 class JSClassRegister
 {
 public:
@@ -52,13 +92,13 @@ JSClassRegister::~JSClassRegister()
 {
     for(auto & KV : NameToClassDefinition)
     {
-        ::free(KV.second);
+        JSClassDefinitionDelete(KV.second);
     }
     NameToClassDefinition.clear();
 #if USING_IN_UNREAL_ENGINE
     for(auto & KV : StructNameToClassDefinition)
     {
-        ::free(KV.second);
+        JSClassDefinitionDelete(KV.second);
     }
     StructNameToClassDefinition.clear();
 #endif
@@ -66,12 +106,14 @@ JSClassRegister::~JSClassRegister()
 
 void JSClassRegister::RegisterClass(const JSClassDefinition &ClassDefinition)
 {
-    auto CD = (JSClassDefinition *)::malloc(sizeof(JSClassDefinition));
-    ::memcpy(CD, &ClassDefinition, sizeof(JSClassDefinition));
-    
     if (ClassDefinition.CPPTypeName)
     {
-        NameToClassDefinition[ClassDefinition.CPPTypeName] = CD;
+        auto cd_iter = NameToClassDefinition.find(ClassDefinition.CPPTypeName);
+        if (cd_iter != NameToClassDefinition.end())
+        {
+            JSClassDefinitionDelete(cd_iter->second);
+        }
+        NameToClassDefinition[ClassDefinition.CPPTypeName] = JSClassDefinitionDuplicate(&ClassDefinition);
         std::string SN = ClassDefinition.CPPTypeName;
         CDataNameToClassDefinition[SN] = NameToClassDefinition[ClassDefinition.CPPTypeName];
     }
@@ -79,7 +121,12 @@ void JSClassRegister::RegisterClass(const JSClassDefinition &ClassDefinition)
     else if (ClassDefinition.UETypeName)
     {
         FString SN = UTF8_TO_TCHAR(ClassDefinition.UETypeName);
-        StructNameToClassDefinition[SN] = CD;
+        auto ud_iter = StructNameToClassDefinition.find(SN);
+        if (ud_iter != StructNameToClassDefinition.end())
+        {
+            JSClassDefinitionDelete(ud_iter->second);
+        }
+        StructNameToClassDefinition[SN] = JSClassDefinitionDuplicate(&ClassDefinition);
     }
 #endif
 }

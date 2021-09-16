@@ -49,7 +49,7 @@ namespace Puerts
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort = -1)
+        public JsEnv(ILoader loader, int debugPort = -1, JsEnvMode mode = JsEnvMode.Default)
              : this(loader, debugPort, JsEnvMode.Default, IntPtr.Zero, IntPtr.Zero)
         {
         }
@@ -158,10 +158,16 @@ namespace Puerts
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
-            ExecuteFile("puerts/timer.js");
+            if (mode != JsEnvMode.Node) 
+            {
+                ExecuteFile("puerts/timer.js");
+            }
             ExecuteFile("puerts/events.js");
             ExecuteFile("puerts/promises.js");
-            ExecuteFile("puerts/polyfill.js");
+            if (mode != JsEnvMode.Node) 
+            {
+                ExecuteFile("puerts/polyfill.js");
+            }
         }
 
         void ExecuteFile(string filename)

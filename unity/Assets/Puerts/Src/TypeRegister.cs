@@ -441,7 +441,7 @@ namespace Puerts
                 flag = flag | BindingFlags.NonPublic;
             }
 
-            MethodInfo[] methods = type.GetMethods(flag);
+            MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
             Dictionary<MethodKey, List<MethodInfo>> methodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
             Dictionary<string, ProperyMethods> propertyGroup = new Dictionary<string, ProperyMethods>();
 
@@ -512,6 +512,45 @@ namespace Puerts
                     methodGroup.Add(methodKey, overloads);
                 }
                 overloads.Add(method);
+            }
+
+            IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
+            Dictionary<MethodKey, List<MethodInfo>> extensionMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
+            if (extensionMethods != null)
+            {
+                var enumerator = extensionMethods.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    var method = enumerator.Current;
+                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false };
+
+                    if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
+                    {
+                        continue;
+                    }
+                    if (method.IsGenericMethodDefinition)
+                    {
+                        if (!Utils.IsSupportedMethod(method))
+                        {
+                            continue;
+                        }
+                        var genericArguments = method.GetGenericArguments();
+                        var constraintedArgumentTypes = new Type[genericArguments.Length];
+                        for (var j = 0; j < genericArguments.Length; j++)
+                        {
+                            constraintedArgumentTypes[j] = genericArguments[j].BaseType;
+                        }
+                        method = method.MakeGenericMethod(constraintedArgumentTypes);
+                    }
+
+                    List<MethodInfo> overloads;
+                    if (!extensionMethodGroup.TryGetValue(methodKey, out overloads))
+                    {
+                        overloads = new List<MethodInfo>();
+                        extensionMethodGroup.Add(methodKey, overloads);
+                    }
+                    overloads.Add(method);
+                }
             }
 
             ConstructorCallback constructorCallback = null;
@@ -592,7 +631,18 @@ namespace Puerts
 
             foreach (var kv in methodGroup)
             {
-                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)).ToList());
+                var wraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)).ToList();
+                if (extensionMethodGroup.TryGetValue(kv.Key, out var _methods))
+                {
+                    wraps.AddRange(_methods.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, true)));
+                    extensionMethodGroup.Remove(kv.Key);
+                }
+                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, wraps);
+                PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, callbackWrap, jsEnv.AddCallback(methodReflectionWrap.Invoke));
+            }
+            foreach (var kv in extensionMethodGroup)
+            {
+                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, true)).ToList());
                 PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, callbackWrap, jsEnv.AddCallback(methodReflectionWrap.Invoke));
             }
 
