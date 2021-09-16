@@ -10,7 +10,6 @@
 #include "Editor.h"
 #include "PuertsModule.h"
 #include "FileHelpers.h"
-#include "GameDelegates.h"
 #include "TypeScriptCompilerContext.h"
 #include "TypeScriptBlueprint.h"
 
@@ -24,7 +23,7 @@ private:
     //
     void PreBeginPIE(bool bIsSimulating);
 
-    void EndPIE();
+    void EndPIE(bool bIsSimulating);
 
     void OnPostEngineInit();
 
@@ -40,7 +39,7 @@ void FPuertsEditorModule::StartupModule()
     Enabled  = IPuertsModule::Get().IsEnabled();
 
     FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsEditorModule::PreBeginPIE);
-    FGameDelegates::Get().GetEndPlayMapDelegate().AddRaw(this, &FPuertsEditorModule::EndPIE);
+    FEditorDelegates::EndPIE.AddRaw(this, &FPuertsEditorModule::EndPIE);
     FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsEditorModule::OnPostEngineInit);
 }
 
@@ -86,7 +85,7 @@ void FPuertsEditorModule::PreBeginPIE(bool bIsSimulating)
     }
 }
 
-void FPuertsEditorModule::EndPIE()
+void FPuertsEditorModule::EndPIE(bool bIsSimulating)
 {
     
 }
