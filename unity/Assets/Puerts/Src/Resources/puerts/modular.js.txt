@@ -18,7 +18,6 @@ var global = global || (function () { return this; }());
     
     let moduleCache = Object.create(null); // key to sid
     let tmpModuleStorage = []; // sid to module
-    let nodeRequire = global.require;
 
     function addModule(m) {
         for (var i = 0; i < tmpModuleStorage.length; i++) {
@@ -120,8 +119,14 @@ var global = global || (function () { return this; }());
     puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;
-    
-    global.require = genRequire("");
+
+    let nodeRequire = global.require;
+    if (nodeRequire) {
+        global.require = global.puertsRequire = genRequire("");
+        global.nodeRequire = nodeRequire;
+    } else {
+        global.require = genRequire("");
+    }
 
     function clearModuleCache () {
         tmpModuleStorage = [];

@@ -44,13 +44,13 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
-        public JsEnv(JsEnvMode mode = JsEnvMode.Default, int debugPort = -1) 
+        public JsEnv(JsEnvMode mode = JsEnvMode.Default) 
             : this(new DefaultLoader(), debugPort, mode, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
         public JsEnv(ILoader loader, int debugPort = -1, JsEnvMode mode = JsEnvMode.Default)
-             : this(loader, debugPort, JsEnvMode.Default, IntPtr.Zero, IntPtr.Zero)
+             : this(loader, debugPort, mode, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
