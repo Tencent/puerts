@@ -24,7 +24,7 @@ namespace converter {                                                           
     struct Converter<CLS*> {                                                                                     \
         static pesapi_value toScript(pesapi_env env, CLS * value)                                                \
         {                                                                                                        \
-            return pesapi_create_native_object(env, #CLS, value, false);                                         \
+            return pesapi_create_native_object(env, puerts::ScriptTypeName<CLS>::value, value, false);                                         \
         }                                                                                                        \
         static CLS * toCpp(pesapi_env env, pesapi_value value)                                                   \
         {                                                                                                        \
@@ -32,7 +32,7 @@ namespace converter {                                                           
         }                                                                                                        \
         static bool accept(pesapi_env env, pesapi_value value)                                                   \
         {                                                                                                        \
-            return pesapi_is_native_object(env, #CLS, value);                                                    \
+            return pesapi_is_native_object(env, puerts::ScriptTypeName<CLS>::value, value);                                                    \
         }                                                                                                        \
     };                                                                                                           \
 }                                                                                                                \
@@ -45,7 +45,7 @@ namespace converter {                                                           
     struct Converter<CLS> {                                                                                             \
         static pesapi_value toScript(pesapi_env env, CLS value)                                 \
         {                                                                                                               \
-            return pesapi_create_native_object(env, #CLS, new CLS(value), false);                \
+            return pesapi_create_native_object(env, puerts::ScriptTypeName<CLS>::value, new CLS(value), false);                \
         }                                                                                                               \
         static CLS toCpp(pesapi_env env, pesapi_value value)                             \
         {                                                                                                               \
@@ -53,7 +53,7 @@ namespace converter {                                                           
         }                                                                                                               \
         static bool accept(pesapi_env env, pesapi_value value)                           \
         {                                                                                                               \
-            return pesapi_is_native_object(env, #CLS, value);            \
+            return pesapi_is_native_object(env, puerts::ScriptTypeName<CLS>::value, value);            \
         }                                                                                                               \
     };                                                                                                                  \
 }                                                                                                                       \

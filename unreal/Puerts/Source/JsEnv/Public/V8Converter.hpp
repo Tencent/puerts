@@ -23,7 +23,7 @@ namespace converter {                                                           
     struct Converter<CLS*> {                                                                                     \
         static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS * value)                        \
         {                                                                                                        \
-            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, #CLS, value, true);    \
+            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, puerts::ScriptTypeName<CLS>::value, value, true);    \
         }                                                                                                        \
         static CLS * toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                    \
         {                                                                                                        \
@@ -31,7 +31,7 @@ namespace converter {                                                           
         }                                                                                                        \
         static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                    \
         {                                                                                                        \
-            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), #CLS, value.As<v8::Object>());    \
+            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), puerts::ScriptTypeName<CLS>::value, value.As<v8::Object>());    \
         }                                                                                                        \
     };                                                                                                           \
 }                                                                                                                \
@@ -44,7 +44,7 @@ namespace converter {                                                           
     struct Converter<CLS> {                                                                                             \
         static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS value)                                 \
         {                                                                                                               \
-            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, #CLS, new CLS(value), false); \
+            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, puerts::ScriptTypeName<CLS>::value, new CLS(value), false); \
         }                                                                                                               \
         static CLS toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                             \
         {                                                                                                               \
@@ -52,7 +52,7 @@ namespace converter {                                                           
         }                                                                                                               \
         static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                           \
         {                                                                                                               \
-            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), #CLS, value.As<v8::Object>());           \
+            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), puerts::ScriptTypeName<CLS>::value, value.As<v8::Object>());           \
         }                                                                                                               \
     };                                                                                                                  \
 }                                                                                                                       \
