@@ -385,6 +385,12 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if defined(WITH_NODEJS)
     UVLoopCallbackHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float) -> bool
     {
+        auto IsolateInner = MainIsolate;
+        v8::Isolate::Scope IsolateScopeInner(IsolateInner);
+        v8::HandleScope HandleScopeInner(IsolateInner);
+        auto ContextInner = v8::Local<v8::Context>::New(IsolateInner, DefaultContext);
+        v8::Context::Scope ContextScopeInner(ContextInner);
+        
         uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT);
         return true;
     }), UV_LOOP_DELAY);
@@ -2678,10 +2684,10 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
         InspectorChannel->OnMessage([this](std::string Message)
             {
                 //UE_LOG(LogTemp, Warning, TEXT("<-- %s"), UTF8_TO_TCHAR(Message.c_str()));
-                v8::Isolate::Scope Isolatescope(MainIsolate);
-                v8::HandleScope HandleScope(MainIsolate);
+                v8::Isolate::Scope IsolatescopeObject(MainIsolate);
+                v8::HandleScope HandleScopeObject(MainIsolate);
                 v8::Local<v8::Context> ContextInner = DefaultContext.Get(MainIsolate);
-                v8::Context::Scope ContextScope(ContextInner);
+                v8::Context::Scope ContextScopeObject(ContextInner);
 
                 auto Handler = InspectorMessageHandler.Get(MainIsolate);
 

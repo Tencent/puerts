@@ -16,6 +16,7 @@
 #include "Internationalization/Regex.h"
 #include "LevelEditor.h"
 #include "Misc/HotReloadInterface.h"
+#include "GameDelegates.h"
 #endif
 #include "Commandlets/Commandlet.h"
 
@@ -38,7 +39,7 @@ public:
 #endif
 
 #if WITH_EDITOR
-    void EndPIE(bool bIsSimulating);
+    void EndPIE();
     bool HandleSettingsSaved();
     void HandleMapChanged(UWorld* InWorld, EMapChangeType InMapChangeType)
     {
@@ -270,7 +271,7 @@ void FPuertsModule::OnUObjectArrayShutdown()
 #endif
 
 #if WITH_EDITOR
-void FPuertsModule::EndPIE(bool bIsSimulating)
+void FPuertsModule::EndPIE()
 {
     if (Enabled)
     {
@@ -329,7 +330,7 @@ void FPuertsModule::StartupModule()
 #if WITH_EDITOR
     if(!IsRunningGame())
     {
-        FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+        FGameDelegates::Get().GetEndPlayMapDelegate().AddRaw(this, &FPuertsModule::EndPIE);
         //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
         FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
         LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);

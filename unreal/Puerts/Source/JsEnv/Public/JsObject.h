@@ -136,7 +136,7 @@ public:
         return {};
     }
 
-    FORCEINLINE v8::Local<v8::Object> GetObject() const
+    FORCEINLINE v8::Local<v8::Object> GetJsObject() const
     {
         if (!GObject.IsEmpty())
         {

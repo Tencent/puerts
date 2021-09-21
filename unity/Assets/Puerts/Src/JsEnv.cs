@@ -44,13 +44,22 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
+#if UNITY_EDITOR
+        public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
+        public delegate void JsEnvDisposeCallback(JsEnv env);
+        public static JsEnvCreateCallback OnJsEnvCreate;
+        public static JsEnvDisposeCallback OnJsEnvDispose;
+
+        public int debugPort;
+#endif
+
         public JsEnv(JsEnvMode mode = JsEnvMode.Default) 
             : this(new DefaultLoader(), -1, mode, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort = -1)
-             : this(loader, debugPort, JsEnvMode.Default, IntPtr.Zero, IntPtr.Zero)
+        public JsEnv(ILoader loader, int debugPort = -1, JsEnvMode mode = JsEnvMode.Default)
+             : this(loader, debugPort, mode, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
@@ -158,10 +167,24 @@ namespace Puerts
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
-            ExecuteFile("puerts/timer.js");
+            if (mode != JsEnvMode.Node) 
+            {
+                ExecuteFile("puerts/timer.js");
+            }
             ExecuteFile("puerts/events.js");
             ExecuteFile("puerts/promises.js");
-            ExecuteFile("puerts/polyfill.js");
+            if (mode != JsEnvMode.Node) 
+            {
+                ExecuteFile("puerts/polyfill.js");
+            }
+
+#if UNITY_EDITOR
+            if (OnJsEnvCreate != null) 
+            {
+                OnJsEnvCreate(this, loader, debugPort);
+            }
+            this.debugPort = debugPort;
+#endif
         }
 
         void ExecuteFile(string filename)
@@ -641,6 +664,13 @@ namespace Puerts
 
         protected virtual void Dispose(bool dispose)
         {
+#if UNITY_EDITOR
+            if (OnJsEnvDispose != null) 
+            {
+                OnJsEnvDispose(this);
+            }
+#endif
+
             lock (jsEnvs)
             {
                 if (disposed) return;

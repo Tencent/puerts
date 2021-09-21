@@ -7,9 +7,11 @@
 
 #include "pesapi.h"
 #include "DataTransfer.h"
+#include "JSClassRegister.h"
 
 #include <string>
 #include <sstream>
+#include <vector>
 
 #pragma warning(push, 0) 
 #include "v8.h"
@@ -76,9 +78,7 @@ namespace v8impl
 	}
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+EXTERN_C_START
 
 //value process
 pesapi_value pesapi_create_null(pesapi_env env)
@@ -262,11 +262,11 @@ bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
 	return value->IsFunction();
 }
 
-pesapi_value pesapi_create_native_object(pesapi_env env, void* class_id, void* object_ptr, bool copy)
+pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
 {
 	auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 	return v8impl::PesapiValueFromV8LocalValue(::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context,
-		static_cast<char*>(class_id), object_ptr, copy));
+		static_cast<const char*>(class_id), object_ptr, copy));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
@@ -277,12 +277,12 @@ void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
 	return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
 }
 
-bool pesapi_is_native_object(pesapi_env env, void* class_id, pesapi_value pvalue)
+bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value pvalue)
 {
 	auto context = v8impl::V8LocalContextFromPesapiEnv(env);
 	auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
 	return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(),
-		static_cast<char*>(class_id), value.As<v8::Object>());
+		static_cast<const char*>(class_id), value.As<v8::Object>());
 }
 
 pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value pvalue)
@@ -524,6 +524,53 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
 	}
 }
 
-#ifdef __cplusplus
+void pesapi_define_class(const char* type_name, const char* super_type_name,
+	pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count,
+	const pesapi_property_descriptor* properties)
+{
+	puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
+	classDef.CPPTypeName = type_name;
+	classDef.CPPSuperTypeName  = super_type_name;
+
+	std::vector<puerts::JSFunctionInfo> p_methods;
+	std::vector<puerts::JSFunctionInfo> p_functions;
+	std::vector<puerts::JSPropertyInfo> p_properties;
+
+	for (int i = 0; i < property_count; i++)
+	{
+		const pesapi_property_descriptor* p = properties + i;
+		if (p->getter != nullptr || p->setter != nullptr)
+		{
+			p_properties.push_back({
+				p->name,
+                reinterpret_cast<v8::FunctionCallback>(p->getter),
+                reinterpret_cast<v8::FunctionCallback>(p->setter),
+				p->data}
+				);
+		}
+		else if (p->method != nullptr)
+		{
+			puerts::JSFunctionInfo finfo {p->name, reinterpret_cast<v8::FunctionCallback>(p->method), p->data };
+			if (p->is_static)
+			{
+				p_functions.push_back(finfo);
+			}
+			else
+			{
+				p_methods.push_back(finfo);
+			}
+		}
+	}
+	
+	p_methods.push_back({nullptr, nullptr, nullptr});
+	p_functions.push_back({nullptr, nullptr, nullptr});
+	p_properties.push_back( {nullptr, nullptr, nullptr, nullptr});
+	
+	classDef.Methods = p_methods.data();
+	classDef.Functions = p_functions.data();
+	classDef.Properties = p_properties.data();
+	
+	puerts::RegisterJSClass(classDef);
 }
-#endif
+
+EXTERN_C_END

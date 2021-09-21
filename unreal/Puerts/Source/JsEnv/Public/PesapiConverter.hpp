@@ -11,7 +11,8 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "Pesapi.h"
+#include <pesapi.h>
+#include "TypeInfo.hpp"
 
 #define __DefObjectType(CLS) \
     namespace puerts { template<> struct is_objecttype<CLS> : public std::true_type {}; }
@@ -23,7 +24,7 @@ namespace converter {                                                           
     struct Converter<CLS*> {                                                                                     \
         static pesapi_value toScript(pesapi_env env, CLS * value)                                                \
         {                                                                                                        \
-            return pesapi_create_native_object(env, #CLS, value, false);                                         \
+            return pesapi_create_native_object(env, puerts::ScriptTypeName<CLS>::value, value, false);                                         \
         }                                                                                                        \
         static CLS * toCpp(pesapi_env env, pesapi_value value)                                                   \
         {                                                                                                        \
@@ -31,7 +32,7 @@ namespace converter {                                                           
         }                                                                                                        \
         static bool accept(pesapi_env env, pesapi_value value)                                                   \
         {                                                                                                        \
-            return pesapi_is_native_object(env, #CLS, value);                                                    \
+            return pesapi_is_native_object(env, puerts::ScriptTypeName<CLS>::value, value);                                                    \
         }                                                                                                        \
     };                                                                                                           \
 }                                                                                                                \
@@ -44,7 +45,7 @@ namespace converter {                                                           
     struct Converter<CLS> {                                                                                             \
         static pesapi_value toScript(pesapi_env env, CLS value)                                 \
         {                                                                                                               \
-            return pesapi_create_native_object(env, #CLS, new CLS(value), false);                \
+            return pesapi_create_native_object(env, puerts::ScriptTypeName<CLS>::value, new CLS(value), false);                \
         }                                                                                                               \
         static CLS toCpp(pesapi_env env, pesapi_value value)                             \
         {                                                                                                               \
@@ -52,7 +53,7 @@ namespace converter {                                                           
         }                                                                                                               \
         static bool accept(pesapi_env env, pesapi_value value)                           \
         {                                                                                                               \
-            return pesapi_is_native_object(env, #CLS, value);            \
+            return pesapi_is_native_object(env, puerts::ScriptTypeName<CLS>::value, value);            \
         }                                                                                                               \
     };                                                                                                                  \
 }                                                                                                                       \
@@ -67,6 +68,32 @@ namespace puerts
     typedef pesapi_value ValueType;
     typedef void (*FunctionCallbackType)(pesapi_callback_info info);
     typedef void*(*InitializeFuncType)(pesapi_callback_info Info);
+    struct GeneralFunctionInfo
+    {
+        const char* Name;
+        FunctionCallbackType Callback;
+        void *Data = nullptr;
+    };
+
+    struct GeneralPropertyInfo
+    {
+        const char* Name;
+        FunctionCallbackType Getter;
+        FunctionCallbackType Setter;
+        void *Data = nullptr;
+    };
+
+    struct GeneralFunctionReflectionInfo
+    {
+        const char* Name;
+        const CFunctionInfo* Type;
+    };
+
+    struct GeneralPropertyReflectionInfo
+    {
+        const char* Name;
+        const char* Type;
+    };
 
     inline int GetArgsLen(pesapi_callback_info info)
     {

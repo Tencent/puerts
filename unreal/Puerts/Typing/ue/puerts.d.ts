@@ -2130,12 +2130,6 @@ declare module "ue" {
         let BitmaskEnum: MetaKey; //, for property
 
         /**
-         * @brief
-         *      used to force puerts serialize the parameter even has constructor
-         */
-        let ForceSerialization: MetaKey;
-
-        /**
          * the decorator used to add meta data to property
          * @param InValues 
          */

@@ -13,6 +13,10 @@
 #include "CoreUObject.h"
 #include "PropertyMacros.h"
 
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+#include "UObject/WeakFieldPtr.h"
+#endif
+
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
 #include "v8.h"
@@ -57,7 +61,7 @@ public:
 
     virtual bool IsOut() const { return false; }
 
-    explicit FPropertyTranslator(PropertyMacro *InProperty) : Property(InProperty), OwnerIsClass(InProperty->GetOwnerClass() != nullptr){ }
+    explicit FPropertyTranslator(PropertyMacro *InProperty) : Property(InProperty), PropertyWeakPtr(InProperty), OwnerIsClass(InProperty->GetOwnerClass() != nullptr){ }
     virtual ~FPropertyTranslator() {}
 
     union
@@ -80,6 +84,12 @@ public:
         DelegatePropertyMacro *DelegateProperty;
         MulticastDelegatePropertyMacro *MulticastDelegateProperty;
     };
+
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+    TWeakObjectPtr<PropertyMacro> PropertyWeakPtr;
+#else
+    TWeakFieldPtr<PropertyMacro> PropertyWeakPtr;
+#endif
 
     bool OwnerIsClass;
 
