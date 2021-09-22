@@ -44,6 +44,8 @@ namespace Puerts
 
         internal ObjectPool objectPool;
 
+        JsEnvMode mode;
+
 #if UNITY_EDITOR
         public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
         public delegate void JsEnvDisposeCallback(JsEnv env);
@@ -83,6 +85,7 @@ namespace Puerts
             }
             // PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
+            this.mode = mode;
             if (mode == JsEnvMode.External)
             {
                 isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
