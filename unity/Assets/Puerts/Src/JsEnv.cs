@@ -588,11 +588,6 @@ namespace Puerts
 
         public void WaitDebugger()
         {
-            if (mode == JsEnvMode.Node)
-            {
-                Eval("require('inspector').waitForDebugger()");
-                return;
-            }
 #if THREAD_SAFE
             lock(this) {
 #endif
