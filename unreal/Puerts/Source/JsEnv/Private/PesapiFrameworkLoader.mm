@@ -18,7 +18,7 @@
 @implementation PesapiFrameworkLoader
 
 + (int)load:(NSString*) frameworkName entryClassName:(NSString*)entryClassName funcPtrArray:(pesapi_func_ptr*)funcPtrArray {
-    NSLog(@"PesapiFrameworkLoader loadFramework frameworkName:%@  class:%@", frameworkName, entryClassName);
+    NSLog(@"load addon name:%@  entry class:%@", frameworkName, entryClassName);
 
     //for + function
     Class entryClass = NSClassFromString(entryClassName);
@@ -40,10 +40,10 @@
              //   NSLog(@"PesapiFrameworkLoader loadFramework finally");
              //}
         } else {
-            NSLog(@"PesapiFrameworkLoader loadFramework %@ can not found selector getPxLibInfor", frameworkName);
+            NSLog(@"load addon %@ fail: can not found selector initlib:", frameworkName);
         }
     } else {
-        NSLog(@"PesapiFrameworkLoader loadFramework %@ can not found class:%@", frameworkName, entryClassName);
+        NSLog(@"load addon %@ fail: can not found class:%@", frameworkName, entryClassName);
     }
     return -1;
 }

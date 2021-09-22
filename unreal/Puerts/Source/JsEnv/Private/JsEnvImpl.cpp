@@ -385,6 +385,12 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if defined(WITH_NODEJS)
     UVLoopCallbackHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float) -> bool
     {
+        auto IsolateInner = MainIsolate;
+        v8::Isolate::Scope IsolateScopeInner(IsolateInner);
+        v8::HandleScope HandleScopeInner(IsolateInner);
+        auto ContextInner = v8::Local<v8::Context>::New(IsolateInner, DefaultContext);
+        v8::Context::Scope ContextScopeInner(ContextInner);
+        
         uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT);
         return true;
     }), UV_LOOP_DELAY);
