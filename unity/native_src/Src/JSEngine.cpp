@@ -678,14 +678,6 @@ namespace puerts
 
     void JSEngine::CreateInspector(int32_t Port)
     {
-#if WITH_NODEJS
-        if (withNode) {
-            static char SCodeBuffer[1024];
-            std::snprintf(SCodeBuffer, sizeof(SCodeBuffer), "require('inspector').open(%d)\n", Port);
-            Eval(SCodeBuffer, "");
-            return;
-        }
-#endif
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -700,12 +692,6 @@ namespace puerts
 
     void JSEngine::DestroyInspector()
     {
-#if WITH_NODEJS
-        if (withNode) 
-        {
-            return;
-        }
-#endif
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
