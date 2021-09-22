@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define LIB_VERSION 12
+#define LIB_VERSION 13
 
 using puerts::JSEngine;
 using puerts::FValue;
