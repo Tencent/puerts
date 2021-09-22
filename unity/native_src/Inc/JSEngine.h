@@ -23,9 +23,13 @@
 #include "V8InspectorImpl.h"
 
 #if PUERTS_UT
-#define PUERTS_EXPORT_FOR_UT __declspec(dllexport)
+# if PLATFORM_WINDOWS
+#  define PUERTS_EXPORT_FOR_UT __declspec(dllexport)
+# else
+#  define PUERTS_EXPORT_FOR_UT __attribute__ ((visibility("default")))
+# endif
 #else 
-#define PUERTS_EXPORT_FOR_UT
+# define PUERTS_EXPORT_FOR_UT
 #endif
 
 #if WITH_NODEJS

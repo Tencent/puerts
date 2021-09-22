@@ -1,4 +1,3 @@
-echo "====================="
 rm -r build
 mkdir build & pushd build
 cmake -DJS_ENGINE=nodejs -DPUERTS_UT=ON -G "Visual Studio 16 2019" -A x64 ..
