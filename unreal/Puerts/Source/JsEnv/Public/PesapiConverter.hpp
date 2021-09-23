@@ -323,7 +323,7 @@ struct Converter<std::reference_wrapper<T>> {
 };
 
 template <class T>                                                                                                         
-struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && is_objecttype<T>::value>::type> {
+struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value && is_objecttype<T>::value>::type> {
     static pesapi_value toScript(pesapi_env env, T value)
     {
         return pesapi_create_native_object(env, puerts::ScriptTypeName<T>::value, new T(value), false);

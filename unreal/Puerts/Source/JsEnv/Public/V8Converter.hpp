@@ -305,7 +305,7 @@ struct Converter<std::reference_wrapper<T>> {
 };
 
 template <class T>                                                                                                         
-struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && is_objecttype<T>::value>::type> {
+struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value && is_objecttype<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, puerts::ScriptTypeName<T>::value, new T(value), false);
