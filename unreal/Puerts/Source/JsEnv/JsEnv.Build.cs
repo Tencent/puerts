@@ -9,13 +9,17 @@ using UnrealBuildTool;
 using System.IO;
 using System.Reflection;
 
+enum EnvType
+{
+	OldV8 = 0,
+	NewV8 = 1,
+	Nodejs = 2,
+	Quickjs = 3,
+}
+
 public class JsEnv : ModuleRules
 {
-    private bool UseNewV8 = false;
-
-    private bool UseNodejs = false;
-
-    private bool UseQuickjs = false;
+	private EnvType Env = EnvType.OldV8;
 
     private bool WithFFI = false;
 
@@ -41,22 +45,30 @@ public class JsEnv : ModuleRules
             }
         }
 
-        if (UseNewV8)
-        {
-            ThirdParty(Target);
-        }
-        else if (UseNodejs)
-        {
-            ThirdPartyNodejs(Target);
-        }
-        else if (UseQuickjs)
-        {
-            ThirdPartyQJS(Target);
-        }
-        else
-        {
-            OldThirdParty(Target);
-        }
+		switch (Env)
+		{
+			case (EnvType.NewV8):
+			{
+				ThirdParty(Target);
+				break;
+			}
+			case (EnvType.Nodejs):
+			{
+				ThirdPartyNodejs(Target);
+				break;
+			}
+			case (EnvType.Quickjs):
+			{
+				ThirdPartyQJS(Target);
+				break;
+			}
+			case (EnvType.OldV8):
+			default:
+			{
+				OldThirdParty(Target);
+				break;
+			}
+		}
         
         if (WithFFI) AddFFI(Target);
 
