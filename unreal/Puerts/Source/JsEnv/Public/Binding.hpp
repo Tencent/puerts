@@ -32,9 +32,7 @@
 #define UsingCppType(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
     __DefObjectType(CLS) \
-    __DefCDataPointerConverter(CLS) \
-    __DefCDataConverter(CLS)
-
+    __DefCDataPointerConverter(CLS)
 
 namespace puerts {
 namespace internal {
