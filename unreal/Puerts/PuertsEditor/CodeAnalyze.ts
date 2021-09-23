@@ -1757,7 +1757,7 @@ function watch(configFilePath:string) {
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
                     let baseTypes = type.getBaseTypes();
-                    if (baseTypes.length != 1) return undefined;
+                    if (!baseTypes || baseTypes.length != 1) return undefined;
                     let baseTypeUClass = getUClassOfType(baseTypes[0]);
                     if (!baseTypeUClass) return undefined;
 
@@ -1802,7 +1802,7 @@ function watch(configFilePath:string) {
                 try {
                     let typeNode = checker.typeToTypeNode(type);
                     //console.log(checker.typeToString(type), tds)
-                    if (ts.isTypeReferenceNode(typeNode)) {
+                    if (ts.isTypeReferenceNode(typeNode) && type.symbol) {
                         let typeName = type.symbol.getName();
                         if (typeName == 'BigInt') {
                             let category:PinCategory = "int64";
@@ -1920,11 +1920,11 @@ function watch(configFilePath:string) {
                 }
             }
 
-            function manualSkip(symbol: ts.Symbol): boolean {
+            function manualSkip(valueDeclaration: ts.Declaration): boolean {
                 const commentRanges = ts.getLeadingCommentRanges(
                     sourceFile.getFullText(), 
-                    symbol.valueDeclaration.getFullStart());
-                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0)) || hasDecorator(symbol.valueDeclaration, "no_blueprint");
+                    valueDeclaration.getFullStart());
+                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos,r.end).indexOf("@no-blueprint" ) > 0)) || hasDecorator(valueDeclaration, "no_blueprint");
             }
 
             function tryGetAnnotation(valueDeclaration: ts.Node, key:string, leading: boolean): string {
@@ -3731,7 +3731,7 @@ function watch(configFilePath:string) {
                 let hasConstructor = false;
                 let properties: ts.Symbol[] = [];
                 type.symbol.valueDeclaration.forEachChild(x  => {
-                    if (ts.isMethodDeclaration(x)) {
+                    if (ts.isMethodDeclaration(x) && !manualSkip(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic && !lsFunctionLibrary) {
                             console.warn(`do not support static function [${x.name.getText()}]`);
@@ -3742,7 +3742,7 @@ function watch(configFilePath:string) {
                             return;
                         }
                         properties.push(checker.getSymbolAtLocation(x.name));
-                    } else if (ts.isPropertyDeclaration(x)) {
+                    } else if (ts.isPropertyDeclaration(x) && !manualSkip(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic) {
                             console.warn("static property:" + x.name.getText() + ' not support');
@@ -3753,7 +3753,6 @@ function watch(configFilePath:string) {
                 })
                 properties
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
-                        .filter(x => !manualSkip(x))
                         .forEach((symbol) => {
                             if (ts.isMethodDeclaration(symbol.valueDeclaration!)) {
                                 if (symbol.getName() === 'Constructor') {
