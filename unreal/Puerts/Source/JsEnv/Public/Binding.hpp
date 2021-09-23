@@ -102,9 +102,10 @@ template <typename Func, typename Enable = void>
 struct FunctionTrait;
 
 template <typename Ret, typename... Args>
-struct FunctionTrait<Ret (*)(Args...)> {
-    using ReturnType = Ret;
-    using Arguments = std::tuple<Args...>;
+struct FunctionTrait<Ret(*)(Args...), typename std::enable_if<!std::is_same<Ret(*)(Args...), typename std::decay<Ret(*)(Args...)>>::value>::type>
+{
+	using ReturnType = Ret;
+	using Arguments = std::tuple<Args...>;
 };
 
 template <typename C, typename Ret, typename... Args>
@@ -131,10 +132,11 @@ public:
 };
 
 // decay: remove const, reference; function type to function pointer
+/*
 template <typename Func>
 struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>>::type>::type>
     : FunctionTrait<typename std::decay<Func>::type> {};
-}  // namespace traits
+}*/  // namespace traits
 
 template <typename T>
 using FuncTrait = traits::FunctionTrait<T>;

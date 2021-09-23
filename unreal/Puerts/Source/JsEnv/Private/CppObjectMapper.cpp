@@ -93,7 +93,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(v8::Isolate* Isolate, 
 	
 bool FCppObjectMapper::IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject)
 {
-    return DataTransfer::GetPointerFast<const char>(JsObject, 1) == CDataName;
+	return !strcmp(DataTransfer::GetPointerFast<const char>(JsObject, 1), CDataName);
 }
 
 
