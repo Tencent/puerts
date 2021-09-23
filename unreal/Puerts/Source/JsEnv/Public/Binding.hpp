@@ -132,7 +132,7 @@ public:
 
 // decay: remove const, reference; function type to function pointer
 template <typename Func>
-struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>>::type>::type>
+struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>::type>::value>::type>
     : FunctionTrait<typename std::decay<Func>::type> {};
 }  // namespace traits
 
