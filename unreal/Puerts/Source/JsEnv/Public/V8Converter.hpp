@@ -305,18 +305,19 @@ struct Converter<std::reference_wrapper<T>> {
 };
 
 template <class T>                                                                                                         
-struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value && is_objecttype<T>::value>::type> {
+struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value
+                        && is_objecttype<T>::value && !is_uetype<T>::value>::type> {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
-        return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, puerts::ScriptTypeName<T>::value, new T(value), false);
+        return DataTransfer::FindOrAddCData(context->GetIsolate(), context, ScriptTypeName<T>::value, new T(value), false);
     }
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return *::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+        return *DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
     }
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), puerts::ScriptTypeName<T>::value, value.As<v8::Object>());
+        return DataTransfer::IsInstanceOf(context->GetIsolate(), ScriptTypeName<T>::value, value.As<v8::Object>());
     }
 };
     
