@@ -79,20 +79,50 @@ namespace Puerts
         public static MethodInfo[] GetMethodAndOverrideMethod(Type type, BindingFlags flag)
         {
             MethodInfo[] allMethods = type.GetMethods(flag);
-            string[] methodNames = allMethods.Select(m=> m.Name).ToArray();
+            string[] methodNames = allMethods.Select(m => m.Name).ToArray();
+
+            Dictionary<string, IEnumerable<Type[]>> errorMethods = type.GetMethods()
+                .Where(m => m.DeclaringType != type)
+                .Where(m => m.IsDefined(typeof(ObsoleteAttribute)) && (m.GetCustomAttributes(typeof(ObsoleteAttribute), true).FirstOrDefault() as ObsoleteAttribute).IsError)
+                .GroupBy(m => m.Name)
+                .ToDictionary(i => i.Key, i => i.Cast<MethodInfo>().Select(m => m.GetParameters().Select(o => o.ParameterType).ToArray()));
+            IEnumerable<Type[]> matchTypes;
 
             Type objType = typeof(Object);
             while (type.BaseType != null && type.BaseType != objType)
             {
                 type = type.BaseType;
-                MethodInfo[] methods = type.GetMethods(flag).Where(m=> Array.IndexOf<string>(methodNames, m.Name) != -1).ToArray();
-                if (methods.Length > 0) 
+                MethodInfo[] methods = type.GetMethods(flag)
+                    .Where(m => Array.IndexOf<string>(methodNames, m.Name) != -1)
+                    .Where(m => !m.IsAbstract)
+                    .Where(m => !m.IsSpecialName || !m.Name.StartsWith("get_") && !m.Name.StartsWith("set_"))   //filter property
+                    .Where(m => !errorMethods.TryGetValue(m.Name, out matchTypes) || !IsMatchParameters(matchTypes, m.GetParameters().Select(o => o.ParameterType).ToArray()))  //filter override method
+                    .ToArray();
+                if (methods.Length > 0)
                 {
                     allMethods = allMethods.Concat(methods).ToArray();
                 }
             }
 
             return allMethods;
+        }
+        private static bool IsMatchParameters(IEnumerable<Type[]> typeList, Type[] pTypes)
+        {
+            foreach (var types in typeList)
+            {
+                if (types.Length != pTypes.Length)
+                    continue;
+
+                bool exclude = true;
+                for (int i = 0; i < pTypes.Length && exclude; i++)
+                {
+                    if (pTypes[i] != types[i])
+                        exclude = false;
+                }
+                if (exclude)
+                    return true;
+            }
+            return false;
         }
 
         public static IEnumerable<MethodInfo> GetExtensionMethodsOf(Type type_to_be_extend)
