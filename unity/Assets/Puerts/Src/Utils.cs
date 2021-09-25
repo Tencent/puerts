@@ -82,8 +82,7 @@ namespace Puerts
             string[] methodNames = allMethods.Select(m => m.Name).ToArray();
 
             Dictionary<string, IEnumerable<Type[]>> errorMethods = type.GetMethods()
-                .Where(m => m.DeclaringType != type)
-                .Where(m => m.IsDefined(typeof(ObsoleteAttribute)) && (m.GetCustomAttributes(typeof(ObsoleteAttribute), true).FirstOrDefault() as ObsoleteAttribute).IsError)
+                .Where(m => m.DeclaringType != type && IsError(m))
                 .GroupBy(m => m.Name)
                 .ToDictionary(i => i.Key, i => i.Cast<MethodInfo>().Select(m => m.GetParameters().Select(o => o.ParameterType).ToArray()));
             IEnumerable<Type[]> matchTypes;
@@ -94,7 +93,7 @@ namespace Puerts
                 type = type.BaseType;
                 MethodInfo[] methods = type.GetMethods(flag)
                     .Where(m => Array.IndexOf<string>(methodNames, m.Name) != -1)
-                    .Where(m => !m.IsAbstract)
+                    .Where(m => !IsError(m) && !IsVirtualMethod(m))
                     .Where(m => !m.IsSpecialName || !m.Name.StartsWith("get_") && !m.Name.StartsWith("set_"))   //filter property
                     .Where(m => !errorMethods.TryGetValue(m.Name, out matchTypes) || !IsMatchParameters(matchTypes, m.GetParameters().Select(o => o.ParameterType).ToArray()))  //filter override method
                     .ToArray();
@@ -105,6 +104,15 @@ namespace Puerts
             }
 
             return allMethods;
+        }
+        private static bool IsVirtualMethod(MethodInfo memberInfo)
+        {
+            return memberInfo.IsAbstract || (memberInfo.Attributes & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
+        }
+        private static bool IsError(MemberInfo memberInfo)
+        {
+            var obsolete = memberInfo.GetCustomAttributes(typeof(ObsoleteAttribute), true).FirstOrDefault() as ObsoleteAttribute;
+            return obsolete != null && obsolete.IsError;
         }
         private static bool IsMatchParameters(IEnumerable<Type[]> typeList, Type[] pTypes)
         {
