@@ -107,6 +107,12 @@ static void* _FRotatorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FRotatorDelete_(void *Ptr)
+{
+    FRotator *Self = static_cast<FRotator*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FRotatorDelete_:%p"), Self);
+    delete Self;
+}
 static void FRotatorM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -1317,6 +1323,7 @@ struct AutoRegisterForFRotator
         Def.UETypeName = "FRotator";
 
         Def.Initialize = _FRotatorNew_;
+        Def.Finalize = _FRotatorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

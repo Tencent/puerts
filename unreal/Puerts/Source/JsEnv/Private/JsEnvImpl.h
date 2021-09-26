@@ -100,9 +100,9 @@ public:
 
     v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject) override;
 
-    void BindStruct(UScriptStruct* ScriptStruct, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
+    void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
 
-    void UnBindStruct(UScriptStruct* ScriptStruct, void *Ptr) override;
+    void UnBindStruct(void *Ptr) override;
 
     void UnBindCppObject(JSClassDefinition* ClassDefinition, void *Ptr) override;
 
@@ -383,8 +383,13 @@ private:
     std::map<void*, v8::UniquePersistent<v8::Value> > StructMap;
 
     FCppObjectMapper CppObjectMapper;
-    
-    std::map<void*, TWeakObjectPtr<UScriptStruct>> ScriptStructTypeMap;
+
+    struct ScriptStructFinalizeInfo
+    {
+        TWeakObjectPtr<UStruct> Struct;
+        FinalizeFunc Finalize;
+    };
+    std::map<void*, ScriptStructFinalizeInfo> ScriptStructFinalizeInfoMap;
 
     v8::UniquePersistent<v8::FunctionTemplate> ArrayTemplate;
 

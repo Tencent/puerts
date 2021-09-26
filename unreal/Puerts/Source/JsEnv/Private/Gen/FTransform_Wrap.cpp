@@ -213,6 +213,12 @@ static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FTransformDelete_(void *Ptr)
+{
+    FTransform *Self = static_cast<FTransform*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FTransformDelete_:%p"), Self);
+    delete Self;
+}
 static void FTransformM_DiagnosticCheckNaN_Translate(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -2669,6 +2675,7 @@ struct AutoRegisterForFTransform
         Def.UETypeName = "FTransform";
 
         Def.Initialize = _FTransformNew_;
+        Def.Finalize = _FTransformDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

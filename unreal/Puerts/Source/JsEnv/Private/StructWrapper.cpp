@@ -18,7 +18,7 @@ namespace puerts
 
     void FStructWrapper::InitTemplateProperties(v8::Isolate* Isolate, UStruct *InStruct, v8::Local<v8::FunctionTemplate> Template)
     {
-        auto ClassDefinition = FindClassByType(Struct);
+        auto ClassDefinition = FindClassByType(Struct.Get());
         TSet<FString> AddedProperties;
         if (ClassDefinition)
         {
@@ -59,7 +59,7 @@ namespace puerts
     v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* Isolate, v8::FunctionCallback Construtor)
     {
         v8::EscapableHandleScope HandleScope(Isolate);
-        auto ClassDefinition = FindClassByType(Struct);
+        auto ClassDefinition = FindClassByType(Struct.Get());
         auto Result = v8::FunctionTemplate::New(Isolate, Construtor, v8::External::New(Isolate, this)); //和class的区别就这里传的函数不一样，后续尽量重用
         Result->InstanceTemplate()->SetInternalFieldCount(4);
 
@@ -69,6 +69,7 @@ namespace puerts
         if (ClassDefinition)
         {
             ExternalInitialize = ClassDefinition->Initialize;
+            ExternalFinalize = ClassDefinition->Finalize;
             JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
             while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
             {
@@ -87,11 +88,11 @@ namespace puerts
             }
         }
 
-        InitTemplateProperties(Isolate, Struct, Result);
+        InitTemplateProperties(Isolate, Struct.Get(), Result);
 
         if (Struct->IsA<UClass>())
         {
-            for (TFieldIterator<UFunction> FuncIt(Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            for (TFieldIterator<UFunction> FuncIt(static_cast<UClass *>(Struct.Get()), EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 UFunction* Function = *FuncIt;
 
@@ -210,7 +211,7 @@ namespace puerts
 
         FStructWrapper * This = reinterpret_cast<FStructWrapper *>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
 
-        auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, This->Struct->GetClass(), This->Struct);
+        auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, This->Struct->GetClass(), This->Struct.Get());
         Info.GetReturnValue().Set(Result);
     }
 
@@ -322,7 +323,7 @@ namespace puerts
                 }
                 else
                 {
-                    Memory = Alloc(ScriptStruct);
+                    Memory = Alloc(static_cast<UScriptStruct*>(Struct.Get()));
                     const int Count = Info.Length() < Properties.size() ? Info.Length() : Properties.size();
                     for (int i = 0; i < Count; ++i)
                     {
@@ -330,7 +331,7 @@ namespace puerts
                     }
                 }
             }
-            FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(ScriptStruct, Memory, Self, PassByPointer);
+            FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, PassByPointer);
         }
         else
         {
@@ -347,20 +348,31 @@ namespace puerts
         return ScriptStructMemory;
     }
 
-    void FScriptStructWrapper::OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<UScriptStruct>& Data)
+    void FScriptStructWrapper::Free(TWeakObjectPtr<UStruct> InStruct, FinalizeFunc InExternalFinalize, void* Ptr)
     {
-        UScriptStruct *ScriptStruct = Data.GetParameter();
+        if (InExternalFinalize)
+        {
+            InExternalFinalize(Ptr);
+        }
+        else
+        {
+            if (InStruct.IsValid()) InStruct->DestroyStruct(Ptr);
+            FMemory::Free(Ptr);
+        }
+    }
+
+    void FScriptStructWrapper::OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data)
+    {
+        FScriptStructWrapper *ScriptStructWrapper = Data.GetParameter();
         void *ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-        FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStruct, ScriptStructMemory);
-        ScriptStruct->DestroyStruct(ScriptStructMemory);
-        FMemory::Free(ScriptStructMemory);
+        FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructMemory);
+        Free(ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize, ScriptStructMemory);
     }
 
     void  FScriptStructWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UScriptStruct>& Data)
     {
-        UScriptStruct *ScriptStruct = Data.GetParameter();
         void *ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-        FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStruct, ScriptStructMemory);
+        FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructMemory);
     }
 
     v8::Local<v8::FunctionTemplate> FClassWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
@@ -393,7 +405,7 @@ namespace puerts
             auto Self = Info.This();
 
             UObject* Object = nullptr;
-
+            auto Class = static_cast<UClass*>(Struct.Get());
             
             if (Info.Length() == 1 && Info[0]->IsExternal()) //Call by Native
             {
