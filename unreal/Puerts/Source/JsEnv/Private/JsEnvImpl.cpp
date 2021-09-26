@@ -1748,7 +1748,7 @@ bool FJsEnvImpl::RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>
             static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
         }
             
-        auto ReturnVal = Map->Set(Context, JsFunction, v8::Undefined(Isolate));
+        auto ReturnVal = Map->Delete(Context, JsFunction);
 
         Iter->second.Proxys.Remove(DelegateProxy);
         SysObjectRetainer.Release(DelegateProxy);
