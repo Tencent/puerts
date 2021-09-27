@@ -391,7 +391,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         auto ContextInner = v8::Local<v8::Context>::New(IsolateInner, DefaultContext);
         v8::Context::Scope ContextScopeInner(ContextInner);
         
-        uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT);
+        while(uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT)) {};
+       
         return true;
     }), UV_LOOP_DELAY);
 #endif
