@@ -36,7 +36,7 @@ IMPLEMENT_MODULE(FPuertsEditorModule, PuertsEditor)
 
 void FPuertsEditorModule::StartupModule()
 {
-    Enabled  = IPuertsModule::Get().IsEnabled();
+    Enabled  = IPuertsModule::Get().IsWatchEnabled();
 
     FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsEditorModule::PreBeginPIE);
     FEditorDelegates::EndPIE.AddRaw(this, &FPuertsEditorModule::EndPIE);

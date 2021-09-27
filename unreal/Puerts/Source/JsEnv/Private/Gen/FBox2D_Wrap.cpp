@@ -96,6 +96,12 @@ static void* _FBox2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FBox2DDelete_(void *Ptr)
+{
+    FBox2D *Self = static_cast<FBox2D*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FBox2DDelete_:%p"), Self);
+    delete Self;
+}
 static void FBox2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -768,6 +774,7 @@ struct AutoRegisterForFBox2D
         Def.UETypeName = "FBox2D";
 
         Def.Initialize = _FBox2DNew_;
+        Def.Finalize = _FBox2DDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

@@ -16,6 +16,7 @@
 #include "Internationalization/Regex.h"
 #include "LevelEditor.h"
 #include "Misc/HotReloadInterface.h"
+#include "GameDelegates.h"
 #endif
 #include "Commandlets/Commandlet.h"
 
@@ -38,7 +39,7 @@ public:
 #endif
 
 #if WITH_EDITOR
-    void EndPIE(bool bIsSimulating);
+    void EndPIE();
     bool HandleSettingsSaved();
     void HandleMapChanged(UWorld* InWorld, EMapChangeType InMapChangeType)
     {
@@ -60,6 +61,11 @@ public:
     virtual bool IsEnabled() override
     {
         return Enabled;
+    }
+
+    virtual bool IsWatchEnabled() override
+    {
+        return WatchEnabled;
     }
 
     void ReloadModule(FName ModuleName, const FString& JsSource) override
@@ -226,6 +232,8 @@ private:
 
     bool Enabled = false;
 
+    bool WatchEnabled = true;
+
     int32 NumberOfJsEnv = 1;
 
     TSharedPtr<puerts::FJsEnvGroup> JsEnvGroup;
@@ -270,7 +278,7 @@ void FPuertsModule::OnUObjectArrayShutdown()
 #endif
 
 #if WITH_EDITOR
-void FPuertsModule::EndPIE(bool bIsSimulating)
+void FPuertsModule::EndPIE()
 {
     if (Enabled)
     {
@@ -309,6 +317,7 @@ void FPuertsModule::RegisterSettings()
         {
             Settings.NumberOfJsEnv = 1;
         }
+        GConfig->GetBool(SectionName, TEXT("WatchDisable"), Settings.WatchDisable, PuertsConfigIniPath);
     }
 
     DebuggerPortFromCommandLine = GetDebuggerPortFromCommandLine();
@@ -329,7 +338,7 @@ void FPuertsModule::StartupModule()
 #if WITH_EDITOR
     if(!IsRunningGame())
     {
-        FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+        FGameDelegates::Get().GetEndPlayMapDelegate().AddRaw(this, &FPuertsModule::EndPIE);
         //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
         FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
         LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
@@ -356,6 +365,8 @@ void FPuertsModule::StartupModule()
     {
         Enable();
     }
+
+    WatchEnabled = !Settings.WatchDisable;
 
     //SetJsEnvSelector([this](UObject* Obj, int Size){
     //    return 1;

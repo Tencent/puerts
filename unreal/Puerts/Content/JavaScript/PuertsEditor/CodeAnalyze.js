@@ -1312,6 +1312,10 @@ function watch(configFilePath) {
                                     return;
                                 let baseTypeUClass = getUClassOfType(baseTypes[0]);
                                 if (baseTypeUClass) {
+                                    if (isSubclassOf(type, "Subsystem")) {
+                                        console.warn("do not support Subsystem " + checker.typeToString(type));
+                                        return;
+                                    }
                                     foundType = type;
                                     foundBaseTypeUClass = baseTypeUClass;
                                 }
@@ -1334,6 +1338,15 @@ function watch(configFilePath) {
                     return node.right.text;
                 }
             }
+            function isSubclassOf(type, baseTypeName) {
+                let baseTypes = type.getBaseTypes();
+                if (baseTypes.length != 1)
+                    return false;
+                if (baseTypes[0].getSymbol().getName() == baseTypeName) {
+                    return true;
+                }
+                return isSubclassOf(baseTypes[0], baseTypeName);
+            }
             function getUClassOfType(type) {
                 if (!type)
                     return undefined;
@@ -1351,7 +1364,7 @@ function watch(configFilePath) {
                 else if (type.symbol && type.symbol.valueDeclaration) {
                     //eturn undefined;
                     let baseTypes = type.getBaseTypes();
-                    if (baseTypes.length != 1)
+                    if (!baseTypes || baseTypes.length != 1)
                         return undefined;
                     let baseTypeUClass = getUClassOfType(baseTypes[0]);
                     if (!baseTypeUClass)
@@ -1395,7 +1408,7 @@ function watch(configFilePath) {
                 try {
                     let typeNode = checker.typeToTypeNode(type);
                     //console.log(checker.typeToString(type), tds)
-                    if (ts.isTypeReferenceNode(typeNode)) {
+                    if (ts.isTypeReferenceNode(typeNode) && type.symbol) {
                         let typeName = type.symbol.getName();
                         if (typeName == 'BigInt') {
                             let category = "int64";
@@ -1511,9 +1524,9 @@ function watch(configFilePath) {
                     return undefined;
                 }
             }
-            function manualSkip(symbol) {
-                const commentRanges = ts.getLeadingCommentRanges(sourceFile.getFullText(), symbol.valueDeclaration.getFullStart());
-                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos, r.end).indexOf("@no-blueprint") > 0)) || hasDecorator(symbol.valueDeclaration, "no_blueprint");
+            function manualSkip(valueDeclaration) {
+                const commentRanges = ts.getLeadingCommentRanges(sourceFile.getFullText(), valueDeclaration.getFullStart());
+                return !!(commentRanges && commentRanges.find(r => sourceFile.getFullText().slice(r.pos, r.end).indexOf("@no-blueprint") > 0)) || hasDecorator(valueDeclaration, "no_blueprint");
             }
             function tryGetAnnotation(valueDeclaration, key, leading) {
                 const commentRanges = (leading ? ts.getLeadingCommentRanges : ts.getTrailingCommentRanges)(sourceFile.getFullText(), valueDeclaration.getFullStart() + (leading ? 0 : valueDeclaration.getFullWidth()));
@@ -2907,19 +2920,19 @@ function watch(configFilePath) {
                 let hasConstructor = false;
                 let properties = [];
                 type.symbol.valueDeclaration.forEachChild(x => {
-                    if (ts.isMethodDeclaration(x)) {
+                    if (ts.isMethodDeclaration(x) && !manualSkip(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic && !lsFunctionLibrary) {
-                            console.warn(`do not static function [${x.name.getText()}]`);
+                            console.warn(`do not support static function [${x.name.getText()}]`);
                             return;
                         }
                         if (!isStatic && lsFunctionLibrary) {
-                            console.warn(`do not non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
+                            console.warn(`do not support non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
                             return;
                         }
                         properties.push(checker.getSymbolAtLocation(x.name));
                     }
-                    else if (ts.isPropertyDeclaration(x)) {
+                    else if (ts.isPropertyDeclaration(x) && !manualSkip(x)) {
                         let isStatic = !!(ts.getCombinedModifierFlags(x) & ts.ModifierFlags.Static);
                         if (isStatic) {
                             console.warn("static property:" + x.name.getText() + ' not support');
@@ -2930,7 +2943,6 @@ function watch(configFilePath) {
                 });
                 properties
                     .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
-                    .filter(x => !manualSkip(x))
                     .forEach((symbol) => {
                     if (ts.isMethodDeclaration(symbol.valueDeclaration)) {
                         if (symbol.getName() === 'Constructor') {

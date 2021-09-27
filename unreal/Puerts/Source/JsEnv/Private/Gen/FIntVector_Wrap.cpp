@@ -128,6 +128,12 @@ static void* _FIntVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FIntVectorDelete_(void *Ptr)
+{
+    FIntVector *Self = static_cast<FIntVector*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FIntVectorDelete_:%p"), Self);
+    delete Self;
+}
 static void FIntVectorM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -660,6 +666,7 @@ struct AutoRegisterForFIntVector
         Def.UETypeName = "FIntVector";
 
         Def.Initialize = _FIntVectorNew_;
+        Def.Finalize = _FIntVectorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

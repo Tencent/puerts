@@ -186,6 +186,12 @@ static void* _FVectorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FVectorDelete_(void *Ptr)
+{
+    FVector *Self = static_cast<FVector*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FVectorDelete_:%p"), Self);
+    delete Self;
+}
 static void FVectorM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -3349,6 +3355,7 @@ struct AutoRegisterForFVector
         Def.UETypeName = "FVector";
 
         Def.Initialize = _FVectorNew_;
+        Def.Finalize = _FVectorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

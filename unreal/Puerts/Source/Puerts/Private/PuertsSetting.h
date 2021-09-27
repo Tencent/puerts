@@ -36,4 +36,7 @@ public:
 	
     UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
     int32 NumberOfJsEnv = 1;
+
+	UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
+	bool WatchDisable = false;
 };

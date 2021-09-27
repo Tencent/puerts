@@ -27,6 +27,12 @@ void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info
 
 void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
+    if (!PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Property is invalid!");
+        return;
+    }
+    
     if (OwnerIsClass)
     {
         UObject* Object = FV8Utils::GetUObject(Info.This());
@@ -59,6 +65,12 @@ void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info
 
 void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
+    if (!PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Property is invalid!");
+        return;
+    }
+    
     if (OwnerIsClass)
     {
         UObject* Object = FV8Utils::GetUObject(Info.This());
@@ -89,6 +101,12 @@ void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Valu
     v8::Context::Scope ContextScope(Context);
 
     FPropertyTranslator* PropertyTranslator = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    if (!PropertyTranslator->PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "Property is invalid!");
+        return;
+    }
+    
     auto Object = FV8Utils::GetUObject(Info.This());
     if (!Object)
     {
@@ -486,7 +504,7 @@ public:
     {
         if (!ValuePtr) return v8::Undefined(Isolate);
         const FJsObject * JsObject = static_cast<const FJsObject *>(ValuePtr);
-        return JsObject->GetObject();
+        return JsObject->GetJsObject();
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override

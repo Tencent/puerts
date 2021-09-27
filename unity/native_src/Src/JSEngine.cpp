@@ -9,7 +9,7 @@
 #include "Log.h"
 #include <memory>
 #include "PromiseRejectCallback.hpp"
-
+#include <stdarg.h>
 
 namespace puerts
 {
@@ -54,10 +54,10 @@ namespace puerts
     void JSEngine::JSEngineWithNode()
     {
 #if WITH_NODEJS
-        PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]start");
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]start");
         if (!GPlatform)
         {
-            PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
+            // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
             int Argc = 1;
             char* ArgvIn[] = {"--trace-uncaught"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
@@ -74,7 +74,7 @@ namespace puerts
                 printf("InitializeNodeWithArgs failed\n");
             }
         }
-        PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform done");
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform done");
         
         NodeUVLoop = new uv_loop_t;
         const int Ret = uv_loop_init(NodeUVLoop);
@@ -86,7 +86,7 @@ namespace puerts
         }
 
         NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
-        PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
 
         auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
         MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
@@ -100,14 +100,14 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
 
         v8::Local<v8::Context> Context = node::NewContext(Isolate);
-        PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]context");
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]context");
 
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(MainIsolate, Context);
 
         if (withNode) 
         {
-            PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
+            // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
             NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
         
             //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
@@ -125,7 +125,7 @@ namespace puerts
                 return;
             }
         }
-        PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
 
         MainIsolate->SetData(0, this);
         v8::Local<v8::Object> Global = Context->Global();
@@ -144,7 +144,7 @@ namespace puerts
 
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
-#if WITH_NODEJS
+#if !WITH_NODEJS
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
@@ -707,9 +707,15 @@ namespace puerts
 
     void JSEngine::LogicTick()
     {
-#if defined(WITH_NODEJS)
+#if WITH_NODEJS
         if (withNode) 
         {
+            v8::Isolate* Isolate = MainIsolate;
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+            v8::Context::Scope ContextScope(Context);
+
             uv_run(NodeUVLoop, UV_RUN_NOWAIT);
         }
 #endif

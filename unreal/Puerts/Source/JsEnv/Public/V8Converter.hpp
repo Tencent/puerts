@@ -23,7 +23,7 @@ namespace converter {                                                           
     struct Converter<CLS*> {                                                                                     \
         static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS * value)                        \
         {                                                                                                        \
-            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, #CLS, value, true);    \
+            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, puerts::ScriptTypeName<CLS>::value, value, true);    \
         }                                                                                                        \
         static CLS * toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                    \
         {                                                                                                        \
@@ -31,31 +31,10 @@ namespace converter {                                                           
         }                                                                                                        \
         static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                    \
         {                                                                                                        \
-            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), #CLS, value.As<v8::Object>());    \
+            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), puerts::ScriptTypeName<CLS>::value, value.As<v8::Object>());    \
         }                                                                                                        \
     };                                                                                                           \
 }                                                                                                                \
-}
-
-#define __DefCDataConverter(CLS)                                                                                        \
-namespace puerts {                                                                                                      \
-namespace converter {                                                                                                   \
-    template <>                                                                                                         \
-    struct Converter<CLS> {                                                                                             \
-        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS value)                                 \
-        {                                                                                                               \
-            return ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, #CLS, new CLS(value), false); \
-        }                                                                                                               \
-        static CLS toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                             \
-        {                                                                                                               \
-            return *::puerts::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());                               \
-        }                                                                                                               \
-        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)                           \
-        {                                                                                                               \
-            return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), #CLS, value.As<v8::Object>());           \
-        }                                                                                                               \
-    };                                                                                                                  \
-}                                                                                                                       \
 }
 
 namespace puerts
@@ -65,6 +44,10 @@ namespace puerts
     typedef v8::Local<v8::Value> ValueType;
     typedef v8::FunctionCallback FunctionCallbackType;
     typedef InitializeFunc InitializeFuncType;
+    typedef JSFunctionInfo GeneralFunctionInfo;
+    typedef JSPropertyInfo GeneralPropertyInfo;
+    typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
+    typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
 
     V8_INLINE int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
@@ -318,6 +301,23 @@ struct Converter<std::reference_wrapper<T>> {
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return value->IsObject(); // do not checked inner
+    }
+};
+
+template <class T>                                                                                                         
+struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value
+                        && is_objecttype<T>::value && !is_uetype<T>::value>::type> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
+    {
+        return DataTransfer::FindOrAddCData(context->GetIsolate(), context, ScriptTypeName<T>::value, new T(value), false);
+    }
+    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return *DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+    }
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return DataTransfer::IsInstanceOf(context->GetIsolate(), ScriptTypeName<T>::value, value.As<v8::Object>());
     }
 };
     

@@ -86,6 +86,12 @@ static void* _FColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FColorDelete_(void *Ptr)
+{
+    FColor *Self = static_cast<FColor*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FColorDelete_:%p"), Self);
+    delete Self;
+}
 static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -602,6 +608,7 @@ struct AutoRegisterForFColor
         Def.UETypeName = "FColor";
 
         Def.Initialize = _FColorNew_;
+        Def.Finalize = _FColorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

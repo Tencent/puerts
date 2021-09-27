@@ -10,7 +10,11 @@
 #include <sstream>
 #include <tuple>
 #include <type_traits>
+#if BUILDING_PES_EXTENSION
+#include "pesapi.h"
+#else
 #include "JSClassRegister.h"
+#endif
 #include "Converter.hpp"
 #include "TypeInfo.hpp"
 
@@ -28,9 +32,7 @@
 #define UsingCppType(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
     __DefObjectType(CLS) \
-    __DefCDataPointerConverter(CLS) \
-    __DefCDataConverter(CLS)
-
+    __DefCDataPointerConverter(CLS)
 
 namespace puerts {
 namespace internal {
@@ -128,7 +130,7 @@ public:
 
 // decay: remove const, reference; function type to function pointer
 template <typename Func>
-struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>>::type>::type>
+struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>::type>::value>::type>
     : FunctionTrait<typename std::decay<Func>::type> {};
 }  // namespace traits
 
@@ -609,18 +611,18 @@ class ClassDefineBuilder
 
     const char *superClassName_ = nullptr;
 
-    std::vector<JSFunctionInfo> functions_{};
+    std::vector<GeneralFunctionInfo> functions_{};
 
-    std::vector<JSFunctionInfo> methods_{};
+    std::vector<GeneralFunctionInfo> methods_{};
 
-    std::vector<JSPropertyInfo> properties_{}; 
+    std::vector<GeneralPropertyInfo> properties_{}; 
 
-    InitializeFunc constructor_{};
+    InitializeFuncType constructor_{};
 
-    std::vector<NamedFunctionInfo> constructorInfos_{};
-    std::vector<NamedFunctionInfo> methodInfos_{};
-    std::vector<NamedFunctionInfo> functionInfos_{};
-    std::vector<NamedPropertyInfo> propertyInfos_{};
+    std::vector<GeneralFunctionReflectionInfo> constructorInfos_{};
+    std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
+    std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
+    std::vector<GeneralPropertyReflectionInfo> propertyInfos_{};
 
 public:
     explicit ClassDefineBuilder(const char * className)
@@ -636,65 +638,66 @@ public:
     std::enable_if_t<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T>&>
     Constructor() {
         InitializeFuncType constructor = ConstructorWrapper<T, Args...>::call;
-        constructor_ = reinterpret_cast<InitializeFunc>(constructor);
-        constructorInfos_.push_back(NamedFunctionInfo {"constructor", ConstructorWrapper<T, Args...>::info()});
+        constructor_ = constructor;
+        constructorInfos_.push_back(GeneralFunctionReflectionInfo {"constructor", ConstructorWrapper<T, Args...>::info()});
         return *this;
     }
 
     ClassDefineBuilder<T>& Constructor(InitializeFuncType constructor, int length, const CFunctionInfo** infos) {
         for(int i = 0; i < length; i++)
         {
-            constructorInfos_.push_back(NamedFunctionInfo {"constructor", infos[i]});
+            constructorInfos_.push_back(GeneralFunctionReflectionInfo {"constructor", infos[i]});
         }
-        constructor_ = reinterpret_cast<InitializeFunc>(constructor);
+        constructor_ = constructor;
         return *this;
     }
 
     ClassDefineBuilder<T>& Function(const char* name, FunctionCallbackType func, const CFunctionInfo* info) {
         if (info)
         {
-            functionInfos_.push_back(NamedFunctionInfo {name, info});
+            functionInfos_.push_back(GeneralFunctionReflectionInfo {name, info});
         }
-        functions_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
+        functions_.push_back(GeneralFunctionInfo {name, func, nullptr});
         return *this;
     }
     
     ClassDefineBuilder<T>& Function(const char* name, FunctionCallbackType func, int length, const CFunctionInfo** infos) {
         for(int i = 0; i < length; i++)
         {
-            functionInfos_.push_back(NamedFunctionInfo {name, infos[i]});
+            functionInfos_.push_back(GeneralFunctionReflectionInfo {name, infos[i]});
         }
-        functions_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
+        functions_.push_back(GeneralFunctionInfo {name, func, nullptr});
         return *this;
     }
 
     ClassDefineBuilder<T>& Method(const char* name, FunctionCallbackType func, const CFunctionInfo* info) {
         if (info)
         {
-            methodInfos_.push_back(NamedFunctionInfo {name, info});
+            methodInfos_.push_back(GeneralFunctionReflectionInfo {name, info});
         }
-        methods_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
+        methods_.push_back(GeneralFunctionInfo {name, func, nullptr});
         return *this;
     }
 
     ClassDefineBuilder<T>& Method(const char* name, FunctionCallbackType func, int length, const CFunctionInfo** infos) {
         for(int i = 0; i < length; i++)
         {
-            methodInfos_.push_back(NamedFunctionInfo {name, infos[i]});
+            methodInfos_.push_back(GeneralFunctionReflectionInfo {name, infos[i]});
         }
-        methods_.push_back(JSFunctionInfo {name, reinterpret_cast<v8::FunctionCallback>(func), nullptr});
+        methods_.push_back(GeneralFunctionInfo {name, func, nullptr});
         return *this;
     }
 
     ClassDefineBuilder<T>& Property(const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const char* type = nullptr) {
         if (type)
         {
-            propertyInfos_.push_back(NamedPropertyInfo {name, type});
+            propertyInfos_.push_back(GeneralPropertyReflectionInfo {name, type});
         }
-        properties_.push_back(JSPropertyInfo {name, reinterpret_cast<v8::FunctionCallback>(getter), reinterpret_cast<v8::FunctionCallback>(setter), nullptr});
+        properties_.push_back(GeneralPropertyInfo {name, getter, setter, nullptr});
         return *this;
     }
 
+#if !BUILDING_PES_EXTENSION
     void Register()
     {
         const bool isUEType = puerts::is_uetype<T>::value;
@@ -720,10 +723,13 @@ public:
         }
 
         ClassDef.Initialize = constructor_;
-        ClassDef.Finalize = [](void *Ptr)
+        if (constructor_)
         {
-            delete static_cast<T*>(Ptr);
-        };
+            ClassDef.Finalize = [](void *Ptr)
+            {
+                delete static_cast<T*>(Ptr);
+            };
+        }
 
         s_functions_ = std::move(functions_);
         s_functions_.push_back({nullptr, nullptr, nullptr});
@@ -755,6 +761,35 @@ public:
 
         puerts::RegisterJSClass(ClassDef);
     }
+#else
+    void Register()
+    {
+        std::vector<pesapi_property_descriptor> properties;
+        for (const auto &func : functions_)
+        {
+            properties.push_back({func.Name, true, func.Callback});
+        }
+
+        for (const auto &method : methods_)
+        {
+            properties.push_back({method.Name, false, method.Callback});
+        }
+
+        for (const auto &prop : properties_)
+        {
+            properties.push_back({prop.Name, false, nullptr, prop.Getter, prop.Setter});
+        }
+        pesapi_finalize finalize = nullptr;
+        if (constructor_)
+        {
+            finalize = [](void *Ptr)
+            {
+                delete static_cast<T*>(Ptr);
+            };
+        }
+        pesapi_define_class(className_, superClassName_, constructor_, finalize, properties.size(), properties.data());
+    }
+#endif
 };
 
 template <typename T>

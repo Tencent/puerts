@@ -123,6 +123,12 @@ static void* _FQuatNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FQuatDelete_(void *Ptr)
+{
+    FQuat *Self = static_cast<FQuat*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FQuatDelete_:%p"), Self);
+    delete Self;
+}
 static void FQuatM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -2006,6 +2012,7 @@ struct AutoRegisterForFQuat
         Def.UETypeName = "FQuat";
 
         Def.Initialize = _FQuatNew_;
+        Def.Finalize = _FQuatDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

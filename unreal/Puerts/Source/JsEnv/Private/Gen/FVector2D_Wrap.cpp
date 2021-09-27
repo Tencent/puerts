@@ -160,6 +160,12 @@ static void* _FVector2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FVector2DDelete_(void *Ptr)
+{
+    FVector2D *Self = static_cast<FVector2D*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FVector2DDelete_:%p"), Self);
+    delete Self;
+}
 static void FVector2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -1517,6 +1523,7 @@ struct AutoRegisterForFVector2D
         Def.UETypeName = "FVector2D";
 
         Def.Initialize = _FVector2DNew_;
+        Def.Finalize = _FVector2DDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
