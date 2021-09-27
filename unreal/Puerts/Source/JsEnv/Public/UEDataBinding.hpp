@@ -148,11 +148,23 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
     
 }
 
-template<typename T>
-struct ScriptTypeName<T, typename std::enable_if<std::is_convertible<T, const FString&>::value
-    || std::is_convertible<T, const FName&>::value
-    || std::is_convertible<T, const FText&>::value
-    || std::is_convertible<T, const TCHAR *>::value>::type> {
+template<>
+struct ScriptTypeName<FString> {
+    static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<FName> {
+    static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<FText> {
+    static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<const TCHAR *> {
     static constexpr const char * value = "string";
 };
 
