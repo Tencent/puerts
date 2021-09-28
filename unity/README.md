@@ -38,6 +38,6 @@
 
 ## 引擎版本及平台支持
 
-* unity 5到unity 2019
+* unity 5 ~ 最新版本
 
 * iOS，Android，Windows，Macos，或者任意.net环境

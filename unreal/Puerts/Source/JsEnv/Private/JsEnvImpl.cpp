@@ -391,7 +391,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         auto ContextInner = v8::Local<v8::Context>::New(IsolateInner, DefaultContext);
         v8::Context::Scope ContextScopeInner(ContextInner);
         
-        uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT);
+        while(uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT)) {};
+       
         return true;
     }), UV_LOOP_DELAY);
 #endif
@@ -455,13 +456,9 @@ FJsEnvImpl::~FJsEnvImpl()
             Iter->second.Reset();
         }
 
-        for (auto Iter = ScriptStructTypeMap.begin(); Iter != ScriptStructTypeMap.end(); Iter++)
+        for (auto Iter = ScriptStructFinalizeInfoMap.begin(); Iter != ScriptStructFinalizeInfoMap.end(); Iter++)
         {
-            if (Iter->second.IsValid())
-            {
-                Iter->second.Get()->DestroyStruct(Iter->first);
-                FMemory::Free(Iter->first);
-            }
+            FScriptStructWrapper::Free(Iter->second.Struct, Iter->second.Finalize, Iter->first);
         }
 
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
@@ -1752,7 +1749,7 @@ bool FJsEnvImpl::RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>
             static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
         }
             
-        auto ReturnVal = Map->Set(Context, JsFunction, v8::Undefined(Isolate));
+        auto ReturnVal = Map->Delete(Context, JsFunction);
 
         Iter->second.Proxys.Remove(DelegateProxy);
         SysObjectRetainer.Release(DelegateProxy);
@@ -1902,16 +1899,16 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
     return FindOrAddContainer(Isolate, Context, MapTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked(), KeyProperty, ValueProperty, Ptr, PassByPointer);
 }
 
-void FJsEnvImpl::BindStruct(UScriptStruct* ScriptStruct, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
+void FJsEnvImpl::BindStruct(FScriptStructWrapper* ScriptStructWrapper, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    DataTransfer::SetPointer(MainIsolate, JSObject, ScriptStruct, 1);// add type info
+    DataTransfer::SetPointer(MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);// add type info
         
     if (!PassByPointer)
     {
         StructMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-        ScriptStructTypeMap[Ptr] = ScriptStruct;
-        StructMap[Ptr].SetWeak<UScriptStruct>(ScriptStruct, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
+        ScriptStructFinalizeInfoMap[Ptr] = {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize};
+        StructMap[Ptr].SetWeak<FScriptStructWrapper>(ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
 }
 
@@ -1920,9 +1917,9 @@ void FJsEnvImpl::BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassD
     CppObjectMapper.BindCppObject(InIsolate, ClassDefinition, Ptr, JSObject, PassByPointer);
 }
 
-void FJsEnvImpl::UnBindStruct(UScriptStruct* ScriptStruct, void *Ptr)
+void FJsEnvImpl::UnBindStruct(void *Ptr)
 {
-    ScriptStructTypeMap.erase(Ptr);
+    ScriptStructFinalizeInfoMap.erase(Ptr);
     StructMap.erase(Ptr);
 }
 

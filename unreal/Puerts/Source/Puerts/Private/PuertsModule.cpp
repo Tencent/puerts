@@ -63,6 +63,11 @@ public:
         return Enabled;
     }
 
+    virtual bool IsWatchEnabled() override
+    {
+        return WatchEnabled;
+    }
+
     void ReloadModule(FName ModuleName, const FString& JsSource) override
     {
         if (Enabled)
@@ -227,6 +232,8 @@ private:
 
     bool Enabled = false;
 
+    bool WatchEnabled = true;
+
     int32 NumberOfJsEnv = 1;
 
     TSharedPtr<puerts::FJsEnvGroup> JsEnvGroup;
@@ -310,6 +317,7 @@ void FPuertsModule::RegisterSettings()
         {
             Settings.NumberOfJsEnv = 1;
         }
+        GConfig->GetBool(SectionName, TEXT("WatchDisable"), Settings.WatchDisable, PuertsConfigIniPath);
     }
 
     DebuggerPortFromCommandLine = GetDebuggerPortFromCommandLine();
@@ -357,6 +365,8 @@ void FPuertsModule::StartupModule()
     {
         Enable();
     }
+
+    WatchEnabled = !Settings.WatchDisable;
 
     //SetJsEnvSelector([this](UObject* Obj, int Size){
     //    return 1;

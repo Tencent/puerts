@@ -26,7 +26,7 @@ namespace puerts
 class FStructWrapper
 {
 public:
-    explicit FStructWrapper(UStruct* InStruct): ExternalInitialize(nullptr), Struct(InStruct){}
+    explicit FStructWrapper(UStruct* InStruct): ExternalInitialize(nullptr), ExternalFinalize(nullptr), Struct(InStruct){}
 
     void AddExtensionMethods(std::vector<UFunction*> InExtensionMethods);
 
@@ -42,19 +42,18 @@ protected:
     std::vector<UFunction*> ExtensionMethods;
 
     InitializeFunc ExternalInitialize;
+    
+    FinalizeFunc ExternalFinalize;
              
-    union
-    {
-        UStruct *Struct;
-        UClass *Class;
-        UScriptStruct *ScriptStruct;
-    };
+    TWeakObjectPtr<UStruct> Struct;
 
     static void StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Find(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Load(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    friend class FJsEnvImpl;
 };
 
 class FScriptStructWrapper : public FStructWrapper
@@ -64,11 +63,13 @@ public:
 
     v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
-    static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<UScriptStruct>& Data);
+    static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data);
 
     static void OnGarbageCollected(const v8::WeakCallbackInfo<UScriptStruct>& Data);
 
     static void *Alloc(UScriptStruct *InScriptStruct);
+
+    static void Free(TWeakObjectPtr<UStruct> InStruct, FinalizeFunc InExternalFinalize, void* Ptr);
 private:
         
 

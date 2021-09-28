@@ -275,7 +275,7 @@ private:
         
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
 
-        func(std::get<index>(cppArgs)...);
+        func(std::forward<Args>(std::get<index>(cppArgs))...);
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -292,7 +292,7 @@ private:
         
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info,index))...);
 
-        auto ret = func(std::get<index>(cppArgs)...);
+        auto ret = func(std::forward<Args>(std::get<index>(cppArgs))...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
@@ -312,7 +312,7 @@ private:
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
         
-        (self->*func)(std::get<index>(cppArgs)...);
+        (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -331,7 +331,7 @@ private:
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
         
-        auto ret = (self->*func)(std::get<index>(cppArgs)...);
+        auto ret = (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);

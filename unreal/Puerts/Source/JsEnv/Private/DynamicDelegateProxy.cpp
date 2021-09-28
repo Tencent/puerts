@@ -17,6 +17,9 @@ void UDynamicDelegateProxy::ProcessEvent(UFunction*, void* Parms)
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker && Owner.IsValid())
     {
-        PinedDynamicInvoker->InvokeJsCallabck(this, Parms);
+        if (ensureAlwaysMsgf(!JsFunction.IsEmpty(), TEXT("Invalid JS Function")))
+        {
+            PinedDynamicInvoker->InvokeJsCallabck(this, Parms);
+        }
     }
 }

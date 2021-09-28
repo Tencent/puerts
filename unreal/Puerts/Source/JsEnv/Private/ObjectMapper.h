@@ -10,6 +10,7 @@
 #if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
 #include "PropertyTranslator.h"
+#include "StructWrapper.h"
 #endif
 #include "JSClassRegister.h"
 
@@ -43,9 +44,9 @@ public:
 
     virtual v8::Local<v8::Value> FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject) = 0;
 
-    virtual void BindStruct(UScriptStruct* ScriptStruct, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
+    virtual void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
 
-    virtual void UnBindStruct(UScriptStruct* ScriptStruct, void *Ptr) = 0;
+    virtual void UnBindStruct(void *Ptr) = 0;
 
     virtual v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer) = 0;
 

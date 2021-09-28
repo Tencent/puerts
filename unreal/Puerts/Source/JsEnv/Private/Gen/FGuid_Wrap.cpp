@@ -55,6 +55,12 @@ static void* _FGuidNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FGuidDelete_(void *Ptr)
+{
+    FGuid *Self = static_cast<FGuid*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FGuidDelete_:%p"), Self);
+    delete Self;
+}
 static void FGuidM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -406,6 +412,7 @@ struct AutoRegisterForFGuid
         Def.UETypeName = "FGuid";
 
         Def.Initialize = _FGuidNew_;
+        Def.Finalize = _FGuidDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
