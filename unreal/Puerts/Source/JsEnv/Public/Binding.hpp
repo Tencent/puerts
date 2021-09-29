@@ -308,6 +308,12 @@ private:
 
         auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
 
+        if (!self)
+        {
+            ThrowException(GetContext(info), "access a null object");
+            return true;
+        }
+
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
@@ -326,6 +332,12 @@ private:
         auto context = GetContext(info);
 
         auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
+
+        if (!self)
+        {
+            ThrowException(GetContext(info), "access a null object");
+            return true;
+        }
 
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 

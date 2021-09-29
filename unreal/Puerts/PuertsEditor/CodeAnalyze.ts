@@ -1523,13 +1523,15 @@ function readAndParseConfigFile(configFilePath: string) : ts.ParsedCommandLine {
 function watch(configFilePath:string) {
     let {fileNames, options} = readAndParseConfigFile(configFilePath);
 
-    console.log("start watch..", JSON.stringify({fileNames:fileNames, options: options}))
+    console.log("start watch..", JSON.stringify({fileNames:fileNames, options: options}));
+    const versionsFilePath = getDirectoryPath(configFilePath) + "/ts_file_versions_info.json";
     const fileVersions: ts.MapLike<{ version: string }> = {};
   
-    // initialize the list of files
+    let beginTime = new Date().getTime();
     fileNames.forEach(fileName => {
-      fileVersions[fileName] = { version: "" };
+      fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName)};
     });
+    console.log ("calc md5 using " + (new Date().getTime() - beginTime) + "ms");
 
     function getDefaultLibLocation(): string {
         return getDirectoryPath(normalizePath(customSystem.getExecutingFilePath()));
@@ -1580,18 +1582,29 @@ function watch(configFilePath:string) {
         }
     }
 
-    let beginTime = new Date().getTime();
+    beginTime = new Date().getTime();
     let program = getProgramFromService();
     console.log ("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics =  ts.getPreEmitDiagnostics(program);
     if (diagnostics.length > 0) {
         logErrors(diagnostics);
     } else {
+        let restoredFileVersions: ts.MapLike<{ version: string }> = {};
+        if (customSystem.fileExists(versionsFilePath)) {
+            try {
+                restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
+                console.log("restore versions from ", versionsFilePath);
+            } catch {}
+        }
         fileNames.forEach(fileName => {
-            onSourceFileAddOrChange(fileName, false, program, true, false);
+            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
+                onSourceFileAddOrChange(fileName, false, program, true, false);
+            }
         });
         fileNames.forEach(fileName => {
-            onSourceFileAddOrChange(fileName, false, program, false);
+            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
+                onSourceFileAddOrChange(fileName, false, program, false);
+            }
         });
     }
 
@@ -1600,8 +1613,10 @@ function watch(configFilePath:string) {
 
     dirWatcher.OnChanged.Add((added, modified, removed) => {
         setTimeout(() =>{
+            var changed = false;
             if (added.Num() > 0) {
                 onFileAdded();
+                changed = true;
             }
             if (modified.Num() > 0) {
                 for(var i = 0; i < modified.Num(); i++) {
@@ -1614,9 +1629,14 @@ function watch(configFilePath:string) {
                             console.log(`${fileName} md5 from ${fileVersions[fileName].version} to ${md5}`);
                             fileVersions[fileName].version = md5;
                             onSourceFileAddOrChange(fileName, true);
+                            changed = true;
                         }
                     }
                 }
+            }
+            if (changed) {
+                console.log("versions saved to " + versionsFilePath);
+                UE.FileSystemOperation.WriteFile(versionsFilePath, JSON.stringify(fileVersions, null, 4));
             }
         }, 100);//延时100毫秒，防止因为读冲突而文件读取失败
     });

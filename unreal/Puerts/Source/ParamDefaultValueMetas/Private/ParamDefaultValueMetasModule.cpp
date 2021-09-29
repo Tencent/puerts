@@ -18,7 +18,7 @@ class FParamDefaultValueMetasModule : public IScriptGeneratorPluginInterface
 public:
     virtual void StartupModule() override { IModularFeatures::Get().RegisterModularFeature(TEXT("ScriptGenerator"), this); }
     virtual void ShutdownModule() override { IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this); }
-    virtual FString GetGeneratedCodeModuleName() const override { return TEXT("Puerts"); }
+    virtual FString GetGeneratedCodeModuleName() const override { return TEXT("JsEnv"); }
     virtual bool SupportsTarget(const FString& TargetName) const override { return true; }
 
     virtual bool ShouldExportClassesForModule(const FString& ModuleName, EBuildModuleType::Type ModuleType, const FString& ModuleGeneratedIncludeDirectory) const override
