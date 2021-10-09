@@ -65,7 +65,7 @@ public:
 
     virtual bool IsWatchEnabled() override
     {
-        return WatchEnabled;
+        return Enabled && WatchEnabled;
     }
 
     void ReloadModule(FName ModuleName, const FString& JsSource) override
