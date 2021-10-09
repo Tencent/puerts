@@ -32,9 +32,7 @@
 #define UsingCppType(CLS) \
     __DefScriptTTypeName(CLS, CLS) \
     __DefObjectType(CLS) \
-    __DefCDataPointerConverter(CLS) \
-    __DefCDataConverter(CLS)
-
+    __DefCDataPointerConverter(CLS)
 
 namespace puerts {
 namespace internal {
@@ -132,7 +130,7 @@ public:
 
 // decay: remove const, reference; function type to function pointer
 template <typename Func>
-struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>>::type>::type>
+struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename std::decay<Func>::type>::value>::type>
     : FunctionTrait<typename std::decay<Func>::type> {};
 }  // namespace traits
 
@@ -277,7 +275,7 @@ private:
         
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
 
-        func(std::get<index>(cppArgs)...);
+        func(std::forward<Args>(std::get<index>(cppArgs))...);
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -294,7 +292,7 @@ private:
         
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info,index))...);
 
-        auto ret = func(std::get<index>(cppArgs)...);
+        auto ret = func(std::forward<Args>(std::get<index>(cppArgs))...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
@@ -310,11 +308,17 @@ private:
 
         auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
 
+        if (!self)
+        {
+            ThrowException(GetContext(info), "access a null object");
+            return true;
+        }
+
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
         
-        (self->*func)(std::get<index>(cppArgs)...);
+        (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
         
@@ -329,11 +333,17 @@ private:
 
         auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
 
+        if (!self)
+        {
+            ThrowException(GetContext(info), "access a null object");
+            return true;
+        }
+
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info)) return false;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
         
-        auto ret = (self->*func)(std::get<index>(cppArgs)...);
+        auto ret = (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
         
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);

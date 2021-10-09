@@ -645,20 +645,31 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         }
         else
         {
-            auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
+            UEdGraph* Graph = FunctionEntryNode->GetGraph();
 
-            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
-            for (UK2Node_EditablePinBase* Node : TargetNodes)
+            TArray<UK2Node_FunctionResult*> ResultNodes;
+            if (Graph)
             {
-                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
-                RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 0);
+                Graph->GetNodesOfClass(ResultNodes);
+            }
 
-                if (RetChanged)
+            if (ResultNodes.Num() == 1)
+            {
+                auto FunctionResultNode = ResultNodes[0];
+
+                TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+                for (UK2Node_EditablePinBase* Node : TargetNodes)
                 {
-                    Node->Modify();
-                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                    TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                    RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 0);
+
+                    if (RetChanged)
                     {
-                        Node->RemoveUserDefinedPin(pinInfo);
+                        Node->Modify();
+                        for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
+                        {
+                            Node->RemoveUserDefinedPin(pinInfo);
+                        }
                     }
                 }
             }

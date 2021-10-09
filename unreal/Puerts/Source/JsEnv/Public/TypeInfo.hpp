@@ -35,6 +35,11 @@ struct ScriptTypeName<T &> {
 };
 
 template<typename T>
+struct ScriptTypeName<T &&> {
+    static constexpr const char * value =  ScriptTypeName<typename std::remove_cv<T>::type>::value;
+};
+
+template<typename T>
 struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type> {
     static constexpr const char * value = "bigint";
 };

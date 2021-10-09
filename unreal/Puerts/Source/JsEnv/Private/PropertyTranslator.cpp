@@ -504,7 +504,7 @@ public:
     {
         if (!ValuePtr) return v8::Undefined(Isolate);
         const FJsObject * JsObject = static_cast<const FJsObject *>(ValuePtr);
-        return JsObject->GetObject();
+        return JsObject->GetJsObject();
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override

@@ -20,7 +20,7 @@ gclient sync
 
 
 echo "=====[ Patching V8 ]====="
-git apply --cached $GITHUB_WORKSPACE/v8-build/patch/builtins-puerts.patch
+# git apply --cached $GITHUB_WORKSPACE/v8-build/patch/builtins-puerts.patch
 git apply --cached $GITHUB_WORKSPACE/v8-build/patch/bitcode.patch
 git checkout -- .
 

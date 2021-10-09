@@ -89,6 +89,12 @@ static void* _FIntPointNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FIntPointDelete_(void *Ptr)
+{
+    FIntPoint *Self = static_cast<FIntPoint*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FIntPointDelete_:%p"), Self);
+    delete Self;
+}
 static void FIntPointM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -750,6 +756,7 @@ struct AutoRegisterForFIntPoint
         Def.UETypeName = "FIntPoint";
 
         Def.Initialize = _FIntPointNew_;
+        Def.Finalize = _FIntPointDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;

@@ -123,6 +123,7 @@ class TsTestActor extends UE.Actor {
 * 如果一个类定义了构造函数，该类成员变量的初始化会被TypeScript接管，这时你在UE编辑器下设置的值将会无效
 * 如果没定义构造函数，则支持在UE编辑器手动设置成员变量值
 * Constructor是UE调用的构造函数，不能在该函数中做js的初始化工作，比如no-blueprint标注的变量的初始化
+* 目前不支持在一个Actor的构造函数修改Component的属性，因为SpawnActor在构造完对象后，有个对Component的重置: [构造函数设置Component属性无效](https://github.com/Tencent/puerts/issues/287)
 
 ### 自动绑定模式支持的数据类型
 

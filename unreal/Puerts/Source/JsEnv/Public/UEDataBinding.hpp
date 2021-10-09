@@ -148,11 +148,23 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
     
 }
 
-template<typename T>
-struct ScriptTypeName<T, typename std::enable_if<std::is_convertible<T, const FString&>::value
-    || std::is_convertible<T, const FName&>::value
-    || std::is_convertible<T, const FText&>::value
-    || std::is_convertible<T, const TCHAR *>::value>::type> {
+template<>
+struct ScriptTypeName<FString> {
+    static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<FName> {
+    static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<FText> {
+    static constexpr const char * value = "string";
+};
+
+template<>
+struct ScriptTypeName<const TCHAR *> {
     static constexpr const char * value = "string";
 };
 
@@ -186,7 +198,7 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
+        return ::puerts::DataTransfer::IsInstanceOf<T>(context->GetIsolate(), value.As<v8::Object>());
     }
 };
 
@@ -204,7 +216,7 @@ struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
+        return ::puerts::DataTransfer::IsInstanceOf<T>(context->GetIsolate(), value.As<v8::Object>());
     }
 };
 

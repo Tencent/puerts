@@ -138,6 +138,12 @@ static void* _FLinearColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     return nullptr;
 }
 
+static void _FLinearColorDelete_(void *Ptr)
+{
+    FLinearColor *Self = static_cast<FLinearColor*>(Ptr);
+    // UE_LOG(LogTemp, Warning, TEXT("_FLinearColorDelete_:%p"), Self);
+    delete Self;
+}
 static void FLinearColorM_ToRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -1231,6 +1237,7 @@ struct AutoRegisterForFLinearColor
         Def.UETypeName = "FLinearColor";
 
         Def.Initialize = _FLinearColorNew_;
+        Def.Finalize = _FLinearColorDelete_;
         Def.Properties = Properties;
         Def.Methods = Methods;
         Def.Functions = Functions;
