@@ -20,8 +20,6 @@ static std::map<std::string, void*> GHandlers;
 int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray);
 #endif
 
-EXTERN_C_START
-
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191)) 
 static pesapi_func_ptr funcs[] = {
@@ -83,7 +81,7 @@ static pesapi_func_ptr funcs[] = {
 };
 MSVC_PRAGMA(warning(pop))
 
-int pesapi_load_addon(const char* path, const char* module_name)
+static int LoadAddon(const char* path, const char* module_name)
 {
 	if (GHandlers.find(path) != GHandlers.end())
 	{
@@ -118,4 +116,9 @@ int pesapi_load_addon(const char* path, const char* module_name)
 #endif
 }
 
+EXTERN_C_START
+int pesapi_load_addon(const char* path, const char* module_name)
+{
+	return LoadAddon(path, module_name);
+}
 EXTERN_C_END
