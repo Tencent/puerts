@@ -111,7 +111,7 @@ var global = global || (function () {
                         time.next_time = now + time.timeout;
                         timers.push(time);
                     }
-                    time.handler(time.args);
+                    time.handler(...time.args);
                 }
             } else {
                break;
