@@ -156,7 +156,7 @@ TArray<UClass*> GetSortedClasses()
 
 void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
 {
-	AllFuncionOutputs.clear();
+    AllFuncionOutputs.clear();
     InitExtensionMethodsMap();
     Output = {"", ""};
     Output << "/// <reference path=\"puerts.d.ts\" />\n";
@@ -174,50 +174,50 @@ bool IsChildOf(UClass *Class, const FString& Name)
 
 const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
 {
-	return TypeInfo->IsObjectType() ? "cpp." : "";    
+    return TypeInfo->IsObjectType() ? "cpp." : "";    
 }
 
 const FString GetName(const puerts::CTypeInfo* TypeInfo)
 {
-	FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
-	if (TypeInfo->IsUEType())
-	{
-		return Ret.Mid(1);
-	}
-	return Ret;
+    FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
+    if (TypeInfo->IsUEType())
+    {
+        return Ret.Mid(1);
+    }
+    return Ret;
 }
 
 void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer & Buff)
 {
-	for(unsigned int i = 0; i < Type->ArgumentCount(); i++)
-	{
-		if (i != 0) Buff << ", ";
-		auto argInfo = Type->Argument(i);
-			
-		Buff << FString::Printf(TEXT("p%d"), i) << ": ";
-			
-		bool IsReference = argInfo->IsRef();
-		bool IsNullable = !IsReference && argInfo->IsPointer();
-		if (IsNullable)
-		{
-			Buff << "$Nullable<";
-		}
-		if (IsReference)
-		{
-			Buff << "$Ref<";
-		}
-			
-		Buff << GetNamePrefix(argInfo) << GetName(argInfo);
-			
-		if (IsNullable)
-		{
-			Buff << ">";
-		}
-		if (IsReference)
-		{
-			Buff << ">";
-		}
-	}
+    for(unsigned int i = 0; i < Type->ArgumentCount(); i++)
+    {
+        if (i != 0) Buff << ", ";
+        auto argInfo = Type->Argument(i);
+            
+        Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+            
+        bool IsReference = argInfo->IsRef();
+        bool IsNullable = !IsReference && argInfo->IsPointer();
+        if (IsNullable)
+        {
+            Buff << "$Nullable<";
+        }
+        if (IsReference)
+        {
+            Buff << "$Ref<";
+        }
+            
+        Buff << GetNamePrefix(argInfo) << GetName(argInfo);
+            
+        if (IsNullable)
+        {
+            Buff << ">";
+        }
+        if (IsReference)
+        {
+            Buff << ">";
+        }
+    }
 }
 
 void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
@@ -572,49 +572,49 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
 
 bool FTypeScriptDeclarationGenerator::GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, puerts::NamedFunctionInfo* Func, bool IsStatic)
 {
-	if (IsStatic)
-	{
-		OwnerBuffer << "static ";
-	}
-	OwnerBuffer << Func->Name << "(";
-	GenArgumentsForFunctionInfo(Func->Type, OwnerBuffer);
-	const auto Return = Func->Type->Return();
-	OwnerBuffer << ") : " << GetNamePrefix(Return) << GetName(Return);
-	
-	return true;
+    if (IsStatic)
+    {
+        OwnerBuffer << "static ";
+    }
+    OwnerBuffer << Func->Name << "(";
+    GenArgumentsForFunctionInfo(Func->Type, OwnerBuffer);
+    const auto Return = Func->Type->Return();
+    OwnerBuffer << ") : " << GetNamePrefix(Return) << GetName(Return);
+    
+    return true;
 }
 
 FTypeScriptDeclarationGenerator::FunctionOutputs& FTypeScriptDeclarationGenerator::GetFunctionOutputs(UStruct *Struct)
 {
-	return AllFuncionOutputs[Struct];
+    return AllFuncionOutputs[Struct];
 }
 
 FTypeScriptDeclarationGenerator::FunctionOverloads& FTypeScriptDeclarationGenerator::GetFunctionOverloads(FunctionOutputs& Outputs, const FString& FunctionName, bool IsStatic)
 {
-	return Outputs[FunctionKey(FunctionName, IsStatic)];
+    return Outputs[FunctionKey(FunctionName, IsStatic)];
 }
 
 void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct *Struct, FStringBuffer& Buff)
 {
-	FunctionOutputs& Outputs = GetFunctionOutputs(Struct);
+    FunctionOutputs& Outputs = GetFunctionOutputs(Struct);
     auto ClassDefinition = puerts::FindClassByType(Struct);
     if (ClassDefinition)
     {
         puerts::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Type)
         {
-        	FStringBuffer Tmp;
-        	GenTemplateBindingFunction(Tmp, FunctionInfo, true);
-        	GetFunctionOverloads(Outputs, FunctionInfo->Name, true).Add(Tmp.Buffer);
-        	++FunctionInfo;
+            FStringBuffer Tmp;
+            GenTemplateBindingFunction(Tmp, FunctionInfo, true);
+            GetFunctionOverloads(Outputs, FunctionInfo->Name, true).Add(Tmp.Buffer);
+            ++FunctionInfo;
         }
 
         puerts::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
         while (MethodInfo && MethodInfo->Name && MethodInfo->Type)
         {
-        	FStringBuffer Tmp;
-        	GenTemplateBindingFunction(Tmp, MethodInfo, false);
-        	GetFunctionOverloads(Outputs, MethodInfo->Name, false).Add(Tmp.Buffer);
+            FStringBuffer Tmp;
+            GenTemplateBindingFunction(Tmp, MethodInfo, false);
+            GetFunctionOverloads(Outputs, MethodInfo->Name, false).Add(Tmp.Buffer);
             ++MethodInfo;
         }
     }
@@ -631,45 +631,45 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct *Struct, FStringB
             {
                 continue;
             }
-        	GetFunctionOverloads(Outputs, Function->GetName(), false).Add(Tmp.Buffer);
+            GetFunctionOverloads(Outputs, Function->GetName(), false).Add(Tmp.Buffer);
         }
     }
 }
 
 void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UClass* InClass, FStringBuffer& Buff)
 {
-	FunctionOutputs& Outputs = GetFunctionOutputs(InClass);
-	for(FunctionOutputs::iterator Iter = Outputs.begin(); Iter != Outputs.end(); ++Iter)
-	{
-		FunctionOverloads& Overloads = Iter->second;
-		for(FunctionOverloads::TRangedForIterator OverloadIter = Overloads.begin(); OverloadIter; ++OverloadIter)
-		{
-			Buff << "    " << *OverloadIter << ";\n";
-		}
+    FunctionOutputs& Outputs = GetFunctionOutputs(InClass);
+    for(FunctionOutputs::iterator Iter = Outputs.begin(); Iter != Outputs.end(); ++Iter)
+    {
+        FunctionOverloads& Overloads = Iter->second;
+        for(FunctionOverloads::TRangedForIterator OverloadIter = Overloads.begin(); OverloadIter; ++OverloadIter)
+        {
+            Buff << "    " << *OverloadIter << ";\n";
+        }
 
-		const FunctionKey& FunctionKey = Iter->first;
-		UClass* SuperClass = InClass->GetSuperClass();
-		while(SuperClass != nullptr)
-		{
-			FunctionOutputs& SuperOutputs = GetFunctionOutputs(SuperClass);
-			FunctionOutputs::iterator SuperOutputsIter = SuperOutputs.find(FunctionKey);
-			if (SuperOutputsIter != SuperOutputs.end())
-			{
-				FunctionOverloads& SuperOverloads = SuperOutputsIter->second;
-				for(FunctionOverloads::TRangedForIterator SuperOverloadIter = SuperOverloads.begin(); SuperOverloadIter; ++SuperOverloadIter)
-				{
-					if (!Overloads.Contains(*SuperOverloadIter))
-					{
-						Buff << "    /**\n";
-						Buff << "     * @deprecated Unsupported super overloads.\n";
-						Buff << "     */\n";
-						Buff << "    " << *SuperOverloadIter << ";\n";
-					}
-				}
-			}
-			SuperClass = SuperClass->GetSuperClass();
-		}
-	}
+        const FunctionKey& FunctionKey = Iter->first;
+        UClass* SuperClass = InClass->GetSuperClass();
+        while(SuperClass != nullptr)
+        {
+            FunctionOutputs& SuperOutputs = GetFunctionOutputs(SuperClass);
+            FunctionOutputs::iterator SuperOutputsIter = SuperOutputs.find(FunctionKey);
+            if (SuperOutputsIter != SuperOutputs.end())
+            {
+                FunctionOverloads& SuperOverloads = SuperOutputsIter->second;
+                for(FunctionOverloads::TRangedForIterator SuperOverloadIter = SuperOverloads.begin(); SuperOverloadIter; ++SuperOverloadIter)
+                {
+                    if (!Overloads.Contains(*SuperOverloadIter))
+                    {
+                        Buff << "    /**\n";
+                        Buff << "     * @deprecated Unsupported super overloads.\n";
+                        Buff << "     */\n";
+                        Buff << "    " << *SuperOverloadIter << ";\n";
+                    }
+                }
+            }
+            SuperClass = SuperClass->GetSuperClass();
+        }
+    }
 }
 
 void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
@@ -708,7 +708,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    " << TmpBuff << ";\n";
     }
 
-	FunctionOutputs& Outputs = GetFunctionOutputs(Class);
+    FunctionOutputs& Outputs = GetFunctionOutputs(Class);
     for (TFieldIterator<UFunction> FunctionIt(Class, EFieldIteratorFlags::ExcludeSuper); FunctionIt; ++FunctionIt)
     {
         FStringBuffer TmpBuff;
@@ -716,12 +716,12 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
         {
             continue;
         }
-    	GetFunctionOverloads(Outputs, FunctionIt->GetName(), (FunctionIt->FunctionFlags & FUNC_Static) != 0).Add(TmpBuff.Buffer);
+        GetFunctionOverloads(Outputs, FunctionIt->GetName(), (FunctionIt->FunctionFlags & FUNC_Static) != 0).Add(TmpBuff.Buffer);
     }
 
     GatherExtensions(Class, StringBuffer);
 
-	GenResolvedFunctions(Class, StringBuffer);
+    GenResolvedFunctions(Class, StringBuffer);
     
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
@@ -860,7 +860,7 @@ class FDeclarationGenerator : public IDeclarationGenerator
 {
 private:
     TSharedPtr<class FUICommandList> PluginCommands;
-	TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
+    TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
 
     void AddToolbarExtension(FToolBarBuilder& Builder)
     {
@@ -920,9 +920,9 @@ public:
             LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
         }
 
-		ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen")
-			, TEXT("Execute GenDTS action")
-			, FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
+        ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen")
+            , TEXT("Execute GenDTS action")
+            , FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
     }
 
     void ShutdownModule() override 
@@ -965,7 +965,7 @@ public:
         
     }
     
-	/*
+    /*
     virtual FString GetGeneratedCodeModuleName() const override
     {
         return TEXT("Engine");
@@ -1010,7 +1010,7 @@ public:
     {
         return TEXT("(TypeScript | Kotlin)Declaration Generator Plugin");
     }
-	*/
+    */
 };
 
 #undef LOCTEXT_NAMESPACE
