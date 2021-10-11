@@ -23,11 +23,11 @@ namespace Puerts
         External = 2
     }
 
-    public enum ReflectionConfig 
+    public enum TypeRegisterMode 
     {
-        Default = 0,
-        DisableForGenerated = 1,
-        Disable = 2
+        Mixed = 0,
+        GeneratedCodeFirst = 1,
+        GeneratedCodeOnly = 2
     }
 
     public class JsEnv : IDisposable
@@ -52,7 +52,7 @@ namespace Puerts
 
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
 
-        public ReflectionConfig ReflectionConfig = ReflectionConfig.Default;
+        public TypeRegisterMode TypeRegisterMode = TypeRegisterMode.Mixed;
 
         public JsEnvMode mode;
 
