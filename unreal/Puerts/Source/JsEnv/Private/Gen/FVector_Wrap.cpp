@@ -3177,7 +3177,7 @@ static void _FVectorXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.Holder());
 
     auto V8Result =v8::Number::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
@@ -3188,7 +3188,7 @@ static void _FVectorXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.Holder());
     auto Value = Info[0];
 
     Self->X =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -3199,7 +3199,7 @@ static void _FVectorYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.Holder());
 
     auto V8Result =v8::Number::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
@@ -3210,7 +3210,7 @@ static void _FVectorYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.Holder());
     auto Value = Info[0];
 
     Self->Y =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -3221,7 +3221,7 @@ static void _FVectorZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.Holder());
 
     auto V8Result =v8::Number::New(Isolate, Self->Z);
     Info.GetReturnValue().Set(V8Result);
@@ -3232,7 +3232,7 @@ static void _FVectorZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FVector>(Info.Holder());
     auto Value = Info[0];
 
     Self->Z =Value->ToNumber(Context).ToLocalChecked()->Value();

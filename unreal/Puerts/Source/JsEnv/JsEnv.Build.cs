@@ -92,7 +92,7 @@ public class JsEnv : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25)
+            if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion >= 25)
             {
                 // for arm7
                 string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armeabi-v7a", "8.4.371.19");
@@ -184,7 +184,7 @@ public class JsEnv : ModuleRules
         // External headers
         if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25)
+            if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion >= 25)
             {
                 PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "8.4.371.19") });
             }

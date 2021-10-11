@@ -296,7 +296,7 @@ static void _FGuidAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     auto V8Result =v8::Integer::New(Isolate, Self->A);
     Info.GetReturnValue().Set(V8Result);
@@ -307,7 +307,7 @@ static void _FGuidASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     auto Value = Info[0];
 
     Self->A =Value->ToInteger(Context).ToLocalChecked()->Value();
@@ -318,7 +318,7 @@ static void _FGuidBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     auto V8Result =v8::Integer::New(Isolate, Self->B);
     Info.GetReturnValue().Set(V8Result);
@@ -329,7 +329,7 @@ static void _FGuidBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     auto Value = Info[0];
 
     Self->B =Value->ToInteger(Context).ToLocalChecked()->Value();
@@ -340,7 +340,7 @@ static void _FGuidCGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     auto V8Result =v8::Integer::New(Isolate, Self->C);
     Info.GetReturnValue().Set(V8Result);
@@ -351,7 +351,7 @@ static void _FGuidCSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     auto Value = Info[0];
 
     Self->C =Value->ToInteger(Context).ToLocalChecked()->Value();
@@ -362,7 +362,7 @@ static void _FGuidDGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     auto V8Result =v8::Integer::New(Isolate, Self->D);
     Info.GetReturnValue().Set(V8Result);
@@ -373,7 +373,7 @@ static void _FGuidDSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     auto Value = Info[0];
 
     Self->D =Value->ToInteger(Context).ToLocalChecked()->Value();
