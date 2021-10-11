@@ -35,7 +35,7 @@ void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     
     if (OwnerIsClass)
     {
-        UObject* Object = FV8Utils::GetUObject(Info.This());
+        UObject* Object = FV8Utils::GetUObject(Info.Holder());
         if (!Object)
         {
             FV8Utils::ThrowException(Isolate, "access a null object");
@@ -50,7 +50,7 @@ void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
     else
     {
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, FV8Utils::GetPointer(Info.This()), true));
+        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, FV8Utils::GetPointer(Info.Holder()), true));
     }
 }
 
@@ -73,7 +73,7 @@ void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     
     if (OwnerIsClass)
     {
-        UObject* Object = FV8Utils::GetUObject(Info.This());
+        UObject* Object = FV8Utils::GetUObject(Info.Holder());
         if (!Object)
         {
             FV8Utils::ThrowException(Isolate, "access a null object");
@@ -88,7 +88,7 @@ void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
     else
     {
-        JsToUEInContainer(Isolate, Context, Value, FV8Utils::GetPointer(Info.This()), true);
+        JsToUEInContainer(Isolate, Context, Value, FV8Utils::GetPointer(Info.Holder()), true);
     }
 }
 
@@ -107,7 +107,7 @@ void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Valu
         return;
     }
     
-    auto Object = FV8Utils::GetUObject(Info.This());
+    auto Object = FV8Utils::GetUObject(Info.Holder());
     if (!Object)
     {
         FV8Utils::ThrowException(Isolate, "access a null object");
