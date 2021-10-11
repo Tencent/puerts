@@ -16,10 +16,18 @@ namespace Puerts
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
 
-    public enum JsEnvMode {
+    public enum JsEnvMode 
+    {
         Default = 0,
         Node = 1,
         External = 2
+    }
+
+    public enum ReflectionConfig 
+    {
+        Default = 0,
+        DisableForGenerated = 1,
+        Disable = 2
     }
 
     public class JsEnv : IDisposable
@@ -36,15 +44,17 @@ namespace Puerts
 
         internal readonly JSObjectFactory jsObjectFactory;
 
-        private readonly ILoader loader;
-
-        public static List<JsEnv> jsEnvs = new List<JsEnv>();
-
         internal IntPtr isolate;
 
         internal ObjectPool objectPool;
 
-        JsEnvMode mode;
+        private readonly ILoader loader;
+
+        public static List<JsEnv> jsEnvs = new List<JsEnv>();
+
+        public ReflectionConfig ReflectionConfig = ReflectionConfig.Default;
+
+        public JsEnvMode mode;
 
 #if UNITY_EDITOR
         public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
