@@ -84,6 +84,15 @@ bool UTypeScriptGeneratedClass::NotSupportInject()
 
 void UTypeScriptGeneratedClass::Bind()
 {
+    if (NotSupportInject())
+    {
+        for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+        {
+            auto Function = *FuncIt;
+            Function->FunctionFlags &= ~FUNC_Native;
+        }
+    }
+    
     Super::Bind();
 
     if (NotSupportInject())

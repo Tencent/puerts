@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace Puerts
 {
-    public class TypeRegister
+    internal class TypeRegister
     {
         public TypeRegister(JsEnv jsEnv)
         {
@@ -424,23 +424,9 @@ namespace Puerts
             lazyStaticWrapLoaders.Add(type, lazyStaticWrapLoader);
         }
 
-        public bool _skipReflectionFilling = true;
         // #lizard forgives
-        public int RegisterType(IntPtr isolate, Type type, bool includeNoPublic)
+        private int RegisterType(IntPtr isolate, Type type, bool includeNoPublic)
         {
-            int baseTypeId = -1;
-            if (type.BaseType != null)
-            {
-                baseTypeId = GetTypeId(isolate, type.BaseType);
-            }
-
-            var start = UnityEngine.Time.realtimeSinceStartup;
-
-            bool skipReflectionFilling = _skipReflectionFilling;
-            if (typeof(ILoader).IsAssignableFrom(type) || type.IsEnum) 
-            {
-                skipReflectionFilling = false;
-            }
             TypeRegisterInfo registerInfo = null;
 
             if (lazyStaticWrapLoaders.ContainsKey(type))
@@ -455,11 +441,54 @@ namespace Puerts
                 flag = flag | BindingFlags.NonPublic;
             }
 
+            // baseType
+            int baseTypeId = -1;
+            if (type.BaseType != null)
+            {
+                baseTypeId = GetTypeId(isolate, type.BaseType);
+            }
+
+            // constructors
+            ConstructorCallback constructorCallback = null;
+
+            if (typeof(Delegate).IsAssignableFrom(type))
+            {
+                DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv.GeneralGetterManager);
+                constructorCallback = delegateConstructWrap.Construct;
+            }
+            else
+            {
+                bool hasNoParametersCtor = false;
+                var constructorWraps = type.GetConstructors(flag)
+                    .Select(m => 
+                    {
+                        if (m.GetParameters().Length == 0) 
+                        {
+                            hasNoParametersCtor = true;
+                        }
+                        return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
+                    })
+                    .ToList();
+                if (type.IsValueType && !hasNoParametersCtor)
+                {
+                    constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
+                }
+                MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
+                constructorCallback = constructorReflectionWrap.Construct;
+            }
+
             Dictionary<MethodKey, List<MethodInfo>> methodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
             Dictionary<string, ProperyMethods> propertyGroup = new Dictionary<string, ProperyMethods>();
             Dictionary<MethodKey, List<MethodInfo>> extensionMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
-            if (!skipReflectionFilling) 
+            List<FieldInfo> nonRegisteredFields = new List<FieldInfo>();
+            HashSet<string> readonlyStaticFields = new HashSet<string>();
+
+            if (
+                jsEnv.ReflectionConfig == ReflectionConfig.Default &&
+                (jsEnv.ReflectionConfig == ReflectionConfig.DisableForGenerated && registerInfo == null)
+            ) 
             {
+                // methods and properties
                 MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
 
                 for (int i = 0; i < methods.Length; ++i)
@@ -531,6 +560,7 @@ namespace Puerts
                     overloads.Add(method);
                 }
 
+                // extensionMethods
                 IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                 if (extensionMethods != null)
                 {
@@ -568,44 +598,21 @@ namespace Puerts
                         overloads.Add(method);
                     }
                 }
-            }
-            ConstructorCallback constructorCallback = null;
 
-            if (typeof(Delegate).IsAssignableFrom(type))
-            {
-                DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv.GeneralGetterManager);
-                constructorCallback = delegateConstructWrap.Construct;
-            }
-            else
-            {
-                bool hasNoParametersCtor = false;
-                var constructorWraps = type.GetConstructors(flag)
-                    .Select(m => 
+                // fields
+                var fields = type.GetFields(flag);
+
+                foreach (var field in fields)
+                {
+                    if (registerInfo != null && registerInfo.Properties.ContainsKey(field.Name))
                     {
-                        if (m.GetParameters().Length == 0) 
-                        {
-                            hasNoParametersCtor = true;
-                        }
-                        return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
-                    })
-                    .ToList();
-                if (type.IsValueType && !hasNoParametersCtor)
-                {
-                    constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
-                }
-                MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
-                constructorCallback = constructorReflectionWrap.Construct;
-            }
-
-            var fields = type.GetFields(flag);
-
-            HashSet<string> readonlyStaticFields = new HashSet<string>();
-
-            foreach (var field in fields)
-            {
-                if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
-                {
-                    readonlyStaticFields.Add(field.Name);
+                        continue;
+                    }
+                    nonRegisteredFields.Add(field);
+                    if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                    {
+                        readonlyStaticFields.Add(field.Name);
+                    }
                 }
             }
 
@@ -684,27 +691,20 @@ namespace Puerts
                 PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, isStatic, getter, getterData, setter, setterData, true);
             }
 
-            if (!skipReflectionFilling) 
+            foreach(var field in fields)
             {
-                foreach(var field in fields)
+                var getterData = jsEnv.AddCallback(GenFieldGetter(type, field));
+
+                V8FunctionCallback setter = null;
+                long setterData = 0;
+
+                if (!field.IsInitOnly && !field.IsLiteral)
                 {
-                    if (registerInfo != null && registerInfo.Properties.ContainsKey(field.Name))
-                    {
-                        continue;
-                    }
-                    var getterData = jsEnv.AddCallback(GenFieldGetter(type, field));
-
-                    V8FunctionCallback setter = null;
-                    long setterData = 0;
-
-                    if (!field.IsInitOnly && !field.IsLiteral)
-                    {
-                        setter = callbackWrap;
-                        setterData = jsEnv.AddCallback(GenFieldSetter(type, field));
-                    }
-
-                    PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, field.Name, field.IsStatic, callbackWrap, getterData, setter, setterData, !readonlyStaticFields.Contains(field.Name));
+                    setter = callbackWrap;
+                    setterData = jsEnv.AddCallback(GenFieldSetter(type, field));
                 }
+
+                PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, field.Name, field.IsStatic, callbackWrap, getterData, setter, setterData, !readonlyStaticFields.Contains(field.Name));
             }
 
             var translateFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(typeof(Type));
