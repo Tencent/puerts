@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if BUILDING_PES_EXTENSION
+#if defined(BUILDING_PES_EXTENSION)
 
 #include "Binding.hpp"
 
