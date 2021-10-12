@@ -427,14 +427,17 @@ namespace Puerts.Editor
                         
                 public static ParameterGenInfo FromParameterInfo(ParameterInfo parameterInfo)
                 {
-                    var ExpectJsType = GeneralGetterManager.GetJsTypeMask(parameterInfo.ParameterType);
+                    bool isParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false);
+                    JsValueType ExpectJsType = isParams ?
+                        GeneralGetterManager.GetJsTypeMask(parameterInfo.ParameterType.GetElementType()) : 
+                        GeneralGetterManager.GetJsTypeMask(parameterInfo.ParameterType);
                     var result = new ParameterGenInfo()
                     {
                         IsOut = !parameterInfo.IsIn && parameterInfo.IsOut && parameterInfo.ParameterType.IsByRef,
                         IsByRef = parameterInfo.ParameterType.IsByRef,
                         TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType).GetFriendlyName(),
                         ExpectJsType = Utils.ToCode(ExpectJsType),
-                        IsParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false),
+                        IsParams = isParams,
                     };
                     if (result.IsParams)
                     {
