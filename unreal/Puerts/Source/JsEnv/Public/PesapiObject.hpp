@@ -7,6 +7,8 @@
 
 #pragma once
 
+#if defined(BUILDING_PES_EXTENSION)
+
 #include "Binding.hpp"
 
 namespace puerts
@@ -200,3 +202,5 @@ struct Converter<::puerts::Function> {
 }
 
 }
+
+#endif
