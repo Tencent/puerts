@@ -7,6 +7,8 @@
 
 #pragma once
 
+#if BUILDING_PES_EXTENSION
+
 #include <type_traits>
 #include <string>
 #include <functional>
@@ -341,3 +343,5 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     
 }
 }
+
+#endif
