@@ -41,13 +41,13 @@ public class JsEnv : ModuleRules
             }
         }
 
-        if (UseNewV8)
-        {
-            ThirdParty(Target);
-        }
-        else if (UseNodejs)
+        if (UseNodejs && Target.bBuildEditor)
         {
             ThirdPartyNodejs(Target);
+        }
+        else if (UseNewV8)
+        {
+            ThirdParty(Target);
         }
         else if (UseQuickjs)
         {
@@ -92,7 +92,7 @@ public class JsEnv : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion >= 25)
+            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25)
             {
                 // for arm7
                 string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armeabi-v7a", "8.4.371.19");
@@ -184,7 +184,7 @@ public class JsEnv : ModuleRules
         // External headers
         if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion >= 25)
+            if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25)
             {
                 PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "8.4.371.19") });
             }
@@ -345,12 +345,12 @@ public class JsEnv : ModuleRules
     {
         PrivateDefinitions.Add("WITHOUT_INSPECTOR");//node already had one
         PrivateDefinitions.Add("WITH_NODEJS");
-        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "libnode"));
+        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "nodejs"));
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "include") });
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "deps", "v8", "include") });
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "deps", "uv", "include") });
 
-        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "libnode", "lib"));
+        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "nodejs", "lib"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Win64");

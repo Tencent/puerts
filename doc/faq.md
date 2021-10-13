@@ -13,3 +13,23 @@ js虚拟机一般不会独立存在，都会依托于某个环境，用于解决
 
 而puerts是另外一个js环境：js虚拟机+游戏引擎。它和nodejs，浏览器js环境是并列关系，nodejs和浏览器专用的包固然没法在puerts上使用，相反如果你用了puerts特有的api做成一个包提交到npm，同样也没法在nodejs或者浏览器上跑。
 
+## vscode 1.60以上版本断点断不上，1.59版本可以
+
+需要在launch.json那设置下remoteRoot，例子：
+
+~~~json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach",
+            "protocol": "inspector",
+            "port": 8080,
+            "sourceMaps": true,
+            "remoteRoot": "${workspaceRoot}../dist"
+        }
+    ]
+}
+~~~

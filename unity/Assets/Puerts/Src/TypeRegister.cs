@@ -441,118 +441,14 @@ namespace Puerts
                 flag = flag | BindingFlags.NonPublic;
             }
 
-            MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
-            Dictionary<MethodKey, List<MethodInfo>> methodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
-            Dictionary<string, ProperyMethods> propertyGroup = new Dictionary<string, ProperyMethods>();
-
-            for (int i = 0; i < methods.Length; ++i)
+            // baseType
+            int baseTypeId = -1;
+            if (type.BaseType != null)
             {
-                MethodInfo method = methods[i];
-                
-                MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
-
-                if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
-                {
-                    continue;
-                }
-
-                if (!method.IsConstructor && method.IsGenericMethodDefinition && Utils.IsSupportedMethod(method))
-                {
-                    var genericArguments = method.GetGenericArguments();
-                    var constraintedArgumentTypes = new Type[genericArguments.Length];
-                    for (var j = 0; j < genericArguments.Length; j++)
-                    {
-                        constraintedArgumentTypes[j] = genericArguments[j].BaseType;
-                    }
-                    method = method.MakeGenericMethod(constraintedArgumentTypes);
-                }
-
-                if (method.IsConstructor || method.IsGenericMethodDefinition)
-                {
-                    continue;
-                }
-
-                if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
-                {
-                    string propName = method.Name.Substring(4);
-                    if (registerInfo != null && registerInfo.Properties.ContainsKey(propName))
-                    {
-                        continue;
-                    }
-                    ProperyMethods properyMethods;
-                    if (!propertyGroup.TryGetValue(propName, out properyMethods))
-                    {
-                        properyMethods = new ProperyMethods();
-                        propertyGroup.Add(propName, properyMethods);
-                    }
-                    properyMethods.Getter = method;
-                    continue;
-                }
-                else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
-                {
-                    string propName = method.Name.Substring(4);
-                    if (registerInfo != null && registerInfo.Properties.ContainsKey(propName))
-                    {
-                        continue;
-                    }
-                    ProperyMethods properyMethods;
-                    if (!propertyGroup.TryGetValue(propName, out properyMethods))
-                    {
-                        properyMethods = new ProperyMethods();
-                        propertyGroup.Add(propName, properyMethods);
-                    }
-                    properyMethods.Setter = method;
-                    continue;
-                }
-
-                List<MethodInfo> overloads;
-                if (!methodGroup.TryGetValue(methodKey, out overloads))
-                {
-                    overloads = new List<MethodInfo>();
-                    methodGroup.Add(methodKey, overloads);
-                }
-                overloads.Add(method);
+                baseTypeId = GetTypeId(isolate, type.BaseType);
             }
 
-            IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
-            Dictionary<MethodKey, List<MethodInfo>> extensionMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
-            if (extensionMethods != null)
-            {
-                var enumerator = extensionMethods.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    var method = enumerator.Current;
-                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false };
-
-                    if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
-                    {
-                        continue;
-                    }
-                    if (method.IsGenericMethodDefinition)
-                    {
-                        if (!Utils.IsSupportedMethod(method))
-                        {
-                            continue;
-                        }
-                        var genericArguments = method.GetGenericArguments();
-                        var constraintedArgumentTypes = new Type[genericArguments.Length];
-                        for (var j = 0; j < genericArguments.Length; j++)
-                        {
-                            constraintedArgumentTypes[j] = genericArguments[j].BaseType;
-                        }
-                        method = method.MakeGenericMethod(constraintedArgumentTypes);
-                    }
-
-                    List<MethodInfo> overloads;
-                    if (!extensionMethodGroup.TryGetValue(methodKey, out overloads))
-                    {
-                        overloads = new List<MethodInfo>();
-                        extensionMethodGroup.Add(methodKey, overloads);
-                    }
-                    overloads.Add(method);
-                }
-            }
-
+            // constructors
             ConstructorCallback constructorCallback = null;
 
             if (typeof(Delegate).IsAssignableFrom(type))
@@ -581,21 +477,144 @@ namespace Puerts
                 constructorCallback = constructorReflectionWrap.Construct;
             }
 
-            int baseTypeId = -1;
-            if (type.BaseType != null)
-            {
-                baseTypeId = GetTypeId(isolate, type.BaseType);
-            }
-
-            var fields = type.GetFields(flag);
-
+            Dictionary<MethodKey, List<MethodInfo>> methodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
+            Dictionary<string, ProperyMethods> propertyGroup = new Dictionary<string, ProperyMethods>();
+            Dictionary<MethodKey, List<MethodInfo>> extensionMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
+            List<FieldInfo> nonRegisteredFields = new List<FieldInfo>();
             HashSet<string> readonlyStaticFields = new HashSet<string>();
 
-            foreach (var field in fields)
+            if (
+                jsEnv.TypeRegisterMode == TypeRegisterMode.Mixed 
+                || (jsEnv.TypeRegisterMode == TypeRegisterMode.GeneratedCodeFirst && registerInfo == null)
+                || typeof(ILoader).IsAssignableFrom(type) 
+                || type.IsEnum
+            ) 
             {
-                if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                // methods and properties
+                MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
+
+                for (int i = 0; i < methods.Length; ++i)
                 {
-                    readonlyStaticFields.Add(field.Name);
+                    MethodInfo method = methods[i];
+                    
+                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+
+                    if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
+                    {
+                        continue;
+                    }
+
+                    if (!method.IsConstructor && method.IsGenericMethodDefinition && Utils.IsSupportedMethod(method))
+                    {
+                        var genericArguments = method.GetGenericArguments();
+                        var constraintedArgumentTypes = new Type[genericArguments.Length];
+                        for (var j = 0; j < genericArguments.Length; j++)
+                        {
+                            constraintedArgumentTypes[j] = genericArguments[j].BaseType;
+                        }
+                        method = method.MakeGenericMethod(constraintedArgumentTypes);
+                    }
+
+                    if (method.IsConstructor || method.IsGenericMethodDefinition)
+                    {
+                        continue;
+                    }
+
+                    if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
+                    {
+                        string propName = method.Name.Substring(4);
+                        if (registerInfo != null && registerInfo.Properties.ContainsKey(propName))
+                        {
+                            continue;
+                        }
+                        ProperyMethods properyMethods;
+                        if (!propertyGroup.TryGetValue(propName, out properyMethods))
+                        {
+                            properyMethods = new ProperyMethods();
+                            propertyGroup.Add(propName, properyMethods);
+                        }
+                        properyMethods.Getter = method;
+                        continue;
+                    }
+                    else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
+                    {
+                        string propName = method.Name.Substring(4);
+                        if (registerInfo != null && registerInfo.Properties.ContainsKey(propName))
+                        {
+                            continue;
+                        }
+                        ProperyMethods properyMethods;
+                        if (!propertyGroup.TryGetValue(propName, out properyMethods))
+                        {
+                            properyMethods = new ProperyMethods();
+                            propertyGroup.Add(propName, properyMethods);
+                        }
+                        properyMethods.Setter = method;
+                        continue;
+                    }
+
+                    List<MethodInfo> overloads;
+                    if (!methodGroup.TryGetValue(methodKey, out overloads))
+                    {
+                        overloads = new List<MethodInfo>();
+                        methodGroup.Add(methodKey, overloads);
+                    }
+                    overloads.Add(method);
+                }
+
+                // extensionMethods
+                IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
+                if (extensionMethods != null)
+                {
+                    var enumerator = extensionMethods.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        var method = enumerator.Current;
+                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false };
+
+                        if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
+                        {
+                            continue;
+                        }
+                        if (method.IsGenericMethodDefinition)
+                        {
+                            if (!Utils.IsSupportedMethod(method))
+                            {
+                                continue;
+                            }
+                            var genericArguments = method.GetGenericArguments();
+                            var constraintedArgumentTypes = new Type[genericArguments.Length];
+                            for (var j = 0; j < genericArguments.Length; j++)
+                            {
+                                constraintedArgumentTypes[j] = genericArguments[j].BaseType;
+                            }
+                            method = method.MakeGenericMethod(constraintedArgumentTypes);
+                        }
+
+                        List<MethodInfo> overloads;
+                        if (!extensionMethodGroup.TryGetValue(methodKey, out overloads))
+                        {
+                            overloads = new List<MethodInfo>();
+                            extensionMethodGroup.Add(methodKey, overloads);
+                        }
+                        overloads.Add(method);
+                    }
+                }
+
+                // fields
+                var fields = type.GetFields(flag);
+
+                foreach (var field in fields)
+                {
+                    if (registerInfo != null && registerInfo.Properties.ContainsKey(field.Name))
+                    {
+                        continue;
+                    }
+                    nonRegisteredFields.Add(field);
+                    if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                    {
+                        readonlyStaticFields.Add(field.Name);
+                    }
                 }
             }
 
@@ -674,12 +693,8 @@ namespace Puerts
                 PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, isStatic, getter, getterData, setter, setterData, true);
             }
 
-            foreach(var field in fields)
+            foreach(var field in nonRegisteredFields)
             {
-                if (registerInfo != null && registerInfo.Properties.ContainsKey(field.Name))
-                {
-                    continue;
-                }
                 var getterData = jsEnv.AddCallback(GenFieldGetter(type, field));
 
                 V8FunctionCallback setter = null;
