@@ -4,7 +4,7 @@ function parameterDef(pinfo, isStatic, type) {
 }
 function typeKeyword(type) {
     if (type.IsDelegate) {
-        return 'type';
+        return 'interface';
     } else if (type.IsInterface) {
         return 'interface';
     } else if (type.IsEnum) {
@@ -92,7 +92,7 @@ declare module 'csharp' {
         {{=typeKeyword(type)}} {{=typeDeclaration(type, true)}}{{
             `==condition start======================`;
             if(type.IsDelegate){        `//type is delegate`;
-        }} = {{=type.DelegateDef}};{{?!type.IsGenericTypeDefinition}}
+        }} { {{=type.DelegateDef.replace('=>', ':')}}; } {{?!type.IsGenericTypeDefinition}}
         var {{=type.Name}}: {new (func: {{=type.DelegateDef}}): {{=type.Name}};}{{?}}{{ 
             } else if(type.IsEnum) {    `//type is enum`;
         }}{ {{= type.EnumKeyValues}} }{{ 
