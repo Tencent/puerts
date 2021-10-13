@@ -360,9 +360,31 @@ private:
 
     node::Environment* NodeEnv;
 
-    const float UV_LOOP_DELAY  = 0.1;
+    uv_thread_t PollingThread;
+
+    uv_sem_t PollingSem;
+
+    uv_async_t DummyUVHandle;
+
+    bool PollingClosed = false;
+
+    FGraphEventRef LastJob;
+
+#if PLATFORM_LINUX
+    int Epoll;
+#endif
+
+    void StartPolling();
+
+    void UvRunOnce();
     
-    FDelegateHandle UVLoopCallbackHandler;
+    void PollEvents();
+    
+    static void OnWatcherQueueChanged(uv_loop_t* loop);
+
+    void WakeupPollingThread();
+
+    void StopPolling();
 #endif
 
     v8::Isolate* MainIsolate;
