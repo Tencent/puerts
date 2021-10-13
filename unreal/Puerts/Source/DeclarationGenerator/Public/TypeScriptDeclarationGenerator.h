@@ -74,7 +74,7 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     void GatherExtensions(UStruct *Struct, FStringBuffer& Buff);
 
-    void GenResolvedFunctions(UClass* InClass, FStringBuffer& Buff);
+    void GenResolvedFunctions(UStruct *Struct, FStringBuffer& Buff);
 
     FunctionOutputs& GetFunctionOutputs(UStruct *Struct);
 

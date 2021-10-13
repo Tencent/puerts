@@ -636,9 +636,9 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct *Struct, FStringB
     }
 }
 
-void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UClass* InClass, FStringBuffer& Buff)
+void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UStruct *Struct, FStringBuffer& Buff)
 {
-    FunctionOutputs& Outputs = GetFunctionOutputs(InClass);
+    FunctionOutputs& Outputs = GetFunctionOutputs(Struct);
     for(FunctionOutputs::iterator Iter = Outputs.begin(); Iter != Outputs.end(); ++Iter)
     {
         FunctionOverloads& Overloads = Iter->second;
@@ -648,10 +648,10 @@ void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UClass* InClass, FStr
         }
 
         const FunctionKey& FunctionKey = Iter->first;
-        UClass* SuperClass = InClass->GetSuperClass();
-        while(SuperClass != nullptr)
+        UStruct* SuperStruct = Struct->GetSuperStruct();
+        while(SuperStruct != nullptr)
         {
-            FunctionOutputs& SuperOutputs = GetFunctionOutputs(SuperClass);
+            FunctionOutputs& SuperOutputs = GetFunctionOutputs(SuperStruct);
             FunctionOutputs::iterator SuperOutputsIter = SuperOutputs.find(FunctionKey);
             if (SuperOutputsIter != SuperOutputs.end())
             {
@@ -667,7 +667,7 @@ void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UClass* InClass, FStr
                     }
                 }
             }
-            SuperClass = SuperClass->GetSuperClass();
+            SuperStruct = SuperStruct->GetSuperStruct();
         }
     }
 }
@@ -833,6 +833,8 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
     }
 
     GatherExtensions(Struct, StringBuffer);
+    
+    GenResolvedFunctions(Struct, StringBuffer);
 
     StringBuffer << "    static StaticClass(): Class;\n";
     
