@@ -570,7 +570,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
     return true;
 }
 
-bool FTypeScriptDeclarationGenerator::GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, puerts::NamedFunctionInfo* Func, bool IsStatic)
+static bool GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, puerts::NamedFunctionInfo* Func, bool IsStatic)
 {
     if (IsStatic)
     {

@@ -12,7 +12,6 @@
 #include <map>
 #include <vector>
 
-#include "JSClassRegister.h"
 #include "PropertyMacros.h"
 
 struct DECLARATIONGENERATOR_API FStringBuffer
@@ -69,8 +68,6 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     virtual bool GenTypeDecl(FStringBuffer& StringBuffer, PropertyMacro* Property, TArray<UObject *> &AddToGen, bool ArrayDimProcessed = false, bool TreatAsRawFunction = false);
     
     virtual bool GenFunction(FStringBuffer& OwnerBuffer,UFunction* Function, bool WithName = true, bool ForceOneway = false, bool IgnoreOut = false, bool IsExtensionMethod = false);
-
-    virtual bool GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, puerts::NamedFunctionInfo* Func, bool IsStatic);
 
     void GatherExtensions(UStruct *Struct, FStringBuffer& Buff);
 
