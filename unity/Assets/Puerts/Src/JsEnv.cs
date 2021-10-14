@@ -52,11 +52,7 @@ namespace Puerts
 
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
 
-<<<<<<< HEAD
-        public ReflectionConfig ReflectionConfig = ReflectionConfig.Default;
-=======
         public TypeRegisterMode TypeRegisterMode = TypeRegisterMode.Mixed;
->>>>>>> 0bc13fe36f41f52741da6e5897078606780747f3
 
         public JsEnvMode mode;
 
