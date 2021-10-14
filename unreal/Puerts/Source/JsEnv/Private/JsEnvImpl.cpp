@@ -199,7 +199,7 @@ void FJsEnvImpl::PollEvents()
     } while (r == -1 && errno == EINTR);
 #elif PLATFORM_MAC
     struct timeval tv;
-    int timeout = uv_backend_timeout(uv_loop_);
+    int timeout = uv_backend_timeout(&NodeUVLoop);
     if (timeout != -1) {
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = (timeout % 1000) * 1000;

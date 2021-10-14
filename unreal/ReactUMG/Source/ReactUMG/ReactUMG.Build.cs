@@ -16,7 +16,7 @@ public class ReactUMG : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] 
 		{ 
-			"Core", "CoreUObject", "Engine", "InputCore", "Serialization", "JsEnv", "UMG"
+			"Core", "CoreUObject", "Engine", "InputCore", "Serialization", "UMG"
         });
 
 		bEnableExceptions = true;

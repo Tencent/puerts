@@ -30,7 +30,7 @@ if ( JS_ENGINE STREQUAL "quickjs")
 elseif ( JS_ENGINE STREQUAL "nodejs")
 
     if ( APPLE )
-        set(LIB_FILE_NAME libnode.dylib)
+        set(LIB_FILE_NAME libnode.83.dylib)
     endif()
 
     include_directories(    
