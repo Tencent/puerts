@@ -364,7 +364,7 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.dylib"));
+            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.83.dylib"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux) 
         {

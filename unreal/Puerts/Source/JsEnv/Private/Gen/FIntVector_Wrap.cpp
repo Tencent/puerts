@@ -567,6 +567,11 @@ static void _FIntVectorXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::X] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Integer::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
@@ -578,6 +583,10 @@ static void _FIntVectorXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::X] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->X =Value->ToInteger(Context).ToLocalChecked()->Value();
@@ -589,6 +598,11 @@ static void _FIntVectorYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::Y] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Integer::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
@@ -600,6 +614,10 @@ static void _FIntVectorYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::Y] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Y =Value->ToInteger(Context).ToLocalChecked()->Value();
@@ -611,6 +629,11 @@ static void _FIntVectorZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::Z] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Integer::New(Isolate, Self->Z);
     Info.GetReturnValue().Set(V8Result);
@@ -622,6 +645,10 @@ static void _FIntVectorZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FIntVector>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntVector::Z] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Z =Value->ToInteger(Context).ToLocalChecked()->Value();
