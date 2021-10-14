@@ -69,6 +69,20 @@ jobs:
         name: nodejs_bin
         path: ~/puerts-node/**/*
         
+  build_linux:
+    name: linux
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run build script
+      run: |
+        cd $GITHUB_WORKSPACE
+        sh ./nodejs-build/linux.sh ${{env.VERSION}}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: nodejs_bin
+        path: ~/puerts-node/**/*
+        
   publish:
     runs-on: ubuntu-latest
     needs: [build_windows,build_windows_32,build_macos]
