@@ -173,8 +173,12 @@ namespace PuertsStaticWrap
                         && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
-                        var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        {{=it.BlittableCopy?"HeapValue":"var result"}} = new {{=it.Name}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
+                        var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};
+                        {{~}}
+                        {{~overload.OptionalParameterInfos :paramInfo:idx}}
+                        var optArg{{=idx}} = default({{=paramInfo.TypeName}});
+                        {{~}}
+                        {{=it.BlittableCopy?"HeapValue":"var result"}} = new {{=it.Name}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}}{{?overload.ParameterInfos.Length != 0 && overload.OptionalParameterInfos!= null && overload.OptionalParameterInfos.Length!=0}},{{?}}{{~overload.OptionalParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}optArg{{=idx}}{{~}});
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         
@@ -208,11 +212,15 @@ namespace PuertsStaticWrap
                     
                     {{~overloadGroup :overload}}
                     {{?method.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
-                        && {{?}}argHelper{{=idx}}.{{=paramInfo.IsParams?"IsMatchParams":"IsMatch"}}({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsParams?idx:paramInfo.IsByRef}}, {{=paramInfo.IsParams?"paramLen":paramInfo.IsOut}}){{~}}){{?}}
+                        && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
-                        var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:refSelf()}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
+                        var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};
+                        {{~}}
+                        {{~overload.OptionalParameterInfos :paramInfo:idx}}
+                        var optArg{{=idx}} = default({{=paramInfo.TypeName}});
+                        {{~}}
+                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:refSelf()}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}}{{?overload.ParameterInfos.Length != 0 && overload.OptionalParameterInfos!= null && overload.OptionalParameterInfos.Length!=0}},{{?}}{{~overload.OptionalParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}optArg{{=idx}}{{~}});
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
