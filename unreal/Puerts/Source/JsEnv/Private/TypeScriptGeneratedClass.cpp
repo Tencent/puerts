@@ -84,7 +84,7 @@ bool UTypeScriptGeneratedClass::NotSupportInject()
 
 void UTypeScriptGeneratedClass::Bind()
 {
-    if (NotSupportInject())
+    if (GetName().StartsWith("REINST_"))
     {
         for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
         {

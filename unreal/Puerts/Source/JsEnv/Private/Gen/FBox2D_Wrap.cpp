@@ -668,7 +668,12 @@ static void _FBox2DMinGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::Min] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =
     puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, &(Self->Min), true);
@@ -681,7 +686,11 @@ static void _FBox2DMinSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::Min] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Min =*puerts::DataTransfer::GetPointerFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
@@ -692,7 +701,12 @@ static void _FBox2DMaxGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::Max] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =
     puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, &(Self->Max), true);
@@ -705,7 +719,11 @@ static void _FBox2DMaxSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::Max] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Max =*puerts::DataTransfer::GetPointerFast<FVector2D>(Value->ToObject(Context).ToLocalChecked());
@@ -716,7 +734,12 @@ static void _FBox2DbIsValidGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::bIsValid] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Boolean::New(Isolate, Self->bIsValid);
     Info.GetReturnValue().Set(V8Result);
@@ -727,7 +750,11 @@ static void _FBox2DbIsValidSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FBox2D::bIsValid] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->bIsValid =Value->ToBoolean(Isolate)->Value();

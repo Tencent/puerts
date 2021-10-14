@@ -484,8 +484,10 @@ namespace Puerts
             HashSet<string> readonlyStaticFields = new HashSet<string>();
 
             if (
-                jsEnv.ReflectionConfig == ReflectionConfig.Default &&
-                (jsEnv.ReflectionConfig == ReflectionConfig.DisableForGenerated && registerInfo == null)
+                jsEnv.TypeRegisterMode == TypeRegisterMode.Mixed 
+                || (jsEnv.TypeRegisterMode == TypeRegisterMode.GeneratedCodeFirst && registerInfo == null)
+                || typeof(ILoader).IsAssignableFrom(type) 
+                || type.IsEnum
             ) 
             {
                 // methods and properties
@@ -697,7 +699,7 @@ namespace Puerts
                 PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, isStatic, getter, getterData, setter, setterData, true);
             }
 
-            foreach(var field in fields)
+            foreach(var field in nonRegisteredFields)
             {
                 var getterData = jsEnv.AddCallback(GenFieldGetter(type, field));
 

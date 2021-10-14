@@ -1200,7 +1200,12 @@ static void _FRotatorPitchGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FRotator::Pitch] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->Pitch);
     Info.GetReturnValue().Set(V8Result);
@@ -1211,7 +1216,11 @@ static void _FRotatorPitchSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FRotator::Pitch] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Pitch =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -1222,7 +1231,12 @@ static void _FRotatorYawGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FRotator::Yaw] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->Yaw);
     Info.GetReturnValue().Set(V8Result);
@@ -1233,7 +1247,11 @@ static void _FRotatorYawSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FRotator::Yaw] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Yaw =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -1244,7 +1262,12 @@ static void _FRotatorRollGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FRotator::Roll] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->Roll);
     Info.GetReturnValue().Set(V8Result);
@@ -1255,7 +1278,11 @@ static void _FRotatorRollSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FRotator>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FRotator::Roll] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Roll =Value->ToNumber(Context).ToLocalChecked()->Value();

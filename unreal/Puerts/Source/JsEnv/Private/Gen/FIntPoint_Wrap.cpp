@@ -676,7 +676,12 @@ static void _FIntPointXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntPoint::X] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Integer::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
@@ -687,7 +692,11 @@ static void _FIntPointXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntPoint::X] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->X =Value->ToInteger(Context).ToLocalChecked()->Value();
@@ -698,7 +707,12 @@ static void _FIntPointYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntPoint::Y] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Integer::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
@@ -709,7 +723,11 @@ static void _FIntPointYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.This());
+    auto Self = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FIntPoint::Y] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Y =Value->ToInteger(Context).ToLocalChecked()->Value();

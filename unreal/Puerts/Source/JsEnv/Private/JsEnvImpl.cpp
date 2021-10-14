@@ -79,6 +79,17 @@
 
 #endif
 
+#else
+#if PLATFORM_WINDOWS
+#include <windows.h>
+#elif PLATFORM_LINUX
+#include <sys/epoll.h>
+#elif PLATFORM_MAC
+#include <sys/select.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#endif
 #endif
 
 namespace puerts
@@ -87,6 +98,159 @@ namespace puerts
 FJsEnvImpl::FJsEnvImpl(const FString &ScriptRoot):FJsEnvImpl(std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, nullptr)
 {
 }
+
+#if defined(WITH_NODEJS)
+void FJsEnvImpl::StartPolling()
+{
+    uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
+    uv_sem_init(&PollingSem, 0);
+    uv_thread_create(&PollingThread, [](void* arg)
+    {
+        auto* self = static_cast<FJsEnvImpl*>(arg);
+        while (true)
+        {
+            uv_sem_wait(&self->PollingSem);
+
+            if (self->PollingClosed)
+                break;
+
+            self->PollEvents();
+
+            if (self->PollingClosed)
+                break;
+
+            self->LastJob = FFunctionGraphTask::CreateAndDispatchWhenReady([self]()
+            {
+                self->UvRunOnce();
+            }, TStatId{}, nullptr, ENamedThreads::GameThread);
+        }
+    }, this);
+    
+#if PLATFORM_WINDOWS
+    if (FPlatformMisc::NumberOfCores())
+    {
+        if (NodeUVLoop.iocp && NodeUVLoop.iocp != INVALID_HANDLE_VALUE)
+            CloseHandle(NodeUVLoop.iocp);
+        NodeUVLoop.iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
+    }
+#elif PLATFORM_LINUX
+    Epoll = epoll_create(1);
+    int backend_fd = uv_backend_fd(&NodeUVLoop);
+    struct epoll_event ev = {0};
+    ev.events = EPOLLIN;
+    ev.data.fd = backend_fd;
+    epoll_ctl(Epoll, EPOLL_CTL_ADD, backend_fd, &ev);
+    NodeUVLoop.data = this;
+    NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
+    
+#elif PLATFORM_MAC
+    NodeUVLoop.data = this;
+    NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
+#endif
+    UvRunOnce();
+}
+
+void FJsEnvImpl::UvRunOnce()
+{
+    auto Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
+    v8::Context::Scope ContextScope(Context);
+
+    //TODO: catch uv_run可以让脚本错误不至于进程退出，但这不知道会不会对node有什么副作用
+    v8::TryCatch TryCatch(Isolate);
+    
+    uv_run(&NodeUVLoop, UV_RUN_NOWAIT);
+    if (TryCatch.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+        return;
+    }
+
+    LastJob = nullptr;
+
+    // Tell the Polling thread to continue.
+    uv_sem_post(&PollingSem);
+}
+
+void FJsEnvImpl::PollEvents()
+{
+#if PLATFORM_WINDOWS
+    DWORD bytes, timeout;
+    ULONG_PTR key;
+    OVERLAPPED* overlapped;
+
+    timeout = uv_backend_timeout(&NodeUVLoop);
+
+    GetQueuedCompletionStatus(NodeUVLoop.iocp, &bytes, &key, &overlapped, timeout);
+
+    // Give the event back so libuv can deal with it.
+    if (overlapped != NULL)
+        PostQueuedCompletionStatus(NodeUVLoop.iocp, bytes, key, overlapped);
+#elif PLATFORM_LINUX
+    int timeout = uv_backend_timeout(&NodeUVLoop);
+
+    // Wait for new libuv events.
+    int r;
+    do {
+        struct epoll_event ev;
+        r = epoll_wait(Epoll, &ev, 1, timeout);
+    } while (r == -1 && errno == EINTR);
+#elif PLATFORM_MAC
+    struct timeval tv;
+    int timeout = uv_backend_timeout(&NodeUVLoop);
+    if (timeout != -1) {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+    }
+
+    fd_set readset;
+    int fd = uv_backend_fd(&NodeUVLoop);
+    FD_ZERO(&readset);
+    FD_SET(fd, &readset);
+
+    // Wait for new libuv events.
+    int r;
+    do {
+        r = select(fd + 1, &readset, nullptr, nullptr,
+                   timeout == -1 ? nullptr : &tv);
+    } while (r == -1 && errno == EINTR);
+#endif
+}
+
+void FJsEnvImpl::OnWatcherQueueChanged(uv_loop_t* loop)
+{
+#if !PLATFORM_WINDOWS
+    FJsEnvImpl* self = static_cast<FJsEnvImpl*>(loop->data);
+    self->WakeupPollingThread();
+#endif
+}
+
+void FJsEnvImpl::WakeupPollingThread()
+{
+    uv_async_send(&DummyUVHandle);
+}
+
+void FJsEnvImpl::StopPolling()
+{
+    PollingClosed = true;
+
+    uv_sem_post(&PollingSem);
+
+    WakeupPollingThread();
+
+    uv_thread_join(&PollingThread);
+
+    if (LastJob)
+    {
+        LastJob->Wait();
+    }
+
+    uv_sem_destroy(&PollingSem);
+}
+
+#endif
 
 FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
     void* InExternalRuntime, void* InExternalContext)
@@ -211,6 +375,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     //the same as raw v8
     Isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+    
+    StartPolling();
 #endif
     
     v8::Local<v8::Object> Global = Context->Global();
@@ -382,21 +548,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
 
-#if defined(WITH_NODEJS)
-    UVLoopCallbackHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this](float) -> bool
-    {
-        auto IsolateInner = MainIsolate;
-        v8::Isolate::Scope IsolateScopeInner(IsolateInner);
-        v8::HandleScope HandleScopeInner(IsolateInner);
-        auto ContextInner = v8::Local<v8::Context>::New(IsolateInner, DefaultContext);
-        v8::Context::Scope ContextScopeInner(ContextInner);
-        
-        while(uv_run(&this->NodeUVLoop, UV_RUN_NOWAIT)) {};
-       
-        return true;
-    }), UV_LOOP_DELAY);
-#endif
-
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
     AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
@@ -408,6 +559,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+#if defined(WITH_NODEJS)
+    StopPolling();
+#endif
+    
     FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
 
     for(int i = 0; i < ManualReleaseCallbackList.size(); i++)
@@ -422,10 +577,6 @@ FJsEnvImpl::~FJsEnvImpl()
     Require.Reset();
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
-
-#if defined(WITH_NODEJS)
-    FTicker::GetCoreTicker().RemoveTicker(UVLoopCallbackHandler);
-#endif
 
     FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
 

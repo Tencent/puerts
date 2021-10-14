@@ -14,6 +14,7 @@ namespace Puerts
         private readonly int jsEnvIdx;
         private readonly IntPtr isolate;
         private readonly IntPtr value;
+        private readonly IntPtr info;
         private JsValueType valueType;
         private object obj;
         private Type csType;
@@ -22,10 +23,29 @@ namespace Puerts
         {
             this.jsEnvIdx = jsEnvIdx;
             this.isolate = isolate;
+            this.info = info;
             value = PuertsDLL.GetArgumentValue(info, index);
             valueType = JsValueType.Invalid;
             obj = null;
             csType = null;
+        }
+
+        public bool IsMatchParams(JsValueType expectJsType, Type expectCsType, int start, int end)
+        {
+            if (!IsMatch(expectJsType, expectCsType, false, false)) 
+            {
+                return false;
+            }
+            for (int i = start + 1; i < end; i++)
+            {
+                var argHelper = new Puerts.ArgumentHelper(jsEnvIdx, isolate, info, i);
+                if (!argHelper.IsMatch(expectJsType, expectCsType, false, false))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public bool IsMatch(JsValueType expectJsType, Type expectCsType, bool isByRef, bool isOut)
