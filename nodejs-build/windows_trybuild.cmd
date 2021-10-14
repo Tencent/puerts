@@ -9,6 +9,8 @@ git checkout v%VERSION%
 
 node %GITHUB_WORKSPACE%\v8-build\CRLF2LF.js %GITHUB_WORKSPACE%\nodejs-build\nodemod.patch
 call git apply --cached --reject %GITHUB_WORKSPACE%\nodejs-build\nodemod.patch
+node %GITHUB_WORKSPACE%\v8-build\CRLF2LF.js %GITHUB_WORKSPACE%\nodejs-build\lib_uv_add_on_watcher_queue_updated.patch
+call git apply --cached --reject %GITHUB_WORKSPACE%\nodejs-build\lib_uv_add_on_watcher_queue_updated.patch
 call git checkout -- .
 
 copy /y %GITHUB_WORKSPACE%\nodejs-build\zlib.def deps\zlib\win32\zlib.def
