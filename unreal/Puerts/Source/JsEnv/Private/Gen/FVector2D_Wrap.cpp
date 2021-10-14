@@ -1423,6 +1423,11 @@ static void _FVector2DXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::X] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->X);
     Info.GetReturnValue().Set(V8Result);
@@ -1434,6 +1439,10 @@ static void _FVector2DXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::X] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->X =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -1445,6 +1454,11 @@ static void _FVector2DYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::Y] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->Y);
     Info.GetReturnValue().Set(V8Result);
@@ -1456,6 +1470,10 @@ static void _FVector2DYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::Y] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->Y =Value->ToNumber(Context).ToLocalChecked()->Value();

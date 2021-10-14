@@ -1100,6 +1100,11 @@ static void _FLinearColorRGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::R] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->R);
     Info.GetReturnValue().Set(V8Result);
@@ -1111,6 +1116,10 @@ static void _FLinearColorRSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::R] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->R =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -1122,6 +1131,11 @@ static void _FLinearColorGGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::G] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->G);
     Info.GetReturnValue().Set(V8Result);
@@ -1133,6 +1147,10 @@ static void _FLinearColorGSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::G] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->G =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -1144,6 +1162,11 @@ static void _FLinearColorBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::B] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->B);
     Info.GetReturnValue().Set(V8Result);
@@ -1155,6 +1178,10 @@ static void _FLinearColorBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::B] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->B =Value->ToNumber(Context).ToLocalChecked()->Value();
@@ -1166,6 +1193,11 @@ static void _FLinearColorAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::A] Attempt to access a NULL self pointer");
+        return;
+    }
 
     auto V8Result =v8::Number::New(Isolate, Self->A);
     Info.GetReturnValue().Set(V8Result);
@@ -1177,6 +1209,10 @@ static void _FLinearColorASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+    if (!Self) {
+        puerts::DataTransfer::ThrowException(Isolate, "[FLinearColor::A] Attempt to access a NULL self pointer");
+        return;
+    }
     auto Value = Info[0];
 
     Self->A =Value->ToNumber(Context).ToLocalChecked()->Value();
