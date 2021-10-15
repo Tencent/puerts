@@ -36,9 +36,15 @@
 
 static FString SafeName(const FString &Name)
 {
-    auto Ret = Name.Replace(TEXT(" "), TEXT("")).Replace(TEXT("-"), TEXT("_"))
+    // auto Ret = Name.Replace(TEXT(" "), TEXT("")).Replace(TEXT("-"), TEXT("_"))
+    //     .Replace(TEXT("/"), TEXT("_")).Replace(TEXT("("), TEXT("_"))
+    //     .Replace(TEXT(")"), TEXT("_")).Replace(TEXT("?"), TEXT("$"))
+    //     .Replace(TEXT(","), TEXT("_"));
+    // 临时解决导出d.ts后变量重名问题，但这么改无效，具体参考：
+    // https://github.com/Tencent/puerts/issues/205
+    auto Ret = Name.Replace(TEXT(" "), TEXT("_")).Replace(TEXT("-"), TEXT("_"))
         .Replace(TEXT("/"), TEXT("_")).Replace(TEXT("("), TEXT("_"))
-        .Replace(TEXT(")"), TEXT("_")).Replace(TEXT("?"), TEXT("$"))
+        .Replace(TEXT(")"), TEXT("_")).Replace(TEXT("?"), TEXT("_"))
         .Replace(TEXT(","), TEXT("_"));
     if (Ret.Len() > 0)
     {
@@ -93,6 +99,28 @@ static FString SafeFieldName(const FString &Name, bool WithBracket = true)
     }
     return IsInvalid  ? (WithBracket ? ((TEXT("[\"") + Ret + TEXT("\"]"))) : ((TEXT("\"") + Ret + TEXT("\"")))) : Ret;
 }
+
+//在PropertyTranslator.cpp另有一份，因为属于两个不同的模块共享比较困难，改动需要同步改
+static FString DisplayNameOfUserDefinedStructField(const FString &Name)
+{
+    const int32 GuidStrLen = 32;
+    if (Name.Len() > GuidStrLen + 3)
+    {
+        const int32 UnderscoreIndex = Name.Len() - GuidStrLen - 1;
+        if (TCHAR('_') == Name[UnderscoreIndex])
+        {
+            for (int i = UnderscoreIndex - 1; i > 0; i--)
+            {
+                if (TCHAR('_') == Name[i])
+                {
+                    return Name.Mid(0, i);
+                }
+            }
+        }
+    }
+    return Name;
+}
+
 
 FStringBuffer& FStringBuffer::operator <<(const FString& InText)
 {

@@ -26,6 +26,7 @@ declare module "puerts" {
     }
     
     function merge(des: {}, src: {}): void;
+    function registerBuildinModule(name: string, module: any): void;
     
     //function requestJitModuleMethod(moduleName: string, methodName: string, callback: (err: Error, result: any)=> void, ... args: any[]): void;
     

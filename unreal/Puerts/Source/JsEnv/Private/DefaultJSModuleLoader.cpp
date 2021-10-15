@@ -102,7 +102,9 @@ namespace puerts
         }
         
 		return SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath)
-            || (ScriptRoot != TEXT("JavaScript") && SearchModuleInDir(FPaths::ProjectContentDir() / TEXT("JavaScript"), RequiredModule, Path, AbsolutePath));
+            // Modify by Song Fuhao 解决插件自带脚本启动寻址问题
+            // Modify by Tiansen  使用宏替换
+            || SearchModuleInDir(FPaths::ProjectPluginsDir() / ENGINE_JS_SEARCH_PATH , RequiredModule, Path, AbsolutePath);
 	}
 
 	bool DefaultJSModuleLoader::Load(const FString& Path, TArray<uint8>& Content)
