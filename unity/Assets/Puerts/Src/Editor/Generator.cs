@@ -538,7 +538,19 @@ namespace Puerts.Editor
                 public ParameterGenInfo[] ParameterInfos;
                 public bool IsVoid;
                 public bool HasParams;
+                public bool EllipsisedParameters;
 
+                private string ParameterInfosMark = null;
+                internal string GetParameterInfosMark() 
+                {
+                    if (ParameterInfosMark == null)
+                    {
+                        ParameterInfosMark = String.Join("|", ParameterInfos.Select(pinfo=> pinfo.TypeName).ToArray());
+                    }
+
+                    return ParameterInfosMark;
+                }
+                
                 public static List<OverloadGenInfo> FromMethodBase(MethodBase methodBase, bool extensionMethod = false)
                 {
                     List<OverloadGenInfo> ret = new List<OverloadGenInfo>();
@@ -550,7 +562,8 @@ namespace Puerts.Editor
                         {
                             ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                             TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
-                            IsVoid = methodInfo.ReturnType == typeof(void)
+                            IsVoid = methodInfo.ReturnType == typeof(void),
+                            EllipsisedParameters = false
                         };
                         Utils.FillEnumInfo(mainInfo, methodInfo.ReturnType);
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
@@ -565,7 +578,8 @@ namespace Puerts.Editor
                                 {
                                     ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
                                     TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
-                                    IsVoid = methodInfo.ReturnType == typeof(void)
+                                    IsVoid = methodInfo.ReturnType == typeof(void),
+                                    EllipsisedParameters = true
                                 };
                                 Utils.FillEnumInfo(optionalInfo, methodInfo.ReturnType);
                                 optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
@@ -584,7 +598,8 @@ namespace Puerts.Editor
                         {
                             ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                             TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
-                            IsVoid = false
+                            IsVoid = false,
+                            EllipsisedParameters = false
                         };
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
                         ret.Add(mainInfo);
@@ -598,7 +613,8 @@ namespace Puerts.Editor
                                 {
                                     ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
                                     TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
-                                    IsVoid = false
+                                    IsVoid = false,
+                                    EllipsisedParameters = true
                                 };
                                 optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
                                 ret.Add(optionalInfo);
@@ -682,11 +698,46 @@ namespace Puerts.Editor
                         IsStatic = isStatic,
                         HasOverloads = ret.Count > 1,
                         OverloadCount = ret.Count,
-                        OverloadGroups = ret.GroupBy(m => m.ParameterInfos.Length + (m.HasParams ? 0 : 9999)).Select(lst => lst.ToArray()).ToArray()
+                        OverloadGroups = ret
+                            .GroupBy(m => m.ParameterInfos.Length + (m.HasParams ? 0 : 9999))
+                            .Select(lst => {
+                                // 因为加上了查找父类的同名函数，这里要去除参数一样的overload
+                                // there are some overload from baseclass, so we need to distinct the overloads with same parameterinfo
+                                Dictionary<string, OverloadGenInfo> distincter = new Dictionary<string, OverloadGenInfo>();
+
+                                foreach (var overload in lst) 
+                                {
+                                    string mark = overload.GetParameterInfosMark();
+                                    OverloadGenInfo existedOverload = null;
+                                    if (!distincter.TryGetValue(mark, out existedOverload)) 
+                                    {
+                                        distincter.Add(mark, overload);
+                                    }
+                                    else 
+                                    {
+                                        if (!overload.EllipsisedParameters)
+                                        {
+                                            if (existedOverload == null || existedOverload.EllipsisedParameters) 
+                                            {
+                                                distincter[mark] = overload;
+                                            }
+                                        }
+                                        else 
+                                        {
+                                            if (existedOverload.EllipsisedParameters)
+                                            {
+                                                distincter[mark] = null;
+                                            }
+                                        }
+                                    }
+                                }
+                                return distincter.Values.ToList().Where(item=> item != null).ToArray();
+                            })
+                            .Where(lst => lst.Count() > 0)
+                            .ToArray()
                     };
                     return result;
                 }
-
             }
         }
 
