@@ -629,6 +629,7 @@ namespace Puerts
                 {
                     typeId = PuertsDLL.RegisterStruct(jsEnv.isolate, -1, type.AssemblyQualifiedName, registerInfo.Constructor, 
                         null, jsEnv.Idx, System.Runtime.InteropServices.Marshal.SizeOf(type));
+
                 }
                 else
                 {
@@ -638,6 +639,11 @@ namespace Puerts
                 foreach (var kv in registerInfo.Methods)
                 {
                     PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, kv.Value, jsEnv.Idx);
+                    if (kv.Key.Name == "ToString" && registerInfo.BlittableCopy) 
+                    {
+                        PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, "toString", false, kv.Value, jsEnv.Idx);
+                    }
+
                 }
 
                 foreach (var kv in registerInfo.Properties)

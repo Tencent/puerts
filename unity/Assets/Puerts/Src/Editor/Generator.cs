@@ -536,6 +536,7 @@ namespace Puerts.Editor
             public class OverloadGenInfo : DataTypeInfo
             {
                 public ParameterGenInfo[] ParameterInfos;
+                public ParameterGenInfo[] OptionalParameterInfos;
                 public bool IsVoid;
                 public bool HasParams;
 
@@ -561,9 +562,11 @@ namespace Puerts.Editor
                             OverloadGenInfo optionalInfo = null;
                             if (ps[i].IsOptional)
                             {
+                                var parameterInfo = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info));
                                 optionalInfo = new OverloadGenInfo()
                                 {
-                                    ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
+                                    ParameterInfos = parameterInfo.Take(i).ToArray(),
+                                    OptionalParameterInfos = parameterInfo.Reverse().Take(ps.Length - i).Reverse().ToArray(),
                                     TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                                     IsVoid = methodInfo.ReturnType == typeof(void)
                                 };
@@ -594,9 +597,11 @@ namespace Puerts.Editor
                             OverloadGenInfo optionalInfo = null;
                             if (ps[i].IsOptional)
                             {
+                                var parameterInfo = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info));
                                 optionalInfo = new OverloadGenInfo()
                                 {
-                                    ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
+                                    ParameterInfos = parameterInfo.Take(i).ToArray(),
+                                    OptionalParameterInfos = parameterInfo.Reverse().Take(ps.Length - i).Reverse().ToArray(),
                                     TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                                     IsVoid = false
                                 };
