@@ -10,6 +10,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleInterface.h"
 #include "Modules/ModuleManager.h"
+#include "EngineMinimal.h"
 
 /**
  * The public interface to this module

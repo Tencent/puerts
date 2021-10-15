@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PropertyMacros.h"
-
+#include "EngineMinimal.h"
 
 USTRUCT(noexport)
 struct FPropertyMetaRoot

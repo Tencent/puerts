@@ -12,6 +12,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "CoreUObject.h"
+
 class UDynamicDelegateProxy;
 class UJSGeneratedFunction;
 namespace puerts
