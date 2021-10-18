@@ -262,7 +262,13 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
     }
 
-    if (Params) CallFunction->DestroyStruct(Params);
+    if (Params)
+    {
+        for (int i = 0; i < Arguments.size(); ++i)
+        {
+            Arguments[i]->Property->DestroyValue_InContainer(Params);
+        }
+    }
 }
 
 void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, std::function<void(void *)> OnCall)
@@ -294,7 +300,13 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
         Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
     }
 
-    if (Params) Function->DestroyStruct(Params);
+    if (Params)
+    {
+        for (int i = 0; i < Arguments.size(); ++i)
+        {
+            Arguments[i]->Property->DestroyValue_InContainer(Params);
+        }
+    }
 }
 
 void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, v8::Local<v8::Value> This, void *Params)
@@ -429,7 +441,13 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
 
     if (!Arguments[0]->JsToUEInContainer(Isolate, Context, Info.Holder(), Params, false))
     {
-        if (Params) Function->DestroyStruct(Params);
+        if (Params)
+        {
+            for (int i = 0; i < Arguments.size(); ++i)
+            {
+                Arguments[i]->Property->DestroyValue_InContainer(Params);
+            }
+        }
         FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
@@ -470,7 +488,12 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
         StructProperty->CopySingleValue(FV8Utils::GetPointer(Info.Holder()), StructProperty->ContainerPtrToValuePtr<void>(Params));
     }
 
-    if (Params) Function->DestroyStruct(Params);
-
+    if (Params)
+    {
+        for (int i = 0; i < Arguments.size(); ++i)
+        {
+            Arguments[i]->Property->DestroyValue_InContainer(Params);
+        }
+    }
 }
 };
