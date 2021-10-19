@@ -359,13 +359,49 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 #else
         Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
-            
+ 
         if (Params)
         {
-            Function->InitializeStruct(Params);
-            for (TFieldIterator<PropertyMacro> It(Function.Get()); It && (It->PropertyFlags & CPF_Parm) == CPF_Parm; ++It)
+            FOutParmRec** LastOut = nullptr;
+            if (!Stack.OutParms) LastOut = &Stack.OutParms;
+            //ScriptCore.cpp
+            for (TFieldIterator<PropertyMacro> It(Function.Get()); It && Stack.PeekCode() != EX_EndFunctionParms; ++It)
             {
-                Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
+                It->InitializeValue_InContainer(Params);
+                
+                if( ((It->PropertyFlags & CPF_ReturnParm) != 0) || ((It->PropertyFlags & CPF_Parm) != CPF_Parm) )
+                {
+                    continue;
+                }
+                Stack.MostRecentPropertyAddress = nullptr;
+                
+                if ( It->PropertyFlags & CPF_OutParm)
+                {
+                    Stack.Step(Stack.Object, NULL);
+
+                    if (LastOut)
+                    {
+                        CA_SUPPRESS(6263)
+                        FOutParmRec* Out = (FOutParmRec*)FMemory_Alloca(sizeof(FOutParmRec));
+                        ensure(Stack.MostRecentPropertyAddress);
+                        Out->PropAddr = (Stack.MostRecentPropertyAddress != NULL) ? Stack.MostRecentPropertyAddress : It->ContainerPtrToValuePtr<uint8>(Params);
+                        Out->Property = *It;
+
+                        if (*LastOut)
+                        {
+                            (*LastOut)->NextOutParm = Out;
+                            LastOut = &(*LastOut)->NextOutParm;
+                        }
+                        else
+                        {
+                            *LastOut = Out;
+                        }
+                    }
+                }
+                else
+                {
+                    Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
+                }
             }
         }
     }
@@ -396,8 +432,10 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             if (Arguments[i]->IsOut())
             {
                 auto OutParmRec = GetMatchOutParmRec(Stack.OutParms, Arguments[i]->Property);
-                check(OutParmRec);
-                Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, false);
+                if (OutParmRec)
+                {
+                    Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, false);
+                }
             }
         }
     }

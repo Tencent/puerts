@@ -591,13 +591,30 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
         TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedPins = FunctionEntryNode->UserDefinedPins;
 
-        bool ParameterChanged = OldUserDefinedPins.Num() != ParameterTypes.Num();
+        TArray<TPair<FName, FEdGraphPinType>> InputParameterTypes;
+        TArray<TPair<FName, FEdGraphPinType>> OutputParameterTypes;
+
+        for(int i = 0; i < ParameterTypes.Num(); ++i)
+        {
+            FEdGraphPinType ParameterType = ParameterTypes[i];
+            if (ParameterType.bIsReference)
+            {
+                ParameterType.bIsReference = false;
+                OutputParameterTypes.Add(TPair<FName, FEdGraphPinType>(ParameterNames[i], ParameterType));
+            }
+            else
+            {
+                InputParameterTypes.Add(TPair<FName, FEdGraphPinType>(ParameterNames[i], ParameterType));
+            }
+        }
+
+        bool ParameterChanged = OldUserDefinedPins.Num() != InputParameterTypes.Num();
 
         if (!ParameterChanged)
         {
             for (int i = 0; i < OldUserDefinedPins.Num(); i++)
             {
-                if (OldUserDefinedPins[i]->PinType != ParameterTypes[i])
+                if (OldUserDefinedPins[i]->PinType != InputParameterTypes[i].Value)
                 {
                     ParameterChanged = true;
                 }
@@ -610,11 +627,34 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             {
                 FunctionEntryNode->RemoveUserDefinedPin(pinInfo);
             }
-            for (int i = 0; i < ParameterNames.Num(); i++)
+            for (int i = 0; i < InputParameterTypes.Num(); i++)
             {
-                FunctionEntryNode->CreateUserDefinedPin(ParameterNames[i], ParameterTypes[i], EGPD_Output);
+                FunctionEntryNode->CreateUserDefinedPin(InputParameterTypes[i].Key, InputParameterTypes[i].Value, EGPD_Output);
             }
         }
+
+        auto TryAddOutput = [](TArray<UK2Node_EditablePinBase*> TargetNodes, FName PinName, const FEdGraphPinType& PinType) -> bool
+        {
+            bool Changed = false; 
+            for (UK2Node_EditablePinBase* Node : TargetNodes)
+            {
+                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
+                auto Old = Node->UserDefinedPins.FindByPredicate([&PinName](const TSharedPtr<FUserPinInfo>& UDPin)
+                    {
+                        return UDPin.IsValid() && (UDPin->PinName == PinName);
+                    });
+                if (!Old || (*Old)->PinType != PinType)
+                {
+                    Changed = true;
+                    if (Old)
+                    {
+                        Node->RemoveUserDefinedPinByName(PinName);
+                    }
+                    Node->CreateUserDefinedPin(PinName, PinType, EGPD_Input, false);
+                }
+            }
+            return Changed;
+        };
 
         bool RetChanged = false;
 
@@ -623,25 +663,8 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         if (!IsVoid && !IsCustomEvent)
         {
             FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
-            //EntryNodes[0]->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
             auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
-
-            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
-            for (UK2Node_EditablePinBase* Node : TargetNodes)
-            {
-                TArray<TSharedPtr<FUserPinInfo>> OldUserDefinedReturnPins = Node->UserDefinedPins;
-                RetChanged = RetChanged || (OldUserDefinedReturnPins.Num() != 1) || (OldUserDefinedReturnPins[0]->PinType != PinType);
-
-                if (RetChanged)
-                {
-                    Node->Modify();
-                    for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
-                    {
-                        Node->RemoveUserDefinedPin(pinInfo);
-                    }
-                    Node->CreateUserDefinedPin(RetValName, PinType, EGPD_Input, false);
-                }
-            }
+            RetChanged = RetChanged || TryAddOutput(GatherAllResultNodes(FunctionResultNode), RetValName, PinType);
         }
         else
         {
@@ -670,6 +693,30 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                         {
                             Node->RemoveUserDefinedPin(pinInfo);
                         }
+                    }
+                }
+            }
+        }
+
+        if (!IsCustomEvent && OutputParameterTypes.Num() > 0)
+        {
+            auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
+            TArray<UK2Node_EditablePinBase*> TargetNodes = GatherAllResultNodes(FunctionResultNode);
+            TSet<FName> OutputSet;
+            for (auto & Pair : OutputParameterTypes)
+            {
+                RetChanged = RetChanged || TryAddOutput(TargetNodes, Pair.Key, Pair.Value);
+                OutputSet.Add(Pair.Key);
+            }
+            OutputSet.Add(RetValName);
+            for (UK2Node_EditablePinBase* Node : TargetNodes)
+            {
+                for (TSharedPtr<FUserPinInfo> UserDefinedPin : Node->UserDefinedPins)
+                {
+                    if (!OutputSet.Contains(UserDefinedPin->PinName))
+                    {
+                        RetChanged = true;
+                        Node->RemoveUserDefinedPinByName(UserDefinedPin->PinName);
                     }
                 }
             }
