@@ -2347,12 +2347,12 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     switch (ContainerType)
     {
     case 0://Array
-        ScriptArray = new FScriptArray;
+        ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));;
         //Logger->Info(FString::Printf(TEXT("Array %s"), *Property1->GetClass()->GetName()));
         Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptArray, false));
         break;
     case 1://Set
-        ScriptSet = new FScriptSet;
+        ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(Property1));
         //Logger->Info(FString::Printf(TEXT("Set %s"), *Property1->GetClass()->GetName()));
         Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptSet, false));
         break;
@@ -2363,7 +2363,7 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
         //Logger->Info(FString::Printf(TEXT("Map %s %s"), *Property1->GetClass()->GetName(), *Property2->GetClass()->GetName()));
-        ScriptMap = new FScriptMap;
+        ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(Property1, Property2));
         Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, Property2, ScriptMap, false));
         break;
     default:

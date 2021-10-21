@@ -11,6 +11,7 @@
 #include "StructWrapper.h"
 #include "Engine/UserDefinedStruct.h"
 #include "ArrayBuffer.h"
+#include "ContainerWrapper.h"
 #include "JsObject.h"
 
 namespace puerts
@@ -574,7 +575,7 @@ public:
         }
         else
         {
-            ScriptArray = new FScriptArray;
+            ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
             ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
@@ -610,7 +611,7 @@ public:
         }
         else
         {
-            ScriptSet = new FScriptSet;
+            ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
             SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
@@ -646,7 +647,7 @@ public:
         }
         else
         {
-            ScriptMap = new FScriptMap;
+            ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);

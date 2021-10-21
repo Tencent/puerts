@@ -255,6 +255,7 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Return)
     {
         Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Return->Property->DestroyValue_InContainer(Params);
     }
 
     for (int i = 0; i < Arguments.size(); ++i)
@@ -293,6 +294,7 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     if (Return)
     {
         Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Return->Property->DestroyValue_InContainer(Params);
     }
 
     for (int i = 0; i < Arguments.size(); ++i)
@@ -512,6 +514,7 @@ void FExtensionMethodTranslator::CallExtension(v8::Isolate* Isolate, v8::Local<v
     if (Return)
     {
         Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Return->Property->DestroyValue_InContainer(Params);
     }
 
     for (int i = 1; i < Arguments.size(); ++i)

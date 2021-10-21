@@ -10,15 +10,6 @@
 
 namespace puerts
 {
-    FORCEINLINE static int32 GetKeyOffset(const FScriptMapLayout &ScriptMapLayout)
-    {
-#if ENGINE_MINOR_VERSION < 22 && ENGINE_MAJOR_VERSION < 5
-        return ScriptMapLayout.KeyOffset;
-#else
-        return 0;
-#endif
-    }
-
     v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
     {
         v8::Isolate::Scope Isolatescope(Isolate);
@@ -157,7 +148,7 @@ namespace puerts
         }
         else
         {
-            Destruct(Self, Inner, Index, 1);
+            FScriptArrayEx::Destruct(Self, Inner->Property, Index, 1);
             Self->Remove(Index, 1, Inner->Property->GetSize());
         }
     }
@@ -189,8 +180,7 @@ namespace puerts
             return;
         }
 
-        Destruct(Self, Inner, 0, Self->Num());
-        Self->Empty(0, Inner->Property->GetSize());
+        FScriptArrayEx::Empty(Self, Inner->Property);
     }
 
     FORCEINLINE int32 FScriptArrayWrapper::AddUninitialized(FScriptArray *ScriptArray, int32 ElementSize, int32 Count)
@@ -210,17 +200,6 @@ namespace puerts
         for (int32 i = 0; i < Count; ++i)
         {
             Inner->Property->InitializeValue(Dest);
-            Dest += ElementSize;
-        }
-    }
-
-    FORCEINLINE void FScriptArrayWrapper::Destruct(FScriptArray *ScriptArray, FPropertyTranslator *Inner, int32 Index, int32 Count)
-    {
-        int32 ElementSize = Inner->Property->GetSize();
-        uint8 *Dest = GetData(ScriptArray, ElementSize, Index);
-        for (int32 i = 0; i < Count; ++i)
-        {
-            Inner->Property->DestroyValue(Dest);
             Dest += ElementSize;
         }
     }
@@ -386,7 +365,7 @@ namespace puerts
         {
             auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
             void* Data = Self->GetData(Index, ScriptLayout);
-            Destruct(Self, Inner, Index, 1);
+            FScriptSetEx::Destruct(Self, Property, Index, 1);
             Self->RemoveAt(Index, ScriptLayout);
         }
     }
@@ -429,26 +408,8 @@ namespace puerts
             FV8Utils::ThrowException(Isolate, "item info is invalid!");
             return;
         }
-        auto Property = Inner->Property;
 
-        auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
-        Destruct(Self, Inner, 0, Self->Num());
-        Self->Empty(0, ScriptLayout);
-    }
-
-    void FScriptSetWrapper::Destruct(FScriptSet *ScriptSet, FPropertyTranslator *Inner, int32 Index, int32 Count)
-    {
-        int32 MaxIndex = ScriptSet->GetMaxIndex();
-        auto Property = Inner->Property;
-        auto SetLayout = ScriptSet->GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
-        for (int32 i = Index; i < Index + Count; ++i)
-        {
-            if (ScriptSet->IsValidIndex(i))
-            {
-                void* Data = ScriptSet->GetData(i, SetLayout);
-                Property->DestroyValue(Data);
-            }
-        }
+        FScriptSetEx::Empty(Self, Inner->Property);
     }
 
     int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -638,7 +599,7 @@ namespace puerts
         }
         else
         {
-            Destruct(Self, KeyPropertyTranslator, ValuePropertyTranslator, Index, 1);
+            FScriptMapEx::Destruct(Self, KeyProperty, ValueProperty, Index, 1);
             Self->RemoveAt(Index, ScriptLayout);
         }
         KeyProperty->DestroyValue(KeyPtr);
@@ -719,28 +680,7 @@ namespace puerts
             return;
         }
         
-        auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
-        Destruct(Self, KeyPropertyTranslator, ValuePropertyTranslator, 0, Self->Num());
-        Self->Empty(0, ScriptLayout);
-    }
-
-    void FScriptMapWrapper::Destruct(FScriptMap *ScriptMap, FPropertyTranslator *KeyTranslator, FPropertyTranslator *ValueTranslator, int32 Index, int32 Count)
-    {
-        int32 MaxIndex = ScriptMap->GetMaxIndex();
-        auto KeyProperty = KeyTranslator->Property;
-        auto ValueProperty = ValueTranslator->Property;
-        auto MapLayout = GetScriptLayout(KeyProperty, ValueProperty);
-        for (int32 i = Index; i < Index + Count; ++i)
-        {
-            if (ScriptMap->IsValidIndex(i))
-            {
-                uint8* Data = reinterpret_cast<uint8*>(ScriptMap->GetData(i, MapLayout));
-                void* Key = Data + GetKeyOffset(MapLayout);
-                void* Value = Data + MapLayout.ValueOffset;
-                KeyProperty->DestroyValue(Key);
-                ValueProperty->DestroyValue(Value);
-            }
-        }
+        FScriptMapEx::Empty(Self, KeyProperty, ValueProperty);
     }
 
     FScriptMapLayout FScriptMapWrapper::GetScriptLayout(const PropertyMacro* KeyProperty, const PropertyMacro* ValueProperty)

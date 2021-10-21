@@ -14,6 +14,7 @@
 #include "CoreUObject.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
+#include "JSLogger.h"
 
 #pragma warning(push, 0)  
 #include "libplatform/libplatform.h"
@@ -25,13 +26,208 @@ namespace puerts
 {
 class FPropertyTranslator;
 
+struct FScriptArrayEx
+{
+    FScriptArray Data;
+
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+    TWeakObjectPtr<PropertyMacro> PropertyPtr;
+#else
+    TWeakFieldPtr<PropertyMacro> PropertyPtr;
+#endif
+
+    FORCEINLINE FScriptArrayEx(PropertyMacro *InProperty)
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("FScriptArrayEx:%p"), this);
+        PropertyPtr = InProperty;
+    }
+
+    FORCEINLINE ~FScriptArrayEx()
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("~FScriptArrayEx:%p"), this);
+        if (PropertyPtr.IsValid())
+        {
+            Empty(&Data, PropertyPtr.Get());
+        }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("~FScriptArrayEx: Property is invalid"));
+        }
+    }
+
+    FORCEINLINE static uint8* GetData(FScriptArray *ScriptArray, int32 ElementSize, int32 Index)
+    {
+        return static_cast<uint8*>(ScriptArray->GetData()) + Index * ElementSize;
+    }
+
+    FORCEINLINE static void Destruct(FScriptArray *ScriptArray, PropertyMacro *Property, int32 Index, int32 Count = 1)
+    {
+        const int32 ElementSize = Property->GetSize();
+        uint8 *Dest = GetData(ScriptArray, ElementSize, Index);
+        for (int32 i = 0; i < Count; ++i)
+        {
+            Property->DestroyValue(Dest);
+            Dest += ElementSize;
+        }
+    }
+
+    FORCEINLINE static void Empty(FScriptArray *ScriptArray, PropertyMacro *Property)
+    {
+        Destruct(ScriptArray, Property, 0, ScriptArray->Num());
+        ScriptArray->Empty(0, Property->GetSize());
+    }
+};
+
+struct FScriptSetEx
+{
+    FScriptSet Data;
+
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+    TWeakObjectPtr<PropertyMacro> PropertyPtr;
+#else
+    TWeakFieldPtr<PropertyMacro> PropertyPtr;
+#endif
+
+    FORCEINLINE FScriptSetEx(PropertyMacro *InProperty)
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("FScriptSetEx:%p"), this);
+        PropertyPtr = InProperty;
+    }
+
+    FORCEINLINE ~FScriptSetEx()
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("~FScriptSetEx:%p"), this);
+        if (PropertyPtr.IsValid())
+        {
+            Empty(&Data, PropertyPtr.Get());
+        }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("~FScriptSetEx: Property is invalid"));
+        }
+    }
+
+    FORCEINLINE static void Destruct(FScriptSet *ScriptSet, PropertyMacro *Property, int32 Index, int32 Count = 1)
+    {
+        auto SetLayout = ScriptSet->GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
+        for (int32 i = Index; i < Index + Count; ++i)
+        {
+            if (ScriptSet->IsValidIndex(i))
+            {
+                void* Data = ScriptSet->GetData(i, SetLayout);
+                Property->DestroyValue(Data);
+            }
+        }
+    }
+
+    FORCEINLINE static void Empty(FScriptSet *ScriptSet, PropertyMacro *Property)
+    {
+        auto SetLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
+        Destruct(ScriptSet, Property, 0, ScriptSet->Num());
+        ScriptSet->Empty(0, SetLayout);
+    }
+};
+
+FORCEINLINE static int32 GetKeyOffset(const FScriptMapLayout &ScriptMapLayout)
+{
+#if ENGINE_MINOR_VERSION < 22 && ENGINE_MAJOR_VERSION < 5
+    return ScriptMapLayout.KeyOffset;
+#else
+    return 0;
+#endif
+}
+
+struct FScriptMapEx
+{
+    FScriptMap Data;
+
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+    TWeakObjectPtr<PropertyMacro> KeyPropertyPtr;
+    TWeakObjectPtr<PropertyMacro> ValuePropertyPtr;
+#else
+    TWeakFieldPtr<PropertyMacro> KeyPropertyPtr;
+    TWeakFieldPtr<PropertyMacro> ValuePropertyPtr;
+#endif
+
+    FORCEINLINE FScriptMapEx(PropertyMacro *InKeyProperty, PropertyMacro *InValueProperty)
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("FScriptMapEx:%p"), this);
+        KeyPropertyPtr = InKeyProperty;
+        ValuePropertyPtr = InValueProperty;
+    }
+
+    FORCEINLINE ~FScriptMapEx()
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("~FScriptMapEx:%p"), this);
+        if (KeyPropertyPtr.IsValid() && ValuePropertyPtr.IsValid())
+        {
+            Empty(&Data, KeyPropertyPtr.Get(), ValuePropertyPtr.Get());
+        }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("~FScriptMapEx: Property is invalid"));
+        }
+    }
+
+    FORCEINLINE static FScriptMapLayout GetScriptLayout(const PropertyMacro* KeyProperty, const PropertyMacro* ValueProperty)
+    {
+        return FScriptMap::GetScriptLayout(KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
+    }
+
+    FORCEINLINE static void Destruct(FScriptMap *ScriptMap, PropertyMacro *KeyProperty, PropertyMacro *ValueProperty, int32 Index, int32 Count = 1)
+    {
+        int32 MaxIndex = ScriptMap->GetMaxIndex();
+        auto MapLayout = GetScriptLayout(KeyProperty, ValueProperty);
+        for (int32 i = Index; i < Index + Count; ++i)
+        {
+            if (ScriptMap->IsValidIndex(i))
+            {
+                uint8* Data = reinterpret_cast<uint8*>(ScriptMap->GetData(i, MapLayout));
+                void* Key = Data + GetKeyOffset(MapLayout);
+                void* Value = Data + MapLayout.ValueOffset;
+                KeyProperty->DestroyValue(Key);
+                ValueProperty->DestroyValue(Value);
+            }
+        }
+    }
+
+    FORCEINLINE static void Empty(FScriptMap *ScriptMap, PropertyMacro *KeyProperty, PropertyMacro *ValueProperty)
+    {
+        auto MapLayout = GetScriptLayout(KeyProperty, ValueProperty);
+        Destruct(ScriptMap, KeyProperty, ValueProperty, 0, ScriptMap->Num());
+        ScriptMap->Empty(0, MapLayout);
+    }
+};
+
 template<typename T>
-class FContinerWrapper
+struct ContainerExTypeMapper;
+
+template<>
+struct ContainerExTypeMapper<FScriptArray>
+{
+    using Type = FScriptArrayEx;
+};
+
+template<>
+struct ContainerExTypeMapper<FScriptSet>
+{
+    using Type = FScriptSetEx;
+};
+
+template<>
+struct ContainerExTypeMapper<FScriptMap>
+{
+    using Type = FScriptMapEx;
+};
+
+template<typename T>
+class FContainerWrapper
 {
 public:
     static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<void>& Data)
     {
-        T *Container = static_cast<T*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
+        typedef ContainerExTypeMapper<T>::Type ET;
+        ET *Container = static_cast<ET*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
         FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindContainer(Container);
         delete Container;
     }
@@ -65,7 +261,7 @@ public:
         }
         else // Call by js new
         {
-            FV8Utils::ThrowException(Isolate, "Container Constrator no support yet");
+            FV8Utils::ThrowException(Isolate, "Container Constructor no support yet");
         }
             
     }
@@ -84,7 +280,7 @@ public:
     }
 };
 
-class FScriptArrayWrapper : public FContinerWrapper<FScriptArray>
+class FScriptArrayWrapper : public FContainerWrapper<FScriptArray>
 {
 public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
@@ -137,12 +333,10 @@ private:
 
     FORCEINLINE static void Construct(FScriptArray *ScriptArray, FPropertyTranslator *Inner, int32 Index, int32 Count = 1);
 
-    FORCEINLINE static void Destruct(FScriptArray *ScriptArray, FPropertyTranslator *Inner, int32 Index, int32 Count = 1);
-
     static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
 
-class FScriptSetWrapper : public FContinerWrapper<FScriptSet>
+class FScriptSetWrapper : public FContainerWrapper<FScriptSet>
 {
 public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
@@ -164,12 +358,10 @@ private:
     static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 private:
-    FORCEINLINE static void Destruct(FScriptSet *ScriptSet, FPropertyTranslator *Inner, int32 Index, int32 Count = 1);
-
     FORCEINLINE static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
 
-class FScriptMapWrapper : public FContinerWrapper<FScriptMap>
+class FScriptMapWrapper : public FContainerWrapper<FScriptMap>
 {
 public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
@@ -192,8 +384,6 @@ private:
     static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 private:
-    FORCEINLINE static void Destruct(FScriptMap *ScriptMap, FPropertyTranslator *KeyTranslator, FPropertyTranslator *ValueTranslator, int32 Index, int32 Count = 1);
-
     FORCEINLINE static FScriptMapLayout GetScriptLayout(const PropertyMacro* KeyProperty, const PropertyMacro* ValueProperty);
 };
 
