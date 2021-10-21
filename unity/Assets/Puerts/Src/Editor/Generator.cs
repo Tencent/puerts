@@ -572,7 +572,7 @@ namespace Puerts.Editor
                         for (int i = ps.Length - 1; i >= 0; i--)
                         {
                             OverloadGenInfo optionalInfo = null;
-                            if (ps[i].IsOptional)
+                            if (ps[i].IsOptional || mainInfo.ParameterInfos[i].IsParams)
                             {
                                 optionalInfo = new OverloadGenInfo()
                                 {
@@ -607,7 +607,7 @@ namespace Puerts.Editor
                         for (int i = ps.Length - 1; i >= 0; i--)
                         {
                             OverloadGenInfo optionalInfo = null;
-                            if (ps[i].IsOptional)
+                            if (ps[i].IsOptional || mainInfo.ParameterInfos[i].IsParams)
                             {
                                 optionalInfo = new OverloadGenInfo()
                                 {
