@@ -11,6 +11,7 @@
 #include "StructWrapper.h"
 #include "Engine/UserDefinedStruct.h"
 #include "ArrayBuffer.h"
+#include "ContainerWrapper.h"
 #include "JsObject.h"
 
 namespace puerts
@@ -378,6 +379,58 @@ public:
 private:
 };
 
+class FSoftObjectPropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FSoftObjectPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+
+    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    {
+        const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(Isolate, Context, new FSoftObjectPtr(*Ptr), SoftObjectProperty->PropertyClass, false);
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    {
+        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
+        if (!Ptr)
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");
+            return false;
+        }
+
+        SoftObjectProperty->SetPropertyValue(ValuePtr, *Ptr);
+        
+        return true;
+    }
+};
+
+class FSoftClassPropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FSoftClassPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+
+    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    {
+        const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(Isolate, Context, new FSoftObjectPtr(*Ptr), SoftClassProperty->MetaClass, true);
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    {
+        FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
+        if (!Ptr)
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object for FSoftObjectPtr");
+            return false;
+        }
+
+        SoftObjectProperty->SetPropertyValue(ValuePtr, *Ptr);
+        
+        return true;
+    }
+};
+
 #ifdef GetObject
 #undef GetObject
 #endif
@@ -525,11 +578,7 @@ class FClassPropertyTranslator : public FObjectPropertyTranslator
 public:
     explicit FClassPropertyTranslator(PropertyMacro *InProperty) : FObjectPropertyTranslator(InProperty) 
     {
-        if (auto SoftClassProperty = CastFieldMacro<SoftClassPropertyMacro>(InProperty))
-        {
-            MetaClass = SoftClassProperty->MetaClass;
-        }
-        else if (auto ClassProperty = CastFieldMacro<ClassPropertyMacro>(InProperty))
+        if (auto ClassProperty = CastFieldMacro<ClassPropertyMacro>(InProperty))
         {
             MetaClass = ClassProperty->MetaClass;
         }
@@ -574,7 +623,7 @@ public:
         }
         else
         {
-            ScriptArray = new FScriptArray;
+            ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
             ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
@@ -610,7 +659,7 @@ public:
         }
         else
         {
-            ScriptSet = new FScriptSet;
+            ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
             SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
@@ -646,7 +695,7 @@ public:
         }
         else
         {
-            ScriptMap = new FScriptMap;
+            ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
@@ -876,17 +925,23 @@ std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *
     {
         return TCreate<FTextPropertyTranslator>(InProperty, IgnoreOut);
     }
-    else if (InProperty->IsA<ClassPropertyMacro>()//child of UObjectProperty
-        || InProperty->IsA<SoftClassPropertyMacro>())//child of USoftObjectProperty
+    else if (InProperty->IsA<ClassPropertyMacro>())
     {
         return TCreate<FClassPropertyTranslator>(InProperty, IgnoreOut);
     }
     else if (InProperty->IsA<ObjectPropertyMacro>()
         || InProperty->IsA <WeakObjectPropertyMacro>()
-        || InProperty->IsA<LazyObjectPropertyMacro>()
-        || InProperty->IsA<SoftObjectPropertyMacro>())//22
+        || InProperty->IsA<LazyObjectPropertyMacro>())
     {
         return TCreate<FObjectPropertyTranslator>(InProperty, IgnoreOut);
+    }
+    else if (InProperty->IsA<SoftClassPropertyMacro>())
+    {
+        return TCreate<FSoftClassPropertyTranslator>(InProperty, IgnoreOut);
+    }
+    else if (InProperty->IsA<SoftObjectPropertyMacro>())
+    {
+        return TCreate<FSoftObjectPropertyTranslator>(InProperty, IgnoreOut);
     }
     else if (InProperty->IsA<StructPropertyMacro>())
     {
