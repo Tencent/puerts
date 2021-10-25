@@ -13,6 +13,7 @@
 #include "StructWrapper.h"
 #include "DelegateWrapper.h"
 #include "ContainerWrapper.h"
+#include "SoftObjectWrapper.h"
 #include "V8Utils.h"
 #include "Engine/Engine.h"
 #include "ObjectMapper.h"
@@ -524,6 +525,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MulticastDelegateTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FMulticastDelegateWrapper::ToFunctionTemplate(Isolate));
 
+    SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
+
     DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
     TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
 
@@ -701,6 +704,7 @@ FJsEnvImpl::~FJsEnvImpl()
         
     DynamicInvoker.Reset();
 
+    SoftObjectPtrTemplate.Reset();
     MulticastDelegateTemplate.Reset();
     DelegateTemplate.Reset();
     FixSizeArrayTemplate.Reset();
@@ -2199,6 +2203,23 @@ bool FJsEnvImpl::IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject)
 bool FJsEnvImpl::IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject)
 {
     return CppObjectMapper.IsInstanceOfCppObject(CDataName, JsObject);
+}
+
+v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass)
+{
+    const auto Constructor = SoftObjectPtrTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked();
+    const auto JSObject = Constructor->NewInstance(Context).ToLocalChecked();
+    DataTransfer::SetPointer(Isolate, JSObject, SoftObjectPtr, 0);
+    DataTransfer::SetPointer(Isolate, JSObject, Class, IsSoftClass ? 2 : 1);
+    DataTransfer::SetPointer(Isolate, JSObject, nullptr, IsSoftClass ? 1 : 2);
+    v8::Global<v8::Object> *GlobalPtr = new v8::Global<v8::Object>(Isolate, JSObject);
+    GlobalPtr->SetWeak<v8::Global<v8::Object>>(GlobalPtr, [](const v8::WeakCallbackInfo<v8::Global<v8::Object>>& Data)
+    {
+        void *Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
+        delete static_cast<FSoftObjectPtr*>(Ptr);
+        delete Data.GetParameter();
+    }, v8::WeakCallbackType::kInternalFields);
+    return JSObject;
 }
 
 void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)

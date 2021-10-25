@@ -119,7 +119,8 @@ declare module "ue" {
     }
 
     type TSoftObjectPtr<T> = {
-        [K in keyof T]: T[K];
+        Get():T;
+        LoadSynchronous(): T;
     }
 
     type TLazyObjectPtr<T> = {
@@ -131,7 +132,8 @@ declare module "ue" {
     }
 
     type TSoftClassPtr<T> = {
-        [K in keyof T]: T[K];
+        Get():Class;
+        LoadSynchronous(): Class;
     }
 
     class UInt64Ptr { }

@@ -79,6 +79,8 @@ public:
     virtual v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) = 0;
 
     virtual bool IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject) = 0;
+
+    virtual v8::Local<v8::Value> AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) = 0;
 };
 #endif
 

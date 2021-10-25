@@ -73,6 +73,7 @@ public:
         BoolPropertyMacro *BoolProperty;
         ObjectPropertyBaseMacro *ObjectBaseProperty;
         SoftObjectPropertyMacro *SoftObjectProperty;
+        SoftClassPropertyMacro *SoftClassProperty;
         InterfacePropertyMacro *InterfaceProperty;
         NamePropertyMacro *NameProperty;
         StrPropertyMacro *StringProperty;

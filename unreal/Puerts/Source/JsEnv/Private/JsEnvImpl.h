@@ -146,6 +146,8 @@ public:
 
     bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) override;
 
+    virtual v8::Local<v8::Value> AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override;
+
     bool CheckDelegateProxys(float tick);
 
     v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
@@ -497,6 +499,8 @@ private:
     v8::UniquePersistent<v8::FunctionTemplate> DelegateTemplate;
 
     v8::UniquePersistent<v8::FunctionTemplate> MulticastDelegateTemplate;
+
+    v8::UniquePersistent<v8::FunctionTemplate> SoftObjectPtrTemplate;
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 
