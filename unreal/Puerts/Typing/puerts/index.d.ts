@@ -62,3 +62,9 @@ declare module "puerts" {
 }
 
 declare function require(name: string): any;
+
+// --> modified by kg begin
+// liangcheng: 因为require时puertr调用时传入了__filename以及__dirname，所以要使用他们得加个声明
+declare const __filename: string;
+declare const __dirname: string;
+// --< end
