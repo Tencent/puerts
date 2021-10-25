@@ -444,6 +444,11 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         AddToGen.Add(WeakObjectProperty->PropertyClass);
         StringBuffer << "TWeakObjectPtr<" << SafeName(WeakObjectProperty->PropertyClass->GetName()) << ">";
     }
+    else if (auto SoftClassProperty = CastFieldMacro<SoftClassPropertyMacro>(Property))
+    {
+        AddToGen.Add(SoftClassProperty->PropertyClass);
+        StringBuffer <<"TSoftClassPtr<" << SafeName(SoftClassProperty->MetaClass->GetName()) << ">";
+    }
     else if (auto SoftObjectProperty = CastFieldMacro<SoftObjectPropertyMacro>(Property))
     {
         AddToGen.Add(SoftObjectProperty->PropertyClass);
