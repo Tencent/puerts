@@ -174,7 +174,7 @@ namespace PuertsStaticWrap
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        {{=it.BlittableCopy?"HeapValue":"var result"}} = new {{=it.Name}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
+                        {{=it.BlittableCopy?"HeapValue":"var result"}} = new {{=it.Name}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsIn? "in ":(paramInfo.IsByRef?"ref ":""))}}Arg{{=idx}}{{~}});
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         
@@ -212,7 +212,7 @@ namespace PuertsStaticWrap
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
-                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:refSelf()}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsByRef?"ref ":"")}}Arg{{=idx}}{{~}});
+                        {{=overload.IsVoid?"":"var result = "}}{{=method.IsStatic?it.Name:refSelf()}}.{{=UnK(method.Name)}}({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}},{{?}}{{=paramInfo.IsOut?"out ":(paramInfo.IsIn? "in ":(paramInfo.IsByRef?"ref ":""))}}Arg{{=idx}}{{~}});
                         {{~overload.ParameterInfos :paramInfo:idx}}{{?paramInfo.IsByRef}}
                         argHelper{{=idx}}.SetByRefValue(Arg{{=idx}});{{?}}{{~}}
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
