@@ -158,21 +158,30 @@ namespace Puerts
                 PuertsDLL.CreateInspector(isolate, debugPort);
             }
 
+            bool isNode = PuertsDLL.GetLibBackend() == 1;
             ExecuteFile("puerts/init.js");
             ExecuteFile("puerts/log.js");
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
-            if (PuertsDLL.GetLibBackend() != 1) 
+#if !PUERTS_GENERAL
+            if (!isNode) 
             {
+#endif
                 ExecuteFile("puerts/timer.js");
+#if !PUERTS_GENERAL
             }
+#endif
             ExecuteFile("puerts/events.js");
             ExecuteFile("puerts/promises.js");
-            if (PuertsDLL.GetLibBackend() != 1) 
+#if !PUERTS_GENERAL
+            if (!isNode) 
             {
+#endif
                 ExecuteFile("puerts/polyfill.js");
+#if !PUERTS_GENERAL
             }
+#endif
 
 #if UNITY_EDITOR
             if (OnJsEnvCreate != null) 

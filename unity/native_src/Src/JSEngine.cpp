@@ -697,6 +697,7 @@ namespace puerts
     void JSEngine::LogicTick()
     {
 #if WITH_NODEJS
+
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
