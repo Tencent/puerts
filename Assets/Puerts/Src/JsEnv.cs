@@ -54,7 +54,7 @@ namespace Puerts
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
             const int libVersionExpect = 11;
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
             PuertsDLL.Init();
 #endif
             int libVersion = PuertsDLL.GetLibVersion();

@@ -70,7 +70,7 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int GetLibVersion();
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void _Init();
@@ -256,7 +256,7 @@ namespace Puerts
         }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
         public static extern bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, IntPtr getter, int getterData, IntPtr setter, int setterData, bool dontDelete);
 #else
         public static extern bool RegisterProperty(IntPtr isolate, int classID, string name, bool isStatic, IntPtr getter, long getterData, IntPtr setter, long setterData, bool dontDelete);
@@ -270,7 +270,7 @@ namespace Puerts
             IntPtr fn1 = getter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(getter);
             IntPtr fn2 = setter == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(setter);
 
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
             return RegisterProperty(isolate, classID, name, isStatic, fn1, (int)getterData, fn2, (int)setterData, dontDelete);
 #else
             return RegisterProperty(isolate, classID, name, isStatic, fn1, getterData, fn2, setterData, dontDelete);
@@ -344,7 +344,7 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern double GetDateFromValue(IntPtr isolate, IntPtr value, bool isByRef);
 
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern string GetStringFromValue(IntPtr isolate, IntPtr value, bool isByRef);
 #else 
