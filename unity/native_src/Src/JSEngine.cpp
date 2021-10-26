@@ -105,25 +105,22 @@ namespace puerts
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(MainIsolate, Context);
 
-        if (withNode) 
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
+        NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+    
+        //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
+        NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+
+        v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
+            NodeEnv,
+            "const publicRequire ="
+            "  require('module').createRequire(process.cwd() + '/');"
+            "globalThis.require = publicRequire;"
+            "require('vm').runInThisContext(process.argv[1]);");
+
+        if (LoadenvRet.IsEmpty())  // There has been a JS exception.
         {
-            // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
-            NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
-        
-            //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
-            NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
-
-            v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
-                NodeEnv,
-                "const publicRequire ="
-                "  require('module').createRequire(process.cwd() + '/');"
-                "globalThis.require = publicRequire;"
-                "require('vm').runInThisContext(process.argv[1]);");
-
-            if (LoadenvRet.IsEmpty())  // There has been a JS exception.
-            {
-                return;
-            }
+            return;
         }
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
 
@@ -196,18 +193,13 @@ namespace puerts
 #endif
     }
 
-    JSEngine::JSEngine(bool withNode, void* external_quickjs_runtime, void* external_quickjs_context)
+    JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
         GeneralDestructor = nullptr;
         Inspector = nullptr;
 #if WITH_NODEJS
-        this->withNode = withNode;
         JSEngineWithNode();
 #else
-        if (withNode) 
-        {
-            throw "does not support withNode in this backend";
-        }
         JSEngineWithoutNode(external_quickjs_runtime, external_quickjs_context);
 #endif
     }
@@ -260,13 +252,10 @@ namespace puerts
         }
         
 #if WITH_NODEJS
-        if (withNode) 
-        {
-            node::EmitExit(NodeEnv);
-            node::Stop(NodeEnv);
-            node::FreeEnvironment(NodeEnv);
-            node::FreeIsolateData(NodeIsolateData);
-        } 
+        node::EmitExit(NodeEnv);
+        node::Stop(NodeEnv);
+        node::FreeEnvironment(NodeEnv);
+        node::FreeIsolateData(NodeIsolateData);
         auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
         bool platform_finished = false;
         Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
@@ -708,16 +697,13 @@ namespace puerts
     void JSEngine::LogicTick()
     {
 #if WITH_NODEJS
-        if (withNode) 
-        {
-            v8::Isolate* Isolate = MainIsolate;
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-            v8::Context::Scope ContextScope(Context);
+        v8::Isolate* Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
 
-            uv_run(NodeUVLoop, UV_RUN_NOWAIT);
-        }
+        uv_run(NodeUVLoop, UV_RUN_NOWAIT);
 #endif
     }
 
