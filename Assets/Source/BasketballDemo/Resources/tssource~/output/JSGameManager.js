@@ -11,10 +11,13 @@ class JSGameManager extends base_1.JsBehaviour {
     }
     Update() {
         const expectPressTimeMax = 1000;
-        if (csharp_1.UnityEngine.Input.GetMouseButtonDown(0)) {
+        if (csharp_1.UnityEngine.Input.GetMouseButtonDown(0) || csharp_1.UnityEngine.Input.touchCount != 0) {
             this.pressed = Date.now();
+            if (csharp_1.UnityEngine.Input.touchCount) {
+                this.useTouch = true;
+            }
         }
-        if (csharp_1.UnityEngine.Input.GetMouseButtonUp(0) && this.pressed) {
+        if (this.pressed && (this.useTouch ? csharp_1.UnityEngine.Input.touchCount == 0 : csharp_1.UnityEngine.Input.GetMouseButtonUp(0))) {
             this.shootBall(Math.min(expectPressTimeMax, Date.now() - this.pressed) / expectPressTimeMax);
             this.pressed = 0;
         }
