@@ -1590,6 +1590,7 @@ function watch(configFilePath:string) {
         logErrors(diagnostics);
     } else {
         let restoredFileVersions: ts.MapLike<{ version: string }> = {};
+        var changed = false;
         if (customSystem.fileExists(versionsFilePath)) {
             try {
                 restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
@@ -1599,13 +1600,18 @@ function watch(configFilePath:string) {
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
+                changed = true;
             }
         });
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
                 onSourceFileAddOrChange(fileName, false, program, false);
+                changed = true;
             }
         });
+        if (changed) {
+            UE.FileSystemOperation.WriteFile(versionsFilePath, JSON.stringify(fileVersions, null, 4));
+        }
     }
 
     var dirWatcher = new UE.PEDirectoryWatcher();

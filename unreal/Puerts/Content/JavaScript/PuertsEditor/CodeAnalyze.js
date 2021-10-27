@@ -1207,6 +1207,7 @@ function watch(configFilePath) {
     }
     else {
         let restoredFileVersions = {};
+        var changed = false;
         if (customSystem.fileExists(versionsFilePath)) {
             try {
                 restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
@@ -1217,13 +1218,18 @@ function watch(configFilePath) {
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
+                changed = true;
             }
         });
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
                 onSourceFileAddOrChange(fileName, false, program, false);
+                changed = true;
             }
         });
+        if (changed) {
+            UE.FileSystemOperation.WriteFile(versionsFilePath, JSON.stringify(fileVersions, null, 4));
+        }
     }
     var dirWatcher = new UE.PEDirectoryWatcher();
     global.__dirWatcher = dirWatcher; //防止被释放?
