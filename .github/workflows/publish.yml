@@ -310,6 +310,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          body: 'mac下如果遇到移入废纸篓问题，请使用 \n sudo xattr -r -d com.apple.quarantine puerts.bundle'
           tag_name: Unity_Plugin_${{ github.event.inputs.tag_name }}
           release_name: Unity_Plugin_${{ github.event.inputs.tag_name }},Version:${{ env.PLUGIN_VERSION }}
           draft: false
