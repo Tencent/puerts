@@ -80,7 +80,7 @@ namespace Puerts
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngineWithNode();
-        
+
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngineWithExternalEnv(IntPtr externalRuntime, IntPtr externalContext);
 
@@ -98,26 +98,12 @@ namespace Puerts
             IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
             SetGlobalFunction(isolate, name, fn, data);
         }
-        
-        private static string GetStringFromNative(IntPtr str, int strlen)
+
+        private static unsafe string GetStringFromNative(IntPtr str, int strlen)
         {
             if (str != IntPtr.Zero)
             {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-                byte[] buffer = new byte[strlen];
-                Marshal.Copy(str, buffer, 0, strlen);
-                return Encoding.UTF8.GetString(buffer);
-#else
-                string ret = Marshal.PtrToStringAnsi(str, strlen);
-                if (ret == null)
-                {
-                    int len = strlen;
-                    byte[] buffer = new byte[len];
-                    Marshal.Copy(str, buffer, 0, len);
-                    return Encoding.UTF8.GetString(buffer);
-                }
-                return ret;
-#endif
+                return Encoding.UTF8.GetString((byte*)str, strlen);
             }
             else
             {
@@ -185,7 +171,7 @@ namespace Puerts
             GCHandle.Alloc(constructor);
             GCHandle.Alloc(destructor);
 #endif
-            IntPtr fn1 = constructor == null ? IntPtr.Zero: Marshal.GetFunctionPointerForDelegate(constructor);
+            IntPtr fn1 = constructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(constructor);
             IntPtr fn2 = destructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(destructor);
 
             return _RegisterClass(isolate, BaseTypeId, fullName, fn1, fn2, data);
