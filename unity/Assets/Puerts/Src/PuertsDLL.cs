@@ -353,7 +353,14 @@ namespace Puerts
 
         public static void SetStringToOutValue(IntPtr isolate, IntPtr value, string str)
         {
-            SetStringToOutValue(isolate, value, Encoding.UTF8.GetBytes(str));
+            if (str == null) 
+            {
+                SetNullToOutValue(isolate, value);
+            }
+            else
+            {
+                SetStringToOutValue(isolate, value, Encoding.UTF8.GetBytes(str));
+            }
         }
 #else
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
