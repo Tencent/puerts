@@ -211,7 +211,8 @@ struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return *::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>()); ;
+        T* ptr = ::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+        return ptr ? *ptr : T{};
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
