@@ -282,6 +282,11 @@ namespace Puerts.UnitTest
             y = new ISubA();
             y.cmpTarget = 100;
         }
+
+        public void OutString(out string str)
+        {
+            str = null;
+        }
     }
 
     public delegate string MyCallBack(string str);

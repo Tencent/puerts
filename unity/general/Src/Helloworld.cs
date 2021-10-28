@@ -30,20 +30,13 @@ public class TxtLoader : ILoader
 
 public class PuertsTest
 {
-    public static void StringOut(out string str)
-    {
-        str = null;
-    }
     public static void Main()
     {
         var jsEnv = new JsEnv(new TxtLoader());
-        string ret = jsEnv.Eval<string>(@"
+        jsEnv.Eval(@"
             const CS = require('csharp');
-            const ref = {};
-            CS.PuertsTest.StringOut(ref);
-            JSON.stringify(ref);
+            CS.System.Console.WriteLine('hello world');
         ");
-        System.Console.WriteLine(ret);
 
         jsEnv.Dispose();
     }

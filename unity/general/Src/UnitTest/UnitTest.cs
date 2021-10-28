@@ -317,6 +317,23 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void StringOutParamIsNullTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            string res = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                const PUERTS = require('puerts');
+                let obj = new CS.Puerts.UnitTest.DerivedClass();
+                let res =  PUERTS.$ref ('');
+                obj.OutString(res);
+                res.value;
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, null);
+
+        }
+
+        [Test]
         public void StructTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
