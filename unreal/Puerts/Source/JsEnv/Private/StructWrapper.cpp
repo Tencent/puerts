@@ -341,9 +341,7 @@ namespace puerts
 
     void * FScriptStructWrapper::Alloc(UScriptStruct *InScriptStruct)
     {
-        UScriptStruct::ICppStructOps *CppStructOps = InScriptStruct->GetCppStructOps();
-        int32 Alignment = CppStructOps ? CppStructOps->GetAlignment() : InScriptStruct->GetMinAlignment();
-        void *ScriptStructMemory = FMemory::Malloc(InScriptStruct->GetStructureSize(), Alignment);
+        void *ScriptStructMemory = new char [InScriptStruct->GetStructureSize()];
         InScriptStruct->InitializeStruct(ScriptStructMemory);
         return ScriptStructMemory;
     }
@@ -357,7 +355,7 @@ namespace puerts
         else
         {
             if (InStruct.IsValid()) InStruct->DestroyStruct(Ptr);
-            FMemory::Free(Ptr);
+            delete[] static_cast<char*>(Ptr);
         }
     }
 
