@@ -41,7 +41,9 @@ public class JsEnv : ModuleRules
             }
         }
 
-        if (UseNodejs && Target.bBuildEditor)
+        if (UseNodejs && (Target.Platform == UnrealTargetPlatform.Win64 
+                          || Target.Platform == UnrealTargetPlatform.Mac 
+                          || Target.Platform == UnrealTargetPlatform.Linux))
         {
             ThirdPartyNodejs(Target);
         }
