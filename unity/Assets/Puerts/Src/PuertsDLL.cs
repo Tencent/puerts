@@ -98,25 +98,36 @@ namespace Puerts
             IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
             SetGlobalFunction(isolate, name, fn, data);
         }
-        
+
+        private const int TEMP_STRING_BUFFER_SIZE = 1024;
+
+        [ThreadStatic]
+        private static byte[] s_tempNativeStringBuffer;
+
+        private static byte[] GetTempNativeStringBuff(int strlen)
+        {
+            byte[] buf = s_tempNativeStringBuffer ??= new byte[TEMP_STRING_BUFFER_SIZE];
+            if (buf.Length < strlen)
+            {
+                return new byte[strlen];
+            }
+            return buf;
+        }
+
+
         private static string GetStringFromNative(IntPtr str, int strlen)
         {
             if (str != IntPtr.Zero)
             {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-                byte[] buffer = new byte[strlen];
-                Marshal.Copy(str, buffer, 0, strlen);
-                return Encoding.UTF8.GetString(buffer);
-#else
-                string ret = Marshal.PtrToStringAnsi(str, strlen);
-                if (ret == null)
+#if PUERTS_UNSAFE
+                unsafe
                 {
-                    int len = strlen;
-                    byte[] buffer = new byte[len];
-                    Marshal.Copy(str, buffer, 0, len);
-                    return Encoding.UTF8.GetString(buffer);
+                    return Encoding.UTF8.GetString((byte*)str, strlen);
                 }
-                return ret;
+#else
+                byte[] buffer = GetTempNativeStringBuff(strlen);
+                Marshal.Copy(str, buffer, 0, strlen);
+                return Encoding.UTF8.GetString(buffer, 0, strlen);
 #endif
             }
             else
