@@ -47,6 +47,10 @@ namespace Puerts.UnitTest
         {
             return i + d;
         }
+        public string TestFilter(string str)
+        {
+            return str + " hello";
+        }
     }
 
     [TestFixture]
@@ -224,6 +228,19 @@ namespace Puerts.UnitTest
             Assert.AreEqual(0, ret);
             jsEnv.Dispose();
         }
+        [Test]
+        public void WarpTest14()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                temp.TestFilter('world');
+            ");
+            Assert.AreEqual("world hello", ret);
+            jsEnv.Dispose();
+        }
         
         [Test]
         public void ReflectTest1()
@@ -397,6 +414,18 @@ namespace Puerts.UnitTest
                 ret;
             ");
             Assert.AreEqual(2, ret);
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ReflectTest14()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int ret = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                temp.TestFilter('world');
+            ");
+            Assert.AreEqual("world hello", ret);
             jsEnv.Dispose();
         }
     }
