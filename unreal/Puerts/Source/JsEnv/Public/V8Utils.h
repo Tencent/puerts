@@ -157,7 +157,7 @@ public:
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::String::Utf8Value Exception(Isolate, TryCatch->Exception());
-        FString ExceptionStr(*Exception);
+        FString ExceptionStr(UTF8_TO_TCHAR(*Exception));
         v8::Local<v8::Message> Message = TryCatch->Message();
         if (Message.IsEmpty())
         {
