@@ -16,13 +16,6 @@ namespace Puerts
     public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
 
-    public enum TypeRegisterMode 
-    {
-        Mixed = 0,
-        GeneratedCodeFirst = 1,
-        GeneratedCodeOnly = 2
-    }
-
     public class JsEnv : IDisposable
     {
         internal readonly int Idx;
@@ -44,9 +37,6 @@ namespace Puerts
         private readonly ILoader loader;
 
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
-
-        public TypeRegisterMode TypeRegisterMode = TypeRegisterMode.Mixed;
-
 
 #if UNITY_EDITOR
         public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);

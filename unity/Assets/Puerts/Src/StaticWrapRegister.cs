@@ -20,6 +20,7 @@ namespace Puerts
     {
         public string Name;
         public bool IsStatic;
+        public bool IsLazyMember;
     }
 
     public class TypeRegisterInfo
@@ -31,5 +32,9 @@ namespace Puerts
         public Dictionary<MethodKey, V8FunctionCallback> Methods;
 
         public Dictionary<string, PropertyRegisterInfo> Properties;
+
+        public Dictionary<MethodKey, V8FunctionCallback> LazyMethods;
+
+        public Dictionary<string, PropertyRegisterInfo> LazyProperties;
     }
 }
