@@ -565,7 +565,7 @@ namespace Puerts
                     while (enumerator.MoveNext())
                     {
                         MethodInfo method = enumerator.Current;
-                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false };
+                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
 
                         AddMethodToSlowBindingGroup(methodKey, method);
                     }
@@ -648,7 +648,7 @@ namespace Puerts
 
             foreach (var kv in slowBindingMethodGroup)
             {
-                var wraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)).ToList();
+                var wraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, kv.Key.IsExtension)).ToList();
                 MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, wraps);
                 PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, callbackWrap, jsEnv.AddCallback(methodReflectionWrap.Invoke));
             }
