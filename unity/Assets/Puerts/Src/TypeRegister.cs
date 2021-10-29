@@ -612,36 +612,42 @@ namespace Puerts
                     PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, kv.Value.IsStatic, kv.Value.Getter, jsEnv.Idx, kv.Value.Setter, jsEnv.Idx, !readonlyStaticFields.Contains(kv.Key));
                 }
 
-                foreach (var kv in registerInfo.LazyMethods)
+                if (registerInfo.LazyMethods != null) 
                 {
-                    //TODO: change to LazyBinding instead of SlowBinding
-                    MethodKey methodKey = kv.Key;
-                    MethodInfo method = type.GetMethod(methodKey.Name, flag);
-
-                    if (method != null)
+                    foreach (var kv in registerInfo.LazyMethods)
                     {
-                        AddMethodToSlowBindingGroup(methodKey, method);
+                        //TODO: change to LazyBinding instead of SlowBinding
+                        MethodKey methodKey = kv.Key;
+                        MethodInfo method = type.GetMethod(methodKey.Name, flag);
+
+                        if (method != null)
+                        {
+                            AddMethodToSlowBindingGroup(methodKey, method);
+                        }
                     }
                 }
 
-                foreach (var kv in registerInfo.LazyProperties)
+                if (registerInfo.LazyProperties != null)
                 {
-                    //TODO: change to LazyBinding instead of SlowBinding
-                    string name = kv.Key;
-
-                    MethodKey getMethodKey = new MethodKey { Name = "get_" + name, IsStatic = kv.Value.IsStatic };
-                    MethodInfo getMethod = type.GetMethod(getMethodKey.Name, flag);
-
-                    MethodKey setMethodKey = new MethodKey { Name = "set_" + name, IsStatic = kv.Value.IsStatic };
-                    MethodInfo setMethod = type.GetMethod(getMethodKey.Name, flag);
-
-                    if (getMethod != null)
+                    foreach (var kv in registerInfo.LazyProperties)
                     {
-                        AddMethodToSlowBindingGroup(getMethodKey, getMethod);
-                    }
-                    if (setMethod != null)
-                    {
-                        AddMethodToSlowBindingGroup(setMethodKey, setMethod);
+                        //TODO: change to LazyBinding instead of SlowBinding
+                        string name = kv.Key;
+
+                        MethodKey getMethodKey = new MethodKey { Name = "get_" + name, IsStatic = kv.Value.IsStatic };
+                        MethodInfo getMethod = type.GetMethod(getMethodKey.Name, flag);
+
+                        MethodKey setMethodKey = new MethodKey { Name = "set_" + name, IsStatic = kv.Value.IsStatic };
+                        MethodInfo setMethod = type.GetMethod(getMethodKey.Name, flag);
+
+                        if (getMethod != null)
+                        {
+                            AddMethodToSlowBindingGroup(getMethodKey, getMethod);
+                        }
+                        if (setMethod != null)
+                        {
+                            AddMethodToSlowBindingGroup(setMethodKey, setMethod);
+                        }
                     }
                 }
             }
