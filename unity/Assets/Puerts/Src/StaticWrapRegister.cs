@@ -20,7 +20,10 @@ namespace Puerts
     {
         public string Name;
         public bool IsStatic;
+
+        //TODO 目前只是为了在group by的时候用一下
         public bool IsLazyMember;
+        public bool IsExtension;
     }
 
     public class TypeRegisterInfo
