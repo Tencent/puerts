@@ -233,7 +233,7 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
-            int ret = jsEnv.Eval<int>(@"
+            string ret = jsEnv.Eval<string>(@"
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                 temp.TestFilter('world');
@@ -420,7 +420,7 @@ namespace Puerts.UnitTest
         public void ReflectTest14()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            int ret = jsEnv.Eval<int>(@"
+            string ret = jsEnv.Eval<string>(@"
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                 temp.TestFilter('world');
