@@ -1,0 +1,9 @@
+(function() {
+    process.on('uncaughtException', (e) => { console.error(e); })
+    process.exit = function() {
+        console.log('`process.exit` is not allowed in puerts')
+    }
+    process.kill = function() {
+        console.log('`process.kill` is not allowed in puerts')
+    }
+})()

@@ -226,7 +226,7 @@ class FContainerWrapper
 public:
     static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<void>& Data)
     {
-        typedef ContainerExTypeMapper<T>::Type ET;
+        typedef typename ContainerExTypeMapper<T>::Type ET;
         ET *Container = static_cast<ET*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
         FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindContainer(Container);
         delete Container;

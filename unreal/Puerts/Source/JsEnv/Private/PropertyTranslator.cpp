@@ -481,6 +481,7 @@ public:
         
         if (!PassByPointer)
         {
+            //FScriptStructWrapper::Alloc using new, so delete in static wrapper is safe
             Ptr = FScriptStructWrapper::Alloc(ScriptStruct);
             StructProperty->InitializeValue(Ptr);
             StructProperty->CopySingleValue(Ptr, ValuePtr);

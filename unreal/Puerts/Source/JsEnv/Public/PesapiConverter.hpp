@@ -333,7 +333,8 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
     static T toCpp(pesapi_env env, pesapi_value value)
     {
-        return *(static_cast<T*>(pesapi_get_native_object_ptr(env, value))); 
+        T* ptr = (static_cast<T*>(pesapi_get_native_object_ptr(env, value)));
+        return ptr ? *ptr : T{};
     }
     static bool accept(pesapi_env env, pesapi_value value)    
     {
