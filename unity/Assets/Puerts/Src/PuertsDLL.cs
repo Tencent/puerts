@@ -147,7 +147,7 @@ namespace Puerts
             SetGeneralDestructor(isolate, fn);
         }
 
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr Eval(IntPtr isolate, byte[] code, string path);
 
@@ -241,7 +241,7 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnNumber(IntPtr isolate, IntPtr info, double number);
 
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
         public static extern void __ReturnString(IntPtr isolate, IntPtr info, byte[] str);
 #else
@@ -257,7 +257,7 @@ namespace Puerts
             }
             else
             {
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
                 __ReturnString(isolate, info, Encoding.UTF8.GetBytes(str));
 #else
                 __ReturnString(isolate, info, str);
@@ -344,7 +344,7 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetDateToOutValue(IntPtr isolate, IntPtr value, double date);
 
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, byte[] str);
 
