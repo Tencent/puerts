@@ -171,6 +171,10 @@ namespace Puerts
                 ExecuteFile("puerts/polyfill.js");
 #if !PUERTS_GENERAL
             }
+            else
+            {
+                ExecuteFile("puerts/nodepatch.js");
+            }
 #endif
 
 #if UNITY_EDITOR
