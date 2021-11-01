@@ -400,20 +400,20 @@ namespace PuertsStaticWrap
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
                 {
                     {{~it.Methods :method}}{{?!method.IsLazyMember}}
-                    { new Puerts.MethodKey {Name = "{{=method.Name}}", IsStatic = {{=method.IsStatic}}},  null},
+                    { new Puerts.MethodKey {Name = "{{=method.Name}}", IsStatic = {{=method.IsStatic}}}, {{=(method.IsStatic ? "F" : "M")}}_{{=method.Name}} },
                     {{?}}{{~}}
                     {{?it.GetIndexs.Length > 0}}{{?!it.IsLazyMember}}
-                    { new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, null },
+                    { new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, GetItem },
                     {{?}}{{?}}
                     {{?it.SetIndexs.Length > 0}}{{?!it.IsLazyMember}}
-                    { new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, null},
+                    { new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, SetItem },
                     {{?}}{{?}}
                     {{~it.Operators :operator}}{{?!operator.IsLazyMember}}
-                    { new Puerts.MethodKey {Name = "{{=operator.Name}}", IsStatic = true}, null},
+                    { new Puerts.MethodKey {Name = "{{=operator.Name}}", IsStatic = true}, O_{{=operator.Name}} },
                     {{?}}{{~}}
                     {{~it.Events :eventInfo}}{{?!eventInfo.IsLazyMember}}
-                    {{?eventInfo.HasAdd}}       { new Puerts.MethodKey {Name = "add_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, null},       {{?}}
-                    {{?eventInfo.HasRemove}}        { new Puerts.MethodKey {Name = "remove_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, null},        {{?}}
+                    {{?eventInfo.HasAdd}}       { new Puerts.MethodKey {Name = "add_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, A_{{=eventInfo.Name}} },       {{?}}
+                    {{?eventInfo.HasRemove}}        { new Puerts.MethodKey {Name = "remove_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}},  R_{{=eventInfo.Name}} },        {{?}}
                     {{?}}{{~}}
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
