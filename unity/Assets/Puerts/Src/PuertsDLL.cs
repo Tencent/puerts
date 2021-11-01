@@ -106,7 +106,7 @@ namespace Puerts
 
         private static byte[] GetTempNativeStringBuff(int strlen)
         {
-            byte[] buf = s_tempNativeStringBuffer ??= new byte[TEMP_STRING_BUFFER_SIZE];
+            byte[] buf = s_tempNativeStringBuffer ?? (s_tempNativeStringBuffer = new byte[TEMP_STRING_BUFFER_SIZE]);
             if (buf.Length < strlen)
             {
                 return new byte[strlen];
