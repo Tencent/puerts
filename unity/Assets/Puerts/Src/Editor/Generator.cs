@@ -389,7 +389,7 @@ namespace Puerts.Editor
                         .Select(i => i.Cast<MethodBase>().ToList());
 
                     var constructors = type.GetConstructors(Utils.Flags)
-                        .Where(m => !Utils.isFiltered(m))
+                        .Where(m => !Utils.isFiltered(m) && Utils.getBindingMode(m) != Utils.BindingMode.LazyBinding)
                         .Cast<MethodBase>()
                         .ToList();
 
