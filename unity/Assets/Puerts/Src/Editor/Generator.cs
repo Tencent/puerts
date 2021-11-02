@@ -738,13 +738,15 @@ namespace Puerts.Editor
                         isStatic = false;
                     }
 
-                    var FirstOverload = overloads.Count > 0 ? overloads[0] : (extensionOverloads.Count > 0 ? extensionOverloads[0] : null);
+                    var FirstOverload = overloads != null && overloads.Count > 0 ? overloads[0] : (
+                        extensionOverloads != null && extensionOverloads.Count > 0 ? extensionOverloads[0] : null
+                    );
 
                     var result = new MethodGenInfo()
                     {
                         Name = name,
                         IsStatic = isStatic,
-                        IsLazyMember = FirstOverload == null ? 0 : Utils.getBindingMode(FirstOverload) == Utils.BindingMode.LazyBinding,
+                        IsLazyMember = FirstOverload == null ? false : Utils.getBindingMode(FirstOverload) == Utils.BindingMode.LazyBinding,
                         HasOverloads = ret.Count > 1,
                         OverloadCount = ret.Count,
                         OverloadGroups = ret
