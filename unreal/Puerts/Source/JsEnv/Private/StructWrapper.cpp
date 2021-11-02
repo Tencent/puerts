@@ -156,7 +156,7 @@ namespace puerts
             if (This->GetPrototype()->IsObject())
             {
                 auto Proto = This->GetPrototype().As<v8::Object>();
-                if (Proto->HasOwnProperty(Context, FixedPropertyName).FromMaybe(false))
+                if (Proto->Has(Context, FixedPropertyName).FromMaybe(false))
                 {
                     Info.GetReturnValue().Set(This->Get(Context, FixedPropertyName).ToLocalChecked());
                     auto DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
@@ -180,7 +180,7 @@ namespace puerts
             if (This->GetPrototype()->IsObject())
             {
                 auto Proto = This->GetPrototype().As<v8::Object>();
-                if (Proto->HasOwnProperty(Context, FixedPropertyName).FromMaybe(false))
+                if (Proto->Has(Context, FixedPropertyName).FromMaybe(false))
                 {
                     auto _UnUsed = This->Set(Context, FixedPropertyName, Value);
                     auto DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
