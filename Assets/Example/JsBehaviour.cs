@@ -10,7 +10,7 @@ namespace PuertsTest
     //但从性能角度这并不是最佳实践，会导致过多的跨语言调用
     public class JsBehaviour : MonoBehaviour
     {
-        public string ModuleName;//可配置加载的js模块
+        public string JSFileName;//可配置加载的js模块
 
         public Action JsStart;
         public Action JsUpdate;
@@ -24,7 +24,8 @@ namespace PuertsTest
             
             if (jsEnv == null) jsEnv = new JsEnv();
 
-            var init = jsEnv.Eval<ModuleInit>("const m = require('" + ModuleName + "'); m.init;");
+            // var init = jsEnv.Eval<ModuleInit>("const m = require('" + ModuleName + "'); m.init;");
+            var init = jsEnv.ExecuteFile<ModuleInit>(JSFileName);
 
             if (init != null) init(this);
         }

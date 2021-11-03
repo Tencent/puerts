@@ -150,8 +150,11 @@ namespace Puerts
             ExecuteFile("puerts/polyfill.js");
         }
 
-        void ExecuteFile(string filename)
+        public void ExecuteFile(string filename)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            PuertsDLL.ExecuteFile(isolate, filename);
+#else 
             if (loader.FileExists(filename))
             {
                 string debugPath;
@@ -166,6 +169,31 @@ namespace Puerts
             {
                 throw new InvalidProgramException("cannot find " + filename);
             }
+#endif
+        }
+        public TResult ExecuteFile<TResult>(string filename) 
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            IntPtr resultInfo = PuertsDLL.ExecuteFile(isolate, filename);
+            TResult result = StaticTranslate<TResult>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
+            PuertsDLL.ResetResult(resultInfo);
+            return result;
+#else 
+            if (loader.FileExists(filename))
+            {
+                string debugPath;
+                var context = loader.ReadFile(filename, out debugPath);
+                if (context == null)
+                {
+                    throw new InvalidProgramException("cannot find " + filename);
+                }
+                return Eval<TResult>(context, debugPath);
+            }
+            else
+            {
+                throw new InvalidProgramException("cannot find " + filename);
+            }
+#endif
         }
 
         public void Eval(string chunk, string chunkName = "chunk")

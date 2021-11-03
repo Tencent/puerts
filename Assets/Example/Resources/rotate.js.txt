@@ -18,6 +18,10 @@ class Rotate {
     }
 }
 
-exports.init = function(bindTo) {
+var init = function(bindTo) {
     new Rotate(bindTo);
+};
+if (typeof module != 'undefined') {
+    module.exports = init;
 }
+init;

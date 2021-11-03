@@ -209,6 +209,10 @@ namespace Puerts
             }
             return Eval(isolate, code, path);
         }
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr ExecuteFile(IntPtr isolate, string path);
+#endif
 #endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
