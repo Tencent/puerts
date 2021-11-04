@@ -22,7 +22,7 @@ namespace puerts
 class IDynamicInvoker
 {
 public:
-    virtual void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms) = 0;
+    virtual void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms) = 0;
 
     virtual void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype) = 0;
 
