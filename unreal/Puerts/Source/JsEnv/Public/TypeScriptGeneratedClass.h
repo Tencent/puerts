@@ -26,13 +26,17 @@ public:
 
     bool InjectNotFinished = true;
 
+	TSet<FName> FunctionToRedirect;
+
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
     void ObjectInitialize(const FObjectInitializer& ObjectInitializer);
 
-    void Bind() override;
+    virtual void Bind() override;
 
     void RedirectToTypeScript(UFunction* InFunction);
+
+	void RedirectToTypeScriptFinish(UFunction* InFunction);
 
     bool NotSupportInject();
 

@@ -549,7 +549,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
-    DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
+    DelegateProxiesCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
@@ -581,7 +581,7 @@ FJsEnvImpl::~FJsEnvImpl()
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
-    FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
+    FTicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
     {
         auto Isolate = MainIsolate;
@@ -888,14 +888,14 @@ static void FinishInjection(UClass* InClass)
     {
         auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
         if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
-            {
+        {
             for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 auto Function = *FuncIt;
-                Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish(Function);
             }
             TempTypeScriptGeneratedClass->InjectNotFinished = false;
-            }
+        }
         InClass = InClass->GetSuperClass();
     }
 }
@@ -992,7 +992,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //SysObjectRetainer.Retain(Class);
 
                         //implement by js
-                        TSet<FName> overrided;
+                        TypeScriptGeneratedClass->FunctionToRedirect.Empty();
 
                         for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); It; ++It)
                         {
@@ -1023,7 +1023,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             }
                             auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
                             v8::Local<v8::Object> FuncsObj = Function->HasAnyFunctionFlags(FUNC_Static) ? static_cast<v8::Local<v8::Object>>(Func) : Proto;
-                            if (!overrided.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
+                            if (!TypeScriptGeneratedClass->FunctionToRedirect.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
                                 (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
                             {
                                 auto MaybeValue = FuncsObj->Get(Context, V8Name);
@@ -1036,8 +1036,8 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                         v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
                                         std::make_unique<puerts::FFunctionTranslator>(Function, false)
                                     };
+                                    TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
                                     TypeScriptGeneratedClass->RedirectToTypeScript(Function);
-                                    overrided.Add(FunctionFName);
                                 }
                             }
                         }
@@ -1969,7 +1969,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     return true;
 }
 
-bool FJsEnvImpl::CheckDelegateProxys(float tick)
+bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 {
     std::vector<void*> PendingToRemove;
     for (auto &KV : DelegateMap)

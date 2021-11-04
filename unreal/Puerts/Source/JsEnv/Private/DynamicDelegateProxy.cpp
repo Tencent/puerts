@@ -19,7 +19,7 @@ void UDynamicDelegateProxy::ProcessEvent(UFunction*, void* Parms)
     {
         if (ensureAlwaysMsgf(!JsFunction.IsEmpty(), TEXT("Invalid JS Function")))
         {
-            PinedDynamicInvoker->InvokeJsCallabck(this, Parms);
+            PinedDynamicInvoker->InvokeJsCallback(this, Parms);
         }
     }
 }
