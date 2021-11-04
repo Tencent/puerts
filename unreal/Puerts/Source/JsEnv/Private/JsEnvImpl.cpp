@@ -549,7 +549,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
-    DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
+    DelegateProxiesCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
@@ -581,7 +581,7 @@ FJsEnvImpl::~FJsEnvImpl()
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
-    FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
+    FTicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
     {
         auto Isolate = MainIsolate;
@@ -888,14 +888,14 @@ static void FinishInjection(UClass* InClass)
     {
         auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
         if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
-            {
+        {
             for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 auto Function = *FuncIt;
                 Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
             }
             TempTypeScriptGeneratedClass->InjectNotFinished = false;
-            }
+        }
         InClass = InClass->GetSuperClass();
     }
 }
@@ -1969,7 +1969,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     return true;
 }
 
-bool FJsEnvImpl::CheckDelegateProxys(float tick)
+bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 {
     std::vector<void*> PendingToRemove;
     for (auto &KV : DelegateMap)
