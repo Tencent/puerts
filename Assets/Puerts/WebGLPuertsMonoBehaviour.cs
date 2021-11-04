@@ -1,3 +1,4 @@
+#if UNITY_WEBGL && !UNITY_EDITOR
 using System;
 using System.Runtime.InteropServices;
 using Puerts;
@@ -57,3 +58,4 @@ public class WebGLPuertsMonoBehaviour : MonoBehaviour {
     [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
     public static extern int SetLastResult(IntPtr result);
 }
+#endif

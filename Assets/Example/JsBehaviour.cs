@@ -46,6 +46,7 @@ namespace PuertsTest
             JsStart = null;
             JsUpdate = null;
             JsOnDestroy = null;
+            jsEnv.Dispose();
         }
 
         //Prevent unity il2cpp code stripping

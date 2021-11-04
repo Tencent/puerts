@@ -30,19 +30,30 @@ namespace Puerts
 
         internal readonly JSObjectFactory jsObjectFactory;
 
-        private readonly ILoader loader;
-
-        public static List<JsEnv> jsEnvs = new List<JsEnv>();
-
         internal IntPtr isolate;
 
         internal ObjectPool objectPool;
 
-        public JsEnv() : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
+        private readonly ILoader loader;
+
+        public static List<JsEnv> jsEnvs = new List<JsEnv>();
+
+#if UNITY_EDITOR
+        public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
+        public delegate void JsEnvDisposeCallback(JsEnv env);
+        public static JsEnvCreateCallback OnJsEnvCreate;
+        public static JsEnvDisposeCallback OnJsEnvDispose;
+
+        public int debugPort;
+#endif
+
+        public JsEnv() 
+            : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
-        public JsEnv(ILoader loader, int debugPort = -1) : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
+        public JsEnv(ILoader loader, int debugPort = -1)
+             : this(loader, debugPort, IntPtr.Zero, IntPtr.Zero)
         {
         }
 
@@ -53,7 +64,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 11;
+            const int libVersionExpect = 14;
 #if UNITY_WEBGL && !UNITY_EDITOR
             PuertsDLL.Init();
 #endif
@@ -62,9 +73,10 @@ namespace Puerts
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);
             }
-            //PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
+            // PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
-            if (externalRuntime != IntPtr.Zero && externalContext != IntPtr.Zero)
+            
+            if (externalRuntime != IntPtr.Zero)
             {
                 isolate = PuertsDLL.CreateJSEngineWithExternalEnv(externalRuntime, externalContext);
             }
@@ -139,15 +151,44 @@ namespace Puerts
                 PuertsDLL.CreateInspector(isolate, debugPort);
             }
 
+            bool isNode = PuertsDLL.GetLibBackend() == 1;
             ExecuteFile("puerts/init.js");
+#if PUERTS_WEBGL && !PUERTS_EDITOR
             ExecuteFile("puerts/log.js");
+#endif
             ExecuteFile("puerts/cjsload.js");
             ExecuteFile("puerts/modular.js");
             ExecuteFile("puerts/csharp.js");
-            ExecuteFile("puerts/timer.js");
-            ExecuteFile("puerts/events.js");
+#if !PUERTS_GENERAL
+            if (!isNode) 
+            {
+#endif
+                ExecuteFile("puerts/timer.js");
+                //ExecuteFile("puerts/events.js");
+#if !PUERTS_GENERAL
+            }
+#endif
             ExecuteFile("puerts/promises.js");
-            ExecuteFile("puerts/polyfill.js");
+#if !PUERTS_GENERAL
+            if (!isNode) 
+            {
+#endif
+                ExecuteFile("puerts/polyfill.js");
+#if !PUERTS_GENERAL
+            }
+            else
+            {
+                ExecuteFile("puerts/nodepatch.js");
+            }
+#endif
+
+#if UNITY_EDITOR
+            if (OnJsEnvCreate != null) 
+            {
+                OnJsEnvCreate(this, loader, debugPort);
+            }
+            this.debugPort = debugPort;
+#endif
         }
 
         public void ExecuteFile(string filename)
@@ -558,6 +599,7 @@ namespace Puerts
                 }
 #endif
             }
+            PuertsDLL.LogicTick(isolate);
             tickHandler.ForEach(fn =>
             {
                 IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
@@ -593,23 +635,35 @@ namespace Puerts
         }
 #endif
 
-        /*[MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogCallback(string msg)
-        {
-            UnityEngine.Debug.Log(msg);
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogWarningCallback(string msg)
-        {
-            UnityEngine.Debug.LogWarning(msg);
-        }
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogWarningCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
-        [MonoPInvokeCallback(typeof(LogCallback))]
-        private static void LogErrorCallback(string msg)
-        {
-            UnityEngine.Debug.LogError(msg);
-        }*/
+//         [MonoPInvokeCallback(typeof(LogCallback))]
+//         private static void LogErrorCallback(string msg)
+//         {
+// #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+//             System.Console.WriteLine(msg);
+// #else
+//             UnityEngine.Debug.Log(msg);
+// #endif
+//         }
 
         ~JsEnv()
         {
@@ -637,6 +691,13 @@ namespace Puerts
 
         protected virtual void Dispose(bool dispose)
         {
+#if UNITY_EDITOR
+            if (OnJsEnvDispose != null) 
+            {
+                OnJsEnvDispose(this);
+            }
+#endif
+
             lock (jsEnvs)
             {
                 if (disposed) return;
@@ -655,49 +716,77 @@ namespace Puerts
             }
         }
 
-        HashSet<IntPtr> pendingReleaseFuncs = new HashSet<IntPtr>();
-        Queue<IntPtr> pendingReleaseObjs = new Queue<IntPtr>();
+        Dictionary<IntPtr, int> funcRefCount = new Dictionary<IntPtr, int>();
+        HashSet<IntPtr> pendingReleaseObjs = new HashSet<IntPtr>();
 
-        internal void addPenddingReleaseFunc(IntPtr nativeJsFuncPtr)
+        internal void IncFuncRef(IntPtr nativeJsFuncPtr)
+        {
+            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
+            lock (funcRefCount)
+            {
+                int refCount;
+                if (funcRefCount.TryGetValue(nativeJsFuncPtr, out refCount))
+                {
+                    ++refCount;
+                }
+                else
+                {
+                    refCount = 1;
+                }
+                funcRefCount[nativeJsFuncPtr] = refCount;
+            }
+        }
+
+        internal void DecFuncRef(IntPtr nativeJsFuncPtr)
         {
             if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
 
-            lock (pendingReleaseFuncs)
+            lock (funcRefCount)
             {
-                pendingReleaseFuncs.Add(nativeJsFuncPtr);
+                funcRefCount[nativeJsFuncPtr] = funcRefCount[nativeJsFuncPtr] - 1;
             }
         }
+
         internal void addPenddingReleaseObject(IntPtr nativeJsObjPtr)
         {
             if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
 
             lock (pendingReleaseObjs)
             {
-                pendingReleaseObjs.Enqueue(nativeJsObjPtr);
+                pendingReleaseObjs.Add(nativeJsObjPtr);
             }
         }
 
+        List<IntPtr> pendingRemovedList = new List<IntPtr>();
+
         internal void ReleasePendingJSFunctions()
         {
-            lock (pendingReleaseFuncs)
+            lock (funcRefCount)
             {
-                foreach(var nativeJsFuncPtr in pendingReleaseFuncs)
+                pendingRemovedList.Clear();
+                foreach (var kv in funcRefCount)
                 {
+                    if (kv.Value <= 0) pendingRemovedList.Add(kv.Key);
+                }
+                for(int i = 0; i  < pendingRemovedList.Count; ++i)
+                {
+                    var nativeJsFuncPtr = pendingRemovedList[i];
+                    funcRefCount.Remove(nativeJsFuncPtr);
                     if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
                     {
                         PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
                     }
                 }
-                pendingReleaseFuncs.Clear();
+                pendingRemovedList.Clear();
             }
         }
 
-        internal void RemoveFromPending(IntPtr nativeJsFuncPtr)
+        internal void RemoveJSObjectFromPendingRelease(IntPtr nativeJsObjPtr)
         {
-            if (disposed || nativeJsFuncPtr == IntPtr.Zero) return;
-            lock (pendingReleaseFuncs)
+            if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
+            lock (pendingReleaseObjs)
             {
-                pendingReleaseFuncs.Remove(nativeJsFuncPtr);
+                pendingReleaseObjs.Remove(nativeJsObjPtr);
             }
         }
 
@@ -705,14 +794,14 @@ namespace Puerts
         {
             lock (pendingReleaseObjs)
             {
-                while (pendingReleaseObjs.Count > 0)
+                foreach(var nativeJsObjPtr in pendingReleaseObjs)
                 {
-                    IntPtr nativeJsObjPtr = pendingReleaseObjs.Dequeue();
                     if (!jsObjectFactory.IsJsObjectAlive(nativeJsObjPtr))
                     {
                         PuertsDLL.ReleaseJSObject(isolate, nativeJsObjPtr);
                     }
                 }
+                pendingReleaseObjs.Clear();
             }
         }
     }

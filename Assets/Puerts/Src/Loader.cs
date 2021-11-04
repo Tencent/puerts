@@ -42,7 +42,6 @@ namespace Puerts
 #if PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
 #else
-
             string pathToUse = this.PathToUse(filepath);
             return UnityEngine.Resources.Load(pathToUse) != null;
 #endif

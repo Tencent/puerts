@@ -1,4 +1,6 @@
-using System;
+{{?it.Namespaces}}{{~it.Namespaces :name}}
+using {{=name}};{{~}}
+{{?}}
 {{
 const fixGet = {
     char: 'GetChar',
@@ -180,7 +182,8 @@ namespace PuertsStaticWrap
                         {
                             return new IntPtr(result);
                         }{{}else{}}return Puerts.Utils.GetObjectPtr((int)data, typeof({{=it.Name}}), result);{{}}}
-                    }{{~}}
+                    }
+                    {{~}}
                 }
                 {{~}}{{?}}
                 {{?!it.Constructor || (it.Constructor.OverloadCount != 1)}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=it.Name}} constructor");{{?}}
@@ -192,6 +195,7 @@ namespace PuertsStaticWrap
             return IntPtr.Zero;
         }
         {{~it.Methods :method}}
+        {{?!method.IsLazyMember}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy && !method.IsStatic}}unsafe {{?}}private static void {{=(method.IsStatic ? "F" : "M")}}_{{=method.Name}}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -206,7 +210,7 @@ namespace PuertsStaticWrap
                     
                     {{~overloadGroup :overload}}
                     {{?method.HasOverloads && overload.ParameterInfos.Length > 0}}if ({{~overload.ParameterInfos :paramInfo:idx}}{{?idx!=0}}
-                        && {{?}}argHelper{{=idx}}.IsMatch({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsByRef}}, {{=paramInfo.IsOut}}){{~}}){{?}}
+                        && {{?}}argHelper{{=idx}}.{{=paramInfo.IsParams?"IsMatchParams":"IsMatch"}}({{=paramInfo.ExpectJsType}}, {{=paramInfo.ExpectCsType}}, {{=paramInfo.IsParams?idx:paramInfo.IsByRef}}, {{=paramInfo.IsParams?"paramLen":paramInfo.IsOut}}){{~}}){{?}}
                     {
                         {{~overload.ParameterInfos :paramInfo:idx}}
                         var Arg{{=idx}} = {{=getArgument(paramInfo, 'argHelper' + idx, idx)}};{{~}}
@@ -216,7 +220,8 @@ namespace PuertsStaticWrap
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
                         {{?!it.BlittableCopy && !method.IsStatic}}{{=setSelf(it)}}{{?}}
                         {{?method.HasOverloads}}return;{{?}}
-                    }{{~}}
+                    }
+                    {{~}}
                 }
                 {{~}}
                 {{?method.HasOverloads}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=method.Name}}");{{?}}
@@ -226,8 +231,11 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
+        {{?}}
         {{~}}
+
         {{~it.Properties :property}}
+        {{?!property.IsLazyMember}}
         {{?property.HasGetter}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy && !property.IsStatic}}unsafe {{?}}private static void G_{{=property.Name}}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
@@ -259,8 +267,11 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }{{?}}
+        {{?}}
         {{~}}
+
         {{?it.GetIndexs.Length > 0}}
+        {{?!it.IsLazyMember}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy}}unsafe {{?}}private static void GetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -283,7 +294,10 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        {{?}}{{?it.SetIndexs.Length > 0}}
+        {{?}}
+        {{?}}
+        {{?it.SetIndexs.Length > 0}}
+        {{?!it.IsLazyMember}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy}}unsafe {{?}}private static void SetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -305,8 +319,11 @@ namespace PuertsStaticWrap
             {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
-        }{{?}}
+        }
+        {{?}}
+        {{?}}
         {{~it.Operators :operator}}
+        {{?!operator.IsLazyMember}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         private static void O_{{=operator.Name}}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -327,7 +344,8 @@ namespace PuertsStaticWrap
                         var result = {{=operatorCall(operator.Name, overload.ParameterInfos.Length, overload)}};
                         {{?!overload.IsVoid}}{{=setReturn(overload)}};{{?}}
                         {{?operator.HasOverloads}}return;{{?}}
-                    }{{~}}
+                    }
+                    {{~}}
                 }
                 {{~}}
                 {{?operator.HasOverloads}}Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to {{=operator.Name}}");{{?}}
@@ -337,8 +355,10 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
+        {{?}}
         {{~}}
         {{~it.Events :eventInfo}}
+        {{?!eventInfo.IsLazyMember}}
         {{?eventInfo.HasAdd}}
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         {{?it.BlittableCopy && !eventInfo.IsStatic}}unsafe {{?}}private static void A_{{=eventInfo.Name}}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
@@ -369,6 +389,7 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
+        {{?}}
         {{?}}{{~}}
         public static Puerts.TypeRegisterInfo GetRegisterInfo()
         {
@@ -378,18 +399,53 @@ namespace PuertsStaticWrap
                 Constructor = Constructor,
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
                 {
-                    {{~it.Methods :method}}{ new Puerts.MethodKey {Name = "{{=method.Name}}", IsStatic = {{=method.IsStatic}}},  {{=(method.IsStatic ? "F" : "M")}}_{{=method.Name}} },
-                    {{~}}{{?it.GetIndexs.Length > 0}}{ new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, GetItem },
-                    {{?}}{{?it.SetIndexs.Length > 0}}{ new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, SetItem},
-                    {{?}}{{~it.Operators :operator}}{ new Puerts.MethodKey {Name = "{{=operator.Name}}", IsStatic = true}, O_{{=operator.Name}}},
-                    {{~}}{{~it.Events :eventInfo}}{{?eventInfo.HasAdd}}{ new Puerts.MethodKey {Name = "add_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, A_{{=eventInfo.Name}}},
-                    {{?}}{{?eventInfo.HasRemove}}{ new Puerts.MethodKey {Name = "remove_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, R_{{=eventInfo.Name}}},
+                    {{~it.Methods :method}}{{?!method.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "{{=method.Name}}", IsStatic = {{=method.IsStatic}}}, {{=(method.IsStatic ? "F" : "M")}}_{{=method.Name}} },
+                    {{?}}{{~}}
+                    {{?it.GetIndexs.Length > 0}}{{?!it.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, GetItem },
+                    {{?}}{{?}}
+                    {{?it.SetIndexs.Length > 0}}{{?!it.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, SetItem },
+                    {{?}}{{?}}
+                    {{~it.Operators :operator}}{{?!operator.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "{{=operator.Name}}", IsStatic = true}, O_{{=operator.Name}} },
+                    {{?}}{{~}}
+                    {{~it.Events :eventInfo}}{{?!eventInfo.IsLazyMember}}
+                    {{?eventInfo.HasAdd}}       { new Puerts.MethodKey {Name = "add_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, A_{{=eventInfo.Name}} },       {{?}}
+                    {{?eventInfo.HasRemove}}        { new Puerts.MethodKey {Name = "remove_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}},  R_{{=eventInfo.Name}} },        {{?}}
                     {{?}}{{~}}
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
                 {
-                    {{~it.Properties :property}}{"{{=property.Name}}", new Puerts.PropertyRegisterInfo(){ IsStatic = {{=property.IsStatic}}, Getter = {{=property.HasGetter?"G_"+property.Name:"null"}}, Setter = {{=property.HasSetter?"S_"+property.Name:"null"}}} },
-                    {{~}}
+                    {{~it.Properties :property}}{{?!property.IsLazyMember}}
+                    {"{{=property.Name}}", new Puerts.PropertyRegisterInfo(){ IsStatic = {{=property.IsStatic}}, Getter = {{=property.HasGetter?"G_"+property.Name:"null"}}, Setter = {{=property.HasSetter?"S_"+property.Name:"null"}}} },
+                    {{?}}{{~}}
+                },
+                LazyMethods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
+                {
+                    {{~it.Methods :method}}{{?method.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "{{=method.Name}}", IsStatic = {{=method.IsStatic}}},  null},
+                    {{?}}{{~}}
+                    {{?it.GetIndexs.Length > 0}}{{?it.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, null },
+                    {{?}}{{?}}
+                    {{?it.SetIndexs.Length > 0}}{{?it.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, null},
+                    {{?}}{{?}}
+                    {{~it.Operators :operator}}{{?operator.IsLazyMember}}
+                    { new Puerts.MethodKey {Name = "{{=operator.Name}}", IsStatic = true}, null},
+                    {{?}}{{~}}
+                    {{~it.Events :eventInfo}}{{?eventInfo.IsLazyMember}}
+                    {{?eventInfo.HasAdd}}       { new Puerts.MethodKey {Name = "add_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, null},       {{?}}
+                    {{?eventInfo.HasRemove}}        { new Puerts.MethodKey {Name = "remove_{{=eventInfo.Name}}", IsStatic = {{=eventInfo.IsStatic}}}, null},        {{?}}
+                    {{?}}{{~}}
+                },
+                LazyProperties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
+                {
+                    {{~it.Properties :property}}{{?property.IsLazyMember}}
+                    {"{{=property.Name}}", new Puerts.PropertyRegisterInfo(){ IsStatic = {{=property.IsStatic}} } },
+                    {{?}}{{~}}
                 }
             };
         }

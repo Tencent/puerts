@@ -43,7 +43,7 @@ namespace Puerts
                 Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
                 PuertsDLL.ReturnNumber(isolate, info, array.Length);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 PuertsDLL.ThrowException(isolate, "array.length throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
@@ -128,7 +128,7 @@ namespace Puerts
             }
             return hited;
         }
-        
+
         bool FastArraySet(IntPtr isolate, IntPtr info, IntPtr self, object obj, uint index, IntPtr value)
         {
             bool hited = true;
@@ -206,7 +206,7 @@ namespace Puerts
             }
             return hited;
         }
-        
+
         private int arrayTypeId = -1;
 
         internal void InitArrayTypeId(IntPtr isolate)
@@ -215,7 +215,7 @@ namespace Puerts
             var lengthFuncId = jsEnv.AddCallback(ArrayLength);
             PuertsDLL.RegisterProperty(jsEnv.isolate, arrayTypeId, "Length", false, callbackWrap, lengthFuncId, null, 0, true);
 
-            PuertsDLL.RegisterFunction(jsEnv.isolate, arrayTypeId, "get_Item", false, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen)=>
+            PuertsDLL.RegisterFunction(jsEnv.isolate, arrayTypeId, "get_Item", false, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen) =>
             {
                 try
                 {
@@ -441,24 +441,25 @@ namespace Puerts
                 flag = flag | BindingFlags.NonPublic;
             }
 
-            MethodInfo[] methods = type.GetMethods(flag);
-            // UnityEngine.Debug.Log("methods length:" + type + "_" + methods.Length);
-            Dictionary<MethodKey, List<MethodInfo>> methodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
-            Dictionary<string, ProperyMethods> propertyGroup = new Dictionary<string, ProperyMethods>();
-
-            for (int i = 0; i < methods.Length; ++i)
+            // baseType
+            int baseTypeId = -1;
+            if (type.BaseType != null)
             {
-                MethodInfo method = methods[i];
-                
-                MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+                baseTypeId = GetTypeId(isolate, type.BaseType);
+            }
 
-                if (registerInfo != null && registerInfo.Methods.ContainsKey(methodKey))
-                {
-                    continue;
-                }
+            Dictionary<MethodKey, List<MethodInfo>> slowBindingMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
+            Dictionary<string, ProperyMethods> slowBindingProperties = new Dictionary<string, ProperyMethods>();
+            List<FieldInfo> slowBindingFields = new List<FieldInfo>();
 
-                if (!method.IsConstructor && method.IsGenericMethodDefinition && Utils.IsSupportedMethod(method))
+            Func<MethodKey, MethodInfo, bool> AddMethodToSlowBindingGroup = (MethodKey methodKey, MethodInfo method) =>
+            {
+                if (method.IsGenericMethodDefinition)
                 {
+                    if (!Utils.IsSupportedMethod(method))
+                    {
+                        return false;
+                    }
                     var genericArguments = method.GetGenericArguments();
                     var constraintedArgumentTypes = new Type[genericArguments.Length];
                     for (var j = 0; j < genericArguments.Length; j++)
@@ -468,109 +469,127 @@ namespace Puerts
                     method = method.MakeGenericMethod(constraintedArgumentTypes);
                 }
 
-                if (method.IsConstructor || method.IsGenericMethodDefinition)
-                {
-                    continue;
-                }
-
                 if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
                 {
                     string propName = method.Name.Substring(4);
-                    if (registerInfo != null && registerInfo.Properties.ContainsKey(propName))
-                    {
-                        continue;
-                    }
                     ProperyMethods properyMethods;
-                    if (!propertyGroup.TryGetValue(propName, out properyMethods))
+                    if (!slowBindingProperties.TryGetValue(propName, out properyMethods))
                     {
                         properyMethods = new ProperyMethods();
-                        propertyGroup.Add(propName, properyMethods);
+                        slowBindingProperties.Add(propName, properyMethods);
                     }
                     properyMethods.Getter = method;
-                    continue;
                 }
                 else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
                 {
                     string propName = method.Name.Substring(4);
-                    if (registerInfo != null && registerInfo.Properties.ContainsKey(propName))
-                    {
-                        continue;
-                    }
                     ProperyMethods properyMethods;
-                    if (!propertyGroup.TryGetValue(propName, out properyMethods))
+                    if (!slowBindingProperties.TryGetValue(propName, out properyMethods))
                     {
                         properyMethods = new ProperyMethods();
-                        propertyGroup.Add(propName, properyMethods);
+                        slowBindingProperties.Add(propName, properyMethods);
                     }
                     properyMethods.Setter = method;
-                    continue;
                 }
-
-                List<MethodInfo> overloads;
-                if (!methodGroup.TryGetValue(methodKey, out overloads))
+                else
                 {
-                    overloads = new List<MethodInfo>();
-                    methodGroup.Add(methodKey, overloads);
-                }
-                overloads.Add(method);
-            }
-
-            ConstructorCallback constructorCallback = null;
-
-            if (typeof(Delegate).IsAssignableFrom(type))
-            {
-                DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv.GeneralGetterManager);
-                constructorCallback = delegateConstructWrap.Construct;
-            }
-            else
-            {
-                bool hasNoParametersCtor = false;
-                var constructorWraps = type.GetConstructors(flag)
-                    .Select(m => 
+                    List<MethodInfo> overloads;
+                    if (!slowBindingMethodGroup.TryGetValue(methodKey, out overloads))
                     {
-                        if (m.GetParameters().Length == 0) 
-                        {
-                            hasNoParametersCtor = true;
-                        }
-                        return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
-                    })
-                    .ToList();
-                if (type.IsValueType && !hasNoParametersCtor)
-                {
-                    constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
+                        overloads = new List<MethodInfo>();
+                        slowBindingMethodGroup.Add(methodKey, overloads);
+                    }
+                    overloads.Add(method);
                 }
-                MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
-                constructorCallback = constructorReflectionWrap.Construct;
-            }
 
-            int baseTypeId = -1;
-            if (type.BaseType != null)
-            {
-                baseTypeId = GetTypeId(isolate, type.BaseType);
-            }
-
-            var fields = type.GetFields(flag);
-
+                return true;
+            };
             HashSet<string> readonlyStaticFields = new HashSet<string>();
-
-            foreach (var field in fields)
-            {
-                if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
-                {
-                    readonlyStaticFields.Add(field.Name);
-                }
-            }
 
             int typeId = -1;
             if (registerInfo == null)
             {
+                // registerInfo is null, then all the member use the SlowBinding
+
+                // constructors
+                ConstructorCallback constructorCallback = null;
+
+                if (typeof(Delegate).IsAssignableFrom(type))
+                {
+                    DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv.GeneralGetterManager);
+                    constructorCallback = delegateConstructWrap.Construct;
+                }
+                else
+                {
+                    bool hasNoParametersCtor = false;
+                    var constructorWraps = type.GetConstructors(flag)
+                        .Select(m =>
+                        {
+                            if (m.GetParameters().Length == 0)
+                            {
+                                hasNoParametersCtor = true;
+                            }
+                            return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
+                        })
+                        .ToList();
+                    if (type.IsValueType && !hasNoParametersCtor)
+                    {
+                        constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
+                    }
+                    MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
+                    constructorCallback = constructorReflectionWrap.Construct;
+                }
+
                 typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
+
+                // methods and properties
+                MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
+
+                for (int i = 0; i < methods.Length; ++i)
+                {
+                    MethodInfo method = methods[i];
+
+                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+
+                    if (!method.IsConstructor)
+                    {
+                        AddMethodToSlowBindingGroup(methodKey, method);
+                    }
+                }
+
+                // extensionMethods
+                IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
+                if (extensionMethods != null)
+                {
+                    var enumerator = extensionMethods.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        MethodInfo method = enumerator.Current;
+                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
+
+                        AddMethodToSlowBindingGroup(methodKey, method);
+                    }
+                }
+
+                // fields
+                var fields = type.GetFields(flag);
+
+                foreach (var field in fields)
+                {
+                    slowBindingFields.Add(field);
+                    if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                    {
+                        readonlyStaticFields.Add(field.Name);
+                    }
+                }
             }
             else
             {
+                // otherwise when registerInfo is not null, most of member use FastBinding, some member with IsLazyMember=true use LazyBinding
+
                 if (registerInfo.BlittableCopy)
                 {
-                    typeId = PuertsDLL.RegisterStruct(jsEnv.isolate, -1, type.AssemblyQualifiedName, registerInfo.Constructor, 
+                    typeId = PuertsDLL.RegisterStruct(jsEnv.isolate, -1, type.AssemblyQualifiedName, registerInfo.Constructor,
                         null, jsEnv.Idx, System.Runtime.InteropServices.Marshal.SizeOf(type));
                 }
                 else
@@ -581,26 +600,67 @@ namespace Puerts
                 foreach (var kv in registerInfo.Methods)
                 {
                     PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, kv.Value, jsEnv.Idx);
+                    if (kv.Key.Name == "ToString" && registerInfo.BlittableCopy)
+                    {
+                        PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, "toString", false, kv.Value, jsEnv.Idx);
+                    }
+
                 }
 
                 foreach (var kv in registerInfo.Properties)
                 {
                     PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, kv.Value.IsStatic, kv.Value.Getter, jsEnv.Idx, kv.Value.Setter, jsEnv.Idx, !readonlyStaticFields.Contains(kv.Key));
                 }
-            }
-            
-            //int typeId = PuertsDLL.RegisterClass(jsEngine, type.AssemblyQualifiedName, null, null, Utils.TwoIntToLong(idx, 0));
 
-            foreach (var kv in methodGroup)
+                if (registerInfo.LazyMethods != null) 
+                {
+                    foreach (var kv in registerInfo.LazyMethods)
+                    {
+                        //TODO: change to LazyBinding instead of SlowBinding
+                        MethodKey methodKey = kv.Key;
+                        MethodInfo method = type.GetMethod(methodKey.Name, flag);
+
+                        if (method != null)
+                        {
+                            AddMethodToSlowBindingGroup(methodKey, method);
+                        }
+                    }
+                }
+
+                if (registerInfo.LazyProperties != null)
+                {
+                    foreach (var kv in registerInfo.LazyProperties)
+                    {
+                        //TODO: change to LazyBinding instead of SlowBinding
+                        string name = kv.Key;
+
+                        MethodKey getMethodKey = new MethodKey { Name = "get_" + name, IsStatic = kv.Value.IsStatic };
+                        MethodInfo getMethod = type.GetMethod(getMethodKey.Name, flag);
+
+                        MethodKey setMethodKey = new MethodKey { Name = "set_" + name, IsStatic = kv.Value.IsStatic };
+                        MethodInfo setMethod = type.GetMethod(getMethodKey.Name, flag);
+
+                        if (getMethod != null)
+                        {
+                            AddMethodToSlowBindingGroup(getMethodKey, getMethod);
+                        }
+                        if (setMethod != null)
+                        {
+                            AddMethodToSlowBindingGroup(setMethodKey, setMethod);
+                        }
+                    }
+                }
+            }
+
+            foreach (var kv in slowBindingMethodGroup)
             {
-                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)).ToList());
-                // UnityEngine.Debug.Log("RegisterFunction_" + typeId + "_" + kv.Key.Name);
+                var wraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, kv.Key.IsExtension)).ToList();
+                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, wraps);
                 PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, callbackWrap, jsEnv.AddCallback(methodReflectionWrap.Invoke));
             }
-
-            foreach(var kv in propertyGroup)
+            foreach (var kv in slowBindingProperties)
             {
-                V8FunctionCallback getter = null; 
+                V8FunctionCallback getter = null;
                 long getterData = 0;
                 bool isStatic = false;
                 if (kv.Value.Getter != null)
@@ -625,13 +685,8 @@ namespace Puerts
                 }
                 PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, isStatic, getter, getterData, setter, setterData, true);
             }
-
-            foreach(var field in fields)
+            foreach (var field in slowBindingFields)
             {
-                if (registerInfo != null && registerInfo.Properties.ContainsKey(field.Name))
-                {
-                    continue;
-                }
                 var getterData = jsEnv.AddCallback(GenFieldGetter(type, field));
 
                 V8FunctionCallback setter = null;

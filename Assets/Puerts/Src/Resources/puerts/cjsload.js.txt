@@ -77,7 +77,7 @@ var global = global || (function () { return this; }());
     }
     
     function loadFile(path) {
-        let debugPath = {}
+        let debugPath = {};
         var context = loader.ReadFile(path, debugPath);
         return {context:context, debugPath:debugPath.value};
     }

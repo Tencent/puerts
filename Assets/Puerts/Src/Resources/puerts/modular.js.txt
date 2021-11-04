@@ -59,7 +59,14 @@ var global = global || (function () { return this; }());
             if (moduleName in buildinModule) return buildinModule[moduleName];
             
             let fullPath = puerts.searchModule(requiringDir, moduleName);
-            if (!fullPath) throw new Error("can not find " + moduleName);
+            if (!fullPath) {
+                try {
+                    return nodeRequire(moduleName);
+                    
+                } catch(e) {
+                    throw new Error("can not find " + moduleName);
+                }
+            }
 
             let key = fullPath;
             if (key in moduleCache) {
@@ -112,8 +119,14 @@ var global = global || (function () { return this; }());
     puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;
-    
-    global.require = genRequire("");
+
+    let nodeRequire = global.require;
+    if (nodeRequire) {
+        global.require = global.puertsRequire = genRequire("");
+        global.nodeRequire = nodeRequire;
+    } else {
+        global.require = genRequire("");
+    }
 
     function clearModuleCache () {
         tmpModuleStorage = [];
