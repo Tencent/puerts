@@ -137,8 +137,16 @@ namespace Puerts
 
         private object JSObjectTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            IntPtr DLLJSObjectPtr = getValueApi.GetJSObject(isolate, value, isByRef);
-            return jsEnv.jsObjectFactory.GetOrCreateJSObject(DLLJSObjectPtr, jsEnv);
+            var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
+            if (jsValueType == JsValueType.Function)
+            {
+                IntPtr DLLJSObjectPtr = getValueApi.GetJSObject(isolate, value, isByRef);
+                return jsEnv.jsObjectFactory.GetOrCreateJSObject(DLLJSObjectPtr, jsEnv);
+            }
+            else
+            {
+                return AnyTranslator(isolate, getValueApi, value, isByRef);
+            }
         }
 
         private object GenericDelegateTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
