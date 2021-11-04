@@ -892,7 +892,7 @@ static void FinishInjection(UClass* InClass)
             for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 auto Function = *FuncIt;
-                Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish(Function);
             }
             TempTypeScriptGeneratedClass->InjectNotFinished = false;
         }
@@ -992,7 +992,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //SysObjectRetainer.Retain(Class);
 
                         //implement by js
-                        TSet<FName> overrided;
+                        TypeScriptGeneratedClass->FunctionToRedirect.Empty();
 
                         for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); It; ++It)
                         {
@@ -1023,7 +1023,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             }
                             auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
                             v8::Local<v8::Object> FuncsObj = Function->HasAnyFunctionFlags(FUNC_Static) ? static_cast<v8::Local<v8::Object>>(Func) : Proto;
-                            if (!overrided.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
+                            if (!TypeScriptGeneratedClass->FunctionToRedirect.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
                                 (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
                             {
                                 auto MaybeValue = FuncsObj->Get(Context, V8Name);
@@ -1036,8 +1036,8 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                         v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
                                         std::make_unique<puerts::FFunctionTranslator>(Function, false)
                                     };
+                                    TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
                                     TypeScriptGeneratedClass->RedirectToTypeScript(Function);
-                                    overrided.Add(FunctionFName);
                                 }
                             }
                         }

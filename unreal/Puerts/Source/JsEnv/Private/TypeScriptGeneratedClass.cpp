@@ -64,6 +64,10 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
 
 void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
 {
+    if (!FunctionToRedirect.Contains(InFunction->GetFName()))
+    {
+        return;
+    }
     if (InFunction->Script.Num() == 0)
     {
         InFunction->Script.Add(EX_EndFunctionParms);
@@ -71,6 +75,15 @@ void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
     InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
     InFunction->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
     AddNativeFunction(*InFunction->GetName(), &UTypeScriptGeneratedClass::execCallJS);
+}
+
+void UTypeScriptGeneratedClass::RedirectToTypeScriptFinish(UFunction* InFunction)
+{
+    if (!FunctionToRedirect.Contains(InFunction->GetFName()))
+    {
+        return;
+    }
+    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
 }
 
 bool UTypeScriptGeneratedClass::NotSupportInject()
