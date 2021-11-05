@@ -1587,6 +1587,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
+        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     else 
@@ -1606,6 +1607,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
                     *Function->GetName(), ContextObject));
+                ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
                 return;
             }
             ThisObj = ObjIter->second.Get(Isolate);
