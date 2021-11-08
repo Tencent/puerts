@@ -813,9 +813,9 @@ namespace Puerts.Editor
                     {
                         return this.Name == info.Name &&
                             this.TypeName == info.TypeName &&
-                            this.IsByRef != info.IsByRef &&
-                            this.IsParams != info.IsParams &&
-                            this.IsOptional != info.IsOptional;
+                            this.IsByRef == info.IsByRef &&
+                            this.IsParams == info.IsParams &&
+                            this.IsOptional == info.IsOptional;
                     }
                     return base.Equals(obj);
                 }
