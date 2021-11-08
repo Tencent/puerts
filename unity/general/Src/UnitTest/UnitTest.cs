@@ -299,6 +299,23 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void InRefTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            string ret = jsEnv.Eval<string>(@"
+                const CS = require('csharp');
+                const PUERTS = require('puerts');
+                let dividend = new CS.Puerts.UnitTest.Vector3(8n,6n,4n);
+                let divisor = new CS.Puerts.UnitTest.Vector3(2n,2n,2n);
+                let result = deriveObj.InRefTest(dividend, divisor);
+                let res = `${result.x}${result.y}${result.z}`
+                res;
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(ret, "432");
+        }
+
+        [Test]
         public void AbstractRefParamTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());

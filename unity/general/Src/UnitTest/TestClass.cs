@@ -11,6 +11,20 @@ using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public struct Vector3
+    {
+        public long x;
+        public long y;
+        public long z;
+
+        public Vector3(long x,long y,long z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
     public struct S
     {
         int age;
@@ -281,6 +295,16 @@ namespace Puerts.UnitTest
         {
             y = new ISubA();
             y.cmpTarget = 100;
+        }
+
+        public static Vector3 InRefTest(in Vector3 v1, in Vector3 v2)
+        {
+            return new Vector3()
+            {
+                x = v1.x / v2.x,
+                y = v1.y / v2.y,
+                z = v1.z / v2.z,
+            };
         }
     }
 
