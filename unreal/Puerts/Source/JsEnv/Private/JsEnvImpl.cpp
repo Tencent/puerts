@@ -1844,7 +1844,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
     auto MaybeProxy = CallbacksMap->Get(Context, Info[0]);
     if (!MaybeProxy.IsEmpty() && MaybeProxy.ToLocalChecked()->IsExternal())
     {
-        __USE(CallbacksMap->Set(Context, Info[0], v8::Undefined(Isolate)));
+        __USE(CallbacksMap->Delete(Context, Info[0]));
         auto DelegateProxy = Cast<UDynamicDelegateProxy>(static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
         for ( auto it = ManualReleaseCallbackList.begin(); it != ManualReleaseCallbackList.end(); )
         {
@@ -1854,6 +1854,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
             } else if (it->Get() == DelegateProxy) {
                 DelegateProxy->JsFunction.Reset();
                 it = ManualReleaseCallbackList.erase(it);
+                SysObjectRetainer.Release(DelegateProxy);
             } else {
                 ++it;
             }
