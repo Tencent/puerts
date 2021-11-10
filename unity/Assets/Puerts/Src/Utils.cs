@@ -61,7 +61,10 @@ namespace Puerts
                     if (
                         parameterType.BaseType != null && (
                             parameterType.BaseType.IsValueType ||
-                            parameterType.BaseType.IsConstructedGenericType
+                            (
+                                parameterType.BaseType.IsGenericType && 
+                                !parameterType.BaseType.IsGenericTypeDefinition
+                            )
                         )
                     ) return false;
                     var parameterConstraints = parameterType.GetGenericParameterConstraints();
