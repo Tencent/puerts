@@ -1518,7 +1518,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         v8::Context::Scope ContextScope(Context);
 
         auto JSObject = Iter->second.Get(Isolate)->ToObject(Context).ToLocalChecked();
-        DataTransfer::SetPointer(Isolate, JSObject, nullptr, 0);
+        DataTransfer::SetPointer(Isolate, JSObject, RELEASED_UOBJECT, 0);
         DataTransfer::SetPointer(Isolate, JSObject, nullptr, 1);
         GeneratedObjectMap.erase(ObjectBase);
     }
