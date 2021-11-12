@@ -557,11 +557,18 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
+
+#ifdef SINGLE_THREAD_VERIFY
+    BoundThreadId = FPlatformTLS::GetCurrentThreadId();
+#endif
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
 #if defined(WITH_NODEJS)
     StopPolling();
 #endif
@@ -721,6 +728,9 @@ FJsEnvImpl::~FJsEnvImpl()
 
 void FJsEnvImpl::InitExtensionMethodsMap()
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
@@ -879,6 +889,9 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
 
 void FJsEnvImpl::LowMemoryNotification()
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     MainIsolate->LowMemoryNotification();
 }
 
@@ -902,6 +915,9 @@ static void FinishInjection(UClass* InClass)
 
 void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
 
     if (Iter == BindInfoMap.end() || ForceReinject)//create and link
@@ -1102,6 +1118,9 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
 void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1137,6 +1156,9 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 
 void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     //Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     JsHotReload(ModuleName, JsSource);
 }
@@ -1369,6 +1391,9 @@ v8::Local<v8::Value> FJsEnvImpl::CreateArray(v8::Isolate* Isolate, v8::Local<v8:
 
 void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto SignatureFunction = Proxy->SignatureFunction;
     auto Iter = JsCallbackPrototypeMap.find(SignatureFunction);
     if (Iter == JsCallbackPrototypeMap.end())
@@ -1393,6 +1418,9 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 
 void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1430,13 +1458,17 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         {
             FScopeLock Lock(&PendingConstructLock);
             PendingConstructObjects.AddUnique(Object);
+            Logger->Warn(FString::Printf(TEXT("TypeScript Object %s(%p) construct delayed!"), *Object->GetName(), Object));
         }
         else
         {
-            Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), (void*)Object));
+            Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), Object));
         }
         return;
     }
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     
     if (BindInfoMap.find(Class) == BindInfoMap.end())
     {
@@ -1507,6 +1539,9 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 
 void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32 Index)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Iter = GeneratedObjectMap.find(ObjectBase);
     if (Iter != GeneratedObjectMap.end())
     {
@@ -1556,6 +1591,9 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
 
 void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     if (GeneratedObjectMap.find(ContextObject) == GeneratedObjectMap.end())
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
@@ -1583,6 +1621,9 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
 
 void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto FuncIter = TsFunctionMap.find(Function);
     if (FuncIter == TsFunctionMap.end())
     {
@@ -1975,6 +2016,9 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 
 bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     std::vector<void*> PendingToRemove;
     for (auto &KV : DelegateMap)
     {
@@ -2398,6 +2442,9 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     if (Started)
     {
         Logger->Error("Started yet!");
@@ -2653,6 +2700,9 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
 
     FTickerDelegateWrapper* DelegateWrapper = new FTickerDelegateWrapper(Continue);
     DelegateWrapper->Init(Info, ExecutionExceptionHandler, DelegateHandleCleaner);
+#ifdef SINGLE_THREAD_VERIFY
+    DelegateWrapper->BoundThreadId = BoundThreadId;
+#endif
     FTickerDelegate Delegate = FTickerDelegate::CreateRaw(DelegateWrapper, &FTickerDelegateWrapper::CallFunction);
 
     v8::Isolate* Isolate = Info.GetIsolate();

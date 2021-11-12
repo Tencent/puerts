@@ -532,6 +532,9 @@ private:
     
     FDelegateHandle AsyncLoadingFlushUpdateHandle;
 
+#ifdef SINGLE_THREAD_VERIFY
+    uint32 BoundThreadId;
+#endif
 };
 
 }
