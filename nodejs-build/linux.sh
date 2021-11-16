@@ -9,11 +9,15 @@ cd node
 git fetch origin v$VERSION
 git checkout v$VERSION
 
+echo "=====[Patching Node.js]====="
+
 git apply --cached $GITHUB_WORKSPACE/nodejs-build/nodemod.patch
 git apply --cached $GITHUB_WORKSPACE/nodejs-build/lib_uv_add_on_watcher_queue_updated.patch
 git checkout -- .
 
-./configure --shared
+echo "=====[Building Node.js]====="
+
+./configure --shared --no-browser-globals
 make -j8
 
 mkdir -p ../puerts-node/nodejs/include
