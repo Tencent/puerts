@@ -518,17 +518,4 @@ namespace Puerts.UnitTest
             return lastCallbackValue == null ? null : lastCallbackValue.GetType();
         }
     }
-
-    public class GenericA
-    {
-        public void a<T>() where T: C
-        {
-        }
-    }
-
-    public class GenericB<T> {
-
-    }
-
-    public class GenericC: B<C> {}
 }

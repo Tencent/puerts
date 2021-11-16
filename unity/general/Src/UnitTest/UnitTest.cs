@@ -1110,28 +1110,6 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
             jsEnv.Dispose();
         }
-
-        [Test]
-        public void SpecialGenericCall()
-        {
-
-
-            jsEnv = new JsEnv(new TxtLoader()); 
-            try {
-                jsEnv.Eval(@"
-                    const CS = require('csharp');
-                    const puerts = require('puerts')
-                    const c = new CS.PuertsTest.C();
-                    const a = new CS.PuertsTest.A();
-                    a.a();
-                ");
-            } 
-            catch(Exception e) { 
-                Assert.True(true);
-                return;
-            }
-            Assert.True(false);
-        }
     }
 }
 
