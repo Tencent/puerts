@@ -1,8 +1,8 @@
 diff --git a/node.gyp b/node.gyp
-index 8ba0dfebe8..53b67360d9 100644
+index f18a0d58a8..5c4cc23ac0 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -827,6 +827,7 @@
+@@ -818,6 +818,7 @@
              'Dbghelp',
              'Psapi',
              'Ws2_32',
@@ -10,39 +10,16 @@ index 8ba0dfebe8..53b67360d9 100644
            ],
          }],
          [ 'node_use_etw=="true"', {
-diff --git a/src/node.cc b/src/node.cc
-index b3823235de..71f36aa4ae 100644
---- a/src/node.cc
-+++ b/src/node.cc
-@@ -134,6 +134,10 @@ using v8::Undefined;
- using v8::V8;
- using v8::Value;
- 
-+std::unique_ptr<v8::Platform> NewDefaultPlatform() {
-+  return v8::platform::NewDefaultPlatform();
-+}
-+
- namespace per_process {
- 
- // node_revert.h
-diff --git a/src/node.h b/src/node.h
-index 38e0ef50f9..5fa8c255a1 100644
---- a/src/node.h
-+++ b/src/node.h
-@@ -71,6 +71,7 @@
- 
- #include "v8-platform.h"  // NOLINT(build/include_order)
- #include "node_version.h"  // NODE_MODULE_VERSION
-+#include "libplatform/libplatform.h"
- 
- #include <memory>
- #include <functional>
-@@ -123,6 +124,8 @@ struct napi_module;
- // terminally confused when it's done in node_internals.h
- namespace node {
- 
-+std::unique_ptr<v8::Platform> NewDefaultPlatform();
-+
- namespace tracing {
- 
- class TracingController;
+diff --git a/vcbuild.bat b/vcbuild.bat
+index 4316658bb4..a455f60339 100644
+--- a/vcbuild.bat
++++ b/vcbuild.bat
+@@ -51,7 +51,7 @@ set noetw_msi_arg=
+ set i18n_arg=
+ set download_arg=
+ set build_release=
+-set configure_flags=
++set configure_flags=--no-browser-globals
+ set build_addons=
+ set dll=
+ set enable_static=
