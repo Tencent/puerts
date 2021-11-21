@@ -797,7 +797,7 @@ void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Object, Object);
+    CHECK_V8_ARGS(EArgObject, EArgObject);
 
     auto Des = Info[0]->ToObject(Context).ToLocalChecked();
     auto Src = Info[1]->ToObject(Context).ToLocalChecked();
@@ -1879,7 +1879,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function);
+    CHECK_V8_ARGS(EArgFunction);
 
     auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
     auto MaybeProxy = CallbacksMap->Get(Context, Info[0]);
@@ -2278,7 +2278,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
 
@@ -2350,7 +2350,7 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Object);
+    CHECK_V8_ARGS(EArgObject);
 
     auto Struct = Cast<UStruct>(FV8Utils::GetUObject(Context, Info[0]));
 
@@ -2397,7 +2397,7 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Int32);
+    CHECK_V8_ARGS(EArgInt32);
 
     int ContainerType = Info[0]->Int32Value(Context).ToChecked();
 
@@ -2584,7 +2584,7 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String, String);
+    CHECK_V8_ARGS(EArgString, EArgString);
 
     v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
 
@@ -2619,7 +2619,7 @@ void FJsEnvImpl::Log(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Int32, String);
+    CHECK_V8_ARGS(EArgInt32, EArgString);
         
     auto Level = Info[0]->Int32Value(Context).ToChecked();
 
@@ -2649,7 +2649,7 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String, String);
+    CHECK_V8_ARGS(EArgString, EArgString);
 
     FString ModuleName = FV8Utils::ToFString(Isolate, Info[0]);
     FString RequiringDir = FV8Utils::ToFString(Isolate, Info[1]);
@@ -2678,7 +2678,7 @@ void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Number);
+    CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, false);
 }
@@ -2770,7 +2770,7 @@ void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     else
     {
-        CHECK_V8_ARGS(External);
+        CHECK_V8_ARGS(EArgExternal);
         v8::Local<v8::External> Arg = v8::Local<v8::External>::Cast(Info[0]);
         FDelegateHandle* Handle = static_cast<FDelegateHandle*>(Arg->Value());
         RemoveFTickerDelegateHandle(Handle);
@@ -2785,7 +2785,7 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Number);
+    CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, true);
 }
@@ -2798,7 +2798,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Object, String, Object, Object);
+    CHECK_V8_ARGS(EArgFunction, EArgObject, EArgString, EArgObject, EArgObject);
 
     auto Constructor = v8::Local<v8::Function>::Cast(Info[0]);
     auto Prototype = Info[1]->ToObject(Context).ToLocalChecked();
@@ -2874,7 +2874,7 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     std::string Name = *(v8::String::Utf8Value(Isolate, Info[0]));
 
@@ -2899,7 +2899,7 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
 
     if (!Inspector) return;
 
-    CHECK_V8_ARGS(Function);
+    CHECK_V8_ARGS(EArgFunction);
 
     if (!InspectorChannel)
     {
@@ -2938,7 +2938,7 @@ void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Valu
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     if (InspectorChannel)
     {
