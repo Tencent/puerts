@@ -313,7 +313,8 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return *DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+        T* ptr = DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+        return ptr ? *ptr : T{};
     }
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {

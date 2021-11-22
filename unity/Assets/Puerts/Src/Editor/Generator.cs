@@ -101,6 +101,27 @@ namespace Puerts.Editor
                 var setMethod = propertyInfo.SetMethod;
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
             }
+            public enum BindingMode {
+                FastBinding = 0,
+                SlowBinding = 1,
+                LazyBinding = 2,
+                DontBinding = 3,
+            }
+
+            internal static BindingMode getBindingMode(MemberInfo mbi) 
+            {
+                if (filters != null && filters.Count > 0)
+                {
+                    foreach (var filter in filters)
+                    {
+                        if ((bool)filter.Invoke(null, new object[] { mbi }))
+                        {
+                            return BindingMode.LazyBinding;
+                        }
+                    }
+                }
+                return BindingMode.FastBinding;
+            }
 
             public static bool isFiltered(MemberInfo mbi, bool notFiltEII = false)
             {
@@ -160,17 +181,6 @@ namespace Puerts.Editor
                             return !mi.Name.Contains(".");
                         }
                         return true;
-                    }
-                }
-
-                if (filters != null && filters.Count > 0)
-                {
-                    foreach (var filter in filters)
-                    {
-                        if ((bool)filter.Invoke(null, new object[] { mbi }))
-                        {
-                            return true;
-                        }
                     }
                 }
 
@@ -347,9 +357,10 @@ namespace Puerts.Editor
 
                 public static TypeGenInfo FromType(Type type, List<Type> genTypes)
                 {
-                    var methodGroups = Puerts.Utils.GetMethodAndOverrideMethod(type, Utils.Flags).Where(m => !Utils.isFiltered(m))
+                    var methodGroups = Puerts.Utils.GetMethodAndOverrideMethod(type, Utils.Flags)
+                        .Where(m => !Utils.isFiltered(m))
                         .Where(m => !m.IsSpecialName && Puerts.Utils.IsSupportedMethod(m))
-                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
+                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic, IsLazyMember = Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList());
                     var extensionMethods = Puerts.Utils.GetExtensionMethodsOf(type);
                     if (extensionMethods != null)
@@ -363,18 +374,24 @@ namespace Puerts.Editor
                         }
                     }
                     var extensionMethodGroup = extensionMethods != null ? extensionMethods
-                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = false })
+                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = false, IsLazyMember = Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList()) : new Dictionary<MethodKey, List<MethodBase>>();
 
-                    var indexs = type.GetProperties(Utils.Flags).Where(m => !Utils.isFiltered(m))
-                        .Where(p => p.GetIndexParameters().GetLength(0) == 1).Select(p => IndexGenInfo.FromPropertyInfo(p)).ToArray();
+                    var indexs = type.GetProperties(Utils.Flags)
+                        .Where(m => !Utils.isFiltered(m))
+                        .Where(p => p.GetIndexParameters().GetLength(0) == 1)
+                        .Select(p => IndexGenInfo.FromPropertyInfo(p))
+                        .ToArray();
                     var operatorGroups = type.GetMethods(Utils.Flags)
                         .Where(m => !Utils.isFiltered(m) && m.IsSpecialName && m.Name.StartsWith("op_") && m.IsStatic)
                         .Where(m => m.Name != "op_Explicit" && m.Name != "op_Implicit")
-                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
+                        .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic, IsLazyMember = Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding })
                         .Select(i => i.Cast<MethodBase>().ToList());
 
-                    var constructors = type.GetConstructors(Utils.Flags).Where(m => !Utils.isFiltered(m)).Cast<MethodBase>().ToList();
+                    var constructors = type.GetConstructors(Utils.Flags)
+                        .Where(m => !Utils.isFiltered(m) && Utils.getBindingMode(m) != Utils.BindingMode.LazyBinding)
+                        .Cast<MethodBase>()
+                        .ToList();
 
                     return new TypeGenInfo
                     {
@@ -386,6 +403,8 @@ namespace Puerts.Editor
                             .Distinct()
                             .ToArray(),
                         Name = type.GetFriendlyName(),
+                        IsValueType = type.IsValueType,
+                        
                         Methods = methodGroups
                             .Select(kv =>
                             {
@@ -394,18 +413,29 @@ namespace Puerts.Editor
                                 extensionMethodGroup.Remove(kv.Key);
                                 return MethodGenInfo.FromType(type, false, kv.Value, exOverloads);
                             })
-                            .Concat(extensionMethodGroup.Select(kv => MethodGenInfo.FromType(type, false, null, kv.Value))).ToArray(),
-                        IsValueType = type.IsValueType,
+                            .Concat(
+                                extensionMethodGroup
+                                    .Select(kv => MethodGenInfo.FromType(type, false, null, kv.Value))
+                            )
+                            .ToArray(),
                         Constructor = !type.IsAbstract ? MethodGenInfo.FromType(type, true, constructors) : null,
                         Properties = type.GetProperties(Utils.Flags)
                             .Where(m => !Utils.isFiltered(m))
                             .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
-                            .Select(p => PropertyGenInfo.FromPropertyInfo(p)).Concat(
-                                type.GetFields(Utils.Flags).Where(m => !Utils.isFiltered(m)).Select(f => PropertyGenInfo.FromFieldInfo(f))).ToArray(),
+                            .Select(p => PropertyGenInfo.FromPropertyInfo(p))
+                            .Concat(
+                                type.GetFields(Utils.Flags)
+                                    .Where(m => !Utils.isFiltered(m))
+                                    .Select(f => PropertyGenInfo.FromFieldInfo(f))
+                            )
+                            .ToArray(),
                         GetIndexs = indexs.Where(i => i.HasGetter).ToArray(),
                         SetIndexs = indexs.Where(i => i.HasSetter).ToArray(),
                         Operators = operatorGroups.Select(m => MethodGenInfo.FromType(type, false, m)).ToArray(),
-                        Events = type.GetEvents(Utils.Flags).Where(m => !Utils.isFiltered(m)).Select(e => EventGenInfo.FromEventInfo(e)).ToArray(),
+                        Events = type.GetEvents(Utils.Flags)
+                            .Where(m => !Utils.isFiltered(m))
+                            .Select(e => EventGenInfo.FromEventInfo(e))
+                            .ToArray(),
                     };
                 }
             }
@@ -417,6 +447,7 @@ namespace Puerts.Editor
                 public string UnderlyingTypeName;
             }
 
+            // represent a javascript function's parameter
             public class ParameterGenInfo : DataTypeInfo
             {
                 public bool IsOut;
@@ -449,12 +480,15 @@ namespace Puerts.Editor
                 }
             }
 
+            // represent a javascript class's property
             public class PropertyGenInfo : DataTypeInfo
             {
                 public string Name;
                 public bool IsStatic;
                 public bool HasGetter;
                 public bool HasSetter;
+                // 虽然还没实现，但是先占坑。Register阶段用反射代替
+                public bool IsLazyMember;
 
                 public static PropertyGenInfo FromPropertyInfo(PropertyInfo propertyInfo)
                 {
@@ -468,6 +502,7 @@ namespace Puerts.Editor
                         IsStatic = isStatic,
                         HasGetter = getMethod != null && getMethod.IsPublic,
                         HasSetter = setMethod != null && setMethod.IsPublic,
+                        IsLazyMember = Utils.getBindingMode(propertyInfo) == Utils.BindingMode.LazyBinding
                     };
                     Utils.FillEnumInfo(result, propertyInfo.PropertyType);
                     return result;
@@ -482,17 +517,21 @@ namespace Puerts.Editor
                         IsStatic = fieldInfo.IsStatic,
                         HasGetter = true,
                         HasSetter = !fieldInfo.IsInitOnly && !fieldInfo.IsLiteral,
+                        IsLazyMember = Utils.getBindingMode(fieldInfo) == Utils.BindingMode.LazyBinding
                     };
                     Utils.FillEnumInfo(result, fieldInfo.FieldType);
                     return result;
                 }
             }
 
+            // represent a javascript class's index getter/setter
             public class IndexGenInfo : DataTypeInfo
             {
                 public ParameterGenInfo IndexParameter;
                 public bool HasGetter;
                 public bool HasSetter;
+                // 虽然还没实现，但是先占坑。Register阶段用反射代替
+                public bool IsLazyMember;
 
                 public static IndexGenInfo FromPropertyInfo(PropertyInfo propertyInfo)
                 {
@@ -506,16 +545,20 @@ namespace Puerts.Editor
                         HasSetter = setMethod != null && setMethod.IsPublic,
                     };
                     Utils.FillEnumInfo(result, propertyInfo.PropertyType);
+                    result.IsLazyMember = Utils.getBindingMode(propertyInfo) == Utils.BindingMode.LazyBinding;
                     return result;
                 }
             }
 
+            // represent a add/remove method in javascript class
             public class EventGenInfo : DataTypeInfo
             {
                 public string Name;
                 public bool IsStatic;
                 public bool HasAdd;
                 public bool HasRemove;
+                // 虽然还没实现，但是先占坑。Register阶段用反射代替
+                public bool IsLazyMember;
 
                 public static EventGenInfo FromEventInfo(EventInfo eventInfo)
                 {
@@ -524,6 +567,7 @@ namespace Puerts.Editor
                     bool isStatic = addMethod == null ? removeMethod.IsStatic : addMethod.IsStatic;
                     return new EventGenInfo()
                     {
+                        IsLazyMember = Utils.getBindingMode(eventInfo) == Utils.BindingMode.LazyBinding,
                         Name = eventInfo.Name,
                         TypeName = eventInfo.EventHandlerType.GetFriendlyName(),
                         IsStatic = isStatic,
@@ -533,6 +577,7 @@ namespace Puerts.Editor
                 }
             }
 
+            // represent a method's overloads in javascript class
             public class OverloadGenInfo : DataTypeInfo
             {
                 public ParameterGenInfo[] ParameterInfos;
@@ -563,7 +608,7 @@ namespace Puerts.Editor
                             ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                             TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                             IsVoid = methodInfo.ReturnType == typeof(void),
-                            EllipsisedParameters = false
+                            EllipsisedParameters = false,
                         };
                         Utils.FillEnumInfo(mainInfo, methodInfo.ReturnType);
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
@@ -579,7 +624,7 @@ namespace Puerts.Editor
                                     ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
                                     TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                                     IsVoid = methodInfo.ReturnType == typeof(void),
-                                    EllipsisedParameters = true
+                                    EllipsisedParameters = true,
                                 };
                                 Utils.FillEnumInfo(optionalInfo, methodInfo.ReturnType);
                                 optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
@@ -599,7 +644,7 @@ namespace Puerts.Editor
                             ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                             TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                             IsVoid = false,
-                            EllipsisedParameters = false
+                            EllipsisedParameters = false,
                         };
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
                         ret.Add(mainInfo);
@@ -614,7 +659,7 @@ namespace Puerts.Editor
                                     ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
                                     TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                                     IsVoid = false,
-                                    EllipsisedParameters = true
+                                    EllipsisedParameters = true,
                                 };
                                 optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
                                 ret.Add(optionalInfo);
@@ -634,6 +679,7 @@ namespace Puerts.Editor
                 }
             }
 
+            // represent a method in javascript class
             public class MethodGenInfo
             {
                 public string Name;
@@ -641,7 +687,7 @@ namespace Puerts.Editor
                 public OverloadGenInfo[][] OverloadGroups;
                 public bool HasOverloads;
                 public int OverloadCount;
-                        
+                public bool IsLazyMember;
                 public static MethodGenInfo FromType(Type type, bool isCtor, List<MethodBase> overloads, List<MethodBase> extensionOverloads = null)
                 {
                     var ret = new List<OverloadGenInfo>();
@@ -692,10 +738,15 @@ namespace Puerts.Editor
                         isStatic = false;
                     }
 
+                    var FirstOverload = overloads != null && overloads.Count > 0 ? overloads[0] : (
+                        extensionOverloads != null && extensionOverloads.Count > 0 ? extensionOverloads[0] : null
+                    );
+
                     var result = new MethodGenInfo()
                     {
                         Name = name,
                         IsStatic = isStatic,
+                        IsLazyMember = FirstOverload == null ? false : Utils.getBindingMode(FirstOverload) == Utils.BindingMode.LazyBinding,
                         HasOverloads = ret.Count > 1,
                         OverloadCount = ret.Count,
                         OverloadGroups = ret
@@ -762,9 +813,9 @@ namespace Puerts.Editor
                     {
                         return this.Name == info.Name &&
                             this.TypeName == info.TypeName &&
-                            this.IsByRef != info.IsByRef &&
-                            this.IsParams != info.IsParams &&
-                            this.IsOptional != info.IsOptional;
+                            this.IsByRef == info.IsByRef &&
+                            this.IsParams == info.IsParams &&
+                            this.IsOptional == info.IsOptional;
                     }
                     return base.Equals(obj);
                 }

@@ -367,17 +367,19 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             FOutParmRec** LastOut = nullptr;
             if (!Stack.OutParms) LastOut = &Stack.OutParms;
             //ScriptCore.cpp
-            for (TFieldIterator<PropertyMacro> It(Function.Get()); It && Stack.PeekCode() != EX_EndFunctionParms; ++It)
+            for (FProperty* Property = (FProperty*)(Function->ChildProperties); *Stack.Code != EX_EndFunctionParms; Property = (FProperty*)(Property->Next))
             {
-                It->InitializeValue_InContainer(Params);
+                checkfSlow(Property, TEXT("NULL Property in Function %s"), *Function->GetPathName());
                 
-                if( ((It->PropertyFlags & CPF_ReturnParm) != 0) || ((It->PropertyFlags & CPF_Parm) != CPF_Parm) )
+                Property->InitializeValue_InContainer(Params);
+                
+                if ((Property->PropertyFlags & CPF_ReturnParm) != 0)
                 {
                     continue;
                 }
                 Stack.MostRecentPropertyAddress = nullptr;
                 
-                if ( It->PropertyFlags & CPF_OutParm)
+                if ( Property->PropertyFlags & CPF_OutParm)
                 {
                     Stack.Step(Stack.Object, NULL);
 
@@ -386,8 +388,8 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                         CA_SUPPRESS(6263)
                         FOutParmRec* Out = (FOutParmRec*)FMemory_Alloca(sizeof(FOutParmRec));
                         ensure(Stack.MostRecentPropertyAddress);
-                        Out->PropAddr = (Stack.MostRecentPropertyAddress != NULL) ? Stack.MostRecentPropertyAddress : It->ContainerPtrToValuePtr<uint8>(Params);
-                        Out->Property = *It;
+                        Out->PropAddr = (Stack.MostRecentPropertyAddress != NULL) ? Stack.MostRecentPropertyAddress : Property->ContainerPtrToValuePtr<uint8>(Params);
+                        Out->Property = Property;
 
                         if (*LastOut)
                         {
@@ -402,7 +404,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 }
                 else
                 {
-                    Stack.Step(Stack.Object, It->ContainerPtrToValuePtr<uint8>(Params));
+                    Stack.Step(Stack.Object, Property->ContainerPtrToValuePtr<uint8>(Params));
                 }
             }
         }

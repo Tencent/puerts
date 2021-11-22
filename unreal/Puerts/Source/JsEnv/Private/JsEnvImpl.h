@@ -57,13 +57,13 @@ public:
     FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
         void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
-    ~FJsEnvImpl() override;
+    virtual ~FJsEnvImpl() override;
 
-    void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments) override;
+    virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments) override;
 
-    void LowMemoryNotification() override;
+    virtual void LowMemoryNotification() override;
 
-    void WaitDebugger(double timeout) override
+    virtual void WaitDebugger(double timeout) override
     {
         const auto startTime = FDateTime::Now();
         while (Inspector && !Inspector->Tick())
@@ -92,65 +92,65 @@ public:
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
 
 public:
-    void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) override;
+    virtual void Bind(UClass *Class, UObject *UEObject, v8::Local<v8::Object> JSObject) override;
 
-    void UnBind(UClass *Class, UObject *UEObject) override;
+    virtual void UnBind(UClass *Class, UObject *UEObject) override;
 
-    void UnBind(UClass *Class, UObject *UEObject, bool ResetPointer);
+    virtual void UnBind(UClass *Class, UObject *UEObject, bool ResetPointer);
 
-    v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject) override;
+    virtual v8::Local<v8::Value> FindOrAdd(v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass *Class, UObject *UEObject) override;
 
-    void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
+    virtual void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
 
-    void UnBindStruct(void *Ptr) override;
+    virtual void UnBindStruct(void *Ptr) override;
 
-    void UnBindCppObject(JSClassDefinition* ClassDefinition, void *Ptr) override;
+    virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void *Ptr) override;
 
-    v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void *Ptr, bool PassByPointer) override;
 
-    void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
+    virtual void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void *Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
 
-    v8::Local<v8::Value> FindOrAddCppObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void *Ptr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddCppObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void *Ptr, bool PassByPointer) override;
 
-    void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) override;
+    virtual void Merge(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) override;
 
-    void BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void(*Callback)(const v8::WeakCallbackInfo<void>& data)) override;
+    virtual void BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void(*Callback)(const v8::WeakCallbackInfo<void>& data)) override;
 
-    void UnBindContainer(void* Ptr) override;
+    virtual void UnBindContainer(void* Ptr) override;
 
-    v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> Constructor, PropertyMacro* Property1, PropertyMacro* Property2, void *Ptr, bool PassByPointer);
+    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> Constructor, PropertyMacro* Property1, PropertyMacro* Property2, void *Ptr, bool PassByPointer);
 
-    v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray *Ptr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray *Ptr, bool PassByPointer) override;
 
-    v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptSet *Ptr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptSet *Ptr, bool PassByPointer) override;
 
-    v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap *Ptr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap *Ptr, bool PassByPointer) override;
 
-    v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner, PropertyMacro* Property, void *DelegatePtr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner, PropertyMacro* Property, void *DelegatePtr, bool PassByPointer) override;
 
-    bool AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
+    virtual bool AddToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
 
-    PropertyMacro *FindDelegateProperty(void *DelegatePtr) override;
+    virtual PropertyMacro *FindDelegateProperty(void *DelegatePtr) override;
 
-    FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) override;
+    virtual FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) override;
 
     void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    bool RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
+    virtual bool RemoveFromDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr, v8::Local<v8::Function> JsFunction) override;
 
-    bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr) override;
+    virtual bool ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, void *DelegatePtr) override;
 
-    void ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void *DelegatePtr) override;
+    virtual void ExecuteDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void *DelegatePtr) override;
 
-    bool IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject) override;
+    virtual bool IsInstanceOf(UStruct *Struct, v8::Local<v8::Object> JsObject) override;
 
-    bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) override;
+    virtual bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) override;
 
     virtual v8::Local<v8::Value> AddSoftObjectPtr(v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass) override;
 
-    bool CheckDelegateProxys(float tick);
+    bool CheckDelegateProxies(float Tick);
 
-    v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
+    virtual v8::Local<v8::Value> CreateArray(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
 
     void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms);
 
@@ -173,12 +173,12 @@ public:
 
 public:
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
-    void OnUObjectArrayShutdown() override
+    virtual void OnUObjectArrayShutdown() override
     {
         GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
     }
 #endif
-    void NotifyUObjectDeleted(const class UObjectBase *Object, int32 Index) override;
+    virtual void NotifyUObjectDeleted(const class UObjectBase *Object, int32 Index) override;
 
     void TryReleaseType(UStruct *Struct);
 
@@ -319,17 +319,17 @@ public:
     public:
         TsDynamicInvokerImpl(FJsEnvImpl *InParent) :Parent(InParent) {}
 
-        void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
+        virtual void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
         {
             if (Parent) Parent->TsConstruct(Class, Object);
         }
 
-        void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM) override
+        virtual void InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM) override
         {
             if (Parent) Parent->InvokeTsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 
-        void NotifyReBind(UTypeScriptGeneratedClass* Class) override
+        virtual void NotifyReBind(UTypeScriptGeneratedClass* Class) override
         {
             if (Parent) Parent->NotifyReBind(Class);
         }
@@ -463,17 +463,17 @@ private:
     public:
         DynamicInvokerImpl(FJsEnvImpl *InParent) :Parent(InParent) {}
 
-        void InvokeJsCallabck(UDynamicDelegateProxy* Proxy, void* Parms) override
+        virtual void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms) override
         {
             if (Parent) Parent->InvokeJsCallback(Proxy, Parms);
         }
 
-        void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype) override
+        virtual void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype) override
         {
             if (Parent) Parent->Construct(Class, Object, Constructor, Prototype);
         }
 
-        void InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM) override
+        virtual void InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM) override
         {
             if (Parent) Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
@@ -512,7 +512,7 @@ private:
 
     std::map<FDelegateHandle*, FTickerDelegateWrapper*> TickerDelegateHandleMap;
 
-    FDelegateHandle DelegateProxysCheckerHandler;
+    FDelegateHandle DelegateProxiesCheckerHandler;
 
     V8Inspector* Inspector;
 
@@ -532,6 +532,9 @@ private:
     
     FDelegateHandle AsyncLoadingFlushUpdateHandle;
 
+#ifdef SINGLE_THREAD_VERIFY
+    uint32 BoundThreadId;
+#endif
 };
 
 }

@@ -51,3 +51,6 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 所以你在脚本访问的count字段会不存在（变成了Count字段）。
 
+## UE5 EA生成按钮不显示
+
+因为UE5 EA的toolbar extension失效了，要等epic自己修复或提供新API 。临时可以用控制台命令生成：Puerts.Gen。

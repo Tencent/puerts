@@ -5,21 +5,12 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#include "DynamicDelegateProxy.h"
-
-void UDynamicDelegateProxy::Fire()
-{
-    //Do Nothing
-}
-
-void UDynamicDelegateProxy::ProcessEvent(UFunction*, void* Parms)
-{
-    auto PinedDynamicInvoker = DynamicInvoker.Pin();
-    if (PinedDynamicInvoker && Owner.IsValid())
-    {
-        if (ensureAlwaysMsgf(!JsFunction.IsEmpty(), TEXT("Invalid JS Function")))
-        {
-            PinedDynamicInvoker->InvokeJsCallback(this, Parms);
-        }
+(function() {
+    process.on('uncaughtException', (e) => { console.error(e); })
+    process.exit = function() {
+        console.log('`process.exit` is not allowed in puerts')
     }
-}
+    process.kill = function() {
+        console.log('`process.kill` is not allowed in puerts')
+    }
+})()

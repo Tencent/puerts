@@ -73,13 +73,10 @@ namespace Puerts
         public static extern int GetLibVersion();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool IsJSEngineBackendSupported(JsEnvMode mode);
+        public static extern int GetLibBackend();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngine();
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr CreateJSEngineWithNode();
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateJSEngineWithExternalEnv(IntPtr externalRuntime, IntPtr externalContext);
@@ -98,25 +95,36 @@ namespace Puerts
             IntPtr fn = v8FunctionCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(v8FunctionCallback);
             SetGlobalFunction(isolate, name, fn, data);
         }
-        
+
+        private const int TEMP_STRING_BUFFER_SIZE = 1024;
+
+        [ThreadStatic]
+        private static byte[] s_tempNativeStringBuffer;
+
+        private static byte[] GetTempNativeStringBuff(int strlen)
+        {
+            byte[] buf = s_tempNativeStringBuffer ?? (s_tempNativeStringBuffer = new byte[TEMP_STRING_BUFFER_SIZE]);
+            if (buf.Length < strlen)
+            {
+                return new byte[strlen];
+            }
+            return buf;
+        }
+
+
         private static string GetStringFromNative(IntPtr str, int strlen)
         {
             if (str != IntPtr.Zero)
             {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-                byte[] buffer = new byte[strlen];
-                Marshal.Copy(str, buffer, 0, strlen);
-                return Encoding.UTF8.GetString(buffer);
-#else
-                string ret = Marshal.PtrToStringAnsi(str, strlen);
-                if (ret == null)
+#if PUERTS_UNSAFE
+                unsafe
                 {
-                    int len = strlen;
-                    byte[] buffer = new byte[len];
-                    Marshal.Copy(str, buffer, 0, len);
-                    return Encoding.UTF8.GetString(buffer);
+                    return Encoding.UTF8.GetString((byte*)str, strlen);
                 }
-                return ret;
+#else
+                byte[] buffer = GetTempNativeStringBuff(strlen);
+                Marshal.Copy(str, buffer, 0, strlen);
+                return Encoding.UTF8.GetString(buffer, 0, strlen);
 #endif
             }
             else
@@ -150,7 +158,7 @@ namespace Puerts
             SetGeneralDestructor(isolate, fn);
         }
 
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr Eval(IntPtr isolate, byte[] code, string path);
 
@@ -244,7 +252,7 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnNumber(IntPtr isolate, IntPtr info, double number);
 
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ReturnString")]
         public static extern void __ReturnString(IntPtr isolate, IntPtr info, byte[] str);
 #else
@@ -260,7 +268,7 @@ namespace Puerts
             }
             else
             {
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
                 __ReturnString(isolate, info, Encoding.UTF8.GetBytes(str));
 #else
                 __ReturnString(isolate, info, str);
@@ -347,13 +355,20 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetDateToOutValue(IntPtr isolate, IntPtr value, double date);
 
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, byte[] str);
 
         public static void SetStringToOutValue(IntPtr isolate, IntPtr value, string str)
         {
-            SetStringToOutValue(isolate, value, Encoding.UTF8.GetBytes(str));
+            if (str == null) 
+            {
+                SetNullToOutValue(isolate, value);
+            }
+            else
+            {
+                SetStringToOutValue(isolate, value, Encoding.UTF8.GetBytes(str));
+            }
         }
 #else
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

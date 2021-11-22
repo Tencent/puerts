@@ -53,6 +53,9 @@ void FTickerDelegateWrapper::Init(const v8::FunctionCallbackInfo<v8::Value> &Inf
 
 bool FTickerDelegateWrapper::CallFunction(float)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     v8::Isolate::Scope Isolatescope(Isolate);
     v8::HandleScope HandleScope(GetIsolate());
     v8::Local<v8::Context> Context = v8::Local<v8::Context>::New(GetIsolate(), GetContext());

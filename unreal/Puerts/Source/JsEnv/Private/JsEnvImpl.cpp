@@ -261,7 +261,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
 #if PLATFORM_IOS
-    std::string Flags = "--jitless";
+    std::string Flags = "--jitless --no-expose-wasm";
     v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 #endif
 
@@ -564,7 +564,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
-    DelegateProxysCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxys), 1);
+    DelegateProxiesCheckerHandler = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
@@ -572,11 +572,18 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
+
+#ifdef SINGLE_THREAD_VERIFY
+    BoundThreadId = FPlatformTLS::GetCurrentThreadId();
+#endif
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
 #if defined(WITH_NODEJS)
     StopPolling();
 #endif
@@ -596,7 +603,7 @@ FJsEnvImpl::~FJsEnvImpl()
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
-    FTicker::GetCoreTicker().RemoveTicker(DelegateProxysCheckerHandler);
+    FTicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
     {
         auto Isolate = MainIsolate;
@@ -736,6 +743,9 @@ FJsEnvImpl::~FJsEnvImpl()
 
 void FJsEnvImpl::InitExtensionMethodsMap()
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
@@ -802,7 +812,7 @@ void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Object, Object);
+    CHECK_V8_ARGS(EArgObject, EArgObject);
 
     auto Des = Info[0]->ToObject(Context).ToLocalChecked();
     auto Src = Info[1]->ToObject(Context).ToLocalChecked();
@@ -894,6 +904,9 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
 
 void FJsEnvImpl::LowMemoryNotification()
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     MainIsolate->LowMemoryNotification();
 }
 
@@ -903,20 +916,23 @@ static void FinishInjection(UClass* InClass)
     {
         auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
         if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
-            {
+        {
             for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 auto Function = *FuncIt;
-                Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish(Function);
             }
             TempTypeScriptGeneratedClass->InjectNotFinished = false;
-            }
+        }
         InClass = InClass->GetSuperClass();
     }
 }
 
 void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedClass, bool ForceReinject, bool RebindObject)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
 
     if (Iter == BindInfoMap.end() || ForceReinject)//create and link
@@ -1007,7 +1023,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         //SysObjectRetainer.Retain(Class);
 
                         //implement by js
-                        TSet<FName> overrided;
+                        TypeScriptGeneratedClass->FunctionToRedirect.Empty();
 
                         for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces); It; ++It)
                         {
@@ -1038,7 +1054,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             }
                             auto V8Name = FV8Utils::ToV8String(Isolate, FunctionName);
                             v8::Local<v8::Object> FuncsObj = Function->HasAnyFunctionFlags(FUNC_Static) ? static_cast<v8::Local<v8::Object>>(Func) : Proto;
-                            if (!overrided.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
+                            if (!TypeScriptGeneratedClass->FunctionToRedirect.Contains(FunctionFName) && FuncsObj->HasOwnProperty(Context, V8Name).ToChecked() && 
                                 (Function->HasAnyFunctionFlags(FUNC_BlueprintEvent)))
                             {
                                 auto MaybeValue = FuncsObj->Get(Context, V8Name);
@@ -1051,8 +1067,8 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                         v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
                                         std::make_unique<puerts::FFunctionTranslator>(Function, false)
                                     };
+                                    TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
                                     TypeScriptGeneratedClass->RedirectToTypeScript(Function);
-                                    overrided.Add(FunctionFName);
                                 }
                             }
                         }
@@ -1085,7 +1101,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             for (FObjectIterator It(TypeScriptGeneratedClass); It; ++It)
                             {
                                 auto Object = *It;
-                                if (Object->GetClass() != TypeScriptGeneratedClass) continue;
+                                if (GeneratedObjectMap.find(Object) != GeneratedObjectMap.end()) continue;
                                 //在编辑器下重启虚拟机，如果TS带构造函数，不重新执行的话，新虚拟机上逻辑上少执行了逻辑（比如对js对象一些字段的初始化）
                                 //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
                                 //后面看是否能参照蓝图的组件初始化进行改造
@@ -1117,6 +1133,9 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
 void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1152,6 +1171,9 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 
 void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     //Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     JsHotReload(ModuleName, JsSource);
 }
@@ -1384,6 +1406,9 @@ v8::Local<v8::Value> FJsEnvImpl::CreateArray(v8::Isolate* Isolate, v8::Local<v8:
 
 void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto SignatureFunction = Proxy->SignatureFunction;
     auto Iter = JsCallbackPrototypeMap.find(SignatureFunction);
     if (Iter == JsCallbackPrototypeMap.end())
@@ -1408,6 +1433,9 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 
 void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function> &Constructor, const v8::UniquePersistent<v8::Object> &Prototype)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1445,13 +1473,17 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         {
             FScopeLock Lock(&PendingConstructLock);
             PendingConstructObjects.AddUnique(Object);
+            Logger->Warn(FString::Printf(TEXT("TypeScript Object %s(%p) construct delayed!"), *Object->GetName(), Object));
         }
         else
         {
-            Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), (void*)Object));
+            Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), Object));
         }
         return;
     }
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     
     if (BindInfoMap.find(Class) == BindInfoMap.end())
     {
@@ -1522,6 +1554,9 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 
 void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32 Index)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto Iter = GeneratedObjectMap.find(ObjectBase);
     if (Iter != GeneratedObjectMap.end())
     {
@@ -1533,7 +1568,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase *ObjectBase, int32
         v8::Context::Scope ContextScope(Context);
 
         auto JSObject = Iter->second.Get(Isolate)->ToObject(Context).ToLocalChecked();
-        DataTransfer::SetPointer(Isolate, JSObject, nullptr, 0);
+        DataTransfer::SetPointer(Isolate, JSObject, RELEASED_UOBJECT, 0);
         DataTransfer::SetPointer(Isolate, JSObject, nullptr, 1);
         GeneratedObjectMap.erase(ObjectBase);
     }
@@ -1571,10 +1606,14 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
 
 void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     if (GeneratedObjectMap.find(ContextObject) == GeneratedObjectMap.end())
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
+        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     auto Isolate = MainIsolate;
@@ -1597,11 +1636,15 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
 
 void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFrame &Stack, void *RESULT_PARAM)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     auto FuncIter = TsFunctionMap.find(Function);
     if (FuncIter == TsFunctionMap.end())
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
+        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     else 
@@ -1621,6 +1664,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
                     *Function->GetName(), ContextObject));
+                ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
                 return;
             }
             ThisObj = ObjIter->second.Get(Isolate);
@@ -1850,13 +1894,13 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function);
+    CHECK_V8_ARGS(EArgFunction);
 
     auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
     auto MaybeProxy = CallbacksMap->Get(Context, Info[0]);
     if (!MaybeProxy.IsEmpty() && MaybeProxy.ToLocalChecked()->IsExternal())
     {
-        __USE(CallbacksMap->Set(Context, Info[0], v8::Undefined(Isolate)));
+        __USE(CallbacksMap->Delete(Context, Info[0]));
         auto DelegateProxy = Cast<UDynamicDelegateProxy>(static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
         for ( auto it = ManualReleaseCallbackList.begin(); it != ManualReleaseCallbackList.end(); )
         {
@@ -1866,6 +1910,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
             } else if (it->Get() == DelegateProxy) {
                 DelegateProxy->JsFunction.Reset();
                 it = ManualReleaseCallbackList.erase(it);
+                SysObjectRetainer.Release(DelegateProxy);
             } else {
                 ++it;
             }
@@ -1984,8 +2029,11 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     return true;
 }
 
-bool FJsEnvImpl::CheckDelegateProxys(float tick)
+bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     std::vector<void*> PendingToRemove;
     for (auto &KV : DelegateMap)
     {
@@ -2245,7 +2293,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
 
@@ -2317,7 +2365,7 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Object);
+    CHECK_V8_ARGS(EArgObject);
 
     auto Struct = Cast<UStruct>(FV8Utils::GetUObject(Context, Info[0]));
 
@@ -2364,7 +2412,7 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Int32);
+    CHECK_V8_ARGS(EArgInt32);
 
     int ContainerType = Info[0]->Int32Value(Context).ToChecked();
 
@@ -2409,6 +2457,9 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>> &Arguments)
 {
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
     if (Started)
     {
         Logger->Error("Started yet!");
@@ -2548,7 +2599,7 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String, String);
+    CHECK_V8_ARGS(EArgString, EArgString);
 
     v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
 
@@ -2583,7 +2634,7 @@ void FJsEnvImpl::Log(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Int32, String);
+    CHECK_V8_ARGS(EArgInt32, EArgString);
         
     auto Level = Info[0]->Int32Value(Context).ToChecked();
 
@@ -2613,7 +2664,7 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String, String);
+    CHECK_V8_ARGS(EArgString, EArgString);
 
     FString ModuleName = FV8Utils::ToFString(Isolate, Info[0]);
     FString RequiringDir = FV8Utils::ToFString(Isolate, Info[1]);
@@ -2642,7 +2693,7 @@ void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Number);
+    CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, false);
 }
@@ -2664,6 +2715,9 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
 
     FTickerDelegateWrapper* DelegateWrapper = new FTickerDelegateWrapper(Continue);
     DelegateWrapper->Init(Info, ExecutionExceptionHandler, DelegateHandleCleaner);
+#ifdef SINGLE_THREAD_VERIFY
+    DelegateWrapper->BoundThreadId = BoundThreadId;
+#endif
     FTickerDelegate Delegate = FTickerDelegate::CreateRaw(DelegateWrapper, &FTickerDelegateWrapper::CallFunction);
 
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -2731,7 +2785,7 @@ void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     else
     {
-        CHECK_V8_ARGS(External);
+        CHECK_V8_ARGS(EArgExternal);
         v8::Local<v8::External> Arg = v8::Local<v8::External>::Cast(Info[0]);
         FDelegateHandle* Handle = static_cast<FDelegateHandle*>(Arg->Value());
         RemoveFTickerDelegateHandle(Handle);
@@ -2746,7 +2800,7 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Number);
+    CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, true);
 }
@@ -2759,7 +2813,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Object, String, Object, Object);
+    CHECK_V8_ARGS(EArgFunction, EArgObject, EArgString, EArgObject, EArgObject);
 
     auto Constructor = v8::Local<v8::Function>::Cast(Info[0]);
     auto Prototype = Info[1]->ToObject(Context).ToLocalChecked();
@@ -2835,7 +2889,7 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     std::string Name = *(v8::String::Utf8Value(Isolate, Info[0]));
 
@@ -2860,7 +2914,7 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
 
     if (!Inspector) return;
 
-    CHECK_V8_ARGS(Function);
+    CHECK_V8_ARGS(EArgFunction);
 
     if (!InspectorChannel)
     {
@@ -2899,7 +2953,7 @@ void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Valu
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     if (InspectorChannel)
     {

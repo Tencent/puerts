@@ -365,26 +365,30 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
             if (!ExistingNode && !Function)
             {
-                if (OverrideFuncClass == GeneratedClass)
+                ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, UObject::StaticClass(), EventName);
+                if (ExistingNode)
                 {
-                    ExistingNode = FBlueprintEditorUtils::FindOverrideForFunction(Blueprint, UObject::StaticClass(), EventName);
-                    if (ExistingNode && !ExistingNode->IsNodeEnabled())
+                    if (!ExistingNode->IsNodeEnabled())
                     {
-                        EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {return GraphNode == ExistingNode;});
-                        FBlueprintEditorUtils::RemoveNode(Blueprint, ExistingNode);
+                        ExistingNode->SetEnabledState(ENodeEnabledState::Enabled);
+                        ExistingNode->NodeComment.Empty();
+                        NeedSave = true;
                     }
                 }
-                UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(
-                    EventGraph,
-                    EventGraph->GetGoodPlaceForNewNode(),
-                    EK2NewNodeFlags::SelectNewNode,
-                    [EventName, OverrideFuncClass](UK2Node_Event* NewInstance)
-                    {
-                        NewInstance->EventReference.SetExternalMember(EventName, OverrideFuncClass);
-                        NewInstance->bOverrideFunction = true;
-                    }
-                );
-                NeedSave = true;
+                else
+                {
+                    UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(
+                        EventGraph,
+                        EventGraph->GetGoodPlaceForNewNode(),
+                        EK2NewNodeFlags::SelectNewNode,
+                        [EventName, OverrideFuncClass](UK2Node_Event* NewInstance)
+                        {
+                            NewInstance->EventReference.SetExternalMember(EventName, OverrideFuncClass);
+                            NewInstance->bOverrideFunction = true;
+                        }
+                    );
+                    NeedSave = true;
+                }
             }
             OverrideAdded.Add(InName);
         }

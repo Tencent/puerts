@@ -39,6 +39,10 @@ public:
     bool IsCalling = false;
 
     bool FunctionContinue;
+
+#ifdef SINGLE_THREAD_VERIFY
+    uint32 BoundThreadId;
+#endif
     
 private:
     v8::Isolate* Isolate;

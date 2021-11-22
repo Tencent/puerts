@@ -101,9 +101,9 @@ v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_
 
 enum JSEngineBackend
 {
-    Default     = 0,
+    V8          = 0,
     Node        = 1,
-    External    = 2,
+    QuickJS     = 2,
 };
 
 class JSEngine
@@ -112,7 +112,7 @@ private:
     void JSEngineWithNode();
     void JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context);
 public:
-    PUERTS_EXPORT_FOR_UT JSEngine(bool withNode, void* external_quickjs_runtime, void* external_quickjs_context);
+    PUERTS_EXPORT_FOR_UT JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
 
     PUERTS_EXPORT_FOR_UT ~JSEngine();
 
@@ -172,8 +172,6 @@ public:
 private:
 
 #if defined(WITH_NODEJS)
-    bool withNode;
-
     uv_loop_t* NodeUVLoop;
 
     std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;

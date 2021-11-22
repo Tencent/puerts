@@ -20,6 +20,10 @@ namespace Puerts
     {
         public string Name;
         public bool IsStatic;
+
+        //TODO 目前只是为了在group by的时候用一下
+        public bool IsLazyMember;
+        public bool IsExtension;
     }
 
     public class TypeRegisterInfo
@@ -31,5 +35,9 @@ namespace Puerts
         public Dictionary<MethodKey, V8FunctionCallback> Methods;
 
         public Dictionary<string, PropertyRegisterInfo> Properties;
+
+        public Dictionary<MethodKey, V8FunctionCallback> LazyMethods;
+
+        public Dictionary<string, PropertyRegisterInfo> LazyProperties;
     }
 }

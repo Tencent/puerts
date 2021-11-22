@@ -9,7 +9,7 @@
 
 puerts is a TypeScript programming solution within game engines.
 
-* provides a JavaScript run-time
+* provides a JavaScript Runtime
 
 * allows TypeScript to access the host engine（module-binding on the JavaScript level and generating TypeScript declarations）
 
@@ -66,17 +66,20 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## Debugging
 
-* [unreal](../unreal/vscode_debug.md)
+* [unreal](unreal/vscode_debug.md)
 * [unity](../unity/vscode_debug.md)
 
 ## FAQ
 
-* [unreal faq](../unreal/faq.md)
+* [unreal faq](unreal/faq.md)
 * [unity faq](../unity/faq.md)
 
 ## Manual
 
 * [unity](../unity/manual.md)
+* [unreal](unreal/manual.md)
+* [TypeScript and unreal engine interaction](unreal/interact_with_uclass.md)
+* [Template-based static binding](unreal/template_binding.md)
 
 ## Available on
 

@@ -23,12 +23,12 @@ namespace puerts
 {
 enum ArgType
 {
-    Int32,
-    Number,
-    String,
-    External,
-    Function,
-    Object
+    EArgInt32,
+    EArgNumber,
+    EArgString,
+    EArgExternal,
+    EArgFunction,
+    EArgObject
 };
 
 #define RELEASED_UOBJECT ((UObject*)12)
@@ -157,7 +157,7 @@ public:
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::String::Utf8Value Exception(Isolate, TryCatch->Exception());
-        FString ExceptionStr(*Exception);
+        FString ExceptionStr(UTF8_TO_TCHAR(*Exception));
         v8::Local<v8::Message> Message = TryCatch->Message();
         if (Message.IsEmpty())
         {
@@ -203,7 +203,7 @@ public:
         {
             switch (TypesExpect[i])
             {
-            case Int32:
+            case EArgInt32:
                 if (!Info[i]->IsInt32())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a int32."), i));
@@ -213,7 +213,7 @@ public:
                 {
                     break;
                 }
-            case Number:
+            case EArgNumber:
                 if (!Info[i]->IsNumber())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a int32."), i));
@@ -223,7 +223,7 @@ public:
                 {
                     break;
                 }
-            case String:
+            case EArgString:
                 if (!Info[i]->IsString())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a string."), i));
@@ -233,7 +233,7 @@ public:
                 {
                     break;
                 }
-            case External:
+            case EArgExternal:
                 if (!Info[i]->IsExternal())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect an external."), i));
@@ -243,7 +243,7 @@ public:
                 {
                     break;
                 }
-            case Function:
+            case EArgFunction:
                 if (!Info[i]->IsFunction())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a function."), i));
@@ -253,7 +253,7 @@ public:
                 {
                     break;
                 }
-            case Object:
+            case EArgObject:
                 if (!Info[i]->IsObject())
                 {
                     ThrowException(Info.GetIsolate(), FString::Printf(TEXT("Bad parameters #%d, expect a object."), i));
