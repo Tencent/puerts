@@ -15,31 +15,35 @@ namespace puerts
 {
     static FString PathNormalize(const FString& PathIn)
     {
-        TArray<FString> PathFrags;
-        PathIn.ParseIntoArray(PathFrags, TEXT("/"));
-        Algo::Reverse(PathFrags);
-        TArray<FString> NewPathFrags;
-        bool FromRoot = PathIn.StartsWith(TEXT("/"));
-        while (PathFrags.Num() > 0) {
-            FString E = PathFrags.Pop();
-            if (E != TEXT("") && E != TEXT(".")) 
-            {
-                if (E == TEXT("..") && NewPathFrags.Num() > 0 && NewPathFrags.Last() != TEXT("..")) {
-                    NewPathFrags.Pop();
-                }
-                else {
-                    NewPathFrags.Push(E);
-                }
-            }
-        }
-        if (FromRoot)
-        {
-            return TEXT("/") + FString::Join(NewPathFrags, TEXT("/"));
-        }
-        else
-        {
-            return FString::Join(NewPathFrags, TEXT("/"));
-        }
+    	// --> modified by ksg begin
+    	// liangcheng: 原生算法并不能将path转换成绝对路径，当require相对路径不一样，则会重复require
+        // TArray<FString> PathFrags;
+        // PathIn.ParseIntoArray(PathFrags, TEXT("/"));
+        // Algo::Reverse(PathFrags);
+        // TArray<FString> NewPathFrags;
+        // bool FromRoot = PathIn.StartsWith(TEXT("/"));
+        // while (PathFrags.Num() > 0) {
+        //     FString E = PathFrags.Pop();
+        //     if (E != TEXT("") && E != TEXT("."))
+        //     {
+        //         if (E == TEXT("..") && NewPathFrags.Num() > 0 && NewPathFrags.Last() != TEXT("..")) {
+        //             NewPathFrags.Pop();
+        //         }
+        //         else {
+        //             NewPathFrags.Push(E);
+        //         }
+        //     }
+        // }
+        // if (FromRoot)
+        // {
+        //     return TEXT("/") + FString::Join(NewPathFrags, TEXT("/"));
+        // }
+        // else
+        // {
+        //     return FString::Join(NewPathFrags, TEXT("/"));
+        // }
+    	return FPaths::ConvertRelativePathToFull(PathIn);
+    	// --< end
     }
 
 	bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FString& AbsolutePath)
