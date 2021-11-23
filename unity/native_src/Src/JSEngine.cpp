@@ -159,7 +159,6 @@ namespace puerts
         SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
         v8::V8::SetSnapshotDataBlob(&SnapshotBlob);
 #endif
-
         // 初始化Isolate和DefaultContext
         CreateParams = new v8::Isolate::CreateParams();
         CreateParams->array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -431,6 +430,106 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
+    }
+
+    v8::MaybeLocal<v8::Module> ResolveModule(
+        v8::Local<v8::Context> Context,
+        v8::Local<v8::String> Specifier,
+        v8::Local<v8::Module> Referrer
+    )
+    {
+        v8::Isolate* Isolate = Context->GetIsolate();
+        JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        
+        v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
+        std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
+        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str());
+        if (Code == nullptr) 
+        {
+            return v8::MaybeLocal<v8::Module>();
+        }
+
+        v8::ScriptOrigin Origin(Specifier,
+                          v8::Integer::New(Isolate, 0),                      // line offset
+                          v8::Integer::New(Isolate, 0),                    // column offset
+                          v8::True(Isolate),                    // is cross origin
+                          v8::Local<v8::Integer>(),                 // script id
+                          v8::Local<v8::Value>(),                   // source map URL
+                          v8::False(Isolate),                   // is opaque (?)
+                          v8::False(Isolate),                   // is WASM
+                          v8::True(Isolate),                    // is ES Module
+                          v8::PrimitiveArray::New(Isolate, 10));
+        v8::TryCatch TryCatch(Isolate);
+
+        v8::Local<v8::Module> Module;
+        v8::ScriptCompiler::CompileOptions options;
+        
+        v8::ScriptCompiler::Source Source(FV8Utils::V8String(Isolate, Code), Origin);
+
+        if (!v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
+                .ToLocal(&Module)) 
+        {
+            JsEngine->LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            return v8::MaybeLocal<v8::Module>();
+        }
+
+        return Module;
+    }
+
+    bool JSEngine::ExecuteModule(const char* Path) 
+    {
+        if (ModuleResolver == nullptr) 
+        {
+            return false;
+        }
+        v8::Isolate* Isolate = MainIsolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, ""),
+                          v8::Integer::New(Isolate, 0),                      // line offset
+                          v8::Integer::New(Isolate, 0),                    // column offset
+                          v8::True(Isolate),                    // is cross origin
+                          v8::Local<v8::Integer>(),                 // script id
+                          v8::Local<v8::Value>(),                   // source map URL
+                          v8::False(Isolate),                   // is opaque (?)
+                          v8::False(Isolate),                   // is WASM
+                          v8::True(Isolate),                    // is ES Module
+                          v8::PrimitiveArray::New(Isolate, 10));
+        
+        v8::ScriptCompiler::Source Source(FV8Utils::V8String(Isolate, ""), Origin);
+        v8::Local<v8::Module> EntryModule = v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
+                .ToLocalChecked();
+
+        v8::MaybeLocal<v8::Module> Module = ResolveModule(Context, FV8Utils::V8String(Isolate, Path), EntryModule);
+
+        if (Module.IsEmpty())
+        {
+            LastExceptionInfo = "resolve module failed";
+            return false;
+        }
+
+        v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
+
+        v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
+        if (!ret.ToChecked()) {
+            printf("instantiate false\n");
+        }
+        ModuleChecked->Evaluate(Context);
+
+        if (ModuleChecked->GetStatus() == v8::Module::kErrored)
+        {
+            v8::MaybeLocal<v8::Value> ErrorMessage = ModuleChecked->GetException().As<v8::Object>()->Get(Context, FV8Utils::V8String(Isolate, "message"));
+            if (!ErrorMessage.IsEmpty() && ErrorMessage.ToLocalChecked()->IsString()) {
+                v8::String::Utf8Value ErrorMessageUtf8(Isolate, ErrorMessage.ToLocalChecked());
+                std::string ErrorMessageStd(*ErrorMessageUtf8, ErrorMessageUtf8.length());
+                LastExceptionInfo = ErrorMessageStd;
+            }
+            return false;
+        }
+        return true;
     }
 
     bool JSEngine::Eval(const char *Code, const char* Path)

@@ -66,6 +66,25 @@ V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, CSharpF
     JsEngine->SetGlobalFunction(Name, Callback, Data);
 }
 
+V8_EXPORT FResultInfo * SetModuleResolver(v8::Isolate *Isolate, CSharpModuleResolveCallback resolver)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->ModuleResolver = resolver;
+}
+
+V8_EXPORT FResultInfo * ExecuteModule(v8::Isolate *Isolate, const char* Path)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    if (JsEngine->ExecuteModule(Path))
+    {
+        return &(JsEngine->ResultInfo);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
