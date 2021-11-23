@@ -1,7 +1,7 @@
 mkdir -p build_osx && cd build_osx
 if [ "$1" == "-ut" ]
 then
-    cmake -DFOR_UT=ON -GXcode ../
+    cmake -DFOR_UT=ON ../
     cd ..
     cmake --build build_osx --config Debug
     cp -r build_osx/Debug/libpuerts.dylib ../general/Bin/

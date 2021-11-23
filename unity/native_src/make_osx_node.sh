@@ -1,7 +1,7 @@
 mkdir -p build_osx_nodejs && cd build_osx_nodejs
 if [ "$1" == "-ut" ]
 then
-    cmake -DJS_ENGINE=nodejs -DFOR_UT=1 -GXcode ../
+    cmake -DJS_ENGINE=nodejs -DFOR_UT=1 ../
     cd ..
     cmake --build build_osx_nodejs --config Debug
     cp -r build_osx_nodejs/Debug/libpuerts.dylib ../general/Bin/
