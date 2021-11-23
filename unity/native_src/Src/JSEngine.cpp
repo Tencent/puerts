@@ -51,9 +51,9 @@ namespace puerts
         Info.GetReturnValue().Set(Result.ToLocalChecked());
     }
 
+#if WITH_NODEJS
     void JSEngine::JSEngineWithNode()
     {
-#if WITH_NODEJS
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]start");
         if (!GPlatform)
         {
@@ -136,12 +136,12 @@ namespace puerts
 
         //the same as raw v8
         MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
-#endif        
     }
+#endif        
 
+#if !WITH_NODEJS
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
-#if !WITH_NODEJS
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
@@ -151,14 +151,12 @@ namespace puerts
 #if PLATFORM_IOS
         std::string Flags = "--jitless --no-expose-wasm";
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
-#endif
 
-#if !WITH_NODEJS
         v8::StartupData SnapshotBlob;
         SnapshotBlob.data = (const char *)SnapshotBlobCode;
         SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
         v8::V8::SetSnapshotDataBlob(&SnapshotBlob);
-#endif
+
         // 初始化Isolate和DefaultContext
         CreateParams = new v8::Isolate::CreateParams();
         CreateParams->array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -191,6 +189,7 @@ namespace puerts
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
 #endif
     }
+#endif        
 
     JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
