@@ -3,6 +3,7 @@ cmake_policy(SET CMP0091 NEW)
 
 project(PuertsPluginTest)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 14)
 set(PuertsDirectory ${PROJECT_SOURCE_DIR}/..)
 
