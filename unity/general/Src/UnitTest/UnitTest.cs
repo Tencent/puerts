@@ -21,14 +21,14 @@ namespace Puerts.UnitTest
 
         public bool FileExists(string filepath)
         {
-            return File.Exists(Path.Combine(root, filepath + ".txt"));
+            return File.Exists(Path.Combine(root, filepath));
         }
 
         public string ReadFile(string filepath, out string debugpath)
         {
             debugpath = Path.Combine(root, filepath);
             
-            using (StreamReader reader = new StreamReader(debugpath + ".txt"))
+            using (StreamReader reader = new StreamReader(debugpath))
             {
                 return reader.ReadToEnd();
             }
@@ -1110,6 +1110,26 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
             jsEnv.Dispose();
         }
+        //[Test]
+        //public void DelegateGC()
+        //{
+        //    var jsEnv = new JsEnv(new TxtLoader());
+        //    jsEnv.Eval(@"
+        //        const CS = require('csharp');
+        //        let obj = new CS.Puerts.UnitTest.BaseClass();
+        //        obj.ActionParam(Math.floor);
+        //        ");
+        //    System.GC.Collect();
+        //    System.GC.WaitForPendingFinalizers();
+
+        //    jsEnv.Eval(@"
+        //        obj.ActionParam(Math.floor);
+        //        ");
+        //    System.GC.Collect();
+        //    System.GC.WaitForPendingFinalizers();
+        //    jsEnv.Tick();
+        //    jsEnv.Dispose();
+        //}
     }
 }
 

@@ -8,7 +8,23 @@ const char* ResolveModule(const char* identifer)
     printf("ResolveModule:%s\n", identifer);
     if (strcmp(identifer, "main") == 0) 
     {
-        return "import { a } from 'lib'; log(a);";
+        return "var global = global || globalThis || (function () { return this; }());\
+(function (global) {\
+    'use strict';\
+    \
+    let puerts = global.puerts = global.puerts || {};\
+    \
+    puerts.loadType = global.__tgjsLoadType;\
+    delete global.__tgjsLoadType;\
+    puerts.getNestedTypes = global.__tgjsGetNestedTypes;\
+    delete global.__tgjsGetNestedTypes;\
+    \
+    puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {\
+        return eval(script);\
+    };\
+    delete global.__tgjsEvalScript;\
+}(global));\
+";
     }
     else if (strcmp(identifer, "lib") == 0) {
         return "const a = 'Hello World'; export { a }; ";

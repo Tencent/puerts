@@ -4,7 +4,7 @@ then
     cmake -DJS_ENGINE=quickjs -DFOR_UT=1 ../
     cd ..
     cmake --build build_osx_qjs --config Debug
-    cp -r build_osx_qjs/Debug/libpuerts.dylib ../general/Bin/
+    cp -r build_osx_qjs/libpuerts.dylib ../general/Bin/
 else
     cmake -DJS_ENGINE=quickjs -GXcode ../
     cd ..

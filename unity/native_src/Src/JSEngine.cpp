@@ -507,7 +507,7 @@ namespace puerts
 
         if (Module.IsEmpty())
         {
-            LastExceptionInfo = "resolve module failed";
+            // LastExceptionInfo = "resolve module failed";
             return false;
         }
 
@@ -521,12 +521,7 @@ namespace puerts
         v8::MaybeLocal<v8::Value> evalRet = ModuleChecked->Evaluate(Context);
         if (evalRet.IsEmpty()) 
         {
-            v8::MaybeLocal<v8::Value> ErrorMessage = ModuleChecked->GetException().As<v8::Object>()->Get(Context, FV8Utils::V8String(Isolate, "message"));
-            if (!ErrorMessage.IsEmpty() && ErrorMessage.ToLocalChecked()->IsString()) {
-                v8::String::Utf8Value ErrorMessageUtf8(Isolate, ErrorMessage.ToLocalChecked());
-                std::string ErrorMessageStd(*ErrorMessageUtf8, ErrorMessageUtf8.length());
-                LastExceptionInfo = ErrorMessageStd.c_str();
-            }
+            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
             return false;
         }
         else

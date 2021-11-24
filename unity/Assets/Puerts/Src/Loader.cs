@@ -32,7 +32,7 @@ namespace Puerts
 
         private string PathToUse(string filepath)
         {
-            return filepath.EndsWith(".cjs") ? 
+            return filepath.EndsWith(".cjs") || filepath.EndsWith(".mjs") ? 
                 filepath.Substring(0, filepath.Length - 4) : 
                 filepath;
         }

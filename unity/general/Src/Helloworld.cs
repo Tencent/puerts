@@ -7,6 +7,7 @@
 
 using System.IO;
 using System.Reflection;
+using System.Diagnostics;
 using Puerts;
 
 public class TxtLoader : ILoader
@@ -18,13 +19,13 @@ public class TxtLoader : ILoader
 
     public bool FileExists(string filepath)
     {
-        return File.Exists(Path.Combine(root, filepath + ".txt"));
+        return File.Exists(Path.Combine(root, filepath));
     }
 
     public string ReadFile(string filepath, out string debugpath)
     {
         debugpath = Path.Combine(root, filepath);
-        return File.ReadAllText(debugpath + ".txt");
+        return File.ReadAllText(debugpath);
     }
 }
 

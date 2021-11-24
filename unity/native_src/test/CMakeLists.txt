@@ -9,7 +9,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(PuertsDirectory ${PROJECT_SOURCE_DIR}/..)
-
+set (CMAKE_BUILD_TYPE Debug)
 add_subdirectory(${PuertsDirectory} puerts)
 
 set(V8_ENGINE ${PuertsDirectory}/${JS_ENGINE})

@@ -4,7 +4,7 @@ then
     cmake -DFOR_UT=ON ../
     cd ..
     cmake --build build_osx --config Debug
-    cp -r build_osx/Debug/libpuerts.dylib ../general/Bin/
+    cp -r build_osx/libpuerts.dylib ../general/Bin/
 else
     cmake -GXcode ../
     cd ..

@@ -485,7 +485,7 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context){
     auto func_obj = JS_DupValue(context->context_, JS_MKPTR(JS_TAG_MODULE, module_));
     auto ret = JS_EvalFunction(context->context_, func_obj);
     if (JS_IsException(ret)) {
-        exception_ = &ret;
+        context->GetIsolate()->handleException();
         return MaybeLocal<Value>();
     }
     JS_FreeValue(context->context_, ret);

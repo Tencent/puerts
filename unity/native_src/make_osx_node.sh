@@ -4,7 +4,7 @@ then
     cmake -DJS_ENGINE=nodejs -DFOR_UT=1 ../
     cd ..
     cmake --build build_osx_nodejs --config Debug
-    cp -r build_osx_nodejs/Debug/libpuerts.dylib ../general/Bin/
+    cp -r build_osx_nodejs/libpuerts.dylib ../general/Bin/
 
 else
     cmake -DJS_ENGINE=nodejs -GXcode ../
