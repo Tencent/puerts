@@ -189,7 +189,7 @@ namespace puerts
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }
-#endif        
+#endif
 
     JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
