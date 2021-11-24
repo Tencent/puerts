@@ -3,3 +3,4 @@ cmake -GXcode ../
 cd ..
 cmake --build build --config Debug
 mkdir -p ~/qjs/quickjs/Lib/macOS/
+cp build/Release/libquickjs.a ~/qjs/quickjs/Lib/macOS/
