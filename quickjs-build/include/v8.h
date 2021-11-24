@@ -42,10 +42,13 @@ template<typename T>
 class FunctionCallbackInfo;
 class String;
 class TryCatch;
+class Module;
 class Script;
 class Message;
 class Value;
 class Primitive;
+
+class PrimitiveArray;
 class Boolean;
 class HandleScope;
 class BigInt;
@@ -720,7 +723,47 @@ private:
 
 typedef void (*PromiseRejectCallback)(PromiseRejectMessage message);
 
+
+class V8_EXPORT Module : public Data {
+ public:
+  /**
+   * The different states a module can be in.
+   *
+   * This corresponds to the states used in ECMAScript except that "evaluated"
+   * is split into kEvaluated and kErrored, indicating success and failure,
+   * respectively.
+   */
+  enum Status {
+    kUninstantiated,
+    kInstantiating,
+    kInstantiated,
+    kEvaluating,
+    kEvaluated,
+    kErrored
+  };
+
+  Status GetStatus() const;
+
+  Local<Value> GetException() const;
+
+  typedef MaybeLocal<Module> (*ResolveCallback)(Local<Context> context,
+                                                Local<String> specifier,
+                                                Local<Module> referrer);
+
+  V8_WARN_UNUSED_RESULT Maybe<bool> InstantiateModule(Local<Context> context,
+                                                      ResolveCallback callback);
+
+  V8_WARN_UNUSED_RESULT MaybeLocal<Value> Evaluate(Local<Context> context);
+
+  JSModuleDef* module_;
+};
+
 class V8_EXPORT Isolate {
+private: 
+    friend class Module;
+    Module::ResolveCallback moduleResolver_;
+
+    static JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque);
 public:
     static Isolate* current_;
     
@@ -1456,11 +1499,25 @@ public:
         Local<Value> resource_name) : resource_name_(resource_name) {
     }
 
+    V8_INLINE ScriptOrigin(
+        Local<Value> resource_name,
+        Local<Integer> resource_line_offset,
+        Local<Integer> resource_column_offset,
+        Local<Boolean> resource_is_shared_cross_origin,
+        Local<Integer> script_id,
+        Local<Value> source_map_url,
+        Local<Boolean> resource_is_opaque,
+        Local<Boolean> is_wasm, Local<Boolean> is_module,
+        Local<PrimitiveArray> host_defined_options
+    ) : resource_name_(resource_name), is_module_(is_module) {}
+
     V8_INLINE Local<Value> ResourceName() const {
         return resource_name_;
     }
 
     Local<Value> resource_name_;
+
+    Local<Boolean> is_module_;
 };
 
 
@@ -1517,6 +1574,55 @@ V8_INLINE Value *EscapeValue_(Value* val, EscapableHandleScope* scope) {
     scope->prev_scope_->scope_value_ = val->value_;
     return reinterpret_cast<Value*>(&scope->prev_scope_->scope_value_);
 }
+
+class V8_EXPORT ScriptCompiler {
+
+  class Source {
+   public:
+    // Source takes ownership of CachedData.
+    V8_INLINE Source(Local<String> source_string, const ScriptOrigin& origin);
+    V8_INLINE ~Source();
+
+   private:
+    friend class ScriptCompiler;
+
+    Local<String> source_string;
+
+    Local<Value> resource_name;
+
+    // CachedData* cached_data;
+  };
+
+  enum CompileOptions {
+    kNoCompileOptions = 0,
+    kConsumeCodeCache,
+    kEagerCompile
+  };
+
+  enum NoCacheReason {
+    kNoCacheNoReason = 0,
+    kNoCacheBecauseCachingDisabled,
+    kNoCacheBecauseNoResource,
+    kNoCacheBecauseInlineScript,
+    kNoCacheBecauseModule,
+    kNoCacheBecauseStreamingSource,
+    kNoCacheBecauseInspector,
+    kNoCacheBecauseScriptTooSmall,
+    kNoCacheBecauseCacheTooCold,
+    kNoCacheBecauseV8Extension,
+    kNoCacheBecauseExtensionModule,
+    kNoCacheBecausePacScript,
+    kNoCacheBecauseInDocumentWrite,
+    kNoCacheBecauseResourceWithNoCacheHandler,
+    kNoCacheBecauseDeferredProduceCodeCache
+  };
+
+  static V8_WARN_UNUSED_RESULT MaybeLocal<Module> CompileModule(
+      Isolate* isolate, Source* source,
+      CompileOptions options = kNoCompileOptions,
+      NoCacheReason no_cache_reason = kNoCacheNoReason);
+
+};
 
 class V8_EXPORT Script : Data {
 public:

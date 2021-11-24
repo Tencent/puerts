@@ -524,7 +524,7 @@ namespace puerts
             if (!ErrorMessage.IsEmpty() && ErrorMessage.ToLocalChecked()->IsString()) {
                 v8::String::Utf8Value ErrorMessageUtf8(Isolate, ErrorMessage.ToLocalChecked());
                 std::string ErrorMessageStd(*ErrorMessageUtf8, ErrorMessageUtf8.length());
-                LastExceptionInfo = ErrorMessageStd;
+                LastExceptionInfo = ErrorMessageStd.c_str();
             }
             return false;
         }

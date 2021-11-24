@@ -29,7 +29,6 @@ if ( JS_ENGINE STREQUAL "quickjs")
     set(LIB_FILE_NAME libquickjs.a)
 
 elseif ( JS_ENGINE STREQUAL "nodejs")
-
     if ( APPLE )
         set(LIB_FILE_NAME libnode.83.dylib)
     endif()
@@ -39,9 +38,11 @@ elseif ( JS_ENGINE STREQUAL "nodejs")
         ${PROJECT_SOURCE_DIR}/nodejs/deps/v8/include
         ${PROJECT_SOURCE_DIR}/nodejs/deps/uv/include
     )
+
 else()
     set(JS_ENGINE v8)
     set(LIB_FILE_NAME libwee8.a)
+    
 endif()
 
 set(V8_ENGINE ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
