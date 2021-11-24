@@ -135,12 +135,4 @@ void UTypeScriptGeneratedClass::Bind()
         auto Function = *FuncIt;
         RedirectToTypeScript(Function);
     }
-    
-    InjectNotFinished = true;
-
-    auto PinedDynamicInvoker = DynamicInvoker.Pin();
-    if (PinedDynamicInvoker)
-    {
-        PinedDynamicInvoker->NotifyReBind(this);
-    }
 }
