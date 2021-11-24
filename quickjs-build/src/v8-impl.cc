@@ -131,11 +131,10 @@ Isolate::~Isolate() {
     }
 };
  
-JSModuleDef* Isolate::js_module_loader(JSContext* ctx, const char *name, void *opaque){
+JSModuleDef* Isolate::js_module_loader(JSContext* ctx, const char *name, void *opaque) {
     JSRuntime *rt = JS_GetRuntime(ctx);
     Isolate* isolate = (Isolate*)JS_GetRuntimeOpaque(rt);
-    if (isolate->moduleResolver_ == nullptr)
-    {
+    if (isolate->moduleResolver_ == nullptr) {
         return nullptr;
     }
     Local<Context> context = isolate->GetCurrentContext();
@@ -145,16 +144,14 @@ JSModuleDef* Isolate::js_module_loader(JSContext* ctx, const char *name, void *o
         Local<Module>(new Module())
     );
 
-    if (m.IsEmpty())
-    {
+    if (m.IsEmpty()) {
         isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "module not found").ToLocalChecked()));
         return nullptr;
     }
 
     Local<Module> v8m = m.ToLocalChecked();
     Maybe<bool> res = v8m->InstantiateModule(context, isolate->moduleResolver_);
-    if (!res.ToChecked()) 
-    {
+    if (!res.ToChecked()) {
         isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "module not found").ToLocalChecked()));
         return nullptr;
     }
@@ -418,8 +415,7 @@ int String::Utf8Length(Isolate* isolate) const {
     return (int)len;
 }
 
-int String::WriteUtf8(Isolate* isolate, char* buffer) const 
-{
+int String::WriteUtf8(Isolate* isolate, char* buffer) const {
     size_t len;
     const char* p = JS_ToCStringLen(isolate->current_context_->context_, &len, value_);
     
@@ -429,21 +425,18 @@ int String::WriteUtf8(Isolate* isolate, char* buffer) const
     return (int)len;
 }
 
-ScriptCompiler::Source::Source(Local<String> source_string, const ScriptOrigin& origin) 
-{
+ScriptCompiler::Source::Source(Local<String> source_string, const ScriptOrigin& origin) {
     this->source_string = source_string;
     this->resource_name = origin.resource_name_;
 }
-ScriptCompiler::Source::~Source() 
-{
+ScriptCompiler::Source::~Source() {
 }
 
 MaybeLocal<Module> ScriptCompiler::CompileModule(
     Isolate* isolate, Source* source,
     CompileOptions options,
     NoCacheReason no_cache_reason
-)
-{
+){
     // cannot run JS_Eval here because quickjs will resolve all the dependencies during compile.
     // but we dont have the module resolver here.
     
@@ -455,10 +448,13 @@ MaybeLocal<Module> ScriptCompiler::CompileModule(
 
 static V8_INLINE MaybeLocal<Value> ProcessResult(Isolate *isolate, JSValue ret) {
     Value* val = nullptr;
-    if (JS_IsException(ret)) {
+    if (JS_IsException(ret)) 
+    {
         isolate->handleException();
         return MaybeLocal<Value>();
-    } else {
+    } 
+    else 
+    {
         //脚本执行的返回值由HandleScope接管，这可能有需要GC的对象
         val = isolate->Alloc<Value>();
         val->value_ = ret;
@@ -467,7 +463,6 @@ static V8_INLINE MaybeLocal<Value> ProcessResult(Isolate *isolate, JSValue ret) 
 }
 
 Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback callback)
-
 {
     Isolate* isolate = context->GetIsolate();
     isolate->moduleResolver_ = callback;
@@ -479,8 +474,7 @@ Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback ca
 
     JSValue func_val = JS_Eval(context_, *code, code.length(), *name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
-    if (JS_IsException(func_val)) 
-    {
+    if (JS_IsException(func_val)) {
         isolate->handleException();
         return Maybe<bool>(false);
     }
@@ -488,12 +482,10 @@ Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback ca
     module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
     return Maybe<bool>(true);
 }
-MaybeLocal<Value> Module::Evaluate(Local<Context> context)
-{
+MaybeLocal<Value> Module::Evaluate(Local<Context> context){
     auto func_obj = JS_DupValue(context->context_, JS_MKPTR(JS_TAG_MODULE, module_));
     auto ret = JS_EvalFunction(context->context_, func_obj);
-    if (JS_IsException(ret))
-    {
+    if (JS_IsException(ret)) {
         exception_ = &ret;
         return MaybeLocal<Value>();
     }
@@ -501,8 +493,7 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context)
 
     return ProcessResult(context->GetIsolate(), ret);
 }
-Local<Value> Module::GetException() const
-{
+Local<Value> Module::GetException() const{
     return Local<Value>(reinterpret_cast<Value*>(const_cast<JSValue*>(exception_)));
 }
 
@@ -525,14 +516,14 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     const char *filename = resource_name_.IsEmpty() ? "eval" : *String::Utf8Value(isolate, resource_name_.ToLocalChecked());
     auto ret = JS_Eval(context->context_, *source, source.length(), filename, JS_EVAL_TYPE_GLOBAL);
 
-    if (JS_IsException(ret)) 
-    {
+    if (JS_IsException(ret))  {
         isolate->handleException();
     }
     return ProcessResult(isolate, ret);
 }
 
-Script::~Script() {
+Script::~Script() 
+{
     //JS_FreeValue(context_->context_, source_->value_);
     //if (!resource_name_.IsEmpty()) {
     //    JS_FreeValue(context_->context_, resource_name_.ToLocalChecked()->value_);
