@@ -61,6 +61,8 @@ class EscapableHandleScope;
 class Array;
 class Name;
 
+class ScriptCompiler;
+
 class V8_EXPORT StartupData {
 public:
     const char* data;
@@ -597,6 +599,13 @@ public:
     }
 };
 
+class V8_EXPORT PrimitiveArray {
+public:
+    V8_INLINE static Local<PrimitiveArray> New(Isolate* isolate, int length) {
+        return Local<PrimitiveArray>(new PrimitiveArray);
+    };
+};
+
 class V8_EXPORT Array : public Object {
 public:
     uint32_t Length() const;
@@ -726,24 +735,6 @@ typedef void (*PromiseRejectCallback)(PromiseRejectMessage message);
 
 class V8_EXPORT Module : public Data {
  public:
-  /**
-   * The different states a module can be in.
-   *
-   * This corresponds to the states used in ECMAScript except that "evaluated"
-   * is split into kEvaluated and kErrored, indicating success and failure,
-   * respectively.
-   */
-  enum Status {
-    kUninstantiated,
-    kInstantiating,
-    kInstantiated,
-    kEvaluating,
-    kEvaluated,
-    kErrored
-  };
-
-  Status GetStatus() const;
-
   Local<Value> GetException() const;
 
   typedef MaybeLocal<Module> (*ResolveCallback)(Local<Context> context,
@@ -755,7 +746,14 @@ class V8_EXPORT Module : public Data {
 
   V8_WARN_UNUSED_RESULT MaybeLocal<Value> Evaluate(Local<Context> context);
 
+ private:
+  JSValue* exception_;
+  friend class ScriptCompiler;
+  friend class Isolate;
   JSModuleDef* module_;
+
+  Local<String> source_string_;
+  Local<Value> resource_name_;
 };
 
 class V8_EXPORT Isolate {
@@ -1576,12 +1574,12 @@ V8_INLINE Value *EscapeValue_(Value* val, EscapableHandleScope* scope) {
 }
 
 class V8_EXPORT ScriptCompiler {
-
+public:
   class Source {
    public:
     // Source takes ownership of CachedData.
-    V8_INLINE Source(Local<String> source_string, const ScriptOrigin& origin);
-    V8_INLINE ~Source();
+    Source(Local<String> source_string, const ScriptOrigin& origin);
+    ~Source();
 
    private:
     friend class ScriptCompiler;

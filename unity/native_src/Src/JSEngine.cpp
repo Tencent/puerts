@@ -151,6 +151,7 @@ namespace puerts
 #if PLATFORM_IOS
         std::string Flags = "--jitless --no-expose-wasm";
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
+#endif
 
         v8::StartupData SnapshotBlob;
         SnapshotBlob.data = (const char *)SnapshotBlobCode;
@@ -187,7 +188,6 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
-#endif
     }
 #endif        
 
@@ -486,6 +486,7 @@ namespace puerts
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
+        v8::TryCatch TryCatch(Isolate);
 
         v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, ""),
                           v8::Integer::New(Isolate, 0),                      // line offset
@@ -501,7 +502,7 @@ namespace puerts
         v8::ScriptCompiler::Source Source(FV8Utils::V8String(Isolate, ""), Origin);
         v8::Local<v8::Module> EntryModule = v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
                 .ToLocalChecked();
-
+                
         v8::MaybeLocal<v8::Module> Module = ResolveModule(Context, FV8Utils::V8String(Isolate, Path), EntryModule);
 
         if (Module.IsEmpty())
@@ -511,14 +512,14 @@ namespace puerts
         }
 
         v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
-
         v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
-        if (!ret.ToChecked()) {
-            printf("instantiate false\n");
+        if (!ret.ToChecked()) 
+        {
+            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            return false;
         }
-        ModuleChecked->Evaluate(Context);
-
-        if (ModuleChecked->GetStatus() == v8::Module::kErrored)
+        v8::MaybeLocal<v8::Value> evalRet = ModuleChecked->Evaluate(Context);
+        if (evalRet.IsEmpty()) 
         {
             v8::MaybeLocal<v8::Value> ErrorMessage = ModuleChecked->GetException().As<v8::Object>()->Get(Context, FV8Utils::V8String(Isolate, "message"));
             if (!ErrorMessage.IsEmpty() && ErrorMessage.ToLocalChecked()->IsString()) {
@@ -527,6 +528,10 @@ namespace puerts
                 LastExceptionInfo = ErrorMessageStd.c_str();
             }
             return false;
+        }
+        else
+        {
+            ResultInfo.Result.Reset(Isolate, evalRet.ToLocalChecked());
         }
         return true;
     }

@@ -33,6 +33,7 @@ int main(int argc, char** argv)
     engine.SetGlobalFunction("log", LogCallback, 0);
     printf("start execute\n");
     engine.ExecuteModule("main");
+    // engine.Eval("log1('Hello World')", "");
     printf("LastExceptionInfo:%s\n", engine.LastExceptionInfo.c_str());
     engine.CreateInspector(9222);
 
