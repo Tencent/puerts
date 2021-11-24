@@ -203,7 +203,13 @@ namespace Puerts
                 //     throw new InvalidProgramException("can not find " + filename);
                 // }
                 // PuertsDLL.Eval(isolate, context, debugPath);
-                PuertsDLL.ExecuteModule(isolate, filename);
+                
+                IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
+                if (resultInfo == IntPtr.Zero)
+                {
+                    string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                    throw new Exception(exceptionInfo);
+                }
             }
             else
             {

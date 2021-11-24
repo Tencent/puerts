@@ -1130,38 +1130,48 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
         }
         [Test]
-        public void ESModuleNotFound()
+        public void EvalError()
         {
+            var jsEnv = new JsEnv(new TxtLoader());
             Assert.Catch(() =>
             {
-                var jsEnv = new JsEnv(new TxtLoader());
-                jsEnv.ExecuteModule("whatever.mjs");
-                jsEnv.Dispose();
+                jsEnv.Eval(@"var obj = {}; obj.func();");
             });
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleNotFound()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            Assert.Catch(() =>
+            {
+                jsEnv.ExecuteModule("whatever.mjs");
+            });
+            jsEnv.Dispose();
         }
         [Test]
         public void ESModuleCompileError()
         {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"export delete;");
+            var jsEnv = new JsEnv(loader);
             Assert.Catch(() =>
             {
-                var loader = new TxtLoader();
-                loader.AddMockFileContent("whatever.mjs", @"export delete;");
-                var jsEnv = new JsEnv(loader);
                 jsEnv.ExecuteModule("whatever.mjs");
-                jsEnv.Dispose();
             });
+            jsEnv.Dispose();
         }
         [Test]
         public void ESModuleEvaluateError()
         {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
+            var jsEnv = new JsEnv(loader);
             Assert.Catch(() =>
             {
-                var loader = new TxtLoader();
-                loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
-                var jsEnv = new JsEnv(loader);
                 jsEnv.ExecuteModule("whatever.mjs");
-                jsEnv.Dispose();
             });
+            jsEnv.Dispose();
         }
     }
 }
