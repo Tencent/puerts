@@ -124,16 +124,7 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
-            PuertsDLL.SetModuleResolver(isolate, (string identifer)=> {
-                if (!loader.FileExists(identifer)) 
-                {
-                    return null;
-                }
-
-                string debugPath;
-                string content = loader.ReadFile(identifer, out debugPath);
-                return content;
-            });
+            PuertsDLL.SetModuleResolver(isolate, StaticCallbacks.ModuleResolverWrap, Idx);
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
             const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.AutoStaticCodeRegister";
@@ -190,6 +181,17 @@ namespace Puerts
 #endif
         }
 
+        internal string ResolveModuleContent(string identifer) 
+        {
+            if (!loader.FileExists(identifer)) 
+            {
+                return null;
+            }
+
+            string debugPath;
+            return loader.ReadFile(identifer, out debugPath);
+        }
+
         public void ExecuteModule(string filename)
         {
             if (loader.FileExists(filename))
@@ -200,7 +202,7 @@ namespace Puerts
                 {
                     throw new InvalidProgramException("can not find " + filename);
                 }
-
+                // PuertsDLL.Eval(isolate, context, debugPath);
                 PuertsDLL.ExecuteModule(isolate, filename);
             }
             else

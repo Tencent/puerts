@@ -442,7 +442,7 @@ namespace puerts
         
         v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str());
+        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
         if (Code == nullptr) 
         {
             return v8::MaybeLocal<v8::Module>();

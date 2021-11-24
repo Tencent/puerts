@@ -6,6 +6,7 @@
  */
 
 var global = global || globalThis || (function () { return this; }());
+global.global = global;
 (function (global) {
     "use strict";
     

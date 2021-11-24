@@ -63,7 +63,7 @@
 
 #endif
 
-typedef const char* (*CSharpModuleResolveCallback)(const char* identifer);
+typedef const char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx);
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
 
@@ -173,6 +173,8 @@ public:
         return FV8Utils::IsolateData<JSEngine>(Isolate);
     }
 
+    int32_t Idx;
+    
     CSharpModuleResolveCallback ModuleResolver;
 private:
 
