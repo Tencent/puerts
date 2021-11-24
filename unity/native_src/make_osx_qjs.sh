@@ -1,7 +1,7 @@
 mkdir -p build_osx_qjs && cd build_osx_qjs
 if [ "$1" == "-ut" ]
 then
-    cmake -DJS_ENGINE=quickjs -DFOR_UT=1 -GXcode ../
+    cmake -DJS_ENGINE=quickjs -DFOR_UT=1 ../
     cd ..
     cmake --build build_osx_qjs --config Debug
     cp -r build_osx_qjs/Debug/libpuerts.dylib ../general/Bin/
