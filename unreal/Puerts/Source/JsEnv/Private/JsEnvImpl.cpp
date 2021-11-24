@@ -797,7 +797,7 @@ void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Object, Object);
+    CHECK_V8_ARGS(EArgObject, EArgObject);
 
     auto Des = Info[0]->ToObject(Context).ToLocalChecked();
     auto Src = Info[1]->ToObject(Context).ToLocalChecked();
@@ -923,7 +923,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
     if (Iter == BindInfoMap.end() || ForceReinject)//create and link
     {
         auto Package = Cast<UPackage>(TypeScriptGeneratedClass->GetOuter());
-        if (!Package)
+        if (!Package || TypeScriptGeneratedClass->NotSupportInject())
         {
             return;
         }
@@ -1087,6 +1087,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             {
                                 auto Object = *It;
                                 if (GeneratedObjectMap.find(Object) != GeneratedObjectMap.end()) continue;
+                                if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_"))) continue;//跳过父类重新编译后临时状态的对象
                                 //在编辑器下重启虚拟机，如果TS带构造函数，不重新执行的话，新虚拟机上逻辑上少执行了逻辑（比如对js对象一些字段的初始化）
                                 //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
                                 //后面看是否能参照蓝图的组件初始化进行改造
@@ -1179,22 +1180,13 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 
         if (UNLIKELY(TypeScriptGeneratedClass))
         {
-            if (UNLIKELY(TypeScriptGeneratedClass->InjectNotFinished))
+            if (UNLIKELY(IsCDO))
             {
-                if (IsCDO)
-                {
-                    //MakeSureInject(TypeScriptGeneratedClass, true, true);
-                    TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
-                }
-                else //InjectNotFinished状态下非CDO对象构建，把UFunction设置为Native
-                {
-                    FinishInjection(TypeScriptGeneratedClass);
-                }
+                //MakeSureInject(TypeScriptGeneratedClass, true, true);
+                TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+                TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                TypeScriptGeneratedClass->InjectNotFinished = true; //CDO construct meat first load or recompiled
             }
-        }
-        else if (UNLIKELY(IsCDO && !Class->IsNative()))
-        {
-            FinishInjection(Class->GetSuperClass());
         }
         //else if (UNLIKELY(Class == UTypeScriptGeneratedClass::StaticClass()))
         //{
@@ -1213,6 +1205,7 @@ void FJsEnvImpl::RebindJs()
         if (!Class->NotSupportInject())
         {
             MakeSureInject(Class, false, true);
+            FinishInjection(Class);
         }
     }
 }
@@ -1451,10 +1444,11 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
 
 void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 {
+    bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
     //蓝图类的CDO会在后台线程构造, 需要将其延迟到主线程执行
     if (!IsInGameThread())
     {
-        if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+        if (IsCDO)
         {
             FScopeLock Lock(&PendingConstructLock);
             PendingConstructObjects.AddUnique(Object);
@@ -1469,30 +1463,47 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    
-    if (BindInfoMap.find(Class) == BindInfoMap.end())
+
+    UObject* CDO = Class->GetDefaultObject(false);
+    if (CDO != Object && IsCDO) //blueprint extend a ts 
     {
-        //保证CDO先完成构造, 这样MakeSureInject也只需要在构造CDO时执行
-        UObject* CDO = Class->GetDefaultObject(false);
-        if (Object != CDO)
+        UClass* ObjClass = Object->GetClass();
+        
+        while (ObjClass && !ObjClass->IsNative() && !static_cast<UObject*>(ObjClass)->IsA<UTypeScriptGeneratedClass>())
         {
-            bool bPending = false;
-            {
-                FScopeLock Lock(&PendingConstructLock);
-                bPending = PendingConstructObjects.RemoveSingle(CDO) > 0;
-            }
-            if (bPending)
-            {
-                ConstructPendingObject(CDO);
-            }
-        }
-        else
-        {
-            MakeSureInject(Class, true, false);
+            //Logger->Warn(FString::Printf(TEXT("release %s in  %s(%p) construct"), *ObjClass->GetName(), *Object->GetName(), Object));
+            TryReleaseType(ObjClass);
+            ObjClass = ObjClass->GetSuperClass();
         }
     }
 
     auto Iter = BindInfoMap.find(Class);
+    if (Iter == BindInfoMap.end())
+    {
+        //保证CDO先完成构造, 这样MakeSureInject也只需要在构造CDO时执行
+        bool bPending = false;
+        {
+            FScopeLock Lock(&PendingConstructLock);
+            bPending = PendingConstructObjects.RemoveSingle(CDO) > 0;
+        }
+        if (bPending)
+        {
+            ConstructPendingObject(CDO);
+        }
+    }
+
+    if (Class->InjectNotFinished)
+    {
+        //Logger->Warn(FString::Printf(TEXT("force %s injection in %s(%p) construct"), *Class->GetName(), *Object->GetName(), Object));
+        MakeSureInject(Class, true, false);
+        if (!IsCDO) //finish inject in first non-CDO construct
+        {
+            //Logger->Warn(FString::Printf(TEXT("finish %s injection in %s(%p) construct"), *Class->GetName(), *Object->GetName(), Object));
+            FinishInjection(Class);
+        }
+        Iter = BindInfoMap.find(Class);
+    }
+
     if (Iter != BindInfoMap.end())
     {
         auto Isolate = MainIsolate;
@@ -1670,19 +1681,16 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
-    if (IsInGameThread())
-    {
-        MakeSureInject(Class, true, false);
-    }
-    else
-    {
-        //蓝图类加载时会在后台线程Bind, 此时只接管其ClassConstructor即可, 在其初次构造时再Inject
-        Class->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-    }
 }
 
 void FJsEnvImpl::OnAsyncLoadingFlushUpdate()
 {
+    if (!IsInGameThread())
+    {
+        Logger->Warn(FString::Printf(TEXT("OnAsyncLoadingFlushUpdate called on illegal thread!")));
+        return;
+    }
+    
     TArray<UObject*> ReadiedObjects;
     {
         FScopeLock Lock(&PendingConstructLock);
@@ -1879,7 +1887,7 @@ void FJsEnvImpl::ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8:
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function);
+    CHECK_V8_ARGS(EArgFunction);
 
     auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
     auto MaybeProxy = CallbacksMap->Get(Context, Info[0]);
@@ -2278,7 +2286,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
 
@@ -2350,7 +2358,7 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Object);
+    CHECK_V8_ARGS(EArgObject);
 
     auto Struct = Cast<UStruct>(FV8Utils::GetUObject(Context, Info[0]));
 
@@ -2397,7 +2405,7 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Int32);
+    CHECK_V8_ARGS(EArgInt32);
 
     int ContainerType = Info[0]->Int32Value(Context).ToChecked();
 
@@ -2584,7 +2592,7 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String, String);
+    CHECK_V8_ARGS(EArgString, EArgString);
 
     v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
 
@@ -2619,7 +2627,7 @@ void FJsEnvImpl::Log(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Int32, String);
+    CHECK_V8_ARGS(EArgInt32, EArgString);
         
     auto Level = Info[0]->Int32Value(Context).ToChecked();
 
@@ -2649,7 +2657,7 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String, String);
+    CHECK_V8_ARGS(EArgString, EArgString);
 
     FString ModuleName = FV8Utils::ToFString(Isolate, Info[0]);
     FString RequiringDir = FV8Utils::ToFString(Isolate, Info[1]);
@@ -2678,7 +2686,7 @@ void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Number);
+    CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, false);
 }
@@ -2770,7 +2778,7 @@ void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     else
     {
-        CHECK_V8_ARGS(External);
+        CHECK_V8_ARGS(EArgExternal);
         v8::Local<v8::External> Arg = v8::Local<v8::External>::Cast(Info[0]);
         FDelegateHandle* Handle = static_cast<FDelegateHandle*>(Arg->Value());
         RemoveFTickerDelegateHandle(Handle);
@@ -2785,7 +2793,7 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Number);
+    CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, true);
 }
@@ -2798,7 +2806,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(Function, Object, String, Object, Object);
+    CHECK_V8_ARGS(EArgFunction, EArgObject, EArgString, EArgObject, EArgObject);
 
     auto Constructor = v8::Local<v8::Function>::Cast(Info[0]);
     auto Prototype = Info[1]->ToObject(Context).ToLocalChecked();
@@ -2874,7 +2882,7 @@ void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     std::string Name = *(v8::String::Utf8Value(Isolate, Info[0]));
 
@@ -2899,7 +2907,7 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value> 
 
     if (!Inspector) return;
 
-    CHECK_V8_ARGS(Function);
+    CHECK_V8_ARGS(EArgFunction);
 
     if (!InspectorChannel)
     {
@@ -2938,7 +2946,7 @@ void FJsEnvImpl::DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Valu
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    CHECK_V8_ARGS(String);
+    CHECK_V8_ARGS(EArgString);
 
     if (InspectorChannel)
     {

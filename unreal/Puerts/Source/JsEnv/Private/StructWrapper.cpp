@@ -90,9 +90,9 @@ namespace puerts
 
         InitTemplateProperties(Isolate, Struct.Get(), Result);
 
-        if (Struct->IsA<UClass>())
+        if (const auto Class = Cast<UClass>(Struct.Get()))
         {
-            for (TFieldIterator<UFunction> FuncIt(static_cast<UClass *>(Struct.Get()), EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            for (TFieldIterator<UFunction> FuncIt(Class, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 UFunction* Function = *FuncIt;
 
@@ -118,6 +118,25 @@ namespace puerts
                     Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
                 }
                 Functions.push_back(std::move(FunctionTranslator));
+            }
+
+            for (const FImplementedInterface& Interface : Class->Interfaces)
+            {
+                if (Interface.Class)
+                {
+                    for (TFieldIterator<UFunction> ItfFuncIt(Interface.Class, EFieldIteratorFlags::ExcludeSuper); ItfFuncIt; ++ItfFuncIt)
+                    {
+                        UFunction* ItfFunction = *ItfFuncIt;
+                        if (!ItfFunction->HasAnyFunctionFlags(FUNC_Static) && !AddedMethods.Contains(ItfFunction->GetName()))
+                        {
+                            auto ItfFunctionTranslator = std::make_unique<FFunctionTranslator>(ItfFunction, false);
+                            AddedMethods.Add(ItfFunction->GetName());
+                            Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, ItfFunction->GetName()),
+                                ItfFunctionTranslator->ToFunctionTemplate(Isolate));
+                            Functions.push_back(std::move(ItfFunctionTranslator));
+                        }
+                    }
+                }
             }
 
             Result->Set(FV8Utils::InternalString(Isolate, "Find"), v8::FunctionTemplate::New(Isolate, Find, v8::External::New(Isolate, this)));
