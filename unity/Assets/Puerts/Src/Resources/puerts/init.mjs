@@ -6,6 +6,7 @@
  */
 
 var global = global || globalThis || (function () { return this; }());
+// polyfill old code after use esm module.
 global.global = global;
 (function (global) {
     "use strict";
