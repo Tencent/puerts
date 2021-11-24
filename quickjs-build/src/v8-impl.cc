@@ -462,8 +462,7 @@ static V8_INLINE MaybeLocal<Value> ProcessResult(Isolate *isolate, JSValue ret) 
     }
 }
 
-Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback callback)
-{
+Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback callback) {
     Isolate* isolate = context->GetIsolate();
     isolate->moduleResolver_ = callback;
 
@@ -522,8 +521,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     return ProcessResult(isolate, ret);
 }
 
-Script::~Script() 
-{
+Script::~Script() {
     //JS_FreeValue(context_->context_, source_->value_);
     //if (!resource_name_.IsEmpty()) {
     //    JS_FreeValue(context_->context_, resource_name_.ToLocalChecked()->value_);
