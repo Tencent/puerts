@@ -9,6 +9,8 @@ using System.IO;
 using System.Reflection;
 using System.Diagnostics;
 using Puerts;
+using System.Collections.Generic;
+using System;
 
 public class TxtLoader : ILoader
 {
@@ -19,13 +21,29 @@ public class TxtLoader : ILoader
 
     public bool FileExists(string filepath)
     {
-        return File.Exists(Path.Combine(root, filepath));
+        return mockFileContent.ContainsKey(filepath) || File.Exists(Path.Combine(root, filepath));
     }
 
     public string ReadFile(string filepath, out string debugpath)
     {
         debugpath = Path.Combine(root, filepath);
-        return File.ReadAllText(debugpath);
+
+        string mockContent;
+        if (mockFileContent.TryGetValue(filepath, out mockContent))
+        {
+            return mockContent;
+        }
+
+        using (StreamReader reader = new StreamReader(debugpath))
+        {
+            return reader.ReadToEnd();
+        }
+    }
+
+    private Dictionary<string, string> mockFileContent = new Dictionary<string, string>();
+    public void AddMockFileContent(string fileName, string content)
+    {
+        mockFileContent.Add(fileName, content);
     }
 }
 
@@ -33,12 +51,17 @@ public class PuertsTest
 {
     public static void Main()
     {
-        var jsEnv = new JsEnv(new TxtLoader());
-        jsEnv.Eval(@"
-            const CS = require('csharp');
-            CS.System.Console.WriteLine('hello world');
-        ");
-
-        jsEnv.Dispose();
+        try
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
+            var jsEnv = new JsEnv(loader);
+            jsEnv.ExecuteModule("whatever.mjs");
+            jsEnv.Dispose();
+        }
+        catch (Exception e)
+        {
+            System.Console.WriteLine("yeah!");
+        }
     }
 }

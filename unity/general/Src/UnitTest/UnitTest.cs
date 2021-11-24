@@ -7,6 +7,7 @@
 
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -21,17 +22,28 @@ namespace Puerts.UnitTest
 
         public bool FileExists(string filepath)
         {
-            return File.Exists(Path.Combine(root, filepath));
+            return mockFileContent.ContainsKey(filepath) || File.Exists(Path.Combine(root, filepath));
         }
 
         public string ReadFile(string filepath, out string debugpath)
         {
             debugpath = Path.Combine(root, filepath);
-            
+
+            string mockContent;
+            if (mockFileContent.TryGetValue(filepath, out mockContent))
+            {
+                return mockContent;
+            }
+
             using (StreamReader reader = new StreamReader(debugpath))
             {
                 return reader.ReadToEnd();
             }
+        }
+
+        private Dictionary<string, string> mockFileContent = new Dictionary<string, string>();
+        public void AddMockFileContent(string fileName, string content) {
+            mockFileContent.Add(fileName, content);
         }
     }
 
@@ -93,7 +105,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void JSObject() 
+        public void JSObject()
         {
             var jsEnv = new JsEnv(new TxtLoader());
             var ret = jsEnv.Eval<string>(@"
@@ -201,7 +213,8 @@ namespace Puerts.UnitTest
         [Test]
         public void Long()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv1 = new JsEnv(new TxtLoader());
                 jsEnv1.Eval(@"
                     const CS = require('csharp');
@@ -502,7 +515,8 @@ namespace Puerts.UnitTest
         [Test]
         public void ListRangeTest()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
                     const CS = require('csharp');
@@ -566,7 +580,8 @@ namespace Puerts.UnitTest
         [Test]
         public void ErrorParamClassTest()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
                     const CS = require('csharp');
@@ -615,7 +630,8 @@ namespace Puerts.UnitTest
         [Test]
         public void ErrorParamRefStructTest()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
                     const CS = require('csharp');
@@ -764,7 +780,8 @@ namespace Puerts.UnitTest
         [Test]
         public void NullParamDateTimeTest()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
                     const CS = require('csharp');
@@ -779,7 +796,8 @@ namespace Puerts.UnitTest
         [Test]
         public void UndefinedParamArrayBufferTest()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
                     const CS = require('csharp');
@@ -795,7 +813,8 @@ namespace Puerts.UnitTest
         [Test]
         public void NullParamArrayBufferTest()
         {
-            Assert.Catch(() => {
+            Assert.Catch(() =>
+            {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
                     const CS = require('csharp');
@@ -1110,26 +1129,40 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
             jsEnv.Dispose();
         }
-        //[Test]
-        //public void DelegateGC()
-        //{
-        //    var jsEnv = new JsEnv(new TxtLoader());
-        //    jsEnv.Eval(@"
-        //        const CS = require('csharp');
-        //        let obj = new CS.Puerts.UnitTest.BaseClass();
-        //        obj.ActionParam(Math.floor);
-        //        ");
-        //    System.GC.Collect();
-        //    System.GC.WaitForPendingFinalizers();
-
-        //    jsEnv.Eval(@"
-        //        obj.ActionParam(Math.floor);
-        //        ");
-        //    System.GC.Collect();
-        //    System.GC.WaitForPendingFinalizers();
-        //    jsEnv.Tick();
-        //    jsEnv.Dispose();
-        //}
+        [Test]
+        public void ESModuleNotFound()
+        {
+            Assert.Catch(() =>
+            {
+                var jsEnv = new JsEnv(new TxtLoader());
+                jsEnv.ExecuteModule("whatever.mjs");
+                jsEnv.Dispose();
+            });
+        }
+        [Test]
+        public void ESModuleCompileError()
+        {
+            Assert.Catch(() =>
+            {
+                var loader = new TxtLoader();
+                loader.AddMockFileContent("whatever.mjs", @"export delete;");
+                var jsEnv = new JsEnv(loader);
+                jsEnv.ExecuteModule("whatever.mjs");
+                jsEnv.Dispose();
+            });
+        }
+        [Test]
+        public void ESModuleEvaluateError()
+        {
+            Assert.Catch(() =>
+            {
+                var loader = new TxtLoader();
+                loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
+                var jsEnv = new JsEnv(loader);
+                jsEnv.ExecuteModule("whatever.mjs");
+                jsEnv.Dispose();
+            });
+        }
     }
 }
 
