@@ -3,28 +3,12 @@
 
 using namespace std;
 
-const char* ResolveModule(const char* identifer)
+const char* ResolveModule(const char* identifer, int32_t jsEnvIdx)
 {
     printf("ResolveModule:%s\n", identifer);
     if (strcmp(identifer, "main") == 0) 
     {
-        return "var global = global || globalThis || (function () { return this; }());\
-(function (global) {\
-    'use strict';\
-    \
-    let puerts = global.puerts = global.puerts || {};\
-    \
-    puerts.loadType = global.__tgjsLoadType;\
-    delete global.__tgjsLoadType;\
-    puerts.getNestedTypes = global.__tgjsGetNestedTypes;\
-    delete global.__tgjsGetNestedTypes;\
-    \
-    puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {\
-        return eval(script);\
-    };\
-    delete global.__tgjsEvalScript;\
-}(global));\
-";
+        return "export delete;";
     }
     else if (strcmp(identifer, "lib") == 0) {
         return "const a = 'Hello World'; export { a }; ";

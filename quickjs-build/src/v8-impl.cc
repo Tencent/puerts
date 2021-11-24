@@ -1266,7 +1266,6 @@ Local<v8::Message> TryCatch::Message() const {
 
 void TryCatch::handleException() {
     catched_ = JS_GetException(isolate_->current_context_->context_);
-    printf("TryCatch::handleException %s\n", JS_ToCString(isolate_->current_context_->context_, catched_));
 }
 
 }  // namespace v8
