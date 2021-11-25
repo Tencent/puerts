@@ -5,14 +5,13 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */ 
 
-var global = global || globalThis || (function () { return this; }());
-(function (global) {
-    "use strict";
-    
-    let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
-    
-    if (!UnityEngine_Debug) return;
+"use strict";
+var global = global || globalThis;
 
+let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
+
+if (UnityEngine_Debug) {
+    
     const console_org = global.console;
     var console = {}
 
@@ -47,5 +46,5 @@ var global = global || globalThis || (function () { return this; }());
     }
 
     global.console = console;
-    puerts.console = console;
-}(global));
+    puerts.console = console;   
+}
