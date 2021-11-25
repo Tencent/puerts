@@ -517,6 +517,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
 
     if (JS_IsException(ret))  {
         isolate->handleException();
+        return MaybeLocal<Value>();
     }
     return ProcessResult(isolate, ret);
 }
