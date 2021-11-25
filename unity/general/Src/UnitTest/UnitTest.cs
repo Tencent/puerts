@@ -1135,7 +1135,9 @@ namespace Puerts.UnitTest
             var jsEnv = new JsEnv(new TxtLoader());
             Assert.Catch(() =>
             {
-                jsEnv.Eval(@"var obj = {}; obj.func();");
+                jsEnv.Eval(@"
+                    var obj = {}; obj.func();
+                ");
             });
             jsEnv.Dispose();
         }

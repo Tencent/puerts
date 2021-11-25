@@ -263,6 +263,7 @@ namespace puerts
 #endif
 
         ResultInfo.Context.Reset();
+        ResultInfo.Result.Reset();
         // TODO DEBUG下一次new的时候会报错的问题
         MainIsolate->Dispose();
         MainIsolate = nullptr;
@@ -479,6 +480,7 @@ namespace puerts
     {
         if (ModuleResolver == nullptr) 
         {
+            LastExceptionInfo = "ModuleResolver is not registered";
             return false;
         }
         v8::Isolate* Isolate = MainIsolate;
@@ -507,7 +509,6 @@ namespace puerts
 
         if (Module.IsEmpty())
         {
-            // LastExceptionInfo = "resolve module failed";
             return false;
         }
 
