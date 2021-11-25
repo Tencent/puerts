@@ -195,9 +195,10 @@ namespace Puerts
 
         public void ExecuteModule(string filename)
         {
-            System.Console.WriteLine("ExecuteModule:" + filename);
+            System.Console.WriteLine("ExecuteModule1:" + filename);
             if (loader.FileExists(filename))
             {
+                System.Console.WriteLine("ExecuteModule2:" + filename);
                 IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
                 if (resultInfo == IntPtr.Zero)
                 {
