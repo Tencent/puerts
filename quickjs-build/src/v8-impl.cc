@@ -482,7 +482,7 @@ Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback ca
     return Maybe<bool>(true);
 }
 MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
-    auto func_obj = JS_DupValue(context->context_, JS_MKPTR(JS_TAG_MODULE, module_));
+    auto func_obj = JS_DupModule(context->context_, module_);
     auto ret = JS_EvalFunction(context->context_, func_obj);
     if (JS_IsException(ret)) {
         context->GetIsolate()->handleException();
