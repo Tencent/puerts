@@ -196,12 +196,19 @@ namespace Puerts
         {
             if (loader.FileExists(filename))
             {
-                IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
-                if (resultInfo == IntPtr.Zero)
+                // IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
+                // if (resultInfo == IntPtr.Zero)
+                // {
+                //     string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
+                //     throw new Exception(exceptionInfo);
+                // }
+                string debugPath;
+                var context = loader.ReadFile(filename, out debugPath);
+                if (context == null)
                 {
-                    string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
-                    throw new Exception(exceptionInfo);
+                    throw new InvalidProgramException("can not find " + filename);
                 }
+                Eval(context, debugPath);
             }
             else
             {
