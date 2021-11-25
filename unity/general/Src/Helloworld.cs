@@ -57,12 +57,11 @@ public class PuertsTest
         var jsEnv = new JsEnv(loader);
         try
         {
-            //jsEnv.ExecuteModule("whatever.mjs");
             jsEnv.Eval("var obj = {}; obj.func();");
         }
         catch (Exception e)
         {
-            System.Console.WriteLine("yeah!");
+            System.Console.WriteLine(e.Message);
         }
         jsEnv.Dispose();
     }
