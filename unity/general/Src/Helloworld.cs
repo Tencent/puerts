@@ -52,17 +52,9 @@ public class PuertsTest
     public static void Main()
     {
         var loader = new TxtLoader();
-        //loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
-        //loader.AddMockFileContent("whatever.mjs", @"export delete;");
+        loader.AddMockFileContent("whatever.mjs", @"export delete;");
         var jsEnv = new JsEnv(loader);
-        try
-        {
-            jsEnv.Eval("var obj = {}; obj.func();");
-        }
-        catch (Exception e)
-        {
-            System.Console.WriteLine(e.Message);
-        }
+        jsEnv.ExecuteModule("whatever.mjs");
         jsEnv.Dispose();
     }
 }
