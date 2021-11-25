@@ -200,6 +200,7 @@ namespace Puerts
             {
                 System.Console.WriteLine("ExecuteModule2:" + filename);
                 IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
+                System.Console.WriteLine("ExecuteModule3:" + resultInfo);
                 if (resultInfo == IntPtr.Zero)
                 {
                     string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
