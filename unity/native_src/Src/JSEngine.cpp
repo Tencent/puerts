@@ -59,7 +59,7 @@ namespace puerts
         {
             // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
             int Argc = 1;
-            char* ArgvIn[] = {"--trace-uncaught"};
+            char* ArgvIn[] = {"--no-harmony-top-level-await"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
