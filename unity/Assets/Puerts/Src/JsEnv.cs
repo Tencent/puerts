@@ -682,6 +682,7 @@ namespace Puerts
             lock (jsEnvs)
             {
                 if (disposed) return;
+                System.Console.WriteLine("JsEnv Disposed:" + Idx);
                 jsEnvs[Idx] = null;
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
