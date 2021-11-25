@@ -5,96 +5,98 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-"use strict";
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
+(function () {
+    "use strict";
 
-let events = Object.create(null);
-let eventsCount = 0;
-
-function checkListener(listener) {
-    if (typeof listener !== 'function') {
-        throw new Error('listener expect a function');
-    }
-}
-
-function on(type, listener, prepend) {
-    checkListener(listener);
+    let events = Object.create(null);
+    let eventsCount = 0;
     
-    let existing = events[type];
-    if (existing === undefined) {
-        events[type] = listener;
-        ++eventsCount;
-    } else {
-        if (typeof existing === 'function') {
-            events[type] = prepend ? [listener, existing] : [existing, listener];
-        } else if (prepend) {
-            existing.unshift(listener);
+    function checkListener(listener) {
+        if (typeof listener !== 'function') {
+            throw new Error('listener expect a function');
+        }
+    }
+    
+    function on(type, listener, prepend) {
+        checkListener(listener);
+        
+        let existing = events[type];
+        if (existing === undefined) {
+            events[type] = listener;
+            ++eventsCount;
         } else {
-            existing.push(listener);
-        }
-    }
-}
-
-function off(type, listener) {
-    checkListener(listener);
-    
-    const list = events[type];
-    if (list === undefined)
-        return;
-    if (list === listener) {
-        if (--eventsCount === 0)
-            events = Object.create(null);
-        else {
-            delete events[type];
-        }
-    } else if (typeof list !== 'function') {
-        for (var i = list.length - 1; i >= 0; i--) {
-            if (list[i] === listener) { //found
-                if (i === 0)
-                    list.shift();
-                else {
-                    spliceOne(list, i);
-                }
-                
-                if (list.length === 1)
-                    events[type] = list[0];
-                break;
+            if (typeof existing === 'function') {
+                events[type] = prepend ? [listener, existing] : [existing, listener];
+            } else if (prepend) {
+                existing.unshift(listener);
+            } else {
+                existing.push(listener);
             }
         }
     }
-}
-
-function emit(type, ...args) {
-    const listener = events[type];
-
-    if (listener === undefined)
-        return false;
-
-    if (typeof listener === 'function') {
-        Reflect.apply(listener, this, args);
-    } else {
-        const len = listener.length;
-        const listeners = arrayClone(listener, len);
-        for (var i = 0; i < len; ++i)
-            Reflect.apply(listeners[i], this, args);
+    
+    function off(type, listener) {
+        checkListener(listener);
+        
+        const list = events[type];
+        if (list === undefined)
+            return;
+        if (list === listener) {
+            if (--eventsCount === 0)
+                events = Object.create(null);
+            else {
+                delete events[type];
+            }
+        } else if (typeof list !== 'function') {
+            for (var i = list.length - 1; i >= 0; i--) {
+                if (list[i] === listener) { //found
+                    if (i === 0)
+                      list.shift();
+                    else {
+                      spliceOne(list, i);
+                    }
+                    
+                    if (list.length === 1)
+                        events[type] = list[0];
+                    break;
+                }
+            }
+        }
     }
+    
+    function emit(type, ...args) {
+        const listener = events[type];
 
-    return true;
-}
+        if (listener === undefined)
+            return false;
 
-function arrayClone(arr, n) {
-    const copy = new Array(n);
-    for (var i = 0; i < n; ++i)
-        copy[i] = arr[i];
-    return copy;
-}
+        if (typeof listener === 'function') {
+            Reflect.apply(listener, this, args);
+        } else {
+            const len = listener.length;
+            const listeners = arrayClone(listener, len);
+            for (var i = 0; i < len; ++i)
+                Reflect.apply(listeners[i], this, args);
+        }
 
-function spliceOne(list, index) {
-    for (; index + 1 < list.length; index++)
-        list[index] = list[index + 1];
-    list.pop();
-}
-
-puerts.on = on;
-puerts.off = off;
-puerts.emit = emit;
+        return true;
+    }
+    
+    function arrayClone(arr, n) {
+        const copy = new Array(n);
+        for (var i = 0; i < n; ++i)
+            copy[i] = arr[i];
+        return copy;
+    }
+    
+    function spliceOne(list, index) {
+        for (; index + 1 < list.length; index++)
+            list[index] = list[index + 1];
+        list.pop();
+    }
+    
+    puerts.on = on;
+    puerts.off = off;
+    puerts.emit = emit;
+}());

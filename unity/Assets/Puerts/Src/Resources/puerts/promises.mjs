@@ -5,62 +5,65 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-"use strict";
-var global = global || globalThis;
-
-const kPromiseRejectWithNoHandler = 0;
-const kPromiseHandlerAddedAfterReject = 1;
-const kPromiseRejectAfterResolved = 2;
-const kPromiseResolveAfterResolved = 3;
-
-global.__tgjsSetPromiseRejectCallback(promiseRejectHandler)
-delete global.__tgjsSetPromiseRejectCallback;
-
-const maybeUnhandledRejection = new WeakMap();
-
-function promiseRejectHandler(type, promise, reason) {
-    switch (type) {
-        case kPromiseRejectWithNoHandler:
-            maybeUnhandledRejection.set(promise, {
-                reason,
-            }); //maybe unhandledRejection
-            Promise.resolve().then(_ => unhandledRejection(promise, reason));
-            break;
-        case kPromiseHandlerAddedAfterReject:
-            handlerAddedAfterReject(promise);
-            break;
-        case kPromiseResolveAfterResolved:
-            console.error('kPromiseResolveAfterResolved', promise, reason);
-            break;
-        case kPromiseRejectAfterResolved:
-            console.error('kPromiseRejectAfterResolved', promise, reason);
-            break;
-    }
-}
-
-function unhandledRejection(promise, reason) {
-    const promiseInfo = maybeUnhandledRejection.get(promise);
-    if (promiseInfo === undefined) {
-        return;
-    }
-    if (!puerts.emit('unhandledRejection', promiseInfo.reason, promise)) {
-        unhandledRejectionWarning(reason);
-    }
-}
-
-function unhandledRejectionWarning(reason) {
-    try {
-        if (reason instanceof Error) {
-            console.warn('unhandledRejection', reason, reason.stack);
-        } else {
-            console.warn('unhandledRejection', reason);
+var global = global || globalThis || (function () { return this; }());
+(function (global) {
+    "use strict";
+    
+    const kPromiseRejectWithNoHandler = 0;
+    const kPromiseHandlerAddedAfterReject = 1;
+    const kPromiseRejectAfterResolved = 2;
+    const kPromiseResolveAfterResolved = 3;
+    
+    global.__tgjsSetPromiseRejectCallback(promiseRejectHandler)
+    delete global.__tgjsSetPromiseRejectCallback;
+    
+    const maybeUnhandledRejection = new WeakMap();
+    
+    function promiseRejectHandler(type, promise, reason) {
+        switch (type) {
+            case kPromiseRejectWithNoHandler:
+                maybeUnhandledRejection.set(promise, {
+                    reason,
+                }); //maybe unhandledRejection
+                Promise.resolve().then(_ => unhandledRejection(promise, reason));
+                break;
+            case kPromiseHandlerAddedAfterReject:
+                handlerAddedAfterReject(promise);
+                break;
+            case kPromiseResolveAfterResolved:
+                console.error('kPromiseResolveAfterResolved', promise, reason);
+                break;
+            case kPromiseRejectAfterResolved:
+                console.error('kPromiseRejectAfterResolved', promise, reason);
+                break;
         }
-    } catch {}
-}
-
-function handlerAddedAfterReject(promise) {
-    const promiseInfo = maybeUnhandledRejection.get(promise);
-    if (promiseInfo !== undefined) { // cancel
-        maybeUnhandledRejection.delete(promise);
     }
-}
+    
+    function unhandledRejection(promise, reason) {
+        const promiseInfo = maybeUnhandledRejection.get(promise);
+        if (promiseInfo === undefined) {
+            return;
+        }
+        if (!puerts.emit('unhandledRejection', promiseInfo.reason, promise)) {
+            unhandledRejectionWarning(reason);
+        }
+    }
+    
+    function unhandledRejectionWarning(reason) {
+        try {
+            if (reason instanceof Error) {
+                console.warn('unhandledRejection', reason, reason.stack);
+            } else {
+                console.warn('unhandledRejection', reason);
+            }
+        } catch {}
+    }
+    
+    function handlerAddedAfterReject(promise) {
+        const promiseInfo = maybeUnhandledRejection.get(promise);
+        if (promiseInfo !== undefined) { // cancel
+            maybeUnhandledRejection.delete(promise);
+        }
+    }
+    
+}(global));

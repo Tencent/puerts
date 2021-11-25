@@ -5,13 +5,14 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */ 
 
-"use strict";
-var global = global || globalThis;
-
-let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
-
-if (UnityEngine_Debug) {
+var global = global || globalThis || (function () { return this; }());
+(function (global) {
+    "use strict";
     
+    let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
+    
+    if (!UnityEngine_Debug) return;
+
     const console_org = global.console;
     var console = {}
 
@@ -46,5 +47,10 @@ if (UnityEngine_Debug) {
     }
 
     global.console = console;
+<<<<<<< HEAD
     puerts.console = console;   
 }
+=======
+    puerts.console = console;
+}(global));
+>>>>>>> parent of b55fec1 (ut??)
