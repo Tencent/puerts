@@ -47,10 +47,5 @@ var global = global || globalThis || (function () { return this; }());
     }
 
     global.console = console;
-<<<<<<< HEAD
-    puerts.console = console;   
-}
-=======
     puerts.console = console;
 }(global));
->>>>>>> parent of b55fec1 (ut??)
