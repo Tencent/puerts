@@ -448,13 +448,10 @@ MaybeLocal<Module> ScriptCompiler::CompileModule(
 
 static V8_INLINE MaybeLocal<Value> ProcessResult(Isolate *isolate, JSValue ret) {
     Value* val = nullptr;
-    if (JS_IsException(ret)) 
-    {
+    if (JS_IsException(ret)) {
         isolate->handleException();
         return MaybeLocal<Value>();
-    } 
-    else 
-    {
+    } else {
         //脚本执行的返回值由HandleScope接管，这可能有需要GC的对象
         val = isolate->Alloc<Value>();
         val->value_ = ret;
@@ -483,14 +480,12 @@ Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback ca
 }
 MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
     auto func_obj = JS_DupModule(context->context_, module_);
-    auto ret = JS_EvalFunction(context->context_, func_obj);
-    if (JS_IsException(ret)) {
-        context->GetIsolate()->handleException();
-        return MaybeLocal<Value>();
-    }
-    JS_FreeValue(context->context_, ret);
+    auto evalRet = JS_EvalFunction(context->context_, func_obj);
+    
+    auto ret = ProcessResult(context->GetIsolate(), evalRet);
 
-    return ProcessResult(context->GetIsolate(), ret);
+    JS_FreeValue(context->context_, evalRet);
+    return ret;
 }
 Local<Value> Module::GetException() const{
     return Local<Value>(reinterpret_cast<Value*>(const_cast<JSValue*>(exception_)));
@@ -515,10 +510,6 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     const char *filename = resource_name_.IsEmpty() ? "eval" : *String::Utf8Value(isolate, resource_name_.ToLocalChecked());
     auto ret = JS_Eval(context->context_, *source, source.length(), filename, JS_EVAL_TYPE_GLOBAL);
 
-    if (JS_IsException(ret))  {
-        isolate->handleException();
-        return MaybeLocal<Value>();
-    }
     return ProcessResult(isolate, ret);
 }
 
