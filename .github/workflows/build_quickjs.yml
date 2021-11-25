@@ -90,7 +90,7 @@ jobs:
     - name: Merge Libs
       run: |
         cd quickjs-build\win
-        LIB.EXE /OUT:quickjs.dll.lib ..\build\libquickjs.dll.a build\Debug\v8qjs.lib
+        LIB.EXE /OUT:quickjs.dll.lib ..\build\libquickjs.dll.a build\Release\v8qjs.lib
     - name: Prepare
       shell: msys2 {0}
       run: |
