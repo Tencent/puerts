@@ -124,7 +124,7 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
-            System.Console.WriteLine(Idx);
+            System.Console.WriteLine("SetModuleResolver: " + Idx);
             PuertsDLL.SetModuleResolver(isolate, StaticCallbacks.ModuleResolverWrap, Idx);
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
