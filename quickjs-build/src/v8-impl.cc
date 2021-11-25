@@ -481,8 +481,8 @@ Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback ca
     module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
     return Maybe<bool>(true);
 }
-MaybeLocal<Value> Module::Evaluate(Local<Context> context){
-    auto func_obj = JS_DupValue(context->context_, JS_MKPTR(JS_TAG_MODULE, module_));
+MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
+    auto func_obj = JS_DupValue(context->context_, (JSValue)((intptr_t)(module_) | (JS_TAG_MODULE)));
     auto ret = JS_EvalFunction(context->context_, func_obj);
     if (JS_IsException(ret)) {
         context->GetIsolate()->handleException();
