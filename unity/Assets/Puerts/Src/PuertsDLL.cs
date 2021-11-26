@@ -371,8 +371,19 @@ namespace Puerts
             }
         }
 #else
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, string str);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetStringToOutValue")]
+        protected static extern void __SetStringToOutValue(IntPtr isolate, IntPtr value, string str);
+        public static void SetStringToOutValue(IntPtr isolate, IntPtr value, string str)
+        {
+            if (str == null) 
+            {
+                SetNullToOutValue(isolate, value);
+            }
+            else
+            {
+                __SetStringToOutValue(isolate, value, str);
+            }
+        }
 #endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
