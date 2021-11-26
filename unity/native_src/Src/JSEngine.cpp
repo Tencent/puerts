@@ -240,6 +240,10 @@ namespace puerts
                 }
                 Iter->second.Reset();
             }
+            for (auto Iter = ModuleCacheMap.begin(); Iter != ModuleCacheMap.end(); ++Iter)
+            {
+                Iter->second.Reset();
+            }
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
