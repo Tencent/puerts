@@ -81,7 +81,6 @@ FFunctionTranslator::FFunctionTranslator(UFunction *InFunction, bool IsDelegate)
 void FFunctionTranslator::Init(UFunction *InFunction, bool IsDelegate)
 {
     check(InFunction);
-    if (InFunction == Function.Get()) return;
     Function = InFunction;
 #if WITH_EDITOR
     FunctionName = Function->GetFName();
