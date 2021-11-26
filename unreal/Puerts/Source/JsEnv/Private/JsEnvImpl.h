@@ -201,6 +201,8 @@ private:
 
     void NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct);
+    
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct *Class, bool &Existed);
 
     v8::Local<v8::Function> GetJsClass(UStruct *Class, v8::Local<v8::Context> Context);
@@ -399,7 +401,7 @@ private:
 
     std::map<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
 
-    std::map<UStruct*, std::pair<std::unique_ptr<FStructWrapper>, int>> TypeReflectionMap;
+    std::map<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
 
     std::map<UObject*, v8::UniquePersistent<v8::Value> > ObjectMap;
     std::map<const class UObjectBase*, v8::UniquePersistent<v8::Value> > GeneratedObjectMap;

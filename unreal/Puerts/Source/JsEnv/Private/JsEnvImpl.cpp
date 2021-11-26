@@ -1596,7 +1596,6 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
         //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
         ClassToTemplateMap[Struct].Reset();
         ClassToTemplateMap.erase(Struct);
-        TypeReflectionMap.erase(Struct);
     }
 }
 
@@ -2151,6 +2150,25 @@ void FJsEnvImpl::UnBindContainer(void* Ptr)
     StructMap.erase(Ptr);
 }
 
+std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
+{
+    const auto FullName = InStruct->GetFullName();
+    
+    const auto Iter = TypeReflectionMap.find(FullName);
+    if (Iter == TypeReflectionMap.end())
+    {
+        auto Ret = std::make_shared<FStructWrapper>(InStruct);
+        TypeReflectionMap[FullName] = Ret;
+        //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper new %s // %s"), *InStruct->GetName(), *FullName);
+        return Ret;
+    }
+    else
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
+        return Iter->second;
+    }
+}
+
 v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct, bool &Existed)
 {
     auto Isolate = MainIsolate;
@@ -2164,19 +2182,20 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
         v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
+        auto StructWrapper = GetStructWrapper(InStruct);
+
         auto ExtensionMethodsIter = ExtensionMethodsMap.find(InStruct);
+        if (ExtensionMethodsIter != ExtensionMethodsMap.end())
+        {
+            StructWrapper->AddExtensionMethods(ExtensionMethodsIter->second);
+            ExtensionMethodsMap.erase(ExtensionMethodsIter);
+        }
 
         if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
         {
             //Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
-            auto ScriptStructReflection = std::make_unique<FScriptStructWrapper>(ScriptStruct);
-            if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-            {
-                ScriptStructReflection->AddExtensionMethods(ExtensionMethodsIter->second);
-                ExtensionMethodsMap.erase(ExtensionMethodsIter);
-            }
-            Template = ScriptStructReflection->ToFunctionTemplate(Isolate);
-            TypeReflectionMap[InStruct] = std::pair<std::unique_ptr<FStructWrapper>, int>((std::move(ScriptStructReflection)), 0);
+            
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New);
             if (!ScriptStruct->IsNative())//非原生的结构体，可能在实例没有的时候会释放
             {
                 SysObjectRetainer.Retain(ScriptStruct);
@@ -2193,14 +2212,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
         {
             auto Class = Cast<UClass>(InStruct);
             check(Class);
-            auto ClassReflection = std::make_unique<FClassWrapper>(Class);
-            if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-            {
-                ClassReflection->AddExtensionMethods(ExtensionMethodsIter->second);
-                ExtensionMethodsMap.erase(ExtensionMethodsIter);
-            }
-            Template = ClassReflection->ToFunctionTemplate(Isolate);
-            TypeReflectionMap[InStruct] = std::pair<std::unique_ptr<FStructWrapper>, int>((std::move(ClassReflection)), 0);
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New);
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)

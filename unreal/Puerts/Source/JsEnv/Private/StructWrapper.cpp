@@ -13,7 +13,60 @@ namespace puerts
 {
     void FStructWrapper::AddExtensionMethods(std::vector<UFunction*> InExtensionMethods)
     {
-        ExtensionMethods.insert(ExtensionMethods.end(), InExtensionMethods.begin(), InExtensionMethods.end());
+        ExtensionMethods = InExtensionMethods;
+    }
+
+    std::shared_ptr<FPropertyTranslator> FStructWrapper::GetPropertyTranslator(PropertyMacro *InProperty)
+    {
+        auto Iter = PropertiesMap.find(InProperty->GetName());
+        if (Iter == PropertiesMap.end())
+        {
+            std::shared_ptr<FPropertyTranslator> PropertyTranslator = FPropertyTranslator::Create(InProperty);
+            if (PropertyTranslator)
+            {
+                PropertiesMap[InProperty->GetName()] = PropertyTranslator;
+                Properties.push_back(PropertyTranslator);
+            }
+            return PropertyTranslator;
+        }
+        Iter->second->Init(InProperty);
+        return Iter->second;
+    }
+
+    std::shared_ptr<FFunctionTranslator>  FStructWrapper::GetMethodTranslator(UFunction *InFunction, bool IsExtension)
+    {
+        auto Iter = FunctionsMap.find(InFunction->GetName());
+        if (Iter == FunctionsMap.end())
+        {
+            std::shared_ptr<FFunctionTranslator> FunctionTranslator;
+            if (IsExtension)
+            {
+                FunctionTranslator = std::make_shared<FExtensionMethodTranslator>(InFunction);
+            }
+            else
+            {
+                FunctionTranslator = std::make_shared<FFunctionTranslator>(InFunction, false);
+            }
+            FunctionsMap[InFunction->GetName()] = FunctionTranslator;
+            Functions.push_back(FunctionTranslator);
+            return FunctionTranslator;
+        }
+        Iter->second->Init(InFunction, false);
+        return Iter->second;
+    }
+
+    std::shared_ptr<FFunctionTranslator> FStructWrapper::GetFunctionTranslator(UFunction *InFunction)
+    {
+        auto Iter = FunctionsMap.find(InFunction->GetName());
+        if (Iter == FunctionsMap.end())
+        {
+            auto FunctionTranslator = std::make_shared<FFunctionTranslator>(InFunction, false);
+            FunctionsMap[InFunction->GetName()] = FunctionTranslator;
+            Functions.push_back(FunctionTranslator);
+            return FunctionTranslator;
+        }
+        Iter->second->Init(InFunction, false);
+        return Iter->second;
     }
 
     void FStructWrapper::InitTemplateProperties(v8::Isolate* Isolate, UStruct *InStruct, v8::Local<v8::FunctionTemplate> Template)
@@ -43,7 +96,7 @@ namespace puerts
             {
                 continue;
             }
-            auto PropertyTranslator = FPropertyTranslator::Create(Property);
+            auto PropertyTranslator = GetPropertyTranslator(Property);
             if (PropertyTranslator)
             {
                 PropertyTranslator->SetAccessor(Isolate, Template);
@@ -103,21 +156,20 @@ namespace puerts
                     continue;
                 }
 
-                auto FunctionTranslator = std::make_unique<FFunctionTranslator>(Function, false);
-
                 auto Key = FV8Utils::InternalString(Isolate, Function->GetName());
 
                 if (Function->HasAnyFunctionFlags(FUNC_Static))
                 {
+                    auto FunctionTranslator = GetFunctionTranslator(Function);
                     AddedFunctions.Add(Function->GetName());
                     Result->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
                 }
                 else
                 {
+                    auto FunctionTranslator = GetMethodTranslator(Function, false);
                     AddedMethods.Add(Function->GetName());
                     Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
                 }
-                Functions.push_back(std::move(FunctionTranslator));
             }
 
             for (const FImplementedInterface& Interface : Class->Interfaces)
@@ -129,11 +181,10 @@ namespace puerts
                         UFunction* ItfFunction = *ItfFuncIt;
                         if (!ItfFunction->HasAnyFunctionFlags(FUNC_Static) && !AddedMethods.Contains(ItfFunction->GetName()))
                         {
-                            auto ItfFunctionTranslator = std::make_unique<FFunctionTranslator>(ItfFunction, false);
+                            auto ItfFunctionTranslator = GetMethodTranslator(ItfFunction, false);
                             AddedMethods.Add(ItfFunction->GetName());
                             Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, ItfFunction->GetName()),
                                 ItfFunctionTranslator->ToFunctionTemplate(Isolate));
-                            Functions.push_back(std::move(ItfFunctionTranslator));
                         }
                     }
                 }
@@ -152,7 +203,7 @@ namespace puerts
                 continue;
             }
 
-            auto FunctionTranslator = std::make_unique<FExtensionMethodTranslator>(Function);
+            auto FunctionTranslator = GetMethodTranslator(Function, true);
 
             auto Key = FV8Utils::InternalString(Isolate, Function->GetName());
 
@@ -303,11 +354,6 @@ namespace puerts
         }
     }
 
-    v8::Local<v8::FunctionTemplate> FScriptStructWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
-    {
-        return FStructWrapper::ToFunctionTemplate(Isolate, New);
-    }
-
     void FScriptStructWrapper::New(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
@@ -390,11 +436,6 @@ namespace puerts
     {
         void *ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
         FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructMemory);
-    }
-
-    v8::Local<v8::FunctionTemplate> FClassWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
-    {
-        return FStructWrapper::ToFunctionTemplate(Isolate, New);
     }
 
     void FClassWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data)

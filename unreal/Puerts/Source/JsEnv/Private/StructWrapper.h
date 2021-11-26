@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <vector>
+#include <map>
 
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
@@ -31,9 +32,21 @@ public:
     void AddExtensionMethods(std::vector<UFunction*> InExtensionMethods);
 
 protected:
-    std::vector<std::unique_ptr<FPropertyTranslator>> Properties;
+    std::vector<std::shared_ptr<FPropertyTranslator>> Properties;
 
-    std::vector<std::unique_ptr<FFunctionTranslator>> Functions;
+    std::map<FString, std::shared_ptr<FPropertyTranslator>> PropertiesMap;
+
+    std::shared_ptr<FPropertyTranslator> GetPropertyTranslator(PropertyMacro *InProperty);
+
+    std::vector<std::shared_ptr<FFunctionTranslator>> Functions;
+
+    std::map<FString, std::shared_ptr<FFunctionTranslator>> FunctionsMap;
+
+    std::map<FString, std::shared_ptr<FFunctionTranslator>> MethodsMap;
+
+    std::shared_ptr<FFunctionTranslator> GetFunctionTranslator(UFunction *InFunction);
+
+    std::shared_ptr<FFunctionTranslator> GetMethodTranslator(UFunction *InFunction, bool IsExtension);
 
     void InitTemplateProperties(v8::Isolate* Isolate, UStruct *InStruct, v8::Local<v8::FunctionTemplate> Template);
 
@@ -61,8 +74,6 @@ class FScriptStructWrapper : public FStructWrapper
 public:
     explicit FScriptStructWrapper(UScriptStruct *InScriptStruct) : FStructWrapper(InScriptStruct){}
 
-    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
-
     static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data);
 
     static void OnGarbageCollected(const v8::WeakCallbackInfo<UScriptStruct>& Data);
@@ -70,10 +81,7 @@ public:
     static void *Alloc(UScriptStruct *InScriptStruct);
 
     static void Free(TWeakObjectPtr<UStruct> InStruct, FinalizeFunc InExternalFinalize, void* Ptr);
-private:
-        
 
-private:
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
@@ -84,11 +92,8 @@ class FClassWrapper : public FStructWrapper
 public:
     explicit FClassWrapper(UClass *InClass) : FStructWrapper(InClass) {}
 
-    v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
-
     static void OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data);
 
-private:
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);

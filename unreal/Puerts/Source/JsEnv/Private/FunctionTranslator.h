@@ -68,6 +68,8 @@ private:
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void Init(UFunction *InFunction, bool IsDelegate);
+
+    friend class FStructWrapper;
 };
 
 class FExtensionMethodTranslator : public FFunctionTranslator
