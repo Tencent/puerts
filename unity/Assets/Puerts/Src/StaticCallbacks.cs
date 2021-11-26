@@ -14,7 +14,6 @@ namespace Puerts
         [MonoPInvokeCallback(typeof(V8FunctionCallback))]
         internal static string ModuleResolverWrap(string identifer, int jsEnvIdx)
         {
-            System.Console.WriteLine("ModuleResolverCallback: " + jsEnvIdx);
             return JsEnv.jsEnvs[jsEnvIdx].ResolveModuleContent(identifer);
         }
 

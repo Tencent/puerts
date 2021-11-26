@@ -124,7 +124,6 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
-            System.Console.WriteLine("SetModuleResolver: " + Idx);
             PuertsDLL.SetModuleResolver(isolate, StaticCallbacks.ModuleResolverWrap, Idx);
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
@@ -195,12 +194,9 @@ namespace Puerts
 
         public void ExecuteModule(string filename)
         {
-            System.Console.WriteLine("ExecuteModule1:" + filename);
             if (loader.FileExists(filename))
             {
-                System.Console.WriteLine("ExecuteModule2:" + filename);
                 IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
-                System.Console.WriteLine("ExecuteModule3:" + resultInfo);
                 if (resultInfo == IntPtr.Zero)
                 {
                     string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
@@ -685,7 +681,6 @@ namespace Puerts
             lock (jsEnvs)
             {
                 if (disposed) return;
-                System.Console.WriteLine("JsEnv Disposed:" + Idx);
                 jsEnvs[Idx] = null;
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
