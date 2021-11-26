@@ -447,13 +447,13 @@ namespace puerts
         
         v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-
+#if !WITH_QUICKJS
         auto Iter = JsEngine->ModuleCacheMap.find(Specifier_std);
         if (Iter != JsEngine->ModuleCacheMap.end())//create and link
         {
             return v8::Local<v8::Module>::New(Isolate, Iter->second);
         }
-        
+#endif 
         const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
         if (Code == nullptr) 
         {
@@ -484,7 +484,9 @@ namespace puerts
             return v8::MaybeLocal<v8::Module>();
         }
 
+#if !WITH_QUICKJS
         JsEngine->ModuleCacheMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
+#endif 
 
         return Module;
     }
