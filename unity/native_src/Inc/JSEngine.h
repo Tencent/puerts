@@ -176,8 +176,9 @@ public:
     int32_t Idx;
     
     CSharpModuleResolveCallback ModuleResolver;
-
+#if !WITH_QUICKJS
     std::map<std::string, v8::UniquePersistent<v8::Module>> ModuleCacheMap;
+#endif
 private:
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;

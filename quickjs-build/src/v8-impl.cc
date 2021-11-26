@@ -124,6 +124,10 @@ Isolate::~Isolate() {
     for (size_t i = 0; i < values_.size(); i++) {
         delete values_[i];
     }
+    for (auto Iter = ModuleCacheMap_.begin(); Iter != ModuleCacheMap_.end(); ++Iter)
+    {
+        delete Iter->second;
+    }
     values_.clear();
     JS_FreeValueRT(runtime_, literal_values_[kEmptyStringIndex]);
     if (!is_external_runtime_) {
@@ -137,6 +141,15 @@ JSModuleDef* Isolate::js_module_loader(JSContext* ctx, const char *name, void *o
     if (isolate->moduleResolver_ == nullptr) {
         return nullptr;
     }
+
+    std::string name_std(name);
+
+    auto Iter = isolate->ModuleCacheMap_.find(name_std);
+    if (Iter != isolate->ModuleCacheMap_.end())//create and link
+    {
+        return Iter->second;
+    }
+
     Local<Context> context = isolate->GetCurrentContext();
     MaybeLocal<Module> m = isolate->moduleResolver_(
         context,
@@ -155,6 +168,8 @@ JSModuleDef* Isolate::js_module_loader(JSContext* ctx, const char *name, void *o
         isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "module not found").ToLocalChecked()));
         return nullptr;
     }
+
+    isolate->ModuleCacheMap_[name_std] = v8m->module_;
 
     return v8m->module_;
 }

@@ -762,6 +762,7 @@ private:
     Module::ResolveCallback moduleResolver_;
 
     static JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque);
+    std::map<std::string, JSModuleDef*> ModuleCacheMap_;
 public:
     static Isolate* current_;
     
