@@ -2165,6 +2165,7 @@ std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
     else
     {
         //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
+        Iter->second->Init(InStruct);
         return Iter->second;
     }
 }

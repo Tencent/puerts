@@ -29,6 +29,13 @@ class FStructWrapper
 public:
     explicit FStructWrapper(UStruct* InStruct): ExternalInitialize(nullptr), ExternalFinalize(nullptr), Struct(InStruct){}
 
+    FORCEINLINE void Init(UStruct* InStruct)
+    {
+        ExternalInitialize = nullptr;
+        ExternalFinalize = nullptr;
+        Struct = InStruct;
+    }
+
     void AddExtensionMethods(std::vector<UFunction*> InExtensionMethods);
 
 protected:
