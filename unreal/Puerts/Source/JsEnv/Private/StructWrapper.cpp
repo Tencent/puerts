@@ -13,7 +13,7 @@ namespace puerts
 {
     void FStructWrapper::AddExtensionMethods(std::vector<UFunction*> InExtensionMethods)
     {
-        ExtensionMethods = InExtensionMethods;
+        ExtensionMethods.insert(ExtensionMethods.end(), InExtensionMethods.begin(), InExtensionMethods.end());
     }
 
     std::shared_ptr<FPropertyTranslator> FStructWrapper::GetPropertyTranslator(PropertyMacro *InProperty)
@@ -100,7 +100,6 @@ namespace puerts
             if (PropertyTranslator)
             {
                 PropertyTranslator->SetAccessor(Isolate, Template);
-                Properties.push_back(std::move(PropertyTranslator));
             }
             else
             {
@@ -209,8 +208,6 @@ namespace puerts
 
             AddedMethods.Add(Function->GetName());
             Result->PrototypeTemplate()->Set(Key, FunctionTranslator->ToFunctionTemplate(Isolate));
-
-            Functions.push_back(std::move(FunctionTranslator));
         }
 
         Result->Set(FV8Utils::InternalString(Isolate, "StaticClass"), v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));

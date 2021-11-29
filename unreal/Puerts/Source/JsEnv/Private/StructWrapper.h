@@ -34,6 +34,9 @@ public:
         ExternalInitialize = nullptr;
         ExternalFinalize = nullptr;
         Struct = InStruct;
+        Properties.clear();
+        Functions.clear();
+        ExtensionMethods.clear();
     }
 
     void AddExtensionMethods(std::vector<UFunction*> InExtensionMethods);
