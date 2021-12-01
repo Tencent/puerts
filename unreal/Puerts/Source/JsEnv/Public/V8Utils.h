@@ -167,7 +167,9 @@ public:
         else
         {
             v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
-
+            // --> modified by ksg begin
+    	    // songfuhao: 引入 SourceMapSupport 后，堆栈显示的是正常 TS 报错，但 Puerts 默认打印的还是 JS 报错，所以把这块打印给去掉了
+            /*
             // 输出 (filename):(line number): (message).
             v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
             int LineNum = Message->GetLineNumber(Context).FromJust();
@@ -188,6 +190,14 @@ public:
                 FinalReport.Append("\n").Append(StackTraceStr);
             }
             return FinalReport;
+            */
+            v8::Local<v8::Value> StackTrace;
+            if (TryCatch->StackTrace(Context).ToLocal(&StackTrace))
+            {
+                return *v8::String::Utf8Value(Isolate, StackTrace);
+            }
+            return ExceptionStr;
+            // --< end
         }
     }
 
