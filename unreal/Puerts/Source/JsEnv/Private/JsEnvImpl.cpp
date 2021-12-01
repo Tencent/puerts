@@ -1599,6 +1599,35 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
     }
 }
 
+//fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters
+static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
+{
+    uint8* Frame = (uint8*)FMemory_Alloca(Function->PropertiesSize);
+    FMemory::Memzero(Frame, Function->PropertiesSize);
+    for (FProperty* Property = (FProperty*)(Function->ChildProperties); Property  && (*Stack.Code != EX_EndFunctionParms); Property = (FProperty*)(Property->Next))
+    {
+        Stack.MostRecentPropertyAddress = NULL;
+        Stack.Step(Stack.Object, (Property->PropertyFlags & CPF_OutParm) ? NULL : Property->ContainerPtrToValuePtr<uint8>(Frame));
+    }
+
+    Stack.Code++;
+
+    for (FProperty* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+    {
+        if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
+        {
+            Destruct->DestroyValue_InContainer(Frame);
+        }
+    }
+
+    FProperty* ReturnProp = Function->GetReturnProperty();
+    if (ReturnProp != NULL)
+    {
+        ReturnProp->DestroyValue(RESULT_PARAM);
+        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->ElementSize);
+    }
+}
+
 void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Function, FFrame &Stack, void *RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -1608,7 +1637,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
-        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+        SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     auto Isolate = MainIsolate;
@@ -1639,7 +1668,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
-        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+        SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     else 
@@ -1659,7 +1688,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
                     *Function->GetName(), ContextObject));
-                ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+                SkipFunction(Stack, RESULT_PARAM, Function);
                 return;
             }
             ThisObj = ObjIter->second.Get(Isolate);

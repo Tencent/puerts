@@ -130,9 +130,5 @@ void UTypeScriptGeneratedClass::Bind()
         //ClassFlags |= CLASS_Native;
     }
 
-    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
-    {
-        auto Function = *FuncIt;
-        RedirectToTypeScript(Function);
-    }
+    ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
 }
