@@ -9,6 +9,7 @@
 #include "TypeScriptGeneratedClass.h"
 #include "PropertyMacros.h"
 #include "JSGeneratedFunction.h"
+#include "JSLogger.h"
 
 DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
 {
@@ -24,6 +25,14 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
         {
             PinedDynamicInvoker->InvokeTsMethod(Context, Func, Stack, RESULT_PARAM);
         }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("call %s::%s fail!, DynamicInvoker invalid"), *Class->GetName(), *Func->GetName());
+        }
+    }
+    else
+    {
+        UE_LOG(Puerts, Error, TEXT("calling a not ts class method %s::%s"), *Func->GetOuter()->GetName(), *Func->GetName());
     }
 }
 
@@ -59,6 +68,10 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     if (PinedDynamicInvoker)
     {
         PinedDynamicInvoker->TsConstruct(this, Object);
+    }
+    else
+    {
+        UE_LOG(Puerts, Error, TEXT("call TsConstruct of %s(%p) fail!, DynamicInvoker invalid"), *Object->GetName(), Object);
     }
 }
 
