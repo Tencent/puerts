@@ -414,12 +414,11 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 }
             }
         }
-    }
-
-    if (Stack.Code)
-    {
-        check(Stack.PeekCode() == EX_EndFunctionParms);
-        Stack.SkipCode(1);          // skip EX_EndFunctionParms
+        if (Stack.Code)
+        {
+            check(Stack.PeekCode() == EX_EndFunctionParms);
+            Stack.SkipCode(1);          // skip EX_EndFunctionParms
+        }
     }
 
     v8::Local<v8::Value> *Args = static_cast<v8::Local<v8::Value> *>(FMemory_Alloca(sizeof(v8::Local<v8::Value>) * Arguments.size()));
