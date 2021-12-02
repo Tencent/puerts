@@ -1604,7 +1604,13 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
 {
     uint8* Frame = (uint8*)FMemory_Alloca(Function->PropertiesSize);
     FMemory::Memzero(Frame, Function->PropertiesSize);
-    for (FProperty* Property = (FProperty*)(Function->ChildProperties); Property  && (*Stack.Code != EX_EndFunctionParms); Property = (FProperty*)(Property->Next))
+    for (PropertyMacro* Property = (PropertyMacro*)(
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+                Function->ChildProperties
+#else
+                Function->Children
+#endif
+                ); Property  && (*Stack.Code != EX_EndFunctionParms); Property = (PropertyMacro*)(Property->Next))
     {
         Stack.MostRecentPropertyAddress = NULL;
         Stack.Step(Stack.Object, (Property->PropertyFlags & CPF_OutParm) ? NULL : Property->ContainerPtrToValuePtr<uint8>(Frame));
@@ -1612,7 +1618,7 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
 
     Stack.Code++;
 
-    for (FProperty* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+    for (PropertyMacro* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
     {
         if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
         {
@@ -1620,7 +1626,7 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
         }
     }
 
-    FProperty* ReturnProp = Function->GetReturnProperty();
+    PropertyMacro* ReturnProp = Function->GetReturnProperty();
     if (ReturnProp != NULL)
     {
         ReturnProp->DestroyValue(RESULT_PARAM);
