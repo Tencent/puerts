@@ -306,7 +306,7 @@ private:
     {
         auto context = GetContext(info);
 
-        auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
+        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
 
         if (!self)
         {
@@ -331,7 +331,7 @@ private:
     {
         auto context = GetContext(info);
 
-        auto self = FastGetNativeObjectPointer<Ins>(context, GetHolder(info));
+        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
 
         if (!self)
         {
@@ -596,14 +596,24 @@ struct PropertyWrapper<Ret Ins::*, member>
     static void getter(CallbackInfoType info)
     {
         auto context = GetContext(info);
-        auto self = FastGetNativeObjectPointer<Ins>(context, GetThis(info));
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        if (!self)
+        {
+            ThrowException(context, "access a null object");
+            return;
+        }
         SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
     }
 
     static void setter(CallbackInfoType info)
     {
         auto context = GetContext(info);
-        auto self = FastGetNativeObjectPointer<Ins>(context, GetThis(info));
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        if (!self)
+        {
+            ThrowException(context, "access a null object");
+            return;
+        }
         self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
     }
 
