@@ -25,12 +25,25 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
 if ( JS_ENGINE STREQUAL "quickjs")
-    set(LIB_FILE_NAME libquickjs.a)
-
+    if ( WIN32 AND NOT MSYS )
+        set(LIB_FILE_NAMES 
+            quickjs.dll.lib
+        )
+    else ()
+        set(LIB_FILE_NAMES 
+            libquickjs.a
+        )
+    endif()
+    
 elseif ( JS_ENGINE STREQUAL "nodejs")
-
-    if ( APPLE )
-        set(LIB_FILE_NAME libnode.83.dylib)
+    if ( WIN32 AND NOT MSYS )
+        set(LIB_FILE_NAMES 
+            libnode.lib
+        )
+    else ()
+        set(LIB_FILE_NAMES 
+            libnode.83.dylib
+        )
     endif()
 
     include_directories(    
@@ -40,7 +53,15 @@ elseif ( JS_ENGINE STREQUAL "nodejs")
     )
 else()
     set(JS_ENGINE v8)
-    set(LIB_FILE_NAME libwee8.a)
+    if ( WIN32 AND NOT MSYS )
+        set(LIB_FILE_NAMES 
+            wee8.lib
+        )
+    else ()
+        set(LIB_FILE_NAMES 
+            libwee8.a
+        )
+    endif ()
 endif()
 
 set(V8_ENGINE ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
@@ -134,82 +155,61 @@ elseif (JS_ENGINE STREQUAL "nodejs")
     target_compile_definitions (puerts PRIVATE WITH_NODEJS)
 endif ()
 
-if ( MSYS )
+if ( MSYS OR WIN32 )
+    if ( WIN32 ) 
+        target_link_libraries(puerts
+            winmm.lib
+            dbghelp.lib
+            shlwapi.lib
+        )
+    endif ()
+    
+    # link
     if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-        target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Win32/${LIB_FILE_NAME}
-        )
+        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win32/${LIB_FILE_NAME}
+            )
+        endforeach()
     else ()
-        target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Win64/${LIB_FILE_NAME}
-        )
+        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Win64/${LIB_FILE_NAME}
+            )
+        endforeach()
     endif ()
+
+    # definition
     target_compile_definitions (puerts PRIVATE PLATFORM_WINDOWS)
-elseif ( WIN32 )
-    if ( JS_ENGINE STREQUAL "quickjs")
-        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win32/quickjs.dll.lib
-                winmm.lib
-                dbghelp.lib
-                shlwapi.lib
-            )
-        else ()
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win64/quickjs.dll.lib
-                winmm.lib
-                dbghelp.lib
-                shlwapi.lib
-            )
-        endif ()
-    elseif (JS_ENGINE STREQUAL "nodejs")
-        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win32/libnode.lib
-                winmm.lib
-                dbghelp.lib
-                shlwapi.lib
-            )
-        else ()
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win64/libnode.lib
-                winmm.lib
-                dbghelp.lib
-                shlwapi.lib
-            )
-        endif ()
-    else ()
-        if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win32/wee8.lib
-                winmm.lib
-                dbghelp.lib
-                shlwapi.lib
-            )
-        else ()
-            target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win64/wee8.lib
-                winmm.lib
-                dbghelp.lib
-                shlwapi.lib
-            )
-        endif ()
-    endif ()
-    target_compile_definitions (puerts PRIVATE PLATFORM_WINDOWS)
+
 elseif ( ANDROID )
-    find_library(log-lib log )
+
+    find_library(log-lib log)
+    target_link_libraries(puerts
+        ${log-lib}
+    )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
-        target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Android/armeabi-v7a/${LIB_FILE_NAME}
-            ${log-lib}
-        )
+        # link
+        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Android/armeabi-v7a/${LIB_FILE_NAME}
+            )
+        endforeach()
+
+        # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
+
     else ()
-        target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
-            ${log-lib}
-        )
+        # link
+        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
+                ${log-lib}
+            )
+        endforeach()
+        
+        # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
     endif ()
 
@@ -220,25 +220,40 @@ elseif ( ANDROID )
             COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -g -S -d --strip-debug --verbose
             "${CMAKE_BINARY_DIR}/libpuerts.so"
             COMMENT "Strip debug symbols done on final binary.")
+
 elseif ( APPLE )
+
     if ( IOS )
+        #definition
         if(PLATFORM STREQUAL "SIMULATOR64")
             target_compile_definitions (puerts PRIVATE PLATFORM_IOS_SIMULATOR)
             message(STATUS "SIMULATOR64 BUILD...")
         else ()
             target_compile_definitions (puerts PRIVATE PLATFORM_IOS)
         endif ()
+
     else ()
-        target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
-        )
+        # link
+        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
+            target_link_libraries(puerts
+                ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
+            )
+        endforeach()
+    
+        #definition
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
+
 elseif (UNIX)
-    target_link_libraries(puerts
-        ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
-	    pthread
-    )
+    # link
+    foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
+        target_link_libraries(puerts
+            ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
+            pthread
+        )
+    endforeach()
+    
+    # definition
     target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
     set(CMAKE_CXX_COMPILER "clang++")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
