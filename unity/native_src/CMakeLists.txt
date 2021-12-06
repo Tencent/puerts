@@ -24,59 +24,22 @@ find_path(PUERTS_PROJECT_DIR NAMES SConstruct
 
 MARK_AS_ADVANCED(PUERTS_PROJECT_DIR)
 
-if ( JS_ENGINE STREQUAL "quickjs")
-    if ( WIN32 AND NOT MSYS )
-        set(LIB_FILE_NAMES 
-            quickjs.dll.lib
-        )
-    else ()
-        set(LIB_FILE_NAMES 
-            libquickjs.a
-        )
-    endif()
-    
-elseif ( JS_ENGINE STREQUAL "nodejs")
-    if ( WIN32 AND NOT MSYS )
-        set(LIB_FILE_NAMES 
-            libnode.lib
-        )
-    else ()
-        set(LIB_FILE_NAMES 
-            libnode.83.dylib
-        )
-    endif()
-
-    include_directories(    
-        ${PROJECT_SOURCE_DIR}/nodejs/include
-        ${PROJECT_SOURCE_DIR}/nodejs/deps/v8/include
-        ${PROJECT_SOURCE_DIR}/nodejs/deps/uv/include
-    )
-else()
+if ( NOT DEFINED JS_ENGINE )
     set(JS_ENGINE v8)
-    if ( WIN32 AND NOT MSYS )
-        set(LIB_FILE_NAMES 
-            wee8.lib
-        )
-    else ()
-        set(LIB_FILE_NAMES 
-            libwee8.a
-        )
-    endif ()
 endif()
 
-set(V8_ENGINE ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
+include(${PROJECT_SOURCE_DIR}/cmake/${JS_ENGINE}/CMakeLists.txt)
 
-set(V8_INC ${V8_ENGINE}/Inc)
+set(ENGINE_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
+set(ENGINE_INC ${ENGINE_ROOT}/Inc)
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
-set(WEBSOCKET_INC ${ThirdParty}/Include/websocketpp)
-set(ASIO_INC ${ThirdParty}/Include/asio)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${V8_INC}
-    ${WEBSOCKET_INC}
-    ${ASIO_INC}
+    ${ENGINE_INC}
+    ${ThirdParty}/Include/websocketpp
+    ${ThirdParty}/Include/asio
     Inc
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
 )
@@ -168,13 +131,13 @@ if ( MSYS OR WIN32 )
     if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
         foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win32/${LIB_FILE_NAME}
+                ${ENGINE_ROOT}/Lib/Win32/${LIB_FILE_NAME}
             )
         endforeach()
     else ()
         foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Win64/${LIB_FILE_NAME}
+                ${ENGINE_ROOT}/Lib/Win64/${LIB_FILE_NAME}
             )
         endforeach()
     endif ()
@@ -193,7 +156,7 @@ elseif ( ANDROID )
         # link
         foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Android/armeabi-v7a/${LIB_FILE_NAME}
+                ${ENGINE_ROOT}/Lib/Android/armeabi-v7a/${LIB_FILE_NAME}
             )
         endforeach()
 
@@ -204,7 +167,7 @@ elseif ( ANDROID )
         # link
         foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
+                ${ENGINE_ROOT}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
                 ${log-lib}
             )
         endforeach()
@@ -236,7 +199,7 @@ elseif ( APPLE )
         # link
         foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
             target_link_libraries(puerts
-                ${V8_ENGINE}/Lib/macOS/${LIB_FILE_NAME}
+                ${ENGINE_ROOT}/Lib/macOS/${LIB_FILE_NAME}
             )
         endforeach()
     
@@ -248,7 +211,7 @@ elseif (UNIX)
     # link
     foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
         target_link_libraries(puerts
-            ${V8_ENGINE}/Lib/Linux/${LIB_FILE_NAME}
+            ${ENGINE_ROOT}/Lib/Linux/${LIB_FILE_NAME}
             pthread
         )
     endforeach()
