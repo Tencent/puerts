@@ -61,7 +61,7 @@ jobs:
         run: |
           md unity\general\Bin
           cd unity\native_src
-          .\make_win64_qjs.bat
+          .\make_win64.bat quickjs
           copy build64_quickjs\Release\puerts.dll ..\general\Bin
           copy quickjs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
@@ -90,7 +90,7 @@ jobs:
         run: |
           md unity\general\Bin
           cd unity\native_src
-          .\make_win64_node.bat
+          .\make_win64.bat nodejs
           copy build64_nodejs\Release\puerts.dll ..\general\Bin
           copy nodejs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
