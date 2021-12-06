@@ -15,3 +15,5 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/nodejs/deps/v8/include
     ${PROJECT_SOURCE_DIR}/nodejs/deps/uv/include
 )
+
+target_compile_definitions (puerts PRIVATE WITH_NODEJS)

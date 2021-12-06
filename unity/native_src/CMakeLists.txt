@@ -28,8 +28,6 @@ if ( NOT DEFINED JS_ENGINE )
     set(JS_ENGINE v8)
 endif()
 
-include(${PROJECT_SOURCE_DIR}/cmake/${JS_ENGINE}/CMakeLists.txt)
-
 set(ENGINE_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
 set(ENGINE_INC ${ENGINE_ROOT}/Inc)
 
@@ -110,13 +108,7 @@ if ( WIN32 AND NOT CYGWIN )
     target_compile_definitions (puerts PRIVATE BUILDING_V8_SHARED)
 endif ()
 
-if ( JS_ENGINE STREQUAL "quickjs")
-    target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
-    target_compile_definitions (puerts PRIVATE WITH_QUICKJS)
-elseif (JS_ENGINE STREQUAL "nodejs")
-    # target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
-    target_compile_definitions (puerts PRIVATE WITH_NODEJS)
-endif ()
+include(${PROJECT_SOURCE_DIR}/cmake/${JS_ENGINE}/CMakeLists.txt)
 
 if ( MSYS OR WIN32 )
     if ( WIN32 ) 

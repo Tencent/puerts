@@ -7,3 +7,6 @@ else ()
         libquickjs.a
     )
 endif()
+
+target_compile_definitions (puerts PRIVATE WITHOUT_INSPECTOR)
+target_compile_definitions (puerts PRIVATE WITH_QUICKJS)
