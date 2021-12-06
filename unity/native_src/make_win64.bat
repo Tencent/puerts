@@ -9,4 +9,4 @@ popd
 cmake --build build64_%ENGINE% --config Release
 md ..\Assets\Plugins\x86_64
 copy build64_%ENGINE%\Release\puerts.dll ..\Assets\Plugins\x86_64
-copy %ENGINE%\Lib\Win64\*.dll ..\Assets\Plugins\x86_64
+xcopy %ENGINE%\Lib\Win64\*.dll ..\Assets\Plugins\x86_64 /C
