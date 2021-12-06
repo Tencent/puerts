@@ -28,5 +28,5 @@ function build() {
     cp ${BUILD_PATH}/libpuerts.so ../Assets/Plugins/Android/libs/${ABI}/libpuerts.so
 }
 
-build android-16 armeabi-v7a arm-linux-androideabi-4.9
-build android-16 arm64-v8a  arm-linux-androideabi-clang
+build android-18 armeabi-v7a arm-linux-androideabi-4.9
+build android-18 arm64-v8a  arm-linux-androideabi-clang
