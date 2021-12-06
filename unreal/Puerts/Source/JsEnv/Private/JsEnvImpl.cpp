@@ -1596,7 +1596,41 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
         //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
         ClassToTemplateMap[Struct].Reset();
         ClassToTemplateMap.erase(Struct);
-        TypeReflectionMap.erase(Struct);
+    }
+}
+
+//fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters
+static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
+{
+    uint8* Frame = (uint8*)FMemory_Alloca(Function->PropertiesSize);
+    FMemory::Memzero(Frame, Function->PropertiesSize);
+    for (PropertyMacro* Property = (PropertyMacro*)(
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+                Function->ChildProperties
+#else
+                Function->Children
+#endif
+                ); Property  && (*Stack.Code != EX_EndFunctionParms); Property = (PropertyMacro*)(Property->Next))
+    {
+        Stack.MostRecentPropertyAddress = NULL;
+        Stack.Step(Stack.Object, (Property->PropertyFlags & CPF_OutParm) ? NULL : Property->ContainerPtrToValuePtr<uint8>(Frame));
+    }
+
+    Stack.Code++;
+
+    for (PropertyMacro* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+    {
+        if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
+        {
+            Destruct->DestroyValue_InContainer(Frame);
+        }
+    }
+
+    PropertyMacro* ReturnProp = Function->GetReturnProperty();
+    if (ReturnProp != NULL)
+    {
+        ReturnProp->DestroyValue(RESULT_PARAM);
+        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->ElementSize);
     }
 }
 
@@ -1609,7 +1643,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
-        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+        SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     auto Isolate = MainIsolate;
@@ -1640,7 +1674,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
-        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+        SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     else 
@@ -1660,7 +1694,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
                     *Function->GetName(), ContextObject));
-                ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+                SkipFunction(Stack, RESULT_PARAM, Function);
                 return;
             }
             ThisObj = ObjIter->second.Get(Isolate);
@@ -2151,6 +2185,26 @@ void FJsEnvImpl::UnBindContainer(void* Ptr)
     StructMap.erase(Ptr);
 }
 
+std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
+{
+    const auto FullName = InStruct->GetFullName();
+    
+    const auto Iter = TypeReflectionMap.find(FullName);
+    if (Iter == TypeReflectionMap.end())
+    {
+        auto Ret = std::make_shared<FStructWrapper>(InStruct);
+        TypeReflectionMap[FullName] = Ret;
+        //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper new %s // %s"), *InStruct->GetName(), *FullName);
+        return Ret;
+    }
+    else
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
+        Iter->second->Init(InStruct);
+        return Iter->second;
+    }
+}
+
 v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct, bool &Existed)
 {
     auto Isolate = MainIsolate;
@@ -2164,19 +2218,20 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
         v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
+        auto StructWrapper = GetStructWrapper(InStruct);
+
         auto ExtensionMethodsIter = ExtensionMethodsMap.find(InStruct);
+        if (ExtensionMethodsIter != ExtensionMethodsMap.end())
+        {
+            StructWrapper->AddExtensionMethods(ExtensionMethodsIter->second);
+            ExtensionMethodsMap.erase(ExtensionMethodsIter);
+        }
 
         if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
         {
             //Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
-            auto ScriptStructReflection = std::make_unique<FScriptStructWrapper>(ScriptStruct);
-            if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-            {
-                ScriptStructReflection->AddExtensionMethods(ExtensionMethodsIter->second);
-                ExtensionMethodsMap.erase(ExtensionMethodsIter);
-            }
-            Template = ScriptStructReflection->ToFunctionTemplate(Isolate);
-            TypeReflectionMap[InStruct] = std::pair<std::unique_ptr<FStructWrapper>, int>((std::move(ScriptStructReflection)), 0);
+            
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New);
             if (!ScriptStruct->IsNative())//非原生的结构体，可能在实例没有的时候会释放
             {
                 SysObjectRetainer.Retain(ScriptStruct);
@@ -2193,14 +2248,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
         {
             auto Class = Cast<UClass>(InStruct);
             check(Class);
-            auto ClassReflection = std::make_unique<FClassWrapper>(Class);
-            if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-            {
-                ClassReflection->AddExtensionMethods(ExtensionMethodsIter->second);
-                ExtensionMethodsMap.erase(ExtensionMethodsIter);
-            }
-            Template = ClassReflection->ToFunctionTemplate(Isolate);
-            TypeReflectionMap[InStruct] = std::pair<std::unique_ptr<FStructWrapper>, int>((std::move(ClassReflection)), 0);
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New);
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)

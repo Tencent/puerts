@@ -61,7 +61,18 @@ public:
 
     virtual bool IsOut() const { return false; }
 
-    explicit FPropertyTranslator(PropertyMacro *InProperty) : Property(InProperty), PropertyWeakPtr(InProperty), OwnerIsClass(InProperty->GetOwnerClass() != nullptr){ }
+    explicit FPropertyTranslator(PropertyMacro *InProperty) 
+    {
+        Init(InProperty);
+    }
+
+    FORCEINLINE void Init(PropertyMacro *InProperty)
+    {
+        Property = InProperty;
+        PropertyWeakPtr = InProperty;
+        OwnerIsClass = InProperty->GetOwnerClass() != nullptr;
+    }
+    
     virtual ~FPropertyTranslator() {}
 
     union
