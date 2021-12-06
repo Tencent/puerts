@@ -34,7 +34,7 @@ jobs:
           md unity\general\Bin
           cd unity\native_src
           .\make_win64.bat
-          copy build64\Release\puerts.dll ..\general\Bin
+          copy build64_v8\Release\puerts.dll ..\general\Bin
       - name: UnitTest
         run: |
           cd unity\general\vs2013
@@ -61,7 +61,7 @@ jobs:
           md unity\general\Bin
           cd unity\native_src
           .\make_win64_qjs.bat
-          copy build64qjs\Release\puerts.dll ..\general\Bin
+          copy build64_quickjs\Release\puerts.dll ..\general\Bin
           copy quickjs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
         run: |
@@ -90,7 +90,7 @@ jobs:
           md unity\general\Bin
           cd unity\native_src
           .\make_win64_node.bat
-          copy build64nodejs\Release\puerts.dll ..\general\Bin
+          copy build64_nodejs\Release\puerts.dll ..\general\Bin
           copy nodejs\Lib\Win64\*.dll ..\general\Bin
       - name: UnitTest
         run: |
