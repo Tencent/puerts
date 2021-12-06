@@ -1501,7 +1501,7 @@ namespace Puerts.Editor
 
                 using (var jsEnv = new JsEnv())
                 {
-                    var templateGetter = jsEnv.Eval<Func<string, Func<object, string>>>("require('puerts/gencode/main.js')");
+                    var templateGetter = jsEnv.Eval<Func<string, Func<object, string>>>("require('puerts/gencode/main.cjs')");
                     var wrapRender = templateGetter("type.tpl");
 
                     if (!tsOnly)
