@@ -29,7 +29,7 @@ namespace puerts
             }
             return PropertyTranslator;
         }
-        Iter->second->Init(InProperty);
+        FPropertyTranslator::CreateOn(InProperty, Iter->second.get());
         return Iter->second;
     }
 
