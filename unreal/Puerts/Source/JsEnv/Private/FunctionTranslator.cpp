@@ -367,7 +367,13 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             FOutParmRec** LastOut = nullptr;
             if (!Stack.OutParms) LastOut = &Stack.OutParms;
             //ScriptCore.cpp
-            for (FProperty* Property = (FProperty*)(Function->ChildProperties); *Stack.Code != EX_EndFunctionParms; Property = (FProperty*)(Property->Next))
+            for (PropertyMacro* Property = (PropertyMacro*)(
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+                Function->ChildProperties
+#else
+                Function->Children
+#endif
+                ); *Stack.Code != EX_EndFunctionParms; Property = (PropertyMacro*)(Property->Next))
             {
                 checkfSlow(Property, TEXT("NULL Property in Function %s"), *Function->GetPathName());
                 
@@ -408,12 +414,11 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 }
             }
         }
-    }
-
-    if (Stack.Code)
-    {
-        check(Stack.PeekCode() == EX_EndFunctionParms);
-        Stack.SkipCode(1);          // skip EX_EndFunctionParms
+        if (Stack.Code)
+        {
+            check(Stack.PeekCode() == EX_EndFunctionParms);
+            Stack.SkipCode(1);          // skip EX_EndFunctionParms
+        }
     }
 
     v8::Local<v8::Value> *Args = static_cast<v8::Local<v8::Value> *>(FMemory_Alloca(sizeof(v8::Local<v8::Value>) * Arguments.size()));

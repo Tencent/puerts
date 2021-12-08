@@ -137,12 +137,32 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>()); ;
+        T* Ret = ::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+        return (!Ret || Ret == RELEASED_UOBJECT_MEMBER || !Ret->IsValidLowLevelFast() || Ret->IsPendingKill()) ? nullptr : Ret;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
+    }
+};
+
+template <typename T>
+struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObject*>::value && std::is_convertible<T*, const UObjectBase*>::value>::type> {
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
+    {
+        return ::puerts::DataTransfer::FindOrAddObject<UObject>(context->GetIsolate(), context, static_cast<UObject*>(value));
+    }
+
+    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        T* Ret = ::puerts::DataTransfer::GetPointerFast<T>(value.As<v8::Object>());
+        return (!Ret || Ret == RELEASED_UOBJECT_MEMBER || !Ret->IsValidLowLevelFast()) ? nullptr : Ret;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), UObject::StaticClass(), value.As<v8::Object>());
     }
 };
     

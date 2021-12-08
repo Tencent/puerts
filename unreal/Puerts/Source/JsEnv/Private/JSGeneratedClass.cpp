@@ -111,7 +111,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass *Class, UFunction 
 
     Function->ReturnValueOffset = MAX_uint16;
     Function->FirstPropertyToInit = NULL;
-    Function->Script.Add(EX_EndFunctionParms);
 
     if (!Replace)
     {

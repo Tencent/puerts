@@ -29,6 +29,8 @@ class FPropertyTranslator
 public:
     static std::unique_ptr<FPropertyTranslator> Create(PropertyMacro *InProperty, bool IgnoreOut = false);
 
+    static void CreateOn(PropertyMacro *InProperty, FPropertyTranslator* InOldProperty);
+
     FORCEINLINE v8::Local<v8::Value> UEToJsInContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ContainerPtr, bool PassByPointer = false) const
     {
         return UEToJs(Isolate, Context, Property->ContainerPtrToValuePtr<void>(ContainerPtr), PassByPointer);
@@ -61,7 +63,18 @@ public:
 
     virtual bool IsOut() const { return false; }
 
-    explicit FPropertyTranslator(PropertyMacro *InProperty) : Property(InProperty), PropertyWeakPtr(InProperty), OwnerIsClass(InProperty->GetOwnerClass() != nullptr){ }
+    explicit FPropertyTranslator(PropertyMacro *InProperty) 
+    {
+        Init(InProperty);
+    }
+
+    FORCEINLINE void Init(PropertyMacro *InProperty)
+    {
+        Property = InProperty;
+        PropertyWeakPtr = InProperty;
+        OwnerIsClass = InProperty->GetOwnerClass() != nullptr;
+    }
+    
     virtual ~FPropertyTranslator() {}
 
     union
@@ -84,6 +97,7 @@ public:
         StructPropertyMacro *StructProperty;
         DelegatePropertyMacro *DelegateProperty;
         MulticastDelegatePropertyMacro *MulticastDelegateProperty;
+        ClassPropertyMacro * ClassProperty;
     };
 
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
@@ -93,6 +107,8 @@ public:
 #endif
 
     bool OwnerIsClass;
+
+    std::unique_ptr<FPropertyTranslator> Inner;
 
     static void Getter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
