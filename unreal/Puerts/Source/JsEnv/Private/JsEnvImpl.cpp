@@ -1166,9 +1166,9 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 
 void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 {
-    UObjectBaseUtility *Object = (UObjectBaseUtility*)InObject;
+    UObjectBaseUtility *Object = static_cast<UObjectBaseUtility*>(const_cast<UObjectBase *>(InObject));
 
-    bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+    const bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
 
     //if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
@@ -1188,10 +1188,13 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                 TypeScriptGeneratedClass->InjectNotFinished = true; //CDO construct meat first load or recompiled
             }
         }
-        //else if (UNLIKELY(Class == UTypeScriptGeneratedClass::StaticClass()))
-        //{
-        //    ((UTypeScriptGeneratedClass *)InObject)->DynamicInvoker = TsDynamicInvoker;
-        //}
+        else if (UNLIKELY(!IsCDO && Class == UTypeScriptGeneratedClass::StaticClass()))
+        {
+            TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
+            TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+            TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+            TypeScriptGeneratedClass->InjectNotFinished = true;
+        }
         
     }
 }
