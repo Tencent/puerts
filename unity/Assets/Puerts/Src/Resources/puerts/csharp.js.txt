@@ -142,7 +142,7 @@ var global = global || (function () { return this; }());
         }
     }
     
-    function extension(cls, extension) {
+    function doExtension(cls, extension) {
         // if you already generate static wrap for cls and extension, then you are no need to invoke this function
         // 如果你已经为extension和cls生成静态wrap，则不需要调用这个函数。
 		var parentPrototype = Object.getPrototypeOf(cls.prototype);
@@ -168,8 +168,8 @@ var global = global || (function () { return this; }());
     puerts.$typeof = getType;
     puerts.$extension = (cls, extension) => { 
         console.warn(`deprecated! if you already generate static wrap for ${cls} and ${extension}, you are no need to invoke $extension`); 
-        return extension(cls, extension)
+        return doExtension(cls, extension)
     };
-    puerts.$reflectExtension = extension;
+    puerts.$reflectExtension = doExtension;
 
 }(global));
