@@ -64,9 +64,9 @@ function indent(str, n) {
     }
     return newLines.join('\n');
 }
-function typeNameWithOutGenericType(type, name) {
-    if (type.IsGenericTypeDefinition) {
-        const gParameters = toJsArray(type.GenericParameters);
+function typeNameWithOutGenericType(typeinfo, name) {
+    if (typeinfo.IsGenericTypeDefinition) {
+        const gParameters = toJsArray(typeinfo.GenericParameters);
         return gParameters.indexOf(name) != -1 ? "any" : name
     }
     return name;
@@ -108,7 +108,7 @@ declare module 'csharp' {
             {{?property.HasGetter}}public {{?property.IsStatic}}static {{?}}get {{=formatPropertyOrMethodName(property.Name)}}(): {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}};{{?}}
             {{?property.HasSetter}}public {{?property.IsStatic}}static {{?}}set {{=formatPropertyOrMethodName(property.Name)}}(value: {{=property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName}});{{?}}{{  } `==for end======================`;}}
             {{~type.Methods :method}}{{=indent(method.Document, 12)}}
-            {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=formatPropertyOrMethodName(method.Name)}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo, method.IsStatic, type)}}{{~}}){{=method.IsConstructor?"":":" + (method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName)}};
+            {{?!type.IsInterface}}public {{?}}{{?method.IsStatic}}static {{?}}{{=formatPropertyOrMethodName(method.Name)}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo, method.IsStatic, type)}}{{~}}){{=method.IsConstructor?"":(":" + (method.IsStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName))}};
             {{~}}
         }{{} 
             `==condition end======================`;}}
