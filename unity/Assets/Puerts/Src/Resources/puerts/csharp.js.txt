@@ -167,7 +167,7 @@ var global = global || (function () { return this; }());
     puerts.$generic = makeGeneric;
     puerts.$typeof = getType;
     puerts.$extension = (cls, extension) => { 
-        console.warn(`deprecated! if you already generate static wrap for ${cls} and ${extension}, you are no need to invoke $extension`); 
+        typeof console != 'undefined' && console.warn(`deprecated! if you already generate static wrap for ${cls} and ${extension}, you are no need to invoke $extension`); 
         return doExtension(cls, extension)
     };
     puerts.$reflectExtension = doExtension;
