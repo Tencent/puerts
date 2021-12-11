@@ -17,7 +17,12 @@ let compiledTemplateCache = Object.create(null);
 function getCompiledTemplate(name) {
     if (!(name in compiledTemplateCache)) {
         let {context} = puerts.loadFile(root + name);
-        compiledTemplateCache[name] = dot.template(context);
+        compiledTemplateCache[name] = (function() {
+            const runDot = dot.template(context);
+            return function() {
+                return runDot.apply(this, arguments).replace(/\n(\s)*\n/g, '\n')
+            }  
+        })();
     }
     return compiledTemplateCache[name];
 }

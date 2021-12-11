@@ -558,18 +558,19 @@ namespace Puerts
                 }
 
                 // extensionMethods
-                IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
-                if (extensionMethods != null)
-                {
-                    var enumerator = extensionMethods.GetEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-                        MethodInfo method = enumerator.Current;
-                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
+                // 因为内存问题与crash问题移除
+                // IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
+                // if (extensionMethods != null)
+                // {
+                //     var enumerator = extensionMethods.GetEnumerator();
+                //     while (enumerator.MoveNext())
+                //     {
+                //         MethodInfo method = enumerator.Current;
+                //         MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
 
-                        AddMethodToSlowBindingGroup(methodKey, method);
-                    }
-                }
+                //         AddMethodToSlowBindingGroup(methodKey, method);
+                //     }
+                // }
 
                 // fields
                 var fields = type.GetFields(flag);
@@ -614,21 +615,24 @@ namespace Puerts
 
                 if (registerInfo.LazyMethods != null) 
                 {
+                    // register all the methods marked as lazy
                     foreach (var kv in registerInfo.LazyMethods)
                     {
                         //TODO: change to LazyBinding instead of SlowBinding
                         MethodKey methodKey = kv.Key;
-                        MethodInfo method = type.GetMethod(methodKey.Name, flag);
+                        MemberInfo[] members = type.GetMember(methodKey.Name, flag);
 
-                        if (method != null)
+                        var enumerator = members.GetEnumerator();
+                        while (enumerator.MoveNext())
                         {
-                            AddMethodToSlowBindingGroup(methodKey, method);
+                            AddMethodToSlowBindingGroup(methodKey, (MethodInfo)enumerator.Current);
                         }
                     }
                 }
 
                 if (registerInfo.LazyProperties != null)
                 {
+                    // register all the properties marked as lazy
                     foreach (var kv in registerInfo.LazyProperties)
                     {
                         //TODO: change to LazyBinding instead of SlowBinding
