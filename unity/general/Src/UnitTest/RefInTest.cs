@@ -55,13 +55,31 @@ namespace Puerts.UnitTest
 
     }
 
+    [TestFixture]
     class TestRefIn
     {
         [Test]
-        public void TestWrap()
+        public void WrapTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
             PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            bool ret = jsEnv.Eval<bool>(@"
+                const CS = require('csharp');
+                let a = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
+                let b = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
+
+                CS.PuertsTest.RefInTest.Normalize(a).ToString() == `(1.0, 2.0, 3.0)` &&
+                CS.PuertsTest.RefInTest.Multiply(a, b).ToString() == `(1.0, 4.0, 9.0)` &&
+                CS.PuertsTest.RefInTest.Divide(a, b).ToString() == `(1.0, 1.0, 1.0)`;
+            ");
+            Assert.AreEqual(true, ret);
+            jsEnv.Dispose();
+        }
+
+        [Test]
+        public void ReflectionTest()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
             bool ret = jsEnv.Eval<bool>(@"
                 const CS = require('csharp');
                 let a = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
