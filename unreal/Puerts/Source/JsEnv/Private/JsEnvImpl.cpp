@@ -93,6 +93,8 @@
 #endif
 #endif
 
+#include "Engine/CollisionProfile.h"
+
 namespace puerts
 {
 
@@ -2391,7 +2393,46 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 #endif
                 : Enum->GetNameStringByIndex(i);
             auto Value = Enum->GetValueByIndex(i);
-            auto ReturnVal = Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value));
+            __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
+        }
+        
+        if (Enum == StaticEnum<EObjectTypeQuery>())
+        {
+            UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+            int32 ContainerIndex = 0;
+            while (true)
+            {
+                FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+                if (ChannelName == NAME_None)
+                {
+                    break;
+                }
+                auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel)ContainerIndex);
+                if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
+                {
+                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, ObjectType)));
+                }
+                ContainerIndex++;
+            }
+        }
+        else if (Enum == StaticEnum<ETraceTypeQuery>())
+        {
+            UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+            int32 ContainerIndex = 0;
+            while (true)
+            {
+                FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+                if (ChannelName == NAME_None)
+                {
+                    break;
+                }
+                auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel)ContainerIndex);
+                if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
+                {
+                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, TraceType)));
+                }
+                ContainerIndex++;
+            }
         }
         Info.GetReturnValue().Set(Result);
     }
