@@ -15,7 +15,7 @@ UENUM(BlueprintType)
 enum class EJsEnvResetPhase : uint8
 {
 	PreBeginPIE = 0,
-	EndPIE = 1,
+	EndPIE = 1 UMETA(DisplayName = "EndPIE(deprecated)"),
 	None = 2
 };
 
