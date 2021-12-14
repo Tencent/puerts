@@ -30,7 +30,7 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Reset Environment in PIE", defaultValue = PreBeginPIE))
 	EJsEnvResetPhase ResetInPIE = EJsEnvResetPhase::PreBeginPIE;
 
-	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = true))
+	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Reset Environment in world tear down", defaultValue = true))
 	bool ResetInTearDownWorld = true;
 
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Debug Enable", defaultValue = false))
