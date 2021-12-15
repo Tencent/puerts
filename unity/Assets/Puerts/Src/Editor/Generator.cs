@@ -1533,7 +1533,7 @@ namespace Puerts.Editor
                             }
                         }
 
-                        var autoRegisterRender = templateGetter("autoreg.tpl");
+                        var autoRegisterRender = jsEnv.Eval("require('autoreg.tpl.cjs')");
                         using (StreamWriter textWriter = new StreamWriter(saveTo + "AutoStaticCodeRegister.cs", false, Encoding.UTF8))
                         {
                             string fileContext = autoRegisterRender(typeGenInfos.ToArray());

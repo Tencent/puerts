@@ -170,5 +170,3 @@ puerts.$extension = (cls, extension) => {
     return doExtension(cls, extension)
 };
 puerts.$reflectExtension = doExtension;
-
-export default csharpModule;
