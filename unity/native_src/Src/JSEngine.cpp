@@ -256,7 +256,7 @@ namespace puerts
         }
         
 #if WITH_NODEJS
-        node::EmitExit(NodeEnv);
+        // node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
         node::FreeEnvironment(NodeEnv);
         node::FreeIsolateData(NodeIsolateData);

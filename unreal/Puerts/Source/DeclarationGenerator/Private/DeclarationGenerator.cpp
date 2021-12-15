@@ -30,6 +30,7 @@
 #include "TypeScriptObject.h"
 #include "CodeGenerator.h"
 #include "JSClassRegister.h"
+#include "Engine/CollisionProfile.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -764,8 +765,49 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
        // auto Value = Enum->GetValueByIndex(i);
         EnumListerrals.Add(SafeFieldName(Name, false));
     }
+
+    StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", ")) ;
+
+    if (Enum == StaticEnum<EObjectTypeQuery>())
+    {
+        UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+        int32 ContainerIndex = 0;
+        while (true)
+        {
+            FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+            if (ChannelName == NAME_None)
+            {
+                break;
+            }
+            auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel)ContainerIndex);
+            if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
+            {
+                StringBuffer << FString::Printf(TEXT(", %s = %d"), *SafeName(ChannelName.ToString()), ObjectType);
+            }
+            ContainerIndex++;
+        }
+    }
+    else if (Enum == StaticEnum<ETraceTypeQuery>())
+    {
+        UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+        int32 ContainerIndex = 0;
+        while (true)
+        {
+            FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+            if (ChannelName == NAME_None)
+            {
+                break;
+            }
+            auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel)ContainerIndex);
+            if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
+            {
+                StringBuffer << FString::Printf(TEXT(", %s = %d"), *SafeName(ChannelName.ToString()), TraceType);
+            }
+            ContainerIndex++;
+        }
+    }
     
-    StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", ")) << "}\n";
+    StringBuffer << "}\n";
     
     Output << StringBuffer;
 }

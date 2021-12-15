@@ -93,6 +93,8 @@
 #endif
 #endif
 
+#include "Engine/CollisionProfile.h"
+
 namespace puerts
 {
 
@@ -1166,9 +1168,9 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 
 void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 {
-    UObjectBaseUtility *Object = (UObjectBaseUtility*)InObject;
+    UObjectBaseUtility *Object = static_cast<UObjectBaseUtility*>(const_cast<UObjectBase *>(InObject));
 
-    bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+    const bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
 
     //if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
@@ -1188,10 +1190,13 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                 TypeScriptGeneratedClass->InjectNotFinished = true; //CDO construct meat first load or recompiled
             }
         }
-        //else if (UNLIKELY(Class == UTypeScriptGeneratedClass::StaticClass()))
-        //{
-        //    ((UTypeScriptGeneratedClass *)InObject)->DynamicInvoker = TsDynamicInvoker;
-        //}
+        else if (UNLIKELY(!IsCDO && Class == UTypeScriptGeneratedClass::StaticClass()))
+        {
+            TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
+            TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+            TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+            TypeScriptGeneratedClass->InjectNotFinished = true;
+        }
         
     }
 }
@@ -2388,7 +2393,46 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 #endif
                 : Enum->GetNameStringByIndex(i);
             auto Value = Enum->GetValueByIndex(i);
-            auto ReturnVal = Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value));
+            __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
+        }
+        
+        if (Enum == StaticEnum<EObjectTypeQuery>())
+        {
+            UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+            int32 ContainerIndex = 0;
+            while (true)
+            {
+                FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+                if (ChannelName == NAME_None)
+                {
+                    break;
+                }
+                auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel)ContainerIndex);
+                if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
+                {
+                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, ObjectType)));
+                }
+                ContainerIndex++;
+            }
+        }
+        else if (Enum == StaticEnum<ETraceTypeQuery>())
+        {
+            UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+            int32 ContainerIndex = 0;
+            while (true)
+            {
+                FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+                if (ChannelName == NAME_None)
+                {
+                    break;
+                }
+                auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel)ContainerIndex);
+                if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
+                {
+                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, TraceType)));
+                }
+                ContainerIndex++;
+            }
         }
         Info.GetReturnValue().Set(Result);
     }

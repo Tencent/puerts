@@ -138,6 +138,4 @@ void UTypeScriptGeneratedClass::Bind()
         //可避免非CDO的在PostConstructInit从基类拷贝值
         //ClassFlags |= CLASS_Native;
     }
-
-    ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
 }

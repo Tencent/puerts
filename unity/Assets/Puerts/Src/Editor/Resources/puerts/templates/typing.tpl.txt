@@ -89,6 +89,9 @@ declare module 'csharp' {
     
     {{~it.NamespaceInfos :ns}}{{?ns.Name}}namespace {{=ns.Name}} {{{?}}
         {{~ns.Types :type}}{{=indent(type.Document, 8)}}
+        
+        {{?type.Name == 'JSObject' && ns.Name == 'Puerts'}}type JSObject = any; {{??}}
+
         {{=typeKeyword(type)}} {{=typeDeclaration(type, true)}}{{
             `==condition start======================`;
             if(type.IsDelegate){        `//type is delegate`;
@@ -119,6 +122,7 @@ declare module 'csharp' {
             {{=formatPropertyOrMethodName(method.Name)}}({{~method.ParameterInfos :pinfo:idx}}{{?idx>0}}, {{?}}{{=parameterDef(pinfo)}}{{~}}):{{=method.TypeName}};
             {{~}}
         }
+        {{?}}
         {{?}}
         {{~}}
     {{?ns.Name}}}{{?}}

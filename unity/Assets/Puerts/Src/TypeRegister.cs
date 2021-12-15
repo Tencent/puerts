@@ -558,6 +558,8 @@ namespace Puerts
                 }
 
                 // extensionMethods
+                // 因为内存问题与crash问题移入宏中
+#if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
                 IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                 if (extensionMethods != null)
                 {
@@ -570,6 +572,7 @@ namespace Puerts
                         AddMethodToSlowBindingGroup(methodKey, method);
                     }
                 }
+#endif
 
                 // fields
                 var fields = type.GetFields(flag);

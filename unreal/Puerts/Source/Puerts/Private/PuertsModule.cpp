@@ -39,12 +39,14 @@ public:
 #endif
 
 #if WITH_EDITOR
-    void EndPIE();
+    void PreBeginPIE(bool bIsSimulating);
+    void EndPIE(bool bIsSimulating);
     bool HandleSettingsSaved();
     void HandleMapChanged(UWorld* InWorld, EMapChangeType InMapChangeType)
     {
-        if (Enabled && EMapChangeType::TearDownWorld == InMapChangeType && IsInGameThread())
+        if (Enabled && EMapChangeType::TearDownWorld == InMapChangeType && IsInGameThread() && GetDefault<UPuertsSetting>()->ResetInTearDownWorld)
         {
+            UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in world teardown"));
             MakeSharedJsEnv();
         }
     }
@@ -278,10 +280,19 @@ void FPuertsModule::OnUObjectArrayShutdown()
 #endif
 
 #if WITH_EDITOR
-void FPuertsModule::EndPIE()
+void FPuertsModule::PreBeginPIE(bool bIsSimulating)
 {
-    if (Enabled)
+    if (Enabled && GetDefault<UPuertsSetting>()->ResetInPIE == EJsEnvResetPhase::PreBeginPIE)
     {
+        UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in PreBeginPIE"));
+        MakeSharedJsEnv();
+    }
+}
+void FPuertsModule::EndPIE(bool bIsSimulating)
+{
+    if (Enabled && GetDefault<UPuertsSetting>()->ResetInPIE == EJsEnvResetPhase::EndPIE)
+    {
+        UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in EndPIE"));
         MakeSharedJsEnv();
     }
 }
@@ -306,6 +317,23 @@ void FPuertsModule::RegisterSettings()
     if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
         GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
+        FString Text; 
+        if( GConfig->GetString( SectionName, TEXT("ResetInPIE"), Text, PuertsConfigIniPath ) )
+        {
+            if (Text.Equals(TEXT("EndPIE")))
+            {
+                Settings.ResetInPIE = EJsEnvResetPhase::EndPIE;
+            }
+            else if (Text.Equals(TEXT("None")))
+            {
+                Settings.ResetInPIE = EJsEnvResetPhase::None;
+            }
+            else
+            {
+                Settings.ResetInPIE = EJsEnvResetPhase::PreBeginPIE;
+            }
+        }
+        GConfig->GetBool(SectionName, TEXT("ResetInTearDownWorld"), Settings.ResetInTearDownWorld, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
         GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, PuertsConfigIniPath);
@@ -335,18 +363,22 @@ void FPuertsModule::UnregisterSettings()
 
 void FPuertsModule::StartupModule()
 {
+	// NonPak Game 打包下, Puerts ini的加载时间晚于模块加载, 因此依然要显式的执行ini的读入, 去保证CDO里的值是正确的
+    RegisterSettings();
+
+    const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
+
 #if WITH_EDITOR
     if(!IsRunningGame())
     {
-        FGameDelegates::Get().GetEndPlayMapDelegate().AddRaw(this, &FPuertsModule::EndPIE);
+        FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsModule::PreBeginPIE);
+        FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
+        
         //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
         FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
         LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
     }
 #endif
-
-	// NonPak Game 打包下, Puerts ini的加载时间晚于模块加载, 因此依然要显式的执行ini的读入, 去保证CDO里的值是正确的
-    RegisterSettings();
 
 #if WITH_HOT_RELOAD
     IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
@@ -358,8 +390,6 @@ void FPuertsModule::StartupModule()
         }
 	});
 #endif
-
-    const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
     if (Settings.AutoModeEnable)
     {
