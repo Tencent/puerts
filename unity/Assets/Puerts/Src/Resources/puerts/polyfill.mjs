@@ -6,7 +6,5 @@
 */
 
 var global = global || globalThis || (function () { return this; }());
-(function (global) {
-    "use strict";
-    global.process = { env: { NODE_ENV: 'development' } };
-}(global));
+
+global.process = { env: { NODE_ENV: 'development' } };

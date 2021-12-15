@@ -176,7 +176,9 @@ public:
     int32_t Idx;
     
     CSharpModuleResolveCallback ModuleResolver;
-#if !WITH_QUICKJS
+#if defined(WITH_QUICKJS)
+    std::map<std::string, JSModuleDef*> ModuleCacheMap;
+#else
     std::map<std::string, v8::UniquePersistent<v8::Module>> ModuleCacheMap;
 #endif
 private:

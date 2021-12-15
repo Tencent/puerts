@@ -8,18 +8,15 @@
 var global = global || globalThis || (function () { return this; }());
 // polyfill old code after use esm module.
 global.global = global;
-(function (global) {
-    "use strict";
-    
-    let puerts = global.puerts = global.puerts || {};
-    
-    puerts.loadType = global.__tgjsLoadType;
-    delete global.__tgjsLoadType;
-    puerts.getNestedTypes = global.__tgjsGetNestedTypes;
-    delete global.__tgjsGetNestedTypes;
-    
-    puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
-        return eval(script);
-    }
-    delete global.__tgjsEvalScript;
-}(global));
+
+let puerts = global.puerts = global.puerts || {};
+
+puerts.loadType = global.__tgjsLoadType;
+delete global.__tgjsLoadType;
+puerts.getNestedTypes = global.__tgjsGetNestedTypes;
+delete global.__tgjsGetNestedTypes;
+
+puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
+    return eval(script);
+}
+delete global.__tgjsEvalScript;

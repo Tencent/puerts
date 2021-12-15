@@ -116,17 +116,11 @@ Isolate::Isolate(void* external_runtime) : current_context_(nullptr) {
     class_id_ = 0;
     JS_NewClassID(&class_id_);
     JS_NewClass(runtime_, class_id_, &cls_def);
-
-    JS_SetModuleLoaderFunc(runtime_, NULL, js_module_loader, NULL);
 };
 
 Isolate::~Isolate() {
     for (size_t i = 0; i < values_.size(); i++) {
         delete values_[i];
-    }
-    for (auto Iter = ModuleCacheMap_.begin(); Iter != ModuleCacheMap_.end(); ++Iter)
-    {
-        delete Iter->second;
     }
     values_.clear();
     JS_FreeValueRT(runtime_, literal_values_[kEmptyStringIndex]);
@@ -134,45 +128,6 @@ Isolate::~Isolate() {
         JS_FreeRuntime(runtime_);
     }
 };
- 
-JSModuleDef* Isolate::js_module_loader(JSContext* ctx, const char *name, void *opaque) {
-    JSRuntime *rt = JS_GetRuntime(ctx);
-    Isolate* isolate = (Isolate*)JS_GetRuntimeOpaque(rt);
-    if (isolate->moduleResolver_ == nullptr) {
-        return nullptr;
-    }
-
-    std::string name_std(name);
-
-    auto Iter = isolate->ModuleCacheMap_.find(name_std);
-    if (Iter != isolate->ModuleCacheMap_.end())//create and link
-    {
-        return Iter->second;
-    }
-
-    Local<Context> context = isolate->GetCurrentContext();
-    MaybeLocal<Module> m = isolate->moduleResolver_(
-        context,
-        String::NewFromUtf8(isolate, name).ToLocalChecked(),
-        Local<Module>(new Module())
-    );
-
-    if (m.IsEmpty()) {
-        isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "module not found").ToLocalChecked()));
-        return nullptr;
-    }
-
-    Local<Module> v8m = m.ToLocalChecked();
-    Maybe<bool> res = v8m->InstantiateModule(context, isolate->moduleResolver_);
-    if (!res.ToChecked()) {
-        isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "module not found").ToLocalChecked()));
-        return nullptr;
-    }
-
-    isolate->ModuleCacheMap_[name_std] = v8m->module_;
-
-    return v8m->module_;
-}
 
 Value* Isolate::Alloc_() {
     if (value_alloc_pos_ == (int)values_.size()) {
@@ -236,7 +191,7 @@ void Isolate::LowMemoryNotification() {
     Scope isolate_scope(this);
     JS_RunGC(runtime_);
 }
- 
+
 Local<Value> Isolate::ThrowException(Local<Value> exception) {
     exception_ = exception->value_;
     this->Escape(*exception);
@@ -440,25 +395,16 @@ int String::WriteUtf8(Isolate* isolate, char* buffer) const {
     return (int)len;
 }
 
-ScriptCompiler::Source::Source(Local<String> source_string, const ScriptOrigin& origin) {
-    this->source_string = source_string;
-    this->resource_name = origin.resource_name_;
-}
-ScriptCompiler::Source::~Source() {
-}
-
-MaybeLocal<Module> ScriptCompiler::CompileModule(
-    Isolate* isolate, Source* source,
-    CompileOptions options,
-    NoCacheReason no_cache_reason
-){
-    // cannot run JS_Eval here because quickjs will resolve all the dependencies during compile.
-    // but we dont have the module resolver here.
-    
-    Module* v8m = new Module();
-    v8m->source_string_ = source->source_string;
-    v8m->resource_name_ = source->resource_name;
-    return MaybeLocal<Module>(Local<Module>(v8m));
+//！！如果一个Local<String>用到这个接口了，就不能再传入JS
+MaybeLocal<Script> Script::Compile(
+    Local<Context> context, Local<String> source,
+    ScriptOrigin* origin) {
+    Script* script = new Script();
+    script->source_ = source;
+    if (origin) {
+        script->resource_name_ = MaybeLocal<String>(Local<String>::Cast(origin->resource_name_));
+    }
+    return MaybeLocal<Script>(Local<Script>(script));
 }
 
 static V8_INLINE MaybeLocal<Value> ProcessResult(Isolate *isolate, JSValue ret) {
@@ -472,50 +418,6 @@ static V8_INLINE MaybeLocal<Value> ProcessResult(Isolate *isolate, JSValue ret) 
         val->value_ = ret;
         return MaybeLocal<Value>(Local<Value>(val));
     }
-}
-
-Maybe<bool> Module::InstantiateModule(Local<Context> context, ResolveCallback callback) {
-    Isolate* isolate = context->GetIsolate();
-    isolate->moduleResolver_ = callback;
-
-    JSContext* context_ = context->context_;
-
-    String::Utf8Value code(isolate, source_string_);
-    String::Utf8Value name(isolate, resource_name_);
-
-    JSValue func_val = JS_Eval(context_, *code, code.length(), *name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
-
-    if (JS_IsException(func_val)) {
-        isolate->handleException();
-        return Maybe<bool>(false);
-    }
-
-    module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
-    return Maybe<bool>(true);
-}
-MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
-    auto func_obj = JS_DupModule(context->context_, module_);
-    auto evalRet = JS_EvalFunction(context->context_, func_obj);
-    
-    auto ret = ProcessResult(context->GetIsolate(), evalRet);
-
-    JS_FreeValue(context->context_, evalRet);
-    return ret;
-}
-Local<Value> Module::GetException() const{
-    return Local<Value>(reinterpret_cast<Value*>(const_cast<JSValue*>(exception_)));
-}
-
-//！！如果一个Local<String>用到这个接口了，就不能再传入JS
-MaybeLocal<Script> Script::Compile(
-    Local<Context> context, Local<String> source,
-    ScriptOrigin* origin) {
-    Script* script = new Script();
-    script->source_ = source;
-    if (origin) {
-        script->resource_name_ = MaybeLocal<String>(Local<String>::Cast(origin->resource_name_));
-    }
-    return MaybeLocal<Script>(Local<Script>(script));
 }
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
