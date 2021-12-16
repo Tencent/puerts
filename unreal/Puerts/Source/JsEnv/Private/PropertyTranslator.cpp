@@ -1015,7 +1015,7 @@ struct PlacementNewCreator<DoNothingPropertyTranslator>
 {
     static FPropertyTranslator* Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
     {
-        return new DoNothingPropertyTranslator(InProperty);
+        return new (Ptr) DoNothingPropertyTranslator(InProperty);
     }
 };
 
