@@ -35,8 +35,8 @@ namespace puerts
 
     std::shared_ptr<FFunctionTranslator>  FStructWrapper::GetMethodTranslator(UFunction *InFunction, bool IsExtension)
     {
-        auto Iter = FunctionsMap.find(InFunction->GetName());
-        if (Iter == FunctionsMap.end())
+        auto Iter = MethodsMap.find(InFunction->GetName());
+        if (Iter == MethodsMap.end())
         {
             std::shared_ptr<FFunctionTranslator> FunctionTranslator;
             if (IsExtension)
@@ -47,8 +47,7 @@ namespace puerts
             {
                 FunctionTranslator = std::make_shared<FFunctionTranslator>(InFunction, false);
             }
-            FunctionsMap[InFunction->GetName()] = FunctionTranslator;
-            Functions.push_back(FunctionTranslator);
+            MethodsMap[InFunction->GetName()] = FunctionTranslator;
             return FunctionTranslator;
         }
         Iter->second->Init(InFunction, false);
@@ -62,7 +61,6 @@ namespace puerts
         {
             auto FunctionTranslator = std::make_shared<FFunctionTranslator>(InFunction, false);
             FunctionsMap[InFunction->GetName()] = FunctionTranslator;
-            Functions.push_back(FunctionTranslator);
             return FunctionTranslator;
         }
         Iter->second->Init(InFunction, false);
