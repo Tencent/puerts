@@ -35,7 +35,9 @@ public:
         ExternalFinalize = nullptr;
         Struct = InStruct;
         Properties.clear();
+        PropertiesMap.clear();
         Functions.clear();
+        FunctionsMap.clear();
         ExtensionMethods.clear();
     }
 
@@ -51,8 +53,6 @@ protected:
     std::vector<std::shared_ptr<FFunctionTranslator>> Functions;
 
     std::map<FString, std::shared_ptr<FFunctionTranslator>> FunctionsMap;
-
-    std::map<FString, std::shared_ptr<FFunctionTranslator>> MethodsMap;
 
     std::shared_ptr<FFunctionTranslator> GetFunctionTranslator(UFunction *InFunction);
 
