@@ -18,5 +18,8 @@ public:
 
 public:
 	void* Data;
+	
 	size_t Length;
+
+	bool bCopy = false;
 };

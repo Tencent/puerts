@@ -574,6 +574,13 @@ FJsEnvImpl::~FJsEnvImpl()
 #if defined(WITH_NODEJS)
     StopPolling();
 #endif
+
+    for (auto &KV : HashToModuleInfo)
+    {
+        delete KV.second;
+    }
+    HashToModuleInfo.clear();
+    PathToModule.Empty();
     
     FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
 
@@ -2621,6 +2628,153 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
+std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::FindModuleInfo(v8::Local<v8::Module> Module)
+{
+    auto Range = HashToModuleInfo.equal_range(Module->GetIdentityHash());
+    for (auto It = Range.first; It != Range.second; ++It)
+    {
+        if (It->second->Module == Module)
+        {
+            return It;
+        }
+    }
+    return HashToModuleInfo.end();
+}
+
+v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(v8::Local<v8::Context> Context,
+    v8::Local<v8::String> Specifier,
+    v8::Local<v8::Module> Referrer)
+{
+    auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Context->GetIsolate()));
+    const auto ItModuleInfo = Self->FindModuleInfo(Referrer);
+    check(ItModuleInfo != Self->HashToModuleInfo.end());
+    const auto RefModuleName = FV8Utils::ToFString(Context->GetIsolate(), Specifier);
+    auto ItRefModule = ItModuleInfo->second->ResolveCache.Find(RefModuleName);
+    check(ItRefModule);
+    return (*ItRefModule).Get(Context->GetIsolate());
+}
+
+v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Context> Context,
+                                          const FString& ModuleName)
+{
+    const auto Isolate = Context->GetIsolate();
+    
+    Logger->Info(FString::Printf(TEXT("ESM Fetch CJS Module: %s"), *ModuleName));
+
+    v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName)};
+
+    auto MaybeRet = Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args);
+
+    if (MaybeRet.IsEmpty())
+    {
+        return v8::MaybeLocal<v8::Module>();;
+    }
+
+    v8::Local<v8::Module> SyntheticModule = v8::Module::CreateSyntheticModule(
+        Isolate,
+        FV8Utils::ToV8String(Isolate, ModuleName),
+        { v8::String::NewFromUtf8(Isolate, "default").ToLocalChecked()},
+        [](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value>
+        {
+            auto isolate = context->GetIsolate();
+            auto self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(isolate));
+
+            const auto ItModuleInfo = self->FindModuleInfo(module);
+            check(ItModuleInfo != self->HashToModuleInfo.end());
+            
+            module->SetSyntheticModuleExport(
+                v8::String::NewFromUtf8(isolate, "default").ToLocalChecked(),
+                ItModuleInfo->second->Value.Get(isolate)
+            );
+            return v8::MaybeLocal<v8::Value>(v8::True(isolate));
+        }
+    );
+
+    FModuleInfo* Info = new FModuleInfo;
+    Info->Module.Reset(Isolate, SyntheticModule);
+    Info->Value.Reset(Isolate, MaybeRet.ToLocalChecked());
+    HashToModuleInfo.emplace(SyntheticModule->GetIdentityHash(), Info);
+    
+    return SyntheticModule;
+}
+    
+v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> Context,
+                                          const FString& FileName)
+{
+    const auto Isolate = Context->GetIsolate();
+    
+    Logger->Info(FString::Printf(TEXT("Fetch ES Module: %s"), *FileName));
+    TArray<uint8> Data;
+    if (!ModuleLoader->Load(FileName, Data))
+    {
+        FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not load [%s]"), *FileName));
+        return v8::MaybeLocal<v8::Module>();
+    }
+
+    FString Script;
+    FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+
+    v8::ScriptOrigin Origin(
+        FV8Utils::ToV8String(Isolate, FileName),
+        v8::Local<v8::Integer>(),
+        v8::Local<v8::Integer>(),
+        v8::Local<v8::Boolean>(),
+        v8::Local<v8::Integer>(),
+        v8::Local<v8::Value>(),
+        v8::Local<v8::Boolean>(),
+        v8::Local<v8::Boolean>(),
+        v8::True(Isolate));
+    v8::ScriptCompiler::Source Source(FV8Utils::ToV8String(Isolate, Script), Origin);
+
+    v8::Local<v8::Module> Module;
+    if (!v8::ScriptCompiler::CompileModule(Isolate, &Source).ToLocal(&Module))
+    {
+        return v8::MaybeLocal<v8::Module>();
+    }
+
+    PathToModule.Add(FileName, v8::Global<v8::Module>(Isolate, Module));
+    FModuleInfo* Info = new FModuleInfo;
+    Info->Module.Reset(Isolate, Module);
+    HashToModuleInfo.emplace(Module->GetIdentityHash(), Info);
+
+    auto DirName = FPaths::GetPath(FileName);
+
+    for (int i = 0, Length = Module->GetModuleRequestsLength(); i < Length; ++i)
+    {
+        auto RefModuleName = FV8Utils::ToFString(Isolate, Module->GetModuleRequest(i));
+
+        FString OutPath;
+        FString OutDebugPath;
+        if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))
+        {
+            if (PathToModule.Contains(OutPath)) continue;
+
+            if (OutPath.EndsWith(TEXT(".mjs")))
+            {
+                auto RefModule = FetchESModuleTree(Context, OutPath);
+                if (RefModule.IsEmpty())
+                {
+                    return v8::MaybeLocal<v8::Module>();
+                }
+                Info->ResolveCache.Add(RefModuleName, v8::Global<v8::Module>(Isolate, RefModule.ToLocalChecked()));
+                continue;
+            }
+        }
+
+        auto RefModule = FetchCJSModuleAsESModule(Context, RefModuleName);
+
+        if (RefModule.IsEmpty())
+        {
+            FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not resolve [%s], import by [%s]"), *RefModuleName, *FileName));
+            return v8::MaybeLocal<v8::Module>();
+        }
+        
+        Info->ResolveCache.Add(RefModuleName, v8::Global<v8::Module>(Isolate, RefModule.ToLocalChecked()));
+    }
+
+    return Module;
+}
+
 void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor)
 {
     FString OutPath;
@@ -2639,17 +2793,40 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
 //         OutPath = DebugPath;
 // #endif
 
-    FString Script;
-    FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
-
-    if (Preprocessor) Script = Preprocessor(Script, OutPath);
-
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
     v8::Context::Scope ContextScope(Context);
+    if (OutPath.EndsWith(".mjs"))
     {
+        v8::TryCatch TryCatch(Isolate);
+        v8::Local<v8::Module> RootModule;
+
+        if (!FetchESModuleTree(Context, OutPath).ToLocal(&RootModule)) {
+            check(TryCatch.HasCaught());
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            return;
+        }
+
+        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
+        {
+            __USE(RootModule->Evaluate(Context));
+        }
+        
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            return;
+        }
+    }
+    else
+    {
+        FString Script;
+        FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+
+        if (Preprocessor) Script = Preprocessor(Script, OutPath);
+
 #if PLATFORM_MAC
         FString FormattedScriptUrl = DebugPath;
 #else
