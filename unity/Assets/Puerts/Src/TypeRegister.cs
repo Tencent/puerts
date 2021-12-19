@@ -456,6 +456,8 @@ namespace Puerts
             {
                 if (method.IsGenericMethodDefinition)
                 {
+                    // 因为 il2cpp 内存问题与crash问题移入宏中
+#if !ENABLE_IL2CPP || UNITY_EDITOR
                     if (!Utils.IsSupportedMethod(method))
                     {
                         return false;
@@ -467,6 +469,9 @@ namespace Puerts
                         constraintedArgumentTypes[j] = genericArguments[j].BaseType;
                     }
                     method = method.MakeGenericMethod(constraintedArgumentTypes);
+#else
+                    return false;
+#endif
                 }
 
                 if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
@@ -557,9 +562,8 @@ namespace Puerts
                     }
                 }
 
-                // extensionMethods
-                // 因为内存问题与crash问题移入宏中
-#if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
+                // 因为 il2cpp 内存问题与crash问题移入宏中
+#if !ENABLE_IL2CPP || UNITY_EDITOR
                 IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                 if (extensionMethods != null)
                 {
