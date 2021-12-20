@@ -18,6 +18,7 @@
 #include "TickerDelegateWrapper.h"
 #include "TypeScriptGeneratedClass.h"
 #include "ContainerMeta.h"
+#include <unordered_map>
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
 #include "UObject/WeakFieldPtr.h"
@@ -240,6 +241,25 @@ private:
     void OnAsyncLoadingFlushUpdate();
 
     void ConstructPendingObject(UObject* PendingObject);
+
+    v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> Context,
+                                          const FString& FileName);
+
+    v8::MaybeLocal<v8::Module> FetchCJSModuleAsESModule(v8::Local<v8::Context> Context,
+                                          const FString& ModuleName);
+
+    struct FModuleInfo
+    {
+        v8::Global<v8::Module> Module;
+        TMap<FString, v8::Global<v8::Module>> ResolveCache;
+        v8::Global<v8::Value> CJSValue;
+    };
+    
+    std::unordered_multimap<int, FModuleInfo*>::iterator FindModuleInfo(v8::Local<v8::Module> Module);
+
+    static v8::MaybeLocal<v8::Module> ResolveModuleCallback(v8::Local<v8::Context> Context,
+                                         v8::Local<v8::String> Specifier,
+                                         v8::Local<v8::Module> Referrer);
 
     struct ObjectMerger;
 
@@ -533,6 +553,10 @@ private:
     TArray<TWeakObjectPtr<UObject>> PendingConstructObjects;
     
     FDelegateHandle AsyncLoadingFlushUpdateHandle;
+
+    TMap<FString, v8::Global<v8::Module>> PathToModule;
+
+    std::unordered_multimap<int, FModuleInfo*> HashToModuleInfo;
 
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;

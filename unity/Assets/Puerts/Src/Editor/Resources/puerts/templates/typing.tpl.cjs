@@ -1,3 +1,10 @@
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
 function parameterDef(pinfo, isStatic, type) {
     return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + (isStatic ? typeNameWithOutGenericType(type, pinfo.TypeName) : pinfo.TypeName);
 }
@@ -54,15 +61,6 @@ function typeDeclaration(type, level1) {
     }
     return result;
 }
-function indent(str, n) {
-    let lines = str.split(/[\n\r]/);
-    let newLines = [lines[0]];
-    let append = " ".repeat(n);
-    for(var i = 1; i < lines.length; i++) {
-        if (lines[i]) newLines.push(append + lines[i]);
-    }
-    return newLines.join('\n');
-}
 function typeNameWithOutGenericType(type, name) {
     if (type.IsGenericTypeDefinition) {
         const gParameters = toJsArray(type.GenericParameters);
@@ -71,13 +69,46 @@ function typeNameWithOutGenericType(type, name) {
     return name;
 }
 
+// TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
 module.exports = function TypingTemplate(data) {
-    return `
+    
+    let ret = '';
+    function _es6tplJoin(str, ...values) {
+        return str.map((strFrag, index)=> {
+            if (index == str.length - 1) {
+                return strFrag;
+
+            } else {
+                return strFrag + values[index];
+            }
+        }).join('');
+    }
+    function tt(str, ...values) {
+        // just append all estemplate values.
+        const appendtext = _es6tplJoin(str, ...values)
+
+        ret += appendtext;
+    }
+    function t(str, ...values) {
+        // just append all estemplate values. and indent them;
+        const appendtext = _es6tplJoin(str, ...values)
+
+        // indent
+        let lines = appendtext.split(/[\n\r]/);
+        let newLines = [lines[0]];
+        let append = " ".repeat(t.indent);
+        for(var i = 1; i < lines.length; i++) {
+            if (lines[i]) newLines.push(append + lines[i].replace(/^[\t\s]*/, ''));
+        }
+
+        ret += newLines.join('\n');
+    }
+
+    tt`
 declare module 'csharp' {
     interface $Ref<T> {
         value: T
     }
-    
     namespace System {
         interface Array$1<T> extends System.Array {
             get_Item(index: number):T;
@@ -85,82 +116,138 @@ declare module 'csharp' {
             set_Item(index: number, value: T):void;
         }
     }
-    
     ${data.TaskDef}
-    
-    ${toJsArray(data.NamespaceInfos).map(ns=> `
-        ${ns.Name ? `namespace ${ns.Name} {` : ''}
-        ${toJsArray(ns.Types).map(type=> 
-            indent(type.Document, 8) + `
-            ` +
-            (type.Name == 'JSObject' && ns.Name == 'Puerts' ? 'type JSObject = any;' : 
-            `${typeKeyword(type)} ${typeDeclaration(type, true)}
-            ${(()=> {
+    `
+
+    toJsArray(data.NamespaceInfos).forEach(ns=> {
+        // namespace start;
+        if (ns.Name) {
+            t`namespace ${ns.Name} {`
+        }
+
+        toJsArray(ns.Types).forEach(type=> {
+            // type start
+            t.indent = 8;
+            // the comment of the type
+            t`
+            ${type.Document}
+            `
+            
+            if (!(type.Name == 'JSObject' && ns.Name == 'Puerts')) {
+                // type declaration
+                t`${typeKeyword(type)} ${typeDeclaration(type, true)}
+                `
+
                 if (type.IsDelegate) {
-                    return `
+                    // delegate, means function in typescript
+                    t`
                     { ${type.DelegateDef.replace('=>', ':')}; }
                     ${(!type.IsGenericTypeDefinition ? `var ${type.Name}: { new (func: ${type.DelegateDef}): ${type.Name}; }` : '')}
-                    `.trim();
+                    `;
                 }
-                else if (type.IsEnum) {
-                    return `{ ${type.EnumKeyValues} }`
-                }
-                else {
-                    return `
-                    {
-                        ${distinctByName(type.Properties).map(property=> {
-                            return `
-                                ${indent(property.Document, 12)}
-                                ${(()=> {
-                                    var allowProperty = !type.IsInterface && (property.HasSetter || property.HasGetter); 
-                                    if (!allowProperty) { 
-                                        let ret = '';
-                                        if (!type.IsInterface) ret += 'public '
-                                        if (property.IsStatic) ret += 'static '
-                                        ret += formatPropertyOrMethodName(property.Name) + ' : ' + (property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName)
-                                        return ret;
 
-                                    } else {
-                                        ret = `
-                                        ${property.HasGetter ? `public ${property.IsStatic ? 'static ' : ''}get ${formatPropertyOrMethodName(property.Name)}(): ${property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName};` : ''}
-                                        ${property.HasSetter ? `public ${property.IsStatic ? 'static ' : ''}set ${formatPropertyOrMethodName(property.Name)}(value: ${property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName});` : ''}
-                                        `;
-                                        return ret;
-                                    }
-                                })() || ''}
-                            `
-                        }).join('\n')}
-                        ${toJsArray(type.Methods).map(method=> `
-                            ${indent(method.Document, 12)}
-                            ${!type.IsInterface ? 'public ': ''}${method.IsStatic ? 'static ': ''}${formatPropertyOrMethodName(method.Name)}(${
-                                toJsArray(method.ParameterInfos).map((pinfo, idx)=> parameterDef(pinfo, method.IsStatic, type)).join(', ')
-                            })${method.IsConstructor ? "" : " : " + (method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName)}
-                        `).join('\n')}
+                else if (type.IsEnum) {
+                    // enum 
+                    t`{ ${type.EnumKeyValues} }
+                    `;
+                }
+
+                else {
+                    // class or interface.
+                    t`{
+                    `;
+                    t.indent = 12;
+                    
+                    // properties start
+                    distinctByName(type.Properties).forEach(property=> {
+                        t`${property.Document}
+                        `
+
+                        var allowProperty = !type.IsInterface && (property.HasSetter || property.HasGetter); 
+                        if (!allowProperty) { 
+                            if (!type.IsInterface) t`public `
+                            if (property.IsStatic) t`static `
+                            t`${formatPropertyOrMethodName(property.Name) + ' : ' + (property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName)}`;
+
+                        } else {
+                            t`
+                            ${property.HasGetter ? `public ${property.IsStatic ? 'static ' : ''}get ${formatPropertyOrMethodName(property.Name)}(): ${property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName};` : ''}
+                            ${property.HasSetter ? `public ${property.IsStatic ? 'static ' : ''}set ${formatPropertyOrMethodName(property.Name)}(value: ${property.IsStatic ? typeNameWithOutGenericType(type, property.TypeName) : property.TypeName});` : ''}
+                            `;
+
+                        }
+                    })
+                    // properties end
+
+                    // methods start
+                    toJsArray(type.Methods).forEach(method=> {
+                        t`${method.Document}
+                        `
+                        !type.IsInterface && t`public `;
+                        method.IsStatic && t`static `;
+                        t`${formatPropertyOrMethodName(method.Name)}` // method name
+                        t` (${toJsArray(method.ParameterInfos).map((pinfo, idx)=> parameterDef(pinfo, method.IsStatic, type)).join(', ')})` // method param
+                        !method.IsConstructor && t` : ${method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName}` // method return
+                        t`
+                        `
+                    });
+                    // methods end
+                    t.indent = 8;
+                    t`
                     }
                     `
                 }
-            })() || ''}
-            ${(()=> {
+
+                // extension methods start
                 if (type.ExtensionMethods.Length > 0) {
-                    return `
-                        ${indent(type.Document, 8)}
-                        interface ${type.Name} {
-${toJsArray(type.ExtensionMethods).map(method=> `
-
-                            ${indent(method.Document, 12)}
-                            ${formatPropertyOrMethodName(method.Name)}(${
-                                toJsArray(method.ParameterInfos).map((pinfo, idx)=> parameterDef(pinfo)).join(', ')
-                            }) : ${method.TypeName};
-
-`).join('\n')}
-                        }
+                    t.indent = 8;
+                    t`
+                    ${type.Document}
+                    interface ${type.Name} {
                     `
-                }
-            })() || ''}
-            `)
-        ).join('\n')}
-        ${ns.Name ? '}' : ''}
-    `).join('\n')}
+                    
+                    toJsArray(type.ExtensionMethods).forEach(method=>{
+                        t.indent = 12;
+                        
+                        t`
+                        ${method.Document}
+                        ${formatPropertyOrMethodName(method.Name)} (${
+                            toJsArray(method.ParameterInfos).map((pinfo, idx)=> parameterDef(pinfo)).join(', ')
+                        }) : ${method.TypeName};
+                        `
+                    });
 
-}`.trim();
+                    t.indent = 8;
+                    t`
+                    }
+                    `;
+                }
+                // extension methods end 
+                
+                
+            } else {
+                // if the type is Puerts.JSObject, declare an alias for any;
+                t.indent = 8;
+                t`type JSObject = any;`;
+
+            }
+        })
+
+        // namespace end
+        if (ns.Name) {
+            t.indent = 4;
+            t`
+            }
+            `
+        }
+
+    })
+    
+    // module end
+    t.indent = 0;
+    t`
+    }
+    `
+
+    return ret.replace(/\n(\s*)\n/g, '\n');
 };

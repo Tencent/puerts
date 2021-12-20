@@ -1501,8 +1501,7 @@ namespace Puerts.Editor
 
                 using (var jsEnv = new JsEnv())
                 {
-                    var templateGetter = jsEnv.Eval<Func<string, Func<object, string>>>("require('puerts/gencode/main.cjs')");
-                    var wrapRender = templateGetter("type.tpl");
+                    var wrapRender = jsEnv.Eval<Func<GenClass.TypeGenInfo, string>>("require('puerts/templates/type.tpl.cjs')");
 
                     if (!tsOnly)
                     {
@@ -1533,7 +1532,7 @@ namespace Puerts.Editor
                             }
                         }
 
-                        var autoRegisterRender = jsEnv.Eval("require('autoreg.tpl.cjs')");
+                        var autoRegisterRender = jsEnv.Eval<Func<GenClass.TypeGenInfo[], string>>("require('puerts/templates/autoreg.tpl.cjs')");
                         using (StreamWriter textWriter = new StreamWriter(saveTo + "AutoStaticCodeRegister.cs", false, Encoding.UTF8))
                         {
                             string fileContext = autoRegisterRender(typeGenInfos.ToArray());
@@ -1542,7 +1541,7 @@ namespace Puerts.Editor
                         }
                     }
 
-                    var typingRender = templateGetter("typing.tpl");
+                    var typingRender = jsEnv.Eval<Func<DTS.TypingGenInfo, string>>("require('puerts/templates/typing.tpl.cjs')");
                     using (StreamWriter textWriter = new StreamWriter(saveTo + "Typing/csharp/index.d.ts", false, Encoding.UTF8))
                     {
                         string fileContext = typingRender(DTS.TypingGenInfo.FromTypes(tsTypes));
