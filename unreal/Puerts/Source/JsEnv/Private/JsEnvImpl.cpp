@@ -2674,25 +2674,25 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
         Isolate,
         FV8Utils::ToV8String(Isolate, ModuleName),
         { v8::String::NewFromUtf8(Isolate, "default").ToLocalChecked()},
-        [](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value>
+        [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
         {
-            auto isolate = context->GetIsolate();
-            auto self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(isolate));
+            const auto IsolateInner = ContextInner->GetIsolate();
+            auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(IsolateInner));
 
-            const auto ItModuleInfo = self->FindModuleInfo(module);
-            check(ItModuleInfo != self->HashToModuleInfo.end());
+            const auto ModuleInfoIt = Self->FindModuleInfo(Module);
+            check(ModuleInfoIt != Self->HashToModuleInfo.end());
             
-            module->SetSyntheticModuleExport(
-                v8::String::NewFromUtf8(isolate, "default").ToLocalChecked(),
-                ItModuleInfo->second->Value.Get(isolate)
+            Module->SetSyntheticModuleExport(
+                v8::String::NewFromUtf8(IsolateInner, "default").ToLocalChecked(),
+                ModuleInfoIt->second->CJSValue.Get(IsolateInner)
             );
-            return v8::MaybeLocal<v8::Value>(v8::True(isolate));
+            return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
         }
     );
 
     FModuleInfo* Info = new FModuleInfo;
     Info->Module.Reset(Isolate, SyntheticModule);
-    Info->Value.Reset(Isolate, MaybeRet.ToLocalChecked());
+    Info->CJSValue.Reset(Isolate, MaybeRet.ToLocalChecked());
     HashToModuleInfo.emplace(SyntheticModule->GetIdentityHash(), Info);
     
     return SyntheticModule;
@@ -2702,6 +2702,10 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
                                           const FString& FileName)
 {
     const auto Isolate = Context->GetIsolate();
+    if (PathToModule.Contains(FileName))
+    {
+        return PathToModule[FileName].Get(Isolate);
+    }
     
     Logger->Info(FString::Printf(TEXT("Fetch ES Module: %s"), *FileName));
     TArray<uint8> Data;
@@ -2747,8 +2751,6 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
         FString OutDebugPath;
         if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))
         {
-            if (PathToModule.Contains(OutPath)) continue;
-
             if (OutPath.EndsWith(TEXT(".mjs")))
             {
                 auto RefModule = FetchESModuleTree(Context, OutPath);
