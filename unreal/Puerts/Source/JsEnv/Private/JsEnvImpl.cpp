@@ -2702,6 +2702,10 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
                                           const FString& FileName)
 {
     const auto Isolate = Context->GetIsolate();
+    if (PathToModule.Contains(FileName))
+    {
+        return PathToModule[FileName].Get(Isolate);
+    }
     
     Logger->Info(FString::Printf(TEXT("Fetch ES Module: %s"), *FileName));
     TArray<uint8> Data;
@@ -2747,8 +2751,6 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
         FString OutDebugPath;
         if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))
         {
-            if (PathToModule.Contains(OutPath)) continue;
-
             if (OutPath.EndsWith(TEXT(".mjs")))
             {
                 auto RefModule = FetchESModuleTree(Context, OutPath);
