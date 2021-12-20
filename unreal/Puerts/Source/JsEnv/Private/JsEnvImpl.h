@@ -252,7 +252,7 @@ private:
     {
         v8::Global<v8::Module> Module;
         TMap<FString, v8::Global<v8::Module>> ResolveCache;
-        v8::Global<v8::Value> Value;
+        v8::Global<v8::Value> CJSValue;
     };
     
     std::unordered_multimap<int, FModuleInfo*>::iterator FindModuleInfo(v8::Local<v8::Module> Module);
