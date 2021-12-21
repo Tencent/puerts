@@ -194,7 +194,6 @@ namespace puerts {
             return false;
 
         } else {
-            //脚本执行的返回值由HandleScope接管，这可能有需要GC的对象
             val = MainIsolate->Alloc<v8::Value>();
             val->value_ = evalRet;
             ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
