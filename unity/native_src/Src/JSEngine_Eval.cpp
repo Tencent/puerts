@@ -11,7 +11,7 @@
 namespace puerts {
     std::string CjsModulePrepend("export default require('");
     std::string CjsModuleAppend("');");
-    
+
 #if !WITH_QUICKJS
     v8::MaybeLocal<v8::Module> ResolveModule(
         v8::Local<v8::Context> Context,
@@ -88,7 +88,7 @@ namespace puerts {
             return Iter->second;
         }
 
-        char* Code;
+        const char* Code;
         if (name_std.substr(name_length - 4, name_length).compare(".mjs") == 0) 
         {
 
