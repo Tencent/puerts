@@ -9,10 +9,10 @@
 #include "quickjs-msvc.h"
 #endif
 namespace puerts {
-#if !WITH_QUICKJS
     std::string CjsModulePrepend("export default require('");
     std::string CjsModuleAppend("');");
-
+    
+#if !WITH_QUICKJS
     v8::MaybeLocal<v8::Module> ResolveModule(
         v8::Local<v8::Context> Context,
         v8::Local<v8::String> Specifier,
