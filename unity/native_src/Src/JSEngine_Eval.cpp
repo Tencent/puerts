@@ -9,7 +9,7 @@
 #include "quickjs-msvc.h"
 #endif
 namespace puerts {
-    std::string CjsModulePrepend("export default require('");
+    std::string CjsModulePrepend("export default globalThis.require('");
     std::string CjsModuleAppend("');");
 
 #if !WITH_QUICKJS
@@ -91,7 +91,6 @@ namespace puerts {
         const char* Code;
         if (name_std.substr(name_length - 4, name_length).compare(".mjs") == 0) 
         {
-
             Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
             if (Code == nullptr) 
             {
@@ -102,11 +101,9 @@ namespace puerts {
         {
             Code = (CjsModulePrepend + name_std + CjsModuleAppend).c_str();
         }
-
         JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
         if (JS_IsException(func_val)) {
-            Isolate->handleException();
             return nullptr;
         }
 
@@ -170,7 +167,9 @@ namespace puerts {
         }
         else
         {
-            ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
+            // do not return the namespace by now, because quickjs doesnot support that
+            // ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
+            // ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
         }
         return true;
 #else
@@ -179,6 +178,7 @@ namespace puerts {
 
         JSModuleDef* EntryModule = js_module_loader(ctx , Path, nullptr);
         if (EntryModule == nullptr) {
+            Isolate->handleException();
             LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
             return false;
         }
@@ -193,9 +193,9 @@ namespace puerts {
             return false;
 
         } else {
-            val = MainIsolate->Alloc<v8::Value>();
-            val->value_ = evalRet;
-            ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
+            // val = MainIsolate->Alloc<v8::Value>();
+            // val->value_ = JS_UNDEFINED;
+            // ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
             return true;
             
         }
