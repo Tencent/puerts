@@ -80,7 +80,7 @@ namespace puerts
             return;
         }
         uint8 *DataPtr = GetData(Self, Inner->Property->GetSize(), Index);
-        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, DataPtr, true));
+        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, DataPtr, false));
     }
 
     void FScriptArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -321,7 +321,7 @@ namespace puerts
         {
             auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
             void* Data = Self->GetData(Index, ScriptLayout);
-            Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Data, true));
+            Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Data, false));
         }
     }
 
@@ -555,7 +555,7 @@ namespace puerts
 
         if (ValuePtr)
         {
-            Info.GetReturnValue().Set(ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, true));
+            Info.GetReturnValue().Set(ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, false));
         }
         KeyProperty->DestroyValue(KeyPtr);
     }
@@ -659,7 +659,7 @@ namespace puerts
             auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
             uint8* Data = reinterpret_cast<uint8*>(Self->GetData(Index, ScriptLayout));
             void* KeyPtr = Data + GetKeyOffset(ScriptLayout);
-            Info.GetReturnValue().Set(KeyPropertyTranslator->UEToJs(Isolate, Context, KeyPtr, true));
+            Info.GetReturnValue().Set(KeyPropertyTranslator->UEToJs(Isolate, Context, KeyPtr, false));
         }
     }
     
@@ -749,7 +749,7 @@ namespace puerts
 
         auto Ptr = Self + Property->ElementSize * Index;
 
-        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Ptr, true));
+        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Ptr, false));
     }
 
     void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)

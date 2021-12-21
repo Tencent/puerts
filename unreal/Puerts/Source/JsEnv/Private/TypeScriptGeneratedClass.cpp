@@ -9,6 +9,7 @@
 #include "TypeScriptGeneratedClass.h"
 #include "PropertyMacros.h"
 #include "JSGeneratedFunction.h"
+#include "JSLogger.h"
 
 DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
 {
@@ -24,6 +25,14 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
         {
             PinedDynamicInvoker->InvokeTsMethod(Context, Func, Stack, RESULT_PARAM);
         }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("call %s::%s fail!, DynamicInvoker invalid"), *Class->GetName(), *Func->GetName());
+        }
+    }
+    else
+    {
+        UE_LOG(Puerts, Error, TEXT("calling a not ts class method %s::%s"), *Func->GetOuter()->GetName(), *Func->GetName());
     }
 }
 
@@ -60,6 +69,10 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     {
         PinedDynamicInvoker->TsConstruct(this, Object);
     }
+    else
+    {
+        UE_LOG(Puerts, Error, TEXT("call TsConstruct of %s(%p) fail!, DynamicInvoker invalid"), *Object->GetName(), Object);
+    }
 }
 
 void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
@@ -67,10 +80,6 @@ void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
     if (!FunctionToRedirect.Contains(InFunction->GetFName()))
     {
         return;
-    }
-    if (InFunction->Script.Num() == 0)
-    {
-        InFunction->Script.Add(EX_EndFunctionParms);
     }
     InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
     InFunction->SetNativeFunc(&UTypeScriptGeneratedClass::execCallJS);
@@ -128,11 +137,5 @@ void UTypeScriptGeneratedClass::Bind()
 
         //可避免非CDO的在PostConstructInit从基类拷贝值
         //ClassFlags |= CLASS_Native;
-    }
-
-    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
-    {
-        auto Function = *FuncIt;
-        RedirectToTypeScript(Function);
     }
 }

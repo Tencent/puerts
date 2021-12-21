@@ -5,8 +5,8 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-"use strict";
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
+
 
 function csTypeToClass(csType) {
     let cls = puerts.loadType(csType);
@@ -141,12 +141,13 @@ function bindThisToFirstArgument(func, parentFunc) {
     }
 }
 
-function extension(cls, extension) {
-    return;
+function doExtension(cls, extension) {
+    // if you already generate static wrap for cls and extension, then you are no need to invoke this function
+    // 如果你已经为extension和cls生成静态wrap，则不需要调用这个函数。
     var parentPrototype = Object.getPrototypeOf(cls.prototype);
     Object.keys(extension).forEach(key=> {
         var func = extension[key];
-        if (typeof func == 'function' && key != 'constructor') {
+        if (typeof func == 'function' && key != 'constructor' && !(key in cls.prototype)) {
     var parentFunc = parentPrototype ? parentPrototype[key] : undefined;
             parentFunc = typeof parentFunc === "function" ? parentFunc : undefined;
             Object.defineProperty(cls.prototype, key, {
@@ -164,4 +165,8 @@ puerts.$set = setref;
 puerts.$promise = taskToPromise;
 puerts.$generic = makeGeneric;
 puerts.$typeof = getType;
-puerts.$extension = extension;
+puerts.$extension = (cls, extension) => { 
+    typeof console != 'undefined' && console.warn(`deprecated! if you already generate static wrap for ${cls} and ${extension}, you are no need to invoke $extension`); 
+    return doExtension(cls, extension)
+};
+puerts.$reflectExtension = doExtension;

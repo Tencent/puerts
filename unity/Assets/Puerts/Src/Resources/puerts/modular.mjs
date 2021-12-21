@@ -5,16 +5,8 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-"use strict";
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
     
-//    let loadModule = function(moduleName, requiringDir) {
-//        let path = puerts.searchModule(requiringDir, moduleName);
-//        if (!path) throw new Error("can not find " + moduleName);
-//        let {context, debugPath} = puerts.loadFile(path);
-//        return {fullPath: path, debugPath: debugPath, script: context}
-//    }
-
 let moduleCache = Object.create(null); // key to sid
 let tmpModuleStorage = []; // sid to module
 

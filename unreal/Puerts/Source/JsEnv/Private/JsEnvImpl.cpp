@@ -93,6 +93,8 @@
 #endif
 #endif
 
+#include "Engine/CollisionProfile.h"
+
 namespace puerts
 {
 
@@ -572,6 +574,13 @@ FJsEnvImpl::~FJsEnvImpl()
 #if defined(WITH_NODEJS)
     StopPolling();
 #endif
+
+    for (auto &KV : HashToModuleInfo)
+    {
+        delete KV.second;
+    }
+    HashToModuleInfo.clear();
+    PathToModule.Empty();
     
     FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
 
@@ -1166,9 +1175,9 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 
 void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 {
-    UObjectBaseUtility *Object = (UObjectBaseUtility*)InObject;
+    UObjectBaseUtility *Object = static_cast<UObjectBaseUtility*>(const_cast<UObjectBase *>(InObject));
 
-    bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+    const bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
 
     //if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
@@ -1188,10 +1197,13 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                 TypeScriptGeneratedClass->InjectNotFinished = true; //CDO construct meat first load or recompiled
             }
         }
-        //else if (UNLIKELY(Class == UTypeScriptGeneratedClass::StaticClass()))
-        //{
-        //    ((UTypeScriptGeneratedClass *)InObject)->DynamicInvoker = TsDynamicInvoker;
-        //}
+        else if (UNLIKELY(!IsCDO && Class == UTypeScriptGeneratedClass::StaticClass()))
+        {
+            TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
+            TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+            TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+            TypeScriptGeneratedClass->InjectNotFinished = true;
+        }
         
     }
 }
@@ -1596,7 +1608,41 @@ void FJsEnvImpl::TryReleaseType(UStruct *Struct)
         //Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
         ClassToTemplateMap[Struct].Reset();
         ClassToTemplateMap.erase(Struct);
-        TypeReflectionMap.erase(Struct);
+    }
+}
+
+//fix ScriptCore.cpp UObject::SkipFunction crash when Function has no parameters
+static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
+{
+    uint8* Frame = (uint8*)FMemory_Alloca(Function->PropertiesSize);
+    FMemory::Memzero(Frame, Function->PropertiesSize);
+    for (PropertyMacro* Property = (PropertyMacro*)(
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+                Function->ChildProperties
+#else
+                Function->Children
+#endif
+                ); Property  && (*Stack.Code != EX_EndFunctionParms); Property = (PropertyMacro*)(Property->Next))
+    {
+        Stack.MostRecentPropertyAddress = NULL;
+        Stack.Step(Stack.Object, (Property->PropertyFlags & CPF_OutParm) ? NULL : Property->ContainerPtrToValuePtr<uint8>(Frame));
+    }
+
+    Stack.Code++;
+
+    for (PropertyMacro* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+    {
+        if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
+        {
+            Destruct->DestroyValue_InContainer(Frame);
+        }
+    }
+
+    PropertyMacro* ReturnProp = Function->GetReturnProperty();
+    if (ReturnProp != NULL)
+    {
+        ReturnProp->DestroyValue(RESULT_PARAM);
+        FMemory::Memzero(RESULT_PARAM, ReturnProp->ArrayDim * ReturnProp->ElementSize);
     }
 }
 
@@ -1609,7 +1655,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject *ContextObject, UJSGeneratedFunction* Fu
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
-        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+        SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     auto Isolate = MainIsolate;
@@ -1640,7 +1686,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"), *ContextObject->GetClass()->GetName(),
             *Function->GetName(), ContextObject));
-        ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+        SkipFunction(Stack, RESULT_PARAM, Function);
         return;
     }
     else 
@@ -1660,7 +1706,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject *ContextObject, UFunction *Function, FFr
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"), *ContextObject->GetClass()->GetName(),
                     *Function->GetName(), ContextObject));
-                ContextObject->SkipFunction(Stack, RESULT_PARAM, Function);
+                SkipFunction(Stack, RESULT_PARAM, Function);
                 return;
             }
             ThisObj = ObjIter->second.Get(Isolate);
@@ -2151,6 +2197,26 @@ void FJsEnvImpl::UnBindContainer(void* Ptr)
     StructMap.erase(Ptr);
 }
 
+std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
+{
+    const auto FullName = InStruct->GetFullName();
+    
+    const auto Iter = TypeReflectionMap.find(FullName);
+    if (Iter == TypeReflectionMap.end())
+    {
+        auto Ret = std::make_shared<FStructWrapper>(InStruct);
+        TypeReflectionMap[FullName] = Ret;
+        //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper new %s // %s"), *InStruct->GetName(), *FullName);
+        return Ret;
+    }
+    else
+    {
+        //UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
+        Iter->second->Init(InStruct);
+        return Iter->second;
+    }
+}
+
 v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct, bool &Existed)
 {
     auto Isolate = MainIsolate;
@@ -2164,19 +2230,20 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
         v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
+        auto StructWrapper = GetStructWrapper(InStruct);
+
         auto ExtensionMethodsIter = ExtensionMethodsMap.find(InStruct);
+        if (ExtensionMethodsIter != ExtensionMethodsMap.end())
+        {
+            StructWrapper->AddExtensionMethods(ExtensionMethodsIter->second);
+            ExtensionMethodsMap.erase(ExtensionMethodsIter);
+        }
 
         if (auto ScriptStruct = Cast<UScriptStruct>(InStruct))
         {
             //Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
-            auto ScriptStructReflection = std::make_unique<FScriptStructWrapper>(ScriptStruct);
-            if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-            {
-                ScriptStructReflection->AddExtensionMethods(ExtensionMethodsIter->second);
-                ExtensionMethodsMap.erase(ExtensionMethodsIter);
-            }
-            Template = ScriptStructReflection->ToFunctionTemplate(Isolate);
-            TypeReflectionMap[InStruct] = std::pair<std::unique_ptr<FStructWrapper>, int>((std::move(ScriptStructReflection)), 0);
+            
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New);
             if (!ScriptStruct->IsNative())//非原生的结构体，可能在实例没有的时候会释放
             {
                 SysObjectRetainer.Retain(ScriptStruct);
@@ -2193,14 +2260,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct *InStruct
         {
             auto Class = Cast<UClass>(InStruct);
             check(Class);
-            auto ClassReflection = std::make_unique<FClassWrapper>(Class);
-            if (ExtensionMethodsIter != ExtensionMethodsMap.end())
-            {
-                ClassReflection->AddExtensionMethods(ExtensionMethodsIter->second);
-                ExtensionMethodsMap.erase(ExtensionMethodsIter);
-            }
-            Template = ClassReflection->ToFunctionTemplate(Isolate);
-            TypeReflectionMap[InStruct] = std::pair<std::unique_ptr<FStructWrapper>, int>((std::move(ClassReflection)), 0);
+            Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New);
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)
@@ -2340,7 +2400,46 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 #endif
                 : Enum->GetNameStringByIndex(i);
             auto Value = Enum->GetValueByIndex(i);
-            auto ReturnVal = Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value));
+            __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
+        }
+        
+        if (Enum == StaticEnum<EObjectTypeQuery>())
+        {
+            UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+            int32 ContainerIndex = 0;
+            while (true)
+            {
+                FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+                if (ChannelName == NAME_None)
+                {
+                    break;
+                }
+                auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel)ContainerIndex);
+                if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
+                {
+                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, ObjectType)));
+                }
+                ContainerIndex++;
+            }
+        }
+        else if (Enum == StaticEnum<ETraceTypeQuery>())
+        {
+            UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+            int32 ContainerIndex = 0;
+            while (true)
+            {
+                FName ChannelName = CollisionProfile->ReturnChannelNameFromContainerIndex(ContainerIndex);
+                if (ChannelName == NAME_None)
+                {
+                    break;
+                }
+                auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel)ContainerIndex);
+                if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
+                {
+                    __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, TraceType)));
+                }
+                ContainerIndex++;
+            }
         }
         Info.GetReturnValue().Set(Result);
     }
@@ -2529,6 +2628,155 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
+std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::FindModuleInfo(v8::Local<v8::Module> Module)
+{
+    auto Range = HashToModuleInfo.equal_range(Module->GetIdentityHash());
+    for (auto It = Range.first; It != Range.second; ++It)
+    {
+        if (It->second->Module == Module)
+        {
+            return It;
+        }
+    }
+    return HashToModuleInfo.end();
+}
+
+v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(v8::Local<v8::Context> Context,
+    v8::Local<v8::String> Specifier,
+    v8::Local<v8::Module> Referrer)
+{
+    auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(Context->GetIsolate()));
+    const auto ItModuleInfo = Self->FindModuleInfo(Referrer);
+    check(ItModuleInfo != Self->HashToModuleInfo.end());
+    const auto RefModuleName = FV8Utils::ToFString(Context->GetIsolate(), Specifier);
+    auto ItRefModule = ItModuleInfo->second->ResolveCache.Find(RefModuleName);
+    check(ItRefModule);
+    return (*ItRefModule).Get(Context->GetIsolate());
+}
+
+v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Context> Context,
+                                          const FString& ModuleName)
+{
+    const auto Isolate = Context->GetIsolate();
+    
+    Logger->Info(FString::Printf(TEXT("ESM Fetch CJS Module: %s"), *ModuleName));
+
+    v8::Local<v8::Value > Args[] = { FV8Utils::ToV8String(Isolate, ModuleName)};
+
+    auto MaybeRet = Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args);
+
+    if (MaybeRet.IsEmpty())
+    {
+        return v8::MaybeLocal<v8::Module>();;
+    }
+
+    v8::Local<v8::Module> SyntheticModule = v8::Module::CreateSyntheticModule(
+        Isolate,
+        FV8Utils::ToV8String(Isolate, ModuleName),
+        { v8::String::NewFromUtf8(Isolate, "default").ToLocalChecked()},
+        [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
+        {
+            const auto IsolateInner = ContextInner->GetIsolate();
+            auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(IsolateInner));
+
+            const auto ModuleInfoIt = Self->FindModuleInfo(Module);
+            check(ModuleInfoIt != Self->HashToModuleInfo.end());
+            
+            Module->SetSyntheticModuleExport(
+                v8::String::NewFromUtf8(IsolateInner, "default").ToLocalChecked(),
+                ModuleInfoIt->second->CJSValue.Get(IsolateInner)
+            );
+            return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
+        }
+    );
+
+    FModuleInfo* Info = new FModuleInfo;
+    Info->Module.Reset(Isolate, SyntheticModule);
+    Info->CJSValue.Reset(Isolate, MaybeRet.ToLocalChecked());
+    HashToModuleInfo.emplace(SyntheticModule->GetIdentityHash(), Info);
+    
+    return SyntheticModule;
+}
+    
+v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> Context,
+                                          const FString& FileName)
+{
+    const auto Isolate = Context->GetIsolate();
+    if (PathToModule.Contains(FileName))
+    {
+        return PathToModule[FileName].Get(Isolate);
+    }
+    
+    Logger->Info(FString::Printf(TEXT("Fetch ES Module: %s"), *FileName));
+    TArray<uint8> Data;
+    if (!ModuleLoader->Load(FileName, Data))
+    {
+        FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not load [%s]"), *FileName));
+        return v8::MaybeLocal<v8::Module>();
+    }
+
+    FString Script;
+    FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+
+    v8::ScriptOrigin Origin(
+        FV8Utils::ToV8String(Isolate, FileName),
+        v8::Local<v8::Integer>(),
+        v8::Local<v8::Integer>(),
+        v8::Local<v8::Boolean>(),
+        v8::Local<v8::Integer>(),
+        v8::Local<v8::Value>(),
+        v8::Local<v8::Boolean>(),
+        v8::Local<v8::Boolean>(),
+        v8::True(Isolate));
+    v8::ScriptCompiler::Source Source(FV8Utils::ToV8String(Isolate, Script), Origin);
+
+    v8::Local<v8::Module> Module;
+    if (!v8::ScriptCompiler::CompileModule(Isolate, &Source).ToLocal(&Module))
+    {
+        return v8::MaybeLocal<v8::Module>();
+    }
+
+    PathToModule.Add(FileName, v8::Global<v8::Module>(Isolate, Module));
+    FModuleInfo* Info = new FModuleInfo;
+    Info->Module.Reset(Isolate, Module);
+    HashToModuleInfo.emplace(Module->GetIdentityHash(), Info);
+
+    auto DirName = FPaths::GetPath(FileName);
+
+    for (int i = 0, Length = Module->GetModuleRequestsLength(); i < Length; ++i)
+    {
+        auto RefModuleName = FV8Utils::ToFString(Isolate, Module->GetModuleRequest(i));
+
+        FString OutPath;
+        FString OutDebugPath;
+        if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))
+        {
+            if (OutPath.EndsWith(TEXT(".mjs")))
+            {
+                auto RefModule = FetchESModuleTree(Context, OutPath);
+                if (RefModule.IsEmpty())
+                {
+                    return v8::MaybeLocal<v8::Module>();
+                }
+                Info->ResolveCache.Add(RefModuleName, v8::Global<v8::Module>(Isolate, RefModule.ToLocalChecked()));
+                continue;
+            }
+        }
+
+        auto RefModule = FetchCJSModuleAsESModule(Context, RefModuleName);
+
+        if (RefModule.IsEmpty())
+        {
+            FV8Utils::ThrowException(MainIsolate, FString::Printf(TEXT("can not resolve [%s], import by [%s]"), *RefModuleName, *FileName));
+            return v8::MaybeLocal<v8::Module>();
+        }
+        
+        Info->ResolveCache.Add(RefModuleName, v8::Global<v8::Module>(Isolate, RefModule.ToLocalChecked()));
+    }
+
+    return Module;
+}
+
 void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor)
 {
     FString OutPath;
@@ -2547,17 +2795,40 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
 //         OutPath = DebugPath;
 // #endif
 
-    FString Script;
-    FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
-
-    if (Preprocessor) Script = Preprocessor(Script, OutPath);
-
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
     v8::Context::Scope ContextScope(Context);
+    if (OutPath.EndsWith(".mjs"))
     {
+        v8::TryCatch TryCatch(Isolate);
+        v8::Local<v8::Module> RootModule;
+
+        if (!FetchESModuleTree(Context, OutPath).ToLocal(&RootModule)) {
+            check(TryCatch.HasCaught());
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            return;
+        }
+
+        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
+        {
+            __USE(RootModule->Evaluate(Context));
+        }
+        
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            return;
+        }
+    }
+    else
+    {
+        FString Script;
+        FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+
+        if (Preprocessor) Script = Preprocessor(Script, OutPath);
+
 #if PLATFORM_MAC
         FString FormattedScriptUrl = DebugPath;
 #else

@@ -5,8 +5,7 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-"use strict";
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
 
 const kPromiseRejectWithNoHandler = 0;
 const kPromiseHandlerAddedAfterReject = 1;

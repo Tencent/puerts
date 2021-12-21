@@ -49,6 +49,23 @@ UClass* FindClass(const TCHAR* ClassName)
     return nullptr;
 }
 
+DEFINE_LOG_CATEGORY_STATIC(PuertsEditorModule, Log, All);
+
+#define CanChangeCheckWithBoolRet() \
+    if (GEditor && GEditor->IsPlaySessionInProgress()) \
+    { \
+        UE_LOG(PuertsEditorModule, Error, TEXT("change the layout of class[%s] in PIE mode is forbiden!"), *GeneratedClass->GetName()); \
+        NeedSave = false; \
+        return false; \
+    }
+
+#define CanChangeCheck() \
+    if (GEditor && GEditor->IsPlaySessionInProgress()) \
+    { \
+        UE_LOG(PuertsEditorModule, Error, TEXT("change the layout of class[%s] in PIE mode is forbiden!"), *GeneratedClass->GetName()); \
+        NeedSave = false; \
+        return; \
+    }
 
 bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {
@@ -67,6 +84,7 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
         Package = Cast<UPackage>(Blueprint->GetOuter());
         if (Blueprint->ParentClass != ParentClass)
         {
+            CanChangeCheckWithBoolRet();
             Blueprint->ParentClass = ParentClass;
             NeedSave = true;
         }
@@ -77,6 +95,12 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
     }
 
     if (!ParentClass) return false;
+
+    if (GEditor && GEditor->IsPlaySessionInProgress())
+    {
+        UE_LOG(PuertsEditorModule, Error, TEXT("create class[%s] in PIE mode is forbiden!"), *InName);
+        return false;
+    }
 
     NeedSave = true;
 
@@ -140,6 +164,7 @@ bool UPEBlueprintAsset::LoadOrCreateWithMetaData(const FString& InName, const FS
 	if (IsValid(InMetaData))
 	{	//	apply the meta data
 		NeedSave = InMetaData->Apply(GeneratedClass, Blueprint) || NeedSave;
+	    if (NeedSave) CanChangeCheckWithBoolRet();
 	}
 	return true;
 }
@@ -370,6 +395,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 {
                     if (!ExistingNode->IsNodeEnabled())
                     {
+                        CanChangeCheck();
                         ExistingNode->SetEnabledState(ENodeEnabledState::Enabled);
                         ExistingNode->NodeComment.Empty();
                         NeedSave = true;
@@ -377,6 +403,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 }
                 else
                 {
+                    CanChangeCheck();
                     UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(
                         EventGraph,
                         EventGraph->GetGoodPlaceForNewNode(),
@@ -398,6 +425,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             UEdGraph* const ExistingGraph = FindObject<UEdGraph>(Blueprint, *InName.ToString());
             if (!ExistingGraph)
             {
+                CanChangeCheck();
                 const FScopedTransaction Transaction(LOCTEXT("CreateOverrideFunctionGraph", "Create Override Function Graph"));
                 Blueprint->Modify();
                 // Implement the function graph
@@ -423,6 +451,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
         if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAxisEvent* Node) { return Node->InputAxisName == InName; }))
         {
+            CanChangeCheck();
             //UE_LOG(LogTemp, Warning, TEXT("Add Axis: %s"), *InName.ToString());
             FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_InputAxisEvent>(
                 EventGraph,
@@ -448,6 +477,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
         if (EventGraph && !AllEvents.FindByPredicate([&](UK2Node_InputAction* Node) { return Node->InputActionName == InName; }))
         {
+            CanChangeCheck();
             UK2Node_InputAction* NewNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_InputAction>(
                 EventGraph,
                 EventGraph->GetGoodPlaceForNewNode(),
@@ -485,6 +515,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         {
             if (EventGraph && !Iter)
             {
+                CanChangeCheck();
                 //处理标签改变的情况
                 Blueprint->FunctionGraphs.RemoveAll([&](UEdGraph* Graph) { return Graph->GetFName() == InName; });
 
@@ -531,6 +562,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         }
         else
         {
+            CanChangeCheck();
             UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
             if (EventGraph)
             {
@@ -579,6 +611,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
             if (ExtraFlags != NewExtraFlags)
             {
+                CanChangeCheck();
                 TypedEntryNode->SetExtraFlags(NewExtraFlags);
                 NeedSave = true;
             }
@@ -588,6 +621,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             int32 NewFunctionFlags = (CustomEventNode->FunctionFlags | InSetFlags) & ~InClearFlags;
             if (CustomEventNode->FunctionFlags  != NewFunctionFlags)
             {
+                CanChangeCheck();
                 CustomEventNode->FunctionFlags = NewFunctionFlags;
                 NeedSave = true;
             }
@@ -620,6 +654,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             {
                 if (OldUserDefinedPins[i]->PinType != InputParameterTypes[i].Value)
                 {
+                    CanChangeCheck();
                     ParameterChanged = true;
                 }
             }
@@ -692,6 +727,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
 
                     if (RetChanged)
                     {
+                        CanChangeCheck();
                         Node->Modify();
                         for (TSharedPtr<FUserPinInfo> pinInfo : OldUserDefinedReturnPins)
                         {
@@ -710,6 +746,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             for (auto & Pair : OutputParameterTypes)
             {
                 RetChanged = RetChanged || TryAddOutput(TargetNodes, Pair.Key, Pair.Value);
+                if (RetChanged) CanChangeCheck();
                 OutputSet.Add(Pair.Key);
             }
             OutputSet.Add(RetValName);
@@ -719,6 +756,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 {
                     if (!OutputSet.Contains(UserDefinedPin->PinName))
                     {
+                        CanChangeCheck();
                         RetChanged = true;
                         Node->RemoveUserDefinedPinByName(UserDefinedPin->PinName);
                     }
@@ -810,6 +848,7 @@ void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGr
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Currently, Only Custom Event and Function Graph Support MetaData"));
 	}
+    if (NeedSave) CanChangeCheck();
 }
 
 void UPEBlueprintAsset::ClearParameter()
@@ -826,6 +865,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, NewVarName);
     if (VarIndex == INDEX_NONE)
     {
+        CanChangeCheck();
         FBlueprintEditorUtils::AddMemberVariable(Blueprint, NewVarName, PinType);
         NeedSave = true;
     }
@@ -834,6 +874,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
         FBPVariableDescription& Variable = Blueprint->NewVariables[VarIndex];
         if (Variable.VarType != PinType)
         {
+            CanChangeCheck();
             FBlueprintEditorUtils::ChangeMemberVariableType(Blueprint, NewVarName, PinType);
             NeedSave = true;
         }
@@ -850,6 +891,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
         uint64 NetFlags = InFlags & NetMask;
         if ((Variable.PropertyFlags & NetMask) != NetFlags)
         {
+            CanChangeCheck();
             Variable.PropertyFlags &= ~NetMask;
             Variable.PropertyFlags |= NetFlags;
             if (Variable.PropertyFlags & CPF_RepNotify)
@@ -872,6 +914,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
 
         if ((Variable.PropertyFlags & CPF_DisableEditOnInstance) != (InFlags & CPF_DisableEditOnInstance))
         {
+            CanChangeCheck();
             if( InFlags & CPF_DisableEditOnInstance )
             {
                 Blueprint->NewVariables[VarIndex].PropertyFlags |= CPF_DisableEditOnInstance;
@@ -885,6 +928,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
 
         if (InLifetimeCondition < COND_Max && Variable.ReplicationCondition != InLifetimeCondition)
         {
+            CanChangeCheck();
             Variable.ReplicationCondition = (ELifetimeCondition)InLifetimeCondition;
             NeedSave = true;
         }
@@ -917,10 +961,15 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
 
 	//	currently the replicated behaviour is different from cpp
 	NeedSave = InMetaData->Apply(Blueprint->NewVariables[VarIndex]) || NeedSave;
+    if (NeedSave) CanChangeCheck();
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
+    if (GEditor && GEditor->IsPlaySessionInProgress())
+    {
+        return;
+    }
     if (Blueprint)
     {
         TArray<FName> ToDelete;
@@ -942,6 +991,10 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 
 void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
+    if (GEditor && GEditor->IsPlaySessionInProgress())
+    {
+        return;
+    }
     if (Blueprint)
     {
         if (FBlueprintEditorUtils::SupportsConstructionScript(Blueprint) && Blueprint->SimpleConstructionScript)
@@ -988,6 +1041,7 @@ void UPEBlueprintAsset::Save()
     if (Blueprint && TypeScriptGeneratedClass)
     {
         NeedSave = NeedSave || (TypeScriptGeneratedClass->HasConstructor != HasConstructor);
+        if (NeedSave) CanChangeCheck();
         TypeScriptGeneratedClass->HasConstructor = HasConstructor;
         if (NeedSave)
         {

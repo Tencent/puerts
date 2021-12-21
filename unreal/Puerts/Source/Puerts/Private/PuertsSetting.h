@@ -11,32 +11,43 @@
 #include "UObject/NoExportTypes.h"
 #include "PuertsSetting.generated.h"
 
-/**
- * 
- */
+UENUM(BlueprintType)
+enum class EJsEnvResetPhase : uint8
+{
+	PreBeginPIE = 0,
+	EndPIE = 1 UMETA(DisplayName = "EndPIE(deprecated)"),
+	None = 2
+};
+
 UCLASS(config = Puerts, defaultconfig, meta = (DisplayName = "Puerts"))
 class UPuertsSetting : public UObject
 {
 	GENERATED_BODY()
 public:
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Auto Mode Enable", defaultValue = false))
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = false))
     bool AutoModeEnable = false;
 
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Debug Enable", defaultValue = false))
+	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Reset Environment in PIE", defaultValue = PreBeginPIE))
+	EJsEnvResetPhase ResetInPIE = EJsEnvResetPhase::PreBeginPIE;
+
+	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Reset Environment in world tear down", defaultValue = true))
+	bool ResetInTearDownWorld = true;
+
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Debug Enable", defaultValue = false))
     bool DebugEnable = false;
 
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Debug Port", defaultValue = 8080))
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Debug Port", defaultValue = 8080))
     int32 DebugPort = 8080;
 
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Wait Debugger", defaultValue = false))
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Wait Debugger", defaultValue = false))
     bool WaitDebugger = false;
 
-	UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Wait Debugger Timeout", defaultValue = 0))
+	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Wait Debugger Timeout", defaultValue = 0))
 	double WaitDebuggerTimeout = 0;
 	
-    UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
     int32 NumberOfJsEnv = 1;
 
-	UPROPERTY(config, EditAnywhere, Category = "Setting", meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
+	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
 	bool WatchDisable = false;
 };

@@ -5,16 +5,14 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */ 
 
-"use strict";
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
 
 let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
 
 if (UnityEngine_Debug) {
-    
     const console_org = global.console;
     var console = {}
-
+    
     function toString(args) {
         return Array.prototype.map.call(args, x => {
             try {
@@ -24,27 +22,27 @@ if (UnityEngine_Debug) {
             }
         }).join(',');
     }
-
+    
     console.log = function() {
         if (console_org) console_org.log.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.Log(toString(arguments));
     }
-
+    
     console.info = function() {
         if (console_org) console_org.info.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.Log(toString(arguments));
     }
-
+    
     console.warn = function() {
         if (console_org) console_org.warn.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.LogWarning(toString(arguments));
     }
-
+    
     console.error = function() {
         if (console_org) console_org.error.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.LogError(toString(arguments));
     }
-
+    
     global.console = console;
-    puerts.console = console;   
+    puerts.console = console;
 }

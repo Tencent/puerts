@@ -164,7 +164,16 @@ namespace Puerts
         }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetModuleResolver(IntPtr isolate, ModuleResolveCallback callback, int jsEnvIdx);
+        private static extern void SetModuleResolver(IntPtr isolate, IntPtr callback, int jsEnvIdx);
+        public static void SetModuleResolver(IntPtr isolate, ModuleResolveCallback callback, int jsEnvIdx)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(callback);
+#endif
+            IntPtr fn = callback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
+            SetModuleResolver(isolate, fn, jsEnvIdx);
+        }
+
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ExecuteModule(IntPtr isolate, string path);

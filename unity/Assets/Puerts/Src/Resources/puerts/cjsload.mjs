@@ -5,7 +5,7 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
 
 let loader = global.__tgjsGetLoader();
 delete global.__tgjsGetLoader;

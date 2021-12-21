@@ -58,8 +58,8 @@ namespace puerts
         if (!GPlatform)
         {
             // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
-            int Argc = 1;
-            char* ArgvIn[] = {"--trace-uncaught"};
+            int Argc = 2;
+            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
@@ -240,6 +240,13 @@ namespace puerts
                 }
                 Iter->second.Reset();
             }
+#if !WITH_QUICKJS
+            for (auto Iter = ModuleCacheMap.begin(); Iter != ModuleCacheMap.end(); ++Iter)
+            {
+                Iter->second.Reset();
+            }
+#endif
+            ModuleCacheMap.clear();
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
@@ -250,7 +257,7 @@ namespace puerts
         }
         
 #if WITH_NODEJS
-        node::EmitExit(NodeEnv);
+        // node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
         node::FreeEnvironment(NodeEnv);
         node::FreeIsolateData(NodeIsolateData);
@@ -430,140 +437,6 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
-    }
-
-    v8::MaybeLocal<v8::Module> ResolveModule(
-        v8::Local<v8::Context> Context,
-        v8::Local<v8::String> Specifier,
-        v8::Local<v8::Module> Referrer
-    )
-    {
-        v8::Isolate* Isolate = Context->GetIsolate();
-        JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        
-        v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
-        std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
-        if (Code == nullptr) 
-        {
-            return v8::MaybeLocal<v8::Module>();
-        }
-
-        v8::ScriptOrigin Origin(Specifier,
-                          v8::Integer::New(Isolate, 0),                      // line offset
-                          v8::Integer::New(Isolate, 0),                    // column offset
-                          v8::True(Isolate),                    // is cross origin
-                          v8::Local<v8::Integer>(),                 // script id
-                          v8::Local<v8::Value>(),                   // source map URL
-                          v8::False(Isolate),                   // is opaque (?)
-                          v8::False(Isolate),                   // is WASM
-                          v8::True(Isolate),                    // is ES Module
-                          v8::PrimitiveArray::New(Isolate, 10));
-        v8::TryCatch TryCatch(Isolate);
-
-        v8::Local<v8::Module> Module;
-        v8::ScriptCompiler::CompileOptions options;
-        
-        v8::ScriptCompiler::Source Source(FV8Utils::V8String(Isolate, Code), Origin);
-
-        if (!v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
-                .ToLocal(&Module)) 
-        {
-            JsEngine->LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return v8::MaybeLocal<v8::Module>();
-        }
-
-        return Module;
-    }
-
-    bool JSEngine::ExecuteModule(const char* Path) 
-    {
-        if (ModuleResolver == nullptr) 
-        {
-            LastExceptionInfo = "ModuleResolver is not registered";
-            return false;
-        }
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-        v8::TryCatch TryCatch(Isolate);
-
-        v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, ""),
-                          v8::Integer::New(Isolate, 0),                      // line offset
-                          v8::Integer::New(Isolate, 0),                    // column offset
-                          v8::True(Isolate),                    // is cross origin
-                          v8::Local<v8::Integer>(),                 // script id
-                          v8::Local<v8::Value>(),                   // source map URL
-                          v8::False(Isolate),                   // is opaque (?)
-                          v8::False(Isolate),                   // is WASM
-                          v8::True(Isolate),                    // is ES Module
-                          v8::PrimitiveArray::New(Isolate, 10));
-        
-        v8::ScriptCompiler::Source Source(FV8Utils::V8String(Isolate, ""), Origin);
-        v8::Local<v8::Module> EntryModule = v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
-                .ToLocalChecked();
-                
-        v8::MaybeLocal<v8::Module> Module = ResolveModule(Context, FV8Utils::V8String(Isolate, Path), EntryModule);
-
-        if (Module.IsEmpty())
-        {
-            return false;
-        }
-
-        v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
-        v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
-        if (!ret.ToChecked()) 
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-        v8::MaybeLocal<v8::Value> evalRet = ModuleChecked->Evaluate(Context);
-        if (evalRet.IsEmpty()) 
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-        else
-        {
-            ResultInfo.Result.Reset(Isolate, evalRet.ToLocalChecked());
-        }
-        return true;
-    }
-
-    bool JSEngine::Eval(const char *Code, const char* Path)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        v8::Local<v8::String> Url = FV8Utils::V8String(Isolate, Path == nullptr ? "" : Path);
-        v8::Local<v8::String> Source = FV8Utils::V8String(Isolate, Code);
-        v8::ScriptOrigin Origin(Url);
-        v8::TryCatch TryCatch(Isolate);
-
-        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-        if (CompiledScript.IsEmpty())
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-        auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);//error info output
-        if (TryCatch.HasCaught())
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-
-        if (!maybeValue.IsEmpty())
-        {
-            ResultInfo.Result.Reset(Isolate, maybeValue.ToLocalChecked());
-        }
-
-        return true;
     }
 
     static void NewWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)

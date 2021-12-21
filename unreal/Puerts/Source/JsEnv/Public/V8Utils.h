@@ -31,9 +31,6 @@ enum ArgType
     EArgObject
 };
 
-#define RELEASED_UOBJECT ((UObject*)12)
-#define RELEASED_UOBJECT_MEMBER ((void*)12)
-
 class FV8Utils
 {
 public:

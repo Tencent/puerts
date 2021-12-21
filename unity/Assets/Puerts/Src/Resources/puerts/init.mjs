@@ -5,10 +5,10 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
 
-"use strict";
-var global = global || globalThis;
+var global = global || globalThis || (function () { return this; }());
 // polyfill old code after use esm module.
 global.global = global;
+
 let puerts = global.puerts = global.puerts || {};
 
 puerts.loadType = global.__tgjsLoadType;
