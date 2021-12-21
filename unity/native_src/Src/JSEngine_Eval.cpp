@@ -10,6 +10,9 @@
 #endif
 namespace puerts {
 #if !WITH_QUICKJS
+    std::string CjsModulePrepend("export default require('");
+    std::string CjsModuleAppend("');");
+
     v8::MaybeLocal<v8::Module> ResolveModule(
         v8::Local<v8::Context> Context,
         v8::Local<v8::String> Specifier,
@@ -21,6 +24,7 @@ namespace puerts {
         
         v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
+        size_t Specifier_length = Specifier_std.length();
 
         auto Iter = JsEngine->ModuleCacheMap.find(Specifier_std);
         if (Iter != JsEngine->ModuleCacheMap.end())//create and link
@@ -28,9 +32,9 @@ namespace puerts {
             return v8::Local<v8::Module>::New(Isolate, Iter->second);
         }
         v8::Local<v8::Module> Module;
-        char* Code;
+        const char* Code;
 
-        if (Specifier_std.substr(Specifier_std.length() - 4, Specifier_std.length()).compare(".mjs") == 0) 
+        if (Specifier_std.substr(Specifier_length - 4, Specifier_length).compare(".mjs") == 0) 
         {
 
             Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
@@ -41,10 +45,7 @@ namespace puerts {
         } 
         else 
         {
-            Code = new char[0]; 
-            strcat(Code, "export default require('");
-            strcat(Code, Specifier_std.c_str());
-            strcat(Code, "')");
+            Code = (CjsModulePrepend + Specifier_std + CjsModuleAppend).c_str();
         }
         v8::ScriptOrigin Origin(Specifier,
                             v8::Integer::New(Isolate, 0),                      // line offset
@@ -79,6 +80,7 @@ namespace puerts {
         JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
 
         std::string name_std(name);
+        size_t name_length = name_std.length();
 
         auto Iter = JsEngine->ModuleCacheMap.find(name_std);
         if (Iter != JsEngine->ModuleCacheMap.end())//create and link
@@ -87,7 +89,7 @@ namespace puerts {
         }
 
         char* Code;
-        if (name_std.substr(name_std.length() - 4, name_std.length()).compare(".mjs") == 0) 
+        if (name_std.substr(name_length - 4, name_length).compare(".mjs") == 0) 
         {
 
             Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
@@ -98,10 +100,7 @@ namespace puerts {
         } 
         else 
         {
-            Code = new char[0]; 
-            strcat(Code, "export default require('");
-            strcat(Code, name_std.c_str());
-            strcat(Code, "')");
+            Code = (CjsModulePrepend + name_std + CjsModuleAppend).c_str();
         }
 
         JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
@@ -158,7 +157,7 @@ namespace puerts {
 
         v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
         v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
-        if (!ret.ToChecked()) 
+        if (ret.IsNothing() || !ret.ToChecked()) 
         {
             LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
             return false;
