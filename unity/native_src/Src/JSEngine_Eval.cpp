@@ -21,19 +21,31 @@ namespace puerts {
         
         v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-        
+
         auto Iter = JsEngine->ModuleCacheMap.find(Specifier_std);
         if (Iter != JsEngine->ModuleCacheMap.end())//create and link
         {
             return v8::Local<v8::Module>::New(Isolate, Iter->second);
         }
+        v8::Local<v8::Module> Module;
+        char* Code;
 
-        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
-        if (Code == nullptr) 
+        if (Specifier_std.substr(Specifier_std.length() - 4, Specifier_std.length()).compare(".mjs") == 0) 
         {
-            return v8::MaybeLocal<v8::Module>();
-        }
 
+            Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
+            if (Code == nullptr) 
+            {
+                return v8::MaybeLocal<v8::Module>();
+            }
+        } 
+        else 
+        {
+            Code = new char[0]; 
+            strcat(Code, "export default require('");
+            strcat(Code, Specifier_std.c_str());
+            strcat(Code, "')");
+        }
         v8::ScriptOrigin Origin(Specifier,
                             v8::Integer::New(Isolate, 0),                      // line offset
                             v8::Integer::New(Isolate, 0),                    // column offset
@@ -46,7 +58,6 @@ namespace puerts {
                             v8::PrimitiveArray::New(Isolate, 10));
         v8::TryCatch TryCatch(Isolate);
 
-        v8::Local<v8::Module> Module;
         v8::ScriptCompiler::CompileOptions options;
         
         v8::ScriptCompiler::Source Source(FV8Utils::V8String(Isolate, Code), Origin);
@@ -59,7 +70,6 @@ namespace puerts {
         }
 
         JsEngine->ModuleCacheMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
-
         return Module;
     }
 #else 
