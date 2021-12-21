@@ -86,7 +86,23 @@ namespace puerts {
             return Iter->second;
         }
 
-        const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
+        char* Code;
+        if (name_std.substr(name_std.length() - 4, name_std.length()).compare(".mjs") == 0) 
+        {
+
+            Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
+            if (Code == nullptr) 
+            {
+                return nullptr;
+            }
+        } 
+        else 
+        {
+            Code = new char[0]; 
+            strcat(Code, "export default require('");
+            strcat(Code, name_std.c_str());
+            strcat(Code, "')");
+        }
 
         JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
