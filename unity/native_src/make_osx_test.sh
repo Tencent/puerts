@@ -5,7 +5,7 @@ then
 fi
 
 mkdir -p build_osx_$ENGINE && cd build_osx_$ENGINE
-cmake -DFOR_UT=ON ../
+cmake -DJS_ENGINE=$ENGINE -DFOR_UT=ON ../
 cd ..
 cmake --build build_osx_$ENGINE --config Debug
 cp -r build_osx_$ENGINE/libpuerts.dylib ../general/Bin/
