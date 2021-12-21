@@ -1175,6 +1175,15 @@ namespace Puerts.UnitTest
             });
             jsEnv.Dispose();
         }
+        [Test]
+        public void ESModuleImportCSharp()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"require('csharp').System.Console.WriteLine('ESModuleImportCSharp')");
+            var jsEnv = new JsEnv(loader);
+            jsEnv.ExecuteModule("whatever.mjs");
+            jsEnv.Dispose();
+        }
     }
 }
 
