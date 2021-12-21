@@ -1181,7 +1181,14 @@ namespace Puerts.UnitTest
             var loader = new TxtLoader();
             loader.AddMockFileContent("whatever.mjs", @"require('csharp').System.Console.WriteLine('ESModuleImportCSharp')");
             var jsEnv = new JsEnv(loader);
-            jsEnv.ExecuteModule("whatever.mjs");
+            try
+            {
+                jsEnv.ExecuteModule("whatever.mjs");
+            }
+            catch (Exception e)
+            {
+                Assert.True(false);
+            }
             jsEnv.Dispose();
         }
     }
