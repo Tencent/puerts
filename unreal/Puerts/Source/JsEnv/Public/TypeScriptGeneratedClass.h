@@ -24,8 +24,6 @@ class JSENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
 public:
     TWeakPtr<puerts::ITsDynamicInvoker> DynamicInvoker;
 
-    bool InjectNotFinished = true;
-
 	TSet<FName> FunctionToRedirect;
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);

@@ -904,19 +904,23 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
-static void FinishInjection(UClass* InClass)
+void FJsEnvImpl::FinishInjection(UClass* InClass)
 {
     while (InClass && !InClass->IsNative())
     {
         auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
-        if (TempTypeScriptGeneratedClass && TempTypeScriptGeneratedClass->InjectNotFinished) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
+        if (TempTypeScriptGeneratedClass) //InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
         {
-            for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+            auto Iter = BindInfoMap.find(TempTypeScriptGeneratedClass);
+            if (Iter != BindInfoMap.end() && Iter->second.InjectNotFinished)
             {
-                auto Function = *FuncIt;
-                TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish(Function);
+                for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+                {
+                    auto Function = *FuncIt;
+                    TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish(Function);
+                }
+                Iter->second.InjectNotFinished = false;
             }
-            TempTypeScriptGeneratedClass->InjectNotFinished = false;
         }
         InClass = InClass->GetSuperClass();
     }
@@ -1194,7 +1198,11 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
                 //MakeSureInject(TypeScriptGeneratedClass, true, true);
                 TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
                 TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                TypeScriptGeneratedClass->InjectNotFinished = true; //CDO construct meat first load or recompiled
+                auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
+                if (Iter != BindInfoMap.end())
+                {
+                    Iter->second.InjectNotFinished = true; //CDO construct meat first load or recompiled
+                }
             }
         }
         else if (UNLIKELY(!IsCDO && Class == UTypeScriptGeneratedClass::StaticClass()))
@@ -1202,7 +1210,11 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
             TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
             TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
             TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-            TypeScriptGeneratedClass->InjectNotFinished = true;
+            auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
+            if (Iter != BindInfoMap.end())
+            {
+                Iter->second.InjectNotFinished = true; //CDO construct meat first load or recompiled
+            }
         }
         
     }
@@ -1502,9 +1514,10 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         {
             ConstructPendingObject(CDO);
         }
+        Iter = BindInfoMap.find(Class);
     }
 
-    if (Class->InjectNotFinished)
+    if (Iter == BindInfoMap.end() || Iter->second.InjectNotFinished)
     {
         //Logger->Warn(FString::Printf(TEXT("force %s injection in %s(%p) construct"), *Class->GetName(), *Object->GetName(), Object));
         MakeSureInject(Class, true, false);
