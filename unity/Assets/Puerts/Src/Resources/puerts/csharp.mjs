@@ -69,6 +69,7 @@ function createTypeProxy(namespace) {
 }
 
 let csharpModule = createTypeProxy(undefined);
+csharpModule.default = csharpModule;
 puerts.registerBuildinModule('csharp', csharpModule);
 
 csharpModule.System.Object.prototype.toString = csharpModule.System.Object.prototype.ToString;
