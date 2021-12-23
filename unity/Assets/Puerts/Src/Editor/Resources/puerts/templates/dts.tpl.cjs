@@ -106,6 +106,10 @@ module.exports = function TypingTemplate(data) {
 
     tt`
 declare module 'csharp' {
+    import * as CSharp from 'csharp';
+    export default CSharp;
+}
+declare module 'csharp' {
     interface $Ref<T> {
         value: T
     }

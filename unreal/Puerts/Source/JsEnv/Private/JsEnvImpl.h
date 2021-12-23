@@ -508,10 +508,13 @@ private:
         FName Name;
         v8::UniquePersistent<v8::Function> Constructor;
         v8::UniquePersistent<v8::Object> Prototype;
+        bool InjectNotFinished;
     };
 
     std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
 
+    void FinishInjection(UClass* InClass);
+    
     void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject, bool RebindObject);
 
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;

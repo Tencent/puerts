@@ -31,6 +31,7 @@
 #include "TypeScriptGeneratedClass.h"
 #include "TypeScriptBlueprint.h"
 #include "utility"
+#include "PuertsModule.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
@@ -51,8 +52,13 @@ UClass* FindClass(const TCHAR* ClassName)
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsEditorModule, Log, All);
 
+static bool IsPlaying()
+{
+    return GEditor && IPuertsModule::IsInPIEMode();
+}
+
 #define CanChangeCheckWithBoolRet() \
-    if (GEditor && GEditor->IsPlaySessionInProgress()) \
+    if (IsPlaying()) \
     { \
         UE_LOG(PuertsEditorModule, Error, TEXT("change the layout of class[%s] in PIE mode is forbiden!"), *GeneratedClass->GetName()); \
         NeedSave = false; \
@@ -60,7 +66,7 @@ DEFINE_LOG_CATEGORY_STATIC(PuertsEditorModule, Log, All);
     }
 
 #define CanChangeCheck() \
-    if (GEditor && GEditor->IsPlaySessionInProgress()) \
+    if (IsPlaying()) \
     { \
         UE_LOG(PuertsEditorModule, Error, TEXT("change the layout of class[%s] in PIE mode is forbiden!"), *GeneratedClass->GetName()); \
         NeedSave = false; \
@@ -96,7 +102,7 @@ bool UPEBlueprintAsset::LoadOrCreate(const FString& InName, const FString& InPat
 
     if (!ParentClass) return false;
 
-    if (GEditor && GEditor->IsPlaySessionInProgress())
+    if (IsPlaying())
     {
         UE_LOG(PuertsEditorModule, Error, TEXT("create class[%s] in PIE mode is forbiden!"), *InName);
         return false;
@@ -966,7 +972,7 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 {
-    if (GEditor && GEditor->IsPlaySessionInProgress())
+    if (IsPlaying())
     {
         return;
     }
@@ -991,7 +997,7 @@ void UPEBlueprintAsset::RemoveNotExistedMemberVariable()
 
 void UPEBlueprintAsset::RemoveNotExistedFunction()
 {
-    if (GEditor && GEditor->IsPlaySessionInProgress())
+    if (IsPlaying())
     {
         return;
     }

@@ -39,6 +39,13 @@ public:
 #endif
 
 #if WITH_EDITOR
+    bool bIsInPIE = false;
+
+    virtual bool IsInPIE() override
+    {
+        return bIsInPIE;
+    }
+
     void PreBeginPIE(bool bIsSimulating);
     void EndPIE(bool bIsSimulating);
     bool HandleSettingsSaved();
@@ -282,6 +289,7 @@ void FPuertsModule::OnUObjectArrayShutdown()
 #if WITH_EDITOR
 void FPuertsModule::PreBeginPIE(bool bIsSimulating)
 {
+    bIsInPIE = true;
     if (Enabled && GetDefault<UPuertsSetting>()->ResetInPIE == EJsEnvResetPhase::PreBeginPIE)
     {
         UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in PreBeginPIE"));
@@ -290,6 +298,7 @@ void FPuertsModule::PreBeginPIE(bool bIsSimulating)
 }
 void FPuertsModule::EndPIE(bool bIsSimulating)
 {
+    bIsInPIE = false;
     if (Enabled && GetDefault<UPuertsSetting>()->ResetInPIE == EJsEnvResetPhase::EndPIE)
     {
         UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in EndPIE"));
