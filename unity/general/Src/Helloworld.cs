@@ -7,7 +7,10 @@
 
 using System.IO;
 using System.Reflection;
+using System.Diagnostics;
 using Puerts;
+using System.Collections.Generic;
+using System;
 
 public class TxtLoader : ILoader
 {
@@ -18,13 +21,29 @@ public class TxtLoader : ILoader
 
     public bool FileExists(string filepath)
     {
-        return File.Exists(Path.Combine(root, filepath + ".txt"));
+        return mockFileContent.ContainsKey(filepath) || File.Exists(Path.Combine(root, filepath));
     }
 
     public string ReadFile(string filepath, out string debugpath)
     {
         debugpath = Path.Combine(root, filepath);
-        return File.ReadAllText(debugpath + ".txt");
+
+        string mockContent;
+        if (mockFileContent.TryGetValue(filepath, out mockContent))
+        {
+            return mockContent;
+        }
+
+        using (StreamReader reader = new StreamReader(debugpath))
+        {
+            return reader.ReadToEnd();
+        }
+    }
+
+    private Dictionary<string, string> mockFileContent = new Dictionary<string, string>();
+    public void AddMockFileContent(string fileName, string content)
+    {
+        mockFileContent.Add(fileName, content);
     }
 }
 
@@ -37,7 +56,6 @@ public class PuertsTest
             const CS = require('csharp');
             CS.System.Console.WriteLine('hello world');
         ");
-
         jsEnv.Dispose();
     }
 }
