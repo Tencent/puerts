@@ -55,6 +55,7 @@ set ( PUERTS_SRC
     Src/Puerts.cpp
     Src/Log.cpp
     Src/JSEngine.cpp
+    Src/JSEngine_Eval.cpp
     Src/JSFunction.cpp
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )

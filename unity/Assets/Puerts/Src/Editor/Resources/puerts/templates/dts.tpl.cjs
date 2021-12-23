@@ -70,7 +70,7 @@ function typeNameWithOutGenericType(type, name) {
 }
 
 // TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
-module.exports = function TypingTemplate(data) {
+module.exports = function TypingTemplate(data, esmMode) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -103,13 +103,20 @@ module.exports = function TypingTemplate(data) {
 
         ret += newLines.join('\n');
     }
-
-    tt`
+if (!esmMode) {
+    tt`   
 declare module 'csharp' {
     import * as CSharp from 'csharp';
     export default CSharp;
 }
+    `
+}
+    tt`
 declare module 'csharp' {
+    ${esmMode ? `
+    export default CSharp;
+namespace CSharp {
+    `: ""}
     interface $Ref<T> {
         value: T
     }
@@ -252,6 +259,11 @@ declare module 'csharp' {
     t`
     }
     `
+    if (esmMode) {
+        t`
+    }
+        `
+    }
 
     return ret.replace(/\n(\s*)\n/g, '\n');
 };

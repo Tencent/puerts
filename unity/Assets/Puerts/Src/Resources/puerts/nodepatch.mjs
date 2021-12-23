@@ -5,12 +5,10 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-(function() {
-    process.on('uncaughtException', (e) => { console.error(e); })
-    process.exit = function() {
-        console.log('`process.exit` is not allowed in puerts')
-    }
-    process.kill = function() {
-        console.log('`process.kill` is not allowed in puerts')
-    }
-})()
+process.on('uncaughtException', (e) => { console.error(e); })
+process.exit = function() {
+    console.log('`process.exit` is not allowed in puerts')
+}
+process.kill = function() {
+    console.log('`process.kill` is not allowed in puerts')
+}

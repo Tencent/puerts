@@ -5,8 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-var global = global || (function () { return this; }());
-(function (global) {
-    "use strict";
-    global.process = { env: { NODE_ENV: 'development' } };
-}(global));
+var global = global || globalThis || (function () { return this; }());
+
+global.process = { env: { NODE_ENV: 'development' } };
