@@ -5,14 +5,12 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-function toJsArray(csArr) {
-    let arr = [];
-    for(var i = 0; i < csArr.Length; i++) {
-        arr.push(csArr.get_Item(i));
-    }
-    return arr;
-}
-
+/**
+ * this template file is write for generating the wrapper register code
+ * 
+ * @param {GenClass.TypeGenInfo[]} types
+ * @returns 
+ */
 module.exports = function AutoRegTemplate(types) {
     types = toJsArray(types);
     return `
@@ -36,3 +34,11 @@ ${
 
     `.trim();
 };
+
+function toJsArray(csArr) {
+    let arr = [];
+    for(var i = 0; i < csArr.Length; i++) {
+        arr.push(csArr.get_Item(i));
+    }
+    return arr;
+}

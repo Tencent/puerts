@@ -5,71 +5,14 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-function parameterDef(pinfo, isStatic, type) {
-    return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + (isStatic ? typeNameWithOutGenericType(type, pinfo.TypeName) : pinfo.TypeName);
-}
-function typeKeyword(type) {
-    if (type.IsDelegate) {
-        return 'interface';
-    } else if (type.IsInterface) {
-        return 'interface';
-    } else if (type.IsEnum) {
-        return 'enum';
-    } else {
-        return 'class'
-    }
-}
-
-function toJsArray(csArr) {
-    let arr = [];
-    for(var i = 0; i < csArr.Length; i++) {
-        arr.push(csArr.get_Item(i));
-    }
-    return arr;
-}
-function formatPropertyOrMethodName(name) {
-    /*处理explicit interface implementation*/
-    if (name.indexOf(".") != -1) {
-        return name.split(".").pop();
-    } else {
-        return name;
-    }
-}
-function distinctByName(arr) {
-    const exist = {};
-    return toJsArray(arr).filter(item=> {
-        const itemExist = exist[item.Name];
-        exist[item.Name] = true;
-        return !itemExist;
-    });
-
-}
-function typeDeclaration(type, level1) {
-    var result = type.Name;
-    if (type.IsGenericTypeDefinition) {
-        result += "<" + Array.prototype.join.call(toJsArray(type.GenericParameters), ', ') + ">";
-    }
-    if (level1 && type.BaseType) {
-        result += " extends " + typeDeclaration(type.BaseType);
-    }
-    var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
-    if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
-        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(interface=> typeDeclaration(interface)).join(', '))
-    }
-    if (!level1 && type.Namespace) {
-        result = type.Namespace + "." + result;
-    }
-    return result;
-}
-function typeNameWithOutGenericType(type, name) {
-    if (type.IsGenericTypeDefinition) {
-        const gParameters = toJsArray(type.GenericParameters);
-        return gParameters.indexOf(name) != -1 ? "any" : name
-    }
-    return name;
-}
-
-// TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
+/**
+ * this template file is write for generating the typescript declartion file
+ * 
+ * TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
+ * @param {DTS.TypingGenInfo} data 
+ * @param {boolean} esmMode will only generate default export for d.ts.
+ * @returns 
+ */
 module.exports = function TypingTemplate(data, esmMode) {
     
     let ret = '';
@@ -267,3 +210,66 @@ namespace CSharp {
 
     return ret.replace(/\n(\s*)\n/g, '\n');
 };
+function parameterDef(pinfo, isStatic, type) {
+    return (pinfo.IsParams ? ("..." + pinfo.Name) : "$" + pinfo.Name) + (pinfo.IsOptional?"?":"") + ": " + (isStatic ? typeNameWithOutGenericType(type, pinfo.TypeName) : pinfo.TypeName);
+}
+function typeKeyword(type) {
+    if (type.IsDelegate) {
+        return 'interface';
+    } else if (type.IsInterface) {
+        return 'interface';
+    } else if (type.IsEnum) {
+        return 'enum';
+    } else {
+        return 'class'
+    }
+}
+
+function toJsArray(csArr) {
+    let arr = [];
+    for(var i = 0; i < csArr.Length; i++) {
+        arr.push(csArr.get_Item(i));
+    }
+    return arr;
+}
+function formatPropertyOrMethodName(name) {
+    /*处理explicit interface implementation*/
+    if (name.indexOf(".") != -1) {
+        return name.split(".").pop();
+    } else {
+        return name;
+    }
+}
+function distinctByName(arr) {
+    const exist = {};
+    return toJsArray(arr).filter(item=> {
+        const itemExist = exist[item.Name];
+        exist[item.Name] = true;
+        return !itemExist;
+    });
+
+}
+function typeDeclaration(type, level1) {
+    var result = type.Name;
+    if (type.IsGenericTypeDefinition) {
+        result += "<" + Array.prototype.join.call(toJsArray(type.GenericParameters), ', ') + ">";
+    }
+    if (level1 && type.BaseType) {
+        result += " extends " + typeDeclaration(type.BaseType);
+    }
+    var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
+    if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
+        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(interface=> typeDeclaration(interface)).join(', '))
+    }
+    if (!level1 && type.Namespace) {
+        result = type.Namespace + "." + result;
+    }
+    return result;
+}
+function typeNameWithOutGenericType(type, name) {
+    if (type.IsGenericTypeDefinition) {
+        const gParameters = toJsArray(type.GenericParameters);
+        return gParameters.indexOf(name) != -1 ? "any" : name
+    }
+    return name;
+}

@@ -89,69 +89,21 @@ let csharpKeywords = {};
     csharpKeywords[keywold] = '@' + keywold;
 });
 
-function toJsArray(csArr) {
-    let arr = [];
-    for (var i = 0; i < csArr.Length; i++) {
-        arr.push(csArr.get_Item(i));
-    }
-    return arr;
-}
-function UnK(identifier) {
-    return csharpKeywords.hasOwnProperty(identifier) ? csharpKeywords[identifier] : identifier;
-}
-
-function getArgument(typeInfo, argHelper, idx) {
-    let typeName = typeInfo.TypeName;
-    let isByRef = typeInfo.IsByRef ? "true" : "false";
-    if (typeInfo.IsParams) {
-        return `${argHelper}.GetParams<${typeName}>(info, ${idx}, paramLen)`;
-    } else if (typeInfo.IsEnum) {
-        return `(${typeName})${argHelper}.${fixGet[typeInfo.UnderlyingTypeName]}(${isByRef})`;
-    } else if (typeName in fixGet) {
-        return `${argHelper}.${fixGet[typeName]}(${isByRef})`;
-    } else {
-        return `${argHelper}.Get<${typeName}>(${isByRef})`;
-    }
-}
-function setReturn(typeInfo) {
-    let typeName = typeInfo.TypeName;
-    if (typeName in fixReturn) {
-        return fixReturn[typeName];
-    } else if (typeInfo.IsEnum) {
-        return fixReturn[typeInfo.UnderlyingTypeName].replace('result', `(${typeInfo.UnderlyingTypeName})result`);
-    } else {
-        return `Puerts.ResultHelper.Set((int)data, isolate, info, result)`;
-    }
-}
-function operatorCall(methodName, argCount, typeInfo) {
-    if (methodName == 'op_Implicit') {
-        return `(${typeInfo.TypeName})arg0`;
-    }
-    if (argCount == 1) {
-        return operatorMap[methodName] + 'arg0';
-    } else if (argCount == 2) {
-        return 'arg0 ' + operatorMap[methodName] + ' arg1';
-    }
-}
-
-function setSelf(type) {
-    if (type.IsValueType) {
-        return `Puerts.Utils.SetSelf((int)data, self, obj);`
-    } else {
-        return '';
-    }
-}
-
-
-function paramLenCheck(group) {
-    let len = group.get_Item(0).ParameterInfos.Length;
-    return group.get_Item(0).HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
-}
-
+/**
+ * generate the paramList. For Array.map() using
+ * @param {} paramInfo 
+ * @param {*} idx 
+ * @returns 
+ */
 const paramListLambda = (paramInfo, idx) => `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? "ref " : "")}Arg${idx}`;
 
-// TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
+/**
+ * this template is for generating the c# wrapper class
+ * @param {GenClass.TypeGenInfo} data 
+ * @returns 
+ */
 module.exports = function TypingTemplate(data) {
+    let ret = '';
     function getSelf(type) {
         if (data.BlittableCopy) {
             return `(${type.Name}*)self`;
@@ -165,7 +117,6 @@ module.exports = function TypingTemplate(data) {
         return data.BlittableCopy ? "(*obj)" : "obj";
     }
 
-    let ret = '';
     function _es6tplJoin(str, ...values) {
         return str.map((strFrag, index) => {
             if (index == str.length - 1) {
@@ -658,4 +609,63 @@ namespace PuertsStaticWrap
 }
 `
     return ret;
+}
+
+function toJsArray(csArr) {
+    let arr = [];
+    for (var i = 0; i < csArr.Length; i++) {
+        arr.push(csArr.get_Item(i));
+    }
+    return arr;
+}
+function UnK(identifier) {
+    return csharpKeywords.hasOwnProperty(identifier) ? csharpKeywords[identifier] : identifier;
+}
+
+function getArgument(typeInfo, argHelper, idx) {
+    let typeName = typeInfo.TypeName;
+    let isByRef = typeInfo.IsByRef ? "true" : "false";
+    if (typeInfo.IsParams) {
+        return `${argHelper}.GetParams<${typeName}>(info, ${idx}, paramLen)`;
+    } else if (typeInfo.IsEnum) {
+        return `(${typeName})${argHelper}.${fixGet[typeInfo.UnderlyingTypeName]}(${isByRef})`;
+    } else if (typeName in fixGet) {
+        return `${argHelper}.${fixGet[typeName]}(${isByRef})`;
+    } else {
+        return `${argHelper}.Get<${typeName}>(${isByRef})`;
+    }
+}
+function setReturn(typeInfo) {
+    let typeName = typeInfo.TypeName;
+    if (typeName in fixReturn) {
+        return fixReturn[typeName];
+    } else if (typeInfo.IsEnum) {
+        return fixReturn[typeInfo.UnderlyingTypeName].replace('result', `(${typeInfo.UnderlyingTypeName})result`);
+    } else {
+        return `Puerts.ResultHelper.Set((int)data, isolate, info, result)`;
+    }
+}
+function operatorCall(methodName, argCount, typeInfo) {
+    if (methodName == 'op_Implicit') {
+        return `(${typeInfo.TypeName})arg0`;
+    }
+    if (argCount == 1) {
+        return operatorMap[methodName] + 'arg0';
+    } else if (argCount == 2) {
+        return 'arg0 ' + operatorMap[methodName] + ' arg1';
+    }
+}
+
+function setSelf(type) {
+    if (type.IsValueType) {
+        return `Puerts.Utils.SetSelf((int)data, self, obj);`
+    } else {
+        return '';
+    }
+}
+
+
+function paramLenCheck(group) {
+    let len = group.get_Item(0).ParameterInfos.Length;
+    return group.get_Item(0).HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
 }
