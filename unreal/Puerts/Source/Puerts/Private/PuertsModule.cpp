@@ -19,6 +19,7 @@
 #include "GameDelegates.h"
 #endif
 #include "Commandlets/Commandlet.h"
+#include "TypeScriptGeneratedClass.h"
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
 
@@ -49,14 +50,6 @@ public:
     void PreBeginPIE(bool bIsSimulating);
     void EndPIE(bool bIsSimulating);
     bool HandleSettingsSaved();
-    void HandleMapChanged(UWorld* InWorld, EMapChangeType InMapChangeType)
-    {
-        if (Enabled && EMapChangeType::TearDownWorld == InMapChangeType && IsInGameThread() && GetDefault<UPuertsSetting>()->ResetInTearDownWorld)
-        {
-            UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in world teardown"));
-            MakeSharedJsEnv();
-        }
-    }
 #endif
 
     void RegisterSettings();
@@ -181,7 +174,7 @@ public:
         return Result;
     }
 
-    void MakeSharedJsEnv()
+    virtual void MakeSharedJsEnv() override
     {
         const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
@@ -290,19 +283,24 @@ void FPuertsModule::OnUObjectArrayShutdown()
 void FPuertsModule::PreBeginPIE(bool bIsSimulating)
 {
     bIsInPIE = true;
-    if (Enabled && GetDefault<UPuertsSetting>()->ResetInPIE == EJsEnvResetPhase::PreBeginPIE)
+    if (Enabled)
     {
-        UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in PreBeginPIE"));
         MakeSharedJsEnv();
+        UE_LOG(PuertsModule, Display, TEXT("JsEnv created"));
     }
 }
 void FPuertsModule::EndPIE(bool bIsSimulating)
 {
     bIsInPIE = false;
-    if (Enabled && GetDefault<UPuertsSetting>()->ResetInPIE == EJsEnvResetPhase::EndPIE)
+    if (Enabled)
     {
-        UE_LOG(PuertsModule, Display, TEXT("reset the JsEnv in EndPIE"));
-        MakeSharedJsEnv();
+        JsEnv.Reset();
+        for (TObjectIterator<UTypeScriptGeneratedClass> It; It; ++It)
+        {
+            UTypeScriptGeneratedClass* Class = *It;
+            Class->CancelRedirection();
+        }
+        UE_LOG(PuertsModule, Display, TEXT("JsEnv reset"));
     }
 }
 #endif
@@ -327,22 +325,6 @@ void FPuertsModule::RegisterSettings()
     {
         GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
         FString Text; 
-        if( GConfig->GetString( SectionName, TEXT("ResetInPIE"), Text, PuertsConfigIniPath ) )
-        {
-            if (Text.Equals(TEXT("EndPIE")))
-            {
-                Settings.ResetInPIE = EJsEnvResetPhase::EndPIE;
-            }
-            else if (Text.Equals(TEXT("None")))
-            {
-                Settings.ResetInPIE = EJsEnvResetPhase::None;
-            }
-            else
-            {
-                Settings.ResetInPIE = EJsEnvResetPhase::PreBeginPIE;
-            }
-        }
-        GConfig->GetBool(SectionName, TEXT("ResetInTearDownWorld"), Settings.ResetInTearDownWorld, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
         GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, PuertsConfigIniPath);
@@ -384,8 +366,8 @@ void FPuertsModule::StartupModule()
         FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
         
         //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
-        FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-        LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
+        //FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+        //LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
     }
 #endif
 
@@ -415,7 +397,9 @@ void FPuertsModule::StartupModule()
 void FPuertsModule::Enable()
 {
     Enabled = true;
+#if !WITH_EDITOR
     MakeSharedJsEnv();
+#endif
     GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
