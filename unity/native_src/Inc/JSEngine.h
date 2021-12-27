@@ -63,6 +63,8 @@
 
 #endif
 
+typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx);
+
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
 
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
@@ -118,6 +120,8 @@ public:
 
     PUERTS_EXPORT_FOR_UT void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
+    PUERTS_EXPORT_FOR_UT bool ExecuteModule(const char* Path);
+    
     PUERTS_EXPORT_FOR_UT bool Eval(const char *Code, const char* Path);
 
     PUERTS_EXPORT_FOR_UT int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
@@ -169,8 +173,15 @@ public:
         return FV8Utils::IsolateData<JSEngine>(Isolate);
     }
 
+    int32_t Idx;
+    
+    CSharpModuleResolveCallback ModuleResolver;
+#if defined(WITH_QUICKJS)
+    std::map<std::string, JSModuleDef*> ModuleCacheMap;
+#else
+    std::map<std::string, v8::UniquePersistent<v8::Module>> ModuleCacheMap;
+#endif
 private:
-
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;
 
