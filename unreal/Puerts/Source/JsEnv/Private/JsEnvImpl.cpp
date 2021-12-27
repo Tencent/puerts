@@ -968,6 +968,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                 FBindInfo BindInfo;
                 BindInfo.Name = *ModuleName;
                 BindInfo.Prototype.Reset(Isolate, v8::Object::New(Isolate));
+                BindInfo.InjectNotFinished = true;
                 BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
             }
 
