@@ -103,13 +103,13 @@ var global = global || (function () { return this; }());
     global.__tgjsUEClassToJSClass = undefined;
     
     function blueprint(path) {
-        let uclass = UE.Class.Load(path);
+        let uclass = UE.Struct.Load(path);
         if (uclass) {
             let jsclass = UEClassToJSClass(uclass);
             jsclass.__puerts_uclass = uclass;
             return jsclass;
         } else {
-            throw new Error("can not load class in " + path);
+            throw new Error("can not load type in " + path);
         }
     }
     
