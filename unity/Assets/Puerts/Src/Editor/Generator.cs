@@ -809,8 +809,9 @@ namespace Puerts.Editor
                 public bool IsOptional;
                 public override bool Equals(object obj)
                 {
-                    if (obj != null && obj is TsParameterGenInfo info)
+                    if (obj != null && obj is TsParameterGenInfo)
                     {
+                        TsParameterGenInfo info = (TsParameterGenInfo)obj;
                         return this.Name == info.Name &&
                             this.TypeName == info.TypeName &&
                             this.IsByRef == info.IsByRef &&
@@ -860,8 +861,9 @@ namespace Puerts.Editor
                 public bool IsStatic;
                 public override bool Equals(object obj)
                 {
-                    if (obj != null && obj is TsMethodGenInfo info)
+                    if (obj != null && obj is TsMethodGenInfo)
                     {
+                        TsMethodGenInfo info = (TsMethodGenInfo)obj;
                         if (this.ParameterInfos.Length != info.ParameterInfos.Length ||
                             this.Name != info.Name ||
                             this.TypeName != info.TypeName ||
@@ -1267,7 +1269,8 @@ namespace Puerts.Editor
 
                     foreach (var info in methodInfos)
                     {
-                        if (!result.TryGetValue(info.Name, out var list))
+                        List<TsMethodGenInfo> list;
+                        if (!result.TryGetValue(info.Name, out list))
                         {
                             list = new List<TsMethodGenInfo>();
                             result.Add(info.Name, list);
