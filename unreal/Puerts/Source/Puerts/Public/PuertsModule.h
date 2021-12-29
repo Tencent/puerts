@@ -43,6 +43,8 @@ public:
 
     virtual void SetJsEnvSelector(std::function<int(UObject*, int)> InSelector) = 0;
 
+    virtual void MakeSharedJsEnv() = 0;
+
 #if WITH_EDITOR
     virtual bool IsInPIE() = 0;
 #endif

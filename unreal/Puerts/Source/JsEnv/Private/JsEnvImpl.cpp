@@ -914,11 +914,7 @@ void FJsEnvImpl::FinishInjection(UClass* InClass)
             auto Iter = BindInfoMap.find(TempTypeScriptGeneratedClass);
             if (Iter != BindInfoMap.end() && Iter->second.InjectNotFinished)
             {
-                for (TFieldIterator<UFunction> FuncIt(TempTypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
-                {
-                    auto Function = *FuncIt;
-                    TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish(Function);
-                }
+                TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish();
                 Iter->second.InjectNotFinished = false;
             }
         }
@@ -972,6 +968,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                 FBindInfo BindInfo;
                 BindInfo.Name = *ModuleName;
                 BindInfo.Prototype.Reset(Isolate, v8::Object::New(Isolate));
+                BindInfo.InjectNotFinished = true;
                 BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
             }
 

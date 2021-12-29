@@ -34,7 +34,9 @@ public:
 
     void RedirectToTypeScript(UFunction* InFunction);
 
-	void RedirectToTypeScriptFinish(UFunction* InFunction);
+	void RedirectToTypeScriptFinish();
+
+	void CancelRedirection();
 
     bool NotSupportInject();
 
