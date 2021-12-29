@@ -514,8 +514,17 @@ public:
         void *Ptr = const_cast<void *>(ValuePtr);
 
         FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
-        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
-        return Ab;
+        if (ArrayBuffer->bCopy)
+        {
+            v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Length);
+            void* Buff = Ab->GetContents().Data();
+            ::memcpy(Buff, ArrayBuffer->Data, ArrayBuffer->Length);
+            return Ab;
+        }
+        else
+        {
+            return v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+        }
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
@@ -1006,7 +1015,7 @@ struct PlacementNewCreator<DoNothingPropertyTranslator>
 {
     static FPropertyTranslator* Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
     {
-        return new DoNothingPropertyTranslator(InProperty);
+        return new (Ptr) DoNothingPropertyTranslator(InProperty);
     }
 };
 

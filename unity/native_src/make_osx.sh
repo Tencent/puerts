@@ -9,7 +9,7 @@ cmake -DJS_ENGINE=$ENGINE -GXcode ../
 cd ..
 cmake --build build_osx_$ENGINE --config Release
 cmake --install build_osx_$ENGINE --prefix "$(pwd)/build_osx_$ENGINE"
-mv build_osx_$ENGINE/bin/libpuerts.dylib build_osx_$ENGINE/bin/libpuerts.bundle
+mv build_osx_$ENGINE/bin/libpuerts.dylib build_osx_$ENGINE/bin/puerts.bundle
 cp -r $ENGINE/Lib/macOS/*.dylib build_osx_$ENGINE/bin/
 
 mkdir -p ../Assets/Plugins/macOS

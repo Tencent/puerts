@@ -11,14 +11,6 @@
 #include "UObject/NoExportTypes.h"
 #include "PuertsSetting.generated.h"
 
-UENUM(BlueprintType)
-enum class EJsEnvResetPhase : uint8
-{
-	PreBeginPIE = 0,
-	EndPIE = 1,
-	None = 2
-};
-
 UCLASS(config = Puerts, defaultconfig, meta = (DisplayName = "Puerts"))
 class UPuertsSetting : public UObject
 {
@@ -26,12 +18,6 @@ class UPuertsSetting : public UObject
 public:
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = false))
     bool AutoModeEnable = false;
-
-	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Reset Environment in PIE", defaultValue = PreBeginPIE))
-	EJsEnvResetPhase ResetInPIE = EJsEnvResetPhase::PreBeginPIE;
-
-	UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = true))
-	bool ResetInTearDownWorld = true;
 
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Debug Enable", defaultValue = false))
     bool DebugEnable = false;

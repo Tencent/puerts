@@ -558,19 +558,21 @@ namespace Puerts
                 }
 
                 // extensionMethods
-                // 因为内存问题与crash问题移除
-                // IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
-                // if (extensionMethods != null)
-                // {
-                //     var enumerator = extensionMethods.GetEnumerator();
-                //     while (enumerator.MoveNext())
-                //     {
-                //         MethodInfo method = enumerator.Current;
-                //         MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
+                // 因为内存问题与crash问题移入宏中
+#if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
+                IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
+                if (extensionMethods != null)
+                {
+                    var enumerator = extensionMethods.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        MethodInfo method = enumerator.Current;
+                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
 
-                //         AddMethodToSlowBindingGroup(methodKey, method);
-                //     }
-                // }
+                        AddMethodToSlowBindingGroup(methodKey, method);
+                    }
+                }
+#endif
 
                 // fields
                 var fields = type.GetFields(flag);

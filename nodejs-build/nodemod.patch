@@ -1,8 +1,17 @@
 diff --git a/node.gyp b/node.gyp
-index f18a0d58a8..5c4cc23ac0 100644
+index 63f60a924b..d1316050b3 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -818,6 +818,7 @@
+@@ -79,7 +79,7 @@
+       [ 'OS=="win" and '
+         'node_use_openssl=="true" and '
+         'node_shared_openssl=="false"', {
+-        'use_openssl_def%': 1,
++        'use_openssl_def%': 0,
+       }, {
+         'use_openssl_def%': 0,
+       }],
+@@ -621,6 +621,7 @@
              'Dbghelp',
              'Psapi',
              'Ws2_32',
@@ -11,7 +20,7 @@ index f18a0d58a8..5c4cc23ac0 100644
          }],
          [ 'node_use_etw=="true"', {
 diff --git a/vcbuild.bat b/vcbuild.bat
-index 4316658bb4..a455f60339 100644
+index b5c5a53dd7..d66e3a7bf8 100644
 --- a/vcbuild.bat
 +++ b/vcbuild.bat
 @@ -51,7 +51,7 @@ set noetw_msi_arg=

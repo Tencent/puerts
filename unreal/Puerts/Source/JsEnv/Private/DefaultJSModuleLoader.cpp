@@ -61,6 +61,7 @@ namespace puerts
         if (FPaths::GetExtension(RequiredModule) == TEXT(""))
         {
             return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath)
+                || SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath)
                 || SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath)
                 || SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath);
         }
@@ -82,7 +83,7 @@ namespace puerts
         {
             return true;
         }
-        else if (RequiredDir != TEXT("") && !RequiredModule.GetCharArray().Contains('/') && !RequiredModule.EndsWith(TEXT(".js")))
+        if (RequiredDir != TEXT("") && !RequiredModule.GetCharArray().Contains('/') && !RequiredModule.EndsWith(TEXT(".js")) && !RequiredModule.EndsWith(TEXT(".mjs")))
         {
             // 调用require的文件所在的目录往上找
             TArray<FString> pathFrags;

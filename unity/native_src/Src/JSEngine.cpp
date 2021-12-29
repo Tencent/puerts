@@ -58,8 +58,8 @@ namespace puerts
         if (!GPlatform)
         {
             // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
-            int Argc = 1;
-            char* ArgvIn[] = {"--trace-uncaught"};
+            int Argc = 2;
+            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
@@ -240,6 +240,13 @@ namespace puerts
                 }
                 Iter->second.Reset();
             }
+#if !WITH_QUICKJS
+            for (auto Iter = ModuleCacheMap.begin(); Iter != ModuleCacheMap.end(); ++Iter)
+            {
+                Iter->second.Reset();
+            }
+#endif
+            ModuleCacheMap.clear();
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
@@ -250,7 +257,7 @@ namespace puerts
         }
         
 #if WITH_NODEJS
-        node::EmitExit(NodeEnv);
+        // node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
         node::FreeEnvironment(NodeEnv);
         node::FreeIsolateData(NodeIsolateData);
@@ -263,6 +270,7 @@ namespace puerts
 #endif
 
         ResultInfo.Context.Reset();
+        ResultInfo.Result.Reset();
         // TODO DEBUG下一次new的时候会报错的问题
         MainIsolate->Dispose();
         MainIsolate = nullptr;
@@ -429,40 +437,6 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
-    }
-
-    bool JSEngine::Eval(const char *Code, const char* Path)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        v8::Local<v8::String> Url = FV8Utils::V8String(Isolate, Path == nullptr ? "" : Path);
-        v8::Local<v8::String> Source = FV8Utils::V8String(Isolate, Code);
-        v8::ScriptOrigin Origin(Url);
-        v8::TryCatch TryCatch(Isolate);
-
-        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-        if (CompiledScript.IsEmpty())
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-        auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);//error info output
-        if (TryCatch.HasCaught())
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-
-        if (!maybeValue.IsEmpty())
-        {
-            ResultInfo.Result.Reset(Isolate, maybeValue.ToLocalChecked());
-        }
-
-        return true;
     }
 
     static void NewWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)

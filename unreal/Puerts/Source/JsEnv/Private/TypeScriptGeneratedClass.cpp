@@ -86,13 +86,32 @@ void UTypeScriptGeneratedClass::RedirectToTypeScript(UFunction* InFunction)
     AddNativeFunction(*InFunction->GetName(), &UTypeScriptGeneratedClass::execCallJS);
 }
 
-void UTypeScriptGeneratedClass::RedirectToTypeScriptFinish(UFunction* InFunction)
+void UTypeScriptGeneratedClass::RedirectToTypeScriptFinish()
 {
-    if (!FunctionToRedirect.Contains(InFunction->GetFName()))
+    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
     {
-        return;
+        auto Function = *FuncIt;
+        if (!FunctionToRedirect.Contains(Function->GetFName()))
+        {
+            continue;
+        }
+        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
     }
-    InFunction->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+}
+
+void UTypeScriptGeneratedClass::CancelRedirection()
+{
+    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+    {
+        auto Function = *FuncIt;
+        if (!FunctionToRedirect.Contains(Function->GetFName()))
+        {
+            continue;
+        }
+        Function->FunctionFlags &= ~FUNC_Native;
+        Function->SetNativeFunc(nullptr);
+        NativeFunctionLookupTable.RemoveAll([=](const FNativeFunctionLookup& NativeFunctionLookup){ return Function->GetFName() == NativeFunctionLookup.Name; });
+    }
 }
 
 bool UTypeScriptGeneratedClass::NotSupportInject()
@@ -138,6 +157,4 @@ void UTypeScriptGeneratedClass::Bind()
         //可避免非CDO的在PostConstructInit从基类拷贝值
         //ClassFlags |= CLASS_Native;
     }
-
-    ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
 }
