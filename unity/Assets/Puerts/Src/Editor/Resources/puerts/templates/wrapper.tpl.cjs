@@ -573,32 +573,32 @@ namespace PuertsStaticWrap
     `
     if (data.BlittableCopy) {
         tt`
-        unsafe private static ${data.Name}} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        unsafe private static ${data.Name} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            ${data.Name}}* result = (${data.Name}}*)getValueApi.GetNativeObject(isolate, value, isByRef);
-            return result == null ? default(${data.Name}}) : *result;
+            ${data.Name}* result = (${data.Name}*)getValueApi.GetNativeObject(isolate, value, isByRef);
+            return result == null ? default(${data.Name}) : *result;
         }
 
-        unsafe private static void StaticSetter(int jsEnvIdx, IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, ${data.Name}} val)
+        unsafe private static void StaticSetter(int jsEnvIdx, IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, ${data.Name} val)
         {
             HeapValue = val;
-            fixed (${data.Name}}* result = &HeapValue)
+            fixed (${data.Name}* result = &HeapValue)
             {
-                var typeId = Puerts.JsEnv.jsEnvs[jsEnvIdx].GetTypeId(typeof(${data.Name}}));
+                var typeId = Puerts.JsEnv.jsEnvs[jsEnvIdx].GetTypeId(typeof(${data.Name}));
                 setValueApi.SetNativeObject(isolate, value, typeId, new IntPtr(result));
             }
         }
         
         public static void InitBlittableCopy(Puerts.JsEnv jsEnv)
         {
-            Puerts.StaticTranslate<${data.Name}}>.ReplaceDefault(StaticSetter, StaticGetter);
+            Puerts.StaticTranslate<${data.Name}>.ReplaceDefault(StaticSetter, StaticGetter);
             int jsEnvIdx = jsEnv.Index;
-            jsEnv.RegisterGeneralGetSet(typeof(${data.Name}}), (IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
+            jsEnv.RegisterGeneralGetSet(typeof(${data.Name}), (IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
                 return StaticGetter(jsEnvIdx, isolate, getValueApi, value, isByRef);
             }, (IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, object obj) => 
             {
-                StaticSetter(jsEnvIdx, isolate, setValueApi, value, (${data.Name}})obj);
+                StaticSetter(jsEnvIdx, isolate, setValueApi, value, (${data.Name})obj);
             });
         }
         `
