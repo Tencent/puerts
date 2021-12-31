@@ -179,11 +179,12 @@ void FJsEnvImpl::UvRunOnce()
 void FJsEnvImpl::PollEvents()
 {
 #if PLATFORM_WINDOWS
-    DWORD bytes, timeout;
+    DWORD bytes;
+    DWORD timeout = uv_backend_timeout(&NodeUVLoop);
     ULONG_PTR key;
     OVERLAPPED* overlapped;
 
-    timeout = uv_backend_timeout(&NodeUVLoop);
+    timeout = timeout > 100 ? 100 : timeout;
 
     GetQueuedCompletionStatus(NodeUVLoop.iocp, &bytes, &key, &overlapped, timeout);
 
@@ -192,6 +193,7 @@ void FJsEnvImpl::PollEvents()
         PostQueuedCompletionStatus(NodeUVLoop.iocp, bytes, key, overlapped);
 #elif PLATFORM_LINUX
     int timeout = uv_backend_timeout(&NodeUVLoop);
+    timeout = timeout > 100 ? 100 : timeout;
 
     // Wait for new libuv events.
     int r;
@@ -202,6 +204,7 @@ void FJsEnvImpl::PollEvents()
 #elif PLATFORM_MAC
     struct timeval tv;
     int timeout = uv_backend_timeout(&NodeUVLoop);
+    timeout = timeout > 100 ? 100 : timeout;
     if (timeout != -1) {
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = (timeout % 1000) * 1000;
