@@ -65,12 +65,12 @@ namespace Puerts.UnitTest
             PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
             bool ret = jsEnv.Eval<bool>(@"
                 const CS = require('csharp');
-                let a = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
-                let b = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
+                let a = new CS.Puerts.UnitTest.RefInClass.Vector3(1, 2, 3);
+                let b = new CS.Puerts.UnitTest.RefInClass.Vector3(1, 2, 3);
 
-                CS.PuertsTest.RefInTest.Normalize(a).ToString() == `(1.0, 2.0, 3.0)` &&
-                CS.PuertsTest.RefInTest.Multiply(a, b).ToString() == `(1.0, 4.0, 9.0)` &&
-                CS.PuertsTest.RefInTest.Divide(a, b).ToString() == `(1.0, 1.0, 1.0)`;
+                CS.Puerts.UnitTest.RefInClass.Normalize(a).ToString() == `(1.0, 2.0, 3.0)` &&
+                CS.Puerts.UnitTest.RefInClass.Multiply(a, b).ToString() == `(1.0, 4.0, 9.0)` &&
+                CS.Puerts.UnitTest.RefInClass.Divide(a, b).ToString() == `(1.0, 1.0, 1.0)`;
             ");
             Assert.AreEqual(true, ret);
             jsEnv.Dispose();
@@ -82,12 +82,12 @@ namespace Puerts.UnitTest
             var jsEnv = new JsEnv(new TxtLoader());
             bool ret = jsEnv.Eval<bool>(@"
                 const CS = require('csharp');
-                let a = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
-                let b = new CS.PuertsTest.RefInTest.Vector3(1, 2, 3);
+                let a = new CS.Puerts.UnitTest.RefInClass.Vector3(1, 2, 3);
+                let b = new CS.Puerts.UnitTest.RefInClass.Vector3(1, 2, 3);
 
-                CS.PuertsTest.RefInTest.Normalize(a).ToString() == `(1.0, 2.0, 3.0)` &&
-                CS.PuertsTest.RefInTest.Multiply(a, b).ToString() == `(1.0, 4.0, 9.0)` &&
-                CS.PuertsTest.RefInTest.Divide(a, b).ToString() == `(1.0, 1.0, 1.0)`;
+                CS.Puerts.UnitTest.RefInClass.Normalize(a).ToString() == `(1.0, 2.0, 3.0)` &&
+                CS.Puerts.UnitTest.RefInClass.Multiply(a, b).ToString() == `(1.0, 4.0, 9.0)` &&
+                CS.Puerts.UnitTest.RefInClass.Divide(a, b).ToString() == `(1.0, 1.0, 1.0)`;
             ");
             Assert.AreEqual(true, ret);
             jsEnv.Dispose();
