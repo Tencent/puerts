@@ -1181,7 +1181,7 @@ namespace Puerts.UnitTest
             var loader = new TxtLoader();
             loader.AddMockFileContent("whatever.mjs", @"
                 import csharp from 'csharp';
-                const func = function() { return csharp.System.String.Join('hello', ' world') }
+                const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
                 export { func };
             ");
             var jsEnv = new JsEnv(loader);
