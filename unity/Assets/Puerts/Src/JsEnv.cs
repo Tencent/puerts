@@ -192,7 +192,7 @@ namespace Puerts
             return loader.ReadFile(identifer, out debugPath);
         }
 
-        public void ExecuteModule(string filename)
+        public JSObject ExecuteModule(string filename)
         {
             if (loader.FileExists(filename))
             {
@@ -202,14 +202,10 @@ namespace Puerts
                     string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
                     throw new Exception(exceptionInfo);
                 }
+                JSObject result = StaticTranslate<JSObject>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
                 PuertsDLL.ResetResult(resultInfo);
-                // string debugPath;
-                // var context = loader.ReadFile(filename, out debugPath);
-                // if (context == null)
-                // {
-                //     throw new InvalidProgramException("can not find " + filename);
-                // }
-                // Eval(context, debugPath);
+                
+                return result;
             }
             else
             {

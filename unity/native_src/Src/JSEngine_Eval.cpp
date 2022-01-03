@@ -89,7 +89,7 @@ namespace puerts {
         }
 
         const char* Code;
-        if (name_std.substr(name_length - 4, name_length).compare(".mjs") == 0) 
+        if (name_length > 4 && name_std.substr(name_length - 4, name_length).compare(".mjs") == 0) 
         {
             Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
             if (Code == nullptr) 
@@ -167,9 +167,7 @@ namespace puerts {
         }
         else
         {
-            // do not return the namespace by now, because quickjs doesnot support that
-            // ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
-            // ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
+            ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
         }
         return true;
 #else
@@ -193,9 +191,9 @@ namespace puerts {
             return false;
 
         } else {
-            // val = MainIsolate->Alloc<v8::Value>();
-            // val->value_ = JS_UNDEFINED;
-            // ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
+            val = MainIsolate->Alloc<v8::Value>();
+            val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
+            ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
             return true;
             
         }
