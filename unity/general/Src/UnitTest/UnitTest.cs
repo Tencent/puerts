@@ -1188,7 +1188,7 @@ namespace Puerts.UnitTest
             JSObject obj = jsEnv.ExecuteModule("whatever.mjs");
 
             Func<string> func = obj.Get<Func<string>>("func");
-            Assert.True(func == "hello world");
+            Assert.True(func() == "hello world");
 
             jsEnv.Dispose();
         }
