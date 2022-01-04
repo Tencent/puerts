@@ -34,7 +34,7 @@ namespace puerts {
         v8::Local<v8::Module> Module;
         const char* Code;
 
-        if (Specifier_length > 4 && Specifier_std.substr(Specifier_length - 4, Specifier_length).compare(".mjs") == 0) 
+        if (Specifier_std.substr(Specifier_length - 4, Specifier_length).compare(".mjs") == 0) 
         {
 
             Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
