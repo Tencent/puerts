@@ -186,6 +186,7 @@ namespace puerts {
 
         v8::Value* val = nullptr;
         if (JS_IsException(evalRet)) {
+            JS_FreeValue(ctx, evalRet);
             MainIsolate->handleException();
             LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
             return false;
@@ -193,6 +194,8 @@ namespace puerts {
         } else {
             val = MainIsolate->Alloc<v8::Value>();
             val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
+            JS_FreeValue(ctx, evalRet);
+            // JS_FreeValue(ctx, val->value_);
             ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
             return true;
             

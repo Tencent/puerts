@@ -255,6 +255,13 @@ namespace puerts
                 delete *Iter;
             }
         }
+        {
+            std::lock_guard<std::mutex> guard(JSObjectsMutex);
+            for (auto Iter = JSObjectMap.begin(); Iter != JSObjectMap.end(); ++Iter)
+            {
+                delete Iter->second;
+            }
+        }
         
 #if WITH_NODEJS
         // node::EmitExit(NodeEnv);

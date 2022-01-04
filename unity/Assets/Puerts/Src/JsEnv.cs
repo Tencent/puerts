@@ -196,6 +196,9 @@ namespace Puerts
         {
             if (loader.FileExists(filename))
             {
+#if THREAD_SAFE
+            lock(this) {
+#endif
                 IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename);
                 if (resultInfo == IntPtr.Zero)
                 {
@@ -204,7 +207,9 @@ namespace Puerts
                 }
                 JSObject result = StaticTranslate<JSObject>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
                 PuertsDLL.ResetResult(resultInfo);
-                
+#if THREAD_SAFE
+            }
+#endif
                 return result;
             }
             else
