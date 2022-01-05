@@ -397,9 +397,17 @@ void FPuertsModule::StartupModule()
 void FPuertsModule::Enable()
 {
     Enabled = true;
-#if !WITH_EDITOR
+
+#if WITH_EDITOR
+    if(IsRunningGame())
+    {
+        // 处理 Standalone 模式的情况
+        MakeSharedJsEnv();
+    }
+#else
     MakeSharedJsEnv();
 #endif
+
     GUObjectArray.AddUObjectCreateListener(static_cast<FUObjectArray::FUObjectCreateListener*>(this));
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 }
