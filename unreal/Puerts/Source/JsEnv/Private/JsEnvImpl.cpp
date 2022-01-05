@@ -193,7 +193,7 @@ void FJsEnvImpl::PollEvents()
         PostQueuedCompletionStatus(NodeUVLoop.iocp, bytes, key, overlapped);
 #elif PLATFORM_LINUX
     int timeout = uv_backend_timeout(&NodeUVLoop);
-    timeout = timeout > 100 ? 100 : timeout;
+    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
 
     // Wait for new libuv events.
     int r;
@@ -204,7 +204,7 @@ void FJsEnvImpl::PollEvents()
 #elif PLATFORM_MAC
     struct timeval tv;
     int timeout = uv_backend_timeout(&NodeUVLoop);
-    timeout = timeout > 100 ? 100 : timeout;
+    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
     if (timeout != -1) {
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = (timeout % 1000) * 1000;
@@ -1221,14 +1221,36 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 
 void FJsEnvImpl::RebindJs()
 {
-    for (TObjectIterator<UTypeScriptGeneratedClass> It; It; ++It)
+    for (TObjectIterator<UClass> It; It; ++It)
     {
-        UTypeScriptGeneratedClass* Class = *It;
-        
-        if (!Class->NotSupportInject())
+        UClass* Class = *It;
+        if (!Class->IsNative())
         {
-            MakeSureInject(Class, false, true);
-            FinishInjection(Class);
+            if (auto TsClass = Cast<UTypeScriptGeneratedClass>(Class))
+            {
+                if (!TsClass->NotSupportInject())
+                {
+                    MakeSureInject(TsClass, false, true);
+                    FinishInjection(TsClass);
+                }
+            }
+            else
+            {
+                auto IsTsSubclass = [](UClass* Class)
+                {
+                    while(Class)
+                    {
+                        if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor || Cast<UTypeScriptGeneratedClass>(Class)) return true;
+                        Class = Class->GetSuperClass();
+                    }
+                    
+                    return false;
+                };
+                if (IsTsSubclass(Class))
+                {
+                    Class->ClassConstructor = UTypeScriptGeneratedClass::StaticConstructor;
+                }
+            }
         }
     }
 }
