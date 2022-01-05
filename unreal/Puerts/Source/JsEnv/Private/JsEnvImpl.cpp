@@ -193,7 +193,7 @@ void FJsEnvImpl::PollEvents()
         PostQueuedCompletionStatus(NodeUVLoop.iocp, bytes, key, overlapped);
 #elif PLATFORM_LINUX
     int timeout = uv_backend_timeout(&NodeUVLoop);
-    timeout = timeout > 100 ? 100 : timeout;
+    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
 
     // Wait for new libuv events.
     int r;
@@ -204,7 +204,7 @@ void FJsEnvImpl::PollEvents()
 #elif PLATFORM_MAC
     struct timeval tv;
     int timeout = uv_backend_timeout(&NodeUVLoop);
-    timeout = timeout > 100 ? 100 : timeout;
+    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
     if (timeout != -1) {
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = (timeout % 1000) * 1000;
