@@ -1185,7 +1185,7 @@ namespace Puerts.UnitTest
                 export { func };
             ");
             var jsEnv = new JsEnv(loader);
-            Func<string> obj = jsEnv.ExecuteModule<Func<string>>("whatever.mjs", "func");
+            Func<string> func = jsEnv.ExecuteModule<Func<string>>("whatever.mjs", "func");
 
             Assert.True(func() == "hello world");
 
