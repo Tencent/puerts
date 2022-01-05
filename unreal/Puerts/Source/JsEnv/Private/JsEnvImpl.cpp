@@ -1221,14 +1221,36 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase *InObject)
 
 void FJsEnvImpl::RebindJs()
 {
-    for (TObjectIterator<UTypeScriptGeneratedClass> It; It; ++It)
+    for (TObjectIterator<UClass> It; It; ++It)
     {
-        UTypeScriptGeneratedClass* Class = *It;
-        
-        if (!Class->NotSupportInject())
+        UClass* Class = *It;
+        if (!Class->IsNative())
         {
-            MakeSureInject(Class, false, true);
-            FinishInjection(Class);
+            if (auto TsClass = Cast<UTypeScriptGeneratedClass>(Class))
+            {
+                if (!TsClass->NotSupportInject())
+                {
+                    MakeSureInject(TsClass, false, true);
+                    FinishInjection(TsClass);
+                }
+            }
+            else
+            {
+                auto IsTsSubclass = [](UClass* Class)
+                {
+                    while(Class)
+                    {
+                        if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor || Cast<UTypeScriptGeneratedClass>(Class)) return true;
+                        Class = Class->GetSuperClass();
+                    }
+                    
+                    return false;
+                };
+                if (IsTsSubclass(Class))
+                {
+                    Class->ClassConstructor = UTypeScriptGeneratedClass::StaticConstructor;
+                }
+            }
         }
     }
 }
