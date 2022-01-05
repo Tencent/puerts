@@ -120,7 +120,7 @@ public:
 
     PUERTS_EXPORT_FOR_UT void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
-    PUERTS_EXPORT_FOR_UT bool ExecuteModule(const char* Path);
+    PUERTS_EXPORT_FOR_UT bool ExecuteModule(const char* Path, const char* Exportee);
     
     PUERTS_EXPORT_FOR_UT bool Eval(const char *Code, const char* Path);
 

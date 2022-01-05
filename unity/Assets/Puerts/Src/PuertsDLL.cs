@@ -176,7 +176,7 @@ namespace Puerts
 
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr ExecuteModule(IntPtr isolate, string path);
+        public static extern IntPtr ExecuteModule(IntPtr isolate, string path, string exportee);
 
 #if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

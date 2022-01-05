@@ -34,7 +34,7 @@ namespace puerts {
         v8::Local<v8::Module> Module;
         const char* Code;
 
-        if (Specifier_length > 4 && Specifier_std.substr(Specifier_length - 4, Specifier_length).compare(".mjs") == 0) 
+        if (Specifier_std.substr(Specifier_length - 4, Specifier_length).compare(".mjs") == 0) 
         {
 
             Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
@@ -115,7 +115,7 @@ namespace puerts {
     }
 #endif
 
-    bool JSEngine::ExecuteModule(const char* Path) 
+    bool JSEngine::ExecuteModule(const char* Path, const char* Exportee) 
     {
         if (ModuleResolver == nullptr) 
         {
@@ -167,7 +167,21 @@ namespace puerts {
         }
         else
         {
-            ResultInfo.Result.Reset(Isolate, ModuleChecked->GetModuleNamespace());
+            if (Exportee != nullptr) 
+            {
+                v8::Local<v8::Value> ns = ModuleChecked->GetModuleNamespace();
+                if (Exportee == 0) 
+                {
+                    ResultInfo.Result.Reset(Isolate, ns);
+                } 
+                else 
+                {
+                    ResultInfo.Result.Reset(
+                        Isolate, 
+                        ns.As<v8::Object>()->Get(Context, FV8Utils::V8String(Isolate, Exportee)).ToLocalChecked()
+                    );
+                }
+            }
         }
         return true;
 #else
@@ -192,11 +206,25 @@ namespace puerts {
             return false;
 
         } else {
-            val = MainIsolate->Alloc<v8::Value>();
-            val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
-            JS_FreeValue(ctx, evalRet);
-            // JS_FreeValue(ctx, val->value_);
-            ResultInfo.Result.Reset(MainIsolate, v8::Local<v8::Value>(val));
+            if (Exportee != nullptr) 
+            {
+                val = MainIsolate->Alloc<v8::Value>();
+                val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
+                JS_FreeValue(ctx, evalRet);
+                v8::Local<v8::Value> ns = v8::Local<v8::Value>(val);
+                if (Exportee == 0) 
+                {
+                    ResultInfo.Result.Reset(Isolate, ns);
+                } 
+                else 
+                {
+                    ResultInfo.Result.Reset(
+                        Isolate, 
+                        ns.As<v8::Object>()->Get(Context, FV8Utils::V8String(Isolate, Exportee)).ToLocalChecked()
+                    );
+                }
+            }
+
             return true;
             
         }
