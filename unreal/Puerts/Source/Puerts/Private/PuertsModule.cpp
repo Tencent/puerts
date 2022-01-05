@@ -295,10 +295,31 @@ void FPuertsModule::EndPIE(bool bIsSimulating)
     if (Enabled)
     {
         JsEnv.Reset();
-        for (TObjectIterator<UTypeScriptGeneratedClass> It; It; ++It)
+        for (TObjectIterator<UClass> It; It; ++It)
         {
-            UTypeScriptGeneratedClass* Class = *It;
-            Class->CancelRedirection();
+            UClass* Class = *It;
+            if (auto TsClass = Cast<UTypeScriptGeneratedClass>(Class))
+            {
+                TsClass->CancelRedirection();
+                TsClass->DynamicInvoker.Reset();
+            }
+            if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
+            {
+                auto SuperClass = Class->GetSuperClass();
+                while (SuperClass)
+                {
+                    if (SuperClass->ClassConstructor != UTypeScriptGeneratedClass::StaticConstructor)
+                    {
+                        Class->ClassConstructor = SuperClass->ClassConstructor;
+                        break;
+                    }
+                    SuperClass = SuperClass->GetSuperClass();
+                }
+                if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
+                {
+                    Class->ClassConstructor = nullptr;
+                }
+            }
         }
         UE_LOG(PuertsModule, Display, TEXT("JsEnv reset"));
     }
