@@ -853,9 +853,9 @@ namespace Puerts.Editor
 
             public class TsMethodGenInfoComparer : IEqualityComparer<TsMethodGenInfo>
             {
-                public bool Equals(TsMethodGenInfo x, TsMethodGenInfo y) => x.Equals(y);
+                public bool Equals(TsMethodGenInfo x, TsMethodGenInfo y) { return x.Equals(y); }
 
-                public int GetHashCode(TsMethodGenInfo obj) => 0;
+                public int GetHashCode(TsMethodGenInfo obj) { return 0; }
             }
 
             public class TsMethodGenInfo

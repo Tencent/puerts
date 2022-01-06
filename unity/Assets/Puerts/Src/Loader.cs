@@ -35,8 +35,10 @@ namespace Puerts
         {
             return 
             // .cjs asset is only supported in unity2018+
+#if UNITY_2018_1_OR_NEWER
             filepath.EndsWith(".cjs") || filepath.EndsWith(".mjs")  ? 
                 filepath.Substring(0, filepath.Length - 4) : 
+#endif
                 filepath;
         }
 
@@ -44,18 +46,16 @@ namespace Puerts
         {
 #if PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
-#elif UNITY_EDITOR
+#endif
             string pathToUse = this.PathToUse(filepath);
             bool exist = UnityEngine.Resources.Load(pathToUse) != null;
-            if (!exist) {
-                return File.Exists(Path.Combine(UnityEngine.Application.dataPath, "Puerts/Src/Editor/Resources", filepath));
-            } else {
-                return true;
+#if UNITY_EDITOR && !UNITY_2018_1_OR_NEWER
+            if (!exist) 
+            {
+                UnityEngine.Debug.LogWarning("【Puerts】unity 2018- is using, if you found some js is not exist, rename *.cjs,*.mjs in the resources dir with *.cjs.txt,*.mjs.txt");
             }
-#else
-            string pathToUse = this.PathToUse(filepath);
-            return UnityEngine.Resources.Load(pathToUse) != null;
 #endif
+            return exist;
         }
 
         public string ReadFile(string filepath, out string debugpath)
@@ -63,26 +63,15 @@ namespace Puerts
 #if PUERTS_GENERAL
             debugpath = Path.Combine(root, filepath);
             return File.ReadAllText(debugpath);
-#elif UNITY_EDITOR
-            debugpath = Path.Combine(UnityEngine.Application.dataPath, "Puerts/Src/Editor/Resources", filepath);
-
+#endif
             string pathToUse = this.PathToUse(filepath);
             UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(pathToUse);
-            if (file == null) {
-                return File.ReadAllText(debugpath);
-
-            } else {
-                return file.text;
-            }
-#else
-            string pathToUse = this.PathToUse(filepath);
-            UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(pathToUse);
+            
             debugpath = System.IO.Path.Combine(root, filepath);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             debugpath = debugpath.Replace("/", "\\");
 #endif
             return file == null ? null : file.text;
-#endif
         }
     }
 }
