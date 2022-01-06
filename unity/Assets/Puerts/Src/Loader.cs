@@ -49,7 +49,7 @@ namespace Puerts
 #endif
             string pathToUse = this.PathToUse(filepath);
             bool exist = UnityEngine.Resources.Load(pathToUse) != null;
-#if UNITY_EDITOR && !UNITY_2018_1_OR_NEWER
+#if !PUERTS_GENERAL && UNITY_EDITOR && !UNITY_2018_1_OR_NEWER
             if (!exist) 
             {
                 UnityEngine.Debug.LogWarning("【Puerts】unity 2018- is using, if you found some js is not exist, rename *.cjs,*.mjs in the resources dir with *.cjs.txt,*.mjs.txt");
