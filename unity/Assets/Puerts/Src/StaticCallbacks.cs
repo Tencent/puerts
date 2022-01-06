@@ -11,7 +11,7 @@ namespace Puerts
 {
     internal class StaticCallbacks
     {
-        [MonoPInvokeCallback(typeof(V8FunctionCallback))]
+        [MonoPInvokeCallback(typeof(ModuleResolveCallback))]
         internal static string ModuleResolverWrap(string identifer, int jsEnvIdx)
         {
             return JsEnv.jsEnvs[jsEnvIdx].ResolveModuleContent(identifer);
