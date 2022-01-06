@@ -755,8 +755,7 @@ namespace Puerts.Editor
                         OverloadGroups = ret
                             .GroupBy(m => m.ParameterInfos.Length + (m.HasParams ? 0 : 9999))
                             .Select(lst => {
-                                // 因为加上了查找父类的同名函数，这里要去除参数一样的overload
-                                // there are some overload from baseclass, so we need to distinct the overloads with same parameterinfo
+                                // some overloads are from the base class, some overloads may have the same parameters, so we need to distinct the overloads with same parameterinfo
                                 Dictionary<string, OverloadGenInfo> distincter = new Dictionary<string, OverloadGenInfo>();
 
                                 foreach (var overload in lst) 
@@ -769,6 +768,11 @@ namespace Puerts.Editor
                                     }
                                     else 
                                     {
+                                        // if the value in distincter is null. Means that this overload is unavailable(will cause ambigious)
+                                        if (existedOverload == null) 
+                                        {
+                                            continue;
+                                        }
                                         if (!overload.EllipsisedParameters)
                                         {
                                             if (existedOverload == null || existedOverload.EllipsisedParameters) 
