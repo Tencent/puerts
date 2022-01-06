@@ -162,7 +162,7 @@ namespace PuertsStaticWrap
     {
 `
     data.BlittableCopy && tt`
-        static ${data.Name} Heapvalue;
+        static ${data.Name} HeapValue;
     `
 
     // ==================== constructor start ====================
