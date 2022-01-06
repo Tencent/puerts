@@ -46,7 +46,7 @@ namespace Puerts
         {
 #if PUERTS_GENERAL
             return File.Exists(Path.Combine(root, filepath));
-#endif
+#else 
             string pathToUse = this.PathToUse(filepath);
             bool exist = UnityEngine.Resources.Load(pathToUse) != null;
 #if !PUERTS_GENERAL && UNITY_EDITOR && !UNITY_2018_1_OR_NEWER
@@ -56,6 +56,7 @@ namespace Puerts
             }
 #endif
             return exist;
+#endif
         }
 
         public string ReadFile(string filepath, out string debugpath)
@@ -63,7 +64,7 @@ namespace Puerts
 #if PUERTS_GENERAL
             debugpath = Path.Combine(root, filepath);
             return File.ReadAllText(debugpath);
-#endif
+#else 
             string pathToUse = this.PathToUse(filepath);
             UnityEngine.TextAsset file = (UnityEngine.TextAsset)UnityEngine.Resources.Load(pathToUse);
             
@@ -72,6 +73,7 @@ namespace Puerts
             debugpath = debugpath.Replace("/", "\\");
 #endif
             return file == null ? null : file.text;
+#endif
         }
     }
 }
