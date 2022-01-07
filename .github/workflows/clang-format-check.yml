@@ -1,0 +1,18 @@
+name: clang-format Check
+on: [push, pull_request]
+jobs:
+  formatting-check:
+    name: Formatting Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path:
+          - 'unreal/Puerts/Source'
+          - 'unreal/ReactUMG/Source'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run clang-format style check
+      uses: jidicula/clang-format-action@v3.5.2
+      with:
+        clang-format-version: '6'
+        check-path: ${{ matrix.path }}
