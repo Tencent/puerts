@@ -1,5 +1,15 @@
 name: clang-format Check
-on: [push, pull_request]
+on:
+  push:
+    paths: 
+      - unreal/Puerts/Source/**
+      - unreal/ReactUMG/Source/**
+      - .clang-format
+  pull_request:
+    paths: 
+      - unreal/Puerts/Source/**
+      - unreal/ReactUMG/Source/**
+      - .clang-format
 jobs:
   formatting-check:
     name: Formatting Check
