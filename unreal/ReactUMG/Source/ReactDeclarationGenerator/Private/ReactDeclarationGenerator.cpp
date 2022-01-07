@@ -207,7 +207,7 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
     StringBuffer << "    " << "}\n\n";
 
     if (IsWidget) {
-        StringBuffer << "    " << "class " << SafeName(Class->GetName()) << " extends React.Component<" << SafeName(Class->GetName()) << "Props> {}\n\n";
+        StringBuffer << "    " << "class " << SafeName(Class->GetName()) << " extends React.Component<" << SafeName(Class->GetName()) << "Props> {\n" << "        nativePtr: ue." << SafeName(Class->GetName()) << ";\n    }\n\n";
     }
 
     Output << StringBuffer;
