@@ -19,7 +19,8 @@ static PropertyMacro* DuplicateProperty(
 #endif
     PropertyMacro* Property, FName Name)
 {
-    auto SetupProperty = [&](PropertyMacro* NewProperty) {
+    auto SetupProperty = [&](PropertyMacro* NewProperty)
+    {
         NewProperty->SetPropertyFlags(Property->GetPropertyFlags());
         return NewProperty;
     };

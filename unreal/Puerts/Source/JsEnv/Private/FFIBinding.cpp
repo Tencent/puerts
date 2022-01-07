@@ -497,7 +497,7 @@ static void Init(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports)
 
 #define SET_FFI_ENUM(value)                                                            \
     Exports->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, #value), \
-        v8::Integer::New(Isolate, (uint32_t)(value)), static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete))
+        v8::Integer::New(Isolate, (uint32_t) (value)), static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete))
 
     SET_FFI_ENUM(FFI_OK);
     SET_FFI_ENUM(FFI_BAD_TYPEDEF);
@@ -586,8 +586,8 @@ static void Init(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports)
 #undef SET_ALIGNOF
     Exports->Set(Context, puerts::FV8Utils::ToV8String(Isolate, "alignof"), AlignOf).Check();
 
-#define SET_Property(key, value)                                                                                                  \
-    Exports->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, key), v8::Integer::New(Isolate, (uint32_t)(value)), \
+#define SET_Property(key, value)                                                                                                   \
+    Exports->DefineOwnProperty(Context, puerts::FV8Utils::ToV8String(Isolate, key), v8::Integer::New(Isolate, (uint32_t) (value)), \
         static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete))
 
     SET_Property("FFI_ARG_SIZE", sizeof(ffi_arg));

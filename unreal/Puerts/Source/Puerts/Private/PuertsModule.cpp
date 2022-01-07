@@ -130,7 +130,8 @@ public:
         UCommandlet::ParseCommandLine(FCommandLine::Get(), OutTokens, OutSwitches, OutParams);
 
 #if WITH_EDITOR
-        static const auto GetPIEInstanceID = [](const TArray<FString>& InTokens) -> int32 {
+        static const auto GetPIEInstanceID = [](const TArray<FString>& InTokens) -> int32
+        {
             static const int32 Start = FString{TEXT("PIEGameUserSettings")}.Len();
             static const int32 BaseCount = FString{TEXT("PIEGameUserSettings.ini")}.Len();
 
@@ -402,12 +403,14 @@ void FPuertsModule::StartupModule()
 
 #if WITH_HOT_RELOAD
     IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
-    HotReloadSupport.OnHotReload().AddLambda([&](bool) {
-        if (Enabled)
+    HotReloadSupport.OnHotReload().AddLambda(
+        [&](bool)
         {
-            MakeSharedJsEnv();
-        }
-    });
+            if (Enabled)
+            {
+                MakeSharedJsEnv();
+            }
+        });
 #endif
 
     if (Settings.AutoModeEnable)

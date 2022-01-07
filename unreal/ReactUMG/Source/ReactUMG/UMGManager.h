@@ -1,30 +1,31 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "ReactWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
+#include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "ReactWidget.h"
+#include "UObject/NoExportTypes.h"
+
 #include "UMGManager.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class REACTUMG_API UUMGManager : public UBlueprintFunctionLibrary
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 public:
-
     UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Widget")
     static UReactWidget* CreateReactWidget(UWorld* World);
 

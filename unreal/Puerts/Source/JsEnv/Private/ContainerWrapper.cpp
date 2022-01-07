@@ -287,9 +287,11 @@ void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Inner->JsToUE(Isolate, Context, Info[0], DataPtr, false);
 
     auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
-    Self->Add(DataPtr, ScriptLayout, [Property](const void* Element) { return Property->GetValueTypeHash(Element); },
+    Self->Add(
+        DataPtr, ScriptLayout, [Property](const void* Element) { return Property->GetValueTypeHash(Element); },
         [Property](const void* A, const void* B) { return Property->Identical(A, B); },
-        [Property, DataPtr](void* Element) {
+        [Property, DataPtr](void* Element)
+        {
             Property->InitializeValue(Element);
             Property->CopySingleValue(Element, DataPtr);
         },
@@ -436,9 +438,9 @@ int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value
 
     auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
 
-    int32 Result =
-        Self->FindIndex(DataPtr, ScriptLayout, [Property](const void* Element) { return Property->GetValueTypeHash(Element); },
-            [Property](const void* A, const void* B) { return Property->Identical(A, B); });
+    int32 Result = Self->FindIndex(
+        DataPtr, ScriptLayout, [Property](const void* Element) { return Property->GetValueTypeHash(Element); },
+        [Property](const void* A, const void* B) { return Property->Identical(A, B); });
     Property->DestroyValue(DataPtr);
     return Result;
 }
@@ -497,14 +499,16 @@ void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     auto ScriptLayout = FScriptMap::GetScriptLayout(
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
 
-    Self->Add(KeyPtr, ValuePtr, ScriptLayout,
-        [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
+    Self->Add(
+        KeyPtr, ValuePtr, ScriptLayout, [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
         [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); },
-        [KeyProperty, KeyPtr](void* NewElementKey) {
+        [KeyProperty, KeyPtr](void* NewElementKey)
+        {
             KeyProperty->InitializeValue(NewElementKey);
             KeyProperty->CopySingleValue(NewElementKey, KeyPtr);
         },
-        [ValueProperty, ValuePtr](void* NewElementValue) {
+        [ValueProperty, ValuePtr](void* NewElementValue)
+        {
             ValueProperty->InitializeValue(NewElementValue);
             ValueProperty->CopySingleValue(NewElementValue, ValuePtr);
         },
@@ -541,8 +545,8 @@ void FScriptMapWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
     auto ScriptLayout = FScriptMap::GetScriptLayout(
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
 
-    void* ValuePtr = Self->FindValue(KeyPtr, ScriptLayout,
-        [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
+    void* ValuePtr = Self->FindValue(
+        KeyPtr, ScriptLayout, [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
         [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
 
     if (ValuePtr)
@@ -581,9 +585,9 @@ void FScriptMapWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
     KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
 
     auto ScriptLayout = GetScriptLayout(KeyProperty, ValueProperty);
-    int32 Index =
-        Self->FindPairIndex(KeyPtr, ScriptLayout, [KeyProperty](const void* Key) { return KeyProperty->GetValueTypeHash(Key); },
-            [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
+    int32 Index = Self->FindPairIndex(
+        KeyPtr, ScriptLayout, [KeyProperty](const void* Key) { return KeyProperty->GetValueTypeHash(Key); },
+        [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
     if (Index == INDEX_NONE)
     {
         FV8Utils::ThrowException(Isolate, TEXT("invalid key argument"));

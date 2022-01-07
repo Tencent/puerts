@@ -79,7 +79,8 @@ struct FPEMetaDataUtils
             static const FName NAME_Units = TEXT("Units");
 
             //	a helper function used to check a function is well defined blueprint protected
-            static const auto ValidateFunctionBlueprintProtected = [](UFunction* InFunction) {
+            static const auto ValidateFunctionBlueprintProtected = [](UFunction* InFunction)
+            {
                 if (!IsValid(InFunction))
                 {
                     return false;
@@ -103,7 +104,8 @@ struct FPEMetaDataUtils
             };
 
             //	a helper function used to check a function is well defined binary operator
-            static const auto ValidateFunctionCommutativeAssociativeBinaryOperator = [](UFunction* InFunction) {
+            static const auto ValidateFunctionCommutativeAssociativeBinaryOperator = [](UFunction* InFunction)
+            {
                 if (!IsValid(InFunction))
                 {
                     return false;
@@ -118,7 +120,8 @@ struct FPEMetaDataUtils
 
                     TFieldIterator<PropertyMacro> It(InFunction);
 
-                    auto GetNextParam = [&]() {
+                    auto GetNextParam = [&]()
+                    {
                         if (It)
                         {
                             if (It->HasAnyPropertyFlags(CPF_ReturnParm))
@@ -155,7 +158,8 @@ struct FPEMetaDataUtils
             };
 
             //	a helper function sued to check a function is well defined as execs
-            static const auto ValidateFunctionExpandAsExecs = [](UFunction* InFunction, const FString& InValue) {
+            static const auto ValidateFunctionExpandAsExecs = [](UFunction* InFunction, const FString& InValue)
+            {
                 if (!IsValid(InFunction))
                 {
                     return false;
@@ -706,15 +710,16 @@ private:
         check(IsValid(InCustomEvent));
 
         //	a helper function used to update text value, and return if the value is updated by a new value
-        static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue) -> bool {
+        static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue) -> bool
+        {
             const FText NewValue = InMetaData.Contains(InKey) ? FText::FromString(InMetaData[InKey]) : FText{};
             const bool bChanged = !NewValue.EqualTo(InOutValue);
             InOutValue = NewValue;
             return bChanged;
         };
         //	a helper function used to update boolean value, and return if the value is updated by the new value
-        static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData,
-                                                      bool& InOutValue) -> bool {
+        static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, bool& InOutValue) -> bool
+        {
             const bool NewValue = InMetaData.Contains(InKey) ? true : false;
             const bool bChanged = NewValue != InOutValue;
             InOutValue = NewValue;
@@ -722,7 +727,8 @@ private:
         };
         //	a helper function sued update string value, return return if the value is updated by the new value
         static const auto UpdateStringMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData,
-                                                     FString& InOutValue) -> bool {
+                                                     FString& InOutValue) -> bool
+        {
             const FString NewValue = InMetaData.Contains(InKey) ? InMetaData[InKey] : FString{};
             const bool bChanged = NewValue != InOutValue;
             InOutValue = NewValue;

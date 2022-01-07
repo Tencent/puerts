@@ -19,9 +19,8 @@ FPEMetaDataUtils::TFormatValidator<class FFieldVariant> FPEMetaDataUtils::Valida
 bool FPEMetaDataUtils::AddMetaData(UField* InField, TMap<FName, FString>& InMetaData)
 {
     //	check if meta data changed
-    const bool bChanged = Algo::AnyOf(InMetaData, [InField](const TPair<FName, FString>& InNewData) {
-        return !InField->HasMetaData(InNewData.Key) || InField->GetMetaData(InNewData.Key) != InNewData.Value;
-    });
+    const bool bChanged = Algo::AnyOf(InMetaData, [InField](const TPair<FName, FString>& InNewData)
+        { return !InField->HasMetaData(InNewData.Key) || InField->GetMetaData(InNewData.Key) != InNewData.Value; });
 
     // set the metadata for this field, since blueprint compilation will handle parent issue, we set meta data directly
     UMetaData* MetaData = InField->GetOutermost()->GetMetaData();
@@ -467,7 +466,8 @@ void UPEFunctionMetaData::SetForceBlueprintImpure(bool bInForceBlueprintImpure)
 bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
 {
     //	a helper function used to update text value, and return if the value is updated by a new value
-    static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue) -> bool {
+    static const auto UpdateTextMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FText& InOutValue) -> bool
+    {
         const FText NewValue = InMetaData.Contains(InKey) ? FText::FromString(InMetaData[InKey]) : FText{};
         const bool bChanged = !NewValue.EqualTo(InOutValue);
         InOutValue = NewValue;
@@ -475,7 +475,8 @@ bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
     };
 
     //	a helper function used to update boolean value, and return if the value is updated by the new value
-    static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, bool& InOutValue) -> bool {
+    static const auto UpdateBooleanMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, bool& InOutValue) -> bool
+    {
         const bool NewValue = InMetaData.Contains(InKey) ? true : false;
         const bool bChanged = NewValue != InOutValue;
         InOutValue = NewValue;
@@ -483,7 +484,8 @@ bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
     };
 
     //	a helper function sued update string value, return return if the value is updated by the new value
-    static const auto UpdateStringMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FString& InOutValue) -> bool {
+    static const auto UpdateStringMetaData = [](FName InKey, const TMap<FName, FString>& InMetaData, FString& InOutValue) -> bool
+    {
         const FString NewValue = InMetaData.Contains(InKey) ? InMetaData[InKey] : FString{};
         const bool bChanged = NewValue != InOutValue;
         InOutValue = NewValue;

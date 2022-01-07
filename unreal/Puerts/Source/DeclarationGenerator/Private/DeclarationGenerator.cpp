@@ -849,7 +849,8 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 
     StringBuffer << " {\n";
 
-    auto GenConstrutor = [&]() {
+    auto GenConstrutor = [&]()
+    {
         FStringBuffer TmpBuff;
         TmpBuff << "constructor(";
         bool First = true;

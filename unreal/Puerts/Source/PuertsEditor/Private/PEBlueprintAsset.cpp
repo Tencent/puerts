@@ -424,12 +424,13 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 else
                 {
                     CanChangeCheck();
-                    UK2Node_Event* NewEventNode =
-                        FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(EventGraph, EventGraph->GetGoodPlaceForNewNode(),
-                            EK2NewNodeFlags::SelectNewNode, [EventName, OverrideFuncClass](UK2Node_Event* NewInstance) {
-                                NewInstance->EventReference.SetExternalMember(EventName, OverrideFuncClass);
-                                NewInstance->bOverrideFunction = true;
-                            });
+                    UK2Node_Event* NewEventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Event>(EventGraph,
+                        EventGraph->GetGoodPlaceForNewNode(), EK2NewNodeFlags::SelectNewNode,
+                        [EventName, OverrideFuncClass](UK2Node_Event* NewInstance)
+                        {
+                            NewInstance->EventReference.SetExternalMember(EventName, OverrideFuncClass);
+                            NewInstance->bOverrideFunction = true;
+                        });
                     NeedSave = true;
                 }
             }
@@ -494,9 +495,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 [InName](UK2Node_InputAction* NewInstance) { NewInstance->InputActionName = InName; });
             // UK2Node_CallFunction
             UK2Node_CallFunction* NewNode2 = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CallFunction>(EventGraph,
-                EventGraph->GetGoodPlaceForNewNode(), EK2NewNodeFlags::SelectNewNode, [InName](UK2Node_CallFunction* NewInstance) {
-                    NewInstance->FunctionReference.SetExternalMember(FName("PrintString"), UKismetSystemLibrary::StaticClass());
-                });
+                EventGraph->GetGoodPlaceForNewNode(), EK2NewNodeFlags::SelectNewNode,
+                [InName](UK2Node_CallFunction* NewInstance)
+                { NewInstance->FunctionReference.SetExternalMember(FName("PrintString"), UKismetSystemLibrary::StaticClass()); });
 
             EventGraph->GetSchema()->TryCreateConnection(NewNode->Pins[0], NewNode2->Pins[0]);
             NeedSave = true;
@@ -527,7 +528,9 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
                 }
 
                 UK2Node_CustomEvent* EventNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_CustomEvent>(EventGraph,
-                    EventGraph->GetGoodPlaceForNewNode(), EK2NewNodeFlags::SelectNewNode, [InName](UK2Node_Event* NewInstance) {
+                    EventGraph->GetGoodPlaceForNewNode(), EK2NewNodeFlags::SelectNewNode,
+                    [InName](UK2Node_Event* NewInstance)
+                    {
                         NewInstance->CustomFunctionName = InName;
                         NewInstance->bIsEditable = true;
                     });
@@ -563,10 +566,12 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
             if (EventGraph)
             {
-                EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
-                    UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
-                    return CustomEvent && CustomEvent->CustomFunctionName == InName;
-                });
+                EventGraph->Nodes.RemoveAll(
+                    [&](UEdGraphNode* GraphNode)
+                    {
+                        UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
+                        return CustomEvent && CustomEvent->CustomFunctionName == InName;
+                    });
                 UEdGraph* ExistingGraph = FindObject<UEdGraph>(Blueprint, *(InName.ToString()));
                 if (ExistingGraph)
                 {
@@ -668,8 +673,8 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             }
         }
 
-        auto TryAddOutput = [](TArray<UK2Node_EditablePinBase*> TargetNodes, FName PinName,
-                                const FEdGraphPinType& PinType) -> bool {
+        auto TryAddOutput = [](TArray<UK2Node_EditablePinBase*> TargetNodes, FName PinName, const FEdGraphPinType& PinType) -> bool
+        {
             bool Changed = false;
             for (UK2Node_EditablePinBase* Node : TargetNodes)
             {
@@ -770,7 +775,8 @@ void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGr
     FPEGraphTerminalType InPinValueType, int32 InSetFlags, int32 InClearFlags, UPEFunctionMetaData* InMetaData)
 {
     //	a helper function used to find custom event by name
-    static const auto FindCustomEvent = [](UBlueprint* InBlueprint, FName InName) -> UK2Node_CustomEvent* {
+    static const auto FindCustomEvent = [](UBlueprint* InBlueprint, FName InName) -> UK2Node_CustomEvent*
+    {
         if (!IsValid(InBlueprint))
         {
             return nullptr;
@@ -786,7 +792,8 @@ void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGr
     };
 
     //	a helper function used to find function entry of a function
-    static const auto FindFunctionEntry = [](UBlueprint* InBlueprint, FName InName) -> UK2Node_FunctionEntry* {
+    static const auto FindFunctionEntry = [](UBlueprint* InBlueprint, FName InName) -> UK2Node_FunctionEntry*
+    {
         if (!IsValid(InBlueprint))
         {
             return nullptr;
@@ -1019,16 +1026,20 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
         UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
         if (EventGraph)
         {
-            auto RemovedCustomEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
-                UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
-                return CustomEvent && !FunctionAdded.Contains(CustomEvent->CustomFunctionName);
-            });
+            auto RemovedCustomEvent = EventGraph->Nodes.RemoveAll(
+                [&](UEdGraphNode* GraphNode)
+                {
+                    UK2Node_CustomEvent* CustomEvent = Cast<UK2Node_CustomEvent>(GraphNode);
+                    return CustomEvent && !FunctionAdded.Contains(CustomEvent->CustomFunctionName);
+                });
             NeedSave = NeedSave || (RemovedCustomEvent > 0);
 
-            auto RemoveOverrideEvent = EventGraph->Nodes.RemoveAll([&](UEdGraphNode* GraphNode) {
-                UK2Node_Event* Event = Cast<UK2Node_Event>(GraphNode);
-                return Event && Event->bOverrideFunction && !OverrideAdded.Contains(Event->EventReference.GetMemberName());
-            });
+            auto RemoveOverrideEvent = EventGraph->Nodes.RemoveAll(
+                [&](UEdGraphNode* GraphNode)
+                {
+                    UK2Node_Event* Event = Cast<UK2Node_Event>(GraphNode);
+                    return Event && Event->bOverrideFunction && !OverrideAdded.Contains(Event->EventReference.GetMemberName());
+                });
             NeedSave = NeedSave || (RemoveOverrideEvent > 0);
         }
     }

@@ -109,8 +109,10 @@ void FJsEnvImpl::StartPolling()
 {
     uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
     uv_sem_init(&PollingSem, 0);
-    uv_thread_create(&PollingThread,
-        [](void* arg) {
+    uv_thread_create(
+        &PollingThread,
+        [](void* arg)
+        {
             auto* self = static_cast<FJsEnvImpl*>(arg);
             while (true)
             {
@@ -394,8 +396,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsEvalScript"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->EvalScript(Info);
                 },
@@ -406,8 +410,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsLog"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->Log(Info);
                 },
@@ -418,8 +424,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsLoadModule"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->LoadModule(Info);
                 },
@@ -430,8 +438,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsLoadUEType"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->LoadUEType(Info);
                 },
@@ -442,8 +452,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsLoadCDataType"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->CppObjectMapper.LoadCppType(Info);
                 },
@@ -454,8 +466,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsUEClassToJSClass"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->UEClassToJSClass(Info);
                 },
@@ -466,8 +480,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsNewContainer"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->NewContainer(Info);
                 },
@@ -478,8 +494,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMergeObject"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->MergeObject(Info);
                 },
@@ -490,8 +508,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsNewObject"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->NewObjectByClass(Info);
                 },
@@ -502,8 +522,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsNewStruct"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->NewStructByScriptStruct(Info);
                 },
@@ -514,8 +536,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMakeUClass"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->MakeUClass(Info);
                 },
@@ -526,8 +550,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFindModule"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->FindModule(Info);
                 },
@@ -538,8 +564,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsSetInspectorCallback"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->SetInspectorCallback(Info);
                 },
@@ -550,8 +578,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsDispatchProtocolMessage"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->DispatchProtocolMessage(Info);
                 },
@@ -569,8 +599,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     //#if !defined(WITH_NODEJS)
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "setTimeout"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->SetTimeout(Info);
                 },
@@ -581,8 +613,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "clearTimeout"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->ClearInterval(Info);
                 },
@@ -593,8 +627,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "setInterval"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->SetInterval(Info);
                 },
@@ -605,8 +641,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "clearInterval"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->ClearInterval(Info);
                 },
@@ -618,8 +656,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "dumpStatisticsLog"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->DumpStatisticsLog(Info);
                 },
@@ -630,8 +670,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     PuertsObj
         ->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info) {
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
                     auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
                     Self->ReleaseManualReleaseDelegate(Info);
                 },
@@ -990,7 +1032,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         }
         if (Info.Length() > 3)
         {
-            ObjectFlags = (EObjectFlags)(Info[3]->Int32Value(Context).ToChecked());
+            ObjectFlags = (EObjectFlags) (Info[3]->Int32Value(Context).ToChecked());
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
@@ -1374,7 +1416,8 @@ void FJsEnvImpl::RebindJs()
             }
             else
             {
-                auto IsTsSubclass = [](UClass* Class) {
+                auto IsTsSubclass = [](UClass* Class)
+                {
                     while (Class)
                     {
                         if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor ||
@@ -1981,17 +2024,15 @@ void FJsEnvImpl::ExecuteDelegate(
 
     if (Iter->second.DelegateProperty)
     {
-        JsCallbackPrototypeMap[SignatureFunction]->Call(
-            Isolate, Context, Info, [ScriptDelegate = static_cast<FScriptDelegate*>(DelegatePtr)](void* Params) {
-                ScriptDelegate->ProcessDelegate<UObject>(Params);
-            });
+        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
+            [ScriptDelegate = static_cast<FScriptDelegate*>(DelegatePtr)](void* Params)
+            { ScriptDelegate->ProcessDelegate<UObject>(Params); });
     }
     else
     {
-        JsCallbackPrototypeMap[SignatureFunction]->Call(
-            Isolate, Context, Info, [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params) {
-                MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params);
-            });
+        JsCallbackPrototypeMap[SignatureFunction]->Call(Isolate, Context, Info,
+            [MulticastScriptDelegate = static_cast<FMulticastScriptDelegate*>(DelegatePtr)](void* Params)
+            { MulticastScriptDelegate->ProcessMulticastDelegate<UObject>(Params); });
     }
 }
 
@@ -2537,8 +2578,10 @@ v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
     DataTransfer::SetPointer(Isolate, JSObject, Class, IsSoftClass ? 2 : 1);
     DataTransfer::SetPointer(Isolate, JSObject, nullptr, IsSoftClass ? 1 : 2);
     v8::Global<v8::Object>* GlobalPtr = new v8::Global<v8::Object>(Isolate, JSObject);
-    GlobalPtr->SetWeak<v8::Global<v8::Object>>(GlobalPtr,
-        [](const v8::WeakCallbackInfo<v8::Global<v8::Object>>& Data) {
+    GlobalPtr->SetWeak<v8::Global<v8::Object>>(
+        GlobalPtr,
+        [](const v8::WeakCallbackInfo<v8::Global<v8::Object>>& Data)
+        {
             void* Ptr = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
             delete static_cast<FSoftObjectPtr*>(Ptr);
             delete Data.GetParameter();
@@ -2815,14 +2858,16 @@ void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UO
         auto Result = ArgvAdd->Call(Context, Argv, 2, Args);
     }
 
-    ExecuteModule(ModuleName, [](const FString& Script, const FString& Path) {
-        auto PathInJs = Path.Replace(TEXT("\\"), TEXT("\\\\"));
-        auto DirInJs = FPaths::GetPath(Path).Replace(TEXT("\\"), TEXT("\\\\"));
-        return FString::Printf(TEXT("(function() { var __filename = '%s', __dirname = '%s', exports ={}, module =  { exports : "
-                                    "exports, filename : __filename }; (function (exports, require, console, prompt) { "
-                                    "%s\n})(exports, puerts.genRequire('%s'), puerts.console);})()"),
-            *PathInJs, *DirInJs, *Script, *DirInJs);
-    });
+    ExecuteModule(ModuleName,
+        [](const FString& Script, const FString& Path)
+        {
+            auto PathInJs = Path.Replace(TEXT("\\"), TEXT("\\\\"));
+            auto DirInJs = FPaths::GetPath(Path).Replace(TEXT("\\"), TEXT("\\\\"));
+            return FString::Printf(TEXT("(function() { var __filename = '%s', __dirname = '%s', exports ={}, module =  { exports : "
+                                        "exports, filename : __filename }; (function (exports, require, console, prompt) { "
+                                        "%s\n})(exports, puerts.genRequire('%s'), puerts.console);})()"),
+                *PathInJs, *DirInJs, *Script, *DirInJs);
+        });
     Started = true;
 }
 
@@ -2888,7 +2933,8 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
 
     v8::Local<v8::Module> SyntheticModule = v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName),
         {v8::String::NewFromUtf8(Isolate, "default").ToLocalChecked()},
-        [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value> {
+        [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
+        {
             const auto IsolateInner = ContextInner->GetIsolate();
             auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(IsolateInner));
 
@@ -3171,8 +3217,9 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
 {
     using std::placeholders::_1;
     using std::placeholders::_2;
-    std::function<void(const JSError*, std::shared_ptr<ILogger>&)> ExceptionLog = [](const JSError* Exception,
-                                                                                      std::shared_ptr<ILogger>& InLogger) {
+    std::function<void(const JSError*, std::shared_ptr<ILogger>&)> ExceptionLog =
+        [](const JSError* Exception, std::shared_ptr<ILogger>& InLogger)
+    {
         FString Message = FString::Printf(TEXT("JS Execution Exception: %s"), *(Exception->Message));
         InLogger->Warn(Message);
     };
@@ -3392,25 +3439,27 @@ void FJsEnvImpl::SetInspectorCallback(const v8::FunctionCallbackInfo<v8::Value>&
     if (!InspectorChannel)
     {
         InspectorChannel = Inspector->CreateV8InspectorChannel();
-        InspectorChannel->OnMessage([this](std::string Message) {
-            // UE_LOG(LogTemp, Warning, TEXT("<-- %s"), UTF8_TO_TCHAR(Message.c_str()));
-            v8::Isolate::Scope IsolatescopeObject(MainIsolate);
-            v8::HandleScope HandleScopeObject(MainIsolate);
-            v8::Local<v8::Context> ContextInner = DefaultContext.Get(MainIsolate);
-            v8::Context::Scope ContextScopeObject(ContextInner);
-
-            auto Handler = InspectorMessageHandler.Get(MainIsolate);
-
-            v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(MainIsolate, Message.c_str())};
-
-            v8::TryCatch TryCatch(MainIsolate);
-            __USE(Handler->Call(ContextInner, ContextInner->Global(), 1, Args));
-            if (TryCatch.HasCaught())
+        InspectorChannel->OnMessage(
+            [this](std::string Message)
             {
-                Logger->Error(
-                    FString::Printf(TEXT("inspector callback exception %s"), *FV8Utils::TryCatchToString(MainIsolate, &TryCatch)));
-            }
-        });
+                // UE_LOG(LogTemp, Warning, TEXT("<-- %s"), UTF8_TO_TCHAR(Message.c_str()));
+                v8::Isolate::Scope IsolatescopeObject(MainIsolate);
+                v8::HandleScope HandleScopeObject(MainIsolate);
+                v8::Local<v8::Context> ContextInner = DefaultContext.Get(MainIsolate);
+                v8::Context::Scope ContextScopeObject(ContextInner);
+
+                auto Handler = InspectorMessageHandler.Get(MainIsolate);
+
+                v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(MainIsolate, Message.c_str())};
+
+                v8::TryCatch TryCatch(MainIsolate);
+                __USE(Handler->Call(ContextInner, ContextInner->Global(), 1, Args));
+                if (TryCatch.HasCaught())
+                {
+                    Logger->Error(FString::Printf(
+                        TEXT("inspector callback exception %s"), *FV8Utils::TryCatchToString(MainIsolate, &TryCatch)));
+                }
+            });
     }
 
     InspectorMessageHandler.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));

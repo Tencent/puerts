@@ -146,12 +146,14 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
     Gen.Begin();
 
-    puerts::ForeachRegisterClass([&](const puerts::JSClassDefinition* ClassDefinition) {
-        if (ClassDefinition->CPPTypeName)
+    puerts::ForeachRegisterClass(
+        [&](const puerts::JSClassDefinition* ClassDefinition)
         {
-            Gen.GenClass(ClassDefinition);
-        }
-    });
+            if (ClassDefinition->CPPTypeName)
+            {
+                Gen.GenClass(ClassDefinition);
+            }
+        });
 
     Gen.End();
 

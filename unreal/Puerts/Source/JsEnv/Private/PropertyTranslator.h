@@ -98,7 +98,8 @@ public:
     {
     }
 
-    union {
+    union
+    {
         PropertyMacro* Property;
         NumericPropertyMacro* NumericProperty;
         IntPropertyMacro* IntProperty;

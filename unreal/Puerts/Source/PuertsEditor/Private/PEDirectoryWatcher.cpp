@@ -18,44 +18,46 @@ bool UPEDirectoryWatcher::Watch(const FString& InDirectory)
     // UE_LOG(LogTemp, Warning, TEXT("PEDirectoryWatcher::Watch: %s"), *InDirectory);
     if (IFileManager::Get().DirectoryExists(*Directory))
     {
-        auto Changed = IDirectoryWatcher::FDirectoryChanged::CreateLambda([&](const TArray<FFileChangeData>& FileChanges) {
-            TArray<FString> Added;
-            TArray<FString> Modified;
-            TArray<FString> Removed;
-
-            for (auto Change : FileChanges)
+        auto Changed = IDirectoryWatcher::FDirectoryChanged::CreateLambda(
+            [&](const TArray<FFileChangeData>& FileChanges)
             {
-                //因为要算md5，所有过滤掉不关心的
-                if (!Change.Filename.EndsWith(TEXT(".ts")) && !Change.Filename.EndsWith(TEXT(".tsx")) &&
-                    !Change.Filename.EndsWith(TEXT(".json")) && !Change.Filename.EndsWith(TEXT(".js")))
+                TArray<FString> Added;
+                TArray<FString> Modified;
+                TArray<FString> Removed;
+
+                for (auto Change : FileChanges)
                 {
-                    continue;
-                }
-                FPaths::NormalizeFilename(Change.Filename);
-                Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
-                switch (Change.Action)
-                {
-                    case FFileChangeData::FCA_Added:
-                        if (Added.Contains(Change.Filename))
-                            continue;
-                        Added.Add(Change.Filename);
-                        break;
-                    case FFileChangeData::FCA_Modified:
-                        if (Modified.Contains(Change.Filename))
-                            continue;
-                        Modified.Add(Change.Filename);
-                        break;
-                    case FFileChangeData::FCA_Removed:
-                        if (Removed.Contains(Change.Filename))
-                            continue;
-                        Removed.Add(Change.Filename);
-                        break;
-                    default:
+                    //因为要算md5，所有过滤掉不关心的
+                    if (!Change.Filename.EndsWith(TEXT(".ts")) && !Change.Filename.EndsWith(TEXT(".tsx")) &&
+                        !Change.Filename.EndsWith(TEXT(".json")) && !Change.Filename.EndsWith(TEXT(".js")))
+                    {
                         continue;
+                    }
+                    FPaths::NormalizeFilename(Change.Filename);
+                    Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
+                    switch (Change.Action)
+                    {
+                        case FFileChangeData::FCA_Added:
+                            if (Added.Contains(Change.Filename))
+                                continue;
+                            Added.Add(Change.Filename);
+                            break;
+                        case FFileChangeData::FCA_Modified:
+                            if (Modified.Contains(Change.Filename))
+                                continue;
+                            Modified.Add(Change.Filename);
+                            break;
+                        case FFileChangeData::FCA_Removed:
+                            if (Removed.Contains(Change.Filename))
+                                continue;
+                            Removed.Add(Change.Filename);
+                            break;
+                        default:
+                            continue;
+                    }
                 }
-            }
-            OnChanged.Broadcast(Added, Modified, Removed);
-        });
+                OnChanged.Broadcast(Added, Modified, Removed);
+            });
         FDirectoryWatcherModule& DirectoryWatcherModule =
             FModuleManager::Get().LoadModuleChecked<FDirectoryWatcherModule>(TEXT("DirectoryWatcher"));
         IDirectoryWatcher* DirectoryWatcher = DirectoryWatcherModule.Get();
