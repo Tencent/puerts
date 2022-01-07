@@ -14,4 +14,5 @@ jobs:
     - name: Run clang-format style check
       uses: jidicula/clang-format-action@v4.4.1
       with:
+        clang-format-version: '12'
         check-path: ${{ matrix.path }}
