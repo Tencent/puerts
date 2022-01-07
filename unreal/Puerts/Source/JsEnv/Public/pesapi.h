@@ -62,15 +62,15 @@
 
 #ifdef USING_OBJC_REFLECTION
 
-#define PESAPI_MODULE(modname, initfunc)                 \
+#define PESAPI_MODULE(modname, initfunc)                      \
     @interface PESAPI_MODULE_INITIALIZER (modname) : NSObject                                     \
-@end                                                     \
-    @implementation PESAPI_MODULE_INITIALIZER (modname)  \
-    +(void) initlib : (pesapi_func_ptr*) func_ptr_array  \
-    {                                                    \
-        pesapi_init(func_ptr_array);                     \
-        initfunc();                                      \
-    }                                                    \
+@end                                                          \
+    @implementation PESAPI_MODULE_INITIALIZER (modname)       \
+    +(void) initlib : (pesapi_func_ptr*) func_ptr_array       \
+    {                                                         \
+        pesapi_init(func_ptr_array);                          \
+        initfunc();                                           \
+    }                                                         \
     @end
 
 #else
