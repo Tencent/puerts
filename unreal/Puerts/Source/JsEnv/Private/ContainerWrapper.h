@@ -1,26 +1,26 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
+
+#include "CoreMinimal.h"
+#include "CoreUObject.h"
+#include "JSLogger.h"
+#include "ObjectMapper.h"
+#include "V8Utils.h"
 
 #include <memory>
 #include <vector>
 
-#include "CoreMinimal.h"
-#include "CoreUObject.h"
-#include "V8Utils.h"
-#include "ObjectMapper.h"
-#include "JSLogger.h"
-
-#pragma warning(push, 0)  
+#pragma warning(push, 0)
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
-
 
 namespace puerts
 {
@@ -36,15 +36,15 @@ struct FScriptArrayEx
     TWeakFieldPtr<PropertyMacro> PropertyPtr;
 #endif
 
-    FORCEINLINE FScriptArrayEx(PropertyMacro *InProperty)
+    FORCEINLINE FScriptArrayEx(PropertyMacro* InProperty)
     {
-        //UE_LOG(LogTemp, Warning, TEXT("FScriptArrayEx:%p"), this);
+        // UE_LOG(LogTemp, Warning, TEXT("FScriptArrayEx:%p"), this);
         PropertyPtr = InProperty;
     }
 
     FORCEINLINE ~FScriptArrayEx()
     {
-        //UE_LOG(LogTemp, Warning, TEXT("~FScriptArrayEx:%p"), this);
+        // UE_LOG(LogTemp, Warning, TEXT("~FScriptArrayEx:%p"), this);
         if (PropertyPtr.IsValid())
         {
             Empty(&Data, PropertyPtr.Get());
@@ -55,15 +55,15 @@ struct FScriptArrayEx
         }
     }
 
-    FORCEINLINE static uint8* GetData(FScriptArray *ScriptArray, int32 ElementSize, int32 Index)
+    FORCEINLINE static uint8* GetData(FScriptArray* ScriptArray, int32 ElementSize, int32 Index)
     {
         return static_cast<uint8*>(ScriptArray->GetData()) + Index * ElementSize;
     }
 
-    FORCEINLINE static void Destruct(FScriptArray *ScriptArray, PropertyMacro *Property, int32 Index, int32 Count = 1)
+    FORCEINLINE static void Destruct(FScriptArray* ScriptArray, PropertyMacro* Property, int32 Index, int32 Count = 1)
     {
         const int32 ElementSize = Property->GetSize();
-        uint8 *Dest = GetData(ScriptArray, ElementSize, Index);
+        uint8* Dest = GetData(ScriptArray, ElementSize, Index);
         for (int32 i = 0; i < Count; ++i)
         {
             Property->DestroyValue(Dest);
@@ -71,7 +71,7 @@ struct FScriptArrayEx
         }
     }
 
-    FORCEINLINE static void Empty(FScriptArray *ScriptArray, PropertyMacro *Property)
+    FORCEINLINE static void Empty(FScriptArray* ScriptArray, PropertyMacro* Property)
     {
         Destruct(ScriptArray, Property, 0, ScriptArray->Num());
         ScriptArray->Empty(0, Property->GetSize());
@@ -88,15 +88,15 @@ struct FScriptSetEx
     TWeakFieldPtr<PropertyMacro> PropertyPtr;
 #endif
 
-    FORCEINLINE FScriptSetEx(PropertyMacro *InProperty)
+    FORCEINLINE FScriptSetEx(PropertyMacro* InProperty)
     {
-        //UE_LOG(LogTemp, Warning, TEXT("FScriptSetEx:%p"), this);
+        // UE_LOG(LogTemp, Warning, TEXT("FScriptSetEx:%p"), this);
         PropertyPtr = InProperty;
     }
 
     FORCEINLINE ~FScriptSetEx()
     {
-        //UE_LOG(LogTemp, Warning, TEXT("~FScriptSetEx:%p"), this);
+        // UE_LOG(LogTemp, Warning, TEXT("~FScriptSetEx:%p"), this);
         if (PropertyPtr.IsValid())
         {
             Empty(&Data, PropertyPtr.Get());
@@ -107,7 +107,7 @@ struct FScriptSetEx
         }
     }
 
-    FORCEINLINE static void Destruct(FScriptSet *ScriptSet, PropertyMacro *Property, int32 Index, int32 Count = 1)
+    FORCEINLINE static void Destruct(FScriptSet* ScriptSet, PropertyMacro* Property, int32 Index, int32 Count = 1)
     {
         auto SetLayout = ScriptSet->GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
         for (int32 i = Index; i < Index + Count; ++i)
@@ -120,7 +120,7 @@ struct FScriptSetEx
         }
     }
 
-    FORCEINLINE static void Empty(FScriptSet *ScriptSet, PropertyMacro *Property)
+    FORCEINLINE static void Empty(FScriptSet* ScriptSet, PropertyMacro* Property)
     {
         auto SetLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
         Destruct(ScriptSet, Property, 0, ScriptSet->Num());
@@ -128,7 +128,7 @@ struct FScriptSetEx
     }
 };
 
-FORCEINLINE static int32 GetKeyOffset(const FScriptMapLayout &ScriptMapLayout)
+FORCEINLINE static int32 GetKeyOffset(const FScriptMapLayout& ScriptMapLayout)
 {
 #if ENGINE_MINOR_VERSION < 22 && ENGINE_MAJOR_VERSION < 5
     return ScriptMapLayout.KeyOffset;
@@ -149,16 +149,16 @@ struct FScriptMapEx
     TWeakFieldPtr<PropertyMacro> ValuePropertyPtr;
 #endif
 
-    FORCEINLINE FScriptMapEx(PropertyMacro *InKeyProperty, PropertyMacro *InValueProperty)
+    FORCEINLINE FScriptMapEx(PropertyMacro* InKeyProperty, PropertyMacro* InValueProperty)
     {
-        //UE_LOG(LogTemp, Warning, TEXT("FScriptMapEx:%p"), this);
+        // UE_LOG(LogTemp, Warning, TEXT("FScriptMapEx:%p"), this);
         KeyPropertyPtr = InKeyProperty;
         ValuePropertyPtr = InValueProperty;
     }
 
     FORCEINLINE ~FScriptMapEx()
     {
-        //UE_LOG(LogTemp, Warning, TEXT("~FScriptMapEx:%p"), this);
+        // UE_LOG(LogTemp, Warning, TEXT("~FScriptMapEx:%p"), this);
         if (KeyPropertyPtr.IsValid() && ValuePropertyPtr.IsValid())
         {
             Empty(&Data, KeyPropertyPtr.Get(), ValuePropertyPtr.Get());
@@ -171,10 +171,12 @@ struct FScriptMapEx
 
     FORCEINLINE static FScriptMapLayout GetScriptLayout(const PropertyMacro* KeyProperty, const PropertyMacro* ValueProperty)
     {
-        return FScriptMap::GetScriptLayout(KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
+        return FScriptMap::GetScriptLayout(
+            KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
     }
 
-    FORCEINLINE static void Destruct(FScriptMap *ScriptMap, PropertyMacro *KeyProperty, PropertyMacro *ValueProperty, int32 Index, int32 Count = 1)
+    FORCEINLINE static void Destruct(
+        FScriptMap* ScriptMap, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, int32 Index, int32 Count = 1)
     {
         int32 MaxIndex = ScriptMap->GetMaxIndex();
         auto MapLayout = GetScriptLayout(KeyProperty, ValueProperty);
@@ -191,7 +193,7 @@ struct FScriptMapEx
         }
     }
 
-    FORCEINLINE static void Empty(FScriptMap *ScriptMap, PropertyMacro *KeyProperty, PropertyMacro *ValueProperty)
+    FORCEINLINE static void Empty(FScriptMap* ScriptMap, PropertyMacro* KeyProperty, PropertyMacro* ValueProperty)
     {
         auto MapLayout = GetScriptLayout(KeyProperty, ValueProperty);
         Destruct(ScriptMap, KeyProperty, ValueProperty, 0, ScriptMap->Num());
@@ -199,42 +201,44 @@ struct FScriptMapEx
     }
 };
 
-template<typename T>
+template <typename T>
 struct ContainerExTypeMapper;
 
-template<>
+template <>
 struct ContainerExTypeMapper<FScriptArray>
 {
     using Type = FScriptArrayEx;
 };
 
-template<>
+template <>
 struct ContainerExTypeMapper<FScriptSet>
 {
     using Type = FScriptSetEx;
 };
 
-template<>
+template <>
 struct ContainerExTypeMapper<FScriptMap>
 {
     using Type = FScriptMapEx;
 };
 
-template<typename T>
+template <typename T>
 class FContainerWrapper
 {
 public:
     static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<void>& Data)
     {
         typedef typename ContainerExTypeMapper<T>::Type ET;
-        ET *Container = static_cast<ET*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
+        ET* Container =
+            static_cast<ET*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
         FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindContainer(Container);
         delete Container;
     }
 
     static void OnGarbageCollected(const v8::WeakCallbackInfo<void>& Data)
     {
-        T *Container = static_cast<T*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
+        T* Container =
+            static_cast<T*>(DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1)));
         FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindContainer(Container);
     }
 
@@ -246,7 +250,7 @@ public:
 
         auto Self = Info.This();
 
-        if (Info.Length() == 2 && Info[0]->IsExternal()) //Call by Native
+        if (Info.Length() == 2 && Info[0]->IsExternal())    // Call by Native
         {
             T* Ptr = reinterpret_cast<T*>(v8::Local<v8::External>::Cast(Info[0])->Value());
             bool PassByPointer = Info[1]->BooleanValue(Isolate);
@@ -259,11 +263,10 @@ public:
                 FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(Ptr, Self, OnGarbageCollectedWithFree);
             }
         }
-        else // Call by js new
+        else    // Call by js new
         {
             FV8Utils::ThrowException(Isolate, "Container Constructor no support yet");
         }
-            
     }
 
     // TODO - 用doxygen注释
@@ -325,13 +328,13 @@ private:
     // 返回：无
     // 作用：清空容器
     static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
-    
+
 private:
-    FORCEINLINE static int32 AddUninitialized(FScriptArray *ScriptArray, int32 ElementSize, int32 Count = 1);
+    FORCEINLINE static int32 AddUninitialized(FScriptArray* ScriptArray, int32 ElementSize, int32 Count = 1);
 
-    FORCEINLINE static uint8* GetData(FScriptArray *ScriptArray, int32 ElementSize, int32 Index);
+    FORCEINLINE static uint8* GetData(FScriptArray* ScriptArray, int32 ElementSize, int32 Index);
 
-    FORCEINLINE static void Construct(FScriptArray *ScriptArray, FPropertyTranslator *Inner, int32 Index, int32 Count = 1);
+    FORCEINLINE static void Construct(FScriptArray* ScriptArray, FPropertyTranslator* Inner, int32 Index, int32 Count = 1);
 
     static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
@@ -340,6 +343,7 @@ class FScriptSetWrapper : public FContainerWrapper<FScriptSet>
 {
 public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
+
 private:
     static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -393,7 +397,9 @@ public:
     static v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
 private:
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info) {}
+    static void New(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+    }
 
     static void Num(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -401,4 +407,4 @@ private:
 
     static void Set(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
-}
+}    // namespace puerts

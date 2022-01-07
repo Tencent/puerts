@@ -1,9 +1,10 @@
 ﻿/*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
@@ -19,7 +20,7 @@
 
 #include <string>
 
-#pragma warning(push, 0) 
+#pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
 
@@ -31,7 +32,7 @@ struct JSENV_API JSFunctionInfo
 {
     const char* Name;
     v8::FunctionCallback Callback;
-    void *Data = nullptr;
+    void* Data = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo
@@ -39,12 +40,12 @@ struct JSENV_API JSPropertyInfo
     const char* Name;
     v8::FunctionCallback Getter;
     v8::FunctionCallback Setter;
-    void *Data = nullptr;
+    void* Data = nullptr;
 };
 
-typedef void(*FinalizeFunc)(void* Ptr);
+typedef void (*FinalizeFunc)(void* Ptr);
 
-typedef void*(*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 struct NamedFunctionInfo
 {
@@ -64,28 +65,31 @@ struct JSENV_API JSClassDefinition
     const char* CPPSuperTypeName;
     const char* UETypeName;
     InitializeFunc Initialize;
-    JSFunctionInfo* Methods;    //成员方法
-    JSFunctionInfo* Functions;  //静态方法
+    JSFunctionInfo* Methods;      //成员方法
+    JSFunctionInfo* Functions;    //静态方法
     JSPropertyInfo* Properties;
     FinalizeFunc Finalize;
-    //int InternalFieldCount;
+    // int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
     NamedFunctionInfo* MethodInfos;
     NamedFunctionInfo* FunctionInfos;
     NamedPropertyInfo* PropertyInfos;
 };
 
-#define JSClassEmptyDefinition { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+#define JSClassEmptyDefinition             \
+    {                                      \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
+    }
 
-void JSENV_API RegisterJSClass(const JSClassDefinition &ClassDefinition);
+void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 
-void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)>);
+void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
 const JSClassDefinition* FindClassByID(const char* Name);
 
 const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
-typedef void(*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
+typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
 AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
@@ -95,14 +99,13 @@ void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 #endif
 
-}
+}    // namespace puerts
 
-#define PUERTS_MODULE(Name, RegFunc) \
-    static struct FAutoRegisterFor##Name \
-    { \
-        FAutoRegisterFor##Name()\
-        {\
-            puerts::RegisterAddon(#Name, (RegFunc));\
-        }\
+#define PUERTS_MODULE(Name, RegFunc)                 \
+    static struct FAutoRegisterFor##Name             \
+    {                                                \
+        FAutoRegisterFor##Name()                     \
+        {                                            \
+            puerts::RegisterAddon(#Name, (RegFunc)); \
+        }                                            \
     } _AutoRegisterFor##Name
-

@@ -1,21 +1,22 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
-#pragma warning(push, 0) 
+#pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
 
 #include "Binding.hpp"
+#include "CoreMinimal.h"
 #include "JSLogger.h"
 #include "V8Utils.h"
 
-#include "CoreMinimal.h"
 #include "JsObject.generated.h"
 
 USTRUCT(BlueprintType)
@@ -24,22 +25,23 @@ struct FJsObject
 public:
     GENERATED_USTRUCT_BODY()
 
-    FJsObject():Isolate(nullptr){}
+    FJsObject() : Isolate(nullptr)
+    {
+    }
 
-    FJsObject(const FJsObject & InOther)
+    FJsObject(const FJsObject& InOther)
     {
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
     }
-    
-    FJsObject(v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
-        : Isolate(InContext->GetIsolate()),
-          GContext(InContext->GetIsolate(), InContext),
-          GObject(InContext->GetIsolate(), InObject)
-    {}
 
-    FJsObject & operator =(const FJsObject & InOther)
+    FJsObject(v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
+        : Isolate(InContext->GetIsolate()), GContext(InContext->GetIsolate(), InContext), GObject(InContext->GetIsolate(), InObject)
+    {
+    }
+
+    FJsObject& operator=(const FJsObject& InOther)
     {
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
@@ -47,7 +49,7 @@ public:
         return *this;
     }
 
-    template<typename T>
+    template <typename T>
     T Get(const char* Key) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -55,7 +57,7 @@ public:
         auto Context = GContext.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
-        
+
         auto MaybeValue = Object->Get(Context, puerts::converter::Converter<const char*>::toScript(Context, Key));
         v8::Local<v8::Value> Val;
         if (MaybeValue.ToLocal(&Val))
@@ -65,7 +67,7 @@ public:
         return {};
     }
 
-    template<typename T>
+    template <typename T>
     void Set(const char* Key, T Val) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -73,12 +75,12 @@ public:
         auto Context = GContext.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
-        
+
         auto _UnUsed = Object->Set(Context, puerts::converter::Converter<const char*>::toScript(Context, Key),
             puerts::converter::Converter<T>::toScript(Context, Val));
     }
 
-    template<typename... Args>
+    template <typename... Args>
     void Action(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -96,7 +98,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        auto _UnUsed = InvokeHelper(Context, Object, cppArgs ... );
+        auto _UnUsed = InvokeHelper(Context, Object, cppArgs...);
 
         if (TryCatch.HasCaught())
         {
@@ -104,7 +106,7 @@ public:
         }
     }
 
-    template<typename Ret, typename... Args>
+    template <typename Ret, typename... Args>
     Ret Func(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -122,7 +124,7 @@ public:
 
         v8::TryCatch TryCatch(Isolate);
 
-        auto MaybeRet = InvokeHelper(Context, Object, cppArgs ... );
+        auto MaybeRet = InvokeHelper(Context, Object, cppArgs...);
 
         if (TryCatch.HasCaught())
         {
@@ -149,11 +151,12 @@ public:
     }
 
 private:
-    template <typename ... Args>
-    FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args ... CppArgs) const
+    template <typename... Args>
+    FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
     {
         v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
-        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);;
+        return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
+        ;
     };
 
     FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
@@ -162,7 +165,7 @@ private:
     };
 
 private:
-    v8::Isolate *Isolate;
+    v8::Isolate* Isolate;
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
 
@@ -171,20 +174,23 @@ private:
 
 namespace puerts
 {
-template<>
-struct ScriptTypeName<FJsObject> {
-    static constexpr const char * value = "object";
+template <>
+struct ScriptTypeName<FJsObject>
+{
+    static constexpr const char* value = "object";
 };
 
-template<typename R, typename... Args>
-struct ScriptTypeName<std::function<R(Args...)>> {
-    static constexpr const char * value = "Function";
+template <typename R, typename... Args>
+struct ScriptTypeName<std::function<R(Args...)>>
+{
+    static constexpr const char* value = "Function";
 };
 
 namespace converter
 {
 template <>
-struct Converter<FJsObject> {
+struct Converter<FJsObject>
+{
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FJsObject value)
     {
         return value.GObject.Get(context->GetIsolate());
@@ -201,8 +207,9 @@ struct Converter<FJsObject> {
     }
 };
 
-template<typename R, typename... Args>
-struct Converter<std::function<R(Args...)>> {
+template <typename R, typename... Args>
+struct Converter<std::function<R(Args...)>>
+{
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<R(Args...)> value)
     {
         return v8::Undefined(context->GetIsolate());
@@ -211,10 +218,7 @@ struct Converter<std::function<R(Args...)>> {
     static std::function<R(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         FJsObject PF(context, value.As<v8::Object>());
-        return [=](Args... cppArgs) -> R
-        {
-            return PF.Func<R>(cppArgs...);
-        };
+        return [=](Args... cppArgs) -> R { return PF.Func<R>(cppArgs...); };
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -223,8 +227,9 @@ struct Converter<std::function<R(Args...)>> {
     }
 };
 
-template<typename... Args>
-struct Converter<std::function<void(Args...)>> {
+template <typename... Args>
+struct Converter<std::function<void(Args...)>>
+{
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<void(Args...)> value)
     {
         return v8::Undefined(context->GetIsolate());
@@ -233,10 +238,7 @@ struct Converter<std::function<void(Args...)>> {
     static std::function<void(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         FJsObject PF(context, value.As<v8::Object>());
-        return [=](Args... cppArgs) -> void
-        {
-            PF.Action(cppArgs...);
-        };
+        return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -244,5 +246,5 @@ struct Converter<std::function<void(Args...)>> {
         return value->IsFunction();
     }
 };
-}   
-}
+}    // namespace converter
+}    // namespace puerts

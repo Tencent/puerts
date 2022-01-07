@@ -4,23 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
 #include "FileSystemOperation.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class PUERTSEDITOR_API UFileSystemOperation : public UBlueprintFunctionLibrary
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
 
     UFUNCTION(BlueprintCallable, Category = "File")
-    static bool ReadFile(FString Path, FString &Data);
+    static bool ReadFile(FString Path, FString& Data);
 
     UFUNCTION(BlueprintCallable, Category = "File")
     static void WriteFile(FString Path, FString Data);
-
 
     UFUNCTION(BlueprintCallable, Category = "File")
     static FString ResolvePath(FString Path);
@@ -49,6 +48,6 @@ class PUERTSEDITOR_API UFileSystemOperation : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, Category = "File")
     static FString FileMD5Hash(FString Path);
 
-    //UFUNCTION(BlueprintCallable, Category = "File")
-    //static TArray<FString> ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32 Depth);
+    // UFUNCTION(BlueprintCallable, Category = "File")
+    // static TArray<FString> ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32 Depth);
 };
