@@ -10,14 +10,12 @@
 
 #if defined(BUILDING_PES_EXTENSION)
 
-#include "TypeInfo.hpp"
-
-#include <pesapi.h>
-
-#include <functional>
-#include <string>
 #include <type_traits>
+#include <string>
+#include <functional>
 #include <vector>
+#include <pesapi.h>
+#include "TypeInfo.hpp"
 
 #define __DefObjectType(CLS)                          \
     namespace puerts                                  \

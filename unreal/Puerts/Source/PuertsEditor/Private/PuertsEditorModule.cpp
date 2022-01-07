@@ -7,13 +7,12 @@
  */
 
 #include "PuertsEditorModule.h"
-
-#include "Editor.h"
-#include "FileHelpers.h"
 #include "JsEnv.h"
+#include "Editor.h"
 #include "PuertsModule.h"
-#include "TypeScriptBlueprint.h"
+#include "FileHelpers.h"
 #include "TypeScriptCompilerContext.h"
+#include "TypeScriptBlueprint.h"
 
 class FPuertsEditorModule : public IPuertsEditorModule
 {

@@ -1,11 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PEDirectoryWatcher.h"
-
 #include "DirectoryWatcherModule.h"
+#include "Modules/ModuleManager.h"
 #include "HAL/FileManager.h"
 #include "Misc/SecureHash.h"
-#include "Modules/ModuleManager.h"
 
 UPEDirectoryWatcher::UPEDirectoryWatcher()
 {

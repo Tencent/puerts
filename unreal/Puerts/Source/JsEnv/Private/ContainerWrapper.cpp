@@ -7,7 +7,6 @@
  */
 
 #include "ContainerWrapper.h"
-
 #include "PropertyTranslator.h"
 
 namespace puerts

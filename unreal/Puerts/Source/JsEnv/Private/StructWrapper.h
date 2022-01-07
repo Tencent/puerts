@@ -8,15 +8,15 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "CoreUObject.h"
-#include "FunctionTranslator.h"
-#include "JSClassRegister.h"
-#include "PropertyTranslator.h"
-
-#include <map>
 #include <memory>
 #include <vector>
+#include <map>
+
+#include "CoreMinimal.h"
+#include "CoreUObject.h"
+#include "PropertyTranslator.h"
+#include "FunctionTranslator.h"
+#include "JSClassRegister.h"
 
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"

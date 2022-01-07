@@ -139,8 +139,8 @@ public:
 
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 #pragma warning(push, 0)
-#include "libplatform/libplatform.h"
 #include "v8.h"
+#include "libplatform/libplatform.h"
 #pragma warning(pop)
 #endif
 

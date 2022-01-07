@@ -9,11 +9,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "K2Node_CustomEvent.h"
-#include "PEBlueprintMetaData.h"
 #include "PropertyMacros.h"
 #include "UObject/NoExportTypes.h"
-
+#include "PEBlueprintMetaData.h"
 #include "PEBlueprintAsset.generated.h"
 
 USTRUCT(BlueprintType)

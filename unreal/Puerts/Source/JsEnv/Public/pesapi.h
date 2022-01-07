@@ -9,9 +9,9 @@
 #ifndef PS_API_H_
 #define PS_API_H_
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 
 #define PESAPI_VERSION 1
 

@@ -10,7 +10,6 @@
 
 #include "CoreMinimal.h"
 #include "Engine/Blueprint.h"
-
 #include "TypeScriptBlueprint.generated.h"
 
 /**

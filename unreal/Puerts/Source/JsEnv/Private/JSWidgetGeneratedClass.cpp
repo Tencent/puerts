@@ -7,7 +7,6 @@
  */
 
 #include "JSWidgetGeneratedClass.h"
-
 #include "JSGeneratedFunction.h"
 
 void UJSWidgetGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitializer)

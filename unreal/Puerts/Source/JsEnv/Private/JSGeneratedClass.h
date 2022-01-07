@@ -13,10 +13,10 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include "CoreMinimal.h"
 #include "DynamicInvoker.h"
-#include "Engine/BlueprintGeneratedClass.h"
 
+#include "CoreMinimal.h"
+#include "Engine/BlueprintGeneratedClass.h"
 #include "JSGeneratedClass.generated.h"
 
 /**

@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include <cstdio>
+
 #include "IScriptGeneratorPluginInterface.h"
 #include "Modules/ModuleManager.h"
-
-#include <cstdio>
+#include "CoreMinimal.h"
 
 class IDeclarationGenerator : public IModuleInterface    //: public IScriptGeneratorPluginInterface
 {

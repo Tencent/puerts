@@ -8,12 +8,11 @@
 
 #pragma once
 
+#include <type_traits>
+#include <string>
+#include <functional>
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
-
-#include <functional>
-#include <string>
-#include <type_traits>
 
 #define __DefObjectType(CLS)                          \
     namespace puerts                                  \

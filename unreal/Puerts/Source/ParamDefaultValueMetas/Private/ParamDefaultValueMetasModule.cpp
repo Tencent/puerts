@@ -9,8 +9,8 @@
 #include "CoreUObject.h"
 #include "Features/IModularFeatures.h"
 #include "IScriptGeneratorPluginInterface.h"
-#include "PropertyMacros.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "PropertyMacros.h"
 
 #define LOCTEXT_NAMESPACE "FParamDefaultValueMetasModule"
 

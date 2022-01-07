@@ -13,10 +13,10 @@
 #pragma warning(pop)
 
 #include "Binding.hpp"
-#include "CoreMinimal.h"
 #include "JSLogger.h"
 #include "V8Utils.h"
 
+#include "CoreMinimal.h"
 #include "JsObject.generated.h"
 
 USTRUCT(BlueprintType)

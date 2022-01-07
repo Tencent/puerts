@@ -8,13 +8,13 @@
 
 #pragma once
 
+#include <memory>
+#include <vector>
+#include <functional>
+
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
 #include "PropertyTranslator.h"
-
-#include <functional>
-#include <memory>
-#include <vector>
 
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"

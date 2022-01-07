@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CodeGenerator.h"
-#include "CoreMinimal.h"
 #include "TypeScriptDeclarationGenerator.h"
-#include "UObject/NoExportTypes.h"
 
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
 #include "TemplateBindingGenerator.generated.h"
 
 /**

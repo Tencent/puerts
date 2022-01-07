@@ -11,12 +11,11 @@
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 
 #include "CoreMinimal.h"
-
 #include <functional>
 
 #pragma warning(push, 0)
-#include "libplatform/libplatform.h"
 #include "v8.h"
+#include "libplatform/libplatform.h"
 #pragma warning(pop)
 
 //对ticker delegate的封装，提供JS函数及其上下文

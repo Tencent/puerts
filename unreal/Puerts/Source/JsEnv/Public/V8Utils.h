@@ -8,10 +8,10 @@
 
 #pragma once
 
+#include <vector>
+
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
-
-#include <vector>
 
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"

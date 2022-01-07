@@ -10,7 +10,6 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-
 #include "ExtensionMethods.generated.h"
 
 /**

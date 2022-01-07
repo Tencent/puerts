@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "IDirectoryWatcher.h"
-#include "UObject/NoExportTypes.h"
 
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
 #include "PEDirectoryWatcher.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(

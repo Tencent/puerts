@@ -1,9 +1,10 @@
 #include "TypeScriptCompilerContext.h"
+#include "TypeScriptGeneratedClass.h"
 
 #include "Kismet2/KismetReinstanceUtilities.h"
 #include "KismetCompilerMisc.h"
+
 #include "Runtime/Launch/Resources/Version.h"
-#include "TypeScriptGeneratedClass.h"
 
 FTypeScriptCompilerContext::FTypeScriptCompilerContext(
     UBlueprint* SourceSketch, FCompilerResultsLog& MessageLog, const FKismetCompilerOptions& CompilerOptions)

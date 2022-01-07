@@ -7,10 +7,9 @@
  */
 
 #include "TypeScriptGeneratedClass.h"
-
+#include "PropertyMacros.h"
 #include "JSGeneratedFunction.h"
 #include "JSLogger.h"
-#include "PropertyMacros.h"
 
 DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
 {

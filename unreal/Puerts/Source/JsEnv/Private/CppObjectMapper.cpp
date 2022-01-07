@@ -7,7 +7,6 @@
  */
 
 #include "CppObjectMapper.h"
-
 #include "DataTransfer.h"
 
 namespace puerts

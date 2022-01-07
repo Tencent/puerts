@@ -7,11 +7,10 @@
  */
 
 #include "GenDTSStyle.h"
-
 #include "Framework/Application/SlateApplication.h"
-#include "Interfaces/IPluginManager.h"
-#include "Slate/SlateGameResources.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Slate/SlateGameResources.h"
+#include "Interfaces/IPluginManager.h"
 
 TSharedPtr<FSlateStyleSet> FGenDTSStyle::StyleInstance = NULL;
 

@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Modules/ModuleManager.h"
-
 #include <cstdio>
 #include <functional>
+
+#include "Modules/ModuleManager.h"
+#include "CoreMinimal.h"
 
 class PUERTS_API IPuertsModule : public IModuleInterface
 {

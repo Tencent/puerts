@@ -8,9 +8,9 @@
 
 // gen by puerts gen tools
 
+#include "GenHeaders.h"
 #include "CoreMinimal.h"
 #include "DataTransfer.h"
-#include "GenHeaders.h"
 #include "JSClassRegister.h"
 
 // <SourceLocation file 'D:\\Program Files\\Epic Games\\UE_4.24\\Engine\\Source\\Runtime\\Core\\Public\\Math/Color.h', line 112,

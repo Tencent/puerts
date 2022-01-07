@@ -10,11 +10,10 @@
 
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
-#include "FunctionTranslator.h"
-#include "PropertyTranslator.h"
-
 #include <memory>
 #include <vector>
+#include "PropertyTranslator.h"
+#include "FunctionTranslator.h"
 
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"

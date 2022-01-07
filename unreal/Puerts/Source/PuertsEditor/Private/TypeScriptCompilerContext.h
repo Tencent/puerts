@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "KismetCompiler.h"
 
 class FTypeScriptCompilerContext final : public FKismetCompilerContext

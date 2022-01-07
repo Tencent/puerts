@@ -6,32 +6,32 @@
  * which is part of this source code package.
  */
 
-#include "Components/PanelSlot.h"
-#include "Components/Widget.h"
-#include "CoreUObject.h"
-#include "Features/IModularFeatures.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "IDeclarationGenerator.h"
+#include "Features/IModularFeatures.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "CoreUObject.h"
 #include "TypeScriptDeclarationGenerator.h"
+#include "Components/PanelSlot.h"
+#include "Components/Widget.h"
 #if WITH_EDITOR
 #include "AssetRegistryModule.h"
 #endif
-#include "Framework/Notifications/NotificationManager.h"
-#include "GenDTSCommands.h"
-#include "GenDTSStyle.h"
 #include "LevelEditor.h"
+#include "GenDTSStyle.h"
+#include "GenDTSCommands.h"
+#include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 //#include "Misc/MessageDialog.h"
-#include "CodeGenerator.h"
-#include "Engine/Blueprint.h"
-#include "Engine/CollisionProfile.h"
-#include "Engine/UserDefinedEnum.h"
-#include "Engine/UserDefinedStruct.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "JSClassRegister.h"
+#include "Engine/UserDefinedStruct.h"
+#include "Engine/UserDefinedEnum.h"
+#include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
+#include "CodeGenerator.h"
+#include "JSClassRegister.h"
+#include "Engine/CollisionProfile.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)

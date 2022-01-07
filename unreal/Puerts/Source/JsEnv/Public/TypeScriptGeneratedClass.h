@@ -8,10 +8,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/BlueprintGeneratedClass.h"
 #include "TsDynamicInvoker.h"
 
+#include "CoreMinimal.h"
+#include "Engine/BlueprintGeneratedClass.h"
 #include "TypeScriptGeneratedClass.generated.h"
 
 /**

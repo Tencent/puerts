@@ -7,7 +7,6 @@
  */
 
 #include "DelegateWrapper.h"
-
 #include "ObjectMapper.h"
 #include "V8Utils.h"
 

@@ -1,10 +1,10 @@
 #include "PEBlueprintMetaData.h"
 
 #include "Algo/AnyOf.h"
-#include "Engine/Blueprint.h"
-#include "GameFramework/Actor.h"
 #include "K2Node_FunctionEntry.h"
 #include "UObject/MetaData.h"
+#include "Engine/Blueprint.h"
+#include "GameFramework/Actor.h"
 
 const TCHAR* UPEClassMetaData::NAME_HideCategories{TEXT("HideCategories")};
 const TCHAR* UPEClassMetaData::NAME_ShowCategories{TEXT("ShowCategories")};

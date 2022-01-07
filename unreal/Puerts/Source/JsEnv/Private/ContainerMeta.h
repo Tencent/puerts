@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EngineMinimal.h"
 #include "PropertyMacros.h"
+#include "EngineMinimal.h"
 
 USTRUCT(noexport)
 struct FPropertyMetaRoot

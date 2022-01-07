@@ -1,7 +1,6 @@
 #include "SoftObjectWrapper.h"
-
-#include "ObjectMapper.h"
 #include "V8Utils.h"
+#include "ObjectMapper.h"
 
 namespace puerts
 {

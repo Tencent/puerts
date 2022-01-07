@@ -13,10 +13,10 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include "CoreMinimal.h"
 #include "DynamicInvoker.h"
-#include "UObject/NoExportTypes.h"
 
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
 #include "DynamicDelegateProxy.generated.h"
 
 /**

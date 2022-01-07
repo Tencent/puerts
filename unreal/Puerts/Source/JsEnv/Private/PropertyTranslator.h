@@ -8,11 +8,11 @@
 
 #pragma once
 
+#include <memory>
+
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
 #include "PropertyMacros.h"
-
-#include <memory>
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
 #include "UObject/WeakFieldPtr.h"

@@ -6,11 +6,11 @@
  * which is part of this source code package.
  */
 
-#include "Algo/Reverse.h"
-#include "Engine.h"
 #include "JSModuleLoader.h"
-#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "Engine.h"
+#include "Algo/Reverse.h"
 
 namespace puerts
 {

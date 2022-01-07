@@ -8,19 +8,19 @@
 
 #pragma once
 
-#include "Containers/Ticker.h"
-#include "CoreMinimal.h"
-#include "ExtensionMethods.h"
-#include "JSLogger.h"
-#include "JSModuleLoader.h"
-#include "ObjectRetainer.h"
-#include "UObject/GCObject.h"
-
+#include <map>
+#include <string>
 #include <algorithm>
 #include <functional>
-#include <map>
 #include <memory>
-#include <string>
+
+#include "CoreMinimal.h"
+#include "UObject/GCObject.h"
+#include "Containers/Ticker.h"
+#include "ObjectRetainer.h"
+#include "JSLogger.h"
+#include "JSModuleLoader.h"
+#include "ExtensionMethods.h"
 
 namespace puerts
 {

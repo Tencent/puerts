@@ -8,12 +8,12 @@
 
 #pragma once
 
-#include "CoreUObject.h"
-#include "PropertyMacros.h"
-
 #include <functional>
+#include "CoreUObject.h"
 #include <map>
 #include <vector>
+
+#include "PropertyMacros.h"
 
 struct DECLARATIONGENERATOR_API FStringBuffer
 {

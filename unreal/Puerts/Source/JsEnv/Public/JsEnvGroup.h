@@ -8,11 +8,11 @@
 
 #pragma once
 
+#include <vector>
+
 #include "CoreMinimal.h"
 #include "JsEnv.h"
 #include "TsDynamicInvoker.h"
-
-#include <vector>
 
 namespace puerts
 {

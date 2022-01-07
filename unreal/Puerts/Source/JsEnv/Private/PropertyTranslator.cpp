@@ -7,14 +7,13 @@
  */
 
 #include "PropertyTranslator.h"
-
-#include "ArrayBuffer.h"
-#include "ContainerWrapper.h"
-#include "Engine/UserDefinedStruct.h"
-#include "JsObject.h"
+#include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "StructWrapper.h"
-#include "V8Utils.h"
+#include "Engine/UserDefinedStruct.h"
+#include "ArrayBuffer.h"
+#include "ContainerWrapper.h"
+#include "JsObject.h"
 
 namespace puerts
 {

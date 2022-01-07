@@ -8,18 +8,17 @@
 
 #pragma once
 
-#include "ContainerMeta.h"
-#include "CppObjectMapper.h"
-#include "DynamicDelegateProxy.h"
-#include "Engine/Engine.h"
-#include "JSLogger.h"
 #include "JsEnv.h"
-#include "ObjectMapper.h"
+#include "DynamicDelegateProxy.h"
 #include "StructWrapper.h"
+#include "CppObjectMapper.h"
+#include "V8Utils.h"
+#include "Engine/Engine.h"
+#include "ObjectMapper.h"
+#include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
 #include "TypeScriptGeneratedClass.h"
-#include "V8Utils.h"
-
+#include "ContainerMeta.h"
 #include <unordered_map>
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4

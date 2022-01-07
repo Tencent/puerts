@@ -10,7 +10,6 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-
 #include "PuertsSetting.generated.h"
 
 UCLASS(config = Puerts, defaultconfig, meta = (DisplayName = "Puerts"))

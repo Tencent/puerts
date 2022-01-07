@@ -7,7 +7,6 @@
  */
 
 #include "JsEnvGroup.h"
-
 #include "JsEnvImpl.h"
 
 namespace puerts

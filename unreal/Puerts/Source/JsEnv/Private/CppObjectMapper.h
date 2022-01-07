@@ -12,10 +12,9 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include <map>
 #include "JSClassRegister.h"
 #include "ObjectMapper.h"
-
-#include <map>
 
 namespace puerts
 {

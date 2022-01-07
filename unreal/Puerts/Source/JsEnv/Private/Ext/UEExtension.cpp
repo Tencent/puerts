@@ -6,8 +6,8 @@
  * which is part of this source code package.
  */
 
-#include "Binding.hpp"
 #include "CoreMinimal.h"
+#include "Binding.hpp"
 #include "UEDataBinding.hpp"
 
 UsingUClass(UObject) UsingUClass(UWorld)    // for return type

@@ -9,9 +9,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EngineMinimal.h"
 #include "Modules/ModuleInterface.h"
 #include "Modules/ModuleManager.h"
+#include "EngineMinimal.h"
 
 /**
  * The public interface to this module

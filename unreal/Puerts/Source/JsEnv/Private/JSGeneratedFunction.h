@@ -15,11 +15,11 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include "CoreMinimal.h"
 #include "DynamicInvoker.h"
 #include "FunctionTranslator.h"
-#include "UObject/NoExportTypes.h"
 
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
 #include "JSGeneratedFunction.generated.h"
 
 /**

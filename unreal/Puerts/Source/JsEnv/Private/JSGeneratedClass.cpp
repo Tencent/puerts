@@ -7,12 +7,11 @@
  */
 
 #include "JSGeneratedClass.h"
-
 #include "Engine/Blueprint.h"
-#include "FunctionParametersDuplicate.h"
-#include "JSAnimGeneratedClass.h"
 #include "JSGeneratedFunction.h"
 #include "JSWidgetGeneratedClass.h"
+#include "JSAnimGeneratedClass.h"
+#include "FunctionParametersDuplicate.h"
 
 UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker,
     v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)

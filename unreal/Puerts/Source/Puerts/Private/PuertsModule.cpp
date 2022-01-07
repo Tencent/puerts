@@ -7,18 +7,17 @@
  */
 
 #include "PuertsModule.h"
-
 #include "JsEnv.h"
 #include "JsEnvGroup.h"
 #include "PuertsSetting.h"
 #if WITH_EDITOR
 #include "Editor.h"
-#include "GameDelegates.h"
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
 #include "Internationalization/Regex.h"
 #include "LevelEditor.h"
 #include "Misc/HotReloadInterface.h"
+#include "GameDelegates.h"
 #endif
 #include "Commandlets/Commandlet.h"
 #include "TypeScriptGeneratedClass.h"
