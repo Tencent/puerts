@@ -1238,10 +1238,19 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                     // Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(),
                                     // *Function->GetName())); UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass,
                                     // Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
-                                    TsFunctionMap.erase(Function);
-                                    TsFunctionMap[Function] = {v8::UniquePersistent<v8::Function>(Isolate,
-                                                                   v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
-                                        std::make_unique<puerts::FFunctionTranslator>(Function, false)};
+                                    auto FuncIter = TsFunctionMap.find(Function);
+                                    if (FuncIter == TsFunctionMap.end())
+                                    {
+                                        TsFunctionMap[Function] = {v8::UniquePersistent<v8::Function>(Isolate,
+                                                                       v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
+                                            std::make_unique<puerts::FFunctionTranslator>(Function, false)};
+                                    }
+                                    else
+                                    {
+                                        FuncIter->second.FunctionTranslator->Init(Function, false);
+                                        FuncIter->second.JsFunction = v8::UniquePersistent<v8::Function>(
+                                            Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()));
+                                    }
                                     TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
                                     TypeScriptGeneratedClass->RedirectToTypeScript(Function);
                                 }

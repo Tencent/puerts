@@ -74,6 +74,7 @@ private:
     void Init(UFunction* InFunction, bool IsDelegate);
 
     friend class FStructWrapper;
+    friend class FJsEnvImpl;
 };
 
 class FExtensionMethodTranslator : public FFunctionTranslator
