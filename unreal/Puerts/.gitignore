@@ -1,0 +1,12 @@
+Binaries
+Intermediate
+ThirdParty/Library
+
+Typing/ue/ue.d.ts
+Typing/cpp/index.d.ts
+
+*.a
+*.o
+*.so
+*.dll
+*.lib
