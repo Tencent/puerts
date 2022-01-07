@@ -1,9 +1,10 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #include "JSClassRegister.h"
 #if USING_IN_UNREAL_ENGINE
@@ -13,21 +14,24 @@
 
 namespace puerts
 {
-template<class T>
-static T* PropertyInfoDuplicate(T * Arr)
+template <class T>
+static T* PropertyInfoDuplicate(T* Arr)
 {
-    if (Arr == nullptr) return nullptr;
-    int Count = 0;;
-    while(true)
+    if (Arr == nullptr)
+        return nullptr;
+    int Count = 0;
+    ;
+    while (true)
     {
-        if (Arr[Count++].Name == nullptr) break;
+        if (Arr[Count++].Name == nullptr)
+            break;
     }
-    T *Ret = new T[Count];
+    T* Ret = new T[Count];
     ::memcpy(Ret, Arr, sizeof(T) * Count);
     return Ret;
 }
-    
-JSClassDefinition * JSClassDefinitionDuplicate(const JSClassDefinition *ClassDefinition)
+
+JSClassDefinition* JSClassDefinitionDuplicate(const JSClassDefinition* ClassDefinition)
 {
     auto Ret = new JSClassDefinition;
     ::memcpy(Ret, ClassDefinition, sizeof(JSClassDefinition));
@@ -41,15 +45,15 @@ JSClassDefinition * JSClassDefinitionDuplicate(const JSClassDefinition *ClassDef
     return Ret;
 }
 
-void JSClassDefinitionDelete(JSClassDefinition *ClassDefinition)
+void JSClassDefinitionDelete(JSClassDefinition* ClassDefinition)
 {
-    delete [] ClassDefinition->Methods;
-    delete [] ClassDefinition->Functions;
-    delete [] ClassDefinition->Properties;
-    delete [] ClassDefinition->ConstructorInfos;
-    delete [] ClassDefinition->MethodInfos;
-    delete [] ClassDefinition->FunctionInfos;
-    delete [] ClassDefinition->PropertyInfos;
+    delete[] ClassDefinition->Methods;
+    delete[] ClassDefinition->Functions;
+    delete[] ClassDefinition->Properties;
+    delete[] ClassDefinition->ConstructorInfos;
+    delete[] ClassDefinition->MethodInfos;
+    delete[] ClassDefinition->FunctionInfos;
+    delete[] ClassDefinition->PropertyInfos;
     delete ClassDefinition;
 }
 
@@ -59,15 +63,15 @@ public:
     JSClassRegister();
     ~JSClassRegister();
 
-    void RegisterClass(const JSClassDefinition &ClassDefinition);
+    void RegisterClass(const JSClassDefinition& ClassDefinition);
 
-    void ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)>);
+    void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
     const JSClassDefinition* FindClassByID(const char* Name);
 
     const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
-    void RegisterAddon(const std::string&Name, AddonRegisterFunc RegisterFunc);
+    void RegisterAddon(const std::string& Name, AddonRegisterFunc RegisterFunc);
 
     AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
@@ -90,13 +94,13 @@ JSClassRegister::JSClassRegister()
 
 JSClassRegister::~JSClassRegister()
 {
-    for(auto & KV : NameToClassDefinition)
+    for (auto& KV : NameToClassDefinition)
     {
         JSClassDefinitionDelete(KV.second);
     }
     NameToClassDefinition.clear();
 #if USING_IN_UNREAL_ENGINE
-    for(auto & KV : StructNameToClassDefinition)
+    for (auto& KV : StructNameToClassDefinition)
     {
         JSClassDefinitionDelete(KV.second);
     }
@@ -104,7 +108,7 @@ JSClassRegister::~JSClassRegister()
 #endif
 }
 
-void JSClassRegister::RegisterClass(const JSClassDefinition &ClassDefinition)
+void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 {
     if (ClassDefinition.CPPTypeName)
     {
@@ -190,15 +194,15 @@ const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
     }
 }
 #endif
-    
-void JSClassRegister::ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)> Callback)
+
+void JSClassRegister::ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)> Callback)
 {
-    for(auto & KV : CDataNameToClassDefinition)
+    for (auto& KV : CDataNameToClassDefinition)
     {
         Callback(KV.second);
     }
 #if USING_IN_UNREAL_ENGINE
-    for(auto & KV : StructNameToClassDefinition)
+    for (auto& KV : StructNameToClassDefinition)
     {
         Callback(KV.second);
     }
@@ -211,12 +215,12 @@ JSClassRegister* GetJSClassRegister()
     return &S_JSClassRegister;
 }
 
-void RegisterJSClass(const JSClassDefinition &ClassDefinition)
+void RegisterJSClass(const JSClassDefinition& ClassDefinition)
 {
     GetJSClassRegister()->RegisterClass(ClassDefinition);
 }
 
-void ForeachRegisterClass(std::function<void(const JSClassDefinition *ClassDefinition)> Callback)
+void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)> Callback)
 {
     GetJSClassRegister()->ForeachRegisterClass(Callback);
 }
@@ -230,12 +234,12 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
 {
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
-    
+
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
 {
     GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);
 }
-    
+
 AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name)
 {
     return GetJSClassRegister()->FindAddonRegisterFunc(Name);
@@ -248,4 +252,4 @@ const JSClassDefinition* FindClassByType(UStruct* Type)
 }
 #endif
 
-}
+}    // namespace puerts

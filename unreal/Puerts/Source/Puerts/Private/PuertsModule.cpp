@@ -1,22 +1,24 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #include "PuertsModule.h"
+
 #include "JsEnv.h"
 #include "JsEnvGroup.h"
 #include "PuertsSetting.h"
 #if WITH_EDITOR
 #include "Editor.h"
+#include "GameDelegates.h"
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
 #include "Internationalization/Regex.h"
 #include "LevelEditor.h"
 #include "Misc/HotReloadInterface.h"
-#include "GameDelegates.h"
 #endif
 #include "Commandlets/Commandlet.h"
 #include "TypeScriptGeneratedClass.h"
@@ -25,15 +27,17 @@ DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
 
 #define LOCTEXT_NAMESPACE "FPuertsModule"
 
-class FPuertsModule : public IPuertsModule, public FUObjectArray::FUObjectCreateListener, public FUObjectArray::FUObjectDeleteListener
+class FPuertsModule : public IPuertsModule,
+                      public FUObjectArray::FUObjectCreateListener,
+                      public FUObjectArray::FUObjectDeleteListener
 {
     /** IModuleInterface implementation */
     void StartupModule() override;
     void ShutdownModule() override;
 
 public:
-    virtual void NotifyUObjectCreated(const class UObjectBase *InObject, int32 Index) override;
-    virtual void NotifyUObjectDeleted(const class UObjectBase *InObject, int32 Index) override;
+    virtual void NotifyUObjectCreated(const class UObjectBase* InObject, int32 Index) override;
+    virtual void NotifyUObjectDeleted(const class UObjectBase* InObject, int32 Index) override;
 
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
     virtual void OnUObjectArrayShutdown() override;
@@ -76,12 +80,12 @@ public:
         {
             if (JsEnv.IsValid())
             {
-                //UE_LOG(PuertsModule, Warning, TEXT("Normal Mode ReloadModule"));
+                // UE_LOG(PuertsModule, Warning, TEXT("Normal Mode ReloadModule"));
                 JsEnv->ReloadModule(ModuleName, JsSource);
             }
             else if (NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
             {
-                //UE_LOG(PuertsModule, Warning, TEXT("Group Mode ReloadModule"));
+                // UE_LOG(PuertsModule, Warning, TEXT("Group Mode ReloadModule"));
                 JsEnvGroup->ReloadModule(ModuleName, JsSource);
             }
         }
@@ -126,12 +130,12 @@ public:
         UCommandlet::ParseCommandLine(FCommandLine::Get(), OutTokens, OutSwitches, OutParams);
 
 #if WITH_EDITOR
-        static const auto GetPIEInstanceID = [](const TArray<FString>& InTokens) -> int32
-        {
+        static const auto GetPIEInstanceID = [](const TArray<FString>& InTokens) -> int32 {
             static const int32 Start = FString{TEXT("PIEGameUserSettings")}.Len();
             static const int32 BaseCount = FString{TEXT("PIEGameUserSettings.ini")}.Len();
 
-            const FString* TokenPtr = InTokens.FindByPredicate([](const FString& InToken) { return InToken.StartsWith(TEXT("GameUserSettingsINI="));});
+            const FString* TokenPtr =
+                InTokens.FindByPredicate([](const FString& InToken) { return InToken.StartsWith(TEXT("GameUserSettingsINI=")); });
             if (TokenPtr == nullptr)
             {
                 return INDEX_NONE;
@@ -154,11 +158,11 @@ public:
             const int32 Index = GetPIEInstanceID(OutTokens);
             if (OutSwitches.Find(TEXT("server")) != INDEX_NONE)
             {
-                Result += 999;     // for server, we add 999, 8080 -> 9079
+                Result += 999;    // for server, we add 999, 8080 -> 9079
             }
             else
             {
-                Result += 10 * (Index + 1); //  for client, we add 10 for each new process, 8080 -> 8090, 8100, 8110
+                Result += 10 * (Index + 1);    //  for client, we add 10 for each new process, 8080 -> 8090, 8100, 8110
             }
         }
 #endif
@@ -187,7 +191,9 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
+                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv,
+                    std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(),
+                    DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
@@ -212,7 +218,9 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
+                JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
+                    std::make_shared<puerts::FDefaultLogger>(),
+                    DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
@@ -243,28 +251,28 @@ private:
     int32 DebuggerPortFromCommandLine = -1;
 };
 
-IMPLEMENT_MODULE( FPuertsModule, Puerts)
+IMPLEMENT_MODULE(FPuertsModule, Puerts)
 
-void FPuertsModule::NotifyUObjectCreated(const class UObjectBase *InObject, int32 Index)
+void FPuertsModule::NotifyUObjectCreated(const class UObjectBase* InObject, int32 Index)
 {
     if (Enabled)
     {
         if (JsEnv.IsValid())
         {
-            //UE_LOG(PuertsModule, Warning, TEXT("Normal Mode TryBindJs"));
+            // UE_LOG(PuertsModule, Warning, TEXT("Normal Mode TryBindJs"));
             JsEnv->TryBindJs(InObject);
         }
         else if (NumberOfJsEnv > 1 && JsEnvGroup.IsValid())
         {
-            //UE_LOG(PuertsModule, Warning, TEXT("Group Mode TryBindJs"));
+            // UE_LOG(PuertsModule, Warning, TEXT("Group Mode TryBindJs"));
             JsEnvGroup->TryBindJs(InObject);
         }
     }
 }
 
-void FPuertsModule::NotifyUObjectDeleted(const class UObjectBase *InObject, int32 Index)
+void FPuertsModule::NotifyUObjectDeleted(const class UObjectBase* InObject, int32 Index)
 {
-    //UE_LOG(PuertsModule, Warning, TEXT("NotifyUObjectDeleted, %p"), InObject);
+    // UE_LOG(PuertsModule, Warning, TEXT("NotifyUObjectDeleted, %p"), InObject);
 }
 
 #if ENGINE_MINOR_VERSION > 22 || ENGINE_MAJOR_VERSION > 4
@@ -345,7 +353,7 @@ void FPuertsModule::RegisterSettings()
     if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
         GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
-        FString Text; 
+        FString Text;
         GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
         GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
         GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, PuertsConfigIniPath);
@@ -375,32 +383,31 @@ void FPuertsModule::UnregisterSettings()
 
 void FPuertsModule::StartupModule()
 {
-	// NonPak Game 打包下, Puerts ini的加载时间晚于模块加载, 因此依然要显式的执行ini的读入, 去保证CDO里的值是正确的
+    // NonPak Game 打包下, Puerts ini的加载时间晚于模块加载, 因此依然要显式的执行ini的读入, 去保证CDO里的值是正确的
     RegisterSettings();
 
     const UPuertsSetting& Settings = *GetDefault<UPuertsSetting>();
 
 #if WITH_EDITOR
-    if(!IsRunningGame())
+    if (!IsRunningGame())
     {
         FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsModule::PreBeginPIE);
         FEditorDelegates::EndPIE.AddRaw(this, &FPuertsModule::EndPIE);
-        
-        //FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
-        //FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-        //LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
+
+        // FEditorSupportDelegates::CleanseEditor.AddRaw(this, &FPuertsModule::CleanseEditor);
+        // FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+        // LevelEditor.OnMapChanged().AddRaw(this, &FPuertsModule::HandleMapChanged);
     }
 #endif
 
 #if WITH_HOT_RELOAD
     IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
-    HotReloadSupport.OnHotReload().AddLambda([&](bool )
-    {
+    HotReloadSupport.OnHotReload().AddLambda([&](bool) {
         if (Enabled)
         {
             MakeSharedJsEnv();
         }
-	});
+    });
 #endif
 
     if (Settings.AutoModeEnable)
@@ -410,7 +417,7 @@ void FPuertsModule::StartupModule()
 
     WatchEnabled = !Settings.WatchDisable;
 
-    //SetJsEnvSelector([this](UObject* Obj, int Size){
+    // SetJsEnvSelector([this](UObject* Obj, int Size){
     //    return 1;
     //    });
 }
@@ -420,7 +427,7 @@ void FPuertsModule::Enable()
     Enabled = true;
 
 #if WITH_EDITOR
-    if(IsRunningGame())
+    if (IsRunningGame())
     {
         // 处理 Standalone 模式的情况
         MakeSharedJsEnv();
@@ -476,4 +483,3 @@ void FPuertsModule::ShutdownModule()
         Disable();
     }
 }
-

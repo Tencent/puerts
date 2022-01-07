@@ -1,50 +1,54 @@
 ﻿/*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
-#include "Runtime/Launch/Resources/Version.h"
-#include "IDeclarationGenerator.h"
-#include "Features/IModularFeatures.h"
-#include "Interfaces/IPluginManager.h"
-#include "Misc/Paths.h"
-#include "CoreUObject.h"
-#include "TypeScriptDeclarationGenerator.h"
 #include "Components/PanelSlot.h"
 #include "Components/Widget.h"
+#include "CoreUObject.h"
+#include "Features/IModularFeatures.h"
+#include "IDeclarationGenerator.h"
+#include "Interfaces/IPluginManager.h"
+#include "Misc/Paths.h"
+#include "Runtime/Launch/Resources/Version.h"
+#include "TypeScriptDeclarationGenerator.h"
 #if WITH_EDITOR
 #include "AssetRegistryModule.h"
 #endif
-#include "LevelEditor.h"
-#include "GenDTSStyle.h"
-#include "GenDTSCommands.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "GenDTSCommands.h"
+#include "GenDTSStyle.h"
+#include "LevelEditor.h"
 #include "Widgets/Notifications/SNotificationList.h"
 //#include "Misc/MessageDialog.h"
-#include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "Engine/UserDefinedStruct.h"
-#include "Engine/UserDefinedEnum.h"
-#include "Engine/Blueprint.h"
-#include "TypeScriptObject.h"
 #include "CodeGenerator.h"
-#include "JSClassRegister.h"
+#include "Engine/Blueprint.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/UserDefinedEnum.h"
+#include "Engine/UserDefinedStruct.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "JSClassRegister.h"
+#include "TypeScriptObject.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
 
-static FString SafeName(const FString &Name)
+static FString SafeName(const FString& Name)
 {
-    auto Ret = Name.Replace(TEXT(" "), TEXT("")).Replace(TEXT("-"), TEXT("_"))
-        .Replace(TEXT("/"), TEXT("_")).Replace(TEXT("("), TEXT("_"))
-        .Replace(TEXT(")"), TEXT("_")).Replace(TEXT("?"), TEXT("$"))
-        .Replace(TEXT(","), TEXT("_"));
+    auto Ret = Name.Replace(TEXT(" "), TEXT(""))
+                   .Replace(TEXT("-"), TEXT("_"))
+                   .Replace(TEXT("/"), TEXT("_"))
+                   .Replace(TEXT("("), TEXT("_"))
+                   .Replace(TEXT(")"), TEXT("_"))
+                   .Replace(TEXT("?"), TEXT("$"))
+                   .Replace(TEXT(","), TEXT("_"));
     if (Ret.Len() > 0)
     {
         auto FirstChar = Ret[0];
-        if ((TCHAR)'0' <= FirstChar && FirstChar <= (TCHAR)'9')
+        if ((TCHAR) '0' <= FirstChar && FirstChar <= (TCHAR) '9')
         {
             return TEXT("_") + Ret;
         }
@@ -52,7 +56,7 @@ static FString SafeName(const FString &Name)
     return Ret;
 }
 
-static FString SafeFieldName(const FString &Name, bool WithBracket = true)
+static FString SafeFieldName(const FString& Name, bool WithBracket = true)
 {
     bool IsInvalid = false;
     FString Ret = TEXT("");
@@ -60,21 +64,19 @@ static FString SafeFieldName(const FString &Name, bool WithBracket = true)
     for (int i = 0; i < Name.Len(); i++)
     {
         auto Char = Name[i];
-        if ((Char >= (TCHAR)'0' && Char <= (TCHAR)'9')
-            || (Char >= (TCHAR)'a' && Char <= (TCHAR)'z')
-            || (Char >= (TCHAR)'A' && Char <= (TCHAR)'Z')
-            || Char == (TCHAR)'_')
+        if ((Char >= (TCHAR) '0' && Char <= (TCHAR) '9') || (Char >= (TCHAR) 'a' && Char <= (TCHAR) 'z') ||
+            (Char >= (TCHAR) 'A' && Char <= (TCHAR) 'Z') || Char == (TCHAR) '_')
         {
             Ret += Char;
         }
         else
         {
             IsInvalid = true;
-            if (Char == (TCHAR)'"')
+            if (Char == (TCHAR) '"')
             {
                 Ret += "\\\"";
             }
-            else if (Char == (TCHAR)'\\')
+            else if (Char == (TCHAR) '\\')
             {
                 Ret += "\\\\";
             }
@@ -87,41 +89,43 @@ static FString SafeFieldName(const FString &Name, bool WithBracket = true)
     if (Ret.Len() > 0)
     {
         auto FirstChar = Ret[0];
-        if ((TCHAR)'0' <= FirstChar && FirstChar <= (TCHAR)'9')
+        if ((TCHAR) '0' <= FirstChar && FirstChar <= (TCHAR) '9')
         {
             IsInvalid = true;
         }
     }
-    return IsInvalid  ? (WithBracket ? ((TEXT("[\"") + Ret + TEXT("\"]"))) : ((TEXT("\"") + Ret + TEXT("\"")))) : Ret;
+    return IsInvalid ? (WithBracket ? ((TEXT("[\"") + Ret + TEXT("\"]"))) : ((TEXT("\"") + Ret + TEXT("\"")))) : Ret;
 }
 
-FStringBuffer& FStringBuffer::operator <<(const FString& InText)
+FStringBuffer& FStringBuffer::operator<<(const FString& InText)
 {
     this->Buffer += InText;
     return *this;
 }
 
-FStringBuffer& FStringBuffer::operator <<(const TCHAR *InText)
+FStringBuffer& FStringBuffer::operator<<(const TCHAR* InText)
 {
     this->Buffer += InText;
     return *this;
 }
 
-FStringBuffer& FStringBuffer::operator <<(const char *InText)
+FStringBuffer& FStringBuffer::operator<<(const char* InText)
 {
     this->Buffer += ANSI_TO_TCHAR(InText);
     return *this;
 }
 
-FStringBuffer& FStringBuffer::operator <<(const FStringBuffer &Other)
+FStringBuffer& FStringBuffer::operator<<(const FStringBuffer& Other)
 {
     FString Line;
     FString Rest = Other.Buffer;
     static const FString NL = TEXT("\n");
-    while (Rest.Split(NL, &Line, &Rest, ESearchCase::CaseSensitive, ESearchDir::FromStart)) {
-        *this << Prefix <<Line << "\n";
+    while (Rest.Split(NL, &Line, &Rest, ESearchCase::CaseSensitive, ESearchDir::FromStart))
+    {
+        *this << Prefix << Line << "\n";
     }
-    if (!Rest.IsEmpty()) {
+    if (!Rest.IsEmpty())
+    {
         *this << Prefix << Rest;
     }
     return *this;
@@ -131,7 +135,8 @@ void FStringBuffer::Indent(int Num)
 {
     if (Num > 0)
     {
-        for(int i=0; i < Num; i++) Prefix.AppendChar(' ');
+        for (int i = 0; i < Num; i++)
+            Prefix.AppendChar(' ');
     }
     else if (Num < 0)
     {
@@ -147,13 +152,10 @@ TArray<UClass*> GetSortedClasses()
         SortedClasses.Add(*It);
     }
 
-    SortedClasses.Sort([&](const UClass &ClassA, const UClass &ClassB) -> bool {
-        return ClassA.GetName() < ClassB.GetName();
-    });
-    
+    SortedClasses.Sort([&](const UClass& ClassA, const UClass& ClassB) -> bool { return ClassA.GetName() < ClassB.GetName(); });
+
     return SortedClasses;
 }
-
 
 void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
 {
@@ -166,16 +168,18 @@ void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
     Output.Indent(4);
 }
 
-bool IsChildOf(UClass *Class, const FString& Name)
+bool IsChildOf(UClass* Class, const FString& Name)
 {
-    if (!Class) return false;
-    if (Class->GetName() == Name) return true;
+    if (!Class)
+        return false;
+    if (Class->GetName() == Name)
+        return true;
     return IsChildOf(Class->GetSuperClass(), Name);
 }
 
 const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
 {
-    return TypeInfo->IsObjectType() ? "cpp." : "";    
+    return TypeInfo->IsObjectType() ? "cpp." : "";
 }
 
 const FString GetName(const puerts::CTypeInfo* TypeInfo)
@@ -188,15 +192,16 @@ const FString GetName(const puerts::CTypeInfo* TypeInfo)
     return Ret;
 }
 
-void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer & Buff)
+void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer& Buff)
 {
-    for(unsigned int i = 0; i < Type->ArgumentCount(); i++)
+    for (unsigned int i = 0; i < Type->ArgumentCount(); i++)
     {
-        if (i != 0) Buff << ", ";
+        if (i != 0)
+            Buff << ", ";
         auto argInfo = Type->Argument(i);
-            
+
         Buff << FString::Printf(TEXT("p%d"), i) << ": ";
-            
+
         bool IsReference = argInfo->IsRef();
         bool IsNullable = !IsReference && argInfo->IsPointer();
         if (IsNullable)
@@ -207,9 +212,9 @@ void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffe
         {
             Buff << "$Ref<";
         }
-            
+
         Buff << GetNamePrefix(argInfo) << GetName(argInfo);
-            
+
         if (IsNullable)
         {
             Buff << ">";
@@ -237,7 +242,8 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
                 if (Function->HasAnyFunctionFlags(FUNC_Static))
                 {
                     TFieldIterator<PropertyMacro> ParamIt(Function);
-                    if (ParamIt && ((ParamIt->PropertyFlags & (CPF_Parm | CPF_ReturnParm)) == CPF_Parm))// has at least one param
+                    if (ParamIt &&
+                        ((ParamIt->PropertyFlags & (CPF_Parm | CPF_ReturnParm)) == CPF_Parm))    // has at least one param
                     {
                         UStruct* Struct = nullptr;
                         if (auto ObjectPropertyBase = CastFieldMacro<ObjectPropertyBaseMacro>(*ParamIt))
@@ -268,16 +274,14 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
     Begin();
 
     Output << "    import * as cpp from \"cpp\"\n\n";
-    
+
     TArray<UClass*> SortedClasses(GetSortedClasses());
     for (int i = 0; i < SortedClasses.Num(); ++i)
     {
         UClass* Class = SortedClasses[i];
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
-        if (Class->GetName().StartsWith("SKEL_")        ||
-            Class->GetName().StartsWith("REINST_")      ||
-            Class->GetName().StartsWith("TRASHCLASS_")  ||
-            Class->GetName().StartsWith("PLACEHOLDER-") ||
+        if (Class->GetName().StartsWith("SKEL_") || Class->GetName().StartsWith("REINST_") ||
+            Class->GetName().StartsWith("TRASHCLASS_") || Class->GetName().StartsWith("PLACEHOLDER-") ||
             Class->GetName().StartsWith("HOTRELOADED_"))
         {
             continue;
@@ -286,12 +290,15 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
     }
     End();
 
-    FFileHelper::SaveStringToFile(ToString(), *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    FFileHelper::SaveStringToFile(ToString(),
+        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")),
+        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
-void FTypeScriptDeclarationGenerator::Gen(UObject *ToGen)
+void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
 {
-    if (Processed.Contains(ToGen)) return;
+    if (Processed.Contains(ToGen))
+        return;
     if (ProcessedByName.Contains(SafeName(ToGen->GetName())))
     {
         UE_LOG(LogTemp, Warning, TEXT("duplicate name found in ue.d.ts generate: %s"), *SafeName(ToGen->GetName()));
@@ -299,7 +306,7 @@ void FTypeScriptDeclarationGenerator::Gen(UObject *ToGen)
     }
     Processed.Add(ToGen);
     ProcessedByName.Add(SafeName(ToGen->GetName()));
-    
+
     if (auto Class = Cast<UClass>(ToGen))
     {
         GenClass(Class);
@@ -315,13 +322,15 @@ void FTypeScriptDeclarationGenerator::Gen(UObject *ToGen)
 }
 
 // #lizard forgives
-bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, PropertyMacro* Property, TArray<UObject *> &AddToGen, bool ArrayDimProcessed, bool TreatAsRawFunction)
+bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, PropertyMacro* Property, TArray<UObject*>& AddToGen,
+    bool ArrayDimProcessed, bool TreatAsRawFunction)
 {
-    if (Property != nullptr && !ArrayDimProcessed && Property->ArrayDim > 1) // fix size array
+    if (Property != nullptr && !ArrayDimProcessed && Property->ArrayDim > 1)    // fix size array
     {
         StringBuffer << "FixSizeArray<";
         bool Result = GenTypeDecl(StringBuffer, Property, AddToGen, true, TreatAsRawFunction);
-        if (!Result) return false;
+        if (!Result)
+            return false;
         StringBuffer << ">";
         return true;
     }
@@ -333,25 +342,17 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "boolean";
     }
-    else if (Property->IsA<DoublePropertyMacro>()
-             || Property->IsA<FloatPropertyMacro>()
-             || Property->IsA<IntPropertyMacro>()
-             || Property->IsA<UInt32PropertyMacro>()
-             || Property->IsA<Int16PropertyMacro>()
-             || Property->IsA<UInt16PropertyMacro>()
-             || Property->IsA<Int8PropertyMacro>())
+    else if (Property->IsA<DoublePropertyMacro>() || Property->IsA<FloatPropertyMacro>() || Property->IsA<IntPropertyMacro>() ||
+             Property->IsA<UInt32PropertyMacro>() || Property->IsA<Int16PropertyMacro>() || Property->IsA<UInt16PropertyMacro>() ||
+             Property->IsA<Int8PropertyMacro>())
     {
         StringBuffer << "number";
     }
-    else if (Property->IsA<Int64PropertyMacro>()
-        || Property->IsA<UInt64PropertyMacro>()
-        )
+    else if (Property->IsA<Int64PropertyMacro>() || Property->IsA<UInt64PropertyMacro>())
     {
         StringBuffer << "bigint";
     }
-    else if (Property->IsA<StrPropertyMacro>()
-             ||Property->IsA<NamePropertyMacro>()
-             ||Property->IsA<TextPropertyMacro>())
+    else if (Property->IsA<StrPropertyMacro>() || Property->IsA<NamePropertyMacro>() || Property->IsA<TextPropertyMacro>())
     {
         StringBuffer << "string";
     }
@@ -362,7 +363,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (BytePropertyMacro* ByteProperty = CastFieldMacro<BytePropertyMacro>(Property))
     {
-        if(ByteProperty->GetIntPropertyEnum())
+        if (ByteProperty->GetIntPropertyEnum())
         {
             AddToGen.Add(ByteProperty->GetIntPropertyEnum());
             StringBuffer << SafeName(ByteProperty->GetIntPropertyEnum()->GetName());
@@ -391,7 +392,8 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "TArray<";
         bool Result = GenTypeDecl(StringBuffer, ArrayProperty->Inner, AddToGen, false, TreatAsRawFunction);
-        if (!Result) return false;
+        if (!Result)
+            return false;
         StringBuffer << ">";
         return true;
     }
@@ -399,7 +401,8 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "TSet<";
         bool Result = GenTypeDecl(StringBuffer, SetProperty->ElementProp, AddToGen, false, TreatAsRawFunction);
-        if (!Result) return false;
+        if (!Result)
+            return false;
         StringBuffer << ">";
         return true;
     }
@@ -407,10 +410,12 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "TMap<";
         bool Result = GenTypeDecl(StringBuffer, MapProperty->KeyProp, AddToGen, false, TreatAsRawFunction);
-        if (!Result) return false;
+        if (!Result)
+            return false;
         StringBuffer << ", ";
         Result = GenTypeDecl(StringBuffer, MapProperty->ValueProp, AddToGen, false, TreatAsRawFunction);
-        if (!Result) return false;
+        if (!Result)
+            return false;
         StringBuffer << ">";
         return true;
     }
@@ -421,18 +426,24 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property))
     {
-        if (!TreatAsRawFunction) StringBuffer << "$Delegate<";
+        if (!TreatAsRawFunction)
+            StringBuffer << "$Delegate<";
         bool Result = GenFunction(StringBuffer, DelegateProperty->SignatureFunction, false);
-        if (!Result) return false;
-        if (!TreatAsRawFunction) StringBuffer << ">";
+        if (!Result)
+            return false;
+        if (!TreatAsRawFunction)
+            StringBuffer << ">";
         return true;
     }
     else if (auto MulticastDelegateProperty = CastFieldMacro<MulticastDelegatePropertyMacro>(Property))
     {
-        if (!TreatAsRawFunction) StringBuffer << "$MulticastDelegate<";
+        if (!TreatAsRawFunction)
+            StringBuffer << "$MulticastDelegate<";
         bool Result = GenFunction(StringBuffer, MulticastDelegateProperty->SignatureFunction, false);
-        if (!Result) return false;
-        if (!TreatAsRawFunction) StringBuffer << ">";
+        if (!Result)
+            return false;
+        if (!TreatAsRawFunction)
+            StringBuffer << ">";
         return true;
     }
     else if (auto InterfaceProperty = CastFieldMacro<InterfacePropertyMacro>(Property))
@@ -448,12 +459,12 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     else if (auto SoftClassProperty = CastFieldMacro<SoftClassPropertyMacro>(Property))
     {
         AddToGen.Add(SoftClassProperty->PropertyClass);
-        StringBuffer <<"TSoftClassPtr<" << SafeName(SoftClassProperty->MetaClass->GetName()) << ">";
+        StringBuffer << "TSoftClassPtr<" << SafeName(SoftClassProperty->MetaClass->GetName()) << ">";
     }
     else if (auto SoftObjectProperty = CastFieldMacro<SoftObjectPropertyMacro>(Property))
     {
         AddToGen.Add(SoftObjectProperty->PropertyClass);
-        StringBuffer <<"TSoftObjectPtr<" << SafeName(SoftObjectProperty->PropertyClass->GetName()) << ">";
+        StringBuffer << "TSoftObjectPtr<" << SafeName(SoftObjectProperty->PropertyClass->GetName()) << ">";
     }
     else if (auto LazyObjectProperty = CastFieldMacro<LazyObjectPropertyMacro>(Property))
     {
@@ -468,21 +479,22 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
 }
 
 // #lizard forgives
-bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFunction* Function, bool WithName, bool ForceOneway, bool IgnoreOut, bool IsExtensionMethod)
+bool FTypeScriptDeclarationGenerator::GenFunction(
+    FStringBuffer& OwnerBuffer, UFunction* Function, bool WithName, bool ForceOneway, bool IgnoreOut, bool IsExtensionMethod)
 {
-    //FStringBuffer LocalBuffer;
+    // FStringBuffer LocalBuffer;
     if (WithName)
     {
         if (!IsExtensionMethod && (Function->FunctionFlags & FUNC_Static))
         {
             OwnerBuffer << "static ";
         }
-        
+
         OwnerBuffer << SafeFieldName(Function->GetName());
     }
     OwnerBuffer << "(";
-    PropertyMacro *ReturnValue = nullptr;
-    TArray<UObject *> RefTypes;
+    PropertyMacro* ReturnValue = nullptr;
+    TArray<UObject*> RefTypes;
     TArray<FString> ParamDecls;
     bool First = true;
     for (TFieldIterator<PropertyMacro> ParamIt(Function); ParamIt; ++ParamIt)
@@ -497,15 +509,16 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
         {
             if (Property->PropertyFlags & CPF_ReturnParm)
             {
-                if (ForceOneway) return false;
+                if (ForceOneway)
+                    return false;
                 ReturnValue = Property;
             }
             else
             {
                 FStringBuffer TmpBuf;
-                TMap<FName, FString> *MetaMap = UMetaData::GetMapForObject(Function);
+                TMap<FName, FString>* MetaMap = UMetaData::GetMapForObject(Function);
                 const FName MetadataCppDefaultValueKey(*(FString(TEXT("CPP_Default_")) + Property->GetName()));
-                FString *DefaultValuePtr = nullptr;
+                FString* DefaultValuePtr = nullptr;
                 if (MetaMap)
                 {
                     DefaultValuePtr = MetaMap->Find(MetadataCppDefaultValueKey);
@@ -518,16 +531,20 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                 }
                 TmpBuf << ": ";
 
-                const bool IsReference = !IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm));
-                const bool IsNullable = !(DefaultValuePtr != nullptr || IsReference) && (CastFieldMacro<ObjectPropertyMacro>(Property) != nullptr) && !(Property->PropertyFlags & CPF_ReferenceParm);
-                
+                const bool IsReference =
+                    !IgnoreOut && Property->PropertyFlags & CPF_OutParm && (!(Property->PropertyFlags & CPF_ConstParm));
+                const bool IsNullable = !(DefaultValuePtr != nullptr || IsReference) &&
+                                        (CastFieldMacro<ObjectPropertyMacro>(Property) != nullptr) &&
+                                        !(Property->PropertyFlags & CPF_ReferenceParm);
+
                 if (IsNullable)
                 {
                     TmpBuf << "$Nullable<";
                 }
                 if (IsReference)
                 {
-                    if (ForceOneway) return false;
+                    if (ForceOneway)
+                        return false;
                     TmpBuf << "$Ref<";
                 }
                 if (!GenTypeDecl(TmpBuf, Property, RefTypes))
@@ -542,12 +559,11 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
                 {
                     TmpBuf << ">";
                 }
-                
+
                 if (DefaultValuePtr)
                 {
-                    if (Property->IsA<StrPropertyMacro>()
-                        || Property->IsA<NamePropertyMacro>()
-                        || Property->IsA<TextPropertyMacro>())
+                    if (Property->IsA<StrPropertyMacro>() || Property->IsA<NamePropertyMacro>() ||
+                        Property->IsA<TextPropertyMacro>())
                     {
                         TmpBuf << " /* = \"" << *DefaultValuePtr << "\" */";
                     }
@@ -566,13 +582,13 @@ bool FTypeScriptDeclarationGenerator::GenFunction(FStringBuffer& OwnerBuffer,UFu
     {
         return false;
     }
-    
+
     for (auto Type : RefTypes)
     {
         Gen(Type);
     }
-    
-    //OwnerBuffer << "    " << LocalBuffer.Buffer << ";\n";
+
+    // OwnerBuffer << "    " << LocalBuffer.Buffer << ";\n";
     return true;
 }
 
@@ -586,30 +602,32 @@ static bool GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, puerts::Named
     GenArgumentsForFunctionInfo(Func->Type, OwnerBuffer);
     const auto Return = Func->Type->Return();
     OwnerBuffer << ") : " << GetNamePrefix(Return) << GetName(Return);
-    
+
     return true;
 }
 
-FTypeScriptDeclarationGenerator::FunctionOutputs& FTypeScriptDeclarationGenerator::GetFunctionOutputs(UStruct *Struct)
+FTypeScriptDeclarationGenerator::FunctionOutputs& FTypeScriptDeclarationGenerator::GetFunctionOutputs(UStruct* Struct)
 {
     return AllFuncionOutputs[Struct];
 }
 
-FTypeScriptDeclarationGenerator::FunctionOverloads& FTypeScriptDeclarationGenerator::GetFunctionOverloads(FunctionOutputs& Outputs, const FString& FunctionName, bool IsStatic)
+FTypeScriptDeclarationGenerator::FunctionOverloads& FTypeScriptDeclarationGenerator::GetFunctionOverloads(
+    FunctionOutputs& Outputs, const FString& FunctionName, bool IsStatic)
 {
     return Outputs[FunctionKey(FunctionName, IsStatic)];
 }
 
-void FTypeScriptDeclarationGenerator::TryToAddOverload(FunctionOutputs& Outputs, const FString& FunctionName, bool IsStatic, const FString& Overload)
+void FTypeScriptDeclarationGenerator::TryToAddOverload(
+    FunctionOutputs& Outputs, const FString& FunctionName, bool IsStatic, const FString& Overload)
 {
-	FunctionOverloads& Overloads = GetFunctionOverloads(Outputs, FunctionName, IsStatic);
-	if (!Overloads.Contains(Overload))
-	{
-		Overloads.Add(Overload);
-	}
+    FunctionOverloads& Overloads = GetFunctionOverloads(Outputs, FunctionName, IsStatic);
+    if (!Overloads.Contains(Overload))
+    {
+        Overloads.Add(Overload);
+    }
 }
 
-void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct *Struct, FStringBuffer& Buff)
+void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringBuffer& Buff)
 {
     FunctionOutputs& Outputs = GetFunctionOutputs(Struct);
     auto ClassDefinition = puerts::FindClassByType(Struct);
@@ -651,28 +669,30 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct *Struct, FStringB
     }
 }
 
-void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UStruct *Struct, FStringBuffer& Buff)
+void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UStruct* Struct, FStringBuffer& Buff)
 {
     FunctionOutputs& Outputs = GetFunctionOutputs(Struct);
 
-	for(FunctionOutputs::iterator Iter = Outputs.begin(); Iter != Outputs.end(); ++Iter)
-	{
+    for (FunctionOutputs::iterator Iter = Outputs.begin(); Iter != Outputs.end(); ++Iter)
+    {
         const FunctionKey& FunctionKey = Iter->first;
         FunctionOverloads& Overloads = Outputs[FunctionKey];
-        for(FunctionOverloads::RangedForIteratorType OverloadIter = Overloads.begin(); OverloadIter != Overloads.end(); ++OverloadIter)
+        for (FunctionOverloads::RangedForIteratorType OverloadIter = Overloads.begin(); OverloadIter != Overloads.end();
+             ++OverloadIter)
         {
-        	Buff << "    " << *OverloadIter << ";\n";
+            Buff << "    " << *OverloadIter << ";\n";
         }
 
         UStruct* SuperStruct = Struct->GetSuperStruct();
-        while(SuperStruct != nullptr)
+        while (SuperStruct != nullptr)
         {
             FunctionOutputs& SuperOutputs = GetFunctionOutputs(SuperStruct);
             FunctionOutputs::iterator SuperOutputsIter = SuperOutputs.find(FunctionKey);
             if (SuperOutputsIter != SuperOutputs.end())
             {
                 FunctionOverloads& SuperOverloads = SuperOutputsIter->second;
-                for(FunctionOverloads::RangedForIteratorType SuperOverloadIter = SuperOverloads.begin(); SuperOverloadIter != SuperOverloads.end(); ++SuperOverloadIter)
+                for (FunctionOverloads::RangedForIteratorType SuperOverloadIter = SuperOverloads.begin();
+                     SuperOverloadIter != SuperOverloads.end(); ++SuperOverloadIter)
                 {
                     if (!Overloads.Contains(*SuperOverloadIter))
                     {
@@ -690,18 +710,19 @@ void FTypeScriptDeclarationGenerator::GenResolvedFunctions(UStruct *Struct, FStr
 
 void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 {
-    if (Class->ImplementsInterface(UTypeScriptObject::StaticClass())) return;
-    FStringBuffer StringBuffer {"", ""};
+    if (Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
+        return;
+    FStringBuffer StringBuffer{"", ""};
     StringBuffer << "class " << SafeName(Class->GetName());
-    
+
     auto Super = Class->GetSuperStruct();
-    
+
     if (Super)
     {
         Gen(Super);
         StringBuffer << " extends " << SafeName(Super->GetName());
     }
-    
+
     StringBuffer << " {\n";
 
     StringBuffer << "    constructor(Outer?: Object, Name?: string, ObjectFlags?: number);\n";
@@ -712,7 +733,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
         FStringBuffer TmpBuff;
         TmpBuff << SafeFieldName(Property->GetName()) << ": ";
-        TArray<UObject *> RefTypesTmp;
+        TArray<UObject*> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
         {
             continue;
@@ -738,39 +759,39 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
     GatherExtensions(Class, StringBuffer);
 
     GenResolvedFunctions(Class, StringBuffer);
-    
+
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
     StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n";
-    
+
     StringBuffer << "}\n\n";
-    
+
     Output << StringBuffer;
 }
 
-void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
+void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
 {
-    FStringBuffer StringBuffer {"", ""};
+    FStringBuffer StringBuffer{"", ""};
 
     TArray<FString> EnumListerrals;
     for (int i = 0; i < Enum->NumEnums(); ++i)
     {
-        auto Name = Enum->IsA<UUserDefinedEnum>() ? 
+        auto Name = Enum->IsA<UUserDefinedEnum>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-            Enum->GetAuthoredNameStringByIndex(i)
+                                                  Enum->GetAuthoredNameStringByIndex(i)
 #else
-            Enum->GetDisplayNameTextByIndex(i).ToString()
+                                                  Enum->GetDisplayNameTextByIndex(i).ToString()
 #endif
-            : Enum->GetNameStringByIndex(i);
-       // auto Value = Enum->GetValueByIndex(i);
+                                                  : Enum->GetNameStringByIndex(i);
+        // auto Value = Enum->GetValueByIndex(i);
         EnumListerrals.Add(SafeFieldName(Name, false));
     }
 
-    StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", ")) ;
+    StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", "));
 
     if (Enum == StaticEnum<EObjectTypeQuery>())
     {
-        UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+        UCollisionProfile* CollisionProfile = UCollisionProfile::Get();
         int32 ContainerIndex = 0;
         while (true)
         {
@@ -779,7 +800,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
             {
                 break;
             }
-            auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel)ContainerIndex);
+            auto ObjectType = CollisionProfile->ConvertToObjectType((ECollisionChannel) ContainerIndex);
             if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
             {
                 StringBuffer << FString::Printf(TEXT(", %s = %d"), *SafeName(ChannelName.ToString()), ObjectType);
@@ -789,7 +810,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
     }
     else if (Enum == StaticEnum<ETraceTypeQuery>())
     {
-        UCollisionProfile *CollisionProfile = UCollisionProfile::Get();
+        UCollisionProfile* CollisionProfile = UCollisionProfile::Get();
         int32 ContainerIndex = 0;
         while (true)
         {
@@ -798,7 +819,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
             {
                 break;
             }
-            auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel)ContainerIndex);
+            auto TraceType = CollisionProfile->ConvertToTraceType((ECollisionChannel) ContainerIndex);
             if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
             {
                 StringBuffer << FString::Printf(TEXT(", %s = %d"), *SafeName(ChannelName.ToString()), TraceType);
@@ -806,30 +827,29 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum *Enum)
             ContainerIndex++;
         }
     }
-    
+
     StringBuffer << "}\n";
-    
+
     Output << StringBuffer;
 }
 
-void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
+void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 {
 #include "ExcludeStructs.h"
-    FStringBuffer StringBuffer {"", ""};
+    FStringBuffer StringBuffer{"", ""};
     StringBuffer << "class " << SafeName(Struct->GetName());
-    
+
     auto Super = Struct->GetSuperStruct();
-    
+
     if (Super)
     {
         Gen(Super);
         StringBuffer << " extends " << SafeName(Super->GetName());
     }
-    
+
     StringBuffer << " {\n";
 
-    auto GenConstrutor = [&]()
-    {
+    auto GenConstrutor = [&]() {
         FStringBuffer TmpBuff;
         TmpBuff << "constructor(";
         bool First = true;
@@ -845,14 +865,15 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             {
                 TmpBuff << ", ";
             }
-            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ? 
+            TmpBuff << SafeName(Struct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                Property->GetAuthoredName() 
+                                                                  Property->GetAuthoredName()
 #else
-                Property->GetDisplayNameText().ToString()
+                                                                  Property->GetDisplayNameText().ToString()
 #endif
-                : Property->GetName()) << ": ";
-            TArray<UObject *> RefTypesTmp;
+                                                                  : Property->GetName())
+                    << ": ";
+            TArray<UObject*> RefTypesTmp;
             if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
             {
                 return;
@@ -860,24 +881,25 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
             HasProperty = true;
         }
         TmpBuff << ")";
-        if (HasProperty) StringBuffer << "    constructor();\n";
+        if (HasProperty)
+            StringBuffer << "    constructor();\n";
         StringBuffer << "    " << TmpBuff.Buffer << ";\n";
     };
     GenConstrutor();
-    
+
     for (TFieldIterator<PropertyMacro> PropertyIt(Struct, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
     {
         auto Property = *PropertyIt;
         FStringBuffer TmpBuff;
-        FString SN = SafeFieldName(Struct->IsA<UUserDefinedStruct>() ? 
+        FString SN = SafeFieldName(Struct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-            Property->GetAuthoredName() 
+                                                                     Property->GetAuthoredName()
 #else
-            Property->GetDisplayNameText().ToString()
+                                                                     Property->GetDisplayNameText().ToString()
 #endif
-            : Property->GetName());
+                                                                     : Property->GetName());
         TmpBuff << SN << ": ";
-        TArray<UObject *> RefTypesTmp;
+        TArray<UObject*> RefTypesTmp;
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
         {
             continue;
@@ -890,13 +912,13 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct *Struct)
     }
 
     GatherExtensions(Struct, StringBuffer);
-    
+
     GenResolvedFunctions(Struct, StringBuffer);
 
     StringBuffer << "    static StaticClass(): Class;\n";
-    
+
     StringBuffer << "}\n\n";
-    
+
     Output << StringBuffer;
 }
 
@@ -919,7 +941,7 @@ class FDeclarationGenerator : public IDeclarationGenerator
 {
 private:
     TSharedPtr<class FUICommandList> PluginCommands;
-	TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
+    TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
 
     void AddToolbarExtension(FToolBarBuilder& Builder)
     {
@@ -941,11 +963,8 @@ private:
             }
         }
 
-        FText DialogText = FText::Format(
-            LOCTEXT("PluginButtonDialogText", "genertate finish, {0} store in {1}"),
-            FText::FromString(TEXT("ue.d.ts")),
-            FText::FromString(TEXT("Content/Typing/ue"))
-        );
+        FText DialogText = FText::Format(LOCTEXT("PluginButtonDialogText", "genertate finish, {0} store in {1}"),
+            FText::FromString(TEXT("ue.d.ts")), FText::FromString(TEXT("Content/Typing/ue")));
         // FMessageDialog::Open(EAppMsgType::Ok, DialogText);
         FNotificationInfo Info(DialogText);
         Info.bFireAndForget = true;
@@ -955,9 +974,9 @@ private:
     }
 
 public:
-    void StartupModule() override 
+    void StartupModule() override
     {
-        //IModularFeatures::Get().RegisterModularFeature(TEXT("ScriptGenerator"), this);
+        // IModularFeatures::Get().RegisterModularFeature(TEXT("ScriptGenerator"), this);
         FGenDTSStyle::Initialize();
         FGenDTSStyle::ReloadTextures();
 
@@ -965,28 +984,26 @@ public:
 
         PluginCommands = MakeShareable(new FUICommandList);
 
-        PluginCommands->MapAction(
-            FGenDTSCommands::Get().PluginAction,
-            FExecuteAction::CreateRaw(this, &FDeclarationGenerator::GenUeDts),
-            FCanExecuteAction());
+        PluginCommands->MapAction(FGenDTSCommands::Get().PluginAction,
+            FExecuteAction::CreateRaw(this, &FDeclarationGenerator::GenUeDts), FCanExecuteAction());
 
         FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 
         {
             TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-            ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FDeclarationGenerator::AddToolbarExtension));
+            ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands,
+                FToolBarExtensionDelegate::CreateRaw(this, &FDeclarationGenerator::AddToolbarExtension));
 
             LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
         }
 
-		ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen")
-			, TEXT("Execute GenDTS action")
-			, FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
+        ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen"), TEXT("Execute GenDTS action"),
+            FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
     }
 
-    void ShutdownModule() override 
+    void ShutdownModule() override
     {
-        //IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this);
+        // IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this);
         FGenDTSStyle::Shutdown();
         FGenDTSCommands::Unregister();
     }
@@ -994,10 +1011,10 @@ public:
     void LoadAllWidgetBlueprint() override
     {
 #if WITH_EDITOR
-        FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked< FAssetRegistryModule >(FName("AssetRegistry"));
+        FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(FName("AssetRegistry"));
         IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
-        TArray< FAssetData > AssetList;
+        TArray<FAssetData> AssetList;
 
         FARFilter BPFilter;
         BPFilter.PackagePaths.Add(FName(TEXT("/Game")));
@@ -1021,31 +1038,33 @@ public:
 
     void GenReactDeclaration() override
     {
-        
     }
-    
-	/*
+
+    /*
     virtual FString GetGeneratedCodeModuleName() const override
     {
         return TEXT("Engine");
     }
-    
+
     virtual bool SupportsTarget(const FString& TargetName) const override
     {
         return true;
     }
-    
-    virtual bool ShouldExportClassesForModule(const FString& ModuleName, EBuildModuleType::Type ModuleType, const FString& ModuleGeneratedIncludeDirectory) const override
+
+    virtual bool ShouldExportClassesForModule(const FString& ModuleName, EBuildModuleType::Type ModuleType, const FString&
+ModuleGeneratedIncludeDirectory) const override
     {
         return ModuleName != TEXT("JsEnv");
     }
-    
-    virtual void Initialize(const FString& RootLocalPath, const FString& RootBuildPath, const FString& OutputDirectory, const FString& IncludeBase) override
+
+    virtual void Initialize(const FString& RootLocalPath, const FString& RootBuildPath, const FString& OutputDirectory, const
+FString& IncludeBase) override
     {
         TypeScriptDeclarationGenerator.Begin();
     }
-    
-    virtual void ExportClass(class UClass* Class, const FString& SourceHeaderFilename, const FString& GeneratedHeaderFilename, bool bHasChanged) override
+
+    virtual void ExportClass(class UClass* Class, const FString& SourceHeaderFilename, const FString& GeneratedHeaderFilename, bool
+bHasChanged) override
     {
 #if WITH_EDITOR || HACK_HEADER_GENERATOR
         static FName MainObjectTag("TGameJSMainObject");
@@ -1055,7 +1074,7 @@ public:
             TypeScriptDeclarationGenerator.Gen(Class);
         }
     }
-    
+
     virtual void FinishExport() override
     {
         TypeScriptDeclarationGenerator.End();
@@ -1064,14 +1083,14 @@ public:
         //printf(">>>>>>>>>>>>save to %s\n\n", TCHAR_TO_ANSI(*Path));
         FFileHelper::SaveStringToFile(TypeScriptDeclarationGenerator.ToString(), *Path);
     }
-    
+
     virtual FString GetGeneratorName() const override
     {
         return TEXT("(TypeScript | Kotlin)Declaration Generator Plugin");
     }
-	*/
+    */
 };
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE( FDeclarationGenerator, DeclarationGenerator )
+IMPLEMENT_MODULE(FDeclarationGenerator, DeclarationGenerator)

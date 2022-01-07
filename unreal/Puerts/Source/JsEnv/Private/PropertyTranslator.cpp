@@ -1,22 +1,23 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #include "PropertyTranslator.h"
-#include "V8Utils.h"
-#include "ObjectMapper.h"
-#include "StructWrapper.h"
-#include "Engine/UserDefinedStruct.h"
+
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
+#include "Engine/UserDefinedStruct.h"
 #include "JsObject.h"
+#include "ObjectMapper.h"
+#include "StructWrapper.h"
+#include "V8Utils.h"
 
 namespace puerts
 {
-
 void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -26,14 +27,15 @@ void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info
     This->Getter(Isolate, Context, Info);
 }
 
-void FPropertyTranslator::Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::Getter(
+    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     if (!PropertyWeakPtr.IsValid())
     {
         FV8Utils::ThrowException(Isolate, "Property is invalid!");
         return;
     }
-    
+
     if (OwnerIsClass)
     {
         UObject* Object = FV8Utils::GetUObject(Info.Holder());
@@ -64,14 +66,15 @@ void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info
     This->Setter(Isolate, Context, Info[0], Info);
 }
 
-void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, const v8::FunctionCallbackInfo<v8::Value>& Info)
+void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value,
+    const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     if (!PropertyWeakPtr.IsValid())
     {
         FV8Utils::ThrowException(Isolate, "Property is invalid!");
         return;
     }
-    
+
     if (OwnerIsClass)
     {
         UObject* Object = FV8Utils::GetUObject(Info.Holder());
@@ -101,13 +104,14 @@ void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Valu
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    FPropertyTranslator* PropertyTranslator = static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+    FPropertyTranslator* PropertyTranslator =
+        static_cast<FPropertyTranslator*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
     if (!PropertyTranslator->PropertyWeakPtr.IsValid())
     {
         FV8Utils::ThrowException(Isolate, "Property is invalid!");
         return;
     }
-    
+
     auto Object = FV8Utils::GetUObject(Info.Holder());
     if (!Object)
     {
@@ -121,24 +125,23 @@ void FPropertyTranslator::DelegateGetter(const v8::FunctionCallbackInfo<v8::Valu
     }
     auto DelegatePtr = PropertyTranslator->Property->ContainerPtrToValuePtr<void>(Object);
 
-    Info.GetReturnValue().Set(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr, true));
+    Info.GetReturnValue().Set(FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
+        Isolate, Context, Object, PropertyTranslator->Property, DelegatePtr, true));
 }
 
-void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template)
+void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template)
 {
-    if (Property->IsA<DelegatePropertyMacro>()
-        || Property->IsA<MulticastDelegatePropertyMacro>()
+    if (Property->IsA<DelegatePropertyMacro>() || Property->IsA<MulticastDelegatePropertyMacro>()
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-        || Property->IsA<MulticastInlineDelegatePropertyMacro>()
-        || Property->IsA<MulticastSparseDelegatePropertyMacro>()
+        || Property->IsA<MulticastInlineDelegatePropertyMacro>() || Property->IsA<MulticastSparseDelegatePropertyMacro>()
 #endif
-        )
+    )
     {
-        if (Property->GetOwnerStruct()->IsA<UClass>()) // only uobject support
+        if (Property->GetOwnerStruct()->IsA<UClass>())    // only uobject support
         {
             auto DelegateGetterTemplate = v8::FunctionTemplate::New(Isolate, DelegateGetter, v8::External::New(Isolate, this));
-            Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()), DelegateGetterTemplate,
-                v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
+            Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, Property->GetName()),
+                DelegateGetterTemplate, v8::Local<v8::FunctionTemplate>(), (v8::PropertyAttribute)(v8::DontDelete | v8::ReadOnly));
         }
     }
     else
@@ -147,27 +150,34 @@ void  FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Funct
         auto Self = v8::External::New(Isolate, this);
         auto GetterTemplate = v8::FunctionTemplate::New(Isolate, Getter, Self);
         auto SetterTemplate = v8::FunctionTemplate::New(Isolate, Setter, Self);
-        Template->PrototypeTemplate()->SetAccessorProperty(FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ? 
+        Template->PrototypeTemplate()->SetAccessorProperty(
+            FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-            Property->GetAuthoredName()
+                                                                                                    Property->GetAuthoredName()
 #else
-            Property->GetDisplayNameText().ToString()
+                                                                                                    Property->GetDisplayNameText()
+                                                                                                        .ToString()
 #endif
-            : Property->GetName()), GetterTemplate, SetterTemplate, v8::DontDelete);
+                                                                                                    : Property->GetName()),
+            GetterTemplate, SetterTemplate, v8::DontDelete);
     }
 }
 
 class FInt32PropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FInt32PropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FInt32PropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::Integer::New(Isolate, static_cast<int32>(NumericProperty->GetSignedIntPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->Int32Value(Context).ToChecked()));
         return true;
@@ -177,14 +187,18 @@ public:
 class FUInt32PropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FUInt32PropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FUInt32PropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::Integer::NewFromUnsigned(Isolate, static_cast<uint32>(NumericProperty->GetUnsignedIntPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->Uint32Value(Context).ToChecked()));
         return true;
@@ -194,18 +208,23 @@ public:
 class FInt64PropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FInt64PropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FInt64PropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::BigInt::New(Isolate, NumericProperty->GetSignedIntPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Value->IsBigInt())
         {
-            NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<int64>(Value->ToBigInt(Context).ToLocalChecked()->Int64Value()));
+            NumericProperty->SetIntPropertyValue(
+                ValuePtr, static_cast<int64>(Value->ToBigInt(Context).ToLocalChecked()->Int64Value()));
         }
         return true;
     }
@@ -214,18 +233,23 @@ public:
 class FUInt64PropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FUInt64PropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FUInt64PropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::BigInt::NewFromUnsigned(Isolate, NumericProperty->GetUnsignedIntPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Value->IsBigInt())
         {
-            NumericProperty->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->ToBigInt(Context).ToLocalChecked()->Uint64Value()));
+            NumericProperty->SetIntPropertyValue(
+                ValuePtr, static_cast<uint64>(Value->ToBigInt(Context).ToLocalChecked()->Uint64Value()));
         }
         return true;
     }
@@ -234,14 +258,18 @@ public:
 class FNumberPropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FNumberPropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FNumberPropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::Number::New(Isolate, NumericProperty->GetFloatingPointPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NumericProperty->SetFloatingPointPropertyValue(ValuePtr, Value->NumberValue(Context).ToChecked());
         return true;
@@ -251,14 +279,18 @@ public:
 class FBooleanPropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FBooleanPropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FBooleanPropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::Boolean::New(Isolate, BoolProperty->GetPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         BoolProperty->SetPropertyValue(ValuePtr, Value->BooleanValue(Isolate));
         return true;
@@ -268,46 +300,59 @@ public:
 class FEnumPropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit FEnumPropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    explicit FEnumPropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
     {
-        return v8::Integer::New(Isolate, static_cast<int32>(EnumProperty->GetUnderlyingProperty()->GetSignedIntPropertyValue(ValuePtr)));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
-        EnumProperty->GetUnderlyingProperty()->SetIntPropertyValue(ValuePtr, static_cast<uint64>(Value->Int32Value(Context).ToChecked()));
+        return v8::Integer::New(
+            Isolate, static_cast<int32>(EnumProperty->GetUnderlyingProperty()->GetSignedIntPropertyValue(ValuePtr)));
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
+    {
+        EnumProperty->GetUnderlyingProperty()->SetIntPropertyValue(
+            ValuePtr, static_cast<uint64>(Value->Int32Value(Context).ToChecked()));
         return true;
     }
 };
-    
 
 class FPropertyWithDestructorReflection : public FPropertyTranslator
 {
 public:
-    explicit FPropertyWithDestructorReflection(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit FPropertyWithDestructorReflection(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    void Cleanup(void *ContainerPtr) const override { Property->DestroyValue_InContainer(ContainerPtr); }
+    void Cleanup(void* ContainerPtr) const override
+    {
+        Property->DestroyValue_InContainer(ContainerPtr);
+    }
 };
 
-    
 //----------------------------string-----------------------------
 
 class FStringPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FStringPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+    explicit FStringPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return FV8Utils::ToV8String(Isolate, StringProperty->GetPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Str = FV8Utils::ToFString(Isolate, Value);
-        //TCHAR* Str = (TCHAR*)(*(v8::String::Value(Isolate, Value)));
+        // TCHAR* Str = (TCHAR*)(*(v8::String::Value(Isolate, Value)));
         StringProperty->SetPropertyValue(ValuePtr, Str);
         return true;
     }
@@ -316,44 +361,55 @@ public:
 class FNamePropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FNamePropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+    explicit FNamePropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return FV8Utils::ToV8String(Isolate, NameProperty->GetPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         NameProperty->SetPropertyValue(ValuePtr, FName(*FV8Utils::ToFString(Isolate, Value)));
         return true;
     }
-}; 
+};
 
 class FTextPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FTextPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+    explicit FTextPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return FV8Utils::ToV8String(Isolate, TextProperty->GetPropertyValue(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(FV8Utils::ToFString(Isolate, Value)));
         return true;
     }
 };
 
-//object,  class, struct
+// object,  class, struct
 class FObjectPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FObjectPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+    explicit FObjectPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         UObject* UEObject = ObjectBaseProperty->GetObjectPropertyValue(ValuePtr);
 
@@ -364,7 +420,8 @@ public:
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, UEObject->GetClass(), UEObject);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Object = FV8Utils::GetUObject(Context, Value);
         if (FV8Utils::IsReleasedPtr(Object))
@@ -382,15 +439,20 @@ private:
 class FSoftObjectPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FSoftObjectPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    explicit FSoftObjectPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(Isolate, Context, new FSoftObjectPtr(*Ptr), SoftObjectProperty->PropertyClass, false);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
+    {
+        const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(
+            Isolate, Context, new FSoftObjectPtr(*Ptr), SoftObjectProperty->PropertyClass, false);
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
         if (!Ptr)
@@ -400,7 +462,7 @@ public:
         }
 
         SoftObjectProperty->SetPropertyValue(ValuePtr, *Ptr);
-        
+
         return true;
     }
 };
@@ -408,15 +470,20 @@ public:
 class FSoftClassPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FSoftClassPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    explicit FSoftClassPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(Isolate, Context, new FSoftObjectPtr(*Ptr), SoftClassProperty->MetaClass, true);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
+    {
+        const FSoftObjectPtr* Ptr = SoftObjectProperty->GetPropertyValuePtr(ValuePtr);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->AddSoftObjectPtr(
+            Isolate, Context, new FSoftObjectPtr(*Ptr), SoftClassProperty->MetaClass, true);
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FSoftObjectPtr* Ptr = static_cast<FSoftObjectPtr*>(FV8Utils::GetPointer(Context, Value));
         if (!Ptr)
@@ -426,7 +493,7 @@ public:
         }
 
         SoftObjectProperty->SetPropertyValue(ValuePtr, *Ptr);
-        
+
         return true;
     }
 };
@@ -438,11 +505,14 @@ public:
 class FInterfacePropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FInterfacePropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    explicit FInterfacePropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        const FScriptInterface &Interface = InterfaceProperty->GetPropertyValue(ValuePtr);
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
+    {
+        const FScriptInterface& Interface = InterfaceProperty->GetPropertyValue(ValuePtr);
 
         UObject* Object = Interface.GetObject();
         if (!Object || !Object->IsValidLowLevelFast() || Object->IsPendingKill())
@@ -452,7 +522,8 @@ public:
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         UObject* Object = FV8Utils::GetUObject(Context, Value);
         if (FV8Utils::IsReleasedPtr(Object))
@@ -460,7 +531,7 @@ public:
             FV8Utils::ThrowException(Isolate, "passing a invalid object");
             return false;
         }
-        FScriptInterface *Interface = reinterpret_cast<FScriptInterface*>(ValuePtr);
+        FScriptInterface* Interface = reinterpret_cast<FScriptInterface*>(ValuePtr);
         Interface->SetObject(Object);
         Interface->SetInterface(Object ? Object->GetInterfaceAddress(InterfaceProperty->InterfaceClass) : nullptr);
         return true;
@@ -470,25 +541,31 @@ public:
 class FScriptStructPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptStructPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) { }
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override //还是得有个指针模式，否则不能通过obj.xx.xx直接修改struct值，倒是和性能无关，应该强制js测不许保存指针型对象的引用（从native侧进入，最后一层退出时清空？）
+    explicit FScriptStructPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        void *Ptr = const_cast<void *>(ValuePtr);
-        
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const
+        override    //还是得有个指针模式，否则不能通过obj.xx.xx直接修改struct值，倒是和性能无关，应该强制js测不许保存指针型对象的引用（从native侧进入，最后一层退出时清空？）
+    {
+        void* Ptr = const_cast<void*>(ValuePtr);
+
         if (!PassByPointer)
         {
-            //FScriptStructWrapper::Alloc using new, so delete in static wrapper is safe
+            // FScriptStructWrapper::Alloc using new, so delete in static wrapper is safe
             Ptr = FScriptStructWrapper::Alloc(StructProperty->Struct);
             StructProperty->InitializeValue(Ptr);
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
+            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
-        void * Ptr = FV8Utils::GetPointer(Context, Value);
+        void* Ptr = FV8Utils::GetPointer(Context, Value);
 
         if (Ptr)
         {
@@ -496,7 +573,8 @@ public:
         }
         else if (Value->IsObject())
         {
-            FV8Utils::IsolateData<IObjectMapper>(Isolate)->Merge(Isolate, Context, Value->ToObject(Context).ToLocalChecked(), StructProperty->Struct, ValuePtr);
+            FV8Utils::IsolateData<IObjectMapper>(Isolate)->Merge(
+                Isolate, Context, Value->ToObject(Context).ToLocalChecked(), StructProperty->Struct, ValuePtr);
         }
         return true;
     }
@@ -505,15 +583,16 @@ public:
 class FArrayBufferPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FArrayBufferPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty)
+    explicit FArrayBufferPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
     }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
-        void *Ptr = const_cast<void *>(ValuePtr);
+        void* Ptr = const_cast<void*>(ValuePtr);
 
-        FArrayBuffer * ArrayBuffer = static_cast<FArrayBuffer *>(Ptr);
+        FArrayBuffer* ArrayBuffer = static_cast<FArrayBuffer*>(Ptr);
         if (ArrayBuffer->bCopy)
         {
             v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Length);
@@ -527,7 +606,8 @@ public:
         }
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         FArrayBuffer ArrayBuffer;
         if (Value->IsArrayBufferView())
@@ -539,13 +619,13 @@ public:
         }
         else if (Value->IsArrayBuffer())
         {
-            auto Ab = v8::Local <v8::ArrayBuffer>::Cast(Value);
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
             ArrayBuffer.Data = Ab->GetContents().Data();
             ArrayBuffer.Length = Ab->GetContents().ByteLength();
         }
-       
+
         StructProperty->CopySingleValue(ValuePtr, &ArrayBuffer);
-        
+
         return true;
     }
 };
@@ -553,16 +633,21 @@ public:
 class FJsObjectPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FJsObjectPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) { }
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    explicit FJsObjectPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        if (!ValuePtr) return v8::Undefined(Isolate);
-        const FJsObject * JsObject = static_cast<const FJsObject *>(ValuePtr);
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
+    {
+        if (!ValuePtr)
+            return v8::Undefined(Isolate);
+        const FJsObject* JsObject = static_cast<const FJsObject*>(ValuePtr);
         return JsObject->GetJsObject();
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Value->IsObject())
         {
@@ -570,7 +655,7 @@ public:
             FJsObject JsObject(Context, Object);
             *static_cast<FJsObject*>(ValuePtr) = JsObject;
         }
-        
+
         return true;
     }
 };
@@ -578,9 +663,12 @@ public:
 class FClassPropertyTranslator : public FObjectPropertyTranslator
 {
 public:
-    explicit FClassPropertyTranslator(PropertyMacro *InProperty) : FObjectPropertyTranslator(InProperty) { }
+    explicit FClassPropertyTranslator(PropertyMacro* InProperty) : FObjectPropertyTranslator(InProperty)
+    {
+    }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Object = FV8Utils::GetUObject(Context, Value);
         if (FV8Utils::IsReleasedPtr(Object))
@@ -588,35 +676,42 @@ public:
             FV8Utils::ThrowException(Isolate, "passing a invalid object");
             return false;
         }
-        UClass *Class = Cast<UClass>(Object);
-        ObjectBaseProperty->SetObjectPropertyValue(ValuePtr, (Class && Class->IsChildOf(ClassProperty->MetaClass)) ? Class : nullptr);
+        UClass* Class = Cast<UClass>(Object);
+        ObjectBaseProperty->SetObjectPropertyValue(
+            ValuePtr, (Class && Class->IsChildOf(ClassProperty->MetaClass)) ? Class : nullptr);
         return true;
     }
 };
 
-//containers
+// containers
 
 class FScriptArrayPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptArrayPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) { }
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool ByPointer) const override
+    explicit FScriptArrayPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        FScriptArray *ScriptArray;
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool ByPointer) const override
+    {
+        FScriptArray* ScriptArray;
         if (ByPointer)
         {
-            ScriptArray = const_cast<FScriptArray*>(reinterpret_cast<const FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr)));
+            ScriptArray =
+                const_cast<FScriptArray*>(reinterpret_cast<const FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr)));
         }
         else
         {
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
             ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
+            Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Ptr = FV8Utils::GetPointer(Context, Value);
         if (Ptr)
@@ -627,17 +722,19 @@ public:
     }
 
 private:
-        
 };
 
 class FScriptSetPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptSetPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) { }
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool ByPointer) const override
+    explicit FScriptSetPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        FScriptSet *ScriptSet;
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool ByPointer) const override
+    {
+        FScriptSet* ScriptSet;
         if (ByPointer)
         {
             ScriptSet = const_cast<FScriptSet*>(reinterpret_cast<const FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr)));
@@ -647,10 +744,12 @@ public:
             ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
             SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
+            Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Ptr = FV8Utils::GetPointer(Context, Value);
         if (Ptr)
@@ -661,17 +760,19 @@ public:
     }
 
 private:
-
 };
 
 class FScriptMapPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptMapPropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) { }
-
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool ByPointer) const override
+    explicit FScriptMapPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        FScriptMap *ScriptMap;
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool ByPointer) const override
+    {
+        FScriptMap* ScriptMap;
         if (ByPointer)
         {
             ScriptMap = const_cast<FScriptMap*>(reinterpret_cast<const FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr)));
@@ -681,10 +782,12 @@ public:
             ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
+            Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         auto Ptr = FV8Utils::GetPointer(Context, Value);
         if (Ptr)
@@ -695,58 +798,70 @@ public:
     }
 
 private:
-
 };
 
-//delegate
+// delegate
 
 //另外特殊处理
 class DoNothingPropertyTranslator : public FPropertyTranslator
 {
 public:
-    explicit DoNothingPropertyTranslator(PropertyMacro *InProperty) : FPropertyTranslator(InProperty) {}
+    explicit DoNothingPropertyTranslator(PropertyMacro* InProperty) : FPropertyTranslator(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         return v8::Undefined(Isolate);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         return true;
     }
 };
 
-//fix array
+// fix array
 class FFixArrayReflection : public FPropertyTranslator
 {
 public:
-    explicit FFixArrayReflection(std::unique_ptr<FPropertyTranslator> InInner): FPropertyTranslator(InInner->Property)
+    explicit FFixArrayReflection(std::unique_ptr<FPropertyTranslator> InInner) : FPropertyTranslator(InInner->Property)
     {
         Inner = std::move(InInner);
     }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
-        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->CreateArray(Isolate, Context, Inner.get(), const_cast<void*>(ValuePtr));
+        return FV8Utils::IsolateData<IObjectMapper>(Isolate)->CreateArray(
+            Isolate, Context, Inner.get(), const_cast<void*>(ValuePtr));
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
-        //Fix Size Array do not assignable
+        // Fix Size Array do not assignable
         return true;
     }
 
-    virtual void Cleanup(void *ContainerPtr) const { Inner->Cleanup(ContainerPtr); }
+    virtual void Cleanup(void* ContainerPtr) const
+    {
+        Inner->Cleanup(ContainerPtr);
+    }
 };
 
-//delegate
+// delegate
 class FDelegatePropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FDelegatePropertyTranslator(PropertyMacro *InProperty) : FPropertyWithDestructorReflection(InProperty) {}
+    explicit FDelegatePropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         auto DelegatePtr = static_cast<FScriptDelegate*>(const_cast<void*>(ValuePtr));
 
@@ -755,18 +870,21 @@ public:
             UObject* UEObject = DelegatePtr->GetUObject();
             if (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())
             {
-                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(Isolate, Context, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
+                return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
+                    Isolate, Context, UEObject, DelegateProperty, DelegatePtr, PassByPointer);
             }
         }
         return v8::Undefined(Isolate);
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
-        FScriptDelegate *Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
+        FScriptDelegate* Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
         if (Value->IsFunction())
         {
-            *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewManualReleaseDelegate(Isolate, Context, Value.As<v8::Function>(), DelegateProperty->SignatureFunction);
+            *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewManualReleaseDelegate(
+                Isolate, Context, Value.As<v8::Function>(), DelegateProperty->SignatureFunction);
         }
         else
         {
@@ -794,14 +912,17 @@ public:
     //    value : realvalue
     // }
 
-    v8::Local<v8::Value> UEToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void *ValuePtr, bool PassByPointer) const override
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
         auto Result = v8::Object::New(Isolate);
-        auto ReturnVal = Result->Set(Context, FV8Utils::InternalString(Isolate, "value"), Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
+        auto ReturnVal = Result->Set(
+            Context, FV8Utils::InternalString(Isolate, "value"), Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
         return Result;
     }
 
-    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         if (Value->IsObject())
         {
@@ -812,36 +933,42 @@ public:
         return true;
     }
 
-    void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, const void *ValuePtr, bool PassByPointer) const override
+    void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, const void* ValuePtr,
+        bool PassByPointer) const override
     {
         if (Value->IsObject())
         {
             auto Outer = Value->ToObject(Context).ToLocalChecked();
-            auto ReturnVal = Outer->Set(Context, FV8Utils::InternalString(Isolate, "value"), Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
+            auto ReturnVal = Outer->Set(
+                Context, FV8Utils::InternalString(Isolate, "value"), Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
         }
     }
 
-    bool JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void *ValuePtr, bool DeepCopy) const override
+    bool JsToUEOut(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
     {
         return JsToUE(Isolate, Context, Value, ValuePtr, DeepCopy);
     }
 
-    bool IsOut() const override { return true; }
+    bool IsOut() const override
+    {
+        return true;
+    }
 
-    void Cleanup(void *ContainerPtr) const override { Inner->Cleanup(ContainerPtr); }
+    void Cleanup(void* ContainerPtr) const override
+    {
+        Inner->Cleanup(ContainerPtr);
+    }
 };
 
-template<template<class> class Creator, typename  Ret>
+template <template <class> class Creator, typename Ret>
 struct PropertyTranslatorCreator
 {
     // #lizard forgives
-    static Ret Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
+    static Ret Do(PropertyMacro* InProperty, bool IgnoreOut, void* Ptr)
     {
-        if (InProperty->IsA<BytePropertyMacro>()
-            || InProperty->IsA<Int8PropertyMacro>()
-            || InProperty->IsA<Int16PropertyMacro>()
-            || InProperty->IsA<IntPropertyMacro>()
-            || InProperty->IsA<UInt16PropertyMacro>())
+        if (InProperty->IsA<BytePropertyMacro>() || InProperty->IsA<Int8PropertyMacro>() || InProperty->IsA<Int16PropertyMacro>() ||
+            InProperty->IsA<IntPropertyMacro>() || InProperty->IsA<UInt16PropertyMacro>())
         {
             return Creator<FInt32PropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
         }
@@ -857,7 +984,7 @@ struct PropertyTranslatorCreator
         {
             return Creator<FUInt64PropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
         }
-        else if (InProperty->IsA<DoublePropertyMacro>() || InProperty->IsA<FloatPropertyMacro>())//11
+        else if (InProperty->IsA<DoublePropertyMacro>() || InProperty->IsA<FloatPropertyMacro>())    // 11
         {
             return Creator<FNumberPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
         }
@@ -885,9 +1012,8 @@ struct PropertyTranslatorCreator
         {
             return Creator<FClassPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
         }
-        else if (InProperty->IsA<ObjectPropertyMacro>()
-            || InProperty->IsA <WeakObjectPropertyMacro>()
-            || InProperty->IsA<LazyObjectPropertyMacro>())
+        else if (InProperty->IsA<ObjectPropertyMacro>() || InProperty->IsA<WeakObjectPropertyMacro>() ||
+                 InProperty->IsA<LazyObjectPropertyMacro>())
         {
             return Creator<FObjectPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
         }
@@ -902,7 +1028,7 @@ struct PropertyTranslatorCreator
         else if (InProperty->IsA<StructPropertyMacro>())
         {
             auto StructProperty = CastFieldMacro<StructPropertyMacro>(InProperty);
-            if(StructProperty->Struct == FArrayBuffer::StaticStruct())
+            if (StructProperty->Struct == FArrayBuffer::StaticStruct())
             {
                 return Creator<FArrayBufferPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
             }
@@ -936,23 +1062,24 @@ struct PropertyTranslatorCreator
             return Creator<FDelegatePropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
         }
         else if (InProperty->IsA<MulticastDelegatePropertyMacro>()
-    #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-            || InProperty->IsA<MulticastInlineDelegatePropertyMacro>()
-            || InProperty->IsA<MulticastSparseDelegatePropertyMacro>()
-    #endif
-            )
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+                 || InProperty->IsA<MulticastInlineDelegatePropertyMacro>() ||
+                 InProperty->IsA<MulticastSparseDelegatePropertyMacro>()
+#endif
+        )
         {
-            return Creator<DoNothingPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr); //统一在别的地方处理
+            return Creator<DoNothingPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);    //统一在别的地方处理
         }
         else
         {
-            return Creator<DoNothingPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr); //还没做支持的忽略掉加载错误好了，ts那本来对这种不支持的类型就不生成ts声明，忽略影响也不大
+            return Creator<DoNothingPropertyTranslator>::Do(InProperty, IgnoreOut,
+                Ptr);    //还没做支持的忽略掉加载错误好了，ts那本来对这种不支持的类型就不生成ts声明，忽略影响也不大
         }
     }
 };
 
-template<typename T>
-std::unique_ptr<FPropertyTranslator> TCreateIgnoreOut(PropertyMacro *InProperty)
+template <typename T>
+std::unique_ptr<FPropertyTranslator> TCreateIgnoreOut(PropertyMacro* InProperty)
 {
     if (InProperty->ArrayDim > 1)
     {
@@ -964,12 +1091,13 @@ std::unique_ptr<FPropertyTranslator> TCreateIgnoreOut(PropertyMacro *InProperty)
     }
 }
 
-template<typename T>
+template <typename T>
 struct UniquePtrCreator
 {
-    static std::unique_ptr<FPropertyTranslator> Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
+    static std::unique_ptr<FPropertyTranslator> Do(PropertyMacro* InProperty, bool IgnoreOut, void* Ptr)
     {
-        if (!IgnoreOut && (InProperty->PropertyFlags & CPF_Parm) && (InProperty->PropertyFlags & CPF_OutParm) && (!(InProperty->PropertyFlags & CPF_ConstParm)) && (!(InProperty->PropertyFlags & CPF_ReturnParm)))
+        if (!IgnoreOut && (InProperty->PropertyFlags & CPF_Parm) && (InProperty->PropertyFlags & CPF_OutParm) &&
+            (!(InProperty->PropertyFlags & CPF_ConstParm)) && (!(InProperty->PropertyFlags & CPF_ReturnParm)))
         {
             return std::make_unique<FOutReflection>(TCreateIgnoreOut<T>(InProperty));
         }
@@ -980,24 +1108,24 @@ struct UniquePtrCreator
     }
 };
 
-template<>
+template <>
 struct UniquePtrCreator<DoNothingPropertyTranslator>
 {
-    static std::unique_ptr<FPropertyTranslator> Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
+    static std::unique_ptr<FPropertyTranslator> Do(PropertyMacro* InProperty, bool IgnoreOut, void* Ptr)
     {
         return std::make_unique<DoNothingPropertyTranslator>(InProperty);
     }
 };
 
-std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro *InProperty, bool IgnoreOut)
+std::unique_ptr<FPropertyTranslator> FPropertyTranslator::Create(PropertyMacro* InProperty, bool IgnoreOut)
 {
     return PropertyTranslatorCreator<UniquePtrCreator, std::unique_ptr<FPropertyTranslator>>::Do(InProperty, IgnoreOut, nullptr);
 }
 
-template<typename T>
+template <typename T>
 struct PlacementNewCreator
 {
-    static FPropertyTranslator* Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
+    static FPropertyTranslator* Do(PropertyMacro* InProperty, bool IgnoreOut, void* Ptr)
     {
         if (InProperty->ArrayDim > 1)
         {
@@ -1010,19 +1138,19 @@ struct PlacementNewCreator
     }
 };
 
-template<>
+template <>
 struct PlacementNewCreator<DoNothingPropertyTranslator>
 {
-    static FPropertyTranslator* Do(PropertyMacro *InProperty, bool IgnoreOut, void* Ptr)
+    static FPropertyTranslator* Do(PropertyMacro* InProperty, bool IgnoreOut, void* Ptr)
     {
         return new (Ptr) DoNothingPropertyTranslator(InProperty);
     }
 };
 
-void FPropertyTranslator::CreateOn(PropertyMacro *InProperty, FPropertyTranslator* InOldProperty)
+void FPropertyTranslator::CreateOn(PropertyMacro* InProperty, FPropertyTranslator* InOldProperty)
 {
     check(InOldProperty);
     PropertyTranslatorCreator<PlacementNewCreator, FPropertyTranslator*>::Do(InProperty, true, InOldProperty);
 }
 
-}
+}    // namespace puerts
