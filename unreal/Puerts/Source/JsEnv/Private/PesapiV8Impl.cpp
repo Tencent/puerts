@@ -294,7 +294,7 @@ pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value pvalue)
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
 
     auto result = v8::Object::New(context->GetIsolate());
-    auto _unused = result->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "value").ToLocalChecked(), value);
+    auto _unused = result->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "value", v8::NewStringType::kNormal).ToLocalChecked(), value);
     return v8impl::PesapiValueFromV8LocalValue(result);
 }
 
@@ -304,7 +304,7 @@ pesapi_value pesapi_get_value_ref(pesapi_env env, pesapi_value pvalue)
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
 
     auto outer = value->ToObject(context).ToLocalChecked();
-    auto realvalue = outer->Get(context, v8::String::NewFromUtf8(context->GetIsolate(), "value").ToLocalChecked()).ToLocalChecked();
+    auto realvalue = outer->Get(context, v8::String::NewFromUtf8(context->GetIsolate(), "value", v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked();
     return v8impl::PesapiValueFromV8LocalValue(realvalue);
 }
 
@@ -316,7 +316,7 @@ void pesapi_update_value_ref(pesapi_env env, pesapi_value ref, pesapi_value pval
     if (holder->IsObject())
     {
         auto outer = holder->ToObject(context).ToLocalChecked();
-        auto _unused = outer->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "value").ToLocalChecked(), value);
+        auto _unused = outer->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "value", v8::NewStringType::kNormal).ToLocalChecked(), value);
     }
 }
 
@@ -365,7 +365,7 @@ void pesapi_throw_by_string(pesapi_env env, const char* msg)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     v8::Isolate* isolate = context->GetIsolate();
-    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg).ToLocalChecked()));
+    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
 }
 
 pesapi_env_holder pesapi_hold_env(pesapi_env env)
@@ -476,7 +476,7 @@ pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const cha
     if (object->IsObject())
     {
         auto MaybeValue =
-            object.As<v8::Object>()->Get(context, v8::String::NewFromUtf8(context->GetIsolate(), key).ToLocalChecked());
+            object.As<v8::Object>()->Get(context, v8::String::NewFromUtf8(context->GetIsolate(), key, v8::NewStringType::kNormal).ToLocalChecked());
         v8::Local<v8::Value> Val;
         if (MaybeValue.ToLocal(&Val))
         {
@@ -495,7 +495,7 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
     if (object->IsObject())
     {
         auto _un_used =
-            object.As<v8::Object>()->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), key).ToLocalChecked(), value);
+            object.As<v8::Object>()->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), key, v8::NewStringType::kNormal).ToLocalChecked(), value);
     }
 }
 

@@ -102,7 +102,8 @@ V8_INLINE void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Valu
     if (holder->IsObject())
     {
         auto outer = holder->ToObject(context).ToLocalChecked();
-        auto _unused = outer->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "value").ToLocalChecked(), value);
+        auto _unused = outer->Set(
+            context, v8::String::NewFromUtf8(context->GetIsolate(), "value", v8::NewStringType::kNormal).ToLocalChecked(), value);
     }
 }
 

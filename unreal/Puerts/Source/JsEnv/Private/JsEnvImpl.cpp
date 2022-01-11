@@ -2940,7 +2940,7 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
     }
 
     v8::Local<v8::Module> SyntheticModule = v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName),
-        {v8::String::NewFromUtf8(Isolate, "default").ToLocalChecked()},
+        {v8::String::NewFromUtf8(Isolate, "default", v8::NewStringType::kNormal).ToLocalChecked()},
         [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
         {
             const auto IsolateInner = ContextInner->GetIsolate();
@@ -2949,7 +2949,8 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
             const auto ModuleInfoIt = Self->FindModuleInfo(Module);
             check(ModuleInfoIt != Self->HashToModuleInfo.end());
 
-            Module->SetSyntheticModuleExport(v8::String::NewFromUtf8(IsolateInner, "default").ToLocalChecked(),
+            Module->SetSyntheticModuleExport(
+                v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(),
                 ModuleInfoIt->second->CJSValue.Get(IsolateInner));
             return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
         });
