@@ -1424,14 +1424,14 @@ void FJsEnvImpl::RebindJs()
             }
             else
             {
-                auto IsTsSubclass = [](UClass* Class)
+                auto IsTsSubclass = [](UClass* InnerClass)
                 {
-                    while (Class)
+                    while (InnerClass)
                     {
-                        if (Class->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor ||
-                            Cast<UTypeScriptGeneratedClass>(Class))
+                        if (InnerClass->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor ||
+                            Cast<UTypeScriptGeneratedClass>(InnerClass))
                             return true;
-                        Class = Class->GetSuperClass();
+                        InnerClass = InnerClass->GetSuperClass();
                     }
 
                     return false;
@@ -2925,6 +2925,11 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::ResolveModuleCallback(
 
 v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Context> Context, const FString& ModuleName)
 {
+#if V8_MAJOR_VERSION < 8
+    FV8Utils::ThrowException(
+        MainIsolate, FString::Printf(TEXT("V8_MAJOR_VERSION < 8 not support fetch CJS module [%s] from ESM"), *ModuleName));
+    return v8::MaybeLocal<v8::Module>();
+#else
     const auto Isolate = Context->GetIsolate();
 
     Logger->Info(FString::Printf(TEXT("ESM Fetch CJS Module: %s"), *ModuleName));
@@ -2936,7 +2941,6 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
     if (MaybeRet.IsEmpty())
     {
         return v8::MaybeLocal<v8::Module>();
-        ;
     }
 
     v8::Local<v8::Module> SyntheticModule = v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName),
@@ -2961,6 +2965,7 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
     HashToModuleInfo.emplace(SyntheticModule->GetIdentityHash(), Info);
 
     return SyntheticModule;
+#endif
 }
 
 v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName)
