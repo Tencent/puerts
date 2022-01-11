@@ -97,8 +97,8 @@ namespace Puerts.Editor
 
             public static bool IsStatic(PropertyInfo propertyInfo)
             {
-                var getMethod = propertyInfo.GetMethod;
-                var setMethod = propertyInfo.SetMethod;
+                var getMethod = propertyInfo.GetGetMethod();
+                var setMethod = propertyInfo.GetSetMethod();
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
             }
             public enum BindingMode {
@@ -156,8 +156,8 @@ namespace Puerts.Editor
                         return true;
                     }
                     if (!(
-                        (pi.GetMethod != null && pi.GetMethod.IsPublic) ||
-                        (pi.SetMethod != null && pi.SetMethod.IsPublic)
+                        (pi.GetGetMethod() != null && pi.GetGetMethod().IsPublic) ||
+                        (pi.GetSetMethod() != null && pi.GetSetMethod().IsPublic)
                     ))
                     {
                         if (notFiltEII)
@@ -853,9 +853,9 @@ namespace Puerts.Editor
 
             public class TsMethodGenInfoComparer : IEqualityComparer<TsMethodGenInfo>
             {
-                public bool Equals(TsMethodGenInfo x, TsMethodGenInfo y) => x.Equals(y);
+                public bool Equals(TsMethodGenInfo x, TsMethodGenInfo y) { return x.Equals(y); }
 
-                public int GetHashCode(TsMethodGenInfo obj) => 0;
+                public int GetHashCode(TsMethodGenInfo obj) { return 0; }
             }
 
             public class TsMethodGenInfo
@@ -1061,8 +1061,8 @@ namespace Puerts.Editor
                                     Document = DocResolver.GetTsDocument(p),
                                     TypeName = Utils.GetTsTypeName(p.PropertyType),
                                     IsStatic = Utils.IsStatic(p),
-                                    HasGetter = p.GetMethod != null && p.GetMethod.IsPublic,
-                                    HasSetter = p.SetMethod != null && p.SetMethod.IsPublic
+                                    HasGetter = p.GetGetMethod() != null && p.GetGetMethod().IsPublic,
+                                    HasSetter = p.GetSetMethod() != null && p.GetSetMethod().IsPublic
                                 })
                             )
                             .ToArray() : new TsPropertyGenInfo[] { },
