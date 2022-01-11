@@ -56,6 +56,16 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     typedef std::map<FunctionKey, FunctionOverloads> FunctionOutputs;
     std::map<UStruct*, FunctionOutputs> AllFuncionOutputs;
 
+    std::map<UObject*, FString> NamespaceMap;
+
+    const FString& GetNamespace(UObject* Obj);
+
+    FString GetNameWithNamespace(UObject* Obj);
+
+    void NamespaceBegin(UObject* Obj);
+
+    void NamespaceEnd(UObject* Obj);
+
     void InitExtensionMethodsMap();
 
     virtual void Begin(FString Namespace = TEXT("ue"));

@@ -295,6 +295,50 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
         FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
+const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
+{
+    auto Iter = NamespaceMap.find(Obj);
+    if (Iter == NamespaceMap.end())
+    {
+        TArray<FString> PathFrags;
+        Cast<UPackage>(Obj->GetOuter())->GetName().ParseIntoArray(PathFrags, TEXT("/"));
+        NamespaceMap[Obj] = FString::Join(PathFrags, TEXT("."));
+        Iter = NamespaceMap.find(Obj);
+    }
+    return Iter->second;
+}
+
+FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
+{
+#if WITH_BP_NAMESPACE
+    if (!Obj->IsNative())
+        return GetNamespace(Obj) + TEXT(".") + SafeName(Obj->GetName());
+#endif
+    return SafeName(Obj->GetName());
+}
+
+void FTypeScriptDeclarationGenerator::NamespaceBegin(UObject* Obj)
+{
+#if WITH_BP_NAMESPACE
+    if (!Obj->IsNative())
+    {
+        Output << "    namespace " << GetNamespace(Obj) << " {\n";
+        Output.Indent(4);
+    }
+#endif
+}
+
+void FTypeScriptDeclarationGenerator::NamespaceEnd(UObject* Obj)
+{
+#if WITH_BP_NAMESPACE
+    if (!Obj->IsNative())
+    {
+        Output.Indent(-4);
+        Output << "    }\n\n";
+    }
+#endif
+}
+
 void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
 {
     if (Processed.Contains(ToGen))
@@ -359,7 +403,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     else if (EnumPropertyMacro* EnumProperty = CastFieldMacro<EnumPropertyMacro>(Property))
     {
         AddToGen.Add(EnumProperty->GetEnum());
-        StringBuffer << SafeName(EnumProperty->GetEnum()->GetName());
+        StringBuffer << GetNameWithNamespace(EnumProperty->GetEnum());
     }
     else if (BytePropertyMacro* ByteProperty = CastFieldMacro<BytePropertyMacro>(Property))
     {
@@ -385,7 +429,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         }
         else
         {
-            StringBuffer << SafeName(StructProperty->Struct->GetName());
+            StringBuffer << GetNameWithNamespace(StructProperty->Struct);
         }
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
@@ -422,7 +466,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     else if (auto ObjectProperty = CastFieldMacro<ObjectPropertyMacro>(Property))
     {
         AddToGen.Add(ObjectProperty->PropertyClass);
-        StringBuffer << SafeName(ObjectProperty->PropertyClass->GetName());
+        StringBuffer << GetNameWithNamespace(ObjectProperty->PropertyClass);
     }
     else if (auto DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property))
     {
@@ -454,22 +498,22 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     else if (auto WeakObjectProperty = CastFieldMacro<WeakObjectPropertyMacro>(Property))
     {
         AddToGen.Add(WeakObjectProperty->PropertyClass);
-        StringBuffer << "TWeakObjectPtr<" << SafeName(WeakObjectProperty->PropertyClass->GetName()) << ">";
+        StringBuffer << "TWeakObjectPtr<" << GetNameWithNamespace(WeakObjectProperty->PropertyClass) << ">";
     }
     else if (auto SoftClassProperty = CastFieldMacro<SoftClassPropertyMacro>(Property))
     {
         AddToGen.Add(SoftClassProperty->PropertyClass);
-        StringBuffer << "TSoftClassPtr<" << SafeName(SoftClassProperty->MetaClass->GetName()) << ">";
+        StringBuffer << "TSoftClassPtr<" << GetNameWithNamespace(SoftClassProperty->MetaClass) << ">";
     }
     else if (auto SoftObjectProperty = CastFieldMacro<SoftObjectPropertyMacro>(Property))
     {
         AddToGen.Add(SoftObjectProperty->PropertyClass);
-        StringBuffer << "TSoftObjectPtr<" << SafeName(SoftObjectProperty->PropertyClass->GetName()) << ">";
+        StringBuffer << "TSoftObjectPtr<" << GetNameWithNamespace(SoftObjectProperty->PropertyClass) << ">";
     }
     else if (auto LazyObjectProperty = CastFieldMacro<LazyObjectPropertyMacro>(Property))
     {
         AddToGen.Add(LazyObjectProperty->PropertyClass);
-        StringBuffer << "TLazyObjectPtr<" << SafeName(LazyObjectProperty->PropertyClass->GetName()) << ">";
+        StringBuffer << "TLazyObjectPtr<" << GetNameWithNamespace(LazyObjectProperty->PropertyClass) << ">";
     }
     else
     {
@@ -720,7 +764,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
     if (Super)
     {
         Gen(Super);
-        StringBuffer << " extends " << SafeName(Super->GetName());
+        StringBuffer << " extends " << GetNameWithNamespace(Super);
     }
 
     StringBuffer << " {\n";
@@ -766,7 +810,11 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     StringBuffer << "}\n\n";
 
+    NamespaceBegin(Class);
+
     Output << StringBuffer;
+
+    NamespaceEnd(Class);
 }
 
 void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
@@ -830,7 +878,11 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
 
     StringBuffer << "}\n";
 
+    NamespaceBegin(Enum);
+
     Output << StringBuffer;
+
+    NamespaceEnd(Enum);
 }
 
 void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
@@ -844,7 +896,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
     if (Super)
     {
         Gen(Super);
-        StringBuffer << " extends " << SafeName(Super->GetName());
+        StringBuffer << " extends " << GetNameWithNamespace(Super);
     }
 
     StringBuffer << " {\n";
@@ -920,7 +972,11 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 
     StringBuffer << "}\n\n";
 
+    NamespaceBegin(Struct);
+
     Output << StringBuffer;
+
+    NamespaceEnd(Struct);
 }
 
 void FTypeScriptDeclarationGenerator::End()
