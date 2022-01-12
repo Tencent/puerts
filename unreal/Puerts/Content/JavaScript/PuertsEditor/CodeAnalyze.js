@@ -1473,7 +1473,7 @@ function watch(configFilePath) {
                                 });
                             }
                             let result = tsTypeToPinType(typeArguments[0], children[1]);
-                            if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None) {
+                            if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None && typeName != '$Ref') {
                                 console.warn("can not find pin type of typeArguments[0] " + typeName);
                                 return undefined;
                             }

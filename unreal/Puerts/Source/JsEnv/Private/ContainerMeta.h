@@ -13,8 +13,8 @@ struct FPropertyMetaRoot
 
 namespace puerts
 {
-
-enum BuiltinType{
+enum BuiltinType
+{
     TBool = 0,
     TByte = 1,
     TInt = 2,
@@ -30,21 +30,20 @@ class FContainerMeta
 {
 public:
     FContainerMeta();
-	~FContainerMeta();
+    ~FContainerMeta();
 
-    PropertyMacro * GetBuiltinProperty(BuiltinType type);
+    PropertyMacro* GetBuiltinProperty(BuiltinType type);
 
-    PropertyMacro * GetObjectProperty(UStruct *Struct);
+    PropertyMacro* GetObjectProperty(UStruct* Struct);
 
-    void NotifyUStructDeleted(const UStruct *Struct);
+    void NotifyUStructDeleted(const UStruct* Struct);
 
 private:
+    UScriptStruct* PropertyMetaRoot;
 
-    UScriptStruct *PropertyMetaRoot;
-
-    PropertyMacro *BuiltinProperty[MaxBuiltinType];
+    PropertyMacro* BuiltinProperty[MaxBuiltinType];
 
     TMap<UStruct*, PropertyMacro*> ObjectPropertyMap;
 };
 
-}
+}    // namespace puerts

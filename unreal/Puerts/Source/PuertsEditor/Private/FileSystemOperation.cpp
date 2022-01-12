@@ -7,11 +7,12 @@
 #include "PuertsModule.h"
 #include "Misc/SecureHash.h"
 
-bool UFileSystemOperation::ReadFile(FString Path, FString &Data)
+bool UFileSystemOperation::ReadFile(FString Path, FString& Data)
 {
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     IFileHandle* FileHandle = PlatformFile.OpenRead(*Path);
-    if (FileHandle) {
+    if (FileHandle)
+    {
         int len = FileHandle->Size();
         TArray<uint8> Content;
         Content.Reset(len + 2);
@@ -58,11 +59,12 @@ FString UFileSystemOperation::GetCurrentDirectory()
     return FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 }
 
-TArray<FString> UFileSystemOperation::GetDirectories(FString Path) 
+TArray<FString> UFileSystemOperation::GetDirectories(FString Path)
 {
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> Dirs;
-    if (!Path.EndsWith(TEXT("/"))) Path = Path + TEXT("/");
+    if (!Path.EndsWith(TEXT("/")))
+        Path = Path + TEXT("/");
     Path = Path + "*";
     FileManager.FindFiles(Dirs, *Path, false, true);
     return Dirs;
@@ -72,7 +74,8 @@ TArray<FString> UFileSystemOperation::GetFiles(FString Path)
 {
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> Dirs;
-    if (!Path.EndsWith(TEXT("/"))) Path = Path + TEXT("/");
+    if (!Path.EndsWith(TEXT("/")))
+        Path = Path + TEXT("/");
     Path = Path + "*";
     FileManager.FindFiles(Dirs, *Path, true, false);
     return Dirs;
@@ -89,7 +92,8 @@ FString UFileSystemOperation::FileMD5Hash(FString Path)
     return LexToString(Hash);
 }
 
-//TArray<FString> UFileSystemOperation::ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32 Depth)
+// TArray<FString> UFileSystemOperation::ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32
+// Depth)
 //{
 //
 //}

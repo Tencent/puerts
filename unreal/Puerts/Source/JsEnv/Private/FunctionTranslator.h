@@ -1,9 +1,10 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
@@ -15,7 +16,7 @@
 #include "CoreUObject.h"
 #include "PropertyTranslator.h"
 
-#pragma warning(push, 0)  
+#pragma warning(push, 0)
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
@@ -25,7 +26,7 @@ namespace puerts
 class FFunctionTranslator
 {
 public:
-    explicit FFunctionTranslator(UFunction *InFunction, bool IsDelegate);
+    explicit FFunctionTranslator(UFunction* InFunction, bool IsDelegate);
 
     virtual ~FFunctionTranslator()
     {
@@ -37,11 +38,14 @@ public:
 
     virtual v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate);
 
-    void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, v8::Local<v8::Value> This, void *Params);
+    void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
+        v8::Local<v8::Value> This, void* Params);
 
-    void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, v8::Local<v8::Value> This, UObject *ContextObject, FFrame &Stack, void *RESULT_PARAM);
+    void CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
+        v8::Local<v8::Value> This, UObject* ContextObject, FFrame& Stack, void* RESULT_PARAM);
 
-    void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, std::function<void(void *)> OnCall);
+    void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        std::function<void(void*)> OnCall);
 
 protected:
     std::vector<std::unique_ptr<FPropertyTranslator>> Arguments;
@@ -58,7 +62,7 @@ protected:
 
     uint32 ParamsBufferSize;
 
-    void *ArgumentDefaultValues;
+    void* ArgumentDefaultValues;
 #if WITH_EDITOR
     FName FunctionName;
 #endif
@@ -67,15 +71,16 @@ private:
 
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    void Init(UFunction *InFunction, bool IsDelegate);
+    void Init(UFunction* InFunction, bool IsDelegate);
 
     friend class FStructWrapper;
+    friend class FJsEnvImpl;
 };
 
 class FExtensionMethodTranslator : public FFunctionTranslator
 {
 public:
-    explicit FExtensionMethodTranslator(UFunction *InFunction);
+    explicit FExtensionMethodTranslator(UFunction* InFunction);
 
     v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate) override;
 
@@ -86,4 +91,4 @@ private:
 
     bool IsUObject;
 };
-}
+}    // namespace puerts

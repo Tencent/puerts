@@ -3,9 +3,12 @@
 
 namespace puerts
 {
-template <typename T> inline void __USE(T&&) {}
+template <typename T>
+inline void __USE(T&&)
+{
+}
 
-template<typename T>
+template <typename T>
 void PromiseRejectCallback(v8::PromiseRejectMessage Message)
 {
     auto Promise = Message.GetPromise();
@@ -47,11 +50,11 @@ void PromiseRejectCallback(v8::PromiseRejectMessage Message)
         Value = v8::Undefined(Isolate);
     }
 
-    v8::Local<v8::Value> Args[] = { v8::Number::New(Isolate, Event), Promise, Value };
+    v8::Local<v8::Value> Args[] = {v8::Number::New(Isolate, Event), Promise, Value};
     __USE(Callback->Call(Isolate->GetCurrentContext(), v8::Undefined(Isolate), 3, Args));
 }
 
-template<typename T>
+template <typename T>
 void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
 {
     auto Isolate = Args.GetIsolate();
@@ -59,7 +62,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
     JsEngine->JsPromiseRejectCallback.Reset(Isolate, Args[0].As<v8::Function>());
 }
 
-//TODO: rename this file
+// TODO: rename this file
 #ifndef WITH_QUICKJS
 std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
@@ -78,7 +81,8 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
             {
                 stm << "    at [eval]:" << LineNumber << ":" << Column << std::endl;
             }
-            else {
+            else
+            {
                 stm << "    at [eval] (" << *ScriptName << ":" << LineNumber << ":" << Column << ")" << std::endl;
             }
             break;
@@ -88,7 +92,8 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
         {
             stm << "    at " << *ScriptName << ":" << LineNumber << ":" << Column << std::endl;
         }
-        else {
+        else
+        {
             stm << "    at " << *FuncName << "(" << *ScriptName << ":" << LineNumber << ":" << Column << ")" << std::endl;
         }
     }
@@ -96,4 +101,4 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
 }
 #endif
 
-}
+}    // namespace puerts

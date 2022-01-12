@@ -1,16 +1,16 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #include "TickerDelegateWrapper.h"
 
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 
-FTickerDelegateWrapper::FTickerDelegateWrapper(bool Continue): 
-    FunctionContinue(Continue), DelegateHandle(nullptr)
+FTickerDelegateWrapper::FTickerDelegateWrapper(bool Continue) : FunctionContinue(Continue), DelegateHandle(nullptr)
 {
     // No operation
 }
@@ -25,7 +25,7 @@ FTickerDelegateWrapper::~FTickerDelegateWrapper()
 }
 
 v8::Isolate* FTickerDelegateWrapper::GetIsolate()
-{ 
+{
     return Isolate;
 }
 
@@ -39,7 +39,8 @@ v8::Global<v8::Function>& FTickerDelegateWrapper::GetFunction()
     return DefaultFunction;
 }
 
-void FTickerDelegateWrapper::Init(const v8::FunctionCallbackInfo<v8::Value> &Info, std::function<void(v8::Isolate*, v8::TryCatch*)> InExceptionHandler,
+void FTickerDelegateWrapper::Init(const v8::FunctionCallbackInfo<v8::Value>& Info,
+    std::function<void(v8::Isolate*, v8::TryCatch*)> InExceptionHandler,
     std::function<void(FDelegateHandle*)> InDelegateHandleCleaner)
 {
     Isolate = Info.GetIsolate();
@@ -84,4 +85,4 @@ void FTickerDelegateWrapper::SetDelegateHandle(FDelegateHandle* Handle)
     DelegateHandle = Handle;
 }
 
-#endif  // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
+#endif    // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX

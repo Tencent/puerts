@@ -1,148 +1,148 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
-    #define PropertyMacro FProperty
+#define PropertyMacro FProperty
 
-    #define NumericPropertyMacro FNumericProperty
+#define NumericPropertyMacro FNumericProperty
 
-    #define BytePropertyMacro FByteProperty
+#define BytePropertyMacro FByteProperty
 
-    #define Int8PropertyMacro FInt8Property
+#define Int8PropertyMacro FInt8Property
 
-    #define Int16PropertyMacro FInt16Property
+#define Int16PropertyMacro FInt16Property
 
-    #define IntPropertyMacro FIntProperty
+#define IntPropertyMacro FIntProperty
 
-    #define Int64PropertyMacro FInt64Property
+#define Int64PropertyMacro FInt64Property
 
-    #define UInt16PropertyMacro FUInt16Property
+#define UInt16PropertyMacro FUInt16Property
 
-    #define UInt32PropertyMacro FUInt32Property
+#define UInt32PropertyMacro FUInt32Property
 
-    #define UInt64PropertyMacro FUInt64Property
+#define UInt64PropertyMacro FUInt64Property
 
-    #define FloatPropertyMacro FFloatProperty
+#define FloatPropertyMacro FFloatProperty
 
-    #define DoublePropertyMacro FDoubleProperty
+#define DoublePropertyMacro FDoubleProperty
 
-    #define BoolPropertyMacro FBoolProperty
+#define BoolPropertyMacro FBoolProperty
 
-    #define ObjectPropertyBaseMacro FObjectPropertyBase
+#define ObjectPropertyBaseMacro FObjectPropertyBase
 
-    #define ObjectPropertyMacro FObjectProperty
+#define ObjectPropertyMacro FObjectProperty
 
-    #define WeakObjectPropertyMacro FWeakObjectProperty
+#define WeakObjectPropertyMacro FWeakObjectProperty
 
-    #define LazyObjectPropertyMacro FLazyObjectProperty
+#define LazyObjectPropertyMacro FLazyObjectProperty
 
-    #define SoftObjectPropertyMacro FSoftObjectProperty
+#define SoftObjectPropertyMacro FSoftObjectProperty
 
-    #define ClassPropertyMacro FClassProperty
+#define ClassPropertyMacro FClassProperty
 
-    #define SoftClassPropertyMacro FSoftClassProperty
+#define SoftClassPropertyMacro FSoftClassProperty
 
-    #define InterfacePropertyMacro FInterfaceProperty
+#define InterfacePropertyMacro FInterfaceProperty
 
-    #define NamePropertyMacro FNameProperty
+#define NamePropertyMacro FNameProperty
 
-    #define StrPropertyMacro FStrProperty
+#define StrPropertyMacro FStrProperty
 
-    #define ArrayPropertyMacro FArrayProperty
+#define ArrayPropertyMacro FArrayProperty
 
-    #define MapPropertyMacro FMapProperty
+#define MapPropertyMacro FMapProperty
 
-    #define SetPropertyMacro FSetProperty
+#define SetPropertyMacro FSetProperty
 
-    #define StructPropertyMacro FStructProperty
-    
-    #define DelegatePropertyMacro FDelegateProperty
+#define StructPropertyMacro FStructProperty
 
-    #define MulticastDelegatePropertyMacro FMulticastDelegateProperty
+#define DelegatePropertyMacro FDelegateProperty
 
-    #define MulticastInlineDelegatePropertyMacro FMulticastInlineDelegateProperty
+#define MulticastDelegatePropertyMacro FMulticastDelegateProperty
 
-    #define MulticastSparseDelegatePropertyMacro FMulticastSparseDelegateProperty
+#define MulticastInlineDelegatePropertyMacro FMulticastInlineDelegateProperty
 
-    #define EnumPropertyMacro FEnumProperty
+#define MulticastSparseDelegatePropertyMacro FMulticastSparseDelegateProperty
 
-    #define TextPropertyMacro FTextProperty
-    
-    #define CastFieldMacro CastField
+#define EnumPropertyMacro FEnumProperty
+
+#define TextPropertyMacro FTextProperty
+
+#define CastFieldMacro CastField
 #else
-    #define PropertyMacro UProperty
+#define PropertyMacro UProperty
 
-    #define NumericPropertyMacro UNumericProperty
+#define NumericPropertyMacro UNumericProperty
 
-    #define BytePropertyMacro UByteProperty
+#define BytePropertyMacro UByteProperty
 
-    #define Int8PropertyMacro UInt8Property
+#define Int8PropertyMacro UInt8Property
 
-    #define Int16PropertyMacro UInt16Property
+#define Int16PropertyMacro UInt16Property
 
-    #define IntPropertyMacro UIntProperty
+#define IntPropertyMacro UIntProperty
 
-    #define Int64PropertyMacro UInt64Property
+#define Int64PropertyMacro UInt64Property
 
-    #define UInt16PropertyMacro UUInt16Property
+#define UInt16PropertyMacro UUInt16Property
 
-    #define UInt32PropertyMacro UUInt32Property
+#define UInt32PropertyMacro UUInt32Property
 
-    #define UInt64PropertyMacro UUInt64Property
+#define UInt64PropertyMacro UUInt64Property
 
-    #define FloatPropertyMacro UFloatProperty
+#define FloatPropertyMacro UFloatProperty
 
-    #define DoublePropertyMacro UDoubleProperty
+#define DoublePropertyMacro UDoubleProperty
 
-    #define BoolPropertyMacro UBoolProperty
+#define BoolPropertyMacro UBoolProperty
 
-    #define ObjectPropertyBaseMacro UObjectPropertyBase
+#define ObjectPropertyBaseMacro UObjectPropertyBase
 
-    #define ObjectPropertyMacro UObjectProperty
+#define ObjectPropertyMacro UObjectProperty
 
-    #define WeakObjectPropertyMacro UWeakObjectProperty
+#define WeakObjectPropertyMacro UWeakObjectProperty
 
-    #define LazyObjectPropertyMacro ULazyObjectProperty
+#define LazyObjectPropertyMacro ULazyObjectProperty
 
-    #define SoftObjectPropertyMacro USoftObjectProperty
+#define SoftObjectPropertyMacro USoftObjectProperty
 
-    #define ClassPropertyMacro UClassProperty
+#define ClassPropertyMacro UClassProperty
 
-    #define SoftClassPropertyMacro USoftClassProperty
+#define SoftClassPropertyMacro USoftClassProperty
 
-    #define InterfacePropertyMacro UInterfaceProperty
+#define InterfacePropertyMacro UInterfaceProperty
 
-    #define NamePropertyMacro UNameProperty
+#define NamePropertyMacro UNameProperty
 
-    #define StrPropertyMacro UStrProperty
+#define StrPropertyMacro UStrProperty
 
-    #define ArrayPropertyMacro UArrayProperty
+#define ArrayPropertyMacro UArrayProperty
 
-    #define MapPropertyMacro UMapProperty
+#define MapPropertyMacro UMapProperty
 
-    #define SetPropertyMacro USetProperty
+#define SetPropertyMacro USetProperty
 
-    #define StructPropertyMacro UStructProperty
-    
-    #define DelegatePropertyMacro UDelegateProperty
+#define StructPropertyMacro UStructProperty
 
-    #define MulticastDelegatePropertyMacro UMulticastDelegateProperty
+#define DelegatePropertyMacro UDelegateProperty
 
-    #define MulticastInlineDelegatePropertyMacro UMulticastInlineDelegateProperty
+#define MulticastDelegatePropertyMacro UMulticastDelegateProperty
 
-    #define MulticastSparseDelegatePropertyMacro UMulticastSparseDelegateProperty
+#define MulticastInlineDelegatePropertyMacro UMulticastInlineDelegateProperty
 
-    #define EnumPropertyMacro UEnumProperty
+#define MulticastSparseDelegatePropertyMacro UMulticastSparseDelegateProperty
 
-    #define TextPropertyMacro UTextProperty
-    
-    #define CastFieldMacro Cast
+#define EnumPropertyMacro UEnumProperty
+
+#define TextPropertyMacro UTextProperty
+
+#define CastFieldMacro Cast
 
 #endif
-
