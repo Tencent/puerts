@@ -1838,7 +1838,7 @@ function watch(configFilePath:string) {
                         let typeName = type.symbol.getName();
                         if (typeName == 'BigInt') {
                             let category:PinCategory = "int64";
-                            let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
+                            let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false, false);
                             return {pinType: pinType};
                         }
                         if (!typeNode.typeArguments || typeNode.typeArguments.length == 0) { 
@@ -1847,13 +1847,13 @@ function watch(configFilePath:string) {
                             if (!uclass) {
                                 let uenum = UE.Enum.Find(type.symbol.getName());
                                 if (uenum) {
-                                    return {pinType: new UE.PEGraphPinType("byte", uenum, UE.EPinContainerType.None, false)};
+                                    return {pinType: new UE.PEGraphPinType("byte", uenum, UE.EPinContainerType.None, false, false)};
                                 }
                                 console.warn("can not find type of " + typeName);
                                 return undefined;
                             }
                             
-                            let pinType = new UE.PEGraphPinType(category, uclass, UE.EPinContainerType.None, false);
+                            let pinType = new UE.PEGraphPinType(category, uclass, UE.EPinContainerType.None, false, false);
                             return {pinType: pinType};
                         } else { //TArray, TSet, TMap
                             let typeRef = type as ts.TypeReference;
@@ -1878,7 +1878,7 @@ function watch(configFilePath:string) {
 
                             let result = tsTypeToPinType(typeArguments[0], children[1]); 
                             
-                            if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None && typeName != '$Ref') {
+                            if (!result || result.pinType.PinContainerType != UE.EPinContainerType.None && typeName != '$Ref' && typeName != '$InRef') {
                                 console.warn("can not find pin type of typeArguments[0] " + typeName);
                                 return undefined;
                             }
@@ -1904,6 +1904,10 @@ function watch(configFilePath:string) {
                                 return result;
                             } else if (typeName ==  '$Ref') {
                                 result.pinType.bIsReference = true;
+                                return result;
+                            } else if (typeName ==  '$InRef') {
+                                result.pinType.bIsReference = true;
+                                result.pinType.bIn = true;
                                 return result;
                             } else if (typeName == 'TMap') {
                                 let valuePinType = tsTypeToPinType(typeArguments[1], undefined);
@@ -1943,7 +1947,7 @@ function watch(configFilePath:string) {
                                 console.warn("not support kind: " + typeNode.kind);
                                 return undefined;
                         }
-                        let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false);
+                        let pinType = new UE.PEGraphPinType(category, undefined, UE.EPinContainerType.None, false, false);
                         return {pinType: pinType};
                     }
                 } catch (e) {
@@ -3809,6 +3813,11 @@ function watch(configFilePath:string) {
                                     let paramPinType = tsTypeToPinType(paramType, getSymbolTypeNode(signature.parameters[i]));
                                     if (!paramPinType)  {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
+                                        bp.ClearParameter();
+                                        return;
+                                    }
+                                    if (paramPinType.pinType.PinContainerType == UE.EPinContainerType.Array && paramPinType.pinType.bIsReference == false) {
+                                        console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has TArray<T> parameter, using $InRef<UE.TArray<T>> instead!");
                                         bp.ClearParameter();
                                         return;
                                     }
