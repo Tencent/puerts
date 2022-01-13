@@ -48,6 +48,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     bool bIsReference;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
+    bool bIn;
 };
 
 /**
@@ -163,4 +166,6 @@ private:
     TArray<FName> ParameterNames;
 
     TArray<FEdGraphPinType> ParameterTypes;
+
+    TArray<bool> ParameterIsIn;
 };

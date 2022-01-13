@@ -253,6 +253,7 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
 void UPEBlueprintAsset::AddParameter(FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType)
 {
     ParameterNames.Add(InParameterName);
+    ParameterIsIn.Add(InGraphPinType.bIn);
     ParameterTypes.Add(ToFEdGraphPinType(InGraphPinType, InPinValueType));
 }
 
@@ -260,6 +261,7 @@ void UPEBlueprintAsset::AddParameterWithMetaData(
     FName InParameterName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, UPEParamMetaData* InMetaData)
 {
     ParameterNames.Add(InParameterName);
+    ParameterIsIn.Add(InGraphPinType.bIn);
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
     if (IsValid(InMetaData))
     {
@@ -456,6 +458,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         }
 
         ParameterNames.Empty();
+        ParameterIsIn.Empty();
         ParameterTypes.Empty();
         return;
     }
@@ -635,7 +638,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         for (int i = 0; i < ParameterTypes.Num(); ++i)
         {
             FEdGraphPinType ParameterType = ParameterTypes[i];
-            if (ParameterType.bIsReference)
+            if (ParameterType.bIsReference && !ParameterIsIn[i])
             {
                 ParameterType.bIsReference = false;
                 OutputParameterTypes.Add(TPair<FName, FEdGraphPinType>(ParameterNames[i], ParameterType));
@@ -767,6 +770,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
     }
 
     ParameterNames.Empty();
+    ParameterIsIn.Empty();
     ParameterTypes.Empty();
 }
 
@@ -854,6 +858,7 @@ void UPEBlueprintAsset::AddFunctionWithMetaData(FName InName, bool IsVoid, FPEGr
 void UPEBlueprintAsset::ClearParameter()
 {
     ParameterNames.Empty();
+    ParameterIsIn.Empty();
     ParameterTypes.Empty();
 }
 

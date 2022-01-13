@@ -11,14 +11,18 @@ declare module "puerts" {
     interface $Ref<T> {
         value: T
     }
+
+    interface $InRef<T> {
+        value: T
+    }
     
     type $Nullable<T> = T | null;
     
     function $ref<T>(x : T) : $Ref<T>;
     
-    function $unref<T>(x: $Ref<T>) : T;
+    function $unref<T>(x: $Ref<T> | $InRef<T>) : T;
     
-    function $set<T>(x: $Ref<T>, val:T) : void;
+    function $set<T>(x: $Ref<T> | $InRef<T>, val:T) : void;
     
     const argv : {
         getByIndex(index: number): Object;
