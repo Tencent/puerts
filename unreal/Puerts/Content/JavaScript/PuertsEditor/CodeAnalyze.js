@@ -1377,15 +1377,22 @@ function watch(configFilePath) {
             function getUClassOfType(type) {
                 if (!type)
                     return undefined;
-                if (getModule(type) == 'ue') {
-                    try {
-                        let jsCls = UE[type.symbol.getName()];
-                        if (typeof jsCls.StaticClass == 'function') {
-                            return jsCls.StaticClass();
+                let moduleNames = getModuleNames(type);
+                if (moduleNames.length > 0 && moduleNames[0] == 'ue') {
+                    if (moduleNames.length == 1) {
+                        try {
+                            let jsCls = UE[type.symbol.getName()];
+                            if (typeof jsCls.StaticClass == 'function') {
+                                return jsCls.StaticClass();
+                            }
+                        }
+                        catch (e) {
+                            console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
                         }
                     }
-                    catch (e) {
-                        console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
+                    else if (moduleNames.length == 2) {
+                        let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
+                        return UE.Struct.Load(classPath);
                     }
                 }
                 else if (type.symbol && type.symbol.valueDeclaration) {
@@ -3058,10 +3065,32 @@ function watch(configFilePath) {
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
             }
-            function getModule(type) {
+            function getModuleNames(type) {
+                let ret = [];
                 if (type.symbol && type.symbol.valueDeclaration && type.symbol.valueDeclaration.parent && ts.isModuleBlock(type.symbol.valueDeclaration.parent)) {
-                    return type.symbol.valueDeclaration.parent.parent.name.text;
+                    let moduleBody = type.symbol.valueDeclaration.parent;
+                    while (moduleBody) {
+                        let moduleDeclaration = moduleBody.parent;
+                        let nameOfModule = undefined;
+                        while (moduleDeclaration) {
+                            nameOfModule = nameOfModule ? (moduleDeclaration.name.text + '/' + nameOfModule) : moduleDeclaration.name.text;
+                            if (ts.isModuleDeclaration(moduleDeclaration.parent)) {
+                                moduleDeclaration = moduleDeclaration.parent;
+                            }
+                            else {
+                                break;
+                            }
+                        }
+                        ret.push(nameOfModule);
+                        if (moduleDeclaration && ts.isModuleBlock(moduleDeclaration.parent)) {
+                            moduleBody = moduleDeclaration.parent;
+                        }
+                        else {
+                            break;
+                        }
+                    }
                 }
+                return ret.reverse();
             }
         }
     }

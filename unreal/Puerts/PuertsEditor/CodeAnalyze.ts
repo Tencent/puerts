@@ -1771,14 +1771,20 @@ function watch(configFilePath:string) {
 
             function getUClassOfType(type: ts.Type) : UE.Object {
                 if (!type) return undefined;
-                if (getModule(type) == 'ue') {
-                    try {
-                        let jsCls = (UE as any)[type.symbol.getName()]; 
-                        if (typeof jsCls.StaticClass == 'function') {
-                            return jsCls.StaticClass();
-                        } 
-                    } catch (e) {
-                        console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
+                let moduleNames = getModuleNames(type);
+                if (moduleNames.length > 0 && moduleNames[0] == 'ue') {
+                    if (moduleNames.length == 1) {
+                        try {
+                            let jsCls = (UE as any)[type.symbol.getName()]; 
+                            if (typeof jsCls.StaticClass == 'function') {
+                                return jsCls.StaticClass();
+                            } 
+                        } catch (e) {
+                            console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
+                        }
+                    } else if (moduleNames.length == 2) {
+                        let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
+                        return UE.Struct.Load(classPath);
                     }
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
@@ -3872,10 +3878,31 @@ function watch(configFilePath:string) {
                 bp.Save();
             }
 
-            function getModule(type: ts.Type) {
+            function getModuleNames(type: ts.Type) : string[] {
+                let ret:string[] = []
                 if(type.symbol && type.symbol.valueDeclaration && type.symbol.valueDeclaration.parent && ts.isModuleBlock(type.symbol.valueDeclaration.parent)) {
-                    return type.symbol.valueDeclaration.parent.parent.name.text;
+                    let moduleBody: ts.ModuleBody = type.symbol.valueDeclaration.parent;
+
+                    while(moduleBody) {
+                        let moduleDeclaration = moduleBody.parent;
+                        let nameOfModule:string = undefined;
+                        while(moduleDeclaration) {
+                            nameOfModule = nameOfModule ? (moduleDeclaration.name.text + '/' + nameOfModule) : moduleDeclaration.name.text;
+                            if (ts.isModuleDeclaration(moduleDeclaration.parent)) {
+                                moduleDeclaration = moduleDeclaration.parent;
+                            } else {
+                                break;
+                            }
+                        }
+                        ret.push(nameOfModule);
+                        if (moduleDeclaration && ts.isModuleBlock(moduleDeclaration.parent)) {
+                            moduleBody = moduleDeclaration.parent;
+                        } else {
+                            break;
+                        }
+                    }
                 } 
+                return ret.reverse();
             }
         }
     }

@@ -310,7 +310,7 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
 
 FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
 {
-#if defined(WITH_BP_NAMESPACE)
+#if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
         return GetNamespace(Obj) + TEXT(".") + SafeName(Obj->GetName());
 #endif
@@ -319,7 +319,7 @@ FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
 
 void FTypeScriptDeclarationGenerator::NamespaceBegin(UObject* Obj)
 {
-#if defined(WITH_BP_NAMESPACE)
+#if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
     {
         Output << "    namespace " << GetNamespace(Obj) << " {\n";
@@ -330,7 +330,7 @@ void FTypeScriptDeclarationGenerator::NamespaceBegin(UObject* Obj)
 
 void FTypeScriptDeclarationGenerator::NamespaceEnd(UObject* Obj)
 {
-#if defined(WITH_BP_NAMESPACE)
+#if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
     {
         Output.Indent(-4);
