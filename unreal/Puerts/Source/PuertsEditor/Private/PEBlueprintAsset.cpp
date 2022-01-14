@@ -275,11 +275,19 @@ void UPEBlueprintAsset::AddParameterWithMetaData(
 
 static TArray<UK2Node_EditablePinBase*> GatherAllResultNodes(UK2Node_EditablePinBase* TargetNode)
 {
+    TArray<UK2Node_EditablePinBase*> Result;
     if (UK2Node_FunctionResult* ResultNode = Cast<UK2Node_FunctionResult>(TargetNode))
     {
-        return (TArray<UK2Node_EditablePinBase*>) ResultNode->GetAllResultNodes();
+        for (auto& Node : ResultNode->GetAllResultNodes())
+        {
+            if (Node)
+            {
+                Result.Add(Node);
+            }
+        }
+        return Result;
     }
-    TArray<UK2Node_EditablePinBase*> Result;
+
     if (TargetNode)
     {
         Result.Add(TargetNode);
@@ -706,7 +714,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             auto FunctionResultNode = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(FunctionEntryNode);
             RetChanged = RetChanged || TryAddOutput(GatherAllResultNodes(FunctionResultNode), RetValName, PinType);
         }
-        else
+        else if (IsCustomEvent || (IsVoid && OutputParameterTypes.Num() == 0))
         {
             UEdGraph* Graph = FunctionEntryNode->GetGraph();
 
