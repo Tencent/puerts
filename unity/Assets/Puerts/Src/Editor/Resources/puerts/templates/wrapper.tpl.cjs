@@ -286,9 +286,9 @@ namespace PuertsStaticWrap
                         ${overload.IsVoid ? "" : "var result = "}${method.IsStatic ? data.Name : refSelf()}.${UnK(method.Name)}(${toJsArray(overload.ParameterInfos).map(paramListLambda).join(', ')});
                 `
                 toJsArray(overload.ParameterInfos).forEach((paramInfo, idx) => {
-                    if (paramInfo.isByRef) {
+                    if (paramInfo.IsByRef) {
                         tt`
-                            argHelper${idx}.SetByRefValue(Arg${idx});
+                        argHelper${idx}.SetByRefValue(Arg${idx});
                         `
                     }
                 })
