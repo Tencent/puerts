@@ -1,7 +1,7 @@
 set VERSION=%1
 
 cd %HOMEPATH%
-git clone --single-branch -b v14.x https://github.com/nodejs/node.git
+git clone -b v16.x https://github.com/nodejs/node.git
 
 cd node
 git fetch origin v%VERSION%
