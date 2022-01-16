@@ -8,7 +8,7 @@ on:
         required: true
 
 env:
-  VERSION: 16.13.2
+  VERSION: 14.16.1
 
 jobs:
   build_windows:
@@ -64,22 +64,6 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         sh ./nodejs-build/macos.sh ${{env.VERSION}}
-    - uses: actions/upload-artifact@v2
-      with:
-        name: nodejs_bin
-        path: ~/puerts-node/**/*
-          
-  build_macos_arm64:
-    name: macOS_arm64
-    runs-on: macos-10.15
-    steps:
-    - uses: actions/checkout@v2
-    - name: Use Xcode 12.0 to use SDK 10.15
-      run: sudo xcode-select -switch "/Applications/Xcode_12.app"
-    - name: Run build script
-      run: |
-        cd $GITHUB_WORKSPACE
-        sh ./nodejs-build/macos_arm64.sh ${{env.VERSION}}
     - uses: actions/upload-artifact@v2
       with:
         name: nodejs_bin
