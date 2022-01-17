@@ -281,7 +281,7 @@ void FReactDeclarationGenerator::GenStruct(UStruct* Struct)
 void FReactDeclarationGenerator::GenEnum(UEnum* Enum)
 {
     Output << "    "
-       << "type " << SafeName(Enum->GetName()) << " = UE." << GetNameWithNamespace(Enum) << ";\n";
+           << "type " << SafeName(Enum->GetName()) << " = UE." << GetNameWithNamespace(Enum) << ";\n";
 }
 
 //--- FSlotDeclarationGenerator end ---
