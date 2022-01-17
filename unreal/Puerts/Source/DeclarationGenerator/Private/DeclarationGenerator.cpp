@@ -410,7 +410,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         if (ByteProperty->GetIntPropertyEnum())
         {
             AddToGen.Add(ByteProperty->GetIntPropertyEnum());
-            StringBuffer << SafeName(ByteProperty->GetIntPropertyEnum()->GetName());
+            StringBuffer << GetNameWithNamespace(ByteProperty->GetIntPropertyEnum());
         }
         else
         {
