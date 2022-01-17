@@ -431,6 +431,10 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         {
             StringBuffer << "object";
         }
+        else if (StructProperty->Struct->GetName() == TEXT("ArrayBuffer"))
+        {
+            StringBuffer << "ArrayBuffer";
+        }
         else
         {
             StringBuffer << GetNameWithNamespace(StructProperty->Struct);
