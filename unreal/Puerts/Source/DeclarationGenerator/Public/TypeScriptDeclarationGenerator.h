@@ -60,7 +60,7 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     const FString& GetNamespace(UObject* Obj);
 
-    FString GetNameWithNamespace(UObject* Obj);
+    FString GetNameWithNamespace(UObject* Obj, bool RefFromOuter = false);
 
     void NamespaceBegin(UObject* Obj);
 

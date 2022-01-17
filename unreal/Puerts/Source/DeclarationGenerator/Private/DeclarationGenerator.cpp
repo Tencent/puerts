@@ -165,6 +165,8 @@ void FTypeScriptDeclarationGenerator::Begin(FString ModuleName)
     Output << "/// <reference path=\"puerts.d.ts\" />\n";
     Output << "declare module \"" << ModuleName << "\" {\n";
     Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
+    Output << "    import * as cpp from \"cpp\"\n\n";
+    Output << "    import * as UE from \"ue\"\n\n";
     Output.Indent(4);
 }
 
@@ -273,8 +275,6 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
 {
     Begin();
 
-    Output << "    import * as cpp from \"cpp\"\n\n";
-
     TArray<UClass*> SortedClasses(GetSortedClasses());
     for (int i = 0; i < SortedClasses.Num(); ++i)
     {
@@ -308,11 +308,11 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     return Iter->second;
 }
 
-FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
+FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj, bool RefFromOuter)
 {
 #if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
-        return GetNamespace(Obj) + TEXT(".") + SafeName(Obj->GetName());
+        return (RefFromOuter ? TEXT("") : TEXT("UE.")) + GetNamespace(Obj) + TEXT(".") + SafeName(Obj->GetName());
 #endif
     return SafeName(Obj->GetName());
 }

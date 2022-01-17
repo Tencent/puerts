@@ -228,7 +228,7 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    "
                      << "class " << SafeName(Class->GetName()) << " extends React.Component<" << SafeName(Class->GetName())
                      << "Props> {\n"
-                     << "        nativePtr: ue." << GetNameWithNamespace(Class) << ";\n    }\n\n";
+                     << "        nativePtr: ue." << GetNameWithNamespace(Class, true) << ";\n    }\n\n";
     }
 
     Output << StringBuffer;
@@ -280,7 +280,7 @@ void FReactDeclarationGenerator::GenStruct(UStruct* Struct)
 void FReactDeclarationGenerator::GenEnum(UEnum* Enum)
 {
     Output << "    "
-           << "type " << SafeName(Enum->GetName()) << " = ue." << GetNameWithNamespace(Enum) << ";\n";
+           << "type " << SafeName(Enum->GetName()) << " = ue." << GetNameWithNamespace(Enum, true) << ";\n";
 }
 
 //--- FSlotDeclarationGenerator end ---
