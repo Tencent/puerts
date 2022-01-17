@@ -308,7 +308,7 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     return Iter->second;
 }
 
-FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj, bool RefFromOuter)
+FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
 {
 #if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())

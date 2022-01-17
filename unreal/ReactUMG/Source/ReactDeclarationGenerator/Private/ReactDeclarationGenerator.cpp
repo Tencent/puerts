@@ -81,6 +81,7 @@ void FReactDeclarationGenerator::End()
 
 void FReactDeclarationGenerator::GenReactDeclaration()
 {
+    RefFromOuter = true;
     FString Components = TEXT("exports.lazyloadComponents = {};\n");
     Output << "declare module \"react-umg\" {\n";
     Output << "    "
@@ -228,7 +229,7 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    "
                      << "class " << SafeName(Class->GetName()) << " extends React.Component<" << SafeName(Class->GetName())
                      << "Props> {\n"
-                     << "        nativePtr: " << GetNameWithNamespace(Class) << ";\n    }\n\n";
+                     << "        nativePtr: UE." << GetNameWithNamespace(Class) << ";\n    }\n\n";
     }
 
     Output << StringBuffer;
@@ -279,6 +280,8 @@ void FReactDeclarationGenerator::GenStruct(UStruct* Struct)
 
 void FReactDeclarationGenerator::GenEnum(UEnum* Enum)
 {
+    Output << "    "
+       << "type " << SafeName(Enum->GetName()) << " = UE." << GetNameWithNamespace(Enum) << ";\n";
 }
 
 //--- FSlotDeclarationGenerator end ---
