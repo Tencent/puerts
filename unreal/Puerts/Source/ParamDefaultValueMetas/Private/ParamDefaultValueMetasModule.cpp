@@ -111,10 +111,10 @@ public:
         // UE_LOG(LogTemp, Error, TEXT("save to: %s"), *FilePath);
         // UE_LOG(LogTemp, Error, TEXT("context: %s"), *GeneratedFileContent);
         FString FileContent;
-        FFileHelper::LoadFileToString(FileContent, *FilePath);
-        if (FileContent != GeneratedFileContent)
+        bool bResult = FFileHelper::LoadFileToString(FileContent, *FilePath);
+        if (!bResult || FileContent != GeneratedFileContent)
         {
-            bool bResult = FFileHelper::SaveStringToFile(GeneratedFileContent, *FilePath);
+            bResult = FFileHelper::SaveStringToFile(GeneratedFileContent, *FilePath);
             check(bResult);
         }
         Finished = true;
