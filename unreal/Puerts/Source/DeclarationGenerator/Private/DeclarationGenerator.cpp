@@ -312,9 +312,13 @@ FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj, bool
 {
 #if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
+    {
         return (RefFromOuter ? TEXT("") : TEXT("UE.")) + GetNamespace(Obj) + TEXT(".") + SafeName(Obj->GetName());
-#endif
+    }
+    return (RefFromOuter ? TEXT("") : TEXT("UE.")) + SafeName(Obj->GetName());
+#else
     return SafeName(Obj->GetName());
+#endif
 }
 
 void FTypeScriptDeclarationGenerator::NamespaceBegin(UObject* Obj)

@@ -84,8 +84,8 @@ void FReactDeclarationGenerator::GenReactDeclaration()
     FString Components = TEXT("exports.lazyloadComponents = {};\n");
     Output << "declare module \"react-umg\" {\n";
     Output << "    "
-           << "import * as React from 'react';\n    import * as ue from 'ue';\n    type TArray<T> = ue.TArray<T>;\n    type "
-              "TSet<T> = ue.TSet<T>;\n    type TMap<TKey, TValue> = ue.TMap<TKey, TValue>;\n\n";
+           << "import * as React from 'react';\n    import * as UE from 'ue';\n    type TArray<T> = UE.TArray<T>;\n    type "
+              "TSet<T> = UE.TSet<T>;\n    type TMap<TKey, TValue> = UE.TMap<TKey, TValue>;\n\n";
 
     for (TObjectIterator<UClass> It; It; ++It)
     {
@@ -228,7 +228,7 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    "
                      << "class " << SafeName(Class->GetName()) << " extends React.Component<" << SafeName(Class->GetName())
                      << "Props> {\n"
-                     << "        nativePtr: ue." << GetNameWithNamespace(Class, true) << ";\n    }\n\n";
+                     << "        nativePtr: " << GetNameWithNamespace(Class) << ";\n    }\n\n";
     }
 
     Output << StringBuffer;
@@ -279,8 +279,6 @@ void FReactDeclarationGenerator::GenStruct(UStruct* Struct)
 
 void FReactDeclarationGenerator::GenEnum(UEnum* Enum)
 {
-    Output << "    "
-           << "type " << SafeName(Enum->GetName()) << " = ue." << GetNameWithNamespace(Enum, true) << ";\n";
 }
 
 //--- FSlotDeclarationGenerator end ---
