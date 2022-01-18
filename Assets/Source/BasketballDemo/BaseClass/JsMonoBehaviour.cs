@@ -17,14 +17,15 @@ public class JsMonoBehaviour : MonoBehaviour
         if (env == null) {
             env = new JsEnv();
         }
-        Action<JsMonoBehaviour> init = env.Eval<Action<JsMonoBehaviour>>(@"
-            global.CS = require('csharp');
+        // Action<JsMonoBehaviour> init = env.Eval<Action<JsMonoBehaviour>>(@"
+        //     global.CS = require('csharp');
 
-            var jsCls = require('behaviours.cjs')." + JSClassName + @";
-            (function init(mono) {
-                return new jsCls(mono)
-            });
-        ");
+        //     var jsCls = require('behaviours.cjs')." + JSClassName + @";
+        //     (function init(mono) {
+        //         return new jsCls(mono)
+        //     });
+        // ");
+        Action<JsMonoBehaviour> init = env.ExecuteModule<Action<JsMonoBehaviour>>("behaviours.mjs", JSClassName);
         init(this);
         if (JsStart!= null) JsStart();
     }

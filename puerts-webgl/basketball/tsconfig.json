@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "es2015",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "typeRoots": [
+      "../../Assets/Puerts/Typing",
+      "../../Assets/Gen/Typing",
+      "../node_modules/@types"
+    ],
+    "outDir": "./output",
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": []
+}

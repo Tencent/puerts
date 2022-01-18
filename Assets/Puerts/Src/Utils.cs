@@ -44,22 +44,38 @@ namespace Puerts
 
         public static bool IsSupportedMethod(MethodInfo method)
         {
+#if !UNITY_EDITOR && ENABLE_IL2CPP && !PUERTS_REFLECT_ALL_EXTENSION
+            if (method.IsGenericMethodDefinition) return false;
+#endif
             if (!method.ContainsGenericParameters)
                 return true;
             var methodParameters = method.GetParameters();
             var returnType = method.ReturnType;
             var hasValidGenericParameter = false;
             var returnTypeValid = !returnType.IsGenericParameter;
+            // 在参数列表里找得到和泛型参数相同的参数
             for (var i = 0; i < methodParameters.Length; i++)
             {
                 var parameterType = methodParameters[i].ParameterType;
+                // 如果参数是泛型参数
                 if (parameterType.IsGenericParameter)
                 {
-                    if (parameterType.BaseType != null && parameterType.BaseType.IsValueType) return false;
+                    // 所有参数的基类都不是值类型，且不是另一个泛型
+                    if (
+                        parameterType.BaseType != null && (
+                            parameterType.BaseType.IsValueType ||
+                            (
+                                parameterType.BaseType.IsGenericType && 
+                                !parameterType.BaseType.IsGenericTypeDefinition
+                            )
+                        )
+                    ) return false;
                     var parameterConstraints = parameterType.GetGenericParameterConstraints();
+                    // 所有泛型参数都有值类型约束
                     if (parameterConstraints.Length == 0) return false;
                     foreach (var parameterConstraint in parameterConstraints)
                     {
+                        // 所有泛型参数的类型约束都不是值类型
                         if (!parameterConstraint.IsClass() || (parameterConstraint == typeof(ValueType)))
                             return false;
                     }

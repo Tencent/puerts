@@ -22,12 +22,17 @@ namespace PuertsTest
         {   
             PreventStripping();
             
-            if (jsEnv == null) jsEnv = new JsEnv();
+            if (jsEnv == null) {
+                jsEnv = new JsEnv();
+            }
 
             // var init = jsEnv.Eval<ModuleInit>("const m = require('" + ModuleName + "'); m.init;");
-            var init = jsEnv.ExecuteFile<ModuleInit>(JSFileName);
-
+            var init = jsEnv.ExecuteModule<ModuleInit>(JSFileName, "init");
+            
             if (init != null) init(this);
+
+            // 临时防裁剪
+            UnityEngine.Debug.Log(UnityEngine.Vector3.up);
         }
 
         void Start()
