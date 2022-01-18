@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrMananger, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, Ref } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, Ref } from "../library";
 /**
  * mixin
  * JS调用C#时，C#侧获取JS调用参数的值
@@ -9,33 +9,33 @@ import { FunctionCallbackInfoPtrMananger, GetType, JSFunction, jsFunctionOrObjec
 export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine) {
     return {
         GetNumberFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
-            return FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr(value);
+            return FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
         },
         GetDateFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
-            return (FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr(value) as Date).getTime();
+            return (FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value) as Date).getTime();
         },
         GetStringFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isByRef: bool): string {
-            var returnStr = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr<string>(value);
+            var returnStr = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<string>(value);
             engine.unityApi.HEAP32[length >> 2] = returnStr.length;
             return engine.JSStringToCSString(returnStr);
         },
         GetBooleanFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
-            return FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr(value);
+            return FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
         },
         ValueIsBigInt: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
-            var bigint = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr<any>(value);
+            var bigint = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
             return bigint instanceof BigInt;
         },
         GetBigIntFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-            var bigint = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr<any>(value);
+            var bigint = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
             return bigint;
         },
         GetObjectFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-            var nativeObject = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr(value);
+            var nativeObject = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
             return engine.csharpObjectMap.getCSObjectIDFromObject(nativeObject);
         },
         GetFunctionFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): JSFunctionPtr {
-            var func = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
+            var func = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
             var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(func);
             return jsfunc.id;
         },
@@ -44,7 +44,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
             throw new Error('not implemented')
         },
         GetArrayBufferFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isOut: bool) {
-            var ab = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr<ArrayBuffer>(value);
+            var ab = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<ArrayBuffer>(value);
             var ptr = engine.unityApi._malloc(ab.byteLength);
             engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
             engine.unityApi.HEAP32[length >> 2] = ab.byteLength;
@@ -53,7 +53,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
 
 
         GetArgumentType: function (isolate: IntPtr, info: MockIntPtr, index: int, isByRef: bool) {
-            var value = FunctionCallbackInfoPtrMananger.GetByMockPointer(info).args[index];
+            var value = FunctionCallbackInfoPtrManager.GetByMockPointer(info).args[index];
             return GetType(engine, value);
         },
         /**
@@ -80,11 +80,11 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
             //     Unknow = 2048,
             //     Any = NullOrUndefined | BigInt | Number | String | Boolean | NativeObject | Array | Function | Date | ArrayBuffer,
             // };
-            var value: any = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr(val);
+            var value: any = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(val);
             return GetType(engine, value);
         },
         GetTypeIdFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-            var obj = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr(value)
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value)
             var typeid = 0;
             if (typeof obj == 'function') {
                 typeid = engine.csharpObjectMap.classIDWeakMap.get(obj);

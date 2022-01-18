@@ -18,7 +18,7 @@ export class FunctionCallbackInfo {
 /**
  * 把FunctionCallbackInfo以及其参数转化为c#可用的intptr
  */
-export class FunctionCallbackInfoPtrMananger {
+export class FunctionCallbackInfoPtrManager {
     // FunctionCallbackInfo的列表，以列表的index作为IntPtr的值
     private static infos: FunctionCallbackInfo[] = [new FunctionCallbackInfo([0])] // 这里原本只是个普通的0
     // FunctionCallbackInfo用完后，就可以放入回收列表，以供下次复用
@@ -31,7 +31,7 @@ export class FunctionCallbackInfoPtrMananger {
      */
     static GetMockPointer(callbackInfo: FunctionCallbackInfo): MockIntPtr {
         if (this.freeInfosIndex.length) {
-            const index = this.freeInfosIndex.shift();
+            const index = this.freeInfosIndex.pop();
             this.infos[index] = callbackInfo;
             return index << 4;
 
@@ -191,6 +191,9 @@ export class PuertsJSEngine {
     public lastCallCSResultType: any = null;
     public lastReturnCSResult: any = null;
     public lastExceptionInfo: string = null;
+    public callV8Function: MockIntPtr;
+    public callV8Constructor: MockIntPtr;
+    public callV8Destructor: MockIntPtr;
 
     constructor(unityAPI: PuertsJSEngine.UnityAPI) {
         this.csharpObjectMap = new CSharpObjectMap();
@@ -205,20 +208,12 @@ export class PuertsJSEngine {
     }
 
     public generalDestructor: IntPtr
-
-    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSObjectID, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetInfoPtr', infoIntPtr);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetSelfPtr', selfPtr || 0);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetData', data);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetParamLen', paramLen);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'CallV8FunctionCallback', functionPtr);
-    }
     makeV8FunctionCallbackFunction(functionPtr: IntPtr, data: number) {
         // 不能用箭头函数！返回的函数会放到具体的class上，this有含义。
         const engine = this;
         return function (...args: any[]) {
             let callbackInfo = new FunctionCallbackInfo(args);
-            let callbackInfoPtr = FunctionCallbackInfoPtrMananger.GetMockPointer(callbackInfo);
+            let callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(callbackInfo);
             engine.callV8FunctionCallback(
                 functionPtr,
                 // getIntPtrManager().GetPointerForJSValue(this),
@@ -227,27 +222,27 @@ export class PuertsJSEngine {
                 args.length,
                 data
             )
-            FunctionCallbackInfoPtrMananger.ReleaseByMockIntPtr(callbackInfoPtr);
+            FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
 
             return callbackInfo.returnValue;
         }
     }
-    callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetInfoPtr', infoIntPtr);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetData', data);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetParamLen', paramLen);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'CallV8ConstructorCallback', functionPtr);
-        return this.getLastResult();
+
+    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSObjectID, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
+        this.unityApi.unityInstance.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
     }
+
+    callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
+        this.lastCallCSResult = this.unityApi.unityInstance.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
+        return this.lastCallCSResult;
+    }
+    
     callV8DestructorCallback(functionPtr: IntPtr, selfPtr: IntPtr, data: number) {
-        // 虽然这里看起来像是this指针，但它实际上是CS里对象池的一个id
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetSelfPtr', selfPtr);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'SetData', data);
-        this.unityApi.unityInstance.SendMessage('__PuertsBridge', 'CallV8DestructorCallback', functionPtr);
+        this.lastCallCSResult = this.unityApi.unityInstance.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
     }
 
     getLastResult() {
-        return this.lastCallCSResult
+        return this.lastCallCSResult;
     }
 }
 

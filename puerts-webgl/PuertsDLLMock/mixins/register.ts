@@ -1,4 +1,4 @@
-import { FunctionCallbackInfo, FunctionCallbackInfoPtrMananger, global, OnFinalize, PuertsJSEngine, Ref } from "../library";
+import { FunctionCallbackInfo, FunctionCallbackInfoPtrManager, global, OnFinalize, PuertsJSEngine, Ref } from "../library";
 /**
  * mixin
  * 注册类API，如注册全局函数、注册类，以及类的属性方法等
@@ -28,12 +28,12 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 tempExternalCSObjectID = 0;
                 if (csObjectID === 0) {
                     const args = Array.prototype.slice.call(arguments, 0);
-                    const FCIPtr = FunctionCallbackInfoPtrMananger.GetMockPointer(new FunctionCallbackInfo(args));
+                    const FCIPtr = FunctionCallbackInfoPtrManager.GetMockPointer(new FunctionCallbackInfo(args));
     
                     // 虽然puerts内Constructor的返回值叫self，但它其实就是CS对象的一个id而已。
                     csObjectID = engine.callV8ConstructorCallback(constructor, FCIPtr, args.length, data);
 
-                    FunctionCallbackInfoPtrMananger.ReleaseByMockIntPtr(FCIPtr)
+                    FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(FCIPtr)
                 }
                 engine.csharpObjectMap.add(csObjectID, this);
 

@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrMananger, GetType, jsFunctionOrObjectFactory, PuertsJSEngine, Ref } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, jsFunctionOrObjectFactory, PuertsJSEngine, Ref } from "../library";
 /**
  * mixin
  * C#调用JS时，获取JS函数返回值

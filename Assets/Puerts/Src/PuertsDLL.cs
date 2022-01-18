@@ -96,15 +96,8 @@ namespace Puerts
             if (!inited) 
             {
                 _Init();
+                WebGLPuerts.Init();
                 inited = true;
-            }
-            if (UnityEngine.GameObject.Find("__PuertsBridge") == null)
-            {
-                // webgl js call unity需要一个gameObject做桥梁
-                UnityEngine.GameObject puertsBridge = new UnityEngine.GameObject("__PuertsBridge");
-                puertsBridge.AddComponent<WebGLPuertsMonoBehaviour>();
-                puertsBridge.transform.parent = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()[0].transform;
-                puertsBridge.transform.parent = null;
             }
             jsEngineCreated = true;
             

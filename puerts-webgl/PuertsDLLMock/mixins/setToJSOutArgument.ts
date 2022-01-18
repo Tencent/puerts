@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrMananger, PuertsJSEngine, Ref } from "../library";
+import { FunctionCallbackInfoPtrManager, PuertsJSEngine, Ref } from "../library";
 /**
  * mixin
  * JS调用C#时，C#侧设置out参数值
@@ -17,7 +17,7 @@ export default function WebGLBackendSetToJSOutArgumentAPI(engine: PuertsJSEngine
 
         },
         SetStringToOutValue: function (isolate: IntPtr, value: MockIntPtr, str: string) {
-            var obj = FunctionCallbackInfoPtrMananger.GetArgsByMockIntPtr<any>(value);
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
             console.log(obj)
         },
         SetBooleanToOutValue: function (isolate: IntPtr, value: MockIntPtr, b: bool) {

@@ -49,13 +49,11 @@ global.PuertsWebGL = {
             WebGLBackendSetToJSOutArgumentAPI(engine),
             WebGLBackendRegisterAPI(engine),
             {
-                SetLastResult: function (res: any) {
-                    engine.lastCallCSResult = res;
+                SetCallV8: function(callV8Function: MockIntPtr, callV8Constructor: MockIntPtr, callV8Destructor: MockIntPtr) {
+                    engine.callV8Function = callV8Function;
+                    engine.callV8Constructor = callV8Constructor;
+                    engine.callV8Destructor = callV8Destructor;
                 },
-                SetLastResultType: function (type: any) {
-                    engine.lastCallCSResultType = type;
-                },
-
                 GetLibVersion: function () {
                     return 15;
                 },
@@ -81,13 +79,18 @@ global.PuertsWebGL = {
                 },
                 ExecuteModule: function (isolate: IntPtr, pathString: CSString, exportee: CSString) {
                     try {
+                        let fileName = Pointer_stringify(pathString);
                         if (typeof wx != 'undefined') {
-                            engine.lastReturnCSResult = wxRequire('puerts_minigame_js_resources/' + Pointer_stringify(pathString))
+                            const result = wxRequire('puerts_minigame_js_resources/' + fileName);
+                            if (exportee) {
+                                engine.lastReturnCSResult = result[Pointer_stringify(exportee)];
+                            } else {
+                                engine.lastReturnCSResult = result;
+                            }
                             return 1024
     
                         } else {
                             const result: any = { exports: {} };
-                            const fileName = Pointer_stringify(pathString);
                             if (executeModuleCache[fileName]) {
                                 result.exports = executeModuleCache[fileName];
 
@@ -100,9 +103,9 @@ global.PuertsWebGL = {
                             }
 
                             if (exportee) {
-                                engine.lastReturnCSResult = result.exports[engine.unityApi.Pointer_stringify(exportee)]
+                                engine.lastReturnCSResult = result.exports[Pointer_stringify(exportee)];
                             } else {
-                                engine.lastReturnCSResult = result.exports
+                                engine.lastReturnCSResult = result.exports;
                             }
                             return 1024
                         }
