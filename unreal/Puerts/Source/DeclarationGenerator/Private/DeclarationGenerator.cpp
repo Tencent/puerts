@@ -1036,6 +1036,8 @@ private:
         Info.FadeInDuration = 0.0f;
         Info.FadeOutDuration = 5.0f;
         FSlateNotificationManager::Get().AddNotification(Info);
+
+        UE_LOG(LogTemp, Log, TEXT("GenUeDts Finished"));
     }
 
 public:
