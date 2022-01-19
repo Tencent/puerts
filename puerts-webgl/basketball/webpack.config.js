@@ -10,8 +10,8 @@ module.exports = {
     },
     externalsType: "module",
     externals: {
-        csharp: 'commonjs2 csharp',
-        puerts: 'commonjs2 puerts',
+        csharp: 'var csharp',
+        puerts: 'var puerts',
     },
     experiments: {
         outputModule: true

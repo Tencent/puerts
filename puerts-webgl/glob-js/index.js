@@ -53,10 +53,10 @@ function buildForMinigame(outputpath) {
     mkdirp.sync(outputdir);
 
     allJSFile.forEach(({ resourceName, jsfile }) => {
-        const resourceFile = path.join(outputdir, resourceName);
-        mkdirp.sync(path.dirname(resourceFile));
+        const resourceFilePath = path.join(outputdir, resourceName);
+        mkdirp.sync(path.dirname(resourceFilePath));
         fs.writeFileSync(
-            resourceFile,
+            resourceFilePath.replace('.mjs', '.js').replace('.cjs', '.js'),
             fs.readFileSync(jsfile, 'utf-8')
         );
     })

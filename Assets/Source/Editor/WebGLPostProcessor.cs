@@ -31,7 +31,7 @@ public class WebGLPuertsPostProcessor {
             Action<string> postProcess = jsenv.Eval<Action<string>>(@"
                 (function() {
                     const nodeModuleRequire = require('module').createRequire('" + PuertsWebglJSRoot + @"')
-                    const cp = nodeRequire('child_process');
+                    const cp = require('child_process');
                     const mkdirp = nodeModuleRequire('mkdirp');
                     var csharp = puertsRequire('csharp')
                     try {
@@ -60,7 +60,7 @@ public class WebGLPuertsPostProcessor {
     [MenuItem("puerts-webgl/build puerts-js for minigame")]
     static void minigame() 
     {
-        run("buildForMinigame", _lastBuiltPath != null ? _lastBuiltPath + "/../minigame" : "");
+        run("buildForMinigame", _lastBuiltPath != null ? _lastBuiltPath + "/../minigame" : null);
     }
 
     [MenuItem("puerts-webgl/build puerts-js for browser")]

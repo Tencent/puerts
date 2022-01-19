@@ -53,12 +53,7 @@ function genRequire(requiringDir) {
         
         let fullPath = puerts.searchModule(requiringDir, moduleName);
         if (!fullPath) {
-            try {
-                return nodeRequire(moduleName);
-                
-            } catch(e) {
-                throw new Error("can not find " + moduleName);
-            }
+            throw new Error("can not find " + moduleName);
         }
 
         let key = fullPath;
@@ -113,12 +108,28 @@ puerts.getModuleBySID = getModuleBySID;
 
 puerts.registerBuildinModule = registerBuildinModule;
 
-let nodeRequire = global.require;
-if (nodeRequire) {
-    global.require = global.puertsRequire = genRequire("");
-    global.nodeRequire = nodeRequire;
+let externalRequire = global.require;
+global.puertsRequire = genRequire("");
+
+if (externalRequire) {
+    global.require = function (...args) {
+        let puertsRequireError = null;
+        try {
+            return puertsRequire(...args);
+        } catch(e) {
+            puertsRequireError = e;
+        }
+        try {
+            return externalRequire(...args);
+        } catch(e) {
+            const err = new Error(`require Error:\n 1.puertsRequire:${puertsRequireError.message} 2.externalRequire:${e.message}`);
+            err.puertsRequireError = puertsRequireError;
+            err.externalRequireError = e;
+        }
+    };
+
 } else {
-    global.require = genRequire("");
+    global.require = puertsRequire;
 }
 
 function clearModuleCache () {

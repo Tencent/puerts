@@ -14,7 +14,7 @@ class JSGameManager extends JsBehaviour<GameManager>{
     protected useTouch: boolean;
     Update() {
         const expectPressTimeMax = 1000;
-        if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.touchCount != 0) {
+        if (!this.pressed && (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.touchCount != 0)) {
             this.pressed = Date.now();
             if (UnityEngine.Input.touchCount) {
                 this.useTouch = true;

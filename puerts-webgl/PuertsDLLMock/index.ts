@@ -81,7 +81,7 @@ global.PuertsWebGL = {
                     try {
                         let fileName = Pointer_stringify(pathString);
                         if (typeof wx != 'undefined') {
-                            const result = wxRequire('puerts_minigame_js_resources/' + fileName);
+                            const result = wxRequire('puerts_minigame_js_resources/' + fileName.replace('.mjs', '.js').replace('.cjs', '.js'));
                             if (exportee) {
                                 engine.lastReturnCSResult = result[Pointer_stringify(exportee)];
                             } else {

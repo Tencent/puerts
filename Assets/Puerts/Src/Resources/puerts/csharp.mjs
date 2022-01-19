@@ -68,7 +68,7 @@ function createTypeProxy(namespace) {
     });
 }
 
-let csharpModule = global.csharp = createTypeProxy(undefined);
+let csharpModule = global.csharp = global.cs = createTypeProxy(undefined);
 csharpModule.default = csharpModule;
 puerts.registerBuildinModule('csharp', csharpModule);
 
