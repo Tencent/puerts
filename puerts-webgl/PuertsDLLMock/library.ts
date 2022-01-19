@@ -255,3 +255,9 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
 export function makeBigInt(low: number, high: number) {
     return (BigInt(high >>> 0) << BigInt(32)) + BigInt(low >>> 0)
 }
+export function setOutValue32(engine: PuertsJSEngine, valuePtr: number, value: any) {
+    engine.unityApi.HEAP32[valuePtr >> 2] = value;
+}
+export function setOutValue8(engine: PuertsJSEngine, valuePtr: number, value: any) {
+    engine.unityApi.HEAP8[valuePtr] = value;
+}

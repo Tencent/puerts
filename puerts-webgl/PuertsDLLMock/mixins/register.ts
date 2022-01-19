@@ -7,12 +7,12 @@ import { FunctionCallbackInfo, FunctionCallbackInfoPtrManager, global, OnFinaliz
  * @returns 
  */
 export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
-    return {
-        SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, /*long */data: any) {
+    const returnee = {
+        SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, /*long */dataLow: any) {
             const name = engine.unityApi.Pointer_stringify(nameString);
-            global[name] = engine.makeV8FunctionCallbackFunction(v8FunctionCallback, data);
+            global[name] = engine.makeV8FunctionCallbackFunction(v8FunctionCallback, dataLow);
         },
-        _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, /*long */data: number) {
+        _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, /*long */dataLow: number) {
             const fullName = engine.unityApi.Pointer_stringify(fullNameString);
 
             const id = Object.keys(engine.csharpObjectMap.classes).length
@@ -31,14 +31,14 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                     const FCIPtr = FunctionCallbackInfoPtrManager.GetMockPointer(new FunctionCallbackInfo(args));
     
                     // 虽然puerts内Constructor的返回值叫self，但它其实就是CS对象的一个id而已。
-                    csObjectID = engine.callV8ConstructorCallback(constructor, FCIPtr, args.length, data);
+                    csObjectID = engine.callV8ConstructorCallback(constructor, FCIPtr, args.length, dataLow);
 
                     FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(FCIPtr)
                 }
                 engine.csharpObjectMap.add(csObjectID, this);
 
                 OnFinalize(this, csObjectID, (csObjectID)=> {
-                    engine.callV8DestructorCallback(destructor || engine.generalDestructor, csObjectID, data);
+                    engine.callV8DestructorCallback(destructor || engine.generalDestructor, csObjectID, dataLow);
                 })
 
             }
@@ -59,6 +59,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             return id;
         },
         RegisterStruct: function (isolate: IntPtr, BaseTypeId: int, fullName: string, constructor: IntPtr, destructor: IntPtr, /*long */data: number, size: int) {
+            return returnee._RegisterClass.apply(this, arguments);
         },
         RegisterFunction: function (isolate: IntPtr, classID: int, nameString: CSString, isStatic: bool, callback: IntPtr, /*long */data: number) {
             var cls = engine.csharpObjectMap.classes[classID]
@@ -111,4 +112,6 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             }
         },
     }
+
+    return returnee;
 }

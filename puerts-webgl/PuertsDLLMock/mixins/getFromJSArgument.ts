@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, Ref } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, Ref, setOutValue32 } from "../library";
 /**
  * mixin
  * JS调用C#时，C#侧获取JS调用参数的值
@@ -16,7 +16,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
         },
         GetStringFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isByRef: bool): string {
             var returnStr = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<string>(value);
-            engine.unityApi.HEAP32[length >> 2] = returnStr.length;
+            setOutValue32(engine, length, returnStr.length);
             return engine.JSStringToCSString(returnStr);
         },
         GetBooleanFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
@@ -48,6 +48,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
             var ptr = engine.unityApi._malloc(ab.byteLength);
             engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
             engine.unityApi.HEAP32[length >> 2] = ab.byteLength;
+            setOutValue32(engine, length, ab.byteLength);
             return ptr;
         },
 

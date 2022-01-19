@@ -1,56 +1,137 @@
-// using UnityEngine;
-// using Puerts;
-// using System;
-// using System.Runtime.InteropServices;
+using UnityEngine;
+using Puerts;
+using System;
+using System.Runtime.InteropServices;
 
-// namespace PuertsTest
-// {
-//     //只是演示纯用js实现MonoBehaviour逻辑的可能，
-//     //但从性能角度这并不是最佳实践，会导致过多的跨语言调用
-//     public class PuertsTest : MonoBehaviour
-//     {
-//         void Awake()
-//         {
-//         }
+namespace PuertsTest
+{
+    public class TestObject {
+        public int value;
+        public TestObject(int val) {
+            value = val;
+        }
+    }
+    public struct TestStruct {
+        public int value;
+    }
+    public class TestHelper {
+        static void OutputTestResult(string name, bool passed) {
+            if (passed) {
+                UnityEngine.Debug.Log($"TestCase {name} success!");
 
-//         void Start()
-//         {
-//             ByteArrayTest(new byte[3]{ 1, 2, 0 }, 3);
-//             ulong l = 18446744073709551615;
-//             BigintTest(l);
-//             BigintTest(9223372036854775806);
-//             BigintTest(9007199254740991);
-//             BigintTest(2147483648);
+            } else {
+                UnityEngine.Debug.LogError($"TestCase {name} failed!");
+
+            }
+        }
+        
+        public void GetNumberFromJSArgument(int jsarg) {
+            OutputTestResult("GetNumberFromJSArgument", jsarg == 3);
+        }
+        public void GetDateFromJSArgument(DateTime date) {
+            UnityEngine.Debug.Log(date);
+            // OutputTestResult("GetNumberFromJSArgument", );
+        }
+        public void GetStringFromJSArgument(string jsarg) {
+            OutputTestResult("GetStringFromJSArgument", "Hello World" == jsarg);
+        }
+        public void GetBooleanFromJSArgument(bool jsarg) {
+            OutputTestResult("GetBooleanFromJSArgument", jsarg);
+        }
+        public void GetBigIntFromJSArgument(long jsarg) {
+            // OutputTestResult("GetBigIntFromJSArgument", jsarg);
+        }
+        public void GetObjectFromJSArgument(TestObject jsarg) {
+            OutputTestResult("GetObjectFromJSArgument", jsarg.value == 3);
+        }
+        public void GetStructFromJSArgument(TestStruct jsarg) {
+            OutputTestResult("GetStructFromJSArgument", jsarg.value == 3);
+        }
+        public void GetFunctionFromJSArgument() {
             
-//             var ptr = ByteArrayReturnTest();
+        }
+        public void GetJSObjectFromJSArgument() {
             
-//             byte[] arr2 = new byte[3];
-//             Marshal.Copy(ptr, arr2, 0, 3);
-//             UnityEngine.Debug.Log(arr2.Length);
-//             foreach (byte bb in arr2) {
-//                 UnityEngine.Debug.Log(bb);
-//             }
+        }
+        public void GetArrayBufferFromJSArgument(byte[] jsarg) {   
+            OutputTestResult("GetArrayBufferFromJSArgument", jsarg.Length == 1 && jsarg[0] == 3);
+        }
 
-//             int a = 2147483640;
-//             RefTest(ref a);
-//             UnityEngine.Debug.Log(a);
-//         }
+        public void GetNumberFromResult(Func<int> jsFunc) {
+            var jsres = jsFunc();
+            OutputTestResult("GetNumberFromResult", jsres == 3);
+        }
+        public void GetDateFromResult(Func<DateTime> jsFunc) {
 
-//         void Update()
-//         {
-//         }
+        }
+        public void GetStringFromResult(Func<string> jsFunc) {
+            var jsres = jsFunc();
+            OutputTestResult("GetStringFromResult", jsres == "Hello World");
+        }
+        public void GetBooleanFromResult(Func<bool> jsFunc) {
+            var jsres = jsFunc();
+            OutputTestResult("GetBooleanFromResult", jsres);
+        }
+        public void GetBigIntFromResult(Func<long> jsFunc) {
 
-//         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-//         public static extern void ByteArrayTest(byte[] byteArr, int length);
+        }
+        public void GetObjectFromResult(Func<TestObject> jsFunc) {
+            var jsres = jsFunc();
+            OutputTestResult("GetObjectFromResult", jsres.value == 3);
+        }
+        public void GetFunctionFromResult(Func<int> jsFunc) {
 
-//         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-//         public static extern void BigintTest(ulong bigint);
+        }
+        public void GetJSObjectFromResult(Func<int> jsFunc) {
 
-//         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-//         public static extern IntPtr ByteArrayReturnTest();
-//         // public static extern Byte[] ByteArrayReturnTest();
+        }
+        public void GetArrayBufferFromResult(Func<byte[]> jsFunc) {
+            var jsres = jsFunc();
+            OutputTestResult("GetArrayBufferFromResult", jsres.Length == 1 && jsres[0] == 3);
+        }
+        // public void SetNumberToOutValue(out int jsOutArg) {
 
-//         [DllImport("__Internal", CallingConvention = CallingConvention.Cdecl)]
-//         public static extern void RefTest(ref int haha);
-//     }
-// }
+        // }
+        // public void SetDateToOutValue(out DateTime jsOutArg) {
+
+        // }
+        // public void SetStringToOutValue(out string jsOutArg) {
+
+        // }
+        // public void SetBooleanToOutValue(out bool jsOutArg) {
+
+        // }
+        // public void SetBigIntToOutValue(out long jsOutArg) {
+
+        // }
+        // public void SetObjectToOutValue(out TestObject jsOutArg) {
+
+        // }
+        // public void SetNullToOutValue(out object jsOutArg) {
+
+        // }
+        // public void SetArrayBufferToOutValue(out byte[] jsOutArg) {
+
+        // }
+    }
+
+    public class PuertsTest : MonoBehaviour
+    {
+        void Awake()
+        {
+        }
+
+        void Start()
+        {
+            var jsEnv = new Puerts.JsEnv();
+            var helper = new TestHelper();
+            Action<TestHelper> doTest = jsEnv.ExecuteModule<Action<TestHelper>>("unittest.mjs", "init");
+            doTest(helper);
+            jsEnv.Dispose();
+        }
+
+        void Update()
+        {
+        }
+    }
+}

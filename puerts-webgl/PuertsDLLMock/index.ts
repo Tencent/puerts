@@ -8,7 +8,7 @@
  * 业务JS <-> WASM <-> unity jslib <-> 本js
  * 但整条链路其实都在一个v8(jscore)虚拟机里
  */
-import { JSFunction, global, PuertsJSEngine, jsFunctionOrObjectFactory } from "./library";
+import { JSFunction, global, PuertsJSEngine, jsFunctionOrObjectFactory, setOutValue32 } from "./library";
 import WebGLBackendGetFromJSArgumentAPI from "./mixins/getFromJSArgument";
 import WebGLBackendGetFromJSReturnAPI from "./mixins/getFromJSReturn";
 import WebGLBackendRegisterAPI from "./mixins/register";
@@ -145,10 +145,10 @@ global.PuertsWebGL = {
                         throw new Error('ptr is not a jsfunc');
                     }
                 },
-                GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */len: any) {
+                GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */length: any) {
                     const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
                     if (func instanceof JSFunction) {
-                        engine.unityApi.HEAP32[length >> 2] = (func.lastExceptionInfo || '').length;
+                        setOutValue32(engine, length, (func.lastExceptionInfo || '').length);
                         return engine.JSStringToCSString(func.lastExceptionInfo || '');
 
                     } else {

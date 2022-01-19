@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrManager, GetType, jsFunctionOrObjectFactory, PuertsJSEngine, Ref } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, jsFunctionOrObjectFactory, PuertsJSEngine, Ref, setOutValue32 } from "../library";
 /**
  * mixin
  * C#调用JS时，获取JS函数返回值
@@ -21,7 +21,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
 
         },
         GetStringFromResult: function (resultInfo: IntPtr, /*out int */len: any) {
-            engine.unityApi.HEAP32[len >> 2] = engine.lastReturnCSResult.length;
+            setOutValue32(engine, length, engine.lastReturnCSResult.length);
             return engine.JSStringToCSString(engine.lastReturnCSResult)
 
         },
@@ -56,7 +56,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
             var ab: ArrayBuffer = engine.lastReturnCSResult;
             var ptr = engine.unityApi._malloc(ab.byteLength);
             engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
-            engine.unityApi.HEAP32[length >> 2] = ab.byteLength;
+            setOutValue32(engine, length, ab.byteLength);
             return ptr;
         },
         //保守方案
