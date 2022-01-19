@@ -50,6 +50,19 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
 {
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     FString NormalizedPath = PathNormalize(PathIn);
+
+#if !WITH_EDITOR && !UE_BUILD_SHIPPING
+    // 优先处理本地目录中的额外文件，在 Shipping 和 编辑器模式下无效
+    IPlatformFile& PlatformPhysical = IPlatformFile::GetPlatformPhysical();
+    if (PlatformPhysical.FileExists(*NormalizedPath))
+    {
+        AbsolutePath = PlatformPhysical.ConvertToAbsolutePathForExternalAppForRead(*NormalizedPath);
+        UE_LOG(LogTemp, Display, TEXT("Found external file: %s from %s"), *AbsolutePath, *PathIn);
+        Path = NormalizedPath;
+        return true;
+    } 
+#endif // !UE_BUILD_SHIPPING
+
     if (PlatformFile.FileExists(*NormalizedPath))
     {
         AbsolutePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*NormalizedPath);
