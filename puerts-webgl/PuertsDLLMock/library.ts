@@ -80,9 +80,9 @@ export class JSFunction {
         jsFunctionOrObjectFactory.jsFuncOrObjectKV[this.id] = this;
     }
     public invoke() {
-        var args = this.args.slice(0);
-        this.args = [];
-        this._func.apply(this, args);
+        var args = [...this.args];
+        this.args.length = 0;
+        return this._func.apply(this, args);
     }
 }
 
@@ -187,8 +187,6 @@ export class PuertsJSEngine {
 
     public readonly unityApi: PuertsJSEngine.UnityAPI
 
-    public lastCallCSResult: any = null;
-    public lastCallCSResultType: any = null;
     public lastReturnCSResult: any = null;
     public lastExceptionInfo: string = null;
     public callV8Function: MockIntPtr;
@@ -233,16 +231,11 @@ export class PuertsJSEngine {
     }
 
     callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        this.lastCallCSResult = this.unityApi.unityInstance.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
-        return this.lastCallCSResult;
+        return this.unityApi.unityInstance.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
     }
     
     callV8DestructorCallback(functionPtr: IntPtr, selfPtr: IntPtr, data: number) {
-        this.lastCallCSResult = this.unityApi.unityInstance.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
-    }
-
-    getLastResult() {
-        return this.lastCallCSResult;
+        this.unityApi.unityInstance.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
     }
 }
 

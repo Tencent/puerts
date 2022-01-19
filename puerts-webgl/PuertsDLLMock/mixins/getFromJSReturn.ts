@@ -17,7 +17,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
 
         },
         GetDateFromResult: function (resultInfo: IntPtr) {
-            return engine.lastReturnCSResult.getTime();
+            return (engine.lastReturnCSResult as Date).getTime();
 
         },
         GetStringFromResult: function (resultInfo: IntPtr, /*out int */len: any) {
@@ -38,8 +38,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
 
         },
         GetObjectFromResult: function (resultInfo: IntPtr) {
-            return engine.csharpObjectMap.getCSObjectIDFromObject(engine.getLastResult);
-
+            return engine.csharpObjectMap.getCSObjectIDFromObject(engine.lastReturnCSResult);
         },
         GetTypeIdFromResult: function (resultInfo: IntPtr) {
             return GetType(engine, engine.lastReturnCSResult);
