@@ -60,8 +60,8 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
         UE_LOG(LogTemp, Display, TEXT("Found external file: %s from %s"), *AbsolutePath, *PathIn);
         Path = NormalizedPath;
         return true;
-    } 
-#endif // !UE_BUILD_SHIPPING
+    }
+#endif    // !WITH_EDITOR && !UE_BUILD_SHIPPING
 
     if (PlatformFile.FileExists(*NormalizedPath))
     {
