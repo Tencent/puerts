@@ -4,7 +4,7 @@ if ( WIN32 AND NOT MSYS )
     )
 elseif ( APPLE AND NOT IOS )
     set(LIB_FILE_NAMES 
-        libnode.83.dylib
+        libnode.102.dylib
     )
 else ()
     message( FATAL_ERROR "Node.js is only supported in osx/win" )
