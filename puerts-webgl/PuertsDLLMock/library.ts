@@ -217,9 +217,12 @@ export class PuertsJSEngine {
         this.unityApi = unityAPI;
     }
 
-    JSStringToCSString(returnStr: string) {
+    JSStringToCSString(returnStr: string, /** out int */length: number) {
         if (returnStr === null || returnStr === undefined) {
             return 0;
+        }
+        if (length) {
+            setOutValue32(this, length, returnStr.length);
         }
         var bufferSize = this.unityApi.lengthBytesUTF8(returnStr) + 1;
         var buffer = this.unityApi._malloc(bufferSize);

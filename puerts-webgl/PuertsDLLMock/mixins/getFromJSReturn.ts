@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrManager, GetType, jsFunctionOrObjectFactory, PuertsJSEngine, Ref, setOutValue32 } from "../library";
+import { GetType, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32 } from "../library";
 /**
  * mixin
  * C#调用JS时，获取JS函数返回值
@@ -14,35 +14,27 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
     return {
         GetNumberFromResult: function (resultInfo: IntPtr) {
             return engine.lastReturnCSResult;
-
         },
         GetDateFromResult: function (resultInfo: IntPtr) {
             return (engine.lastReturnCSResult as Date).getTime();
-
         },
-        GetStringFromResult: function (resultInfo: IntPtr, /*out int */len: any) {
-            setOutValue32(engine, length, engine.lastReturnCSResult.length);
-            return engine.JSStringToCSString(engine.lastReturnCSResult)
-
+        GetStringFromResult: function (resultInfo: IntPtr, /*out int */length: number) {
+            return engine.JSStringToCSString(engine.lastReturnCSResult, length);
         },
         GetBooleanFromResult: function (resultInfo: IntPtr) {
             return engine.lastReturnCSResult;
-
         },
         ResultIsBigInt: function (resultInfo: IntPtr) {
             return engine.lastReturnCSResult instanceof BigInt;
-
         },
         GetBigIntFromResult: function (resultInfo: IntPtr) {
             throw new Error('not implemented')
-
         },
         GetObjectFromResult: function (resultInfo: IntPtr) {
             return engine.csharpObjectMap.getCSObjectIDFromObject(engine.lastReturnCSResult);
         },
         GetTypeIdFromResult: function (resultInfo: IntPtr) {
             return GetType(engine, engine.lastReturnCSResult);
-
         },
         GetFunctionFromResult: function (resultInfo: IntPtr): JSFunctionPtr {
             var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(engine.lastReturnCSResult);
@@ -50,7 +42,6 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
         },
         GetJSObjectFromResult: function (resultInfo: IntPtr) {
             throw new Error('not implemented')
-
         },
         GetArrayBufferFromResult: function (resultInfo: IntPtr, /*out int */length: any) {
             var ab: ArrayBuffer = engine.lastReturnCSResult;

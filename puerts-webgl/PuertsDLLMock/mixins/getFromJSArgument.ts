@@ -1,4 +1,4 @@
-import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, Ref, setOutValue32 } from "../library";
+import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32 } from "../library";
 /**
  * mixin
  * JS调用C#时，C#侧获取JS调用参数的值
@@ -14,13 +14,9 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
         GetDateFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
             return (FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value) as Date).getTime();
         },
-        GetStringFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isByRef: bool): number {
+        GetStringFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: number, isByRef: bool): number {
             var returnStr = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<string>(value);
-            if (returnStr === null || returnStr === undefined) {
-                return 0;
-            }
-            setOutValue32(engine, length, returnStr.length);
-            return engine.JSStringToCSString(returnStr);
+            return engine.JSStringToCSString(returnStr, length);
         },
         GetBooleanFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
             return FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);

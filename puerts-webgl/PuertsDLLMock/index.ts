@@ -19,6 +19,7 @@ import WebGLBackendSetToJSOutArgumentAPI from "./mixins/setToJSOutArgument";
 declare const PUERTS_JS_RESOURCES: any;
 declare const wxRequire: any;
 
+global.wxRequire = global.require;
 global.PuertsWebGL = {
     // puerts首次初始化时会调用这里，并把Unity的通信接口传入
     Init({
@@ -145,16 +146,13 @@ global.PuertsWebGL = {
                         throw new Error('ptr is not a jsfunc');
                     }
                 },
-                GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */length: any) {
+                GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */length: number) {
                     const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
                     if (func instanceof JSFunction) {
-                        setOutValue32(engine, length, (func.lastExceptionInfo || '').length);
-                        return engine.JSStringToCSString(func.lastExceptionInfo || '');
-
+                        return engine.JSStringToCSString(func.lastExceptionInfo || '', length);
                     } else {
                         throw new Error('ptr is not a jsfunc');
                     }
-
                 },
                 ReleaseJSFunction: function (isolate: IntPtr, _function: JSFunctionPtr) {
                     jsFunctionOrObjectFactory.removeJSFunctionById(_function);
