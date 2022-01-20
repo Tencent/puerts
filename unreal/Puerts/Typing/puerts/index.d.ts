@@ -46,6 +46,10 @@ declare module "puerts" {
     
     function releaseManualReleaseDelegate<T extends (...args: any) => any>(func: T): void;
 
+    // --> modified by kg begin
+    // songfuhao: 保存未修改前的 console，以便于接入devtools相关接口逻辑
+    const console_org: Console;
+    // --< end
     /*function getProperties(obj: Object, ...propNames:string[]): any;
     function getPropertiesAsync(obj: Object, ...propNames:string[]): Promise<any>;
     function setProperties(obj: Object, properties: any):void;

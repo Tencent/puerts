@@ -51,6 +51,10 @@ var global = global || (function () { return this; }());
         log(3, arguments);
     }
 
+    // --> modified by kg begin
+    // songfuhao: 保存未修改前的 console，以便于接入devtools相关接口逻辑
+    global.puerts.console_org = console_org;
+    // --< end
     global.puerts.console = console;
     global.console = console;
 }(global));
