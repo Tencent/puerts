@@ -175,7 +175,7 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
                                 else if (StructProp->Struct == TBaseStructure<FLinearColor>::Get())
                                 {
                                     FLinearColor* LinearColor = (FLinearColor*) PropValuePtr;
-                                    FDefaultValueHelper::ParseLinearColor(**DefaultValuePtr, *LinearColor);
+                                    LinearColor->InitFromString(**DefaultValuePtr);
                                     continue;
                                 }
                             }
