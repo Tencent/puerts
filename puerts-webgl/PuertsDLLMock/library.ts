@@ -3,16 +3,17 @@
  * 对应v8::FunctionCallbackInfo
  */
 export class FunctionCallbackInfo {
-    args: any[]
-
-    returnValue: any
+    args: any[];
+    returnValue: any;
 
     constructor(args: any[]) {
         this.args = args;
-        this.returnValue = void 0;
     }
 
-    public static infos: FunctionCallbackInfo[];
+    recycle(): void {
+        this.args = null;
+        this.returnValue = void 0;
+    }
 }
 
 /**
@@ -29,23 +30,34 @@ export class FunctionCallbackInfoPtrManager {
      * 
      * 右侧四位就是为了放下参数的序号，用于表示callbackinfo参数的intptr
      */
-    static GetMockPointer(callbackInfo: FunctionCallbackInfo): MockIntPtr {
-        if (this.freeInfosIndex.length) {
-            const index = this.freeInfosIndex.pop();
-            this.infos[index] = callbackInfo;
-            return index << 4;
-
+    static GetMockPointer(args: any[]): MockIntPtr {
+        let index: number;
+        index = this.freeInfosIndex.pop();
+        // index最小为1
+        if (index) {
+            this.infos[index].args = args;
         } else {
-            this.infos.push(callbackInfo);
-            return (this.infos.length - 1) << 4;
+            index = this.infos.push(new FunctionCallbackInfo(args)) - 1;
         }
+        return index << 4;
     }
+
     static GetByMockPointer(intptr: MockIntPtr): FunctionCallbackInfo {
         return this.infos[intptr >> 4];
     }
+
+    static GetReturnValueAndRecycle(intptr: MockIntPtr): any {
+        const index = intptr >> 4;
+        this.freeInfosIndex.push(index);
+        let info = this.infos[index];
+        let ret = info.returnValue;
+        info.recycle();
+        return ret;
+    }
+
     static ReleaseByMockIntPtr(intptr: MockIntPtr) {
         const index = intptr >> 4;
-        this.infos[index] = void 0;
+        this.infos[index].recycle();
         this.freeInfosIndex.push(index);
     }
 
@@ -76,7 +88,7 @@ export class JSFunction {
     constructor(func: (...args: any[]) => any) {
         this._func = func;
         this.id = jsFunctionOrObjectFactory.regularID++;
-        jsFunctionOrObjectFactory.idmap.set(func, this.id);
+        jsFunctionOrObjectFactory.idMap.set(func, this.id);
         jsFunctionOrObjectFactory.jsFuncOrObjectKV[this.id] = this;
     }
     public invoke() {
@@ -88,25 +100,26 @@ export class JSFunction {
 
 export class jsFunctionOrObjectFactory {
     public static regularID: number = 1;
-    public static idmap = new WeakMap();
+    public static idMap = new WeakMap<Function, number>();
     public static jsFuncOrObjectKV: { [id: number]: JSFunction } = {};
 
     public static getOrCreateJSFunction(funcValue: (...args: any[]) => any) {
-        const id = jsFunctionOrObjectFactory.idmap.get(funcValue)
+        const id = jsFunctionOrObjectFactory.idMap.get(funcValue);
         if (id) {
             return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
         }
         return new JSFunction(funcValue);
     }
+
     public static getJSFunctionById(id: number): JSFunction {
-        return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id]
-    }
-    public static removeJSFunctionById(id: number) {
-        const jsFunc = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
-        jsFunctionOrObjectFactory.idmap.delete(jsFunc._func);
-        delete jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+        return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
     }
 
+    public static removeJSFunctionById(id: number) {
+        const jsFunc = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+        jsFunctionOrObjectFactory.idMap.delete(jsFunc._func);
+        delete jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+    }
 }
 
 /**
@@ -114,7 +127,11 @@ export class jsFunctionOrObjectFactory {
  * 和puerts.dll所做的一样
  */
 export class CSharpObjectMap {
-    public classes: { [classID: number]: any } = {};
+    public classes: {
+        (): void;
+        createFromCS(csObjectID: number): any;
+        [key: string]: any;
+    }[] = [null];
 
     private nativeObjectKV: { [objectID: number]: WeakRef<any> } = {};
     private objectIDWeakMap: WeakMap<any, number> = new WeakMap();
@@ -149,8 +166,8 @@ var registry: FinalizationRegistry<any> = null;
 function init() {
     registry = new FinalizationRegistry(function (heldValue: any) {
         var callback = destructors[heldValue];
-        if (!(heldValue in destructors)) {
-            throw new Error("cannot find destructor for" + heldValue);
+        if (!callback) {
+            throw new Error("cannot find destructor for " + heldValue);
         }
         delete destructors[heldValue]
         console.log('onFinalize', heldValue)
@@ -172,7 +189,10 @@ export { global };
 export namespace PuertsJSEngine {
     export interface UnityAPI {
         Pointer_stringify: (strPtr: CSString) => string,
-        _malloc: (size: number) => any,
+        _malloc: (size: number) => number,
+        _memset: (ptr: number, ch: number, size: number) => number,
+        _memcpy: (dst: number, src: number, size: number) => number,
+        _free: (ptr: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
         lengthBytesUTF8: (str: string) => number,
         unityInstance: any,
@@ -180,7 +200,6 @@ export namespace PuertsJSEngine {
         HEAP32: Int32Array
     }
 }
-
 
 export class PuertsJSEngine {
     public readonly csharpObjectMap: CSharpObjectMap
@@ -199,6 +218,9 @@ export class PuertsJSEngine {
     }
 
     JSStringToCSString(returnStr: string) {
+        if (returnStr === null || returnStr === undefined) {
+            return 0;
+        }
         var bufferSize = this.unityApi.lengthBytesUTF8(returnStr) + 1;
         var buffer = this.unityApi._malloc(bufferSize);
         this.unityApi.stringToUTF8(returnStr, buffer, bufferSize);
@@ -210,8 +232,7 @@ export class PuertsJSEngine {
         // 不能用箭头函数！返回的函数会放到具体的class上，this有含义。
         const engine = this;
         return function (...args: any[]) {
-            let callbackInfo = new FunctionCallbackInfo(args);
-            let callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(callbackInfo);
+            let callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(args);
             engine.callV8FunctionCallback(
                 functionPtr,
                 // getIntPtrManager().GetPointerForJSValue(this),
@@ -220,9 +241,7 @@ export class PuertsJSEngine {
                 args.length,
                 data
             )
-            FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
-
-            return callbackInfo.returnValue;
+            return FunctionCallbackInfoPtrManager.GetReturnValueAndRecycle(callbackInfoPtr);
         }
     }
 
@@ -233,15 +252,14 @@ export class PuertsJSEngine {
     callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
         return this.unityApi.unityInstance.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
     }
-    
+
     callV8DestructorCallback(functionPtr: IntPtr, selfPtr: IntPtr, data: number) {
         this.unityApi.unityInstance.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
     }
 }
 
-
 export function GetType(engine: PuertsJSEngine, value: any): number {
-    if (typeof value == 'undefined') { return 1 }
+    if (value === null || value === undefined) { return 1 }
     if (typeof value == 'number') { return 4 }
     if (typeof value == 'string') { return 8 }
     if (typeof value == 'boolean') { return 16 }
@@ -255,9 +273,11 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
 export function makeBigInt(low: number, high: number) {
     return (BigInt(high >>> 0) << BigInt(32)) + BigInt(low >>> 0)
 }
+
 export function setOutValue32(engine: PuertsJSEngine, valuePtr: number, value: any) {
     engine.unityApi.HEAP32[valuePtr >> 2] = value;
 }
+
 export function setOutValue8(engine: PuertsJSEngine, valuePtr: number, value: any) {
     engine.unityApi.HEAP8[valuePtr] = value;
 }

@@ -14,8 +14,11 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
         GetDateFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
             return (FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value) as Date).getTime();
         },
-        GetStringFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isByRef: bool): string {
+        GetStringFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isByRef: bool): number {
             var returnStr = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<string>(value);
+            if (returnStr === null || returnStr === undefined) {
+                return 0;
+            }
             setOutValue32(engine, length, returnStr.length);
             return engine.JSStringToCSString(returnStr);
         },
@@ -85,16 +88,12 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
             return GetType(engine, value);
         },
         GetTypeIdFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value)
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
             var typeid = 0;
-            if (typeof obj == 'function') {
-                typeid = engine.csharpObjectMap.classIDWeakMap.get(obj);
-
-            } else if (obj instanceof JSFunction) {
-                typeid = engine.csharpObjectMap.classIDWeakMap.get(obj._func);
-
+            if (obj instanceof JSFunction) {
+                typeid = (obj._func as any)["$cid"];
             } else {
-                typeid = engine.csharpObjectMap.classIDWeakMap.get((obj as any).__proto__.constructor);
+                typeid = (obj as any)["$cid"];
             }
 
             if (!typeid) {

@@ -26,9 +26,9 @@ export default function WebGLBackendSetToJSInvokeReturnApi(engine: PuertsJSEngin
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);
             callbackInfo.returnValue = str;
         },
-        ReturnBigInt: function (isolate: IntPtr, info: MockIntPtr, longlow: number, longhigh: number) {
+        ReturnBigInt: function (isolate: IntPtr, info: MockIntPtr, longLow: number, longHigh: number) {
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);
-            callbackInfo.returnValue = makeBigInt(longlow, longhigh);
+            callbackInfo.returnValue = makeBigInt(longLow, longHigh);
         },
         ReturnBoolean: function (isolate: IntPtr, info: MockIntPtr, b: bool) {
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);

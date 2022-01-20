@@ -22,10 +22,10 @@ declare const wxRequire: any;
 global.PuertsWebGL = {
     // puerts首次初始化时会调用这里，并把Unity的通信接口传入
     Init({
-        Pointer_stringify, _malloc, stringToUTF8, lengthBytesUTF8, HEAP8, HEAP32, unityInstance
+        Pointer_stringify, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, HEAP8, HEAP32, unityInstance
     }: PuertsJSEngine.UnityAPI) {
         const engine = new PuertsJSEngine({
-            Pointer_stringify, _malloc, stringToUTF8, lengthBytesUTF8, HEAP8, HEAP32, unityInstance
+            Pointer_stringify, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, HEAP8, HEAP32, unityInstance
         });
 
         global.__tgjsEvalScript = typeof eval == "undefined" ? () => { } : eval;
