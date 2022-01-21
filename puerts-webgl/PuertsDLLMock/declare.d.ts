@@ -3,7 +3,7 @@ interface IntPtr {__cannotMockInJS: boolean}
 interface CSString {__cannotMockInJS: boolean}
 declare const Module: any
 declare const unityInstance: any
-declare type CSObjectID = number;
+declare type CSIdentifer = number; // 可以是一个CSObjectPool的ID，如果是BlittableCopy的Struct则是内存地址
 declare type int = number;
 declare type double = number;
 declare type bool = boolean;

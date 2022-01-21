@@ -129,31 +129,31 @@ export class jsFunctionOrObjectFactory {
 export class CSharpObjectMap {
     public classes: {
         (): void;
-        createFromCS(csObjectID: number): any;
+        createFromCS(csID: number): any;
         [key: string]: any;
     }[] = [null];
 
-    private nativeObjectKV: { [objectID: number]: WeakRef<any> } = {};
-    private objectIDWeakMap: WeakMap<any, number> = new WeakMap();
+    private nativeObjectKV: { [objectID: CSIdentifer]: WeakRef<any> } = {};
+    private csIDWeakMap: WeakMap<any, CSIdentifer> = new WeakMap();
 
     public namesToClassesID: { [name: string]: number } = {};
     public classIDWeakMap = new WeakMap();
 
-    add(csObjectID: number, obj: any) {
-        this.nativeObjectKV[csObjectID] = new WeakRef(obj);
-        this.objectIDWeakMap.set(obj, csObjectID);
+    add(csID: CSIdentifer, obj: any) {
+        this.nativeObjectKV[csID] = new WeakRef(obj);
+        this.csIDWeakMap.set(obj, csID);
     }
-    findOrAddObject(csObjectID: number, classID: number) {
+    findOrAddObject(csID: CSIdentifer, classID: number) {
         var ret;
-        if (this.nativeObjectKV[csObjectID] && (ret = this.nativeObjectKV[csObjectID].deref())) {
+        if (this.nativeObjectKV[csID] && (ret = this.nativeObjectKV[csID].deref())) {
             return ret;
         }
-        ret = this.classes[classID].createFromCS(csObjectID);
-        this.add(csObjectID, ret);
+        ret = this.classes[classID].createFromCS(csID);
+        // this.add(csID, ret); 构造函数里负责调用
         return ret;
     }
-    getCSObjectIDFromObject(obj: any) {
-        return this.objectIDWeakMap.get(obj);
+    getCSIdentiferFromObject(obj: any) {
+        return this.csIDWeakMap.get(obj);
     }
 }
 
@@ -170,7 +170,6 @@ function init() {
             throw new Error("cannot find destructor for " + heldValue);
         }
         delete destructors[heldValue]
-        console.log('onFinalize', heldValue)
         callback(heldValue);
     });
 }
@@ -239,7 +238,7 @@ export class PuertsJSEngine {
             engine.callV8FunctionCallback(
                 functionPtr,
                 // getIntPtrManager().GetPointerForJSValue(this),
-                engine.csharpObjectMap.getCSObjectIDFromObject(this),
+                engine.csharpObjectMap.getCSIdentiferFromObject(this),
                 callbackInfoPtr,
                 args.length,
                 data
@@ -248,7 +247,7 @@ export class PuertsJSEngine {
         }
     }
 
-    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSObjectID, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
+    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifer, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
         this.unityApi.unityInstance.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
     }
 
@@ -269,7 +268,7 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
     if (typeof value == 'function') { return 256 }
     if (value instanceof Date) { return 512 }
     if (value instanceof Array) { return 128 }
-    if (engine.csharpObjectMap.getCSObjectIDFromObject(value)) { return 32 }
+    if (engine.csharpObjectMap.getCSIdentiferFromObject(value)) { return 32 }
     return 64;
 }
 

@@ -40,7 +40,7 @@ export default function WebGLBackendSetToInvokeJSArgumentApi(engine: PuertsJSEng
             func.args.push(d);
 
         },
-        PushObjectForJSFunction: function (_function: JSFunctionPtr, classID: int, objectID: CSObjectID) {
+        PushObjectForJSFunction: function (_function: JSFunctionPtr, classID: int, objectID: CSIdentifer) {
             const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
             func.args.push(engine.csharpObjectMap.findOrAddObject(objectID, classID));
         },

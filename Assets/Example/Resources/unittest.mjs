@@ -6,9 +6,9 @@ var init = function (testHelper) {
     // testHelper.GetBooleanFromJSArgument(true)
     // // testHelper.GetBigIntFromJSArgument(Number.MAX_SAFE_INTEGER)
     // testHelper.GetObjectFromJSArgument(new cs.PuertsTest.TestObject(3))
-    const struct = new cs.PuertsTest.TestStruct();
-    struct.value = 3;
-    testHelper.GetStructFromJSArgument(struct)
+    // const struct = new cs.PuertsTest.TestStruct();
+    // struct.value = 3;
+    // testHelper.GetStructFromJSArgument(struct)
     // testHelper.GetFunctionFromJSArgument()
     // testHelper.GetJSObjectFromJSArgument()
     // testHelper.GetArrayBufferFromJSArgument(new Uint8Array([3]).buffer)
@@ -21,6 +21,10 @@ var init = function (testHelper) {
     // testHelper.GetFunctionFromResult()
     // testHelper.GetJSObjectFromResult()
     // testHelper.GetArrayBufferFromResult(() => new Uint8Array([3]).buffer)
+    const struct1 = testHelper.ReturnStruct(1);
+    const struct2 = testHelper.ReturnStruct(2);
+    const struct3 = testHelper.ReturnStruct(3);
+    console.log(struct1.value, struct2.value, struct3.value);
 };
 
 export { init };

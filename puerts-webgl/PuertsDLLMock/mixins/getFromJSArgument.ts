@@ -31,7 +31,7 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
         },
         GetObjectFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
             var nativeObject = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
-            return engine.csharpObjectMap.getCSObjectIDFromObject(nativeObject);
+            return engine.csharpObjectMap.getCSIdentiferFromObject(nativeObject);
         },
         GetFunctionFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool): JSFunctionPtr {
             var func = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);

@@ -113,6 +113,12 @@ namespace PuertsTest
         // public void SetArrayBufferToOutValue(out byte[] jsOutArg) {
 
         // }
+        public TestStruct ReturnStruct(int val) 
+        {
+            var ts = new TestStruct();
+            ts.value = val;
+            return ts;
+        }
     }
 
     public class PuertsTest : MonoBehaviour
