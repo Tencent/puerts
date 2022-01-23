@@ -260,7 +260,7 @@ namespace Puerts.Editor
                 {
                     extensionMethods = (from type in genTypeSet
                                         from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                                        where isDefined(method, typeof(ExtensionAttribute)) && Puerts.Utils.IsSupportedMethod(method)
+                                        where isDefined(method, typeof(ExtensionAttribute)) && Puerts.Utils.IsMethodSupportGenerate(method)
                                         group method by getExtendedType(method)).ToDictionary(g => g.Key, g => g.ToArray());
                 }
                 MethodInfo[] ret;
@@ -361,7 +361,7 @@ namespace Puerts.Editor
                 {
                     var methodGroups = Puerts.Utils.GetMethodAndOverrideMethod(type, Utils.Flags)
                         .Where(m => !Utils.isFiltered(m))
-                        .Where(m => !m.IsSpecialName && Puerts.Utils.IsSupportedMethod(m))
+                        .Where(m => !m.IsSpecialName && Puerts.Utils.IsMethodSupportGenerate(m))
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic, IsLazyMember = Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList());
                     var extensionMethods = Puerts.Utils.GetExtensionMethodsOf(type);
@@ -369,7 +369,7 @@ namespace Puerts.Editor
                     {
                         extensionMethods = extensionMethods
                             .Where(m => !Utils.isFiltered(m))
-                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m));
+                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsMethodSupportGenerate(m));
                         if (genTypes != null)
                         {
                             extensionMethods = extensionMethods.Where(m => genTypes.Contains(m.DeclaringType));
@@ -924,7 +924,7 @@ namespace Puerts.Editor
                     var methods = type.GetMethods(Utils.Flags)
                         .Where(m => genTypeSet.Contains(m.DeclaringType) && methodNames.Contains(m.Name))
                         .Concat(declMethods)
-                        .Where(m => !Utils.isFiltered(m, true) && !Utils.IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsSupportedMethod(m)))
+                        .Where(m => !Utils.isFiltered(m, true) && !Utils.IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsMethodSupportGenerate(m)))
                         .Cast<MethodBase>()
                         .Distinct();
 

@@ -12,3 +12,14 @@ process.exit = function() {
 process.kill = function() {
     console.log('`process.kill` is not allowed in puerts')
 }
+const customPromisify = nodeRequire('util').promisify.custom;
+Object.defineProperty(setTimeout, customPromisify, {
+  enumerable: true,
+  get() {
+    return function(delay) {
+        return new Promise(resolve=> setTimeout(resolve, delay))
+    };
+  }
+});
+globalThis.setImmediate = function(fn) { return setTimeout(fn, 0) }
+globalThis.clearImmediate = function(fn) { clearTimeout(fn) }

@@ -42,6 +42,77 @@ namespace Puerts
             JsEnv.jsEnvs[jsEnvIdx].objectPool.ReplaceValueType(self.ToInt32(), obj);
         }
 
+        private static bool HasValidContraint(Type type, List<Type> validTypes) 
+        {
+            if (type.IsGenericType)
+            {
+                Type[] genericArguments = type.GetGenericArguments();
+                foreach (Type argument in genericArguments)
+                {
+                    if (!HasValidContraint(argument, validTypes))
+                    {
+                        return false;
+                    }
+                }
+                
+                validTypes.Add(type);
+                return true;
+            }
+            else if (type.IsGenericParameter)
+            {
+                if (
+                    type.BaseType != null && type.BaseType.IsValueType
+                ) return false;
+
+                var parameterConstraints = type.GetGenericParameterConstraints();
+                
+                if (parameterConstraints.Length == 0) return false;
+                foreach (var parameterConstraint in parameterConstraints)
+                {
+                    // the constraint could not be another genericType #533
+                    if (
+                        !parameterConstraint.IsClass() ||
+                        parameterConstraint == typeof(ValueType) ||
+                        (
+                            parameterConstraint.IsGenericType && 
+                            !parameterConstraint.IsGenericTypeDefinition
+                        )
+                    ) 
+                    {
+                        return false;
+                    }
+                }
+
+                validTypes.Add(type);
+                return true;
+            }
+            else 
+            {
+                return false;
+            }
+        }
+
+        public static bool IsMethodSupportGenerate(MethodInfo method) {
+            // 不包含泛型参数，肯定支持
+            if (!method.ContainsGenericParameters)
+                return true;
+
+            List<Type> validGenericParameter = new List<Type>();
+
+            foreach (var parameters in method.GetParameters())
+            {
+                Type parameterType = parameters.ParameterType;
+
+                if (!HasValidContraint(parameterType, validGenericParameter)) { return false; }
+            }
+
+            return validGenericParameter.Count > 0 && (
+                // 返回值也需要判断，必须是非泛型，或者是可用泛型参数里正好也包括返回类型
+                !method.ReturnType.IsGenericParameter ||
+                validGenericParameter.Contains(method.ReturnType)
+            );
+        }
+
         public static bool IsSupportedMethod(MethodInfo method)
         {
 #if !UNITY_EDITOR && ENABLE_IL2CPP && !PUERTS_REFLECT_ALL_EXTENSION
