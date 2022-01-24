@@ -639,11 +639,11 @@ struct ConstructorsCombiner
     }
 };
 
-template <typename T, T>
+template <typename T, T, typename Enable = void>
 struct PropertyWrapper;
 
 template <class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<Ret Ins::*, member>
+struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value>::type>
 {
     static void getter(CallbackInfoType info)
     {
@@ -655,6 +655,39 @@ struct PropertyWrapper<Ret Ins::*, member>
             return;
         }
         SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
+    }
+
+    static void setter(CallbackInfoType info)
+    {
+        auto context = GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        if (!self)
+        {
+            ThrowException(context, "access a null object");
+            return;
+        }
+        self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+    }
+
+    static const char* info()
+    {
+        return ScriptTypeName<Ret>::value;
+    }
+};
+
+template <class Ins, class Ret, Ret Ins::*member>
+struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
+{
+    static void getter(CallbackInfoType info)
+    {
+        auto context = GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        if (!self)
+        {
+            ThrowException(context, "access a null object");
+            return;
+        }
+        SetReturn(info, internal::TypeConverter<Ret*>::toScript(context, &(self->*member)));
     }
 
     static void setter(CallbackInfoType info)
