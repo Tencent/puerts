@@ -39,13 +39,15 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 if (size) {
                     csIdentifer = engine.unityApi._memcpy(engine.unityApi._malloc(size), csIdentifer, size);
                     csharpObjectMap.add(csIdentifer, this);
-                    OnFinalize(this, csIdentifer, (csObjectID) => {
-                        engine.unityApi._free(csObjectID);
+                    OnFinalize(this, csIdentifer, (csIdentifer) => {
+                        csharpObjectMap.remove(csIdentifer);
+                        engine.unityApi._free(csIdentifer);
                     })
                 } else {
                     csharpObjectMap.add(csIdentifer, this);
-                    OnFinalize(this, csIdentifer, (csObjectID) => {
-                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csObjectID, dataLow);
+                    OnFinalize(this, csIdentifer, (csIdentifer) => {
+                        csharpObjectMap.remove(csIdentifer);
+                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifer, dataLow);
                     })
                 }
             }

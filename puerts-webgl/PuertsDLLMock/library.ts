@@ -143,10 +143,20 @@ export class CSharpObjectMap {
         this.nativeObjectKV[csID] = new WeakRef(obj);
         this.csIDWeakMap.set(obj, csID);
     }
+    remove(csID: CSIdentifer) {
+        delete this.nativeObjectKV[csID];
+    }
     findOrAddObject(csID: CSIdentifer, classID: number) {
         var ret;
-        if (this.nativeObjectKV[csID] && (ret = this.nativeObjectKV[csID].deref())) {
-            return ret;
+        if (this.nativeObjectKV[csID]) {
+            if (ret = this.nativeObjectKV[csID].deref()) {
+                return ret;
+
+            } else if (destructors[csID]) {
+                // weakref内容释放时机可能比finalizationRegistry的触发更早，但finalizationRegistry最终又肯定会触发。
+                // 如果遇到这个情况，需要给destructor加计数
+                destructors[csID].count++;
+            }
         }
         ret = this.classes[classID].createFromCS(csID);
         // this.add(csID, ret); 构造函数里负责调用
@@ -157,27 +167,36 @@ export class CSharpObjectMap {
     }
 }
 
-var destructors: { [CSObjectID: number]: (heldValue: any) => any } = {};
+interface Destructor {
+    (heldValue: CSIdentifer): any,
+    count: number
+};
+var destructors: { [csIdentifer: CSIdentifer]: Destructor } = {};
 
 /**
  * JS对象声明周期监听
  */
 var registry: FinalizationRegistry<any> = null;
 function init() {
-    registry = new FinalizationRegistry(function (heldValue: any) {
+    registry = new FinalizationRegistry(function (heldValue: CSIdentifer) {
         var callback = destructors[heldValue];
         if (!callback) {
             throw new Error("cannot find destructor for " + heldValue);
         }
-        delete destructors[heldValue]
-        callback(heldValue);
+        if (destructors[heldValue].count == 0) {
+            delete destructors[heldValue]
+            callback(heldValue);
+        } else {
+            destructors[heldValue].count--;
+        }
     });
 }
-export function OnFinalize(obj: object, heldValue: any, callback: (heldValue: any) => any) {
+export function OnFinalize(obj: object, heldValue: any, callback: (heldValue: CSIdentifer) => any) {
     if (!registry) {
         init();
     }
-    destructors[heldValue] = callback;
+    (callback as Destructor).count = 0;
+    destructors[heldValue] = (callback as Destructor);
     registry.register(obj, heldValue);
 }
 declare let global: any;
@@ -255,7 +274,7 @@ export class PuertsJSEngine {
         return this.unityApi.unityInstance.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
     }
 
-    callV8DestructorCallback(functionPtr: IntPtr, selfPtr: IntPtr, data: number) {
+    callV8DestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifer, data: number) {
         this.unityApi.unityInstance.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
     }
 }
