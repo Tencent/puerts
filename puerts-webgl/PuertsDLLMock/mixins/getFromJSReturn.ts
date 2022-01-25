@@ -31,7 +31,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
             throw new Error('not implemented')
         },
         GetObjectFromResult: function (resultInfo: IntPtr) {
-            return engine.csharpObjectMap.getCSIdentiferFromObject(engine.lastReturnCSResult);
+            return engine.csharpObjectMap.getCSIdentifierFromObject(engine.lastReturnCSResult);
         },
         GetTypeIdFromResult: function (resultInfo: IntPtr) {
             return GetType(engine, engine.lastReturnCSResult);

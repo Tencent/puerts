@@ -17,7 +17,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             const csharpObjectMap = engine.csharpObjectMap;
             const id = csharpObjectMap.classes.length;
 
-            let tempExternalCSID = 0;
+            let tempExternalCSID: CSIdentifier = 0;
             const ctor = function () {
                 // 设置类型ID
                 this["$cid"] = id;
@@ -39,15 +39,15 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 if (size) {
                     csID = engine.unityApi._memcpy(engine.unityApi._malloc(size), csID, size);
                     csharpObjectMap.add(csID, this);
-                    OnFinalize(this, csID, (csIdentifer) => {
-                        csharpObjectMap.remove(csIdentifer);
-                        engine.unityApi._free(csIdentifer);
+                    OnFinalize(this, csID, (csIdentifier) => {
+                        csharpObjectMap.remove(csIdentifier);
+                        engine.unityApi._free(csIdentifier);
                     })
                 } else {
                     csharpObjectMap.add(csID, this);
-                    OnFinalize(this, csID, (csIdentifer) => {
-                        csharpObjectMap.remove(csIdentifer);
-                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifer, dataLow);
+                    OnFinalize(this, csID, (csIdentifier) => {
+                        csharpObjectMap.remove(csIdentifier);
+                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifier, dataLow);
                     })
                 }
             }

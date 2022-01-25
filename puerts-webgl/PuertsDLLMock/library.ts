@@ -147,22 +147,22 @@ export class CSharpObjectMap {
         delete this.nativeObjectKV[csID];
     }
     findOrAddObject(csID: CSIdentifier, classID: number) {
-        var ret;
-        if (this.nativeObjectKV[csID] && (ret = this.nativeObjectKV[csID].deref())) {
+        let ret = this.nativeObjectKV[csID];
+        if (ret && (ret = ret.deref())) {
             return ret;
         }
         ret = this.classes[classID].createFromCS(csID);
         // this.add(csID, ret); 构造函数里负责调用
         return ret;
     }
-    getCSIdentiferFromObject(obj: any) {
+    getCSIdentifierFromObject(obj: any) {
         return this.csIDWeakMap.get(obj);
     }
 }
 
 interface Destructor {
     (heldValue: CSIdentifier): any,
-    count: number
+    ref: number
 };
 var destructors: { [csIdentifier: CSIdentifier]: Destructor } = {};
 
@@ -176,8 +176,8 @@ function init() {
         if (!callback) {
             throw new Error("cannot find destructor for " + heldValue);
         }
-        if (--callback.count == 0) {
-            delete destructors[heldValue]
+        if (--callback.ref == 0) {
+            delete destructors[heldValue];
             callback(heldValue);
         }
     });
@@ -186,14 +186,14 @@ export function OnFinalize(obj: object, heldValue: any, callback: (heldValue: CS
     if (!registry) {
         init();
     }
-    if (destructors[heldValue]) {
-        // weakref内容释放时机可能比finalizationRegistry的触发更早，前面如果发现weakRef为空会重新创建对象
+    let originCallback = destructors[heldValue];
+    if (originCallback) {
+        // WeakRef内容释放时机可能比finalizationRegistry的触发更早，前面如果发现weakRef为空会重新创建对象
         // 但之前对象的finalizationRegistry最终又肯定会触发。
         // 所以如果遇到这个情况，需要给destructor加计数
-        destructors[heldValue].count++
-
+        ++originCallback.ref;
     } else {
-        (callback as Destructor).count = 1;
+        (callback as Destructor).ref = 1;
         destructors[heldValue] = (callback as Destructor);
     }
     registry.register(obj, heldValue);
@@ -256,7 +256,7 @@ export class PuertsJSEngine {
             engine.callV8FunctionCallback(
                 functionPtr,
                 // getIntPtrManager().GetPointerForJSValue(this),
-                engine.csharpObjectMap.getCSIdentiferFromObject(this),
+                engine.csharpObjectMap.getCSIdentifierFromObject(this),
                 callbackInfoPtr,
                 args.length,
                 data
@@ -286,7 +286,7 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
     if (typeof value == 'function') { return 256 }
     if (value instanceof Date) { return 512 }
     if (value instanceof Array) { return 128 }
-    if (engine.csharpObjectMap.getCSIdentiferFromObject(value)) { return 32 }
+    if (engine.csharpObjectMap.getCSIdentifierFromObject(value)) { return 32 }
     return 64;
 }
 
