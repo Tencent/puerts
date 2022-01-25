@@ -271,7 +271,10 @@ void FFunctionTranslator::Call(
     {
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            Arguments[i]->Property->DestroyValue_InContainer(Params);
+            if (Arguments[i]->ParamShallowCopySize == 0)
+            {
+                Arguments[i]->Property->DestroyValue_InContainer(Params);
+            }
         }
     }
 }
@@ -312,7 +315,10 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     {
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            Arguments[i]->Property->DestroyValue_InContainer(Params);
+            if (Arguments[i]->ParamShallowCopySize == 0)
+            {
+                Arguments[i]->Property->DestroyValue_InContainer(Params);
+            }
         }
     }
 }
@@ -507,7 +513,10 @@ void FExtensionMethodTranslator::CallExtension(
         {
             for (int i = 0; i < Arguments.size(); ++i)
             {
-                Arguments[i]->Property->DestroyValue_InContainer(Params);
+                if (Arguments[i]->ParamShallowCopySize == 0)
+                {
+                    Arguments[i]->Property->DestroyValue_InContainer(Params);
+                }
             }
         }
         FV8Utils::ThrowException(Isolate, "access a invalid object");
@@ -555,7 +564,10 @@ void FExtensionMethodTranslator::CallExtension(
     {
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            Arguments[i]->Property->DestroyValue_InContainer(Params);
+            if (Arguments[i]->ParamShallowCopySize == 0)
+            {
+                Arguments[i]->Property->DestroyValue_InContainer(Params);
+            }
         }
     }
 }

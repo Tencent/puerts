@@ -40,15 +40,15 @@ var global = global || (function () { return this; }());
     puerts.registerBuildinModule('cpp', CPP);
     
     function ref(x) {
-        return {value:x};
+        return [x];
     }
 
     function unref(r) {
-        return r.value;
+        return r[0];
     }
     
     function setref(x, val) {
-        x.value = val;
+        x[0] = val;
     }
     
     cache.NewObject = global.__tgjsNewObject;

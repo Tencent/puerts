@@ -102,8 +102,7 @@ V8_INLINE void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Valu
     if (holder->IsObject())
     {
         auto outer = holder->ToObject(context).ToLocalChecked();
-        auto _unused = outer->Set(
-            context, v8::String::NewFromUtf8(context->GetIsolate(), "value", v8::NewStringType::kNormal).ToLocalChecked(), value);
+        auto _unused = outer->Set(context, 0, value);
     }
 }
 
@@ -299,8 +298,7 @@ struct Converter<std::reference_wrapper<T>>
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
     {
         auto result = v8::Object::New(context->GetIsolate());
-        auto _unused =
-            result->Set(context, Converter<const char*>::toScript(context, "value"), Converter<T>::toScript(context, value));
+        auto _unused = result->Set(context, 0, Converter<T>::toScript(context, value));
         return result;
     }
 
@@ -309,7 +307,7 @@ struct Converter<std::reference_wrapper<T>>
         if (value->IsObject())
         {
             auto outer = value->ToObject(context).ToLocalChecked();
-            auto realvalue = outer->Get(context, Converter<const char*>::toScript(context, "value")).ToLocalChecked();
+            auto realvalue = outer->Get(context, 0).ToLocalChecked();
             return Converter<T>::toCpp(context, realvalue);
         }
         else

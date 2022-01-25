@@ -33,8 +33,7 @@ v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    v8::Local<v8::Value> ObjectValueKey = v8::String::NewFromUtf8(Isolate, "value", v8::NewStringType::kNormal).ToLocalChecked();
-    v8::Local<v8::Value> ReturnValue = Value->ToObject(Context).ToLocalChecked()->Get(Context, ObjectValueKey).ToLocalChecked();
+    v8::Local<v8::Value> ReturnValue = Value->ToObject(Context).ToLocalChecked()->Get(Context, 0).ToLocalChecked();
 
     return HandleScope.Escape(ReturnValue);
 }
@@ -46,8 +45,7 @@ void DataTransfer::UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, c
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
 
-    v8::Local<v8::Value> ObjectValueKey = v8::String::NewFromUtf8(Isolate, "value", v8::NewStringType::kNormal).ToLocalChecked();
-    auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, ObjectValueKey, Value);
+    auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, 0, Value);
 }
 
 #if USING_IN_UNREAL_ENGINE

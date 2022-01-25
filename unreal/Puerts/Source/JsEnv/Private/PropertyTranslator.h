@@ -129,6 +129,8 @@ public:
 
     bool OwnerIsClass;
 
+    size_t ParamShallowCopySize = 0;
+
     std::unique_ptr<FPropertyTranslator> Inner;
 
     static void Getter(const v8::FunctionCallbackInfo<v8::Value>& Info);
