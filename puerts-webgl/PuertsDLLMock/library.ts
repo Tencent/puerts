@@ -148,15 +148,8 @@ export class CSharpObjectMap {
     }
     findOrAddObject(csID: CSIdentifier, classID: number) {
         var ret;
-        if (this.nativeObjectKV[csID]) {
-            if (ret = this.nativeObjectKV[csID].deref()) {
-                return ret;
-
-            } else if (destructors[csID]) {
-                // weakref内容释放时机可能比finalizationRegistry的触发更早，但finalizationRegistry最终又肯定会触发。
-                // 如果遇到这个情况，需要给destructor加计数
-                destructors[csID].count++;
-            }
+        if (this.nativeObjectKV[csID] && (ret = this.nativeObjectKV[csID].deref())) {
+            return ret;
         }
         ret = this.classes[classID].createFromCS(csID);
         // this.add(csID, ret); 构造函数里负责调用
@@ -183,11 +176,9 @@ function init() {
         if (!callback) {
             throw new Error("cannot find destructor for " + heldValue);
         }
-        if (callback.count == 0) {
+        if (--callback.count == 0) {
             delete destructors[heldValue]
             callback(heldValue);
-        } else {
-            callback.count--;
         }
     });
 }
@@ -195,8 +186,16 @@ export function OnFinalize(obj: object, heldValue: any, callback: (heldValue: CS
     if (!registry) {
         init();
     }
-    (callback as Destructor).count = 0;
-    destructors[heldValue] = (callback as Destructor);
+    if (destructors[heldValue]) {
+        // weakref内容释放时机可能比finalizationRegistry的触发更早，前面如果发现weakRef为空会重新创建对象
+        // 但之前对象的finalizationRegistry最终又肯定会触发。
+        // 所以如果遇到这个情况，需要给destructor加计数
+        destructors[heldValue].count++
+
+    } else {
+        (callback as Destructor).count = 1;
+        destructors[heldValue] = (callback as Destructor);
+    }
     registry.register(obj, heldValue);
 }
 declare let global: any;
