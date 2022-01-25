@@ -17,7 +17,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             const csharpObjectMap = engine.csharpObjectMap;
             const id = csharpObjectMap.classes.length;
 
-            let tempExternalCSObjectID = 0;
+            let tempExternalCSID = 0;
             const ctor = function () {
                 // 设置类型ID
                 this["$cid"] = id;
@@ -26,33 +26,33 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 // 第一个情况，cs对象ID或者是callV8ConstructorCallback返回的。
                 // 第二个情况，则cs对象ID是cs new完之后一并传给js的。
 
-                let csIdentifer = tempExternalCSObjectID; // 如果是第二个情况，此ID由createFromCS设置
-                tempExternalCSObjectID = 0;
-                if (csIdentifer === 0) {
+                let csID = tempExternalCSID; // 如果是第二个情况，此ID由createFromCS设置
+                tempExternalCSID = 0;
+                if (csID === 0) {
                     const args = Array.prototype.slice.call(arguments, 0);
                     const callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(args);
                     // 虽然puerts内Constructor的返回值叫self，但它其实就是CS对象的一个id而已。
-                    csIdentifer = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, dataLow);
+                    csID = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, dataLow);
                     FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
                 }
                 // blittable
                 if (size) {
-                    csIdentifer = engine.unityApi._memcpy(engine.unityApi._malloc(size), csIdentifer, size);
-                    csharpObjectMap.add(csIdentifer, this);
-                    OnFinalize(this, csIdentifer, (csIdentifer) => {
+                    csID = engine.unityApi._memcpy(engine.unityApi._malloc(size), csID, size);
+                    csharpObjectMap.add(csID, this);
+                    OnFinalize(this, csID, (csIdentifer) => {
                         csharpObjectMap.remove(csIdentifer);
                         engine.unityApi._free(csIdentifer);
                     })
                 } else {
-                    csharpObjectMap.add(csIdentifer, this);
-                    OnFinalize(this, csIdentifer, (csIdentifer) => {
+                    csharpObjectMap.add(csID, this);
+                    OnFinalize(this, csID, (csIdentifer) => {
                         csharpObjectMap.remove(csIdentifer);
                         engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifer, dataLow);
                     })
                 }
             }
-            ctor.createFromCS = function (csObjectID: number) {
-                tempExternalCSObjectID = csObjectID;
+            ctor.createFromCS = function (csID: CSIdentifier) {
+                tempExternalCSID = csID;
                 return new (ctor as any)();
             };
             Object.defineProperty(ctor, "name", { value: fullName + "Constructor" });

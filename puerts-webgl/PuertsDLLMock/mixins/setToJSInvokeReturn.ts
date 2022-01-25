@@ -13,7 +13,7 @@ export default function WebGLBackendSetToJSInvokeReturnApi(engine: PuertsJSEngin
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);
             callbackInfo.returnValue = engine.csharpObjectMap.classes[classID];
         },
-        ReturnObject: function (isolate: IntPtr, info: MockIntPtr, classID: int, self: CSIdentifer) {
+        ReturnObject: function (isolate: IntPtr, info: MockIntPtr, classID: int, self: CSIdentifier) {
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);
             callbackInfo.returnValue = engine.csharpObjectMap.findOrAddObject(self, classID);
         },
