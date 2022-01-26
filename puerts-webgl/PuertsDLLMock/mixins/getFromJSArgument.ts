@@ -45,8 +45,8 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
         GetArrayBufferFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isOut: bool) {
             var ab = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<ArrayBuffer>(value);
             var ptr = engine.unityApi._malloc(ab.byteLength);
-            engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
-            engine.unityApi.HEAP32[length >> 2] = ab.byteLength;
+            engine.unityInst.HEAP8.set(new Int8Array(ab), ptr);
+            engine.unityInst.HEAP32[length >> 2] = ab.byteLength;
             setOutValue32(engine, length, ab.byteLength);
             return ptr;
         },

@@ -23,10 +23,10 @@ global.wxRequire = global.require;
 global.PuertsWebGL = {
     // puerts首次初始化时会调用这里，并把Unity的通信接口传入
     Init({
-        Pointer_stringify, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, HEAP8, HEAP32, unityInstance
+        UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
     }: PuertsJSEngine.UnityAPI) {
         const engine = new PuertsJSEngine({
-            Pointer_stringify, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, HEAP8, HEAP32, unityInstance
+            UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
         });
 
         global.__tgjsEvalScript = typeof eval == "undefined" ? () => { } : eval;
@@ -80,11 +80,11 @@ global.PuertsWebGL = {
                 },
                 ExecuteModule: function (isolate: IntPtr, pathString: CSString, exportee: CSString) {
                     try {
-                        let fileName = Pointer_stringify(pathString);
+                        let fileName = UTF8ToString(pathString);
                         if (typeof wx != 'undefined') {
                             const result = wxRequire('puerts_minigame_js_resources/' + fileName.replace('.mjs', '.js').replace('.cjs', '.js'));
                             if (exportee) {
-                                engine.lastReturnCSResult = result[Pointer_stringify(exportee)];
+                                engine.lastReturnCSResult = result[UTF8ToString(exportee)];
                             } else {
                                 engine.lastReturnCSResult = result;
                             }
@@ -104,7 +104,7 @@ global.PuertsWebGL = {
                             }
 
                             if (exportee) {
-                                engine.lastReturnCSResult = result.exports[Pointer_stringify(exportee)];
+                                engine.lastReturnCSResult = result.exports[UTF8ToString(exportee)];
                             } else {
                                 engine.lastReturnCSResult = result.exports;
                             }
@@ -118,7 +118,7 @@ global.PuertsWebGL = {
                     if (!global.eval) {
                         throw new Error("eval is not supported");
                     }
-                    const code = Pointer_stringify(codeString);
+                    const code = UTF8ToString(codeString);
                     const result = global.eval(code);
                     // return getIntPtrManager().GetPointerForJSValue(result);
                     engine.lastReturnCSResult = result;
@@ -127,7 +127,7 @@ global.PuertsWebGL = {
 
 
                 ThrowException: function (isolate: IntPtr, /*byte[] */messageString: CSString) {
-                    throw new Error(Pointer_stringify(messageString));
+                    throw new Error(UTF8ToString(messageString));
                 },
 
                 InvokeJSFunction: function (_function: JSFunctionPtr, hasResult: bool) {

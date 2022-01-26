@@ -46,7 +46,7 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
         GetArrayBufferFromResult: function (resultInfo: IntPtr, /*out int */length: any) {
             var ab: ArrayBuffer = engine.lastReturnCSResult;
             var ptr = engine.unityApi._malloc(ab.byteLength);
-            engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
+            engine.unityInst.HEAP8.set(new Int8Array(ab), ptr);
             setOutValue32(engine, length, ab.byteLength);
             return ptr;
         },

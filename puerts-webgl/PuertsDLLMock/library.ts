@@ -205,23 +205,22 @@ export { global };
 
 export namespace PuertsJSEngine {
     export interface UnityAPI {
-        Pointer_stringify: (strPtr: CSString) => string,
+        UTF8ToString: (strPtr: CSString) => string,
         _malloc: (size: number) => number,
         _memset: (ptr: number, ch: number, size: number) => number,
-        _memcpy: (dst: number, src: number, size: number) => number,
+        _memcpy: (dst: number, src: number, size: number) => void,
         _free: (ptr: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
         lengthBytesUTF8: (str: string) => number,
         unityInstance: any,
-        HEAP8: Int8Array,
-        HEAP32: Int32Array
     }
 }
 
 export class PuertsJSEngine {
     public readonly csharpObjectMap: CSharpObjectMap
 
-    public readonly unityApi: PuertsJSEngine.UnityAPI
+    public readonly unityApi: PuertsJSEngine.UnityAPI;
+    public readonly unityInst: { HEAP8: Uint8Array, HEAP32: Uint32Array, dynCall_viiiii: Function, dynCall_viii: Function, dynCall_iiiii: Function };
 
     public lastReturnCSResult: any = null;
     public lastExceptionInfo: string = null;
@@ -232,6 +231,7 @@ export class PuertsJSEngine {
     constructor(unityAPI: PuertsJSEngine.UnityAPI) {
         this.csharpObjectMap = new CSharpObjectMap();
         this.unityApi = unityAPI;
+        this.unityInst = unityAPI.unityInstance;
     }
 
     JSStringToCSString(returnStr: string, /** out int */length: number) {
@@ -266,15 +266,15 @@ export class PuertsJSEngine {
     }
 
     callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        this.unityApi.unityInstance.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
+        this.unityInst.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
     }
 
     callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        return this.unityApi.unityInstance.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
+        return this.unityInst.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
     }
 
     callV8DestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, data: number) {
-        this.unityApi.unityInstance.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
+        this.unityInst.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
     }
 }
 
@@ -295,9 +295,9 @@ export function makeBigInt(low: number, high: number) {
 }
 
 export function setOutValue32(engine: PuertsJSEngine, valuePtr: number, value: any) {
-    engine.unityApi.HEAP32[valuePtr >> 2] = value;
+    engine.unityInst.HEAP32[valuePtr >> 2] = value;
 }
 
 export function setOutValue8(engine: PuertsJSEngine, valuePtr: number, value: any) {
-    engine.unityApi.HEAP8[valuePtr] = value;
+    engine.unityInst.HEAP8[valuePtr] = value;
 }

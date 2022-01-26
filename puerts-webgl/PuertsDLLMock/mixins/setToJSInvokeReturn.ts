@@ -22,7 +22,7 @@ export default function WebGLBackendSetToJSInvokeReturnApi(engine: PuertsJSEngin
             callbackInfo.returnValue = number;
         },
         ReturnString: function (isolate: IntPtr, info: MockIntPtr, strString: CSString) {
-            const str = engine.unityApi.Pointer_stringify(strString);
+            const str = engine.unityApi.UTF8ToString(strString);
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);
             callbackInfo.returnValue = str;
         },
@@ -52,7 +52,7 @@ export default function WebGLBackendSetToJSInvokeReturnApi(engine: PuertsJSEngin
         },
         ReturnArrayBuffer: function (isolate: IntPtr, info: MockIntPtr, /*byte[] */bytes: number, Length: int) {
             var callbackInfo = FunctionCallbackInfoPtrManager.GetByMockPointer(info);
-            callbackInfo.returnValue = new Uint8Array(engine.unityApi.HEAP8.buffer, bytes, Length);
+            callbackInfo.returnValue = new Uint8Array(engine.unityInst.HEAP8.buffer, bytes, Length);
         },
 
     }

@@ -32,7 +32,7 @@ export default function WebGLBackendSetToInvokeJSArgumentApi(engine: PuertsJSEng
         },
         PushStringForJSFunction: function (_function: JSFunctionPtr, strString: CSString) {
             const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
-            func.args.push(engine.unityApi.Pointer_stringify(strString));
+            func.args.push(engine.unityApi.UTF8ToString(strString));
 
         },
         PushNumberForJSFunction: function (_function: JSFunctionPtr, d: double) {
@@ -55,7 +55,7 @@ export default function WebGLBackendSetToInvokeJSArgumentApi(engine: PuertsJSEng
         },
         PushArrayBufferForJSFunction: function (_function: MockIntPtr, /*byte[] */bytes: number, length: int) {
             const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
-            func.args.push(new Uint8Array(engine.unityApi.HEAP8.buffer, bytes, length));
+            func.args.push(new Uint8Array(engine.unityInst.HEAP8.buffer, bytes, length));
         }
 
     }

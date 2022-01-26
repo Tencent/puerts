@@ -9,11 +9,11 @@ import { FunctionCallbackInfoPtrManager, global, OnFinalize, PuertsJSEngine } fr
 export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
     const returnee = {
         SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, dataLow: number, dataHigh: number) {
-            const name = engine.unityApi.Pointer_stringify(nameString);
+            const name = engine.unityApi.UTF8ToString(nameString);
             global[name] = engine.makeV8FunctionCallbackFunction(v8FunctionCallback, dataLow);
         },
         _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, dataLow: number, dataHigh: number, size: number) {
-            const fullName = engine.unityApi.Pointer_stringify(fullNameString);
+            const fullName = engine.unityApi.UTF8ToString(fullNameString);
             const csharpObjectMap = engine.csharpObjectMap;
             const id = csharpObjectMap.classes.length;
 
@@ -37,9 +37,10 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 }
                 // blittable
                 if (size) {
-                    csID = engine.unityApi._memcpy(engine.unityApi._malloc(size), csID, size);
-                    csharpObjectMap.add(csID, this);
-                    OnFinalize(this, csID, (csIdentifier) => {
+                    let csNewID = engine.unityApi._malloc(size);
+                    engine.unityApi._memcpy(csNewID, csID, size);
+                    csharpObjectMap.add(csNewID, this);
+                    OnFinalize(this, csNewID, (csIdentifier) => {
                         csharpObjectMap.remove(csIdentifier);
                         engine.unityApi._free(csIdentifier);
                     })
@@ -75,7 +76,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             if (!cls) {
                 return false;
             }
-            const name = engine.unityApi.Pointer_stringify(nameString);
+            const name = engine.unityApi.UTF8ToString(nameString);
 
             var fn = engine.makeV8FunctionCallbackFunction(callback, data)
             if (isStatic) {
@@ -101,7 +102,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             if (!cls) {
                 return false;
             }
-            const name = engine.unityApi.Pointer_stringify(nameString);
+            const name = engine.unityApi.UTF8ToString(nameString);
 
             var attr: PropertyDescriptor = {
                 configurable: !dontDelete,
