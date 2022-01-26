@@ -204,7 +204,7 @@ global.global = global;
 export { global };
 
 export namespace PuertsJSEngine {
-    export interface UnityAPI {
+    export interface EngineConstructorParam {
         UTF8ToString: (strPtr: CSString) => string,
         _malloc: (size: number) => number,
         _memset: (ptr: number, ch: number, size: number) => number,
@@ -214,13 +214,26 @@ export namespace PuertsJSEngine {
         lengthBytesUTF8: (str: string) => number,
         unityInstance: any,
     }
+    export interface UnityAPI {
+        UTF8ToString: (strPtr: CSString) => string,
+        _malloc: (size: number) => number,
+        _memset: (ptr: number, ch: number, size: number) => number,
+        _memcpy: (dst: number, src: number, size: number) => void,
+        _free: (ptr: number) => void,
+        stringToUTF8: (str: string, buffer: any, size: number) => any,
+        lengthBytesUTF8: (str: string) => number,
+        HEAP8: Uint8Array,
+        HEAP32: Uint32Array,
+        dynCall_viiiii: Function,
+        dynCall_viii: Function,
+        dynCall_iiiii: Function
+    }
 }
 
 export class PuertsJSEngine {
     public readonly csharpObjectMap: CSharpObjectMap
 
     public readonly unityApi: PuertsJSEngine.UnityAPI;
-    public readonly unityInst: { HEAP8: Uint8Array, HEAP32: Uint32Array, dynCall_viiiii: Function, dynCall_viii: Function, dynCall_iiiii: Function };
 
     public lastReturnCSResult: any = null;
     public lastExceptionInfo: string = null;
@@ -228,10 +241,34 @@ export class PuertsJSEngine {
     public callV8Constructor: MockIntPtr;
     public callV8Destructor: MockIntPtr;
 
-    constructor(unityAPI: PuertsJSEngine.UnityAPI) {
+    constructor(ctorParam: PuertsJSEngine.EngineConstructorParam) {
         this.csharpObjectMap = new CSharpObjectMap();
-        this.unityApi = unityAPI;
-        this.unityInst = unityAPI.unityInstance;
+        const { UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8 } = ctorParam
+        this.unityApi = { 
+            UTF8ToString, 
+            _malloc, 
+            _memset, 
+            _memcpy, 
+            _free, 
+            stringToUTF8, 
+            lengthBytesUTF8,
+
+            dynCall_iiiii: ctorParam.unityInstance.dynCall_iiiii.bind(ctorParam.unityInstance),
+            dynCall_viii: ctorParam.unityInstance.dynCall_viii.bind(ctorParam.unityInstance),
+            dynCall_viiiii: ctorParam.unityInstance.dynCall_viiiii.bind(ctorParam.unityInstance),
+            HEAP32: null,
+            HEAP8: null
+        };
+        Object.defineProperty(this.unityApi, 'HEAP32', {
+            get: function() {
+                return ctorParam.unityInstance.HEAP32
+            }
+        })
+        Object.defineProperty(this.unityApi, 'HEAP8', {
+            get: function() {
+                return ctorParam.unityInstance.HEAP8
+            }
+        })
     }
 
     JSStringToCSString(returnStr: string, /** out int */length: number) {
@@ -266,15 +303,15 @@ export class PuertsJSEngine {
     }
 
     callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        this.unityInst.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
+        this.unityApi.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
     }
 
     callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        return this.unityInst.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
+        return this.unityApi.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
     }
 
     callV8DestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, data: number) {
-        this.unityInst.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
+        this.unityApi.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
     }
 }
 
@@ -295,9 +332,9 @@ export function makeBigInt(low: number, high: number) {
 }
 
 export function setOutValue32(engine: PuertsJSEngine, valuePtr: number, value: any) {
-    engine.unityInst.HEAP32[valuePtr >> 2] = value;
+    engine.unityApi.HEAP32[valuePtr >> 2] = value;
 }
 
 export function setOutValue8(engine: PuertsJSEngine, valuePtr: number, value: any) {
-    engine.unityInst.HEAP8[valuePtr] = value;
+    engine.unityApi.HEAP8[valuePtr] = value;
 }
