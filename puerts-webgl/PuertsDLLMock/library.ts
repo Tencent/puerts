@@ -243,7 +243,7 @@ export class PuertsJSEngine {
 
     constructor(ctorParam: PuertsJSEngine.EngineConstructorParam) {
         this.csharpObjectMap = new CSharpObjectMap();
-        const { UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8 } = ctorParam
+        const { UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
         this.unityApi = { 
             UTF8ToString, 
             _malloc, 
@@ -253,20 +253,20 @@ export class PuertsJSEngine {
             stringToUTF8, 
             lengthBytesUTF8,
 
-            dynCall_iiiii: ctorParam.unityInstance.dynCall_iiiii.bind(ctorParam.unityInstance),
-            dynCall_viii: ctorParam.unityInstance.dynCall_viii.bind(ctorParam.unityInstance),
-            dynCall_viiiii: ctorParam.unityInstance.dynCall_viiiii.bind(ctorParam.unityInstance),
+            dynCall_iiiii: unityInstance.dynCall_iiiii.bind(unityInstance),
+            dynCall_viii: unityInstance.dynCall_viii.bind(unityInstance),
+            dynCall_viiiii: unityInstance.dynCall_viiiii.bind(unityInstance),
             HEAP32: null,
             HEAP8: null
         };
         Object.defineProperty(this.unityApi, 'HEAP32', {
             get: function() {
-                return ctorParam.unityInstance.HEAP32
+                return unityInstance.HEAP32
             }
         })
         Object.defineProperty(this.unityApi, 'HEAP8', {
             get: function() {
-                return ctorParam.unityInstance.HEAP8
+                return unityInstance.HEAP8
             }
         })
     }
@@ -275,12 +275,10 @@ export class PuertsJSEngine {
         if (returnStr === null || returnStr === undefined) {
             return 0;
         }
-        if (length) {
-            setOutValue32(this, length, returnStr.length);
-        }
-        var bufferSize = this.unityApi.lengthBytesUTF8(returnStr) + 1;
-        var buffer = this.unityApi._malloc(bufferSize);
-        this.unityApi.stringToUTF8(returnStr, buffer, bufferSize);
+        var byteCount = this.unityApi.lengthBytesUTF8(returnStr);
+        setOutValue32(this, length, byteCount);
+        var buffer = this.unityApi._malloc(byteCount + 1);
+        this.unityApi.stringToUTF8(returnStr, buffer, byteCount + 1);
         return buffer;
     }
 
