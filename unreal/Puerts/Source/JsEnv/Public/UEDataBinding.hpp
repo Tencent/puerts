@@ -28,25 +28,6 @@ namespace puerts
 namespace converter
 {
 template <>
-struct Converter<const TCHAR*>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const TCHAR* value)
-    {
-        return v8::String::NewFromUtf8(context->GetIsolate(), TCHAR_TO_UTF8(value), v8::NewStringType::kNormal).ToLocalChecked();
-    }
-
-    static const TCHAR* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsString();
-    }
-};
-
-template <>
 struct Converter<FString>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FString value)
@@ -195,12 +176,6 @@ struct ScriptTypeName<FName>
 
 template <>
 struct ScriptTypeName<FText>
-{
-    static constexpr const char* value = "string";
-};
-
-template <>
-struct ScriptTypeName<const TCHAR*>
 {
     static constexpr const char* value = "string";
 };
