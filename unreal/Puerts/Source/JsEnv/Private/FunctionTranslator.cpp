@@ -368,6 +368,8 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 {
     void* Params = Stack.Locals;
 
+    auto OldOutParms = Stack.OutParms;
+
     if (Stack.Node != Stack.CurrentNativeFunction)
     {
 #if defined(USE_GLOBAL_PARAMS_BUFFER)
@@ -466,6 +468,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             }
         }
     }
+    Stack.OutParms = OldOutParms;
 }
 
 FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction* InFunction) : FFunctionTranslator(InFunction, false)
