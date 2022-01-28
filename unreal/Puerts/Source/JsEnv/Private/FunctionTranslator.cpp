@@ -405,7 +405,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 
                 if (Property->PropertyFlags & CPF_OutParm)
                 {
-                    Stack.Step(Stack.Object, NULL);
+                    Stack.Step(Stack.Object, Property->ContainerPtrToValuePtr<uint8>(Params));
 
                     if (LastOut)
                     {
