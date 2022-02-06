@@ -15,6 +15,7 @@ public class PuertsTestCfg
             {
                 typeof(PuertsTest.TestObject),
                 typeof(PuertsTest.TestStruct),
+                typeof(PerformanceHelper),
             };
         }
     }
@@ -28,6 +29,7 @@ public class PuertsTestCfg
             {
                 //打开这个可以优化Vector3的GC，但需要开启unsafe编译
                 typeof(PuertsTest.TestStruct),
+                typeof(UnityEngine.Vector3),
             };
         }
     }

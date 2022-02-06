@@ -1,0 +1,10 @@
+﻿
+
+<linker>
+
+	<assembly fullname="Assembly-CSharp">
+	    <type fullname="PerformanceHelper" preserve="all"/>
+		
+	</assembly>
+
+</linker>

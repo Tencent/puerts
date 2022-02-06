@@ -1,0 +1,37 @@
+local start = os.clock()
+for i=0,1000000,1
+do
+    CS.PerformanceHelper.ReturnNumber(3);
+end
+-- CS.UnityEngine.Debug.Log('XLua Number:');
+-- CS.UnityEngine.Debug.Log(math.floor((os.clock() - start) * 1000));
+CS.PerformanceHelper.LuaNumber.text = 'XLua Number:'..math.floor((os.clock() - start) * 1000)..'ms'
+
+start = os.clock()
+for i=0,1000000,1
+do
+    CS.PerformanceHelper.ReturnVector(1, 2, 3);
+end
+-- CS.UnityEngine.Debug.Log('XLua Vector3:');
+-- CS.UnityEngine.Debug.Log(math.floor((os.clock() - start) * 1000));
+CS.PerformanceHelper.LuaVector.text = 'XLua Vector3:'..math.floor((os.clock() - start) * 1000)..'ms'
+
+-- local fibcache = {1}
+-- local function fibonacci(n)
+--     if n == 0 then 
+--         return 0
+--     end
+--     if n == 1 then 
+--         return 1
+--     end
+--     return fibonacci(n - 1) + fibonacci(n - 2)
+-- end
+
+-- start = os.clock()
+-- for i=0,100000,1
+-- do
+--     fibonacci(12)
+-- end
+-- -- CS.UnityEngine.Debug.Log('XLua fibonacci:');
+-- -- CS.UnityEngine.Debug.Log(math.floor((os.clock() - start) * 1000));
+-- CS.PerformanceHelper.LuaFibonacci.text = 'XLua fibonacci:'..math.floor((os.clock() - start) * 1000)..'ms'

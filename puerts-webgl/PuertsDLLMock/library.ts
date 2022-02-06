@@ -133,21 +133,28 @@ export class CSharpObjectMap {
         [key: string]: any;
     }[] = [null];
 
-    private nativeObjectKV: { [objectID: CSIdentifier]: WeakRef<any> } = {};
-    private csIDWeakMap: WeakMap<any, CSIdentifier> = new WeakMap();
+    private nativeObjectKV: Map<CSIdentifier, WeakRef<any>> = new Map();
+    // private nativeObjectKV: { [objectID: CSIdentifier]: WeakRef<any> } = {};
+    // private csIDWeakMap: WeakMap<any, CSIdentifier> = new WeakMap();
 
     public namesToClassesID: { [name: string]: number } = {};
     public classIDWeakMap = new WeakMap();
 
     add(csID: CSIdentifier, obj: any) {
-        this.nativeObjectKV[csID] = new WeakRef(obj);
-        this.csIDWeakMap.set(obj, csID);
+        // this.nativeObjectKV[csID] = new WeakRef(obj);
+        // this.csIDWeakMap.set(obj, csID);
+        this.nativeObjectKV.set(csID, new WeakRef(obj));
+        Object.defineProperty(obj, '_puerts_csid_', {
+            value: csID
+        })
     }
     remove(csID: CSIdentifier) {
-        delete this.nativeObjectKV[csID];
+        // delete this.nativeObjectKV[csID];
+        this.nativeObjectKV.delete(csID);
     }
     findOrAddObject(csID: CSIdentifier, classID: number) {
-        let ret = this.nativeObjectKV[csID];
+        let ret = this.nativeObjectKV.get(csID);
+        // let ret = this.nativeObjectKV[csID];
         if (ret && (ret = ret.deref())) {
             return ret;
         }
@@ -156,7 +163,8 @@ export class CSharpObjectMap {
         return ret;
     }
     getCSIdentifierFromObject(obj: any) {
-        return this.csIDWeakMap.get(obj);
+        // return this.csIDWeakMap.get(obj);
+        return obj._puerts_csid_;
     }
 }
 
@@ -321,6 +329,7 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
     if (typeof value == 'function') { return 256 }
     if (value instanceof Date) { return 512 }
     if (value instanceof Array) { return 128 }
+    if (value instanceof ArrayBuffer || value instanceof Uint8Array) { return 1024 }
     if (engine.csharpObjectMap.getCSIdentifierFromObject(value)) { return 32 }
     return 64;
 }
