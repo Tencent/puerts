@@ -19,7 +19,7 @@ function csTypeToClass(csType) {
 
             currentCls = parentPrototype.constructor;
             parentPrototype = Object.getPrototypeOf(currentCls.prototype);
-            if (currentCls === Object || currentCls === Function || cls.__static_inherit__) break;
+            if (currentCls === Object || currentCls === Function || currentCls.__static_inherit__) break;
         }
 
         for(var key in cls) {
