@@ -57,7 +57,7 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
     if (PlatformPhysical.FileExists(*NormalizedPath))
     {
         AbsolutePath = PlatformPhysical.ConvertToAbsolutePathForExternalAppForRead(*NormalizedPath);
-        UE_LOG(LogTemp, Display, TEXT("Found external file: %s from %s"), *AbsolutePath, *PathIn);
+        UE_LOG(Puerts, Display, TEXT("Found external file: %s from %s"), *AbsolutePath, *PathIn);
         Path = NormalizedPath;
         return true;
     }
