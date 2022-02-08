@@ -12,9 +12,14 @@ function csTypeToClass(csType) {
     let cls = puerts.loadType(csType);
     
     if (cls) {
-        let parentPrototype = Object.getPrototypeOf(cls.prototype);
-        if (parentPrototype) {
-            Object.setPrototypeOf(cls, parentPrototype.constructor);//v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
+        let currentCls = cls, parentPrototype = Object.getPrototypeOf(currentCls.prototype);
+        while (parentPrototype) {
+            Object.setPrototypeOf(currentCls, parentPrototype.constructor);//v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
+            currentCls.__static_inherit__ = true;
+
+            currentCls = parentPrototype.constructor;
+            parentPrototype = Object.getPrototypeOf(currentCls.prototype);
+            if (currentCls === Object || currentCls === Function || cls.__static_inherit__) break;
         }
 
         for(var key in cls) {
