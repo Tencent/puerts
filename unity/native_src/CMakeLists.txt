@@ -95,9 +95,10 @@ if ( APPLE )
 
         set(CMAKE_SKIP_RPATH FALSE)    
         set(CMAKE_INSTALL_RPATH "@loader_path/")
-        add_library(puerts SHARED
+        add_library(puerts MODULE
             ${PUERTS_SRC} ${PUERTS_INC}
         )
+        set_target_properties ( puerts PROPERTIES BUNDLE TRUE )
     endif ()
 else ()
     add_library(puerts SHARED
