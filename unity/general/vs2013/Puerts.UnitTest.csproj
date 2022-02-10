@@ -15,6 +15,7 @@
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -23,7 +24,7 @@
     <Optimize>false</Optimize>
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <IntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest</IntermediateOutputPath>
     <DefineConstants>_DEBUG;DEBUG;TRACE;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -34,7 +35,7 @@
     <Optimize>true</Optimize>
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <IntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest</IntermediateOutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -66,17 +67,17 @@
     <Compile Include="..\Src\UnitTest\UnitTest.cs">
       <Link>Src\UnitTest\UnitTest.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\warp\AutoStaticCodeRegister.cs">
-      <Link>Src\UnitTest\warp\AutoStaticCodeRegister.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\warp\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
-      <Link>Src\UnitTest\warp\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\PuertsTest_RefInTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\PuertsTest_RefInTest_Wrap.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\warp\PuertsTest_RefInTest_Wrap.cs">
-      <Link>Src\UnitTest\warp\PuertsTest_RefInTest_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\PuertsTest_RefInTest_Vector3_Wrap.cs">
+      <Link>Src\UnitTest\wrap\PuertsTest_RefInTest_Vector3_Wrap.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\warp\PuertsTest_RefInTest_Vector3_Wrap.cs">
-      <Link>Src\UnitTest\warp\PuertsTest_RefInTest_Vector3_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
+      <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

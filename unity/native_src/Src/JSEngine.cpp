@@ -278,7 +278,6 @@ namespace puerts
 
         ResultInfo.Context.Reset();
         ResultInfo.Result.Reset();
-        // TODO DEBUG下一次new的时候会报错的问题
         MainIsolate->Dispose();
         MainIsolate = nullptr;
 
