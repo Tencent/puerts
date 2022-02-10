@@ -618,7 +618,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         {
             int32 ExtraFlags = TypedEntryNode->GetExtraFlags();
 
-            int32 NewExtraFlags = (ExtraFlags | InSetFlags) & ~InClearFlags;
+            int32 NewExtraFlags = ((ExtraFlags & ~NetMask) | InSetFlags) & ~InClearFlags;
 
             if (ExtraFlags != NewExtraFlags)
             {
@@ -629,7 +629,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
         }
         else if (UK2Node_CustomEvent* CustomEventNode = Cast<UK2Node_CustomEvent>(FunctionEntryNode))
         {
-            int32 NewFunctionFlags = (CustomEventNode->FunctionFlags | InSetFlags) & ~InClearFlags;
+            int32 NewFunctionFlags = ((CustomEventNode->FunctionFlags & ~NetMask) | InSetFlags) & ~InClearFlags;
             if (CustomEventNode->FunctionFlags != NewFunctionFlags)
             {
                 CanChangeCheck();
