@@ -13,6 +13,8 @@ function csTypeToClass(csType) {
     
     if (cls) {
         let currentCls = cls, parentPrototype = Object.getPrototypeOf(currentCls.prototype);
+
+        // 此处parentPrototype如果是一个泛型，会丢失父父的继承信息，必须循环找下去
         while (parentPrototype) {
             Object.setPrototypeOf(currentCls, parentPrototype.constructor);//v8 api的inherit并不能把静态属性也继承，通过这种方式修复下
             currentCls.__static_inherit__ = true;

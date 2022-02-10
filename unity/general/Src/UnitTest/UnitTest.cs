@@ -132,6 +132,37 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void DoubleInheritStaticMethod()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            bool res = jsEnv.Eval<bool>(@"
+                const CS = require('csharp');
+                CS.Puerts.UnitTest.ParentParent.doSth();
+                CS.Puerts.UnitTest.SonClass.doSth();
+                true
+            ");
+            Assert.AreEqual(true, res);
+            jsEnv.Dispose();
+        }
+
+        [Test]
+        public void RecursiveJSFunctionInvoke()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingFunc<int, int>();
+            int result = jsEnv.Eval<int>(@"
+                const CS = require('csharp');
+                function fibonacci(num) {
+                    if (num == 0 || num == 1) { return num }
+                    return CS.Puerts.UnitTest.Util.InvokeJSFunctionIntInt(fibonacci, num - 1) + CS.Puerts.UnitTest.Util.InvokeJSFunctionIntInt(fibonacci, num - 2)
+                }
+
+                CS.Puerts.UnitTest.Util.InvokeJSFunctionIntInt(fibonacci, 6);
+            ");
+            Assert.AreEqual(8, result);
+        }
+
+        [Test]
         public void GenericDelegate()
         {
             var jsEnv = new JsEnv(new TxtLoader());

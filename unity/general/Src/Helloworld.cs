@@ -49,25 +49,13 @@ public class TxtLoader : ILoader
 
 public class PuertsTest
 {
-    public static int InvokeJSFunction(Func<int, int> jsFunc, int arg)
-    {
-        return jsFunc(arg);
-    }
-
     public static void Main()
     {
         var jsEnv = new JsEnv(new TxtLoader());
-        jsEnv.UsingFunc<int, int>();
-        int result = jsEnv.Eval<int>(@"
+        jsEnv.Eval(@"
             const CS = require('csharp');
-            function fibonacci(num) {
-                if (num == 0 || num == 1) { return num }
-                return CS.PuertsTest.InvokeJSFunction(fibonacci, num - 1) + CS.PuertsTest.InvokeJSFunction(fibonacci, num - 2)
-            }
-
-            CS.PuertsTest.InvokeJSFunction(fibonacci, 6);
+            CS.System.Console.WriteLine('hello world');
         ");
-        System.Console.WriteLine(result);
         jsEnv.Dispose();
     }
 }
