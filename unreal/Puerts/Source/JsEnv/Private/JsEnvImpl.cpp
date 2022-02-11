@@ -681,6 +681,76 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 .ToLocalChecked())
         .Check();
 
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "fileExistsEx"),
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                    Self->FileExists(Info);
+                },
+                This)
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "readFileEx"),
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                    Self->ReadFile(Info);
+                },
+                This)
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "writeFileEx"),
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                    Self->WriteFile(Info);
+                },
+                This)
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "dirnameEx"),
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                    Self->DirName(Info);
+                },
+                This)
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "combineEx"),
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                    Self->Combine(Info);
+                },
+                This)
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
     ArrayTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FScriptArrayWrapper::ToFunctionTemplate(Isolate));
 
     SetTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FScriptSetWrapper::ToFunctionTemplate(Isolate));
@@ -719,6 +789,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     Require.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
 
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+
+    // 优先初始化部分项目相关内容，例如 reflect、source-map-support 等支持
+    ExecuteModule("puerts/project_init.js");
 
     DelegateProxiesCheckerHandler =
         FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
@@ -3332,6 +3405,104 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, true);
+}
+
+void FJsEnvImpl::FileExists(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgString);
+
+    std::string FilePath = *(v8::String::Utf8Value(Isolate, Info[0]));
+    // UE_LOG(LogTemp, Warning, TEXT("fileExist Path: %s"), UTF8_TO_TCHAR(FilePath.c_str()));
+
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    auto Result = PlatformFile.FileExists(UTF8_TO_TCHAR(FilePath.c_str()));
+    Info.GetReturnValue().Set(Result);
+}
+
+void FJsEnvImpl::ReadFile(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgString);
+
+    std::string FilePath = *(v8::String::Utf8Value(Isolate, Info[0]));
+    // UE_LOG(LogTemp, Warning, TEXT("fileExist Path: %s"), UTF8_TO_TCHAR(FilePath.c_str()));
+
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    IFileHandle* FileHandle = PlatformFile.OpenRead(UTF8_TO_TCHAR(FilePath.c_str()));
+    FString FileData;
+
+    if (FileHandle)
+    {
+        int len = FileHandle->Size();
+        TArray<uint8> Content;
+        Content.Reset(len + 2);
+        Content.AddUninitialized(len);
+        FileHandle->Read(Content.GetData(), len);
+        delete FileHandle;
+        FFileHelper::BufferToString(FileData, Content.GetData(), Content.Num());
+        Info.GetReturnValue().Set(FV8Utils::ToV8String(Isolate, TCHAR_TO_UTF8(*FileData)));
+    }
+}
+
+void FJsEnvImpl::WriteFile(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgString, EArgString);
+
+    const std::string FilePath = *(v8::String::Utf8Value(Isolate, Info[0]));
+    const std::string FileContent = *(v8::String::Utf8Value(Isolate, Info[1]));
+
+    FFileHelper::SaveStringToFile(
+        UTF8_TO_TCHAR(FileContent.c_str()), UTF8_TO_TCHAR(FilePath.c_str()), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+}
+
+void FJsEnvImpl::DirName(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgString);
+
+    FString FilePath = *(v8::String::Utf8Value(Isolate, Info[0]));
+    FString ReturnDirName = FPaths::GetPath(FilePath);
+
+    Info.GetReturnValue().Set(FV8Utils::ToV8String(Isolate, TCHAR_TO_UTF8(*ReturnDirName)));
+}
+
+void FJsEnvImpl::Combine(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgString, EArgString);
+
+    FString BaseDir = *(v8::String::Utf8Value(Isolate, Info[0]));
+    FString SubPath = *(v8::String::Utf8Value(Isolate, Info[1]));
+    FString ReturnPath = FPaths::Combine(BaseDir, SubPath);
+
+    Info.GetReturnValue().Set(FV8Utils::ToV8String(Isolate, TCHAR_TO_UTF8(*ReturnPath)));
 }
 
 void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)

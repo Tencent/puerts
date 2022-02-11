@@ -49,6 +49,13 @@ declare module "puerts" {
     
     function releaseManualReleaseDelegate<T extends (...args: any) => any>(func: T): void;
 
+    // 以下的函数用于支持 source-map-support
+    function fileExistsEx(filePath: string): boolean;
+    function readFileEx(filePath: string): string;
+    function writeFileEx(filePath: string, fileContent: string): void;
+    function dirnameEx(filePath: string): string;
+    function combineEx(baseDir: string, subPath: string): string;
+
     /*function getProperties(obj: Object, ...propNames:string[]): any;
     function getPropertiesAsync(obj: Object, ...propNames:string[]): Promise<any>;
     function setProperties(obj: Object, properties: any):void;

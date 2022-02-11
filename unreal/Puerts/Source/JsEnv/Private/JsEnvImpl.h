@@ -246,6 +246,13 @@ private:
 
     void SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    // 用于支持 source-map-support 等 Filesystem 相关方法
+    void FileExists(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void ReadFile(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void WriteFile(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void DirName(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Combine(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     void ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info);
