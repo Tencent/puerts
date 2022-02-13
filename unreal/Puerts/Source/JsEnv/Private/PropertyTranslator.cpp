@@ -936,6 +936,21 @@ public:
             {
                 *Des = *Src;
             }
+            else if (Des && Value->IsArray())
+            {
+                auto Array = Value->ToObject(Context).ToLocalChecked();
+                auto Obj = FV8Utils::GetUObject(Context, Array->Get(Context, 0).ToLocalChecked());
+                if (Obj)
+                {
+                    auto FuncName = Array->Get(Context, 1).ToLocalChecked();
+                    if (FuncName->IsString())
+                    {
+                        FScriptDelegate Delegate;
+                        Delegate.BindUFunction(Obj, *FV8Utils::ToFString(Isolate, FuncName));
+                        *Des = Delegate;
+                    }
+                }
+            }
         }
         return true;
     }
