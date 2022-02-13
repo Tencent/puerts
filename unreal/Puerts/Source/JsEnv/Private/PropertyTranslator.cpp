@@ -986,8 +986,11 @@ public:
             {
                 auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
                 auto Ptr = FV8Utils::GetPointer(Context, Realvalue);
-                FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);
-                return;
+                if (Ptr)
+                {
+                    FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);
+                    return;
+                }
             }
 
             auto ReturnVal = Outer->Set(Context, 0, Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
