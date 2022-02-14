@@ -55,7 +55,7 @@ namespace Puerts
                     }
                 }
                 
-                validTypes.Add(type);
+                // validTypes.Add(type);
                 return true;
             }
             else if (type.IsGenericParameter)
