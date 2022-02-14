@@ -9,11 +9,11 @@ declare module "puerts" {
     import {Object, Class, $Delegate} from "ue"
     
     interface $Ref<T> {
-        value: T
+        __doNoAccess: T
     }
 
     interface $InRef<T> {
-        value: T
+        __doNoAccess: T
     }
     
     type $Nullable<T> = T | null;
