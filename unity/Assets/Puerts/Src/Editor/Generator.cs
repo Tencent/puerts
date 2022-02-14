@@ -272,7 +272,7 @@ namespace Puerts.Editor
             }
 
             // #lizard forgives
-            public static string GetTsTypeName(Type type, bool isParams = false, ParameterInfo paramInfo = null)
+            public static string GetTsTypeName(Type type, bool isParams = false)
             {
                 if (type == typeof(int))
                     return "number";
@@ -310,8 +310,6 @@ namespace Puerts.Editor
                     return "any";
                 else if (type == typeof(Delegate) || type == typeof(Puerts.GenericDelegate))
                     return "Function";
-                else if (paramInfo != null && paramInfo.IsIn)
-                    return GetTsTypeName(type.GetElementType());
                 else if (type.IsByRef)
                     return "$Ref<" + GetTsTypeName(type.GetElementType()) + ">";
                 else if (type.IsArray)
@@ -464,11 +462,10 @@ namespace Puerts.Editor
                     JsValueType ExpectJsType = isParams ?
                         GeneralGetterManager.GetJsTypeMask(parameterInfo.ParameterType.GetElementType()) : 
                         GeneralGetterManager.GetJsTypeMask(parameterInfo.ParameterType);
-                    bool IsByRef = parameterInfo.ParameterType.IsByRef;
                     var result = new ParameterGenInfo()
                     {
-                        IsOut = parameterInfo.IsOut && IsByRef,
-                        IsByRef = IsByRef && !parameterInfo.IsIn,
+                        IsOut = !parameterInfo.IsIn && parameterInfo.IsOut && parameterInfo.ParameterType.IsByRef,
+                        IsByRef = parameterInfo.ParameterType.IsByRef,
                         TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType).GetFriendlyName(),
                         ExpectJsType = Utils.ToCode(ExpectJsType),
                         IsParams = isParams,
@@ -842,8 +839,8 @@ namespace Puerts.Editor
                     return new TsParameterGenInfo()
                     {
                         Name = parameterInfo.Name,
-                        IsByRef = parameterInfo.ParameterType.IsByRef && !parameterInfo.IsIn,
-                        TypeName = Utils.GetTsTypeName(Utils.ToConstraintType(parameterInfo.ParameterType, isGenericTypeDefinition), isParams, parameterInfo),
+                        IsByRef = parameterInfo.ParameterType.IsByRef,
+                        TypeName = Utils.GetTsTypeName(Utils.ToConstraintType(parameterInfo.ParameterType, isGenericTypeDefinition), isParams),
                         IsParams = isParams,
                         IsOptional = parameterInfo.IsOptional
                     };
@@ -1087,7 +1084,7 @@ namespace Puerts.Editor
                         else
                         {
                             var m = type.GetMethod("Invoke");
-                            var tsFuncDef = "(" + string.Join(", ", m.GetParameters().Select(p => p.Name + ": " + Utils.GetTsTypeName(p.ParameterType, false, p)).ToArray()) + ") => " + Utils.GetTsTypeName(m.ReturnType);
+                            var tsFuncDef = "(" + string.Join(", ", m.GetParameters().Select(p => p.Name + ": " + Utils.GetTsTypeName(p.ParameterType)).ToArray()) + ") => " + Utils.GetTsTypeName(m.ReturnType);
                             result.DelegateDef = tsFuncDef;
                         }
                     }

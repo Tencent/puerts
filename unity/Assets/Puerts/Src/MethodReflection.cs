@@ -94,8 +94,8 @@ namespace Puerts
                 types[i] = parameterType.IsByRef ? parameterType.GetElementType() : parameterType;
                 typeMasks[i] = GeneralGetterManager.GetJsTypeMask(parameterType);
                 argsTranslateFuncs[i] = generalGetterManager.GetTranslateFunc(parameterType);
-                byRef[i] = parameterType.IsByRef && !parameterInfo.IsIn;
-                if (byRef[i])
+                byRef[i] = parameterType.IsByRef;
+                if (parameterType.IsByRef)
                 {
                     byRefValueSetFuncs[i] = generalSetterManager.GetTranslateFunc(parameterType.GetElementType());
                 }

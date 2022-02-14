@@ -55,9 +55,6 @@
     <Compile Include="..\Src\UnitTest\OptionalParametersTest.cs">
       <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\RefInTest.cs">
-      <Link>Src\UnitTest\RefInTest.cs</Link>
-    </Compile>
     <Compile Include="..\Src\UnitTest\TestClass.cs">
       <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>
@@ -69,12 +66,6 @@
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\PuertsTest_RefInTest_Wrap.cs">
-      <Link>Src\UnitTest\wrap\PuertsTest_RefInTest_Wrap.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\PuertsTest_RefInTest_Vector3_Wrap.cs">
-      <Link>Src\UnitTest\wrap\PuertsTest_RefInTest_Vector3_Wrap.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
