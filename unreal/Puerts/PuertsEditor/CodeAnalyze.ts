@@ -1378,9 +1378,9 @@ function logErrors(allDiagnostics: readonly ts.Diagnostic[]) {
         let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
           diagnostic.start!
         );
-        console.warn(`  Error ${diagnostic.file.fileName} (${line + 1},${character +1}): ${message}`);
+        console.error(`  Error ${diagnostic.file.fileName} (${line + 1},${character +1}): ${message}`);
       } else {
-        console.warn(`  Error: ${message}`);
+        console.error(`  Error: ${message}`);
       }
     });
 }
@@ -1525,11 +1525,11 @@ function watch(configFilePath:string) {
 
     console.log("start watch..", JSON.stringify({fileNames:fileNames, options: options}));
     const versionsFilePath = getDirectoryPath(configFilePath) + "/ts_file_versions_info.json";
-    const fileVersions: ts.MapLike<{ version: string }> = {};
+    const fileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
   
     let beginTime = new Date().getTime();
     fileNames.forEach(fileName => {
-      fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName)};
+      fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false};
     });
     console.log ("calc md5 using " + (new Date().getTime() - beginTime) + "ms");
 
@@ -1545,7 +1545,7 @@ function watch(configFilePath:string) {
               return fileVersions[fileName] && fileVersions[fileName].version.toString();
           } else {
               let md5 = UE.FileSystemOperation.FileMD5Hash(fileName);
-              fileVersions[fileName] = { version: md5 };
+              fileVersions[fileName] = { version: md5, processed: false};
               return md5;
           }
       },
@@ -1589,7 +1589,7 @@ function watch(configFilePath:string) {
     if (diagnostics.length > 0) {
         logErrors(diagnostics);
     } else {
-        let restoredFileVersions: ts.MapLike<{ version: string }> = {};
+        let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
         var changed = false;
         if (customSystem.fileExists(versionsFilePath)) {
             try {
@@ -1598,13 +1598,13 @@ function watch(configFilePath:string) {
             } catch {}
         }
         fileNames.forEach(fileName => {
-            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
+            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
                 changed = true;
             }
         });
         fileNames.forEach(fileName => {
-            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version) {
+            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, false);
                 changed = true;
             }
@@ -1656,7 +1656,7 @@ function watch(configFilePath:string) {
             if (!(fileName in fileVersions)) {
                 console.log(`new file: ${fileName} ...`)
                 newFiles.push(fileName);
-                fileVersions[fileName] = { version: "" };
+                fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false };
             }
         });
 
@@ -1749,6 +1749,7 @@ function watch(configFilePath:string) {
                         }
                     }
                 }
+                fileVersions[sourceFilePath].processed = true;
             }
 
             function typeNameToString(node: ts.EntityName): string {
