@@ -740,5 +740,6 @@ var global = global || (function () { return this; }());
     cache.FunctionExportFlags = FunctionExportFlags;
 
     puerts.toManualReleaseDelegate = (x) => x;
+    puerts.toDelegate = (o,k) => [o, k];
     
 }(global));
