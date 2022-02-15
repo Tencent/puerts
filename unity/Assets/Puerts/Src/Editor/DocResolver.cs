@@ -3,13 +3,10 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace Puerts
 {
-    using UnityEngine;
-    using UnityEditor;
-    using System.Xml;
-
     public class DocResolver
     {
         public class DocBody

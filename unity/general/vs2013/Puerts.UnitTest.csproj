@@ -70,6 +70,9 @@
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
     </Compile>
+    <Compile Include="..\Src\WrapperGenerate.cs">
+      <Link>Src\WrapperGenerate.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Puerts.Core.csproj">

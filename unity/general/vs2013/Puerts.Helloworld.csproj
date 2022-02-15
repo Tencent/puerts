@@ -11,6 +11,7 @@
     <AssemblyName>Puerts.Helloworld</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -19,7 +20,7 @@
     <Optimize>false</Optimize>
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <IntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld</IntermediateOutputPath>
     <DefineConstants>_DEBUG;DEBUG;TRACE;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -33,7 +34,7 @@
     <Optimize>true</Optimize>
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.Helloworld\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <IntermediateOutputPath>obj\Any CPU\Release\Puerts.Helloworld</IntermediateOutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
