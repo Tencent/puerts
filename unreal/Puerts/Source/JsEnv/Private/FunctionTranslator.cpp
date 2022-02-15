@@ -344,7 +344,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 
         for (int i = 0; i < Arguments.size(); ++i)
         {
-            Arguments[i]->JsToUEOutInContainer(Isolate, Context, Args[i], Params, false);
+            Arguments[i]->JsToUEOutInContainer(Isolate, Context, Args[i], Params, true);
         }
     }
 }
@@ -463,7 +463,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 auto OutParmRec = GetMatchOutParmRec(Stack.OutParms, Arguments[i]->Property);
                 if (OutParmRec)
                 {
-                    Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, false);
+                    Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, true);
                 }
             }
         }
