@@ -88,7 +88,6 @@ public class PuertsTest
 {
     public static void Main()
     {
-        System.Console.WriteLine("Hello World1");
         Puerts.Editor.Generator.Menu.GenerateWrapper(
             TxtLoader.PathToBinDir("../Src/UnitTest/wrap/"),
             new TxtLoader()
