@@ -78,8 +78,7 @@ namespace Puerts
                     sb.AppendLine(string.Format(" * @returns {0}", this.returns));
                 }
 
-                sb.Append(" */");
-                return sb.ToString();
+                return sb.ToString().Replace("*/", "* /") + " */";
             }
         }
 
