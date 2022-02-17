@@ -241,26 +241,12 @@ public class JsEnv : ModuleRules
 
     void AddRuntimeDependencies(string[] DllNames, string LibraryPath, bool Delay)
     {
-        string BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", "Win64"));
         foreach (var DllName in DllNames)
         {
             if(Delay) PublicDelayLoadDLLs.Add(DllName);
             var DllPath = Path.Combine(LibraryPath, DllName);
-            var DestDllPath = Path.Combine(BinariesDir, DllName);
-            if (!Directory.Exists(BinariesDir))
-            {
-                Directory.CreateDirectory(BinariesDir);
-            }
-            try
-            {
-                System.IO.File.Delete(DestDllPath);
-            }
-            catch { }
-            if (!System.IO.File.Exists(DestDllPath) && System.IO.File.Exists(DllPath))
-            {
-                System.IO.File.Copy(DllPath, DestDllPath, false);
-            }
-            RuntimeDependencies.Add(DestDllPath);
+            var DestDllPath = Path.Combine("$(BinaryOutputDir)", DllName);
+            RuntimeDependencies.Add(DestDllPath, DllPath, StagedFileType.NonUFS);
         }
     }
 
