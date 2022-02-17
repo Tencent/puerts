@@ -174,12 +174,73 @@ interface Destructor {
 };
 var destructors: { [csIdentifier: CSIdentifier]: Destructor } = {};
 
+declare let global: any;
+global = global || globalThis || window;
+global.global = global;
+export { global };
+
 /**
- * JS对象声明周期监听
+ * JS对象生命周期监听
  */
+interface FinalizationRegistryMock<T> extends FinalizationRegistry<T> {}
+class FinalizationRegistryMock<T> {
+    private _handler: (value: T) => void;
+
+    private refs: WeakRef<any>[] = [];
+    private helds: T[] = [];
+    private availableIndex: number[] = [];
+
+    constructor(handler: (value: T) => void) {
+        console.warn("FinalizationRegister is not defined. using FinalizationRegistryMock");
+        global._puerts_registry = this;
+        this._handler = handler;
+    }
+    public register(obj: object, heldValue: T) {
+        if (this.availableIndex.length) {
+            const index = this.availableIndex.pop();
+            this.refs[index] = new WeakRef(obj);
+            this.helds[index] = heldValue;
+
+        } else {
+            this.refs.push(new WeakRef(obj));
+            this.helds.push(heldValue);
+        }
+    }
+
+    /**
+     * 清除可能已经失效的WeakRef
+     */
+    private iteratePosition: number = 0;
+    public cleanup(part: number = 1) {
+        const nextIterStep = this.refs.length / part;
+        for (
+            let i = this.iteratePosition, j = 0; 
+            i < this.refs.length && j < nextIterStep; 
+            i = (i == this.refs.length - 1 ? 0 : i + 1), j++
+        ) {
+            if (this.refs[i] == null) {
+                continue;
+            }
+            if (!this.refs[i].deref()) 
+            {
+                // 目前没有内存整理能力，如果游戏中期ref很多但后期少了，这里就会白费遍历次数
+                // 但遍历也只是一句==和continue，浪费影响不大
+                this.availableIndex.push(i);
+                this.refs[i] = null;
+                try {
+                    this._handler(this.helds[i]);
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+        }
+    }
+}
 var registry: FinalizationRegistry<any> = null;
 function init() {
-    registry = new FinalizationRegistry(function (heldValue: CSIdentifier) {
+    registry = new (
+        typeof FinalizationRegistry == 'undefined' ? FinalizationRegistryMock : FinalizationRegistry
+    )(function (heldValue: CSIdentifier) {
         var callback = destructors[heldValue];
         if (!callback) {
             throw new Error("cannot find destructor for " + heldValue);
@@ -206,10 +267,6 @@ export function OnFinalize(obj: object, heldValue: any, callback: (heldValue: CS
     }
     registry.register(obj, heldValue);
 }
-declare let global: any;
-global = global || globalThis || window;
-global.global = global;
-export { global };
 
 export namespace PuertsJSEngine {
     export interface EngineConstructorParam {

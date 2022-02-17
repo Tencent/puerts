@@ -28,6 +28,8 @@ class JSGameManager extends JsBehaviour<GameManager>{
             this.shootBall(Math.min(expectPressTimeMax, Date.now() - this.pressed) / expectPressTimeMax);
             this.pressed = 0;
         }
+        //@ts-ignore
+        globalThis._puerts_registry && globalThis._puerts_registry.cleanup();
     }
 
     shootBall(power: number) {
