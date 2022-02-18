@@ -155,4 +155,10 @@ void UTypeScriptGeneratedClass::Bind()
         //可避免非CDO的在PostConstructInit从基类拷贝值
         // ClassFlags |= CLASS_Native;
     }
+#if WITH_EDITOR
+    if (IsRunningGame())
+#endif
+    {
+        ClassConstructor = &StaticConstructor;
+    }
 }
