@@ -141,7 +141,7 @@ namespace CSharp {
                         method.IsStatic && t`static `;
                         t`${formatPropertyOrMethodName(method.Name)}` // method name
                         t` (${toJsArray(method.ParameterInfos).map((pinfo, idx)=> parameterDef(pinfo, method.IsStatic, type)).join(', ')})` // method param
-                        !method.IsConstructor && t` : ${method.isStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName}` // method return
+                        !method.IsConstructor && t` : ${method.IsStatic ? typeNameWithOutGenericType(type, method.TypeName) : method.TypeName}` // method return
                         t`
                         `
                     });
