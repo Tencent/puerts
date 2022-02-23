@@ -3084,7 +3084,9 @@ function watch(configFilePath) {
                         let moduleDeclaration = moduleBody.parent;
                         let nameOfModule = undefined;
                         while (moduleDeclaration) {
-                            nameOfModule = nameOfModule ? (moduleDeclaration.name.text + '/' + nameOfModule) : moduleDeclaration.name.text;
+                            let ns = moduleDeclaration.name.text;
+                            ns = ns.startsWith("$") ? ns.substring(1) : ns;
+                            nameOfModule = nameOfModule ? (ns + '/' + nameOfModule) : ns;
                             if (ts.isModuleDeclaration(moduleDeclaration.parent)) {
                                 moduleDeclaration = moduleDeclaration.parent;
                             }
