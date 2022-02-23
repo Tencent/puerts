@@ -302,7 +302,7 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     {
         TArray<FString> PathFrags;
         Cast<UPackage>(Obj->GetOuter())->GetName().ParseIntoArray(PathFrags, TEXT("/"));
-        for(int i = 0; i < PathFrags.Num(); i++)
+        for (int i = 0; i < PathFrags.Num(); i++)
         {
             auto FirstChar = PathFrags[i][0];
             if ((FirstChar >= (TCHAR) '0' && FirstChar <= (TCHAR) '9') || FirstChar == (TCHAR) '$')
