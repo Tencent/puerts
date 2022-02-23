@@ -19,7 +19,6 @@
 static void* _FColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -80,7 +79,6 @@ static void _FColorDelete_(void* Ptr)
 static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -122,7 +120,6 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -150,7 +147,6 @@ static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -178,7 +174,6 @@ static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FColorM_FromRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -206,7 +201,6 @@ static void FColorM_FromRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorS_FromHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -229,7 +223,6 @@ static void FColorS_FromHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -251,7 +244,6 @@ static void FColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FColorS_MakeRedToGreenColorFromScalar(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -274,7 +266,6 @@ static void FColorS_MakeRedToGreenColorFromScalar(const v8::FunctionCallbackInfo
 static void FColorS_MakeFromColorTemperature(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -297,7 +288,6 @@ static void FColorS_MakeFromColorTemperature(const v8::FunctionCallbackInfo<v8::
 static void FColorM_WithAlpha(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -326,7 +316,6 @@ static void FColorM_WithAlpha(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorM_ReinterpretAsLinear(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -355,7 +344,6 @@ static void FColorM_ReinterpretAsLinear(const v8::FunctionCallbackInfo<v8::Value
 static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -381,7 +369,6 @@ static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -407,7 +394,6 @@ static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -433,7 +419,6 @@ static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -458,7 +443,6 @@ static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -483,7 +467,6 @@ static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -508,7 +491,6 @@ static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FColorM_ToPackedBGRA(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {

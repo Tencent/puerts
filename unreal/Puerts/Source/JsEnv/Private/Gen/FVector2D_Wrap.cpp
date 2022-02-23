@@ -46,7 +46,6 @@
 static void* _FVector2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -144,7 +143,6 @@ static void _FVector2DDelete_(void* Ptr)
 static void FVector2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -196,7 +194,6 @@ static void FVector2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -250,7 +247,6 @@ static void FVector2DM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>&
 static void FVector2DM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -302,7 +298,6 @@ static void FVector2DM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -354,7 +349,6 @@ static void FVector2DM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -382,7 +376,6 @@ static void FVector2DM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FVector2DM_op_ExclusiveOr(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -411,7 +404,6 @@ static void FVector2DM_op_ExclusiveOr(const v8::FunctionCallbackInfo<v8::Value>&
 static void FVector2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -439,7 +431,6 @@ static void FVector2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -467,7 +458,6 @@ static void FVector2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FVector2DM_op_UnaryNegation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -496,7 +486,6 @@ static void FVector2DM_op_UnaryNegation(const v8::FunctionCallbackInfo<v8::Value
 static void FVector2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -520,7 +509,6 @@ static void FVector2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -546,7 +534,6 @@ static void FVector2DM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -590,7 +577,6 @@ static void FVector2DM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FVector2DS_DotProduct(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -616,7 +602,6 @@ static void FVector2DS_DotProduct(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FVector2DS_DistSquared(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -642,7 +627,6 @@ static void FVector2DS_DistSquared(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DS_Distance(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -668,7 +652,6 @@ static void FVector2DS_Distance(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DS_CrossProduct(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -694,7 +677,6 @@ static void FVector2DS_CrossProduct(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FVector2DM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -724,7 +706,6 @@ static void FVector2DM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -749,7 +730,6 @@ static void FVector2DM_Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -774,7 +754,6 @@ static void FVector2DM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_GetAbsMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -799,7 +778,6 @@ static void FVector2DM_GetAbsMax(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FVector2DM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -824,7 +802,6 @@ static void FVector2DM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -849,7 +826,6 @@ static void FVector2DM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -874,7 +850,6 @@ static void FVector2DM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DM_GetRotated(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -903,7 +878,6 @@ static void FVector2DM_GetRotated(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FVector2DM_GetSafeNormal(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -932,7 +906,6 @@ static void FVector2DM_GetSafeNormal(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FVector2DM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -956,7 +929,6 @@ static void FVector2DM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FVector2DM_IsNearlyZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -982,7 +954,6 @@ static void FVector2DM_IsNearlyZero(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FVector2DM_ToDirectionAndLength(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1014,7 +985,6 @@ static void FVector2DM_ToDirectionAndLength(const v8::FunctionCallbackInfo<v8::V
 static void FVector2DM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1039,7 +1009,6 @@ static void FVector2DM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_IntPoint(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1067,7 +1036,6 @@ static void FVector2DM_IntPoint(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_RoundToVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1095,7 +1063,6 @@ static void FVector2DM_RoundToVector(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FVector2DM_ClampAxes(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1125,7 +1092,6 @@ static void FVector2DM_ClampAxes(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FVector2DM_GetSignVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1153,7 +1119,6 @@ static void FVector2DM_GetSignVector(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FVector2DM_GetAbs(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1181,7 +1146,6 @@ static void FVector2DM_GetAbs(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1207,7 +1171,6 @@ static void FVector2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FVector2DM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1234,7 +1197,6 @@ static void FVector2DM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>&
 static void FVector2DM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1258,7 +1220,6 @@ static void FVector2DM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Val
 static void FVector2DM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1283,7 +1244,6 @@ static void FVector2DM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FVector2DM_SphericalToUnitCartesian(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1312,7 +1272,6 @@ static void FVector2DM_SphericalToUnitCartesian(const v8::FunctionCallbackInfo<v
 static void _FVector2DXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
@@ -1329,7 +1288,6 @@ static void _FVector2DXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FVector2DXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
@@ -1345,7 +1303,6 @@ static void _FVector2DXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FVector2DYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
@@ -1362,7 +1319,6 @@ static void _FVector2DYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FVector2DYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());

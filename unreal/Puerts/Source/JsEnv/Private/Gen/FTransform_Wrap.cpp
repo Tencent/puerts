@@ -43,7 +43,6 @@
 static void* _FTransformNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -185,7 +184,6 @@ static void _FTransformDelete_(void* Ptr)
 static void FTransformM_DiagnosticCheckNaN_Translate(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -209,7 +207,6 @@ static void FTransformM_DiagnosticCheckNaN_Translate(const v8::FunctionCallbackI
 static void FTransformM_DiagnosticCheckNaN_Rotate(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -233,7 +230,6 @@ static void FTransformM_DiagnosticCheckNaN_Rotate(const v8::FunctionCallbackInfo
 static void FTransformM_DiagnosticCheckNaN_Scale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -257,7 +253,6 @@ static void FTransformM_DiagnosticCheckNaN_Scale3D(const v8::FunctionCallbackInf
 static void FTransformM_DiagnosticCheckNaN_All(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -281,7 +276,6 @@ static void FTransformM_DiagnosticCheckNaN_All(const v8::FunctionCallbackInfo<v8
 static void FTransformM_DiagnosticCheck_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -305,7 +299,6 @@ static void FTransformM_DiagnosticCheck_IsValid(const v8::FunctionCallbackInfo<v
 static void FTransformM_DebugPrint(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -328,7 +321,6 @@ static void FTransformM_DebugPrint(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FTransformM_ToHumanReadableString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -355,7 +347,6 @@ static void FTransformM_ToHumanReadableString(const v8::FunctionCallbackInfo<v8:
 static void FTransformM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -381,7 +372,6 @@ static void FTransformM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FTransformM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -408,7 +398,6 @@ static void FTransformM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>
 static void FTransformM_Inverse(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -436,7 +425,6 @@ static void FTransformM_Inverse(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FTransformM_Blend(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -468,7 +456,6 @@ static void FTransformM_Blend(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FTransformM_BlendWith(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -496,7 +483,6 @@ static void FTransformM_BlendWith(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FTransformM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -527,7 +513,6 @@ static void FTransformM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -581,7 +566,6 @@ static void FTransformM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformS_AnyHasNegativeScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -607,7 +591,6 @@ static void FTransformS_AnyHasNegativeScale(const v8::FunctionCallbackInfo<v8::V
 static void FTransformM_ScaleTranslation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -651,7 +634,6 @@ static void FTransformM_ScaleTranslation(const v8::FunctionCallbackInfo<v8::Valu
 static void FTransformM_RemoveScaling(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -676,7 +658,6 @@ static void FTransformM_RemoveScaling(const v8::FunctionCallbackInfo<v8::Value>&
 static void FTransformM_GetMaximumAxisScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -702,7 +683,6 @@ static void FTransformM_GetMaximumAxisScale(const v8::FunctionCallbackInfo<v8::V
 static void FTransformM_GetMinimumAxisScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -728,7 +708,6 @@ static void FTransformM_GetMinimumAxisScale(const v8::FunctionCallbackInfo<v8::V
 static void FTransformM_GetRelativeTransform(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -760,7 +739,6 @@ static void FTransformM_GetRelativeTransform(const v8::FunctionCallbackInfo<v8::
 static void FTransformM_GetRelativeTransformReverse(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -792,7 +770,6 @@ static void FTransformM_GetRelativeTransformReverse(const v8::FunctionCallbackIn
 static void FTransformM_SetToRelativeTransform(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -819,7 +796,6 @@ static void FTransformM_SetToRelativeTransform(const v8::FunctionCallbackInfo<v8
 static void FTransformM_TransformFVector4(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -851,7 +827,6 @@ static void FTransformM_TransformFVector4(const v8::FunctionCallbackInfo<v8::Val
 static void FTransformM_TransformFVector4NoScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -883,7 +858,6 @@ static void FTransformM_TransformFVector4NoScale(const v8::FunctionCallbackInfo<
 static void FTransformM_TransformPosition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -915,7 +889,6 @@ static void FTransformM_TransformPosition(const v8::FunctionCallbackInfo<v8::Val
 static void FTransformM_TransformPositionNoScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -947,7 +920,6 @@ static void FTransformM_TransformPositionNoScale(const v8::FunctionCallbackInfo<
 static void FTransformM_InverseTransformPosition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -979,7 +951,6 @@ static void FTransformM_InverseTransformPosition(const v8::FunctionCallbackInfo<
 static void FTransformM_InverseTransformPositionNoScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1011,7 +982,6 @@ static void FTransformM_InverseTransformPositionNoScale(const v8::FunctionCallba
 static void FTransformM_TransformVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1043,7 +1013,6 @@ static void FTransformM_TransformVector(const v8::FunctionCallbackInfo<v8::Value
 static void FTransformM_TransformVectorNoScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1075,7 +1044,6 @@ static void FTransformM_TransformVectorNoScale(const v8::FunctionCallbackInfo<v8
 static void FTransformM_InverseTransformVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1107,7 +1075,6 @@ static void FTransformM_InverseTransformVector(const v8::FunctionCallbackInfo<v8
 static void FTransformM_InverseTransformVectorNoScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1139,7 +1106,6 @@ static void FTransformM_InverseTransformVectorNoScale(const v8::FunctionCallback
 static void FTransformM_TransformRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1171,7 +1137,6 @@ static void FTransformM_TransformRotation(const v8::FunctionCallbackInfo<v8::Val
 static void FTransformM_InverseTransformRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1203,7 +1168,6 @@ static void FTransformM_InverseTransformRotation(const v8::FunctionCallbackInfo<
 static void FTransformM_GetScaled(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1255,7 +1219,6 @@ static void FTransformM_GetScaled(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FTransformM_GetScaledAxis(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1285,7 +1248,6 @@ static void FTransformM_GetScaledAxis(const v8::FunctionCallbackInfo<v8::Value>&
 static void FTransformM_GetUnitAxis(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1314,7 +1276,6 @@ static void FTransformM_GetUnitAxis(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_Mirror(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1339,7 +1300,6 @@ static void FTransformM_Mirror(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FTransformS_GetSafeScaleReciprocal(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1366,7 +1326,6 @@ static void FTransformS_GetSafeScaleReciprocal(const v8::FunctionCallbackInfo<v8
 static void FTransformM_GetLocation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1394,7 +1353,6 @@ static void FTransformM_GetLocation(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_Rotator(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1422,7 +1380,6 @@ static void FTransformM_Rotator(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FTransformM_GetDeterminant(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1448,7 +1405,6 @@ static void FTransformM_GetDeterminant(const v8::FunctionCallbackInfo<v8::Value>
 static void FTransformM_SetLocation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1474,7 +1430,6 @@ static void FTransformM_SetLocation(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1499,7 +1454,6 @@ static void FTransformM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1524,7 +1478,6 @@ static void FTransformM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FTransformS_AreRotationsEqual(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -1552,7 +1505,6 @@ static void FTransformS_AreRotationsEqual(const v8::FunctionCallbackInfo<v8::Val
 static void FTransformS_AreTranslationsEqual(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -1580,7 +1532,6 @@ static void FTransformS_AreTranslationsEqual(const v8::FunctionCallbackInfo<v8::
 static void FTransformS_AreScale3DsEqual(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -1608,7 +1559,6 @@ static void FTransformS_AreScale3DsEqual(const v8::FunctionCallbackInfo<v8::Valu
 static void FTransformM_RotationEquals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1639,7 +1589,6 @@ static void FTransformM_RotationEquals(const v8::FunctionCallbackInfo<v8::Value>
 static void FTransformM_TranslationEquals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1670,7 +1619,6 @@ static void FTransformM_TranslationEquals(const v8::FunctionCallbackInfo<v8::Val
 static void FTransformM_Scale3DEquals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1701,7 +1649,6 @@ static void FTransformM_Scale3DEquals(const v8::FunctionCallbackInfo<v8::Value>&
 static void FTransformM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1731,7 +1678,6 @@ static void FTransformM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FTransformM_EqualsNoScale(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -1762,7 +1708,6 @@ static void FTransformM_EqualsNoScale(const v8::FunctionCallbackInfo<v8::Value>&
 static void FTransformS_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -1790,7 +1735,6 @@ static void FTransformS_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FTransformM_SetComponents(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -1825,7 +1769,6 @@ static void FTransformM_SetComponents(const v8::FunctionCallbackInfo<v8::Value>&
 static void FTransformM_SetIdentity(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1848,7 +1791,6 @@ static void FTransformM_SetIdentity(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_MultiplyScale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1875,7 +1817,6 @@ static void FTransformM_MultiplyScale3D(const v8::FunctionCallbackInfo<v8::Value
 static void FTransformM_SetTranslation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1902,7 +1843,6 @@ static void FTransformM_SetTranslation(const v8::FunctionCallbackInfo<v8::Value>
 static void FTransformM_CopyTranslation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1929,7 +1869,6 @@ static void FTransformM_CopyTranslation(const v8::FunctionCallbackInfo<v8::Value
 static void FTransformM_ConcatenateRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1956,7 +1895,6 @@ static void FTransformM_ConcatenateRotation(const v8::FunctionCallbackInfo<v8::V
 static void FTransformM_AddToTranslation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1983,7 +1921,6 @@ static void FTransformM_AddToTranslation(const v8::FunctionCallbackInfo<v8::Valu
 static void FTransformS_AddTranslations(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -2012,7 +1949,6 @@ static void FTransformS_AddTranslations(const v8::FunctionCallbackInfo<v8::Value
 static void FTransformS_SubtractTranslations(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -2041,7 +1977,6 @@ static void FTransformS_SubtractTranslations(const v8::FunctionCallbackInfo<v8::
 static void FTransformM_SetRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -2067,7 +2002,6 @@ static void FTransformM_SetRotation(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_CopyRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -2093,7 +2027,6 @@ static void FTransformM_CopyRotation(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FTransformM_SetScale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -2119,7 +2052,6 @@ static void FTransformM_SetScale3D(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FTransformM_CopyScale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -2145,7 +2077,6 @@ static void FTransformM_CopyScale3D(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_SetTranslationAndScale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -2176,7 +2107,6 @@ static void FTransformM_SetTranslationAndScale3D(const v8::FunctionCallbackInfo<
 static void FTransformM_Accumulate(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -2202,7 +2132,6 @@ static void FTransformM_Accumulate(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FTransformM_NormalizeRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -2226,7 +2155,6 @@ static void FTransformM_NormalizeRotation(const v8::FunctionCallbackInfo<v8::Val
 static void FTransformM_IsRotationNormalized(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -2252,7 +2180,6 @@ static void FTransformM_IsRotationNormalized(const v8::FunctionCallbackInfo<v8::
 static void FTransformM_GetRotation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -2280,7 +2207,6 @@ static void FTransformM_GetRotation(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FTransformM_GetTranslation(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -2309,7 +2235,6 @@ static void FTransformM_GetTranslation(const v8::FunctionCallbackInfo<v8::Value>
 static void FTransformM_GetScale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -2337,7 +2262,6 @@ static void FTransformM_GetScale3D(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FTransformM_CopyRotationPart(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -2364,7 +2288,6 @@ static void FTransformM_CopyRotationPart(const v8::FunctionCallbackInfo<v8::Valu
 static void FTransformM_CopyTranslationAndScale3D(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {

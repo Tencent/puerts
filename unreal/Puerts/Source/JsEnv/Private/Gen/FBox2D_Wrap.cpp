@@ -22,7 +22,6 @@
 static void* _FBox2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -90,7 +89,6 @@ static void _FBox2DDelete_(void* Ptr)
 static void FBox2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -118,7 +116,6 @@ static void FBox2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -146,7 +143,6 @@ static void FBox2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
 static void FBox2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -200,7 +196,6 @@ static void FBox2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -224,7 +219,6 @@ static void FBox2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_ComputeSquaredDistanceToPoint(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -253,7 +247,6 @@ static void FBox2DM_ComputeSquaredDistanceToPoint(const v8::FunctionCallbackInfo
 static void FBox2DM_ExpandBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -282,7 +275,6 @@ static void FBox2DM_ExpandBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_GetArea(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -307,7 +299,6 @@ static void FBox2DM_GetArea(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_GetCenter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -335,7 +326,6 @@ static void FBox2DM_GetCenter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_GetCenterAndExtents(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -370,7 +360,6 @@ static void FBox2DM_GetCenterAndExtents(const v8::FunctionCallbackInfo<v8::Value
 static void FBox2DM_GetClosestPointTo(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -402,7 +391,6 @@ static void FBox2DM_GetClosestPointTo(const v8::FunctionCallbackInfo<v8::Value>&
 static void FBox2DM_GetExtent(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -430,7 +418,6 @@ static void FBox2DM_GetExtent(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_GetSize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -458,7 +445,6 @@ static void FBox2DM_GetSize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_Init(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -481,7 +467,6 @@ static void FBox2DM_Init(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_Intersect(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -509,7 +494,6 @@ static void FBox2DM_Intersect(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_IsInside(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -557,7 +541,6 @@ static void FBox2DM_IsInside(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_ShiftBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -588,7 +571,6 @@ static void FBox2DM_ShiftBy(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FBox2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -614,7 +596,6 @@ static void FBox2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FBox2DMinGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
@@ -632,7 +613,6 @@ static void _FBox2DMinGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FBox2DMinSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
@@ -648,7 +628,6 @@ static void _FBox2DMinSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FBox2DMaxGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
@@ -666,7 +645,6 @@ static void _FBox2DMaxGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FBox2DMaxSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
@@ -682,7 +660,6 @@ static void _FBox2DMaxSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FBox2DbIsValidGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());
@@ -699,7 +676,6 @@ static void _FBox2DbIsValidGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FBox2DbIsValidSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FBox2D>(Info.Holder());

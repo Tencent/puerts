@@ -34,7 +34,6 @@
 static void* _FLinearColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -123,7 +122,6 @@ static void _FLinearColorDelete_(void* Ptr)
 static void FLinearColorM_ToRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -151,7 +149,6 @@ static void FLinearColorM_ToRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FLinearColorS_FromSRGBColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -176,7 +173,6 @@ static void FLinearColorS_FromSRGBColor(const v8::FunctionCallbackInfo<v8::Value
 static void FLinearColorS_FromPow22Color(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -201,7 +197,6 @@ static void FLinearColorS_FromPow22Color(const v8::FunctionCallbackInfo<v8::Valu
 static void FLinearColorM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -245,7 +240,6 @@ static void FLinearColorM_Component(const v8::FunctionCallbackInfo<v8::Value>& I
 static void FLinearColorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -278,7 +272,6 @@ static void FLinearColorM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>&
 static void FLinearColorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -311,7 +304,6 @@ static void FLinearColorM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Valu
 static void FLinearColorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -366,7 +358,6 @@ static void FLinearColorM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>&
 static void FLinearColorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -421,7 +412,6 @@ static void FLinearColorM_op_Division(const v8::FunctionCallbackInfo<v8::Value>&
 static void FLinearColorM_GetClamped(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -451,7 +441,6 @@ static void FLinearColorM_GetClamped(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FLinearColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -481,7 +470,6 @@ static void FLinearColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>&
 static void FLinearColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -511,7 +499,6 @@ static void FLinearColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value
 static void FLinearColorM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -542,7 +529,6 @@ static void FLinearColorM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FLinearColorM_CopyWithNewOpacity(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -572,7 +558,6 @@ static void FLinearColorM_CopyWithNewOpacity(const v8::FunctionCallbackInfo<v8::
 static void FLinearColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -594,7 +579,6 @@ static void FLinearColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Val
 static void FLinearColorS_MakeFromColorTemperature(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -617,7 +601,6 @@ static void FLinearColorS_MakeFromColorTemperature(const v8::FunctionCallbackInf
 static void FLinearColorS_Dist(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
@@ -645,7 +628,6 @@ static void FLinearColorS_Dist(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void FLinearColorM_LinearRGBToHSV(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -674,7 +656,6 @@ static void FLinearColorM_LinearRGBToHSV(const v8::FunctionCallbackInfo<v8::Valu
 static void FLinearColorM_HSVToLinearRGB(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -703,7 +684,6 @@ static void FLinearColorM_HSVToLinearRGB(const v8::FunctionCallbackInfo<v8::Valu
 static void FLinearColorS_LerpUsingHSV(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 3)
     {
@@ -736,7 +716,6 @@ static void FLinearColorS_LerpUsingHSV(const v8::FunctionCallbackInfo<v8::Value>
 static void FLinearColorM_Quantize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -764,7 +743,6 @@ static void FLinearColorM_Quantize(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FLinearColorM_QuantizeRound(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -793,7 +771,6 @@ static void FLinearColorM_QuantizeRound(const v8::FunctionCallbackInfo<v8::Value
 static void FLinearColorM_ToFColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -822,7 +799,6 @@ static void FLinearColorM_ToFColor(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FLinearColorM_Desaturate(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -851,7 +827,6 @@ static void FLinearColorM_Desaturate(const v8::FunctionCallbackInfo<v8::Value>& 
 static void FLinearColorM_ComputeLuminance(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -877,7 +852,6 @@ static void FLinearColorM_ComputeLuminance(const v8::FunctionCallbackInfo<v8::Va
 static void FLinearColorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -902,7 +876,6 @@ static void FLinearColorM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FLinearColorM_IsAlmostBlack(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -928,7 +901,6 @@ static void FLinearColorM_IsAlmostBlack(const v8::FunctionCallbackInfo<v8::Value
 static void FLinearColorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -953,7 +925,6 @@ static void FLinearColorM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info
 static void FLinearColorM_GetLuminance(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -979,7 +950,6 @@ static void FLinearColorM_GetLuminance(const v8::FunctionCallbackInfo<v8::Value>
 static void FLinearColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
     {
@@ -1005,7 +975,6 @@ static void FLinearColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& In
 static void FLinearColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 1)
     {
@@ -1032,7 +1001,6 @@ static void FLinearColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Valu
 static void _FLinearColorRGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1049,7 +1017,6 @@ static void _FLinearColorRGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorRSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1065,7 +1032,6 @@ static void _FLinearColorRSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorGGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1082,7 +1048,6 @@ static void _FLinearColorGGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorGSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1098,7 +1063,6 @@ static void _FLinearColorGSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1115,7 +1079,6 @@ static void _FLinearColorBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1131,7 +1094,6 @@ static void _FLinearColorBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
@@ -1148,7 +1110,6 @@ static void _FLinearColorAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 static void _FLinearColorASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
