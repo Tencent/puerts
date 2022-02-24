@@ -10,11 +10,13 @@
 #include "Binding.hpp"
 #include "UEDataBinding.hpp"
 
-UsingUClass(UObject) UsingUClass(UWorld)    // for return type
-    UsingUClass(UClass) UsingUClass(USceneComponent)
-    UsingUClass(UActorComponent)
+UsingUClass(UObject);
+UsingUClass(UWorld);    // for return type
+UsingUClass(UClass);
+UsingUClass(USceneComponent);
+UsingUClass(UActorComponent);
 
-        struct AutoRegisterForUE
+struct AutoRegisterForUE
 {
     AutoRegisterForUE()
     {
@@ -35,7 +37,7 @@ UsingUClass(UObject) UsingUClass(UWorld)    // for return type
         puerts::DefineClass<USceneComponent>()
             .Method("SetupAttachment", MakeFunction(&USceneComponent::SetupAttachment))
             .Register();
-            
+
         puerts::DefineClass<UActorComponent>()
             .Method("RegisterComponent", MakeFunction(&UActorComponent::RegisterComponent))
             .Register();
