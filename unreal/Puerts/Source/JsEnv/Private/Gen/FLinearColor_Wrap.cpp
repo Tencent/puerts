@@ -839,7 +839,11 @@ static void FLinearColorM_ComputeLuminance(const v8::FunctionCallbackInfo<v8::Va
                     Isolate, "[FLinearColor::M_ComputeLuminance] Attempt to access a NULL self pointer");
                 return;
             }
+#if ENGINE_MAJOR_VERSION > 4
+            auto MethodResult = Self->GetLuminance();
+#else
             auto MethodResult = Self->ComputeLuminance();
+#endif
             auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
 

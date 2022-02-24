@@ -122,6 +122,7 @@ public class JsEnv : ModuleRules
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
             } 
+#if !UE_4_22_OR_LATER
             else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 22) 
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armeabi-v7a", "7.4.288");
@@ -135,6 +136,7 @@ public class JsEnv : ModuleRules
                 PublicAdditionalLibraries.Add("v8_libplatform");
                 PublicAdditionalLibraries.Add("v8_libsampler");
             }
+#endif
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
