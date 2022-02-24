@@ -300,17 +300,25 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     auto Iter = NamespaceMap.find(Obj);
     if (Iter == NamespaceMap.end())
     {
-        TArray<FString> PathFrags;
-        Cast<UPackage>(Obj->GetOuter())->GetName().ParseIntoArray(PathFrags, TEXT("/"));
-        for (int i = 0; i < PathFrags.Num(); i++)
+        UPackage* Pkg = Obj->GetPackage();
+        if (Pkg)
         {
-            auto FirstChar = PathFrags[i][0];
-            if ((FirstChar >= (TCHAR) '0' && FirstChar <= (TCHAR) '9') || FirstChar == (TCHAR) '$')
+            TArray<FString> PathFrags;
+            Pkg->GetName().ParseIntoArray(PathFrags, TEXT("/"));
+            for (int i = 0; i < PathFrags.Num(); i++)
             {
-                PathFrags[i] = TEXT("$") + PathFrags[i];
+                auto FirstChar = PathFrags[i][0];
+                if ((FirstChar >= (TCHAR) '0' && FirstChar <= (TCHAR) '9') || FirstChar == (TCHAR) '$')
+                {
+                    PathFrags[i] = TEXT("$") + PathFrags[i];
+                }
             }
+            NamespaceMap[Obj] = FString::Join(PathFrags, TEXT("."));
         }
-        NamespaceMap[Obj] = FString::Join(PathFrags, TEXT("."));
+        else
+        {
+            NamespaceMap[Obj] = TEXT("");
+        }
         Iter = NamespaceMap.find(Obj);
     }
     return Iter->second;
