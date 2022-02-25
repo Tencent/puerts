@@ -8,16 +8,20 @@ const ts = require("typescript");
  */
 class MetaSpecifier {
     /**
+     * the identity of the specifier
+     */
+    Specifier = "";
+    /**
+     * the value
+     */
+    Values;
+    /**
      * the constructor
      * @param specifier
      * @param values
      * @returns
      */
     constructor(specifier, values) {
-        /**
-         * the identity of the specifier
-         */
-        this.Specifier = "";
         this.Specifier = specifier;
         this.Values = values;
     }
@@ -73,107 +77,107 @@ class MetaSpecifier {
     IsMetaKeyValues() {
         return this.Values != null;
     }
+    /**
+     * the common meta data, the behavior is sync with unreal engine 5.0 early preview
+     */
+    static CommonMetaData = new Map([
+        ["DisplayName", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("DisplayName", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }],
+        ["FriendlyName", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("FriendlyName", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }],
+        ["BlueprintInternalUseOnly", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("BlueprintInternalUseOnly", 'true');
+                    metaData.set("BlueprintType", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["BlueprintType", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("BlueprintType", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["NotBlueprintType", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("NotBlueprintType", 'true');
+                    metaData.delete('BlueprintType');
+                    return true;
+                }
+                return false;
+            }],
+        ["Blueprintable", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("IsBlueprintBase", 'true');
+                    metaData.set("BlueprintType", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["CallInEditor", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("CallInEditor", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["NotBlueprintable", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("IsBlueprintBase", 'false');
+                    metaData.delete("BlueprintType");
+                    return true;
+                }
+                return false;
+            }],
+        ["Category", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("Category", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }],
+        ["Experimental", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("DevelopmentStatus", "Experimental");
+                    return true;
+                }
+                return false;
+            }],
+        ["EarlyAccessPreview", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("DevelopmentStatus", "EarlyAccessPreview");
+                    return true;
+                }
+                return false;
+            }],
+        ["DocumentationPolicy", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("DocumentationPolicy", 'Strict');
+                    return true;
+                }
+                return false;
+            }],
+        ["SparseClassDataType", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("SparseClassDataType", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }]
+    ]);
 }
-/**
- * the common meta data, the behavior is sync with unreal engine 5.0 early preview
- */
-MetaSpecifier.CommonMetaData = new Map([
-    ["DisplayName", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("DisplayName", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }],
-    ["FriendlyName", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("FriendlyName", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }],
-    ["BlueprintInternalUseOnly", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("BlueprintInternalUseOnly", 'true');
-                metaData.set("BlueprintType", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["BlueprintType", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("BlueprintType", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["NotBlueprintType", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("NotBlueprintType", 'true');
-                metaData.delete('BlueprintType');
-                return true;
-            }
-            return false;
-        }],
-    ["Blueprintable", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("IsBlueprintBase", 'true');
-                metaData.set("BlueprintType", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["CallInEditor", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("CallInEditor", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["NotBlueprintable", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("IsBlueprintBase", 'false');
-                metaData.delete("BlueprintType");
-                return true;
-            }
-            return false;
-        }],
-    ["Category", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("Category", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }],
-    ["Experimental", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("DevelopmentStatus", "Experimental");
-                return true;
-            }
-            return false;
-        }],
-    ["EarlyAccessPreview", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("DevelopmentStatus", "EarlyAccessPreview");
-                return true;
-            }
-            return false;
-        }],
-    ["DocumentationPolicy", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("DocumentationPolicy", 'Strict');
-                return true;
-            }
-            return false;
-        }],
-    ["SparseClassDataType", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("SparseClassDataType", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }]
-]);
 ;
 function some(array, predicate) {
     if (array) {
@@ -941,10 +945,10 @@ function getCustomSystem() {
         console.log(s);
     }
     function readFile(path, encoding) {
-        let data = puerts_1.$ref(undefined);
+        let data = (0, puerts_1.$ref)(undefined);
         const res = UE.FileSystemOperation.ReadFile(path, data);
         if (res) {
-            return puerts_1.$unref(data);
+            return (0, puerts_1.$unref)(data);
         }
         else {
             console.warn("readFile: read file fail! path=" + path);
@@ -1114,7 +1118,7 @@ const PropertyFlags = {
     CPF_NativeAccessSpecifierPublic: 0x0010000000000000,
     CPF_NativeAccessSpecifierProtected: 0x0020000000000000,
     CPF_NativeAccessSpecifierPrivate: 0x0040000000000000,
-    CPF_SkipSerialization: 0x0080000000000000,
+    CPF_SkipSerialization: 0x0080000000000000, ///< Property shouldn't be serialized, can still be exported to text
 };
 const ELifetimeCondition = {
     "COND_InitialOnly": 1,
@@ -1130,7 +1134,7 @@ const ELifetimeCondition = {
     "COND_SimulatedOnlyNoReplay": 11,
     "COND_SimulatedOrPhysicsNoReplay": 12,
     "COND_SkipReplay": 13,
-    "COND_Never": 15,
+    "COND_Never": 15, // This property will never be replicated						
 };
 function readAndParseConfigFile(configFilePath) {
     let readResult = ts.readConfigFile(configFilePath, customSystem.readFile);
@@ -1220,11 +1224,17 @@ function watch(configFilePath) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
                 changed = true;
             }
+            else {
+                fileVersions[fileName].processed = true;
+            }
         });
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, false);
                 changed = true;
+            }
+            else {
+                fileVersions[fileName].processed = true;
             }
         });
         if (changed) {
