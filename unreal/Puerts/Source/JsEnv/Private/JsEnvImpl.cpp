@@ -16,21 +16,27 @@
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
 #include "V8Utils.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/Engine.h"
+#endif
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
 #include "Async/Async.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JSGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
 #include "JSWidgetGeneratedClass.h"
 #include "JSGeneratedFunction.h"
+#endif
 #include "JSClassRegister.h"
 #include "PromiseRejectCallback.hpp"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "TypeScriptObject.h"
 #include "TypeScriptGeneratedClass.h"
-#include "ContainerMeta.h"
 #include "Engine/UserDefinedEnum.h"
+#endif
+#include "ContainerMeta.h"
 
 #pragma warning(push, 0)
 #include "libplatform/libplatform.h"
@@ -94,7 +100,9 @@
 #endif
 #endif
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/CollisionProfile.h"
+#endif
 
 namespace puerts
 {
@@ -533,6 +541,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 .ToLocalChecked())
         .Check();
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMakeUClass"),
             v8::FunctionTemplate::New(
@@ -546,6 +555,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 ->GetFunction(Context)
                 .ToLocalChecked())
         .Check();
+#endif
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFindModule"),
@@ -699,7 +709,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
+#endif
 
     Inspector = CreateV8Inspector(InDebugPort, &Context);
 
@@ -725,7 +737,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
+#endif
 
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
@@ -752,7 +766,9 @@ FJsEnvImpl::~FJsEnvImpl()
     HashToModuleInfo.clear();
     PathToModule.Empty();
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
+#endif
 
     for (int i = 0; i < ManualReleaseCallbackList.size(); i++)
     {
@@ -827,6 +843,7 @@ FJsEnvImpl::~FJsEnvImpl()
             Iter->second.JsFunction.Reset();
         }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         TsDynamicInvoker.Reset();
         for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
         {
@@ -834,6 +851,7 @@ FJsEnvImpl::~FJsEnvImpl()
             Iter->second.Prototype.Reset();
         }
         BindInfoMap.clear();
+#endif
 
         for (auto& Pair : TickerDelegateHandleMap)
         {
@@ -843,6 +861,7 @@ FJsEnvImpl::~FJsEnvImpl()
         }
         TickerDelegateHandleMap.clear();
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         for (auto& GeneratedClass : GeneratedClasses)
         {
             if (auto JSGeneratedClass = Cast<UJSGeneratedClass>(GeneratedClass))
@@ -867,6 +886,7 @@ FJsEnvImpl::~FJsEnvImpl()
                 }
             }
         }
+#endif
 
 #if defined(WITH_NODEJS)
         node::EmitExit(NodeEnv);
@@ -913,6 +933,7 @@ void FJsEnvImpl::InitExtensionMethodsMap()
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
@@ -955,6 +976,7 @@ void FJsEnvImpl::InitExtensionMethodsMap()
             }
         }
     }
+#endif
     ExtensionMethodsMapInited = true;
 }
 
@@ -1079,6 +1101,7 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::FinishInjection(UClass* InClass)
 {
     while (InClass && !InClass->IsNative())
@@ -1319,6 +1342,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
         }
     }
 }
+#endif
 
 void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
 {
@@ -1365,6 +1389,7 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
     JsHotReload(ModuleName, JsSource);
 }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
 {
     UObjectBaseUtility* Object = static_cast<UObjectBaseUtility*>(const_cast<UObjectBase*>(InObject));
@@ -1444,6 +1469,7 @@ void FJsEnvImpl::RebindJs()
         }
     }
 }
+#endif
 
 FString FJsEnvImpl::CurrentStackTrace()
 {
@@ -1645,6 +1671,7 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
     }
 }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
     const v8::UniquePersistent<v8::Object>& Prototype)
 {
@@ -1789,6 +1816,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         Logger->Error(FString::Printf(TEXT("Construct TypeScript Object fail for %s"), *Class->GetName()));
     }
 }
+#endif
 
 void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32 Index)
 {
@@ -1813,12 +1841,14 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
 
     TryReleaseType((UStruct*) ObjectBase);
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     UTypeScriptGeneratedClass* GeneratedClass = (UTypeScriptGeneratedClass*) ObjectBase;
     auto IterBIM = BindInfoMap.find(GeneratedClass);
     if (IterBIM != BindInfoMap.end())
     {
         BindInfoMap.erase(IterBIM);
     }
+#endif
 
     UnBind(nullptr, (UObject*) ObjectBase, true);
 
@@ -1877,6 +1907,7 @@ static void SkipFunction(FFrame& Stack, RESULT_DECL, UFunction* Function)
     }
 }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -2015,6 +2046,7 @@ void FJsEnvImpl::ConstructPendingObject(UObject* PendingObject)
         TsConstruct(SuperClasses[i], PendingObject);
     }
 }
+#endif
 
 void FJsEnvImpl::ExecuteDelegate(
     v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info, void* DelegatePtr)
@@ -2547,6 +2579,7 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
     if (UNLIKELY(!Existed))    // first create
     {
         auto Class = Cast<UClass>(InStruct);
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         if (Class && !Class->IsNative() && !InStruct->IsA<UTypeScriptGeneratedClass>())
         {
             auto SuperClass = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass());
@@ -2561,6 +2594,7 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
                 }
             }
         }
+#endif
     }
 
     return Ret;
@@ -2654,6 +2688,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
         auto Result = v8::Object::New(Isolate);
         for (int i = 0; i < Enum->NumEnums(); ++i)
         {
+#if !defined(ENGINE_INDEPENDENT_JSENV)
             auto Name = Enum->IsA<UUserDefinedEnum>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                                                       Enum->GetAuthoredNameStringByIndex(i)
@@ -2661,10 +2696,13 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
                                                       Enum->GetDisplayNameTextByIndex(i).ToString()
 #endif
                                                       : Enum->GetNameStringByIndex(i);
+#else
+            auto Name = Enum->GetNameStringByIndex(i);
+#endif
             auto Value = Enum->GetValueByIndex(i);
             __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
         }
-
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         if (Enum == StaticEnum<EObjectTypeQuery>())
         {
             UCollisionProfile* CollisionProfile = UCollisionProfile::Get();
@@ -2703,6 +2741,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
                 ContainerIndex++;
             }
         }
+#endif
         Info.GetReturnValue().Set(Result);
     }
     else
@@ -3334,6 +3373,7 @@ void FJsEnvImpl::SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     SetFTickerDelegate(Info, true);
 }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -3413,6 +3453,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     auto Result = FindOrAdd(Isolate, Context, Class->GetClass(), Class);
     Info.GetReturnValue().Set(Result);
 }
+#endif
 
 void FJsEnvImpl::FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {

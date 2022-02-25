@@ -11,7 +11,9 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleInterface.h"
 #include "Modules/ModuleManager.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "EngineMinimal.h"
+#endif
 
 /**
  * The public interface to this module

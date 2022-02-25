@@ -10,7 +10,9 @@
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "StructWrapper.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/UserDefinedStruct.h"
+#endif
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
 #include "JsObject.h"
@@ -149,6 +151,7 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
         auto Self = v8::External::New(Isolate, this);
         auto GetterTemplate = v8::FunctionTemplate::New(Isolate, Getter, Self);
         auto SetterTemplate = v8::FunctionTemplate::New(Isolate, Setter, Self);
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         Template->PrototypeTemplate()->SetAccessorProperty(
             FV8Utils::InternalString(Isolate, OwnerStruct && OwnerStruct->IsA<UUserDefinedStruct>() ?
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
@@ -159,6 +162,10 @@ void FPropertyTranslator::SetAccessor(v8::Isolate* Isolate, v8::Local<v8::Functi
 #endif
                                                                                                     : Property->GetName()),
             GetterTemplate, SetterTemplate, v8::DontDelete);
+#else
+        Template->PrototypeTemplate()->SetAccessorProperty(
+            FV8Utils::InternalString(Isolate, Property->GetName()), GetterTemplate, SetterTemplate, v8::DontDelete);
+#endif
     }
 }
 

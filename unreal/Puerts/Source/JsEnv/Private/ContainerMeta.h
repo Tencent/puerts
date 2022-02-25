@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "PropertyMacros.h"
+#include "UObject/UnrealType.h"
+#include "UObject/TextProperty.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "EngineMinimal.h"
+#endif
 
 USTRUCT(noexport)
 struct FPropertyMetaRoot

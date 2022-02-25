@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ContainerMeta.h"
+#include "UObject/Package.h"
 
 namespace puerts
 {

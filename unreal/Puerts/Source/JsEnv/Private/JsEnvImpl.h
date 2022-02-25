@@ -13,11 +13,15 @@
 #include "StructWrapper.h"
 #include "CppObjectMapper.h"
 #include "V8Utils.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/Engine.h"
+#endif
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "TypeScriptGeneratedClass.h"
+#endif
 #include "ContainerMeta.h"
 #include <unordered_map>
 
@@ -85,9 +89,11 @@ public:
         }
     }
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     virtual void TryBindJs(const class UObjectBase* InObject) override;
 
     virtual void RebindJs() override;
+#endif
 
     virtual FString CurrentStackTrace() override;
 
@@ -178,6 +184,7 @@ public:
 
     void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms);
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
         const v8::UniquePersistent<v8::Object>& Prototype);
 
@@ -188,6 +195,7 @@ public:
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
     void NotifyReBind(UTypeScriptGeneratedClass* Class);
+#endif
 
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
@@ -264,9 +272,11 @@ private:
 
     void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     void OnAsyncLoadingFlushUpdate();
 
     void ConstructPendingObject(UObject* PendingObject);
+#endif
 
     v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName);
 
@@ -362,6 +372,7 @@ private:
     friend ObjectMerger;
 
 public:
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     class TsDynamicInvokerImpl : public ITsDynamicInvoker
     {
     public:
@@ -391,7 +402,7 @@ public:
     };
 
     TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
-
+#endif
 private:
     puerts::FObjectRetainer UserObjectRetainer;
 
@@ -523,7 +534,7 @@ private:
             if (Parent)
                 Parent->InvokeJsCallback(Proxy, Parms);
         }
-
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         virtual void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
             const v8::UniquePersistent<v8::Object>& Prototype) override
         {
@@ -537,10 +548,10 @@ private:
             if (Parent)
                 Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
-
+#endif
         FJsEnvImpl* Parent;
     };
-
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     struct FBindInfo
     {
         FName Name;
@@ -554,7 +565,7 @@ private:
     void FinishInjection(UClass* InClass);
 
     void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject, bool RebindObject);
-
+#endif
     TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
 
     TSet<UClass*> GeneratedClasses;

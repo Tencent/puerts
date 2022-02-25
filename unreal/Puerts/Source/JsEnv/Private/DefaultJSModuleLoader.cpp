@@ -9,8 +9,8 @@
 #include "JSModuleLoader.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
-#include "Engine.h"
 #include "Algo/Reverse.h"
+#include "HAL/PlatformFilemanager.h"
 
 namespace puerts
 {

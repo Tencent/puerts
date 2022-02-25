@@ -24,10 +24,12 @@ class IDynamicInvoker
 public:
     virtual void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms) = 0;
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     virtual void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
         const v8::UniquePersistent<v8::Object>& Prototype) = 0;
 
     virtual void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) = 0;
+#endif
 };
 
 }    // namespace puerts

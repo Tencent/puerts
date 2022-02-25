@@ -20,7 +20,9 @@
 #include "ObjectRetainer.h"
 #include "JSLogger.h"
 #include "JSModuleLoader.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "ExtensionMethods.h"
+#endif
 
 namespace puerts
 {
@@ -33,11 +35,13 @@ public:
 
     virtual void WaitDebugger(double timeout) = 0;
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     virtual void TryBindJs(const class UObjectBase* InObject) = 0;
 
-    virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
-
     virtual void RebindJs() = 0;
+#endif
+
+    virtual void ReloadModule(FName ModuleName, const FString& JsSource) = 0;
 
     virtual FString CurrentStackTrace() = 0;
 

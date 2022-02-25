@@ -6,6 +6,7 @@
  * which is part of this source code package.
  */
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JsEnvGroup.h"
 #include "JsEnvImpl.h"
 
@@ -141,3 +142,4 @@ void FJsEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
 }
 
 }    // namespace puerts
+#endif

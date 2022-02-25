@@ -11,10 +11,12 @@
 #include "UEDataBinding.hpp"
 
 UsingUClass(UObject);
-UsingUClass(UWorld);    // for return type
 UsingUClass(UClass);
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+UsingUClass(UWorld);    // for return type
 UsingUClass(USceneComponent);
 UsingUClass(UActorComponent);
+#endif
 
 struct AutoRegisterForUE
 {
@@ -31,9 +33,12 @@ struct AutoRegisterForUE
             .Method("GetName", SelectFunction(FString(UObjectBaseUtility::*)() const, &UObjectBaseUtility::GetName))
             .Method("GetOuter", MakeFunction(&UObject::GetOuter))
             .Method("GetClass", MakeFunction(&UObject::GetClass))
+#if !defined(ENGINE_INDEPENDENT_JSENV)
             .Method("GetWorld", MakeFunction(&UObject::GetWorld))
+#endif
             .Register();
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
         puerts::DefineClass<USceneComponent>()
             .Method("SetupAttachment", MakeFunction(&USceneComponent::SetupAttachment))
             .Register();
@@ -41,6 +46,7 @@ struct AutoRegisterForUE
         puerts::DefineClass<UActorComponent>()
             .Method("RegisterComponent", MakeFunction(&UActorComponent::RegisterComponent))
             .Register();
+#endif
     }
 };
 

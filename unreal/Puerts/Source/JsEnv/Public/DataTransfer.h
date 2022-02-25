@@ -10,6 +10,7 @@
 
 #if USING_IN_UNREAL_ENGINE
 #include "CoreMinimal.h"
+#include "UObject/Package.h"
 #else
 #include "JSClassRegister.h"
 #endif
