@@ -43,6 +43,14 @@ if (UnityEngine_Debug) {
         UnityEngine_Debug.LogError(toString(arguments));
     }
     
+    console.trace = function() {
+        if (console_org) console_org.trace.apply(null, Array.prototype.slice.call(arguments));
+        let stack = new Error().stack; // get js stack
+        stack = stack.substring(stack.indexOf("\n")+1); // remove first line ("Error")
+        stack = stack.replace(/^ {4}/gm, ""); // remove indentation
+        UnityEngine_Debug.Log(toString(arguments) + "\n" + stack + "\n");
+    }
+    
     global.console = console;
     puerts.console = console;
 }
