@@ -166,7 +166,8 @@ public:
         {
             v8::Local<v8::Context> Context(Isolate->GetCurrentContext());
             // --> modified by ksg begin
-    	    // songfuhao: 引入 SourceMapSupport 后，堆栈显示的是正常 TS 报错，但 Puerts 默认打印的还是 JS 报错，所以把这块打印给去掉了
+            // songfuhao: 引入 SourceMapSupport 后，堆栈显示的是正常 TS 报错，但 Puerts 默认打印的还是 JS
+            // 报错，所以把这块打印给去掉了
             /*
             // 输出 (filename):(line number): (message).
             v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());

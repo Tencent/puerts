@@ -119,7 +119,6 @@ bool DefaultJSModuleLoader::Search(const FString& RequiredDir, const FString& Re
         }
     }
 
-
     // --> modified by ksg begin
     // songfuhao: 移除默认寻址 JavaScript 目录规则，新增默认寻址Puerts插件目录规则
     // tiansen: 使用ENGINE_JS_SEARCH_PATH宏替换写死路径
@@ -128,8 +127,8 @@ bool DefaultJSModuleLoader::Search(const FString& RequiredDir, const FString& Re
            (ScriptRoot != TEXT("JavaScript") &&
                SearchModuleInDir(FPaths::ProjectContentDir() / TEXT("JavaScript"), RequiredModule, Path, AbsolutePath));
     */
-    return SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath)
-        || SearchModuleInDir(FPaths::ProjectPluginsDir() / ENGINE_JS_SEARCH_PATH , RequiredModule, Path, AbsolutePath);
+    return SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath) ||
+           SearchModuleInDir(FPaths::ProjectPluginsDir() / ENGINE_JS_SEARCH_PATH, RequiredModule, Path, AbsolutePath);
 }
 
 bool DefaultJSModuleLoader::Load(const FString& Path, TArray<uint8>& Content)
