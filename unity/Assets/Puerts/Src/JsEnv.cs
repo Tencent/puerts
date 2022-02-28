@@ -196,6 +196,8 @@ namespace Puerts
         * execute the module and get the result
         * when exportee is null, get the module namespace
         * when exportee is not null, get the specified member of the module namespace
+        *
+        * example: JsEnv.ExecuteModule("main.mjs")
         */
         public T ExecuteModule<T>(string filename, string exportee = "")
         {
