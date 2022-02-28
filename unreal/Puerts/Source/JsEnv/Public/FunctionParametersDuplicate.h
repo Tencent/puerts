@@ -1,9 +1,10 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #pragma once
 
@@ -18,7 +19,8 @@ static PropertyMacro* DuplicateProperty(
 #endif
     PropertyMacro* Property, FName Name)
 {
-    auto SetupProperty = [&](PropertyMacro* NewProperty) {
+    auto SetupProperty = [&](PropertyMacro* NewProperty)
+    {
         NewProperty->SetPropertyFlags(Property->GetPropertyFlags());
         return NewProperty;
     };
@@ -38,7 +40,6 @@ static PropertyMacro* DuplicateProperty(
     }
     else if (auto ArrayProperty = CastFieldMacro<ArrayPropertyMacro>(Property))
     {
-
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
         auto Temp = new ArrayPropertyMacro(Outer, Name, ObjectFlags);
 #else
@@ -102,7 +103,7 @@ static PropertyMacro* DuplicateProperty(
     return NewProperty;
 };
 
-static void DuplicateParameters(UFunction * FromFunction, UFunction * Function)
+static void DuplicateParameters(UFunction* FromFunction, UFunction* Function)
 {
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
     FField** Storage = &Function->ChildProperties;

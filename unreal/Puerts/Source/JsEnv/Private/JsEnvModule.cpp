@@ -1,22 +1,22 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 #include "JsEnvModule.h"
 //#include "TGameJSCorePCH.h"
 #include "HAL/MemoryBase.h"
 #if defined(WITH_NODEJS)
-#pragma warning(push, 0) 
+#pragma warning(push, 0)
 #include "node.h"
 #include "uv.h"
 #pragma warning(pop)
 #endif
 
-class FMallocWrapper final
-    : public FMalloc
+class FMallocWrapper final : public FMalloc
 {
 public:
     FMalloc* InnerMalloc;
@@ -64,7 +64,7 @@ public:
         return InnerMalloc->Free(Ptr);
     }
 
-    virtual bool GetAllocationSize(void *Original, SIZE_T &SizeOut) override
+    virtual bool GetAllocationSize(void* Original, SIZE_T& SizeOut) override
     {
         return InnerMalloc->GetAllocationSize(Original, SizeOut);
     }
@@ -79,8 +79,8 @@ public:
         return InnerMalloc->ValidateHeap();
     }
 
-    virtual const TCHAR* GetDescriptiveName() override 
-    { 
+    virtual const TCHAR* GetDescriptiveName() override
+    {
         return InnerMalloc->GetDescriptiveName();
     }
 
@@ -121,7 +121,7 @@ public:
         return InnerMalloc->Exec(InWorld, Cmd, Ar);
     }
 
-    virtual void UpdateStats()  override
+    virtual void UpdateStats() override
     {
         InnerMalloc->UpdateStats();
     }
@@ -138,7 +138,7 @@ public:
 };
 
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
-#pragma warning(push, 0)     
+#pragma warning(push, 0)
 #include "v8.h"
 #include "libplatform/libplatform.h"
 #pragma warning(pop)
@@ -163,13 +163,11 @@ private:
 #endif
 };
 
-IMPLEMENT_MODULE( FJsEnvModule, JsEnv)
-
-
+IMPLEMENT_MODULE(FJsEnvModule, JsEnv)
 
 void FJsEnvModule::StartupModule()
 {
-    int * Dummy = new (std::nothrow) int[0];
+    int* Dummy = new (std::nothrow) int[0];
     if (!Dummy)
     {
         UE_LOG(JsEnvModule, Warning, TEXT("new (std::nothrow) int[0] return nullptr, try fix it!"));
@@ -177,7 +175,7 @@ void FJsEnvModule::StartupModule()
         GMalloc = MallocWrapper;
     }
     delete[] Dummy;
-    
+
     // This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 #if defined(WITH_NODEJS)
@@ -193,7 +191,7 @@ void FJsEnvModule::StartupModule()
     int Argc = 1;
     char* ArgvIn[1];
     ArgvIn[0] = const_cast<char*>("puerts");
-    char ** Argv = uv_setup_args(Argc, ArgvIn);
+    char** Argv = uv_setup_args(Argc, ArgvIn);
     std::vector<std::string> Args(Argv, Argv + Argc);
     std::vector<std::string> ExecArgs;
     std::vector<std::string> Errors;
@@ -204,7 +202,6 @@ void FJsEnvModule::StartupModule()
     }
 #endif
 }
-
 
 void FJsEnvModule::ShutdownModule()
 {
@@ -230,4 +227,3 @@ void* FJsEnvModule::GetV8Platform()
     return reinterpret_cast<void*>(platform_.get());
 }
 #endif
-

@@ -33,7 +33,7 @@ if ( ANDROID OR APPLE OR (MSYS AND NOT WIN_DLL) )
     list(APPEND SRC_FILES src/v8-impl.cc)
 endif()
 
-file(STRINGS "quickjs/VERSION" QJS_VERSION_STR)
+file(STRINGS "quickjs/_VERSION" QJS_VERSION_STR)
 
 set (CMAKE_CXX_STANDARD 14)
 

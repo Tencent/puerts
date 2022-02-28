@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\NUnit3TestAdapter.4.1.0\build\net35\NUnit3TestAdapter.props" Condition="Exists('packages\NUnit3TestAdapter.4.1.0\build\net35\NUnit3TestAdapter.props')" />
   <Import Project="packages\NUnit.3.12.0\build\NUnit.props" Condition="Exists('packages\NUnit.3.12.0\build\NUnit.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -14,6 +15,7 @@
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -22,7 +24,7 @@
     <Optimize>false</Optimize>
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <IntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest</IntermediateOutputPath>
     <DefineConstants>_DEBUG;DEBUG;TRACE;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -33,8 +35,9 @@
     <Optimize>true</Optimize>
     <OutputPath>..\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants></DefineConstants>
+    <IntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest</IntermediateOutputPath>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -61,11 +64,14 @@
     <Compile Include="..\Src\UnitTest\UnitTest.cs">
       <Link>Src\UnitTest\UnitTest.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\warp\AutoStaticCodeRegister.cs">
-      <Link>Src\UnitTest\warp\AutoStaticCodeRegister.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\warp\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
-      <Link>Src\UnitTest\warp\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
+      <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\WrapperGenerate.cs">
+      <Link>Src\WrapperGenerate.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -83,6 +89,7 @@
       <ErrorText>这台计算机上缺少此项目引用的 NuGet 程序包。使用“NuGet 程序包还原”可下载这些程序包。有关更多信息，请参见 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的文件是 {0}。</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\NUnit.3.12.0\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\NUnit.3.12.0\build\NUnit.props'))" />
+    <Error Condition="!Exists('packages\NUnit3TestAdapter.4.1.0\build\net35\NUnit3TestAdapter.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\NUnit3TestAdapter.4.1.0\build\net35\NUnit3TestAdapter.props'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

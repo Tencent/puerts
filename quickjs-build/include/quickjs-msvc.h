@@ -1002,8 +1002,10 @@ JSValue JS_MapSet(JSContext *ctx, JSValueConst this_val,
 JSValue JS_MapGet(JSContext *ctx, JSValueConst this_val,
                   JSValueConst key);
 void JS_MapClear(JSContext *ctx, JSValueConst this_val);
+JSValue JS_DupModule(JSContext *ctx, JSModuleDef* v);
 
 /*-------end fuctions for v8 api---------*/
+JSValue JS_GET_MODULE_NS(JSContext *ctx, JSModuleDef* v);
 
 #undef js_unlikely
 #undef js_force_inline

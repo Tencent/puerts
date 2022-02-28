@@ -32,7 +32,7 @@ public:
 };
 ~~~
 
-### 方式二：自动绑定模式
+### 方式二：继承引擎类模式
 
 该模式的优点是能做到特定写法的类能被UE编辑器识别
 
@@ -88,12 +88,12 @@ class TS_Player extends UE.Character {
 
 ### 两种模式之间的关系
 
-* 自动绑定模式是建立于自行启动虚拟机模式的基础上的，PuertsModule启动了一个虚拟机，然后做了些自动绑定蓝图，代码增量编译、增量刷新功能
+* 继承引擎类模式是建立于自行启动虚拟机模式的基础上的，PuertsModule启动了一个虚拟机，然后做了些自动绑定蓝图，代码增量编译、增量刷新功能
 
 * 两者可以并存，但要谨记你自己手动启动的虚拟机，和PuertsModule的虚拟机不是同一个，他们是相互隔离的
 
 
-## 自动绑定模式
+## 继承引擎类模式
 
 ### 格式
 
@@ -103,9 +103,24 @@ class TS_Player extends UE.Character {
 * 类名和去掉.ts后缀的文件名相同；
 * 把这个类export default。
 
+### 生命周期
+
+本模式下，继承UE类型的TypeScript类型的对象，生命周期由引擎管理。
+
+比如下面这个例子：
+
+~~~typescript
+let obj = getsomeobject();
+setTimeout(() => {
+    console.log(obj.XXX);
+}, 1000);
+~~~
+
+obj对象通过闭包被引用了，如果这个obj是个普通UE对象，puerts会对obj加个强引用，如果是继承UE类型的TypeScript类型的对象，则不加引用。
+
 ### 构造函数
 
-和标准的typescript构造函数不一样，自动绑定模式被UE初始化调用的构造函数首字母需大写，也就是Constructor
+和标准的typescript构造函数不一样，继承引擎类模式被UE初始化调用的构造函数首字母需大写，也就是Constructor
 
 ~~~typescript
 class TsTestActor extends UE.Actor {
@@ -127,9 +142,9 @@ class TsTestActor extends UE.Actor {
   - 不能在该函数中申请js的资源，比如创建一个闭包函数，因为重载虚拟机后这些资源将失效，然而构造函数不会重新执行
 * 目前不支持在一个Actor的构造函数修改Component的属性，因为SpawnActor在构造完对象后，有个对Component的重置: [构造函数设置Component属性无效](https://github.com/Tencent/puerts/issues/287)
 
-### 自动绑定模式支持的数据类型
+### 继承引擎类模式支持的数据类型
 
-只有用自动绑定模式支持的类型声明的字段、方法，才能被UE识别
+只有用继承引擎类模式支持的类型声明的字段、方法，才能被UE识别
 
 **直接映射的类型**
 

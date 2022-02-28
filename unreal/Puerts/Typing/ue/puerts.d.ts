@@ -26,13 +26,13 @@ declare module "ue" {
         Clear(): void;
     }
     
-    class FixSizeArray<T> {
+    interface FixSizeArray<T> {
         Num(): number;
         Get(Index: number): T;
         Set(Index: number, Value: T): void;
     }
     
-    class TArray<T> {
+    interface TArray<T> {
         Num(): number;
         Add(Value: T): void;
         Get(Index: number): T;
@@ -44,7 +44,7 @@ declare module "ue" {
         Empty(): void;
     }
     
-    class TSet<T> {
+    interface TSet<T> {
         Num(): number;
         Add(Value: T): void;
         Get(Index: number): T;  // TODO - 这个接口要用Index吗？
@@ -57,7 +57,7 @@ declare module "ue" {
         Empty(): void;
     }
     
-    class TMap<TKey, TValue> {
+    interface TMap<TKey, TValue> {
         Num(): number;
         Add(Key: TKey, Value: TValue): void;
         Get(Key: TKey): TValue | undefined;

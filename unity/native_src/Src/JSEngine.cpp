@@ -51,15 +51,15 @@ namespace puerts
         Info.GetReturnValue().Set(Result.ToLocalChecked());
     }
 
+#if WITH_NODEJS
     void JSEngine::JSEngineWithNode()
     {
-#if WITH_NODEJS
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]start");
         if (!GPlatform)
         {
             // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
-            int Argc = 1;
-            char* ArgvIn[] = {"--trace-uncaught"};
+            int Argc = 2;
+            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
@@ -136,12 +136,12 @@ namespace puerts
 
         //the same as raw v8
         MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
-#endif        
     }
+#endif        
 
+#if !WITH_NODEJS
     void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
     {
-#if !WITH_NODEJS
         if (!GPlatform)
         {
             GPlatform = v8::platform::NewDefaultPlatform();
@@ -153,12 +153,10 @@ namespace puerts
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 #endif
 
-#if !WITH_NODEJS
         v8::StartupData SnapshotBlob;
         SnapshotBlob.data = (const char *)SnapshotBlobCode;
         SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
         v8::V8::SetSnapshotDataBlob(&SnapshotBlob);
-#endif
 
         // 初始化Isolate和DefaultContext
         CreateParams = new v8::Isolate::CreateParams();
@@ -190,8 +188,8 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
-#endif
     }
+#endif
 
     JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
@@ -242,6 +240,13 @@ namespace puerts
                 }
                 Iter->second.Reset();
             }
+#if !WITH_QUICKJS
+            for (auto Iter = ModuleCacheMap.begin(); Iter != ModuleCacheMap.end(); ++Iter)
+            {
+                Iter->second.Reset();
+            }
+#endif
+            ModuleCacheMap.clear();
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
@@ -250,9 +255,16 @@ namespace puerts
                 delete *Iter;
             }
         }
+        {
+            std::lock_guard<std::mutex> guard(JSObjectsMutex);
+            for (auto Iter = JSObjectMap.begin(); Iter != JSObjectMap.end(); ++Iter)
+            {
+                delete Iter->second;
+            }
+        }
         
 #if WITH_NODEJS
-        node::EmitExit(NodeEnv);
+        // node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
         node::FreeEnvironment(NodeEnv);
         node::FreeIsolateData(NodeIsolateData);
@@ -265,7 +277,7 @@ namespace puerts
 #endif
 
         ResultInfo.Context.Reset();
-        // TODO DEBUG下一次new的时候会报错的问题
+        ResultInfo.Result.Reset();
         MainIsolate->Dispose();
         MainIsolate = nullptr;
 
@@ -431,40 +443,6 @@ namespace puerts
         v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, true, Callback, Data)->GetFunction(Context).ToLocalChecked()).Check();
-    }
-
-    bool JSEngine::Eval(const char *Code, const char* Path)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        v8::Local<v8::String> Url = FV8Utils::V8String(Isolate, Path == nullptr ? "" : Path);
-        v8::Local<v8::String> Source = FV8Utils::V8String(Isolate, Code);
-        v8::ScriptOrigin Origin(Url);
-        v8::TryCatch TryCatch(Isolate);
-
-        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
-        if (CompiledScript.IsEmpty())
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-        auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);//error info output
-        if (TryCatch.HasCaught())
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
-            return false;
-        }
-
-        if (!maybeValue.IsEmpty())
-        {
-            ResultInfo.Result.Reset(Isolate, maybeValue.ToLocalChecked());
-        }
-
-        return true;
     }
 
     static void NewWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)

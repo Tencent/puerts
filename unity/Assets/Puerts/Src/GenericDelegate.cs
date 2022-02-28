@@ -339,6 +339,23 @@ namespace Puerts
             this.jsEnv = jsEnv;
         }
 
+        // Func<JSObject, string, object> MemberGetter;
+        // public T Get<T>(string key) 
+        // {
+        //     if (MemberGetter == null) 
+        //     {
+        //         MemberGetter = jsEnv.Eval<Func<JSObject, string, object>>("(function(obj, key) { return obj[key] })");
+        //     }
+        //     object value = MemberGetter(this, key);
+            
+        //     Type maybeDelegateType = typeof(T);
+        //     if (typeof(Delegate).IsAssignableFrom(typeof(T))) {
+        //         return (T)(object)jsEnv.genericDelegateFactory.Create(typeof(T), (IntPtr)value);
+        //     }
+            
+        //     return (T)value;
+        // }
+
         ~JSObject() 
         {
 #if THREAD_SAFE

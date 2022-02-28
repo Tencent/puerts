@@ -558,6 +558,8 @@ namespace Puerts
                 }
 
                 // extensionMethods
+                // 因为内存问题与crash问题移入宏中
+#if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
                 IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                 if (extensionMethods != null)
                 {
@@ -570,6 +572,7 @@ namespace Puerts
                         AddMethodToSlowBindingGroup(methodKey, method);
                     }
                 }
+#endif
 
                 // fields
                 var fields = type.GetFields(flag);
@@ -614,21 +617,24 @@ namespace Puerts
 
                 if (registerInfo.LazyMethods != null) 
                 {
+                    // register all the methods marked as lazy
                     foreach (var kv in registerInfo.LazyMethods)
                     {
                         //TODO: change to LazyBinding instead of SlowBinding
                         MethodKey methodKey = kv.Key;
-                        MethodInfo method = type.GetMethod(methodKey.Name, flag);
+                        MemberInfo[] members = type.GetMember(methodKey.Name, flag);
 
-                        if (method != null)
+                        var enumerator = members.GetEnumerator();
+                        while (enumerator.MoveNext())
                         {
-                            AddMethodToSlowBindingGroup(methodKey, method);
+                            AddMethodToSlowBindingGroup(methodKey, (MethodInfo)enumerator.Current);
                         }
                     }
                 }
 
                 if (registerInfo.LazyProperties != null)
                 {
+                    // register all the properties marked as lazy
                     foreach (var kv in registerInfo.LazyProperties)
                     {
                         //TODO: change to LazyBinding instead of SlowBinding

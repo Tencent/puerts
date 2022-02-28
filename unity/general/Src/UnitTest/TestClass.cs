@@ -11,6 +11,27 @@ using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public class Util
+    {
+        public static int InvokeJSFunctionIntInt(Func<int, int> jsFunc, int arg)
+        {
+            return jsFunc(arg);
+        }
+    }
+
+    public class ParentParent
+    {
+        public static void doSth()
+        {
+        }
+    }
+    public class GenericParent<T> : ParentParent
+    {
+    }
+    public class SonClass: GenericParent<int>
+    {
+    }
+
     public struct S
     {
         int age;
