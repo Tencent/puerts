@@ -307,7 +307,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     // 初始化Isolate和DefaultContext
     // v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
     v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
-        UE_LOG(LogJS, Error, TEXT("DcheckErrorCallback: file: %s, line: %d, message: %s"), ANSI_TO_TCHAR(file), line, ANSI_TO_TCHAR(message));
+        UE_LOG(Puerts, Error, TEXT("DcheckErrorCallback: file: %s, line: %d, message: %s"), ANSI_TO_TCHAR(file), line, ANSI_TO_TCHAR(message));
     });
 
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -319,10 +319,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     // MainIsolate = v8::Isolate::New(CreateParams);
     MainIsolate = v8::Isolate::Allocate();
     MainIsolate->SetFatalErrorHandler([](const char* location, const char* message) {
-        UE_LOG(LogJS, Error, TEXT("FatalErrorCallback: location: %s, message: %s"), ANSI_TO_TCHAR(location), ANSI_TO_TCHAR(message));
+        UE_LOG(Puerts, Error, TEXT("FatalErrorCallback: location: %s, message: %s"), ANSI_TO_TCHAR(location), ANSI_TO_TCHAR(message));
     });
     MainIsolate->SetOOMErrorHandler([](const char* location, bool is_heap_oom) {
-        UE_LOG(LogJS, Error, TEXT("OOMErrorCallback: location: %s, is_heap_oom: %d"), ANSI_TO_TCHAR(location), is_heap_oom?1:0);
+        UE_LOG(Puerts, Error, TEXT("OOMErrorCallback: location: %s, is_heap_oom: %d"), ANSI_TO_TCHAR(location), is_heap_oom?1:0);
     });
 
     v8::Isolate::Initialize(MainIsolate, CreateParams);
