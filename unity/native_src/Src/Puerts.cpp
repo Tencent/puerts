@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define LIB_VERSION 14
+#define LIB_VERSION 15
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -64,6 +64,26 @@ V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, CSharpF
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->SetGlobalFunction(Name, Callback, Data);
+}
+
+V8_EXPORT void SetModuleResolver(v8::Isolate *Isolate, CSharpModuleResolveCallback Resolver, int32_t Idx)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->ModuleResolver = Resolver;
+    JsEngine->Idx = Idx;
+}
+
+V8_EXPORT FResultInfo * ExecuteModule(v8::Isolate *Isolate, const char* Path, const char* Exportee)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    if (JsEngine->ExecuteModule(Path, Exportee))
+    {
+        return &(JsEngine->ResultInfo);
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)

@@ -8,16 +8,17 @@
 #include "UObject/NoExportTypes.h"
 #include "PEDirectoryWatcher.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FDirectoryWatcherCallback, const TArray<FString>&, Added, const TArray<FString>&, Modified, const TArray<FString>&, Removed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+    FDirectoryWatcherCallback, const TArray<FString>&, Added, const TArray<FString>&, Modified, const TArray<FString>&, Removed);
 
 /**
- * 
+ *
  */
 UCLASS()
 class PUERTSEDITOR_API UPEDirectoryWatcher : public UObject
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
     FDelegateHandle DelegateHandle;
 

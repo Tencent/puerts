@@ -54043,4 +54043,14 @@ void JS_MapClear(JSContext *ctx, JSValueConst this_val)
     }
 }
 
+JSValue JS_DupModule(JSContext *ctx, JSModuleDef* v)
+{
+    return JS_DupValue(ctx, JS_MKPTR(JS_TAG_MODULE, v));
+}
+
 /*-------end fuctions for v8 api---------*/
+
+JSValue JS_GET_MODULE_NS(JSContext *ctx, JSModuleDef* v)
+{
+    return js_get_module_ns(ctx, v);
+}

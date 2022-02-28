@@ -3,13 +3,10 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace Puerts
 {
-    using UnityEngine;
-    using UnityEditor;
-    using System.Xml;
-
     public class DocResolver
     {
         public class DocBody
@@ -27,7 +24,8 @@ namespace Puerts
                     sb.AppendLine("/**");
                     foreach (var line in this.summary)
                     {
-                        sb.AppendLine($" * {line.Replace('\r', ' ')}");
+                        //sb.AppendLine($" * {line.Replace('\r', ' ')}");
+                        sb.AppendLine(string.Format(" * {0}", line.Replace('\r', ' ')));
                     }
                 }
                 else
@@ -52,11 +50,13 @@ namespace Puerts
                     {
                         if ((this.parameters != null || this.parameters.Count == 0) && string.IsNullOrEmpty(this.returns))
                         {
-                            sb.Append($"/** {this.summary[0]}");
+                            //sb.Append($"/** {this.summary[0]}");
+                            sb.Append(string.Format("/** {0}", this.summary[0]));
                         }
                         else
                         {
-                            sb.AppendLine($"/** {this.summary[0]}");
+                            //sb.AppendLine($"/** {this.summary[0]}");
+                            sb.AppendLine(string.Format("/** {0}", this.summary[0]));
                         }
                     }
                 }
@@ -67,17 +67,18 @@ namespace Puerts
                     {
                         var pname = kv.Key;
                         var ptext = kv.Value;
-                        sb.AppendLine($" * @param {pname} {ptext}");
+                        //sb.AppendLine($" * @param {pname} {ptext}");
+                        sb.AppendLine(string.Format(" * @param {0} {1}", pname, ptext));
                     }
                 }
 
                 if (!string.IsNullOrEmpty(this.returns))
                 {
-                    sb.AppendLine($" * @returns {this.returns}");
+                    //sb.AppendLine($" * @returns {this.returns}");
+                    sb.AppendLine(string.Format(" * @returns {0}", this.returns));
                 }
 
-                sb.Append(" */");
-                return sb.ToString();
+                return sb.ToString().Replace("*/", "* /") + " */";
             }
         }
 
@@ -121,22 +122,53 @@ namespace Puerts
 
         public static string GetTsDocument(MethodBase methodBase)
         {
-            return GetResolver(methodBase.DeclaringType.Assembly).GetDocBody(methodBase)?.ToJsDoc() ?? "";
+            //return GetResolver(methodBase.DeclaringType.Assembly).GetDocBody(methodBase)?.ToJsDoc() ?? "";
+
+            var docBody = GetResolver(methodBase.DeclaringType.Assembly).GetDocBody(methodBase);
+
+            if (docBody != null && docBody.ToJsDoc() != null)
+            {
+                return docBody.ToJsDoc();
+            }
+            return "";
         }
 
         public static string GetTsDocument(FieldInfo fieldInfo)
         {
-            return GetResolver(fieldInfo.DeclaringType.Assembly).GetDocBody(fieldInfo)?.ToJsDoc() ?? "";
+            //return GetResolver(fieldInfo.DeclaringType.Assembly).GetDocBody(fieldInfo)?.ToJsDoc() ?? "";
+
+            var docBody = GetResolver(fieldInfo.DeclaringType.Assembly).GetDocBody(fieldInfo);
+
+            if (docBody != null && docBody.ToJsDoc() != null)
+            {
+                return docBody.ToJsDoc();
+            }
+            return "";
         }
 
         public static string GetTsDocument(PropertyInfo propertyInfo)
         {
-            return GetResolver(propertyInfo.DeclaringType.Assembly).GetDocBody(propertyInfo)?.ToJsDoc() ?? "";
+            //return GetResolver(propertyInfo.DeclaringType.Assembly).GetDocBody(propertyInfo)?.ToJsDoc() ?? "";
+
+            var docBody = GetResolver(propertyInfo.DeclaringType.Assembly).GetDocBody(propertyInfo);
+
+            if (docBody != null && docBody.ToJsDoc() != null)
+            {
+                return docBody.ToJsDoc();
+            }
+            return "";
         }
 
         public static string GetTsDocument(Type type)
         {
-            return GetResolver(type.Assembly).GetDocBody(type)?.ToJsDoc() ?? "";
+            //return GetResolver(type.Assembly).GetDocBody(type)?.ToJsDoc() ?? "";
+            var docBody = GetResolver(type.Assembly).GetDocBody(type);
+
+            if (docBody != null && docBody.ToJsDoc() != null)
+            {
+                return docBody.ToJsDoc();
+            }
+            return "";
         }
 
         public DocBody GetFieldDocBody(string path)
@@ -166,7 +198,8 @@ namespace Puerts
                 return null;
             }
             var declType = methodBase.DeclaringType;
-            _sb.Clear();
+            //_sb.Clear();
+            _sb.Remove(0, _sb.Length);
             _sb.Append(declType.FullName);
             _sb.Append('.');
             _sb.Append(methodBase.Name);
@@ -197,7 +230,7 @@ namespace Puerts
 
         public DocBody GetDocBody(PropertyInfo propertyInfo)
         {
-            if (propertyInfo.GetMethod == null || !propertyInfo.GetMethod.IsPublic)
+            if (propertyInfo.GetGetMethod() == null || !propertyInfo.GetGetMethod().IsPublic)
             {
                 return null;
             }
@@ -316,7 +349,8 @@ namespace Puerts
 
         private string ReadSingleTextBlock(XmlReader reader, DocBody body, string elementName)
         {
-            _sb.Clear();
+            //_sb.Clear();
+            _sb.Remove(0, _sb.Length);
             if (!reader.IsEmptyElement)
             {
                 while (reader.Read())

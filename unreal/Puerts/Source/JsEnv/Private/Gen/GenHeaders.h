@@ -1,5 +1,6 @@
 #pragma once
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Engine/NetworkObjectList.h"
 #include "TimerManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -61,3 +62,4 @@
 #include "GameFramework/TouchInterface.h"
 #include "GameFramework/Volume.h"
 #include "GameFramework/WorldSettings.h"
+#endif

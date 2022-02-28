@@ -10,17 +10,17 @@
 UINTERFACE(MinimalAPI)
 class UCodeGenerator : public UInterface
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 };
 
 /**
- * 
+ *
  */
 class DECLARATIONGENERATOR_API ICodeGenerator
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
+    // Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
     UFUNCTION(BlueprintNativeEvent)
     void Gen() const;

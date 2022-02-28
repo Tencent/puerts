@@ -35,6 +35,11 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
+    public delegate string ModuleResolveCallback(string identifer, int jsEnvIdx);
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
     public delegate void V8DestructorCallback(IntPtr self, long data);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
@@ -157,6 +162,21 @@ namespace Puerts
             IntPtr fn = generalDestructor == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(generalDestructor);
             SetGeneralDestructor(isolate, fn);
         }
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void SetModuleResolver(IntPtr isolate, IntPtr callback, int jsEnvIdx);
+        public static void SetModuleResolver(IntPtr isolate, ModuleResolveCallback callback, int jsEnvIdx)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(callback);
+#endif
+            IntPtr fn = callback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
+            SetModuleResolver(isolate, fn, jsEnvIdx);
+        }
+
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr ExecuteModule(IntPtr isolate, string path, string exportee);
 
 #if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -371,8 +391,19 @@ namespace Puerts
             }
         }
 #else
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetStringToOutValue(IntPtr isolate, IntPtr value, string str);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetStringToOutValue")]
+        protected static extern void __SetStringToOutValue(IntPtr isolate, IntPtr value, string str);
+        public static void SetStringToOutValue(IntPtr isolate, IntPtr value, string str)
+        {
+            if (str == null) 
+            {
+                SetNullToOutValue(isolate, value);
+            }
+            else
+            {
+                __SetStringToOutValue(isolate, value, str);
+            }
+        }
 #endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

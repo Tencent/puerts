@@ -40,15 +40,15 @@ var global = global || (function () { return this; }());
     puerts.registerBuildinModule('cpp', CPP);
     
     function ref(x) {
-        return {value:x};
+        return [x];
     }
 
     function unref(r) {
-        return r.value;
+        return r[0];
     }
     
     function setref(x, val) {
-        x.value = val;
+        x[0] = val;
     }
     
     cache.NewObject = global.__tgjsNewObject;
@@ -103,13 +103,13 @@ var global = global || (function () { return this; }());
     global.__tgjsUEClassToJSClass = undefined;
     
     function blueprint(path) {
-        let uclass = UE.Class.Load(path);
+        let uclass = UE.Struct.Load(path);
         if (uclass) {
             let jsclass = UEClassToJSClass(uclass);
             jsclass.__puerts_uclass = uclass;
             return jsclass;
         } else {
-            throw new Error("can not load class in " + path);
+            throw new Error("can not load type in " + path);
         }
     }
     
@@ -740,5 +740,6 @@ var global = global || (function () { return this; }());
     cache.FunctionExportFlags = FunctionExportFlags;
 
     puerts.toManualReleaseDelegate = (x) => x;
+    puerts.toDelegate = (o,k) => [o, k];
     
 }(global));

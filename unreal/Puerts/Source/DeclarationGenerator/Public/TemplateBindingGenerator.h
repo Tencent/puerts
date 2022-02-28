@@ -10,17 +10,16 @@
 #include "TemplateBindingGenerator.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class DECLARATIONGENERATOR_API UTemplateBindingGenerator : public UObject, public ICodeGenerator
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent)
-	void Gen() const;
+    UFUNCTION(BlueprintNativeEvent)
+    void Gen() const;
 
-	virtual void Gen_Implementation() const override;
-
+    virtual void Gen_Implementation() const override;
 };

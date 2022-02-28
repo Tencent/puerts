@@ -272,6 +272,7 @@ public class JsEnv : ModuleRules
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
             } 
+#if !UE_4_22_OR_LATER
             else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 22) 
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armeabi-v7a", "7.4.288");
@@ -285,6 +286,7 @@ public class JsEnv : ModuleRules
                 PublicAdditionalLibraries.Add("v8_libplatform");
                 PublicAdditionalLibraries.Add("v8_libsampler");
             }
+#endif
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
@@ -391,26 +393,12 @@ public class JsEnv : ModuleRules
 
     void AddRuntimeDependencies(string[] DllNames, string LibraryPath, bool Delay)
     {
-        string BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", "Win64"));
         foreach (var DllName in DllNames)
         {
             if(Delay) PublicDelayLoadDLLs.Add(DllName);
             var DllPath = Path.Combine(LibraryPath, DllName);
-            var DestDllPath = Path.Combine(BinariesDir, DllName);
-            if (!Directory.Exists(BinariesDir))
-            {
-                Directory.CreateDirectory(BinariesDir);
-            }
-            try
-            {
-                System.IO.File.Delete(DestDllPath);
-            }
-            catch { }
-            if (!System.IO.File.Exists(DestDllPath) && System.IO.File.Exists(DllPath))
-            {
-                System.IO.File.Copy(DllPath, DestDllPath, false);
-            }
-            RuntimeDependencies.Add(DestDllPath);
+            var DestDllPath = Path.Combine("$(BinaryOutputDir)", DllName);
+            RuntimeDependencies.Add(DestDllPath, DllPath, StagedFileType.NonUFS);
         }
     }
 
@@ -508,10 +496,7 @@ public class JsEnv : ModuleRules
             string V8LibraryPath = Path.Combine(LibraryPath, "Win64");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.lib"));
 
-            AddRuntimeDependencies(new string[]
-            {
-                "libnode.dll",
-            }, V8LibraryPath, false);
+            RuntimeDependencies.Add("$(TargetOutputDir)/libnode.dll", Path.Combine(V8LibraryPath, "libnode.dll"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {

@@ -120,7 +120,7 @@ namespace Puerts
             }
             return filters;
         }
-
+#if !PUERTS_GENERAL
         public static string GetCodeOutputDirectory()
         {
             var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
@@ -147,5 +147,6 @@ namespace Puerts
             }
             return UnityEngine.Application.dataPath + "/Gen/";
         }
+#endif
     }
 }
