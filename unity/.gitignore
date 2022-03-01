@@ -3,7 +3,7 @@
 /general/Lib
 /general/vs2013/*/
 /general/vs2013/*.user
-/native_src/v8
-/native_src/nodejs
-/native_src/quickjs
-/native_src/cpptest
+/native_src/v8*
+/native_src/nodejs*
+/native_src/quickjs*
+/native_src/puerts-cpp-tester

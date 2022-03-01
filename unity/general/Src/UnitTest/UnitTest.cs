@@ -1222,6 +1222,23 @@ namespace Puerts.UnitTest
 
             jsEnv.Dispose();
         }
+        [Test]
+        public void ESModuleImportCSharpNamespace()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"
+                import csharp from 'csharp';
+                const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
+                export { func };
+            ");
+            var jsEnv = new JsEnv(loader);
+            var ns = jsEnv.ExecuteModule<JSObject>("whatever.mjs");
+
+            Assert.True(ns != null);
+            Assert.True(ns.GetType() == typeof(JSObject));
+
+            jsEnv.Dispose();
+        }
     }
 }
 
