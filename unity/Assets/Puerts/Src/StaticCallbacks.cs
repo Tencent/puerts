@@ -14,7 +14,17 @@ namespace Puerts
         [MonoPInvokeCallback(typeof(ModuleResolveCallback))]
         internal static string ModuleResolverWrap(string identifer, int jsEnvIdx)
         {
-            return JsEnv.jsEnvs[jsEnvIdx].ResolveModuleContent(identifer);
+            JsEnv env = JsEnv.jsEnvs[jsEnvIdx];
+            try
+            {
+                return env.ResolveModuleContent(identifer);
+            }
+            catch (Exception e)
+            {
+                // 因为只是C++到C#的通信，此处C++侧没有加v8::TryCatch。不能用PuertsDLL.ThrowException
+                // PuertsDLL.ThrowException(env.isolate, "ModuleResolverWrap c# exception:" + e.Message + ",stack:" + e.StackTrace);
+                return "throw new Error('resolve module " + identifer + " error: " + e.Message + "')";
+            }
         }
 
         [MonoPInvokeCallback(typeof(V8FunctionCallback))]
