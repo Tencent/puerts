@@ -65,6 +65,8 @@
 
 typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx);
 
+typedef void (*CSharpPushJSFunctionArgumentsCallback)(v8::Isolate* Isolate, int32_t jsEnvIdx, puerts::JSFunction* NativeFuncPtr);
+
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
 
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
@@ -176,6 +178,8 @@ public:
     int32_t Idx;
     
     CSharpModuleResolveCallback ModuleResolver;
+    CSharpPushJSFunctionArgumentsCallback PushJSFunctionArgumentsCallback;
+    
 #if defined(WITH_QUICKJS)
     std::map<std::string, JSModuleDef*> ModuleCacheMap;
 #else
