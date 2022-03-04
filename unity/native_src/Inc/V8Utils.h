@@ -87,7 +87,7 @@ public:
             if (TryCatch.StackTrace(Context).ToLocal(&StackTrace))
             {
                 v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
-                stm << std::endl << *StackTraceVal;
+                stm << *StackTraceVal;
             }
             else 
             {
