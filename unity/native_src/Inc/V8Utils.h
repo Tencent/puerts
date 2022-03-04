@@ -89,6 +89,15 @@ public:
                 v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
                 stm << std::endl << *StackTraceVal;
             }
+            else 
+            {
+                // 输出 (filename):(line number): (message).
+                v8::String::Utf8Value FileName(Isolate, Message->GetScriptResourceName());
+                int LineNum = Message->GetLineNumber(Context).FromJust();
+                const char * StrFileName = *FileName;
+                stm << (StrFileName == nullptr ? "unknow file" : StrFileName) << ":" << LineNum << ": " << ExceptionStr;
+                stm << std::endl;
+            }
             return stm.str();
         }
     }
