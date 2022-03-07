@@ -60,9 +60,6 @@
     <Compile Include="..\..\Assets\Puerts\Src\Loader.cs">
       <Link>Assets\Puerts\Src\Loader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\MethodReflection.cs">
-      <Link>Assets\Puerts\Src\MethodReflection.cs</Link>
-    </Compile>
     <Compile Include="..\..\Assets\Puerts\Src\NativeValueApiGeneric.cs">
       <Link>Assets\Puerts\Src\NativeValueApiGeneric.cs</Link>
     </Compile>
@@ -105,9 +102,25 @@
     <Compile Include="..\..\Assets\Puerts\Src\Editor\U2018Compatible.cs">
       <Link>Assets\Puerts\Src\Editor\U2018Compatible.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator.cs">
-      <Link>Assets\Puerts\Src\Editor\Generator.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Src\ReflectionWrap.cs">
+      <Link>Assets\Puerts\Src\ReflectionWrap.cs</Link>
     </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Menu.cs">
+      <Link>Assets\Puerts\Src\Editor\Generator\Menu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Utils.cs">
+      <Link>Assets\Puerts\Src\Editor\Generator\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\DTS.cs">
+      <Link>Assets\Puerts\Src\Editor\Generator\DTS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Wrapper.cs">
+      <Link>Assets\Puerts\Src\Editor\Generator\Wrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Src\LazyWrap.cs">
+      <Link>Assets\Puerts\Src\LazyWrap.cs</Link>
+    </Compile>
+    <Compile Include="methodReflectionWrap.cs" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

@@ -527,48 +527,39 @@ namespace PuertsStaticWrap
                 BlittableCopy = ${data.BlittableCopy},
                 Constructor = Constructor,
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
-                {
-                    ${[
-            toJsArray(data.Methods).filter(p => !p.IsLazyMember).map(method => `{ new Puerts.MethodKey {Name = "${method.Name}", IsStatic = ${method.IsStatic}}, ${(method.IsStatic ? "F" : "M")}_${method.Name} }`).join(',\n'),
-            data.GetIndexs.Length > 0 ? '{ new Puerts.MethodKey {Name = "get_Item", IsStatic = false}, GetItem }\n' : '',
-            data.SetIndexs.Length > 0 ? '{ new Puerts.MethodKey {Name = "set_Item", IsStatic = false}, SetItem }\n' : '',
-            toJsArray(data.Operators).filter(p => !p.IsLazyMember).map(operator => `{ new Puerts.MethodKey {Name = "${operator.Name}", IsStatic = true}, O_${operator.Name} }`).join(',\n'),
+                {   ${[
+            toJsArray(data.Methods).filter(p => !p.IsLazyMember).map(method => `
+                    { new Puerts.MethodKey { Name = "${method.Name}", IsStatic = ${method.IsStatic}}, ${(method.IsStatic ? "F" : "M")}_${method.Name} }`).join(','),
+            data.GetIndexs.Length > 0 ? `
+                    { new Puerts.MethodKey { Name = "get_Item", IsStatic = false}, GetItem }\n` : '',
+            data.SetIndexs.Length > 0 ? `
+                    { new Puerts.MethodKey { Name = "set_Item", IsStatic = false}, SetItem }\n` : '',
+            toJsArray(data.Operators).filter(p => !p.IsLazyMember).map(operator => `
+                    { new Puerts.MethodKey { Name = "${operator.Name}", IsStatic = true}, O_${operator.Name} }`).join(',\n'),
             toJsArray(data.Events).filter(p => !p.IsLazyMember).map(eventInfo => {
                 const ret = [];
                 if (eventInfo.HasAdd) {
-                    ret.push(`{ new Puerts.MethodKey {Name = "add_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}}, A_${eventInfo.Name} }`)
+                    ret.push(`
+                    { new Puerts.MethodKey { Name = "add_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}}, A_${eventInfo.Name} }`)
                 }
                 if (eventInfo.HasRemove) {
-                    ret.push(`{ new Puerts.MethodKey {Name = "remove_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}},  R_${eventInfo.Name} }`)
+                    ret.push(`
+                    { new Puerts.MethodKey { Name = "remove_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}},  R_${eventInfo.Name} }`)
                 }
-                return ret.join(',\n')
+                return ret.join(',')
             }).join(',\n')
         ].filter(str => str.trim()).join(',\n')}
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
                 {
-                    ${toJsArray(data.Properties).filter(p => !p.IsLazyMember).map(property => `{"${property.Name}", new Puerts.PropertyRegisterInfo(){ IsStatic = ${property.IsStatic}, Getter = ${property.HasGetter ? "G_" + property.Name : "null"}, Setter = ${property.HasSetter ? "S_" + property.Name : "null"}} }`).join(',\n')}
+                    ${toJsArray(data.Properties).filter(p => !p.IsLazyMember).map(property => `
+                    {"${property.Name}", new Puerts.PropertyRegisterInfo(){ IsStatic = ${property.IsStatic}, Getter = ${property.HasGetter ? "G_" + property.Name : "null"}, Setter = ${property.HasSetter ? "S_" + property.Name : "null"}} }`).join(',\n')}
                 },
-                LazyMethods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
-                {
-                    ${[
-            toJsArray(data.Methods).filter(p => p.IsLazyMember).map(method => `{ new Puerts.MethodKey {Name = "${method.Name}", IsStatic = ${method.IsStatic}}, null}`).join(',\n'),
-            toJsArray(data.Operators).filter(p => p.IsLazyMember).map(operator => `{ new Puerts.MethodKey {Name = "${operator.Name}", IsStatic = true}, null}`).join(',\n'),
-            toJsArray(data.Events).filter(p => p.IsLazyMember).map(eventInfo => {
-                const ret = [];
-                if (eventInfo.HasAdd) {
-                    ret.push(`{ new Puerts.MethodKey {Name = "add_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}}, null}`)
-                }
-                if (eventInfo.HasRemove) {
-                    ret.push(`{ new Puerts.MethodKey {Name = "remove_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}}, null}`)
-                }
-                return ret.join(',\n')
-            }).join(',\n')
-        ].filter(str => str).join(',\n')}
-                },
-                LazyProperties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
-                {
-                    ${toJsArray(data.Properties).filter(p => p.IsLazyMember).map(property => `{"${property.Name}", new Puerts.PropertyRegisterInfo(){ IsStatic = ${property.IsStatic} } }`).join(',\n')}
+                LazyMembers = new System.Collections.Generic.List<Puerts.LazyMemberRegisterInfo>()
+                {   ${toJsArray(data.LazyMembers).map(item=> {
+                        return `
+                    new Puerts.LazyMemberRegisterInfo() { Name = "${item.Name}", IsStatic = ${item.IsStatic}, Type = (Puerts.LazyMemberType)${item.Type}, HasGetter = ${item.HasGetter}, HasSetter = ${item.HasSetter} }`
+                    })}
                 }
             };
         }

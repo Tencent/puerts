@@ -112,7 +112,7 @@ namespace Puerts
             else if (type == typeof(string[]))
             {
                 string[] array = obj as string[];
-                string str = array[index];
+                string str = array[index]; 
                 if (str == null)
                 {
                     PuertsDLL.ReturnNull(isolate, info);
@@ -451,6 +451,10 @@ namespace Puerts
             Dictionary<MethodKey, List<MethodInfo>> slowBindingMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
             Dictionary<string, ProperyMethods> slowBindingProperties = new Dictionary<string, ProperyMethods>();
             List<FieldInfo> slowBindingFields = new List<FieldInfo>();
+            
+            Dictionary<MethodKey, List<MethodInfo>> lazyBindingMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
+            Dictionary<string, ProperyMethods> lazyBindingProperties = new Dictionary<string, ProperyMethods>();
+            List<FieldInfo> lazyBindingFields = new List<FieldInfo>();
 
             Func<MethodKey, MethodInfo, bool> AddMethodToSlowBindingGroup = (MethodKey methodKey, MethodInfo method) =>
             {
@@ -615,53 +619,91 @@ namespace Puerts
                     PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, kv.Key, kv.Value.IsStatic, kv.Value.Getter, jsEnv.Idx, kv.Value.Setter, jsEnv.Idx, !readonlyStaticFields.Contains(kv.Key));
                 }
 
-                if (registerInfo.LazyMethods != null) 
+                foreach (LazyMemberRegisterInfo lazyinfo in registerInfo.LazyMembers)
                 {
-                    // register all the methods marked as lazy
-                    foreach (var kv in registerInfo.LazyMethods)
+                    switch (lazyinfo.Type)
                     {
-                        //TODO: change to LazyBinding instead of SlowBinding
-                        MethodKey methodKey = kv.Key;
-                        MemberInfo[] members = type.GetMember(methodKey.Name, flag);
-
-                        var enumerator = members.GetEnumerator();
-                        while (enumerator.MoveNext())
-                        {
-                            AddMethodToSlowBindingGroup(methodKey, (MethodInfo)enumerator.Current);
-                        }
+                        case LazyMemberType.Method:
+                            LazyMethodWrap lazyMethodWrap = new LazyMethodWrap(lazyinfo.Name, jsEnv, type);
+                            long callback = jsEnv.AddCallback(lazyMethodWrap.Invoke);
+                            PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, lazyinfo.Name, lazyinfo.IsStatic, callbackWrap, callback);
+                            if (lazyinfo.Name == "ToString" && registerInfo.BlittableCopy)
+                            {
+                                PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, "toString", false, callbackWrap, jsEnv.Idx);
+                            }
+                            break;
+                        case LazyMemberType.Constructor:
+                            // TODO
+                            break;
+                        case LazyMemberType.Field:
+                            LazyFieldWrap lazyFieldWrap = new LazyFieldWrap(lazyinfo.Name, jsEnv, type);
+                            PuertsDLL.RegisterProperty(
+                                jsEnv.isolate, typeId, lazyinfo.Name, lazyinfo.IsStatic,
+                                callbackWrap, jsEnv.AddCallback(lazyFieldWrap.InvokeGetter),
+                                lazyinfo.HasSetter ? callbackWrap : null, lazyinfo.HasSetter ? jsEnv.AddCallback(lazyFieldWrap.InvokeSetter) : 0,
+                                !readonlyStaticFields.Contains(lazyinfo.Name)
+                            );
+                            break;
+                        case LazyMemberType.Property:
+                            LazyPropertyWrap getterLazyPropertyWrap = new LazyPropertyWrap("get_" + lazyinfo.Name, jsEnv, type);
+                            LazyPropertyWrap setterLazyPropertyWrap = new LazyPropertyWrap("set_" + lazyinfo.Name, jsEnv, type);
+                            PuertsDLL.RegisterProperty(
+                                jsEnv.isolate, typeId, lazyinfo.Name, lazyinfo.IsStatic,
+                                lazyinfo.HasGetter ? callbackWrap : null, lazyinfo.HasGetter ? jsEnv.AddCallback(getterLazyPropertyWrap.Invoke) : 0,
+                                lazyinfo.HasSetter ? callbackWrap : null, lazyinfo.HasSetter ? jsEnv.AddCallback(setterLazyPropertyWrap.Invoke) : 0,
+                                true
+                            );
+                            break;
                     }
                 }
 
-                if (registerInfo.LazyProperties != null)
-                {
-                    // register all the properties marked as lazy
-                    foreach (var kv in registerInfo.LazyProperties)
-                    {
-                        //TODO: change to LazyBinding instead of SlowBinding
-                        string name = kv.Key;
+                //if (registerInfo.LazyMethods != null) 
+                //{
+                //    // register all the methods marked as lazy
+                //    foreach (var kv in registerInfo.LazyMethods)
+                //    {
+                //        //TODO: change to LazyBinding instead of SlowBinding
+                //        MethodKey methodKey = kv.Key;
+                //        MemberInfo[] members = type.GetMember(methodKey.Name, flag);
 
-                        MethodKey getMethodKey = new MethodKey { Name = "get_" + name, IsStatic = kv.Value.IsStatic };
-                        MethodInfo getMethod = type.GetMethod(getMethodKey.Name, flag);
+                //        var enumerator = members.GetEnumerator();
+                //        while (enumerator.MoveNext())
+                //        {
+                //            AddMethodToSlowBindingGroup(methodKey, (MethodInfo)enumerator.Current);
+                //        }
+                //    }
+                //}
 
-                        MethodKey setMethodKey = new MethodKey { Name = "set_" + name, IsStatic = kv.Value.IsStatic };
-                        MethodInfo setMethod = type.GetMethod(getMethodKey.Name, flag);
+                //if (registerInfo.LazyProperties != null)
+                //{
+                //    // register all the properties marked as lazy
+                //    foreach (var kv in registerInfo.LazyProperties)
+                //    {
+                //        //TODO: change to LazyBinding instead of SlowBinding
+                //        string name = kv.Key;
 
-                        if (getMethod != null)
-                        {
-                            AddMethodToSlowBindingGroup(getMethodKey, getMethod);
-                        }
-                        if (setMethod != null)
-                        {
-                            AddMethodToSlowBindingGroup(setMethodKey, setMethod);
-                        }
-                    }
-                }
+                //        MethodKey getMethodKey = new MethodKey { Name = "get_" + name, IsStatic = kv.Value.IsStatic };
+                //        MethodInfo getMethod = type.GetMethod(getMethodKey.Name, flag);
+
+                //        MethodKey setMethodKey = new MethodKey { Name = "set_" + name, IsStatic = kv.Value.IsStatic };
+                //        MethodInfo setMethod = type.GetMethod(getMethodKey.Name, flag);
+
+                //        if (getMethod != null)
+                //        {
+                //            AddMethodToSlowBindingGroup(getMethodKey, getMethod);
+                //        }
+                //        if (setMethod != null)
+                //        {
+                //            AddMethodToSlowBindingGroup(setMethodKey, setMethod);
+                //        }
+                //    }
+                //}
             }
 
             foreach (var kv in slowBindingMethodGroup)
             {
-                var wraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, kv.Key.IsExtension)).ToList();
-                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, wraps);
+                var overloadWraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, kv.Key.IsExtension)).ToList();
+                MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, overloadWraps);
                 PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, callbackWrap, jsEnv.AddCallback(methodReflectionWrap.Invoke));
             }
             foreach (var kv in slowBindingProperties)
