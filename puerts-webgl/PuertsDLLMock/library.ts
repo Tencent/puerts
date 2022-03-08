@@ -141,9 +141,9 @@ export class CSharpObjectMap {
     public classIDWeakMap = new WeakMap();
 
     add(csID: CSIdentifier, obj: any) {
-        // this.nativeObjectKV[csID] = new WeakRef(obj);
+        // this.nativeObjectKV[csID] = createWeakRef(obj);
         // this.csIDWeakMap.set(obj, csID);
-        this.nativeObjectKV.set(csID, new WeakRef(obj));
+        this.nativeObjectKV.set(csID, createWeakRef(obj));
         Object.defineProperty(obj, '_puerts_csid_', {
             value: csID
         })
@@ -179,6 +179,26 @@ global = global || globalThis || window;
 global.global = global;
 export { global };
 
+declare const WXWeakRef: any;
+const createWeakRef: <T extends object>(obj: any) => WeakRef<T> = (function () {
+    if (typeof WeakRef == 'undefined') {
+        if (typeof WXWeakRef == 'undefined') {
+            console.error("WeakRef is not defined. maybe you should use newer environment");
+            return function(obj: any) {
+                return { deref() { return obj } }
+            }
+        }
+
+        console.warn("using WXWeakRef");
+        return function (obj: any) {
+            return new WXWeakRef(obj);
+        }
+    }    
+    return function(obj: any) {
+        return new WeakRef(obj);
+    }
+})();
+export { createWeakRef }
 /**
  * JS对象生命周期监听
  */
@@ -198,11 +218,11 @@ class FinalizationRegistryMock<T> {
     public register(obj: object, heldValue: T) {
         if (this.availableIndex.length) {
             const index = this.availableIndex.pop();
-            this.refs[index] = new WeakRef(obj);
+            this.refs[index] = createWeakRef(obj);
             this.helds[index] = heldValue;
 
         } else {
-            this.refs.push(new WeakRef(obj));
+            this.refs.push(createWeakRef(obj));
             this.helds.push(heldValue);
         }
     }
