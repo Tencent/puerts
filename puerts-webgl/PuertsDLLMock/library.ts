@@ -232,11 +232,12 @@ class FinalizationRegistryMock<T> {
      */
     private iteratePosition: number = 0;
     public cleanup(part: number = 1) {
-        const nextIterStep = this.refs.length / part;
+        const stepCount = this.refs.length / part;
+        let i = this.iteratePosition;
         for (
-            let i = this.iteratePosition, j = 0; 
-            i < this.refs.length && j < nextIterStep; 
-            i = (i == this.refs.length - 1 ? 0 : i + 1), j++
+            let currentStep = 0; 
+            i < this.refs.length && currentStep < stepCount; 
+            i = (i == this.refs.length - 1 ? 0 : i + 1), currentStep++
         ) {
             if (this.refs[i] == null) {
                 continue;
@@ -254,6 +255,7 @@ class FinalizationRegistryMock<T> {
                 }
             }
         }
+        this.iteratePosition = i;
     }
 }
 var registry: FinalizationRegistry<any> = null;
