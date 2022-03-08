@@ -26,7 +26,7 @@ public class JsEnv : ModuleRules
 
         PublicDependencyModuleNames.AddRange(new string[]
         {
-            "Core", "CoreUObject", "Engine", "InputCore", "Serialization", "OpenSSL","UMG"
+            "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas" ,"UMG"
         });
 
         bEnableExceptions = true;
