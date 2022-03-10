@@ -33,11 +33,11 @@ jobs:
           mkdir -p package/Runtime/Src
           cp unity/Assets/Puerts/Src/*.cs package/Runtime/Src/
           mkdir -p package/Runtime/Resources
-          cp -r unity/Assets/Puerts/Src/Resources/**/* package/Runtime/Resources
+          cp -r unity/Assets/Puerts/Src/Resources/. package/Runtime/Resources
           mkdir -p package/Editor/Src
           cp unity/Assets/Puerts/Src/Editor/*.cs package/Editor/Src/
           mkdir -p package/Editor/Resources
-          cp -r unity/Assets/Puerts/Src/Editor/Resources/**/* package/Editor/Resources
+          cp -r unity/Assets/Puerts/Src/Editor/Resources/. package/Editor/Resources
           cp LICENSE README.md package
           git subtree split -P package -b upm
           git checkout upm
