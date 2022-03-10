@@ -19,7 +19,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: publish.yml
-          name: Unity_Plugins_Quickjs
+          name: Unity_Plugins_V8
           path: package/Runtime/Plugins/
       - name: Download Nodejs Plugin
         uses: dawidd6/action-download-artifact@v2
@@ -39,6 +39,8 @@ jobs:
           mkdir -p package/Editor/Resources
           cp -r unity/Assets/Puerts/Src/Editor/Resources/. package/Editor/Resources
           cp LICENSE README.md package
+          git add .
+          git commit -am "upm"
           git subtree split -P package -b upm
           git checkout upm
           git push origin upm
