@@ -367,9 +367,8 @@ namespace puerts
 
         v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InObject->Isolate);
         idmap->Delete(InObject->Context.Get(Isolate), InObject->GObject.Get(Isolate));
+        JSObjectMap.erase(InObject->Index);
 
-        JSObjectMap[InObject->Index] = nullptr;
-        
         ObjectMapFreeIndex.push_back(InObject->Index);
         delete InObject;
     }
