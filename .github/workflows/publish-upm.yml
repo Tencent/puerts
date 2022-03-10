@@ -46,4 +46,4 @@ jobs:
           git commit -am "upm"
           git subtree split -P package -b upm
           git checkout upm
-          git push origin upm
+          git push -f origin upm
