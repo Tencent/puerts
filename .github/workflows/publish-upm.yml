@@ -31,11 +31,11 @@ jobs:
         run: |
           cp -r unity/Assets/Puerts/Typing package/
           mkdir -p package/Runtime/Src
-          cp unity/Assets/Puerts/Src/**/*.cs package/Runtime/Src/
+          cp unity/Assets/Puerts/Src/*.cs package/Runtime/Src/
           mkdir -p package/Runtime/Resources
           cp unity/Assets/Puerts/Src/Resources/**/* package/Runtime/Resources
           mkdir -p package/Editor/Src
-          cp unity/Assets/Puerts/Src/Editor/**/*.cs package/Editor/Src/
+          cp unity/Assets/Puerts/Src/Editor/*.cs package/Editor/Src/
           mkdir -p package/Editor/Resources
           cp unity/Assets/Puerts/Editor/Resources/**/* package/Editor/Resources
           cp LICENSE README.MD package
