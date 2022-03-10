@@ -1,0 +1,47 @@
+name: publish-upm
+
+on: 
+  workflow_dispatch:
+
+env:
+  RUNID: 613573412
+
+jobs:
+  Setup UPM Branch:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Retrieve version
+        run: |
+          echo "PLUGIN_VERSION=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')" >> $GITHUB_ENV
+      - name: Clear branch
+        run: |
+          git branch -D upm
+      - name: Download V8 Plugin
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: publish.yml
+          name: Plugins_V8_ver${{ env.PLUGIN_VERSION }}
+          path: package/Runtime/Plugins/
+      - name: Download Nodejs Plugin
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: publish.yml
+          name: Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}
+          path: package/Editor/Plugins/
+      - name: Copy Source
+        run: |
+          cp unity/Assets/Puerts/Typing package/
+          mkdir -p package/Runtime/Src
+          cp unity/Assets/Puerts/Src/**/*.cs package/Runtime/Src/
+          mkdir -p package/Runtime/Resources
+          cp unity/Assets/Puerts/Src/Resources/**/* package/Runtime/Resources
+          mkdir -p package/Editor/Src
+          cp unity/Assets/Puerts/Editor/**/*.cs package/Editor/Src/
+          mkdir -p package/Editor/Resources
+          cp unity/Assets/Puerts/Editor/Resources/**/* package/Editor/Resources
+          cp LICENSE README.MD package/
+          git subtree split -P package -b upm
+          git checkout upm
+          git push -f origin upm
