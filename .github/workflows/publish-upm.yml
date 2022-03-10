@@ -29,7 +29,7 @@ jobs:
           path: package/Editor/Plugins/
       - name: Copy Source
         run: |
-          cp unity/Assets/Puerts/Typing package/
+          cp -r unity/Assets/Puerts/Typing package/
           mkdir -p package/Runtime/Src
           cp unity/Assets/Puerts/Src/**/*.cs package/Runtime/Src/
           mkdir -p package/Runtime/Resources
