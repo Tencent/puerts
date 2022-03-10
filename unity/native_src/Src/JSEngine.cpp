@@ -366,11 +366,7 @@ namespace puerts
         v8::Context::Scope ContextScope(Context);
 
         v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InObject->Isolate);
-        idmap->Set(
-            InObject->Context.Get(Isolate),
-            InObject->GObject.Get(Isolate),
-            v8::Undefined(Isolate)
-        );
+        idmap->Delete(InObject->Context.Get(Isolate), InObject->GObject.Get(Isolate));
 
         JSObjectMap[InObject->Index] = nullptr;
         
