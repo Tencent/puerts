@@ -39,6 +39,7 @@ jobs:
           mkdir -p package/Editor/Resources
           cp -r unity/Assets/Puerts/Src/Editor/Resources/. package/Editor/Resources
           cp LICENSE README.md package
+          echo '{"name":"com.tencent.puerts.core","version":"1.2.4-pre","repository":{"type":"git","url":"git+https://github.com/tencent/puerts.git"},"license":"MIT"}' > package/package.json
           git config --global user.email "zombieyang@tencent.com"
           git config --global user.name "zombieyang"
           git add .
