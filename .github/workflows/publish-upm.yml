@@ -17,7 +17,7 @@ jobs:
           echo "PLUGIN_VERSION=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')" >> $GITHUB_ENV
       - name: Clear branch
         run: |
-          git branch -D upm
+          git branch -D upm &> /dev/null || echo upm branch not found
       - name: Download V8 Plugin
         uses: dawidd6/action-download-artifact@v2
         with:
