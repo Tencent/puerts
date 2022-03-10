@@ -41,4 +41,4 @@ jobs:
           cp LICENSE README.md package
           git subtree split -P package -b upm
           git checkout upm
-          git push -f origin upm
+          git push origin upm
