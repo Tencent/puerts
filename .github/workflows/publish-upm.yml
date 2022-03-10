@@ -39,6 +39,8 @@ jobs:
           mkdir -p package/Editor/Resources
           cp -r unity/Assets/Puerts/Src/Editor/Resources/. package/Editor/Resources
           cp LICENSE README.md package
+          git config --global user.email "zombieyang@tencent.com"
+          git config --global user.name "zombieyang"
           git add .
           git commit -am "upm"
           git subtree split -P package -b upm
