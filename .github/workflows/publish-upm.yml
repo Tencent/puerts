@@ -22,13 +22,13 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: publish.yml
-          name: Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}
+          name: Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
           path: package/Runtime/Plugins/
       - name: Download Nodejs Plugin
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: publish.yml
-          name: Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}
+          name: Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz
           path: package/Editor/Plugins/
       - name: Copy Source
         run: |
