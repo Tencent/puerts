@@ -41,7 +41,7 @@ jobs:
           cp unity/Assets/Puerts/Editor/**/*.cs package/Editor/Src/
           mkdir -p package/Editor/Resources
           cp unity/Assets/Puerts/Editor/Resources/**/* package/Editor/Resources
-          cp LICENSE README.MD package/
+          cp LICENSE README.MD package
           git subtree split -P package -b upm
           git checkout upm
           git push -f origin upm
