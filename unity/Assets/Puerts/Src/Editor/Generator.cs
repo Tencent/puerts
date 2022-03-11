@@ -1499,15 +1499,14 @@ namespace Puerts.Editor
             }
 
 #endif
-            public static List<MethodInfo> filters;
             public static Dictionary<string, List<KeyValuePair<object, int>>> configure;
             public static List<Type> genTypes;
 
             public static void GenerateDTS(string saveTo, bool esmMode = false, ILoader loader = null)
             {
-                if (filters == null)
+                if (Utils.filters == null)
                 {
-                    filters = Configure.GetFilters();
+                    Utils.filters = Configure.GetFilters();
                     configure = Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",
                         "Puerts.BlittableCopyAttribute",
@@ -1549,9 +1548,9 @@ namespace Puerts.Editor
 
             public static void GenerateWrapper(string saveTo, ILoader loader = null)
             {
-                if (filters == null)
+                if (Utils.filters == null)
                 {
-                    filters = Configure.GetFilters();
+                    Utils.filters = Configure.GetFilters();
                     configure = Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",
                         "Puerts.BlittableCopyAttribute",
