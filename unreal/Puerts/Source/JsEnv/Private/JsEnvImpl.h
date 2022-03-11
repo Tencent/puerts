@@ -120,8 +120,8 @@ public:
 
     virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr) override;
 
-    virtual v8::Local<v8::Value> FindOrAddStruct(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
+    virtual v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct,
+        void* Ptr, bool PassByPointer, bool ForceNoCache) override;
 
     virtual void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void* Ptr,
         v8::Local<v8::Object> JSObject, bool PassByPointer) override;
@@ -468,7 +468,9 @@ private:
     std::map<UObject*, v8::UniquePersistent<v8::Value>> ObjectMap;
     std::map<const class UObjectBase*, v8::UniquePersistent<v8::Value>> GeneratedObjectMap;
 
-    std::map<void*, v8::UniquePersistent<v8::Value>> StructMap;
+    std::map<void*, v8::UniquePersistent<v8::Value>> StructCache;
+
+    std::map<void*, v8::UniquePersistent<v8::Value>> ContainerCache;
 
     FCppObjectMapper CppObjectMapper;
 

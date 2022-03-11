@@ -792,28 +792,18 @@ FJsEnvImpl::~FJsEnvImpl()
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
-        for (auto Iter = ClassToTemplateMap.begin(); Iter != ClassToTemplateMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
+
+        ClassToTemplateMap.clear();
 
         CppObjectMapper.UnInitialize(Isolate);
 
-        for (auto Iter = ObjectMap.begin(); Iter != ObjectMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
+        ObjectMap.clear();
 
-        for (auto Iter = GeneratedObjectMap.begin(); Iter != GeneratedObjectMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
         GeneratedObjectMap.clear();
 
-        for (auto Iter = StructMap.begin(); Iter != StructMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
+        StructCache.clear();
+
+        ContainerCache.clear();
 
         for (auto Iter = ScriptStructFinalizeInfoMap.begin(); Iter != ScriptStructFinalizeInfoMap.end(); Iter++)
         {
@@ -1549,18 +1539,15 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
     }
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
+v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct,
+    void* Ptr, bool PassByPointer, bool ForceNoCache)
 {
     check(Ptr);    // must not null
 
-    //查询历史记录，当初这么改是因为一个结构体如果其第一个成员也是结构体，这个结构体的指针将和这个第一个成员的指针值一样，导致访问该成员也会返回外层结构体
-    //但问题是目前看，这部分是多余代码了，如果不是传指针才查，但不是传指针每次都是new堆内存，实际上是不可能查找到的，还是走到后面的逻辑
-    //另外，这有没更好的解决办法呢？记录下ScriptStruct，如果类型不一致才new？
-    if (!PassByPointer)
+    if (LIKELY(!ForceNoCache))    // default: false
     {
-        auto Iter = StructMap.find(Ptr);
-        if (Iter != StructMap.end())
+        auto Iter = StructCache.find(Ptr);
+        if (Iter != StructCache.end())
         {
             return v8::Local<v8::Value>::New(Isolate, Iter->second);
         }
@@ -2405,13 +2392,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 {
     check(Ptr);    // must not null
 
-    if (!PassByPointer)
+    auto Iter = ContainerCache.find(Ptr);
+    if (Iter != ContainerCache.end())
     {
-        auto Iter = StructMap.find(Ptr);
-        if (Iter != StructMap.end())
-        {
-            return v8::Local<v8::Value>::New(Isolate, Iter->second);
-        }
+        return v8::Local<v8::Value>::New(Isolate, Iter->second);
     }
 
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
@@ -2451,11 +2435,11 @@ void FJsEnvImpl::BindStruct(
     DataTransfer::SetPointer(
         MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
 
+    StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
     if (!PassByPointer)
     {
-        StructMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
         ScriptStructFinalizeInfoMap[Ptr] = {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize};
-        StructMap[Ptr].SetWeak<FScriptStructWrapper>(
+        StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
 }
@@ -2469,7 +2453,7 @@ void FJsEnvImpl::BindCppObject(
 void FJsEnvImpl::UnBindStruct(void* Ptr)
 {
     ScriptStructFinalizeInfoMap.erase(Ptr);
-    StructMap.erase(Ptr);
+    StructCache.erase(Ptr);
 }
 
 void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
@@ -2480,13 +2464,13 @@ void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
 void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data))
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    StructMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-    StructMap[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
+    ContainerCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    ContainerCache[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBindContainer(void* Ptr)
 {
-    StructMap.erase(Ptr);
+    ContainerCache.erase(Ptr);
 }
 
 std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)

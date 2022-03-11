@@ -553,6 +553,15 @@ public:
         {
             ParamShallowCopySize = StructProperty->Struct->GetStructureSize();
         }
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+        auto Owner = Property->GetOwnerUObject();
+#else
+        auto Owner = Property->GetOuter();
+#endif
+        if (Owner && Owner->IsA<UScriptStruct>() && Property->GetOffset_ForInternal() == 0)
+        {
+            ForceNoCache = true;
+        }
     }
 
     v8::Local<v8::Value> UEToJs(
@@ -569,7 +578,7 @@ public:
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
-            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
+            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer, ForceNoCache);
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
