@@ -330,7 +330,11 @@ namespace puerts
         if (!v8ObjectIndex->IsNullOrUndefined())
         {
             int32_t mapIndex = (int32_t)v8::Number::Cast(*v8ObjectIndex)->Value();
-            jsObject = JSObjectMap[mapIndex];
+            auto iter = JSObjectMap.find(mapIndex);
+            if (iter != JSObjectMap.end())
+            {
+                jsObject = iter->second;
+            }
         }
 
         // 如果不存在id，则创建新对象
