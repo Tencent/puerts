@@ -13,24 +13,12 @@ using System.Threading.Tasks;
 
 namespace Puerts
 {
-    public delegate void JSFunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
-    public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
+    public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
+    public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
+
     public class JsEnv : IDisposable
     {
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
-
-        protected PushJSFunctionArgumentsCallback _ArgumentsPusher;
-
-        public PushJSFunctionArgumentsCallback ArgumentsPusher {
-            get 
-            {
-                return _ArgumentsPusher;
-            }
-            set 
-            {
-                _ArgumentsPusher = value;
-            }
-        }
 
         internal readonly int Idx;
 
@@ -147,7 +135,7 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
             PuertsDLL.SetModuleResolver(isolate, StaticCallbacks.ModuleResolverCallback, Idx);
-            PuertsDLL.SetPushJSFunctionArgumentsCallback(isolate, StaticCallbacks.PushJSFunctionArgumentsCallback, Idx);
+
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
             const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.AutoStaticCodeRegister";
@@ -376,14 +364,14 @@ namespace Puerts
             callbacks[callbackIdx](isolate, info, self, paramLen);
         }
 
-        internal long AddCallback(JSFunctionCallback callback)
+        internal long AddCallback(FunctionCallback callback)
         {
             int callbackIdx = callbacks.Count;
             callbacks.Add(callback);
             return Utils.TwoIntToLong(Idx, callbackIdx);
         }
 
-        private readonly List<JSConstructorCallback> constructorCallbacks = new List<JSConstructorCallback>();
+        private readonly List<ConstructorCallback> constructorCallbacks = new List<ConstructorCallback>();
 
         internal IntPtr InvokeConstructor(IntPtr isolate, int callbackIdx, IntPtr info, int paramLen)
         {
@@ -393,7 +381,7 @@ namespace Puerts
             return new IntPtr(objectId);
         }
 
-        internal long AddConstructor(JSConstructorCallback callback)
+        internal long AddConstructor(ConstructorCallback callback)
         {
             int callbackIdx = constructorCallbacks.Count;
             constructorCallbacks.Add(callback);
@@ -697,11 +685,8 @@ namespace Puerts
             PuertsDLL.LogicTick(isolate);
             foreach (var fn in tickHandler)
             {
-                IntPtr resultInfo = GenericDelegate.InvokeJSFunction(
-                    this, fn, 0, false, 
-                    (IntPtr isolate, int envIdx, IntPtr nativeJsFuncPtr) => {}
-                );
-                if (resultInfo == IntPtr.Zero)
+                IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
+                if (resultInfo==IntPtr.Zero)
                 {
                     var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
                     throw new Exception(exceptionInfo);

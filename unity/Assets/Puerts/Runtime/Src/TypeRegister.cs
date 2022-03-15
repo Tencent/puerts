@@ -418,7 +418,7 @@ namespace Puerts
             public MethodInfo Setter;
         }
 
-        private JSFunctionCallback GenFieldGetter(Type type, FieldInfo field)
+        private FunctionCallback GenFieldGetter(Type type, FieldInfo field)
         {
             var translateFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(field.FieldType);
             if (field.IsStatic)
@@ -438,7 +438,7 @@ namespace Puerts
             }
         }
 
-        private JSFunctionCallback GenFieldSetter(Type type, FieldInfo field)
+        private FunctionCallback GenFieldSetter(Type type, FieldInfo field)
         {
             var translateFunc = jsEnv.GeneralGetterManager.GetTranslateFunc(field.FieldType);
             var typeMask = GeneralGetterManager.GetJsTypeMask(field.FieldType);
@@ -621,7 +621,7 @@ namespace Puerts
                 // registerInfo is null, then all the member use the SlowBinding
 
                 // constructors
-                JSConstructorCallback constructorCallback = null;
+                ConstructorCallback constructorCallback = null;
 
                 if (typeof(Delegate).IsAssignableFrom(type))
                 {

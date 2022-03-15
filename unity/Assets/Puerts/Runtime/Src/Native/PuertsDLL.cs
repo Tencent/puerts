@@ -40,11 +40,6 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate void PushJSFunctionArgumentsCallback(IntPtr isolate, int jsEnvIdx, IntPtr nativeJsFuncPtr);
-
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-#endif
     public delegate void V8DestructorCallback(IntPtr self, long data);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
@@ -202,16 +197,6 @@ namespace Puerts
             SetModuleResolver(isolate, fn, jsEnvIdx);
         }
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void SetPushJSFunctionArgumentsCallback(IntPtr isolate, IntPtr callback, int jsEnvIdx);
-        public static void SetPushJSFunctionArgumentsCallback(IntPtr isolate, PushJSFunctionArgumentsCallback callback, int jsEnvIdx)
-        {
-#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
-            GCHandle.Alloc(callback);
-#endif
-            IntPtr fn = callback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
-            SetPushJSFunctionArgumentsCallback(isolate, fn, jsEnvIdx);
-        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ExecuteModule(IntPtr isolate, string path, string exportee);
