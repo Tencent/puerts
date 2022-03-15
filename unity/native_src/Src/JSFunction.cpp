@@ -53,9 +53,8 @@ namespace puerts
         ResultInfo.Context.Reset();
     }
 
-    static v8::Local<v8::Value> ToV8(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const FValue &Value)
+    static v8::Local<v8::Value> ToV8(v8::Isolate* Isolate, v8::Local<v8::Context> Context, FValue &Value)
     {
-        JSEngine *JsEngine = nullptr;
         switch (Value.Type)
         {
         case NullOrUndefined:
@@ -69,8 +68,7 @@ namespace puerts
         case String:
             return FV8Utils::V8String(Isolate, Value.Str.c_str());
         case NativeObject:
-            JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-            return JsEngine->FindOrAddObject(Isolate, Context, Value.ObjectInfo.ClassID, Value.ObjectInfo.ObjectPtr);
+            return Value.Persistent.Get(Isolate);
         case Function:
             return Value.FunctionPtr->GFunction.Get(Isolate);
         case JsObject:
@@ -78,7 +76,7 @@ namespace puerts
         case Boolean:
             return v8::Boolean::New(Isolate, Value.Boolean);
         case ArrayBuffer:
-            return Value.ArrayBuffer.Get(Isolate);
+            return Value.Persistent.Get(Isolate);
         default:
             return v8::Undefined(Isolate);
         }

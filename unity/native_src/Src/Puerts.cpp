@@ -647,7 +647,7 @@ V8_EXPORT void PushArrayBufferForJSFunction(JSFunction *Function, unsigned char 
     v8::Context::Scope ContextScope(Context);
     FValue Value;
     Value.Type = puerts::ArrayBuffer;
-    Value.ArrayBuffer.Reset(Isolate, puerts::NewArrayBuffer(Isolate, Bytes, Length));
+    Value.Persistent.Reset(Isolate, puerts::NewArrayBuffer(Isolate, Bytes, Length));
     Function->Arguments.push_back(std::move(Value));
 }
 
@@ -671,8 +671,14 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
 {
     FValue Value;
     Value.Type = puerts::NativeObject;
-    Value.ObjectInfo.ClassID = ClassID;
-    Value.ObjectInfo.ObjectPtr = Ptr;
+    auto Isolate = Function->ResultInfo.Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Function->ResultInfo.Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    auto localObj = JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr);
+    Value.Persistent.Reset(Isolate, localObj);
     Function->Arguments.push_back(std::move(Value));
 }
 

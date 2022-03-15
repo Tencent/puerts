@@ -705,8 +705,9 @@ namespace puerts
         
         JSObject->SetAlignedPointerInInternalField(1, LifeCycleInfo);
         JSObject->SetAlignedPointerInInternalField(2, reinterpret_cast<void *>(OBJECT_MAGIC));
-        ObjectMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-        ObjectMap[Ptr].SetWeak<FLifeCycleInfo>(LifeCycleInfo, OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        v8::UniquePersistent<v8::Value> persistent(MainIsolate, JSObject);
+        persistent.SetWeak<FLifeCycleInfo>(LifeCycleInfo, OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        ObjectMap[Ptr] = std::move(persistent);
     }
 
     void JSEngine::UnBindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr)
