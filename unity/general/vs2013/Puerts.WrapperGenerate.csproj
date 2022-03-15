@@ -55,6 +55,9 @@
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTestBase_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTestBase_Wrap.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Src\UnitTest\wrap\" />

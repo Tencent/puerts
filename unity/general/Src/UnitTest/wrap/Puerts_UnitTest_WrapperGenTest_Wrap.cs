@@ -44,9 +44,9 @@ namespace PuertsStaticWrap
             
                     {
                 
-                        obj.GeneratedMethod();
+                        var result = obj.GeneratedMethod();
                 
-                        
+                        Puerts.PuertsDLL.ReturnString(isolate, info, result);
                         
                         return;
                     }
@@ -65,9 +65,9 @@ namespace PuertsStaticWrap
                 
                         var Arg0 = argHelper0.GetBoolean(false);
                     
-                        obj.GeneratedMethod(Arg0);
+                        var result = obj.GeneratedMethod(Arg0);
                 
-                        
+                        Puerts.PuertsDLL.ReturnString(isolate, info, result);
                         
                         return;
                     }

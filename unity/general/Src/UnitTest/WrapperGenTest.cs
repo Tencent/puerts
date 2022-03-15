@@ -1,4 +1,4 @@
-using NUnit.Framework;
+//using NUnit.Framework;
 
 namespace Puerts.UnitTest 
 {
@@ -27,13 +27,13 @@ namespace Puerts.UnitTest
 
     public class WrapperGenTestBase
     {
-        public void GeneratedMethod(bool isBase) 
+        public string GeneratedMethod(bool isBase) 
         {
-
+            return "GeneratedMethod(bool)";
         }
-        public void LazyMethod(bool isBase)
+        public string LazyMethod(bool isBase)
         {
-
+            return "LazyMethod(bool)";
         }
     }
     public class WrapperGenTest: WrapperGenTestBase
@@ -82,13 +82,13 @@ namespace Puerts.UnitTest
         public readonly string ReadonlyField = "ReadonlyField";
 
         
-        public void GeneratedMethod() 
+        public string GeneratedMethod() 
         {
-
+            return "GeneratedMethod";
         }
-        public void LazyMethod()
+        public string LazyMethod()
         {
-
+            return "LazyMethod";
         }
         public void SupportedGenericMethod<T>(T t) where T: Puerts.ILoader
         {
@@ -107,24 +107,24 @@ namespace Puerts.UnitTest
         }
     }
 
-    [TestFixture]
-    public class WrapperGenUnitTest
-    {
-        [Test]
-        public void PropertyTest()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
-            string ret = jsEnv.Eval<string>(@"
-                const CS = require('csharp');
-                const i1 = CS.Puerts.UnitTest.WrapperGenTest.StaticProperty;
-                CS.Puerts.UnitTest.WrapperGenTest.StaticProperty = 'Puerts'
-                i1 + ' ' + CS.Puerts.UnitTest.WrapperGenTest.StaticProperty;
-            ");
+    //[TestFixture]
+    //public class WrapperGenUnitTest
+    //{
+    //    [Test]
+    //    public void PropertyTest()
+    //    {
+    //        var jsEnv = new JsEnv(new TxtLoader());
+    //        PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+    //        string ret = jsEnv.Eval<string>(@"
+    //            const CS = require('csharp');
+    //            const i1 = CS.Puerts.UnitTest.WrapperGenTest.StaticProperty;
+    //            CS.Puerts.UnitTest.WrapperGenTest.StaticProperty = 'Puerts'
+    //            i1 + ' ' + CS.Puerts.UnitTest.WrapperGenTest.StaticProperty;
+    //        ");
 
-            jsEnv.Dispose();
+    //        jsEnv.Dispose();
 
-            Assert.AreEqual("StaticProperty Puerts", ret);
-        }
-    }
+    //        Assert.AreEqual("StaticProperty Puerts", ret);
+    //    }
+    //}
 }

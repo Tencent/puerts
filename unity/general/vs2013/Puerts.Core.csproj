@@ -120,7 +120,6 @@
     <Compile Include="..\..\Assets\Puerts\Src\LazyWrap.cs">
       <Link>Assets\Puerts\Src\LazyWrap.cs</Link>
     </Compile>
-    <Compile Include="methodReflectionWrap.cs" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

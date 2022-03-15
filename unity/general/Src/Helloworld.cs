@@ -52,9 +52,27 @@ public class PuertsTest
     public static void Main()
     {
         var jsEnv = new JsEnv(new TxtLoader());
+        //PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
         jsEnv.Eval(@"
             const CS = require('csharp');
-            CS.System.Console.WriteLine('hello world');
+
+            CS.System.Console.WriteLine('start');
+
+            let start = Date.now();
+            const cls = CS.Puerts.UnitTest.WrapperGenTest;
+            CS.System.Console.WriteLine((Date.now() - start) + 'ms');
+
+            start = Date.now();
+            const obj = new cls;
+            CS.System.Console.WriteLine((Date.now() - start) + 'ms');
+
+            start = Date.now();
+            obj.LazyMethod()
+            CS.System.Console.WriteLine((Date.now() - start) + 'ms');
+
+            start = Date.now();
+            for (var i = 0; i < 10000; i++) obj.LazyMethod();
+            CS.System.Console.WriteLine((Date.now() - start) + 'ms');
         ");
         jsEnv.Dispose();
     }

@@ -513,6 +513,7 @@ namespace Puerts
             int typeId = -1;
             if (registerInfo == null)
             {
+                System.Console.WriteLine("SlowBinding: " + type);
                 // registerInfo is null, then all the member use the SlowBinding
 
                 // constructors

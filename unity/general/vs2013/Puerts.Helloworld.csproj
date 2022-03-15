@@ -47,6 +47,18 @@
     <Compile Include="..\Src\Helloworld.cs">
       <Link>Src\Helloworld.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
+      <Link>Src\AutoStaticCodeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
+      <Link>Src\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperGenTest.cs">
+      <Link>Src\WrapperGenTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTestBase_Wrap.cs">
+      <Link>Src\Puerts_UnitTest_WrapperGenTestBase_Wrap.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Puerts.Core.csproj">
