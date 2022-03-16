@@ -352,4 +352,4 @@ jobs:
 
       - name: Trigger demo/upm repository update
         run: |
-          curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/zombieyang/puerts_unity_demo/dispatches --data '{"event_type": "publish ${{ github.event.inputs.tag_name }}", "inputs": {"push_tag_version": "${{ github.event.inputs.tag_name }}"}}'
+          curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json" https://api.github.com/repos/zombieyang/puerts_unity_demo/actions/workflows/sync-package.yml/dispatches -d '{"ref": "master", "inputs": {"push_tag_version": "${{ github.event.inputs.tag_name }}"}}'
