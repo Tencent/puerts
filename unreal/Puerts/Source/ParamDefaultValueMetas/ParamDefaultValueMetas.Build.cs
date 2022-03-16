@@ -39,8 +39,6 @@ namespace UnrealBuildTool.Rules
                     "CoreUObject",
                 }
                 );
-
-            PublicDefinitions.Add("HACK_HEADER_GENERATOR=1");
         }
     }
 }
