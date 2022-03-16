@@ -330,11 +330,7 @@ namespace puerts
         if (!v8ObjectIndex->IsNullOrUndefined())
         {
             int32_t mapIndex = (int32_t)v8::Number::Cast(*v8ObjectIndex)->Value();
-            auto iter = JSObjectMap.find(mapIndex);
-            if (iter != JSObjectMap.end())
-            {
-                jsObject = iter->second;
-            }
+            jsObject = JSObjectMap[mapIndex];
         }
 
         // 如果不存在id，则创建新对象
@@ -370,9 +366,14 @@ namespace puerts
         v8::Context::Scope ContextScope(Context);
 
         v8::Local<v8::Map> idmap = JSObjectIdMap.Get(InObject->Isolate);
-        idmap->Delete(InObject->Context.Get(Isolate), InObject->GObject.Get(Isolate));
-        JSObjectMap.erase(InObject->Index);
+        idmap->Set(
+            InObject->Context.Get(Isolate),
+            InObject->GObject.Get(Isolate),
+            v8::Undefined(Isolate)
+        );
 
+        JSObjectMap[InObject->Index] = nullptr;
+        
         ObjectMapFreeIndex.push_back(InObject->Index);
         delete InObject;
     }
