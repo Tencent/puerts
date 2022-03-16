@@ -315,6 +315,7 @@ V8InspectorChannel* V8InspectorClientImpl::CreateV8InspectorChannel()
 
 V8InspectorClientImpl::~V8InspectorClientImpl()
 {
+    V8InspectorChannel->OnMessage(nullptr);
     Close();
 }
 
