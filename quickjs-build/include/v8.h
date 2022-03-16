@@ -622,6 +622,8 @@ public:
     V8_WARN_UNUSED_RESULT MaybeLocal<Map> Set(Local<Context> context,
         Local<Value> key,
         Local<Value> value);
+    V8_WARN_UNUSED_RESULT MaybeLocal<Value> Delete(Local<Context> context,
+        Local<Value> key);
     static Local<Map> New(Isolate* isolate);
 
     V8_INLINE static Map* Cast(Value* obj) {
