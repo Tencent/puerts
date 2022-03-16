@@ -61,12 +61,6 @@ public class TxtLoader : ILoader
     }
 }
 
-public class WrapperGenTest
-{
-    public void Haha()
-    {
-    }
-}
 
 [Configure]
 public class WrapperGenConfig
@@ -79,6 +73,7 @@ public class WrapperGenConfig
             return new List<Type>()
             {
                 typeof(Puerts.UnitTest.OptionalParametersClass),
+                typeof(Puerts.UnitTest.WrapperGenTest)
             };
         }
     }

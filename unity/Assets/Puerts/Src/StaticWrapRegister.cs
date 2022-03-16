@@ -6,9 +6,33 @@
 */
 
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Puerts
 {
+    public enum LazyMemberType
+    {
+        Constructor = 1,
+
+        Method = 2,
+        
+        Property= 3,
+
+        Field = 4
+    }
+    public struct LazyMemberRegisterInfo
+    {
+        public bool IsStatic;
+
+        public string Name;
+
+        public LazyMemberType Type;
+
+        public bool HasGetter;
+
+        public bool HasSetter;
+    }
+
     public struct PropertyRegisterInfo
     {
         public bool IsStatic;
@@ -20,9 +44,6 @@ namespace Puerts
     {
         public string Name;
         public bool IsStatic;
-
-        //TODO 目前只是为了在group by的时候用一下
-        public bool IsLazyMember;
         public bool IsExtension;
     }
 
@@ -36,8 +57,6 @@ namespace Puerts
 
         public Dictionary<string, PropertyRegisterInfo> Properties;
 
-        public Dictionary<MethodKey, V8FunctionCallback> LazyMethods;
-
-        public Dictionary<string, PropertyRegisterInfo> LazyProperties;
+        public List<LazyMemberRegisterInfo> LazyMembers;
     }
 }
