@@ -105,9 +105,6 @@
     <Compile Include="..\..\Assets\Puerts\Src\ReflectionWrap.cs">
       <Link>Assets\Puerts\Src\ReflectionWrap.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Menu.cs">
-      <Link>Assets\Puerts\Src\Editor\Generator\Menu.cs</Link>
-    </Compile>
     <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Utils.cs">
       <Link>Assets\Puerts\Src\Editor\Generator\Utils.cs</Link>
     </Compile>
@@ -120,7 +117,9 @@
     <Compile Include="..\..\Assets\Puerts\Src\LazyWrap.cs">
       <Link>Assets\Puerts\Src\LazyWrap.cs</Link>
     </Compile>
-    <Compile Include="methodReflectionWrap.cs" />
+    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Menu.cs">
+      <Link>Assets\Puerts\Src\Editor\Generator\Menu.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

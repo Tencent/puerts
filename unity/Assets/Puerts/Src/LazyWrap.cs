@@ -24,8 +24,8 @@ namespace Puerts
     {
         public LazyFieldWrap(string memberName, JsEnv env, Type definitionType) : base(memberName, env, definitionType) { }
 
-        private FunctionCallback Getter;
-        private FunctionCallback Setter;
+        private JSFunctionCallback Getter;
+        private JSFunctionCallback Setter;
         public void InvokeSetter(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen)
         {
             if (Getter == null)
@@ -58,7 +58,7 @@ namespace Puerts
             Getter(isolate, info, self, argumentsLen);
         }
 
-        private FunctionCallback GenFieldGetter(Type type, FieldInfo field)
+        private JSFunctionCallback GenFieldGetter(Type type, FieldInfo field)
         {
             var translateFunc = env.GeneralSetterManager.GetTranslateFunc(field.FieldType);
             if (field.IsStatic)
@@ -78,7 +78,7 @@ namespace Puerts
             }
         }
 
-        private FunctionCallback GenFieldSetter(Type type, FieldInfo field)
+        private JSFunctionCallback GenFieldSetter(Type type, FieldInfo field)
         {
             var translateFunc = env.GeneralGetterManager.GetTranslateFunc(field.FieldType);
             var typeMask = GeneralGetterManager.GetJsTypeMask(field.FieldType);

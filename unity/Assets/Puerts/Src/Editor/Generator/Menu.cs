@@ -11,8 +11,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+#if !PUERTS_GENERAL
 using UnityEditor;
 using UnityEngine;
+#endif
 
 namespace Puerts.Editor
 {
