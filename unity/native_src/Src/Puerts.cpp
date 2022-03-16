@@ -431,9 +431,10 @@ V8_EXPORT void SetObjectToOutValue(v8::Isolate* Isolate, v8::Value *Value, int C
     if (Value->IsObject())
     {
         auto Context = Isolate->GetCurrentContext();
-        auto Outer = Value->ToObject(Context).ToLocalChecked();
         auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr));
+        auto Object = JsEngine->FindOrAddObject(Isolate, Context, ClassID, Ptr);
+        auto Outer = Value->ToObject(Context).ToLocalChecked();
+        auto ReturnVal = Outer->Set(Context, FV8Utils::V8String(Isolate, "value"), Object);
     }
 }
 
