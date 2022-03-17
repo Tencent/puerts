@@ -18,7 +18,7 @@ declare module "puerts" {
     
     type $Nullable<T> = T | null;
     
-    function $ref<T>(x : T) : $Ref<T>;
+    function $ref<T>(x? : T) : $Ref<T>;
     
     function $unref<T>(x: $Ref<T> | $InRef<T>) : T;
     
