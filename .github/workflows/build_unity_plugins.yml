@@ -73,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins_Quickjs
+          name: Unity_Plugins_QuickJS
   ios:
     runs-on: macos-10.15
 
@@ -118,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins_Quickjs
+          name: Unity_Plugins_QuickJS
   osx:
     runs-on: macos-10.15
 
@@ -162,7 +162,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins_Nodejs
+          name: Unity_Plugins_NodeJS
   osx_qjs:
     runs-on: macos-10.15
 
@@ -184,7 +184,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins_Quickjs
+          name: Unity_Plugins_QuickJS
   windows:
     runs-on: windows-2019
 
@@ -227,7 +227,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins_Quickjs
+          name: Unity_Plugins_QuickJS
   windows_node:
     runs-on: windows-2019
 
@@ -248,7 +248,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins_Nodejs
+          name: Unity_Plugins_NodeJS
           
   linux64:
     runs-on: ubuntu-latest

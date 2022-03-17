@@ -54043,6 +54043,21 @@ void JS_MapClear(JSContext *ctx, JSValueConst this_val)
     }
 }
 
+JSValue JS_MapDelete(JSContext *ctx, JSValueConst this_val,
+                          JSValueConst key)
+{
+    JSMapState *s = JS_GetOpaque2(ctx, this_val, JS_CLASS_MAP);
+    JSMapRecord *mr;
+
+    if (!s)
+        return JS_EXCEPTION;
+    mr = map_find_record(ctx, s, key);
+    if (!mr)
+        return JS_FALSE;
+    map_delete_record(ctx->rt, s, mr);
+    return JS_TRUE;
+}
+
 JSValue JS_DupModule(JSContext *ctx, JSModuleDef* v)
 {
     return JS_DupValue(ctx, JS_MKPTR(JS_TAG_MODULE, v));
