@@ -576,6 +576,17 @@ MaybeLocal<Map> Map::Set(Local<Context> context,
     return MaybeLocal<Map>(Local<Map>(map));
 }
 
+MaybeLocal<Value> Map::Delete(Local<Context> context,
+                           Local<Value> key) {
+    JSValue v = JS_MapDelete(context->context_, value_, key->value_);
+    if (JS_IsException(v)) {
+        return MaybeLocal<Value>();
+    }
+    Value *val = context->GetIsolate()->Alloc<Value>();
+    val->value_ = v;
+    return MaybeLocal<Value>(Local<Value>(val));
+}
+
 Local<Map> Map::New(Isolate* isolate) {
     Map *map = isolate->Alloc<Map>();
     map->value_ = JS_NewMap(isolate->GetCurrentContext()->context_);

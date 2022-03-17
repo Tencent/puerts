@@ -56,6 +56,11 @@ public:
 
     void OnMessage(std::function<void(const std::string&)> Handler) override;
 
+    virtual ~V8InspectorChannelImpl() override
+    {
+        OnSendMessage = nullptr;
+    }
+
 private:
     void SendMessage(v8_inspector::StringBuffer& MessageBuffer);
 
@@ -315,7 +320,6 @@ V8InspectorChannel* V8InspectorClientImpl::CreateV8InspectorChannel()
 
 V8InspectorClientImpl::~V8InspectorClientImpl()
 {
-    V8InspectorChannel->OnMessage(nullptr);
     Close();
 }
 
