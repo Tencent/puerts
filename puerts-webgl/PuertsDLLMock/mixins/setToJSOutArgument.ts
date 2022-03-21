@@ -9,35 +9,37 @@ import { FunctionCallbackInfoPtrManager, PuertsJSEngine, Ref } from "../library"
 export default function WebGLBackendSetToJSOutArgumentAPI(engine: PuertsJSEngine) {
     return {
         SetNumberToOutValue: function (isolate: IntPtr, value: MockIntPtr, number: double) {
-            throw new Error('not implemented')
-
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj.value = number;
         },
         SetDateToOutValue: function (isolate: IntPtr, value: MockIntPtr, date: double) {
-            throw new Error('not implemented')
-
-        },
-        SetStringToOutValue: function (isolate: IntPtr, value: MockIntPtr, str: string) {
             var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
-            console.log(obj)
+            obj.value = new Date(date);
+        },
+        SetStringToOutValue: function (isolate: IntPtr, value: MockIntPtr, strString: CSString) {
+            const str = engine.unityApi.UTF8ToString(strString);
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj.value = str;
         },
         SetBooleanToOutValue: function (isolate: IntPtr, value: MockIntPtr, b: bool) {
-            throw new Error('not implemented')
-
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj.value = !!b; // 传过来的是1和0
         },
         SetBigIntToOutValue: function (isolate: IntPtr, value: IntPtr, /*long */bigInt: any) {
             throw new Error('not implemented')
 
         },
-        SetObjectToOutValue: function (isolate: IntPtr, value: IntPtr, classId: int, ptr: IntPtr) {
-            throw new Error('not implemented')
-
+        SetObjectToOutValue: function (isolate: IntPtr, value: MockIntPtr, classID: int, self: CSIdentifier) {
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj.value = engine.csharpObjectMap.findOrAddObject(self, classID);
         },
         SetNullToOutValue: function (isolate: IntPtr, value: MockIntPtr) {
-            throw new Error('not implemented')
-
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj.value = null; // 传过来的是1和0
         },
-        SetArrayBufferToOutValue: function (isolate: IntPtr, value: IntPtr, /*Byte[] */bytes: any, length: int) {
-            throw new Error('not implemented')
+        SetArrayBufferToOutValue: function (isolate: IntPtr, value: MockIntPtr, /*Byte[] */bytes: any, Length: int) {
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+            obj.value = new Uint8Array(engine.unityApi.HEAP8.buffer, bytes, Length);
 
         },
     }

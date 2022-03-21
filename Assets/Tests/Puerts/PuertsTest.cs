@@ -146,30 +146,40 @@ namespace PuertsTest
             var jsres = jsFunc();
             AssertAndPrint("GetArrayBufferFromResult", jsres.Count == 1 && jsres.Bytes[0] == 3);
         }
-        // public void SetNumberToOutValue(out int jsOutArg) {
-
-        // }
-        // public void SetDateToOutValue(out DateTime jsOutArg) {
-
-        // }
-        // public void SetStringToOutValue(out string jsOutArg) {
-
-        // }
-        // public void SetBooleanToOutValue(out bool jsOutArg) {
-
-        // }
-        // public void SetBigIntToOutValue(out long jsOutArg) {
-
-        // }
-        // public void SetObjectToOutValue(out TestObject jsOutArg) {
-
-        // }
-        // public void SetNullToOutValue(out object jsOutArg) {
-
-        // }
-        // public void SetArrayBufferToOutValue(out byte[] jsOutArg) {
-
-        // }
+        
+        public void SetNumberToOutValue(out int jsOutArg) 
+        {
+            jsOutArg = 3;
+        }
+        public void SetDateToOutValue(out DateTime jsOutArg) 
+        {
+            jsOutArg = DateTime.Parse("11/11/1998 0:00 AM");
+        }
+        public void SetStringToOutValue(out string jsOutArg) 
+        {
+            jsOutArg = "byebye string out";
+        }
+        public void SetBooleanToOutValue(out bool jsOutArg) 
+        {
+            jsOutArg = true;
+        }
+        public void SetBigIntToOutValue(out long jsOutArg) 
+        {
+            jsOutArg = 9007199254740992;
+        }
+        public void SetObjectToOutValue(out TestObject jsOutArg) 
+        {
+            jsOutArg = new TestObject(3);
+        }
+        public void SetNullToOutValue(out object jsOutArg) 
+        {
+            jsOutArg = null;
+        }
+        public void SetArrayBufferToOutValue(out Puerts.ArrayBuffer jsOutArg) 
+        {
+            byte[] bytes = new byte[1] { 3 };
+            jsOutArg = new Puerts.ArrayBuffer(bytes);
+        }
         public int ReturnNumber()
         {
             return 3;
