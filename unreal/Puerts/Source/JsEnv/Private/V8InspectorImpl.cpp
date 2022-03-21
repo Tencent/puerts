@@ -55,7 +55,7 @@ public:
     void DispatchProtocolMessage(const std::string& Message) override;
 
     void OnMessage(std::function<void(const std::string&)> Handler) override;
-    
+
     virtual ~V8InspectorChannelImpl() override
     {
         OnSendMessage = nullptr;
