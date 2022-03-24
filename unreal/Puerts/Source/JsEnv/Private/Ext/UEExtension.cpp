@@ -9,6 +9,7 @@
 #include "CoreMinimal.h"
 #include "Binding.hpp"
 #include "UEDataBinding.hpp"
+#include "Blueprint/UserWidget.h"
 
 UsingUClass(UObject);
 UsingUClass(UClass);
@@ -16,6 +17,8 @@ UsingUClass(UClass);
 UsingUClass(UWorld);    // for return type
 UsingUClass(USceneComponent);
 UsingUClass(UActorComponent);
+UsingUClass(UUserWidget);
+UsingUClass(UWidget);
 #endif
 
 struct AutoRegisterForUE
@@ -46,6 +49,10 @@ struct AutoRegisterForUE
         puerts::DefineClass<UActorComponent>()
             .Method("RegisterComponent", MakeFunction(&UActorComponent::RegisterComponent))
             .Register();
+    	
+    	puerts::DefineClass<UUserWidget>()
+			.Method("GetWidgetFromName", SelectFunction(UWidget* (UUserWidget::*) (const FName&) const, &UUserWidget::GetWidgetFromName))
+			.Register();
 #endif
     }
 };
