@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -48,7 +48,9 @@ UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPt
 
     auto Blueprint = NewObject<UBlueprint>(Outer);
     Blueprint->GeneratedClass = Class;
+#if ENGINE_MAJOR_VERSION < 5 || WITH_EDITOR
     Class->ClassGeneratedBy = Blueprint;
+#endif
 
     // Set properties we need to regenerate the class with
     Class->PropertyLink = Parent->PropertyLink;

@@ -54,3 +54,9 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 ## UE5 EA生成按钮不显示
 
 因为UE5 EA的toolbar extension失效了，要等epic自己修复或提供新API 。临时可以用控制台命令生成：Puerts.Gen。
+
+## UE5下报 Construct TypeScript Object TestActor_C_1(000001E5057BD300) on illegal thread!
+
+关闭AsyncLoadingThreadEnabled选项（该选项ue4默认关闭, ue5默认打开了）
+
+

@@ -1455,7 +1455,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                filters = null;
+                Utils.filters = null;
             }
 
             [MenuItem("Puerts/Generate index.d.ts", false, 1)]
@@ -1469,7 +1469,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
                 
-                filters = null;
+                Utils.filters = null;
             }
 
             [MenuItem("Puerts/Generate index.d.ts ESM compatible (unstable)", false, 1)]
@@ -1483,7 +1483,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
                 
-                filters = null;
+                Utils.filters = null;
             }
 
             [MenuItem("Puerts/Clear Generated Code", false, 2)]

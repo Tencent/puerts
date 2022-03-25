@@ -134,17 +134,17 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ### Unity
 
-* [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/01_JsCallCs) ： js调用c#
+* [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/01_JsCallCs) ： js调用c#
 
-* [02_Require](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/02_Require) ： 加载js文件
+* [02_Require](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/02_Require) ： 加载js文件
 
-* [03_Callback](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/03_Callback) ： 回调基本演示
+* [03_Callback](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/03_Callback) ： 回调基本演示
 
-* [04_JsBehaviour](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/04_JsBehaviour) ： 用js模拟MonoBehaviour
+* [04_JsBehaviour](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/04_JsBehaviour) ： 用js模拟MonoBehaviour
 
-* [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
+* [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
 
-* [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/06_UIEvent) ：UI事件的演示
+* [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/Assets/Examples/06_UIEvent) ：UI事件的演示
 
 ## 技术支持
 
