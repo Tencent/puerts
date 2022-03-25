@@ -50,8 +50,8 @@ public:
     virtual v8::Local<v8::Value> FindOrAdd(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) = 0;
 
-    virtual void BindStruct(
-        FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
+    virtual void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject,
+        bool PassByPointer, bool ForceNoCache) = 0;
 
     virtual void UnBindStruct(void* Ptr) = 0;
 

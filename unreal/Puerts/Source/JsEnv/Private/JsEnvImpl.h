@@ -113,8 +113,8 @@ public:
     virtual v8::Local<v8::Value> FindOrAdd(
         v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) override;
 
-    virtual void BindStruct(
-        FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
+    virtual void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject,
+        bool PassByPointer, bool ForceNoCache) override;
 
     virtual void UnBindStruct(void* Ptr) override;
 

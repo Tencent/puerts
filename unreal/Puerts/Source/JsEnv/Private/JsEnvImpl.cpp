@@ -1555,8 +1555,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local
 
     // create and link
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
-    return GetJsClass(ScriptStruct, Context)->NewInstance(Context, 2, Args).ToLocalChecked();
+    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer), v8::Boolean::New(Isolate, ForceNoCache)};
+    return GetJsClass(ScriptStruct, Context)->NewInstance(Context, 3, Args).ToLocalChecked();
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddCppObject(
@@ -2429,13 +2429,16 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 }
 
 void FJsEnvImpl::BindStruct(
-    FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
+    FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer, bool ForceNoCache)
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
     DataTransfer::SetPointer(
         MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
 
-    StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    if (LIKELY(!ForceNoCache))    // default: false
+    {
+        StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    }
     if (!PassByPointer)
     {
         ScriptStructFinalizeInfoMap[Ptr] = {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize};
