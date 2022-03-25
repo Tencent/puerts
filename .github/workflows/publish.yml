@@ -19,8 +19,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_v8.yml
           name: v8_bin
+          repo: puerts/backend-v8
           path: unity/native_src/
       - name: Install NDK
         run: |
@@ -48,9 +50,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_quickjs.yml
-          #run_id: ${{env.RUNID}}
           name: qjs_v8_bin
+          repo: puerts/backend-quickjs
           path: unity/native_src/
       - name: Install NDK
         run: |
@@ -78,8 +81,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_v8.yml
           name: v8_bin
+          repo: puerts/backend-v8
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
@@ -100,9 +105,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_quickjs.yml
-          #run_id: ${{env.RUNID}}
           name: qjs_v8_bin
+          repo: puerts/backend-quickjs
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
@@ -123,8 +129,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_v8.yml
           name: v8_bin
+          repo: puerts/backend-v8
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
@@ -145,6 +153,8 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          repo: puerts/backend-nodejs
           workflow: build_nodejs.yml
           name: nodejs_bin
           path: unity/native_src/
@@ -167,9 +177,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_quickjs.yml
-          #run_id: ${{env.RUNID}}
           name: qjs_v8_bin
+          repo: puerts/backend-quickjs
           path: unity/native_src/
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
@@ -190,8 +201,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_v8.yml
           name: v8_bin
+          repo: puerts/backend-v8
           path: unity/native_src/
       - name: Build
         run: |
@@ -211,6 +224,8 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          repo: puerts/backend-nodejs
           workflow: build_nodejs.yml
           name: nodejs_bin
           path: unity/native_src/
@@ -223,7 +238,6 @@ jobs:
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_Nodejs
-          
   windows_qjs:
     runs-on: windows-2019
 
@@ -232,9 +246,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_quickjs.yml
-          #run_id: ${{env.RUNID}}
           name: qjs_v8_bin
+          repo: puerts/backend-quickjs
           path: unity/native_src/
       - name: Build
         run: |
@@ -259,8 +274,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_v8.yml
           name: v8_bin
+          repo: puerts/backend-v8
           path: unity/native_src/
       - name: Build
         run: |
