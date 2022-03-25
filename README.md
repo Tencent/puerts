@@ -1,4 +1,4 @@
-![Logo](./pic/puerts_logo.png)
+![Logo](./doc/pic/puerts_logo.png)
 
 [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
 [![release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases)
