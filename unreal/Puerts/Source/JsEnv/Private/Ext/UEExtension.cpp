@@ -51,7 +51,8 @@ struct AutoRegisterForUE
             .Register();
 
         puerts::DefineClass<UUserWidget>()
-            .Method("GetWidgetFromName",SelectFunction(UWidget * (UUserWidget::*) (const FName&) const, &UUserWidget::GetWidgetFromName))
+            .Method("GetWidgetFromName",
+                SelectFunction(UWidget * (UUserWidget::*) (const FName&) const, &UUserWidget::GetWidgetFromName))
             .Register();
 #endif
     }
