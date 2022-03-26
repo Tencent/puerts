@@ -49,10 +49,10 @@ struct AutoRegisterForUE
         puerts::DefineClass<UActorComponent>()
             .Method("RegisterComponent", MakeFunction(&UActorComponent::RegisterComponent))
             .Register();
-    	
-    	puerts::DefineClass<UUserWidget>()
-			.Method("GetWidgetFromName", SelectFunction(UWidget* (UUserWidget::*) (const FName&) const, &UUserWidget::GetWidgetFromName))
-			.Register();
+
+        puerts::DefineClass<UUserWidget>()
+            .Method("GetWidgetFromName", SelectFunction(UWidget* (UUserWidget::*) (const FName&) const, &UUserWidget::GetWidgetFromName))
+            .Register();
 #endif
     }
 };
