@@ -21,6 +21,7 @@ v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isol
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
+    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Contains"), v8::FunctionTemplate::New(Isolate, Contains));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "FindIndex"), v8::FunctionTemplate::New(Isolate, FindIndex));
@@ -61,28 +62,12 @@ void FScriptArrayWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FScriptArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    InternalArrayGet(Info, false);
+}
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
-    if (!Inner->PropertyWeakPtr.IsValid())
-    {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
-        return;
-    }
-
-    int Index = Info[0]->Int32Value(Context).ToChecked();
-    if (Index < 0 || Index >= Self->Num())
-    {
-        FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
-        return;
-    }
-    uint8* DataPtr = GetData(Self, Inner->Property->GetSize(), Index);
-    Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, DataPtr, false));
+void FScriptArrayWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    InternalArrayGet(Info, true);
 }
 
 void FScriptArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -240,6 +225,32 @@ int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Val
     return Result;
 }
 
+void FScriptArrayWrapper::InternalArrayGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    CHECK_V8_ARGS_LEN(1);
+
+    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Info.Holder(), 0);
+    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    if (!Inner->PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        return;
+    }
+
+    int Index = Info[0]->Int32Value(Context).ToChecked();
+    if (Index < 0 || Index >= Self->Num())
+    {
+        FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
+        return;
+    }
+    uint8* DataPtr = GetData(Self, Inner->Property->GetSize(), Index);
+    Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, DataPtr, PassByPointer));
+}
+
 //---------------------------------------Set-----------------------------------------------
 
 v8::Local<v8::FunctionTemplate> FScriptSetWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
@@ -252,6 +263,7 @@ v8::Local<v8::FunctionTemplate> FScriptSetWrapper::ToFunctionTemplate(v8::Isolat
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
+    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Contains"), v8::FunctionTemplate::New(Isolate, Contains));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "FindIndex"), v8::FunctionTemplate::New(Isolate, FindIndex));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "RemoveAt"), v8::FunctionTemplate::New(Isolate, RemoveAt));
@@ -300,32 +312,12 @@ void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FScriptSetWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    InternalSetGet(Info, false);
+}
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
-    if (!Inner->PropertyWeakPtr.IsValid())
-    {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
-        return;
-    }
-    auto Property = Inner->Property;
-
-    int32 Index = Info[0]->Int32Value(Context).ToChecked();
-    if (Self->IsValidIndex(Index) == false)
-    {
-        FV8Utils::ThrowException(Isolate, "invalid index argument");
-    }
-    else
-    {
-        auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
-        void* Data = Self->GetData(Index, ScriptLayout);
-        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Data, false));
-    }
+void FScriptSetWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    InternalSetGet(Info, true);
 }
 
 void FScriptSetWrapper::Contains(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -444,6 +436,36 @@ int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value
     return Result;
 }
 
+void FScriptSetWrapper::InternalSetGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    CHECK_V8_ARGS_LEN(1);
+
+    auto Self = FV8Utils::GetPointerFast<FScriptSet>(Info.Holder(), 0);
+    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    if (!Inner->PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        return;
+    }
+    auto Property = Inner->Property;
+
+    int32 Index = Info[0]->Int32Value(Context).ToChecked();
+    if (Self->IsValidIndex(Index) == false)
+    {
+        FV8Utils::ThrowException(Isolate, "invalid index argument");
+    }
+    else
+    {
+        auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
+        void* Data = Self->GetData(Index, ScriptLayout);
+        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Data, PassByPointer));
+    }
+}
+
 //---------------------------------------Map-----------------------------------------------
 v8::Local<v8::FunctionTemplate> FScriptMapWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
@@ -455,6 +477,7 @@ v8::Local<v8::FunctionTemplate> FScriptMapWrapper::ToFunctionTemplate(v8::Isolat
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Add"), v8::FunctionTemplate::New(Isolate, Add));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
+    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, GetRef));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Remove"), v8::FunctionTemplate::New(Isolate, Remove));
     Result->PrototypeTemplate()->Set(
@@ -520,39 +543,12 @@ void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FScriptMapWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    InternalMapGet(Info, false);
+}
 
-    CHECK_V8_ARGS_LEN(1);
-
-    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
-    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
-    auto KeyProperty = KeyPropertyTranslator->Property;
-    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
-    auto ValueProperty = ValuePropertyTranslator->Property;
-    if (!KeyPropertyTranslator->PropertyWeakPtr.IsValid() || !ValuePropertyTranslator->PropertyWeakPtr.IsValid())
-    {
-        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
-        return;
-    }
-
-    void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
-    KeyProperty->InitializeValue(KeyPtr);
-    KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
-
-    auto ScriptLayout = FScriptMap::GetScriptLayout(
-        KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
-
-    void* ValuePtr = Self->FindValue(
-        KeyPtr, ScriptLayout, [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
-        [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
-
-    if (ValuePtr)
-    {
-        Info.GetReturnValue().Set(ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, false));
-    }
-    KeyProperty->DestroyValue(KeyPtr);
+void FScriptMapWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    InternalMapGet(Info, true);
 }
 
 void FScriptMapWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -683,6 +679,43 @@ FScriptMapLayout FScriptMapWrapper::GetScriptLayout(const PropertyMacro* KeyProp
         KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
 }
 
+void FScriptMapWrapper::InternalMapGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    CHECK_V8_ARGS_LEN(1);
+
+    auto Self = FV8Utils::GetPointerFast<FScriptMap>(Info.Holder(), 0);
+    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    auto KeyProperty = KeyPropertyTranslator->Property;
+    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 2);
+    auto ValueProperty = ValuePropertyTranslator->Property;
+    if (!KeyPropertyTranslator->PropertyWeakPtr.IsValid() || !ValuePropertyTranslator->PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+        return;
+    }
+
+    void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
+    KeyProperty->InitializeValue(KeyPtr);
+    KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
+
+    auto ScriptLayout = FScriptMap::GetScriptLayout(
+        KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
+
+    void* ValuePtr = Self->FindValue(
+        KeyPtr, ScriptLayout, [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
+        [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
+
+    if (ValuePtr)
+    {
+        Info.GetReturnValue().Set(ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
+    }
+    KeyProperty->DestroyValue(KeyPtr);
+}
+
 //---------------------------------------Fix Size Array-----------------------------------------------
 v8::Local<v8::FunctionTemplate> FFixSizeArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
@@ -693,6 +726,7 @@ v8::Local<v8::FunctionTemplate> FFixSizeArrayWrapper::ToFunctionTemplate(v8::Iso
 
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Num"), v8::FunctionTemplate::New(Isolate, Num));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Get"), v8::FunctionTemplate::New(Isolate, Get));
+    Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetRef"), v8::FunctionTemplate::New(Isolate, Get));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
     // Result->PrototypeTemplate()->SetIndexedPropertyHandler(Getter, Setter);
 
@@ -716,35 +750,12 @@ void FFixSizeArrayWrapper::Num(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FFixSizeArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    InternalFixSizeArrayGet(Info, false);
+}
 
-    auto Self = FV8Utils::GetPointerFast<uint8>(Info.Holder(), 0);
-    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
-    if (!Inner->PropertyWeakPtr.IsValid())
-    {
-        FV8Utils::ThrowException(Isolate, "item info is invalid!");
-        return;
-    }
-    auto Property = Inner->Property;
-
-    int32 Index = -1;
-
-    if (Info[0]->IsInt32())
-    {
-        Index = Info[0]->Int32Value(Context).ToChecked();
-    }
-
-    if (Index < 0 || Index >= Property->ArrayDim)
-    {
-        FV8Utils::ThrowException(Isolate, "invalid index");
-        return;
-    }
-
-    auto Ptr = Self + Property->ElementSize * Index;
-
-    Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Ptr, false));
+void FFixSizeArrayWrapper::GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    InternalFixSizeArrayGet(Info, true);
 }
 
 void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -779,4 +790,38 @@ void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     Inner->JsToUE(Isolate, Context, Info[1], Ptr, true);
 }
+
+void FFixSizeArrayWrapper::InternalFixSizeArrayGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    auto Self = FV8Utils::GetPointerFast<uint8>(Info.Holder(), 0);
+    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Info.Holder(), 1);
+    if (!Inner->PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "item info is invalid!");
+        return;
+    }
+    auto Property = Inner->Property;
+
+    int32 Index = -1;
+
+    if (Info[0]->IsInt32())
+    {
+        Index = Info[0]->Int32Value(Context).ToChecked();
+    }
+
+    if (Index < 0 || Index >= Property->ArrayDim)
+    {
+        FV8Utils::ThrowException(Isolate, "invalid index");
+        return;
+    }
+
+    auto Ptr = Self + Property->ElementSize * Index;
+
+    Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Ptr, false));
+}
+
 }    // namespace puerts

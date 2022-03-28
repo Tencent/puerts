@@ -295,9 +295,14 @@ private:
     static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     // 参数：索引
-    // 返回：元素
+    // 返回：元素（值类型，有内存拷贝）
     // 作用：获取索引对应的元素，如果索引越界则抛出异常
     static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    // 参数：索引
+    // 返回：元素（引用类型）
+    // 作用：获取索引对应的元素，如果索引越界则抛出异常
+    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     // 参数1：索引；参数2：元素
     // 返回：无
@@ -337,6 +342,8 @@ private:
     FORCEINLINE static void Construct(FScriptArray* ScriptArray, FPropertyTranslator* Inner, int32 Index, int32 Count = 1);
 
     static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    FORCEINLINE static void InternalArrayGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
 };
 
 class FScriptSetWrapper : public FContainerWrapper<FScriptSet>
@@ -348,6 +355,8 @@ private:
     static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Contains(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -362,7 +371,10 @@ private:
     static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
 private:
+
     FORCEINLINE static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    FORCEINLINE static void InternalSetGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
 };
 
 class FScriptMapWrapper : public FContainerWrapper<FScriptMap>
@@ -374,6 +386,8 @@ private:
     static void Add(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Set(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -389,6 +403,8 @@ private:
 
 private:
     FORCEINLINE static FScriptMapLayout GetScriptLayout(const PropertyMacro* KeyProperty, const PropertyMacro* ValueProperty);
+
+    FORCEINLINE static void InternalMapGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
 };
 
 class FFixSizeArrayWrapper
@@ -405,6 +421,10 @@ private:
 
     static void Get(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    static void GetRef(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     static void Set(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    FORCEINLINE static void InternalFixSizeArrayGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
 };
 }    // namespace puerts
