@@ -270,8 +270,23 @@ template <typename Ret, typename... Args, bool CheckArguments>
 struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments>
 {
 private:
+    template <typename T, typename = void>
+    struct ArgumentTupleType
+    {
+        using type = typename std::decay<T>::type;
+    };
+
+    template <typename T>
+    struct ArgumentTupleType<T,
+        typename std::enable_if<
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value>::type>
+    {
+        using type = std::reference_wrapper<typename std::decay<T>::type>;
+    };
+
     static constexpr auto ArgsLength = sizeof...(Args);
-    using ArgumentsTupleType = std::tuple<typename std::decay<Args>::type...>;
+    using ArgumentsTupleType = std::tuple<typename ArgumentTupleType<Args>::type...>;
 
     template <typename T, typename Enable = void>
     struct RefValueSync
@@ -287,7 +302,17 @@ private:
     {
         static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value)
         {
-            UpdateRefValue(context, holder, converter::Converter<decltype(value)>::toScript(context, value));
+            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value));
+        }
+
+        static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value)
+        {
+            if (&(TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, GetUndefined(context)).get()) !=
+                &(value.get()))
+            {
+                return;
+            }
+            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context, &(value.get())));
         }
     };
 
@@ -319,8 +344,8 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
-        ArgumentsTupleType cppArgs =
-            std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
+            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
 
         func(std::forward<Args>(std::get<index>(cppArgs))...);
 
@@ -339,8 +364,8 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
-        ArgumentsTupleType cppArgs =
-            std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
+            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
 
         auto ret = func(std::forward<Args>(std::get<index>(cppArgs))...);
         SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
@@ -368,8 +393,8 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
-        ArgumentsTupleType cppArgs =
-            std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
+            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
 
         (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
 
@@ -396,11 +421,12 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
-        ArgumentsTupleType cppArgs =
-            std::make_tuple<typename std::decay<Args>::type...>(TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
+        ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
+            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
 
         auto ret = (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
-        SetReturn(info, TypeConverter<Ret>::toScript(context, std::forward<Ret>(ret)));
+        SetReturn(info, TypeConverter<typename std::remove_reference<Ret>::type>::toScript(
+                            context, std::forward<typename std::remove_reference<Ret>::type>(ret)));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
 
