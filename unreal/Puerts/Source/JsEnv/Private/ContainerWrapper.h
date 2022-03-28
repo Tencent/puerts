@@ -370,8 +370,6 @@ private:
 
     static void Empty(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-private:
-
     FORCEINLINE static int32 FindIndexInner(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     FORCEINLINE static void InternalSetGet(const v8::FunctionCallbackInfo<v8::Value>& Info, bool PassByPointer);
