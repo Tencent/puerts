@@ -22,7 +22,7 @@
     };                                            \
     }
 
-#define UsingTArray(CLS, CLSNAME)                     \
+#define UsingTArrayWithName(CLS, CLSNAME)             \
     namespace puerts                                  \
     {                                                 \
     template <>                                       \
