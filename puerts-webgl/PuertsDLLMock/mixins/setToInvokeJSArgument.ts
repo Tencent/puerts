@@ -46,11 +46,12 @@ export default function WebGLBackendSetToInvokeJSArgumentApi(engine: PuertsJSEng
         },
         PushJSFunctionForJSFunction: function (_function: JSFunctionPtr, JSFunction: JSFunctionPtr) {
             const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
-            func.args.push(jsFunctionOrObjectFactory.getJSFunctionById(JSFunction));
+            func.args.push(jsFunctionOrObjectFactory.getJSFunctionById(JSFunction)._func);
 
         },
-        PushJSObjectForJSFunction: function (_function: MockIntPtr, JSObject: IntPtr) {
-            throw new Error('not implemented')
+        PushJSObjectForJSFunction: function (_function: MockIntPtr, JSObject: JSObjectPtr) {
+            const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
+            func.args.push(jsFunctionOrObjectFactory.getJSObjectById(JSObject).getObject());
 
         },
         PushArrayBufferForJSFunction: function (_function: MockIntPtr, /*byte[] */bytes: number, length: int) {

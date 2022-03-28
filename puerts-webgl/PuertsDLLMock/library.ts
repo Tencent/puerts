@@ -85,11 +85,9 @@ export class JSFunction {
 
     public lastExceptionInfo: string = '';
 
-    constructor(func: (...args: any[]) => any) {
+    constructor(id: number, func: (...args: any[]) => any) {
         this._func = func;
-        this.id = jsFunctionOrObjectFactory.regularID++;
-        jsFunctionOrObjectFactory.idMap.set(func, this.id);
-        jsFunctionOrObjectFactory.jsFuncOrObjectKV[this.id] = this;
+        this.id = id;
     }
     public invoke() {
         var args = [...this.args];
@@ -98,25 +96,73 @@ export class JSFunction {
     }
 }
 
+/**
+ * 代表一个JSObject
+ */
+export class JSObject {
+    private _obj: object
+
+    public id: number
+
+    constructor(id: number, obj: object) {
+        this._obj = obj;
+        this.id = id;
+    }
+
+    public getObject (): object {
+        return this._obj;
+    }
+}
+
 export class jsFunctionOrObjectFactory {
-    public static regularID: number = 1;
-    public static idMap = new WeakMap<Function, number>();
-    public static jsFuncOrObjectKV: { [id: number]: JSFunction } = {};
+    private static regularID: number = 1;
+    private static idMap = new WeakMap<Function | object, number>();
+    private static jsFuncOrObjectKV: { [id: number]: JSFunction | JSObject } = {};
 
     public static getOrCreateJSFunction(funcValue: (...args: any[]) => any) {
-        const id = jsFunctionOrObjectFactory.idMap.get(funcValue);
+        let id = jsFunctionOrObjectFactory.idMap.get(funcValue);
         if (id) {
             return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
         }
-        return new JSFunction(funcValue);
+
+        id = jsFunctionOrObjectFactory.regularID++;
+        const func = new JSFunction(id, funcValue);
+        jsFunctionOrObjectFactory.idMap.set(funcValue, id);
+        jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] = func;
+
+        return func;
+    }
+
+    public static getOrCreateJSObject(obj: object) {
+        let id = jsFunctionOrObjectFactory.idMap.get(obj);
+        if (id) {
+            return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+        }
+
+        id = jsFunctionOrObjectFactory.regularID++;
+        const jsObject = new JSObject(id, obj);
+        jsFunctionOrObjectFactory.idMap.set(obj, id);
+        jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] = jsObject;
+
+        return jsObject;
+    }
+
+    public static getJSObjectById(id: number): JSObject {
+        return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSObject;
+    }
+
+    public static removeJSObjectById(id: number): void {
+        const jsObject = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSObject;
+        jsFunctionOrObjectFactory.idMap.delete(jsObject.getObject());
+        delete jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
     }
 
     public static getJSFunctionById(id: number): JSFunction {
-        return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+        return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSFunction;
     }
 
-    public static removeJSFunctionById(id: number) {
-        const jsFunc = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+    public static removeJSFunctionById(id: number): void {
+        const jsFunc = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSFunction;
         jsFunctionOrObjectFactory.idMap.delete(jsFunc._func);
         delete jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
     }

@@ -46,7 +46,7 @@ namespace PuertsTest
 #if UNITY_WEBGL && !UNITY_EDITOR
                 UnityEngine.Debug.LogError($"TestCase {name} failed!");
 #else
-                UnityEngine.Debug.LogError($"<color=red>TestCase {name} failed!</color>");
+                UnityEngine.Debug.LogError($"<color=magenta>TestCase {name} failed!</color>");
 #endif
             }
         }
@@ -54,171 +54,106 @@ namespace PuertsTest
         public TestHelper(JsEnv env)
         {
             env.UsingFunc<int>();
-            env.UsingFunc<DateTime>();
-            env.UsingFunc<string>();
-            env.UsingFunc<bool>();
-            env.UsingFunc<long>();
+            env.UsingFunc<int, int>();
+            env.UsingFunc<DateTime, DateTime>();
+            env.UsingFunc<string, string>();
+            env.UsingFunc<bool, bool>();
+            env.UsingFunc<long, long>();
         }
 
-        public void GetNumberFromJSArgument(int jsarg)
+        /**
+        * 保证初始值返回3.后续每次交互用的都是同一个初始值
+        */
+        public Func<int> JSFunctionTestPipeLine(Func<int> initialValue, Func<Func<int>, Func<int>> JSValueHandler) 
         {
-            AssertAndPrint("GetNumberFromJSArgument", jsarg == 3);
+            AssertAndPrint("CSGetFunctionArgFromJS", initialValue() == 3);
+            AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue) == initialValue);
+            return initialValue;
         }
-        public void GetDateFromJSArgument(DateTime date)
+        /**
+        * 初始值1，每次交互+1
+        */
+        public int NumberTestPipeLine(int initialValue, out int outArg, Func<int, int> JSValueHandler) 
         {
-            AssertAndPrint("GetDateFromJSArgument", date.ToString() == "11/11/1998 12:00:00 AM");
+            AssertAndPrint("CSGetNumberArgFromJS", initialValue == 1);
+            AssertAndPrint("CSGetNumberReturnFromJS", JSValueHandler(initialValue + 1) == 3);
+            outArg = 4;
+            return 5;
         }
-        public void GetStringFromJSArgument(string jsarg)
+        /**
+        * 判断引用即可
+        */
+        public DateTime DateTestPipeLine(DateTime initialValue, out DateTime outArg, Func<DateTime, DateTime> JSValueHandler) 
         {
-            AssertAndPrint("GetStringFromJSArgument", "Hello World" == jsarg);
+            AssertAndPrint("CSGetDateArgFromJS", initialValue.ToString() == "1998/11/11 0:00:00");
+            AssertAndPrint("CSGetDateReturnFromJS", JSValueHandler(initialValue) == initialValue);
+            outArg = initialValue;
+            return initialValue;
         }
-        public void GetBooleanFromJSArgument(bool jsarg)
+        /**
+        * 初始值 'abc'
+        * 后续每次交互往后多加一个字母
+        */
+        public string StringTestPipeLine(string initialValue, out string outArg, Func<string, string> JSValueHandler) 
         {
-            AssertAndPrint("GetBooleanFromJSArgument", jsarg);
+            AssertAndPrint("CSGetStringArgFromJS", initialValue == "abc");
+            AssertAndPrint("CSGetStringReturnFromJS", JSValueHandler(initialValue + "d") == "abcde");
+            outArg = "abcdef";
+            return "abcdefg";
         }
-        public void GetBigIntFromJSArgument(long jsarg)
+        /**
+        * js到cs都是true，cs到js都是false
+        */
+        public bool BoolTestPipeLine(bool initialValue, out bool outArg, Func<bool, bool> JSValueHandler) 
         {
-            AssertAndPrint("GetBigIntFromJSArgument", jsarg == 9007199254740992);
-
+            AssertAndPrint("CSGetBoolArgFromJS", initialValue);
+            AssertAndPrint("CSGetBoolReturnFromJS", JSValueHandler(false));
+            outArg = false;
+            return false;
         }
-        public void GetObjectFromJSArgument(TestObject jsarg)
+        /**
+        * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
+        * 后续每次交互都+1
+        */
+        public long BigIntTestPipeLine(long initialValue, out long outArg, Func<long, long> JSValueHandler) 
         {
-            AssertAndPrint("GetObjectFromJSArgument", jsarg.value == 3);
+            AssertAndPrint("CSGetBigIntArgFromJS", initialValue == 9007199254740992);
+            AssertAndPrint("CSGetBigIntReturnFromJS", JSValueHandler(initialValue + 1) == initialValue + 2);
+            outArg = initialValue + 3;
+            return initialValue + 4;
         }
-        public void GetStructFromJSArgument(TestStruct jsarg)
+        /**
+        * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
+        * 后续每次交互都+1
+        */
+        public Puerts.ArrayBuffer ArrayBufferTestPipeLine(Puerts.ArrayBuffer initialValue, out Puerts.ArrayBuffer outArg, Func<Puerts.ArrayBuffer, Puerts.ArrayBuffer> JSValueHandler) 
         {
-            AssertAndPrint("GetStructFromJSArgument", jsarg.value == 3);
-        }
-        public void GetFunctionFromJSArgument(Func<int> jsarg)
-        {
-            AssertAndPrint("GetFunctionFromJSArgument", jsarg() == 3);
-        }
-        public void GetJSObjectFromJSArgument()
-        {
-
-        }
-        public void GetArrayBufferFromJSArgument(Puerts.ArrayBuffer jsarg)
-        {
-            AssertAndPrint("GetArrayBufferFromJSArgument", jsarg.Count == 1 && jsarg.Bytes[0] == 3);
-        }
-
-        public void GetNumberFromResult(Func<int> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetNumberFromResult", jsres == 3);
-        }
-        public void GetDateFromResult(Func<DateTime> jsFunc)
-        {
-            var date = jsFunc();
-            AssertAndPrint("GetDateFromResult", date.ToString() == "11/11/1998 12:00:00 AM");
-        }
-        public void GetStringFromResult(Func<string> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetStringFromResult", jsres == "Hello World");
-        }
-        public void GetBooleanFromResult(Func<bool> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetBooleanFromResult", jsres);
-        }
-        public void GetBigIntFromResult(Func<long> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetBigIntFromResult", jsres == 9007199254740992);
-        }
-        public void GetObjectFromResult(Func<TestObject> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetObjectFromResult", jsres.value == 3);
-        }
-        public void GetFunctionFromResult(Func<Func<int>> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetFunctionFromResult", jsres() == 3);
-        }
-        public void GetJSObjectFromResult(Func<int> jsFunc)
-        {
-
-        }
-        public void GetArrayBufferFromResult(Func<Puerts.ArrayBuffer> jsFunc)
-        {
-            var jsres = jsFunc();
-            AssertAndPrint("GetArrayBufferFromResult", jsres.Count == 1 && jsres.Bytes[0] == 3);
-        }
-        
-        public void SetNumberToOutValue(out int jsOutArg) 
-        {
-            jsOutArg = 3;
-        }
-        public void SetDateToOutValue(out DateTime jsOutArg) 
-        {
-            jsOutArg = DateTime.Parse("11/11/1998 0:00 AM");
-        }
-        public void SetStringToOutValue(out string jsOutArg) 
-        {
-            jsOutArg = "byebye string out";
-        }
-        public void SetBooleanToOutValue(out bool jsOutArg) 
-        {
-            jsOutArg = true;
-        }
-        public void SetBigIntToOutValue(out long jsOutArg) 
-        {
-            jsOutArg = 9007199254740992;
-        }
-        public void SetObjectToOutValue(out TestObject jsOutArg) 
-        {
-            jsOutArg = new TestObject(3);
-        }
-        public void SetNullToOutValue(out object jsOutArg) 
-        {
-            jsOutArg = null;
-        }
-        public void SetArrayBufferToOutValue(out Puerts.ArrayBuffer jsOutArg) 
-        {
-            byte[] bytes = new byte[1] { 3 };
-            jsOutArg = new Puerts.ArrayBuffer(bytes);
-        }
-        public int ReturnNumber()
-        {
-            return 3;
-        }
-        public DateTime ReturnDate()
-        {
-            return DateTime.Parse("11/11/1998 0:00 AM");
-        }
-        public string ReturnString()
-        {
-            return "Hello World";
-        }
-        public bool ReturnBoolean()
-        {
-            return true;
-        }
-        public long ReturnBigInt()
-        {
-            return 9007199254740992;
-        }
-        public TestObject ReturnObject(int val)
-        {
-            return new TestObject(3);
-        }
-        public TestStruct ReturnStruct(int val)
-        {
-            var ts = new TestStruct();
-            ts.value = val;
-            return ts;
-        }
-        public Func<int> ReturnFunction()
-        {
-            return () => 3;
-        }
-        // public Puerts.JSObject ReturnJSObject() { }
-        public Puerts.ArrayBuffer ReturnArrayBuffer()
-        {
-            byte[] bytes = new byte[1] { 3 };
+            AssertAndPrint("CSGetArrayBufferArgFromJS", initialValue.Bytes.Length == 1 && initialValue.Bytes[0] == 1);
+            initialValue.Bytes[0] = 2;
+            AssertAndPrint("CSGetArrayBufferReturnFromJS", JSValueHandler(initialValue).Bytes[0] == 3);
+            initialValue.Bytes[0] = 4;
+            outArg = initialValue;
+            byte[] bytes = new byte[1] { 5 };
             return new Puerts.ArrayBuffer(bytes);
+        }
+        /**
+        * 判断引用即可
+        */
+        public TestObject NativeObjectTestPipeLine(TestObject initialValue, out TestObject outArg, Func<TestObject, TestObject> JSValueHandler) 
+        {
+            AssertAndPrint("CSGetNativeObjectArgFromJS", initialValue != null && initialValue.value == 1);
+            AssertAndPrint("CSGetNativeObjectReturnFromJS", JSValueHandler(initialValue) == initialValue);
+            outArg = initialValue;
+            return initialValue;
+        }
+        /**
+        * CS侧暂无法处理，判断引用即可
+        */
+        public JSObject JSObjectTestPipeLine(JSObject initialValue, Func<JSObject, JSObject> JSValueHandler) 
+        {
+            AssertAndPrint("CSGetJSObjectArgFromJS", initialValue != null);
+            AssertAndPrint("CSGetJSObjectReturnFromJS", JSValueHandler(initialValue) == initialValue);
+            return initialValue;
         }
     }
 
@@ -231,8 +166,10 @@ namespace PuertsTest
         void Start()
         {
             var jsEnv = new Puerts.JsEnv();
+            // var jsEnv = new Puerts.JsEnv(new DefaultLoader(), 8080);
+            // jsEnv.WaitDebugger();
             var helper = new TestHelper(jsEnv);
-            Action<TestHelper> doTest = jsEnv.ExecuteModule<Action<TestHelper>>("unittest.mjs", "init");
+            Action<TestHelper> doTest = jsEnv.ExecuteModule<Action<TestHelper>>("datatype-test.mjs", "init");
             doTest(helper);
             jsEnv.Dispose();
         }

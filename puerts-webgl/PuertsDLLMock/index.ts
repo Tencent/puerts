@@ -159,8 +159,8 @@ global.PuertsWebGL = {
                     jsFunctionOrObjectFactory.removeJSFunctionById(_function);
 
                 },
-                ReleaseJSObject: function (isolate: IntPtr, obj: IntPtr) {
-                    throw new Error('not implemented')
+                ReleaseJSObject: function (isolate: IntPtr, obj: JSObjectPtr) {
+                    jsFunctionOrObjectFactory.removeJSObjectById(obj)
 
                 },
 

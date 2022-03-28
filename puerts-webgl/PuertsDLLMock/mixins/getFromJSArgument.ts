@@ -38,9 +38,10 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
             var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(func);
             return jsfunc.id;
         },
-        GetJSObjectFromValue: function (isolate: IntPtr, value: IntPtr, isByRef: bool) {
-            // 按Function的方式实现
-            throw new Error('not implemented')
+        GetJSObjectFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
+            var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
+            var jsobj = jsFunctionOrObjectFactory.getOrCreateJSObject(obj);
+            return jsobj.id;
         },
         GetArrayBufferFromValue: function (isolate: IntPtr, value: MockIntPtr, /*out int */length: any, isOut: bool) {
             var ab = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<ArrayBuffer>(value);

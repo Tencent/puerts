@@ -11,4 +11,5 @@ declare const wx: any;
 
 declare type MockIntPtr = number;
 declare type JSFunctionPtr = number;
+declare type JSObjectPtr = number;
 // declare type MockIntPtr = number;

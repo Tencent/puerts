@@ -41,7 +41,8 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
             return jsfunc.id;
         },
         GetJSObjectFromResult: function (resultInfo: IntPtr) {
-            throw new Error('not implemented')
+            var jsobj = jsFunctionOrObjectFactory.getOrCreateJSObject(engine.lastReturnCSResult);
+            return jsobj.id;
         },
         GetArrayBufferFromResult: function (resultInfo: IntPtr, /*out int */length: any) {
             var ab: ArrayBuffer = engine.lastReturnCSResult;
