@@ -1,4 +1,4 @@
-name: ci
+name: unity-unittest
 
 on: 
   workflow_dispatch:
@@ -11,13 +11,13 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
-      - .github/workflows/ci.yml
+      - .github/workflows/unity-unittest.yml
   
 env:
   RUNID: 613573412
 
 jobs:
-  ci-v8:
+  unittest-v8:
     runs-on: windows-2019
 
     steps:
@@ -45,7 +45,7 @@ jobs:
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
           ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll   
-  ci-quickjs:
+  unittest-quickjs:
     runs-on: windows-2019
 
     steps:
@@ -75,7 +75,7 @@ jobs:
           msbuild /property:Configuration=Release Puerts.sln
           ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
           
-  ci-nodejs:
+  unittest-nodejs:
     runs-on: windows-2019
 
     steps:
