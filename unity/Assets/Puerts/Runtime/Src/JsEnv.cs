@@ -80,8 +80,8 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 16;
-            int libVersion = PuertsDLL.GetLibVersion();
+            const int libVersionExpect = 17;
+            int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
                 throw new InvalidProgramException("expect lib version " + libVersionExpect + ", but got " + libVersion);

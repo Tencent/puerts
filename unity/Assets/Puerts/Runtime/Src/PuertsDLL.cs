@@ -80,7 +80,7 @@ namespace Puerts
 #endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int GetLibVersion();
+        public static extern int GetApiLevel();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int GetLibBackend();

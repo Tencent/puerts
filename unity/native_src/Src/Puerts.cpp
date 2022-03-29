@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define LIB_VERSION 16
+#define API_LEVEL 17
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -22,9 +22,14 @@ using puerts::JsValueType;
 extern "C" {
 #endif
 
+// deprecated, delete in 1.4 plz
 V8_EXPORT int GetLibVersion()
 {
-    return LIB_VERSION;
+    return API_LEVEL;
+}
+V8_EXPORT int GetApiLevel()
+{
+    return API_LEVEL;
 }
 
 V8_EXPORT int GetLibBackend()
