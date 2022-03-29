@@ -388,11 +388,13 @@ void FScriptStructWrapper::New(
         void* Memory = nullptr;
 
         bool PassByPointer = false;
+        bool ForceNoCache = false;
 
-        if (Info.Length() == 2 && Info[0]->IsExternal())    // Call by Native
+        if (Info.Length() == 3 && Info[0]->IsExternal())    // Call by Native
         {
             Memory = v8::Local<v8::External>::Cast(Info[0])->Value();
             PassByPointer = Info[1]->BooleanValue(Isolate);
+            ForceNoCache = Info[2]->BooleanValue(Isolate);
         }
         else
         {
@@ -410,7 +412,7 @@ void FScriptStructWrapper::New(
                 }
             }
         }
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, PassByPointer);
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, PassByPointer, ForceNoCache);
     }
     else
     {
