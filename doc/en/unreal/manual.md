@@ -58,7 +58,7 @@ export default TS_Player;
 
 Then you can choose it in the UE editor.
 
-![select_character.png](../../../pic/select_character.png)
+![select_character.png](../../../doc/pic/select_character.png)
 
 - Can be identified by the UE, support constructor, support Override Blueprint Override method, support axial map Axis, Action event, support RPC
 

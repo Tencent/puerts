@@ -1,9 +1,0 @@
-assets/js/
-dist/
-node_modules/
-assets/html/*.woff
-assets/html/*.ttf
-assets/html/index.bundle.js.LICENSE.txt
-assets/html/index.bundle.js
-assets/html/index.bundle.debug.js.LICENSE.txt
-assets/html/index.bundle.debug.js

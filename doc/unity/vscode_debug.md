@@ -63,4 +63,4 @@ void Update()
 
 * 打开“ProjectSetting/Player”页面，把“Run In Background”勾选上
 
-![throttle cpu](../../pic/unity_run_in_background.png)
+![throttle cpu](../../doc/pic/unity_run_in_background.png)
