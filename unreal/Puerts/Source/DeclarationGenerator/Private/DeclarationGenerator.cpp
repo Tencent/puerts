@@ -180,12 +180,17 @@ bool IsChildOf(UClass* Class, const FString& Name)
     return IsChildOf(Class->GetSuperClass(), Name);
 }
 
-const FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+bool IsUEContainer(const char* name)
 {
-    return TypeInfo->IsObjectType() ? "cpp." : "";
+    return !(strncmp(name, "TArray", 6) && strncmp(name, "TSet", 4) && strncmp(name, "TMap", 4));
 }
 
-const FString GetName(const puerts::CTypeInfo* TypeInfo)
+FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+{
+    return TypeInfo->IsObjectType() && !(IsUEContainer(TypeInfo->Name())) ? "cpp." : "";
+}
+
+FString GetName(const puerts::CTypeInfo* TypeInfo)
 {
     FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
     if (TypeInfo->IsUEType())

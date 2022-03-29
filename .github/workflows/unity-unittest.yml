@@ -1,4 +1,4 @@
-name: ci
+name: unity-unittest
 
 on: 
   workflow_dispatch:
@@ -11,13 +11,13 @@ on:
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
-      - .github/workflows/ci.yml
+      - .github/workflows/unity-unittest.yml
   
 env:
   RUNID: 613573412
 
 jobs:
-  ci-v8:
+  unittest-v8:
     runs-on: windows-2019
 
     steps:
@@ -27,8 +27,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_v8.yml
-          name: v8_bin_win64
+          name: v8_bin
+          repo: puerts/backend-v8
           path: unity/native_src/
       - name: Build plugin
         run: |
@@ -43,7 +45,7 @@ jobs:
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
           ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll   
-  ci-quickjs:
+  unittest-quickjs:
     runs-on: windows-2019
 
     steps:
@@ -53,9 +55,10 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build_quickjs.yml
-          #run_id: ${{env.RUNID}}
           name: qjs_v8_bin
+          repo: puerts/backend-quickjs
           path: unity/native_src/
       - name: Build plugin
         run: |
@@ -72,7 +75,7 @@ jobs:
           msbuild /property:Configuration=Release Puerts.sln
           ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
           
-  ci-nodejs:
+  unittest-nodejs:
     runs-on: windows-2019
 
     steps:
@@ -82,8 +85,9 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          repo: puerts/backend-nodejs
           workflow: build_nodejs.yml
-          #run_id: ${{env.RUNID}}
           name: nodejs_bin
           path: unity/native_src/
       - name: Build plugin
@@ -100,17 +104,4 @@ jobs:
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
           ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
-          
-  test-workflow-download:
-    runs-on: windows-2019
-
-    steps:
-
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          path: ./
-      
 
