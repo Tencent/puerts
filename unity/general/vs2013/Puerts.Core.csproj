@@ -45,94 +45,85 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Assets\Puerts\Src\ArgumentHelper.cs">
-      <Link>Assets\Puerts\Src\ArgumentHelper.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\ArgumentHelper.cs">
+      <Link>Assets\Puerts\Runtime\Src\ArgumentHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\DataTranslate.cs">
-      <Link>Assets\Puerts\Src\DataTranslate.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\DataTranslate.cs">
+      <Link>Assets\Puerts\Runtime\Src\DataTranslate.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\GenericDelegate.cs">
-      <Link>Assets\Puerts\Src\GenericDelegate.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\GenericDelegate.cs">
+      <Link>Assets\Puerts\Runtime\Src\GenericDelegate.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\JsEnv.cs">
-      <Link>Assets\Puerts\Src\JsEnv.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\JsEnv.cs">
+      <Link>Assets\Puerts\Runtime\Src\JsEnv.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Loader.cs">
-      <Link>Assets\Puerts\Src\Loader.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Loader.cs">
+      <Link>Assets\Puerts\Runtime\Src\Loader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\NativeValueApiGeneric.cs">
-      <Link>Assets\Puerts\Src\NativeValueApiGeneric.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\NativeValueApiGeneric.cs">
+      <Link>Assets\Puerts\Runtime\Src\NativeValueApiGeneric.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\ObjectPool.cs">
-      <Link>Assets\Puerts\Src\ObjectPool.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\ObjectPool.cs">
+      <Link>Assets\Puerts\Runtime\Src\ObjectPool.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\PuertsDLL.cs">
-      <Link>Assets\Puerts\Src\PuertsDLL.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\PuertsDLL.cs">
+      <Link>Assets\Puerts\Runtime\Src\PuertsDLL.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\StaticCallbacks.cs">
-      <Link>Assets\Puerts\Src\StaticCallbacks.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticCallbacks.cs">
+      <Link>Assets\Puerts\Runtime\Src\StaticCallbacks.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\StaticTranslate.cs">
-      <Link>Assets\Puerts\Src\StaticTranslate.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticTranslate.cs">
+      <Link>Assets\Puerts\Runtime\Src\StaticTranslate.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\StaticWrapRegister.cs">
-      <Link>Assets\Puerts\Src\StaticWrapRegister.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticWrapRegister.cs">
+      <Link>Assets\Puerts\Runtime\Src\StaticWrapRegister.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\TypeExtensions.cs">
-      <Link>Assets\Puerts\Src\TypeExtensions.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
+      <Link>Assets\Puerts\Runtime\Src\TypeExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\TypeRegister.cs">
-      <Link>Assets\Puerts\Src\TypeRegister.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeRegister.cs">
+      <Link>Assets\Puerts\Runtime\Src\TypeRegister.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Utils.cs">
-      <Link>Assets\Puerts\Src\Utils.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Utils.cs">
+      <Link>Assets\Puerts\Runtime\Src\Utils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\TypedValue.cs">
-      <Link>Assets\Puerts\Src\TypedValue.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypedValue.cs">
+      <Link>Assets\Puerts\Runtime\Src\TypedValue.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\CJSImporter.cs">
-      <Link>Assets\Puerts\Src\Editor\CJSImporter.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\ReflectionWrap.cs">
+      <Link>Assets\Puerts\Runtime\Src\ReflectionWrap.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Configure.cs">
-      <Link>Assets\Puerts\Src\Editor\Configure.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\LazyWrap.cs">
+      <Link>Assets\Puerts\Runtime\Src\LazyWrap.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\DocResolver.cs">
-      <Link>Assets\Puerts\Src\Editor\DocResolver.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\CJSImporter.cs">
+      <Link>Assets\Puerts\Editor\Src\CJSImporter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\U2018Compatible.cs">
-      <Link>Assets\Puerts\Src\Editor\U2018Compatible.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\Configure.cs">
+      <Link>Assets\Puerts\Editor\Src\Configure.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\ReflectionWrap.cs">
-      <Link>Assets\Puerts\Src\ReflectionWrap.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\DocResolver.cs">
+      <Link>Assets\Puerts\Editor\Src\DocResolver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Utils.cs">
-      <Link>Assets\Puerts\Src\Editor\Generator\Utils.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\U2018Compatible.cs">
+      <Link>Assets\Puerts\Editor\Src\U2018Compatible.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\DTS.cs">
-      <Link>Assets\Puerts\Src\Editor\Generator\DTS.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\Utils.cs">
+      <Link>Assets\Puerts\Editor\Src\Generator\Utils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Wrapper.cs">
-      <Link>Assets\Puerts\Src\Editor\Generator\Wrapper.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\DTS.cs">
+      <Link>Assets\Puerts\Editor\Src\Generator\DTS.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\LazyWrap.cs">
-      <Link>Assets\Puerts\Src\LazyWrap.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\Wrapper.cs">
+      <Link>Assets\Puerts\Editor\Src\Generator\Wrapper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Src\Editor\Generator\Menu.cs">
-      <Link>Assets\Puerts\Src\Editor\Generator\Menu.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\Menu.cs">
+      <Link>Assets\Puerts\Editor\Src\Generator\Menu.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Assets\Puerts\Src\Editor\Resources\puerts\templates\wrapper-reg.tpl.cjs">
-      <Link>Assets\Puerts\Src\Editor\Resources\puerts\templates\wrapper-reg.tpl.cjs</Link>
-    </None>
-    <None Include="..\..\Assets\Puerts\Src\Editor\Resources\puerts\templates\dts.tpl.cjs">
-      <Link>Assets\Puerts\Src\Editor\Resources\puerts\templates\dts.tpl.cjs</Link>
-    </None>
-    <None Include="..\..\Assets\Puerts\Src\Editor\Resources\puerts\templates\wrapper.tpl.cjs">
-      <Link>Assets\Puerts\Src\Editor\Resources\puerts\templates\wrapper.tpl.cjs</Link>
-    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
