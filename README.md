@@ -49,7 +49,7 @@ puerts init
 
 * unreal：待发布
 
-* unity: [![release](https://img.shields.io/badge/release-v1.2.4-blue.svg)](https://github.com/Tencent/puerts/releases)
+* [![unity](https://img.shields.io/badge/release-v1.2.4-blue.svg)](https://github.com/Tencent/puerts/releases)
 
 ### changelog
 
