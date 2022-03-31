@@ -93,7 +93,7 @@ namespace puerts
 
     }*/
 
-    bool JSFunction::Invoke(bool HasResult)
+    bool JSFunction::Invoke(int argumentsLength, bool HasResult)
     {
         v8::Isolate* Isolate = ResultInfo.Isolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -103,7 +103,10 @@ namespace puerts
 
         V8Args.clear();
         JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        JsEngine->PushJSFunctionArgumentsCallback(Isolate, JsEngine->Idx, this);
+        if (argumentsLength > 0)
+        {
+            JsEngine->GetJSArgumentsCallback(Isolate, JsEngine->Idx, this);
+        }
         
         v8::TryCatch TryCatch(Isolate);
         auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());

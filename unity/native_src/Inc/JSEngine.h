@@ -178,7 +178,7 @@ public:
     int32_t Idx;
     
     CSharpModuleResolveCallback ModuleResolver;
-    CSharpPushJSFunctionArgumentsCallback PushJSFunctionArgumentsCallback;
+    CSharpPushJSFunctionArgumentsCallback GetJSArgumentsCallback;
     
 #if defined(WITH_QUICKJS)
     std::map<std::string, JSModuleDef*> ModuleCacheMap;

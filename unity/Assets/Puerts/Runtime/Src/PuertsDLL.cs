@@ -483,7 +483,7 @@ namespace Puerts
         public static extern void PushJSObjectForJSFunction(IntPtr function, IntPtr JSObject);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr InvokeJSFunction(IntPtr function, bool hasResult);
+        public static extern IntPtr InvokeJSFunction(IntPtr function, int argumentsLen, bool hasResult);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetFunctionLastExceptionInfo(IntPtr function, out int len);

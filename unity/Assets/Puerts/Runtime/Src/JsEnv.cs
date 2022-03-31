@@ -17,21 +17,17 @@ namespace Puerts
     public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
     public class JsEnv : IDisposable
     {
-        protected PushJSFunctionArgumentsCallback PushArgumentsCallback;
-        public void SetPushArgumentsCallback(PushJSFunctionArgumentsCallback callback) 
-        {
-            PushArgumentsCallback = callback;
-        }
-        public void UnsetPushArgumentsCallback() 
-        {
-            PushArgumentsCallback = null;
-        }
-        public void InvokePushArgumentsCallback(IntPtr nativeJsFuncPtr) 
-        {
-            if (PushArgumentsCallback == null) {
-                throw new Exception("PushArgumentsCallback is not found");
+        protected PushJSFunctionArgumentsCallback _ArgumentsPusher;
+
+        public PushJSFunctionArgumentsCallback ArgumentsPusher {
+            get 
+            {
+                return _ArgumentsPusher;
             }
-            PushArgumentsCallback(isolate, Idx, nativeJsFuncPtr);
+            set 
+            {
+                _ArgumentsPusher = value;
+            }
         }
 
         internal readonly int Idx;
@@ -635,9 +631,10 @@ namespace Puerts
             PuertsDLL.LogicTick(isolate);
             tickHandler.ForEach(fn =>
             {
-                SetPushArgumentsCallback((IntPtr isolate, int envIdx, IntPtr nativeJsFuncPtr) => { });
-                IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
-                UnsetPushArgumentsCallback();
+                IntPtr resultInfo = GenericDelegate.InvokeJSFunction(
+                    this, fn, 0, false, 
+                    (IntPtr isolate, int envIdx, IntPtr nativeJsFuncPtr) => {}
+                );
                 if (resultInfo==IntPtr.Zero)
                 {
                     var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);

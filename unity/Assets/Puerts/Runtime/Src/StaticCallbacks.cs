@@ -30,7 +30,18 @@ namespace Puerts
         [MonoPInvokeCallback(typeof(PushJSFunctionArgumentsCallback))]
         internal static void PushJSFunctionArgumentsCallback(IntPtr isolate, int jsEnvIdx, IntPtr nativeJsFuncPtr)
         {
-            JsEnv.jsEnvs[jsEnvIdx].InvokePushArgumentsCallback(nativeJsFuncPtr);
+            try 
+            {
+                if (JsEnv.jsEnvs[jsEnvIdx].ArgumentsPusher == null)
+                {
+                    throw new Exception("JsEnv.JSFunctionArgumentsPusher is not setted");
+                }
+                JsEnv.jsEnvs[jsEnvIdx].ArgumentsPusher(isolate, jsEnvIdx, nativeJsFuncPtr);
+            } 
+            catch(Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "JsEnvCallbackWrap c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
         }
 
         [MonoPInvokeCallback(typeof(V8FunctionCallback))]
