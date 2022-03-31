@@ -45,6 +45,12 @@ puerts init
 
 ## 版本相关
 
+### 最新版本
+
+* unreal：待发布
+
+* unity: [![release](https://img.shields.io/badge/release-v1.2.4-blue.svg)](https://github.com/Tencent/puerts/releases)
+
 ### changelog
 
 * [unreal](doc/unreal/changelog.md)
@@ -52,7 +58,7 @@ puerts init
 
 ### 已知问题
 
-各发布版本已知的，影响比较打的bug及其解决办法（如果有的话）
+各发布版本已知的，影响较大的bug及其修复办法
 
 * [unreal](doc/unreal/bugs.md)
 * [unity](doc/unity/bugs.md)
