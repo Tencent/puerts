@@ -1594,7 +1594,7 @@ function watch(configFilePath) {
             function postProcessPinType(valueDeclaration, pinType, leading) {
                 if (pinType.PinContainerType == UE.EPinContainerType.None) {
                     let pc = pinType.PinCategory;
-                    if (pc === "float") {
+                    if (pc === "float" || pc === "real") {
                         let cppType = tryGetAnnotation(valueDeclaration, "cpp", leading);
                         if (cppType === "int" || cppType === "byte") {
                             pinType.PinCategory = cppType;
