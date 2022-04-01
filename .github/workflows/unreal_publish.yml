@@ -1,4 +1,4 @@
-name: publish
+name: unreal publish
 
 on: 
   workflow_dispatch:
