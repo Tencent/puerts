@@ -1,0 +1,74 @@
+name: publish
+
+on: 
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'tag name'     
+        required: true
+
+env:
+  UE424_V8: "https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz"
+  UE425_V8: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+
+jobs:
+  
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+          
+      - name: Create Release Asset
+        run: |
+          wget -O v8_for_ue425.tgz -q  ${{env.UE425_V8}} 
+          tar xvfz v8_for_ue425.tgz -C unreal\Puerts\ThirdParty
+          cd unreal
+          tar cvfz puerts.tgz Puerts ReactUMG
+          mv puerts.tgz ..
+          cd ..
+          rm -r unreal\Puerts\ThirdParty\v8
+          wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
+          tar xvfz v8_for_ue424.tgz -C unreal\Puerts\ThirdParty
+          cd unreal
+          tar cvfz puerts_for_ue424_or_below.tgz Puerts ReactUMG
+          mv puerts_for_ue424_or_below.tgz ..
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: |
+            mac下如果遇到移入废纸篓问题，请
+            ~~~bash
+            cd Plugins/Puerts/ThirdParty
+            find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine 
+            ~~~
+          tag_name: Unreal_v${{ github.event.inputs.tag_name }}
+          release_name: Unreal_v${{ github.event.inputs.tag_name }}
+          draft: false
+          prerelease: false
+          
+      - name: Upload Puerts Plugins default
+        #id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./puerts.tgz
+          asset_name: puerts.tgz
+          asset_content_type: application/tgz
+          
+      - name: Upload Puerts Plugins UE424 Or Below
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./puerts_for_ue424_or_below.tgz
+          asset_name: puerts_for_ue424_or_below.tgz
+          asset_content_type: application/tgz
+          
