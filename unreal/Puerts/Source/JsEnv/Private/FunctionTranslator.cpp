@@ -243,6 +243,10 @@ void FFunctionTranslator::Call(
     if (Params)
     {
         FMemory::Memzero(Params, ParamsBufferSize);
+        if (Return)
+        {
+            Return->Property->InitializeValue_InContainer(Params);
+        }
     }
     for (int i = 0; i < Arguments.size(); ++i)
     {
