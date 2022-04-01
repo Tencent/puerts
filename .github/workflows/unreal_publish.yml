@@ -20,7 +20,7 @@ jobs:
           
       - name: Create Release Asset
         run: |
-          wget -O v8_for_ue425.tgz -q  ${{env.UE425_V8}} 
+          wget -O v8_for_ue425.tgz  ${{env.UE425_V8}} 
           tar xvfz v8_for_ue425.tgz -C unreal\Puerts\ThirdParty
           cd unreal
           tar cvfz puerts.tgz Puerts ReactUMG
