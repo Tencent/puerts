@@ -111,9 +111,16 @@ namespace Puerts.Editor
                 {
                     foreach (var filter in filters)
                     {
-                        if ((bool)filter.Invoke(null, new object[] { mbi }))
+                        if (filter.ReturnType == typeof(bool))
                         {
-                            return BindingMode.LazyBinding;
+                            if ((bool)filter.Invoke(null, new object[] { mbi }))
+                            {
+                                return BindingMode.SlowBinding;
+                            }
+                        }
+                        else if (filter.ReturnType == typeof(BindingMode))
+                        {
+                            return (BindingMode)filter.Invoke(null, new object[] { mbi });
                         }
                     }
                 }

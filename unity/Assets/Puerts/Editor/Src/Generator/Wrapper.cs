@@ -108,12 +108,20 @@ namespace Puerts.Editor
 
                 public static TypeGenInfo FromType(Type type, List<Type> genTypes)
                 {
+                    // 关于懒绑定的成员函数：先全部丢进lazy收集器中。尔后如果发现有同名方法是不lazy的，那么它也要变成不lazy
+                    // 做这个事情的原因是目前还没法做到重载级别的lazy。
                     LazyMemberCollector lazyCollector = new LazyMemberCollector();
 
                     var methodLists = Puerts.Utils.GetMethodAndOverrideMethod(type, Utils.Flags)
                         .Where(m => !Utils.IsNotSupportedMember(m))
                         .Where(m => !m.IsSpecialName && Puerts.Utils.IsNotGenericOrValidGeneric(m))
-                        .Select(m=> { if (Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding) { lazyCollector.Add(m); } return m; })
+                        .Where(m => 
+                        { 
+                            Utils.BindingMode mode = Utils.getBindingMode(m);
+                            if (mode == Utils.BindingMode.DontBinding) return false;
+                            if (mode == Utils.BindingMode.LazyBinding) lazyCollector.Add(m); 
+                            return true; 
+                        })
                         .ToArray();
 
                     var extensionMethodsList = Puerts.Utils.GetExtensionMethodsOf(type);
@@ -127,7 +135,13 @@ namespace Puerts.Editor
                             extensionMethodsList = extensionMethodsList.Where(m => genTypes.Contains(m.DeclaringType));
                         }
                         extensionMethodsList
-                            .Select(m => { if (Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding) lazyCollector.Add(m); return m; });
+                            .Where(m => 
+                            { 
+                                Utils.BindingMode mode = Utils.getBindingMode(m);
+                                if (mode == Utils.BindingMode.DontBinding) return false;
+                                if (mode == Utils.BindingMode.LazyBinding) lazyCollector.Add(m); 
+                                return true; 
+                            });
                     }
 
                     foreach (var m in methodLists)
@@ -142,7 +156,9 @@ namespace Puerts.Editor
                         foreach (var m in extensionMethodsList)
                         {
                             if (lazyCollector.Contains(m.Name) && Utils.getBindingMode(m) != Utils.BindingMode.LazyBinding)
-                            { lazyCollector.Remove(m.Name); }
+                            { 
+                                lazyCollector.Remove(m.Name); 
+                            }
                         }
                     }
 
@@ -155,8 +171,6 @@ namespace Puerts.Editor
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = false })
                         .ToDictionary(i => i.Key, i => i.Cast<MethodBase>().ToList()) : new Dictionary<MethodKey, List<MethodBase>>();
 
-
-
                     var indexs = type.GetProperties(Utils.Flags)
                         .Where(m => !Utils.IsNotSupportedMember(m))
                         .Where(p => p.GetIndexParameters().GetLength(0) == 1)
@@ -166,20 +180,22 @@ namespace Puerts.Editor
                         .Where(m => !Utils.IsNotSupportedMember(m) && m.IsSpecialName && m.Name.StartsWith("op_") && m.IsStatic)
                         .Where(m => m.Name != "op_Explicit" && m.Name != "op_Implicit")
                         .Where(m =>
-                        {
-                            bool isLazy = Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding;
-                            if (isLazy) lazyCollector.Add(m);
-                            return !isLazy;
+                        { 
+                            Utils.BindingMode mode = Utils.getBindingMode(m);
+                            if (mode == Utils.BindingMode.DontBinding) return false;
+                            if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
+                            return true; 
                         })
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
                         .Select(i => i.Cast<MethodBase>().ToList());
                     var constructors = type.GetConstructors(Utils.Flags)
                         .Where(m => !Utils.IsNotSupportedMember(m))
                         .Where(m =>
-                        {
-                            bool isLazy = Utils.getBindingMode(m) == Utils.BindingMode.LazyBinding;
-                            if (isLazy) lazyCollector.Add(m);
-                            return !isLazy;
+                        { 
+                            Utils.BindingMode mode = Utils.getBindingMode(m);
+                            if (mode == Utils.BindingMode.DontBinding) return false;
+                            if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
+                            return true; 
                         })
                         .Cast<MethodBase>()
                         .ToList();
@@ -213,20 +229,22 @@ namespace Puerts.Editor
                             .Where(p => !Utils.IsNotSupportedMember(p))
                             .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
                             .Where(p =>
-                            {
-                                bool isLazy = Utils.getBindingMode(p) == Utils.BindingMode.LazyBinding;
-                                if (isLazy) lazyCollector.Add(p);
-                                return !isLazy;
+                            { 
+                                Utils.BindingMode mode = Utils.getBindingMode(p);
+                                if (mode == Utils.BindingMode.DontBinding) return false;
+                                if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(p); return false; }
+                                return true; 
                             })
                             .Select(p => PropertyGenInfo.FromPropertyInfo(p))
                             .Concat(
                                 type.GetFields(Utils.Flags)
                                     .Where(f => !Utils.IsNotSupportedMember(f))
                                     .Where(f =>
-                                    {
-                                        bool isLazy = Utils.getBindingMode(f) == Utils.BindingMode.LazyBinding;
-                                        if (isLazy) lazyCollector.Add(f);
-                                        return !isLazy;
+                                    { 
+                                        Utils.BindingMode mode = Utils.getBindingMode(f);
+                                        if (mode == Utils.BindingMode.DontBinding) return false;
+                                        if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(f); return false; }
+                                        return true; 
                                     })
                                     .Select(f => PropertyGenInfo.FromFieldInfo(f))
                             )

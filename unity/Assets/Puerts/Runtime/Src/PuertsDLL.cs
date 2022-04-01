@@ -79,8 +79,22 @@ namespace Puerts
         const string DLLNAME = "puerts";
 #endif
 
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetApiLevel")]
+        protected static extern int _GetApiLevel();
+
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int GetApiLevel();
+        public static extern int GetLibVersion();
+
+        public static int GetApiLevel() {
+            try 
+            {
+                return _GetApiLevel();
+            } 
+            catch(Exception e) 
+            {
+                return GetLibVersion();
+            }
+        }
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern int GetLibBackend();
