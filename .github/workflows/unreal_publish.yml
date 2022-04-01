@@ -3,8 +3,8 @@ name: unreal publish
 on: 
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: 'tag name'     
+      publish_version:
+        description: 'publish_version'     
         required: true
 
 env:
@@ -45,8 +45,8 @@ jobs:
             cd Plugins/Puerts/ThirdParty
             find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine 
             ~~~
-          tag_name: Unreal_v${{ github.event.inputs.tag_name }}
-          release_name: Unreal_v${{ github.event.inputs.tag_name }}
+          tag_name: Unreal_v${{ github.event.inputs.publish_version }}
+          release_name: Unreal_v${{ github.event.inputs.publish_version }}
           draft: false
           prerelease: false
           
