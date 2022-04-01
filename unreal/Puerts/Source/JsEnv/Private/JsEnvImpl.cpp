@@ -2435,7 +2435,7 @@ void FJsEnvImpl::BindStruct(
     DataTransfer::SetPointer(
         MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
 
-    if (LIKELY(!ForceNoCache))    // default: false
+    if (LIKELY(!ForceNoCache || !PassByPointer))
     {
         StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
     }

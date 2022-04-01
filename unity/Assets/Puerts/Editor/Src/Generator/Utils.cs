@@ -214,8 +214,14 @@ namespace Puerts.Editor
         
             public static Type ToConstraintType(Type type, bool isGenericTypeDefinition)
             {
-                if (!isGenericTypeDefinition && type.IsGenericParameter && type.BaseType != null && type.BaseType != typeof(object) && type.BaseType != typeof(ValueType)) return ToConstraintType(type.BaseType, false);
-                else return type;
+                if (type.IsGenericType)
+                    return type.GetGenericTypeDefinition().MakeGenericType(
+                        type.GetGenericArguments().Select(t=> ToConstraintType(t, isGenericTypeDefinition)).ToArray()
+                    );
+                else if (!isGenericTypeDefinition && type.IsGenericParameter && type.BaseType != null && type.BaseType != typeof(object) && type.BaseType != typeof(ValueType)) 
+                    return ToConstraintType(type.BaseType, false);
+                else 
+                    return type;
             }
         
             public static bool IsGetterOrSetter(MethodInfo method)
@@ -245,9 +251,16 @@ namespace Puerts.Editor
 
             public static Type RemoveRefAndToConstraintType(Type type)
             {
-                if (type.IsGenericParameter && type.BaseType != null && type.BaseType != typeof(object) && type.BaseType != typeof(ValueType)) return RemoveRefAndToConstraintType(type.BaseType);
-                else if (type.IsByRef) return RemoveRefAndToConstraintType(type.GetElementType());
-                else return type;
+                if (type.IsGenericType)
+                    return type.GetGenericTypeDefinition().MakeGenericType(
+                        type.GetGenericArguments().Select(t=> RemoveRefAndToConstraintType(t)).ToArray()
+                    );
+                else if (type.IsGenericParameter && type.BaseType != null && type.BaseType != typeof(object) && type.BaseType != typeof(ValueType))
+                    return RemoveRefAndToConstraintType(type.BaseType);
+                else if (type.IsByRef) 
+                    return RemoveRefAndToConstraintType(type.GetElementType());
+                else 
+                    return type;
             }
 
             public static Dictionary<Type, MethodInfo[]> extensionMethods = null;

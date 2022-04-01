@@ -570,7 +570,8 @@ public:
 #else
         auto Owner = Property->GetOuter();
 #endif
-        if (Owner && Owner->IsA<UScriptStruct>() && Property->GetOffset_ForInternal() == 0)
+        if (Owner && Owner->IsA<UScriptStruct>() && Property->GetOffset_ForInternal() == 0 &&
+            Owner->GetFName() != TEXT("PropertyMetaRoot"))
         {
             ForceNoCache = true;
         }
