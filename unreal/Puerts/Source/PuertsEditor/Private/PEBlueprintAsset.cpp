@@ -224,11 +224,28 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
         }
     }
 
-    FEdGraphPinType PinType(InGraphPinType.PinCategory, NAME_None, InGraphPinType.PinSubCategoryObject,
+    FName InGraphSubCategory;
+    FName InPinValueSubCategory;
+
+#if (ENGINE_MAJOR_VERSION >= 5)
+    if (InGraphPinType.PinCategory == UEdGraphSchema_K2::PC_Float)
+    {
+        InGraphPinType.PinCategory = UEdGraphSchema_K2::PC_Real;
+        InGraphSubCategory = UEdGraphSchema_K2::PC_Double;
+    }
+    if (InPinValueType.PinCategory == UEdGraphSchema_K2::PC_Float)
+    {
+        InPinValueType.PinCategory = UEdGraphSchema_K2::PC_Real;
+        InPinValueSubCategory = UEdGraphSchema_K2::PC_Double;
+    }
+#endif
+    
+    FEdGraphPinType PinType(InGraphPinType.PinCategory, InGraphSubCategory, InGraphPinType.PinSubCategoryObject,
         (EPinContainerType) InGraphPinType.PinContainerType, InGraphPinType.bIsReference, FEdGraphTerminalType());
     if (PinType.ContainerType == EPinContainerType::Map)
     {
         PinType.PinValueType.TerminalCategory = InPinValueType.PinCategory;
+        PinType.PinValueType.TerminalSubCategory = InPinValueSubCategory;
         PinType.PinValueType.TerminalSubCategoryObject = InPinValueType.PinSubCategoryObject;
         if (InPinValueType.PinSubCategoryObject && InPinValueType.PinCategory == UEdGraphSchema_K2::PC_Object)
         {
