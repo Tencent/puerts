@@ -99,10 +99,10 @@ namespace Puerts.Editor
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
             }
             public enum BindingMode {
-                FastBinding = 0,
-                SlowBinding = 1,
-                LazyBinding = 2,
-                DontBinding = 3,
+                FastBinding = 0, // generate static wrapper
+                SlowBinding = 1, // useless now. dont use
+                LazyBinding = 2, // reflect during first call
+                DontBinding = 3, // not able to called in runtime. Also will not generate d.ts
             }
 
             internal static BindingMode getBindingMode(MemberInfo mbi) 
