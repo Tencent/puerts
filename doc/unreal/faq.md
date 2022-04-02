@@ -59,4 +59,10 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 关闭AsyncLoadingThreadEnabled选项（该选项ue4默认关闭, ue5默认打开了）
 
+## 应如何避免"access a invalid object"异常
 
+那个异常是puerts内部的对象生命周期跟踪功能抛的，如果一个对象被这功能标记为无效，所有对其所有调用（包括UObject::IsValid，也是一个普通的UE调用），都会抛异常。
+
+技术上“对象生命周期跟踪功能”添加一个判断的api很简单（比写这faq简单）。但加这种api会导致业务到处都是这类判断，影响业务的代码可读性。
+
+建议出现这种问题，应该设计上解决，避免持有无效对象（比如常见的切场景UE会强制删actor，那么切场景时应通知ts清理），解决不了又感觉可以忽略就try-catch。
