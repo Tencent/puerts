@@ -1987,7 +1987,7 @@ function watch(configFilePath:string) {
             function postProcessPinType(valueDeclaration: ts.Node,  pinType: UE.PEGraphPinType, leading: boolean):void {
                 if (pinType.PinContainerType == UE.EPinContainerType.None) {
                     let pc = pinType.PinCategory;
-                    if (pc === "float" || pc === "real") {
+                    if (pc === "float") {
                         let cppType = tryGetAnnotation(valueDeclaration, "cpp", leading);
                         if (cppType === "int" || cppType === "byte") {
                             pinType.PinCategory = cppType;
