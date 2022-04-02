@@ -239,7 +239,7 @@ static FEdGraphPinType ToFEdGraphPinType(FPEGraphPinType InGraphPinType, FPEGrap
         InPinValueSubCategory = UEdGraphSchema_K2::PC_Double;
     }
 #endif
-    
+
     FEdGraphPinType PinType(InGraphPinType.PinCategory, InGraphSubCategory, InGraphPinType.PinSubCategoryObject,
         (EPinContainerType) InGraphPinType.PinContainerType, InGraphPinType.bIsReference, FEdGraphTerminalType());
     if (PinType.ContainerType == EPinContainerType::Map)
