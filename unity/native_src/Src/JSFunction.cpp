@@ -81,12 +81,19 @@ namespace puerts
         }
     }
 
+    void JSFunction::PushArgument(FValue arg)
+    {
+        v8::Isolate* Isolate = ResultInfo.Isolate;
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        V8Args.push_back(ToV8(Isolate, Context, arg));
+    }
+
     /*void JSFunction::SetResult(v8::MaybeLocal<v8::Value> maybeValue)
     {
 
     }*/
 
-    bool JSFunction::Invoke(bool HasResult)
+    bool JSFunction::Invoke(int argumentsLength, bool HasResult)
     {
         v8::Isolate* Isolate = ResultInfo.Isolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -94,12 +101,13 @@ namespace puerts
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
 
-        std::vector< v8::Local<v8::Value>> V8Args;
-        for (int i = 0; i < Arguments.size(); ++i)
+        V8Args.clear();
+        JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        if (argumentsLength > 0)
         {
-            V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
+            JsEngine->GetJSArgumentsCallback(Isolate, JsEngine->Idx, this);
         }
-        Arguments.clear();
+        
         v8::TryCatch TryCatch(Isolate);
         auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         
