@@ -6,6 +6,8 @@
  * which is part of this source code package.
  */
 
+#ifndef WITH_QUICKJS
+
 #include "pesapi.h"
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
@@ -566,3 +568,5 @@ void pesapi_define_class(const char* type_name, const char* super_type_name, pes
 }
 
 EXTERN_C_END
+
+#endif

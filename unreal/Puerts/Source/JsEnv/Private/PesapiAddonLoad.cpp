@@ -6,6 +6,8 @@
  * which is part of this source code package.
  */
 
+#ifndef WITH_QUICKJS
+
 #include "pesapi.h"
 #include "CoreMinimal.h"
 
@@ -88,3 +90,5 @@ int pesapi_load_addon(const char* path, const char* module_name)
     return LoadAddon(path, module_name);
 }
 EXTERN_C_END
+
+#endif

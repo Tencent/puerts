@@ -47,7 +47,7 @@
 
 #if !defined(WITH_NODEJS)
 
-#if V8_MAJOR_VERSION < 8
+#if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
 
 #if PLATFORM_WINDOWS
 #include "Blob/Win64/NativesBlob.h"
@@ -289,7 +289,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
 #if !defined(WITH_NODEJS)
-#if V8_MAJOR_VERSION < 8
+#if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
     std::unique_ptr<v8::StartupData> NativesBlob;
     if (!NativesBlob)
     {
@@ -762,12 +762,14 @@ FJsEnvImpl::~FJsEnvImpl()
     StopPolling();
 #endif
 
+#ifndef WITH_QUICKJS
     for (auto& KV : HashToModuleInfo)
     {
         delete KV.second;
     }
     HashToModuleInfo.clear();
     PathToModule.Empty();
+#endif
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
@@ -2927,6 +2929,7 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
+#ifndef WITH_QUICKJS
 std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::FindModuleInfo(v8::Local<v8::Module> Module)
 {
     auto Range = HashToModuleInfo.equal_range(Module->GetIdentityHash());
@@ -3068,6 +3071,7 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
 
     return Module;
 }
+#endif
 
 void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor)
 {
@@ -3092,6 +3096,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
     v8::Context::Scope ContextScope(Context);
+#ifndef WITH_QUICKJS
     if (OutPath.EndsWith(".mjs"))
     {
         v8::TryCatch TryCatch(Isolate);
@@ -3116,6 +3121,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         }
     }
     else
+#endif
     {
         FString Script;
         FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());

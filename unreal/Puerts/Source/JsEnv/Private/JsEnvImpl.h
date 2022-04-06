@@ -278,6 +278,7 @@ private:
     void ConstructPendingObject(UObject* PendingObject);
 #endif
 
+#ifndef WITH_QUICKJS
     v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName);
 
     v8::MaybeLocal<v8::Module> FetchCJSModuleAsESModule(v8::Local<v8::Context> Context, const FString& ModuleName);
@@ -293,6 +294,7 @@ private:
 
     static v8::MaybeLocal<v8::Module> ResolveModuleCallback(
         v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier, v8::Local<v8::Module> Referrer);
+#endif
 
     struct ObjectMerger;
 
@@ -608,9 +610,11 @@ private:
 
     FDelegateHandle AsyncLoadingFlushUpdateHandle;
 
+#ifndef WITH_QUICKJS
     TMap<FString, v8::Global<v8::Module>> PathToModule;
 
     std::unordered_multimap<int, FModuleInfo*> HashToModuleInfo;
+#endif
 
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;
