@@ -73,9 +73,13 @@ public:
 
     ~JSFunction();
 
-    bool Invoke(bool HasResult);
+    bool Invoke(int argumentsLength, bool HasResult);
 
     std::vector<FValue> Arguments;
+
+    std::vector< v8::Local<v8::Value>> V8Args;
+
+    void PushArgument(FValue arg);
 
     v8::UniquePersistent<v8::Function> GFunction;
 

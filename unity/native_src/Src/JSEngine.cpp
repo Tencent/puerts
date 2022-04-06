@@ -16,7 +16,7 @@ namespace puerts
     v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size)
     {
         v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
-        void* Buff = Ab->GetContents().Data();
+        void* Buff = Ab->GetBackingStore().get()->Data();
         ::memcpy(Buff, Ptr, Size);
         return Ab;
     }
