@@ -1,4 +1,4 @@
-name: publish
+name: unity publish
 
 on: 
   workflow_dispatch:
@@ -297,28 +297,28 @@ jobs:
       
       - name: Retrieve version
         run: |
-          echo "PLUGIN_VERSION=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=LIB_VERSION\s)(\d+)')" >> $GITHUB_ENV
+          echo "API_LEVEL=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=API_LEVEL\s)(\d+)')" >> $GITHUB_ENV
             
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_V8
-          path: V8/Plugins/
+          path: V8/Puerts/Runtime/Plugins/
           
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_Quickjs
-          path: Quickjs/Plugins/
+          path: Quickjs/Puerts/Runtime/Plugins/
 
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_Nodejs
-          path: Nodejs/Plugins/
+          path: Nodejs/Puerts/Editor/Plugins/
           
       - name: Create Release Asset
         run: |
-          cd V8/ && tar cvfz ../Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
-          cd Quickjs/ && tar cvfz ../Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
-          cd Nodejs/ && tar cvfz ../Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz Plugins && cd -
+          cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
           
       - name: Create Release
         id: create_release
@@ -327,10 +327,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: |
-            mac下如果遇到移入废纸篓问题，请使用
-            sudo xattr -r -d com.apple.quarantine puerts.bundle
-          tag_name: Unity_Plugin_${{ github.event.inputs.tag_name }}
-          release_name: Unity_Plugin_${{ github.event.inputs.tag_name }},Version:${{ env.PLUGIN_VERSION }}
+            中文版本请查看 [`doc/unity/changelog.md`](https://github.com/Tencent/puerts/blob/master/doc/unity/changelog.md)
+          tag_name: Unity_v${{ github.event.inputs.tag_name }}
+          release_name: Unity_v${{ github.event.inputs.tag_name }},ApiLevel:${{ env.API_LEVEL }}
           draft: false
           prerelease: false
           
@@ -341,8 +340,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz
-          asset_name: Plugins_V8_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
           asset_content_type: application/tgz
           
       - name: Upload Quickjs Plugins
@@ -352,8 +351,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
-          asset_name: Plugins_Quickjs_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_path: ./PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz
           asset_content_type: application/tgz
           
       - name: Upload Nodejs Plugins
@@ -363,10 +362,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz
-          asset_name: Plugins_Nodejs_ver${{ env.PLUGIN_VERSION }}.tgz
+          asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
           asset_content_type: application/tgz
 
-      - name: Trigger demo/upm repository update
-        run: |
-          curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json" https://api.github.com/repos/zombieyang/puerts_unity_demo/actions/workflows/sync-package.yml/dispatches -d '{"ref": "master", "inputs": {"push_tag_version": "${{ github.event.inputs.tag_name }}"}}'
+      # - name: Trigger demo/upm repository update
+      #   run: |
+      #     curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json" https://api.github.com/repos/zombieyang/puerts_unity_demo/actions/workflows/sync-package.yml/dispatches -d '{"ref": "master", "inputs": {"push_tag_version": "${{ github.event.inputs.tag_name }}"}}'
