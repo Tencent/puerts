@@ -115,7 +115,7 @@ namespace Puerts.Editor
                         {
                             if ((bool)filter.Invoke(null, new object[] { mbi }))
                             {
-                                return BindingMode.SlowBinding;
+                                return BindingMode.LazyBinding;
                             }
                         }
                         else if (filter.ReturnType == typeof(BindingMode))
