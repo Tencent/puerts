@@ -1,4 +1,4 @@
-name: unity-unittest
+name: unity unittest
 
 on: 
   workflow_dispatch:
