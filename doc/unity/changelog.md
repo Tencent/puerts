@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.3.1] - 2022-04-06
+1. 修复UPM安装时安卓会识别到iOS库的问题
+2. 修复旧有filter无效的问题
+3. 主仓库加上了asmdef
+
 ## [1.3.0] - 2022-04-05
 0. 终于支持UPM！
 1. 重排了整体目录结构，使puerts符合unity package的结构标准。
