@@ -1,4 +1,3 @@
-using System.Net.Mime;
 /*
 * Tencent is pleased to support the open source community by making Puerts available.
 * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
@@ -6,6 +5,7 @@ using System.Net.Mime;
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+using System.Net.Mime;
 #if PUERTS_GENERAL || UNITY_EDITOR
 using System.IO;
 #endif
