@@ -32,6 +32,9 @@
 #include "CodeGenerator.h"
 #include "JSClassRegister.h"
 #include "Engine/CollisionProfile.h"
+#if (ENGINE_MAJOR_VERSION >= 5)
+#include "ToolMenus.h"
+#endif
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -1030,10 +1033,38 @@ private:
     TSharedPtr<class FUICommandList> PluginCommands;
     TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
 
+#if (ENGINE_MAJOR_VERSION >= 5)
+    void RegisterMenus()
+    {
+        // Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
+        FToolMenuOwnerScoped OwnerScoped(this);
+
+        {
+            UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+            {
+                FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+                Section.AddMenuEntryWithCommandList(FGenDTSCommands::Get().PluginAction, PluginCommands);
+            }
+        }
+
+        {
+            UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
+            {
+                FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("PluginTools");
+                {
+                    FToolMenuEntry& Entry =
+                        Section.AddEntry(FToolMenuEntry::InitToolBarButton(FGenDTSCommands::Get().PluginAction));
+                    Entry.SetCommandList(PluginCommands);
+                }
+            }
+        }
+    }
+#else
     void AddToolbarExtension(FToolBarBuilder& Builder)
     {
         Builder.AddToolBarButton(FGenDTSCommands::Get().PluginAction);
     }
+#endif
 
     void GenUeDts()
     {
@@ -1074,6 +1105,10 @@ public:
         PluginCommands->MapAction(FGenDTSCommands::Get().PluginAction,
             FExecuteAction::CreateRaw(this, &FDeclarationGenerator::GenUeDts), FCanExecuteAction());
 
+#if (ENGINE_MAJOR_VERSION >= 5)
+        UToolMenus::RegisterStartupCallback(
+            FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FDeclarationGenerator::RegisterMenus));
+#else
         FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 
         {
@@ -1083,6 +1118,7 @@ public:
 
             LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
         }
+#endif
 
         ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen"), TEXT("Execute GenDTS action"),
             FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
@@ -1091,6 +1127,9 @@ public:
     void ShutdownModule() override
     {
         // IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this);
+#if (ENGINE_MAJOR_VERSION >= 5)
+        UToolMenus::UnRegisterStartupCallback(this);
+#endif
         FGenDTSStyle::Shutdown();
         FGenDTSCommands::Unregister();
     }
