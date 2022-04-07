@@ -10,7 +10,7 @@
 
 * 点击如下按钮进行声明文件的生成
 
-![puerts_gen_dts.png](../../pic/puerts_gen_dts.png)
+![puerts_gen_dts.png](../../doc/pic/puerts_gen_dts.png)
 
 * 或者，也可以通过控制台命令生成声明文件：`Puerts.Gen`
     - 注：UE5 EA版的工具栏扩展按钮目前无法使用，故可用这种方式替代。

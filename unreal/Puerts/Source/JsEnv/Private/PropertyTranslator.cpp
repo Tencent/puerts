@@ -54,7 +54,13 @@ void FPropertyTranslator::Getter(
     }
     else
     {
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, FV8Utils::GetPointer(Info.Holder()), true));
+        auto Ptr = FV8Utils::GetPointer(Info.Holder());
+        if (!Ptr)
+        {
+            FV8Utils::ThrowException(Isolate, "access a null struct");
+            return;
+        }
+        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, Ptr, true));
     }
 }
 
@@ -93,7 +99,13 @@ void FPropertyTranslator::Setter(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     }
     else
     {
-        JsToUEInContainer(Isolate, Context, Value, FV8Utils::GetPointer(Info.Holder()), true);
+        auto Ptr = FV8Utils::GetPointer(Info.Holder());
+        if (!Ptr)
+        {
+            FV8Utils::ThrowException(Isolate, "access a null struct");
+            return;
+        }
+        JsToUEInContainer(Isolate, Context, Value, Ptr, true);
     }
 }
 
@@ -553,6 +565,16 @@ public:
         {
             ParamShallowCopySize = StructProperty->Struct->GetStructureSize();
         }
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+        auto Owner = Property->GetOwnerUObject();
+#else
+        auto Owner = Property->GetOuter();
+#endif
+        if (Owner && Owner->IsA<UScriptStruct>() && Property->GetOffset_ForInternal() == 0 &&
+            Owner->GetFName() != TEXT("PropertyMetaRoot"))
+        {
+            ForceNoCache = true;
+        }
     }
 
     v8::Local<v8::Value> UEToJs(
@@ -569,7 +591,7 @@ public:
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
-            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
+            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer, ForceNoCache);
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,

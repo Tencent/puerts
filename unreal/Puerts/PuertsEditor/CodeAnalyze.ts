@@ -1601,12 +1601,16 @@ function watch(configFilePath:string) {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
                 changed = true;
+            } else {
+                fileVersions[fileName].processed = true;
             }
         });
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, false);
                 changed = true;
+            } else {
+                fileVersions[fileName].processed = true;
             }
         });
         if (changed) {

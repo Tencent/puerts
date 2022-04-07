@@ -241,9 +241,19 @@ void FFunctionTranslator::Call(
     }
 #endif
     if (Params)
-        CallFunction->InitializeStruct(Params);
+    {
+        FMemory::Memzero(Params, ParamsBufferSize);
+        if (Return)
+        {
+            Return->Property->InitializeValue_InContainer(Params);
+        }
+    }
     for (int i = 0; i < Arguments.size(); ++i)
     {
+        if (Arguments[i]->ParamShallowCopySize == 0)
+        {
+            Arguments[i]->Property->InitializeValue_InContainer(Params);
+        }
         if (UNLIKELY(ArgumentDefaultValues && Info[i]->IsUndefined()))
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
@@ -265,16 +275,9 @@ void FFunctionTranslator::Call(
     for (int i = 0; i < Arguments.size(); ++i)
     {
         Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
-    }
-
-    if (Params)
-    {
-        for (int i = 0; i < Arguments.size(); ++i)
+        if (Arguments[i]->ParamShallowCopySize == 0)
         {
-            if (Arguments[i]->ParamShallowCopySize == 0)
-            {
-                Arguments[i]->Property->DestroyValue_InContainer(Params);
-            }
+            Arguments[i]->Property->DestroyValue_InContainer(Params);
         }
     }
 }
@@ -289,9 +292,15 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 #endif
 
     if (Params)
-        Function->InitializeStruct(Params);
+    {
+        FMemory::Memzero(Params, ParamsBufferSize);
+    }
     for (int i = 0; i < Arguments.size(); ++i)
     {
+        if (Arguments[i]->ParamShallowCopySize == 0)
+        {
+            Arguments[i]->Property->InitializeValue_InContainer(Params);
+        }
         if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
         {
             return;
@@ -309,16 +318,9 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     for (int i = 0; i < Arguments.size(); ++i)
     {
         Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
-    }
-
-    if (Params)
-    {
-        for (int i = 0; i < Arguments.size(); ++i)
+        if (Arguments[i]->ParamShallowCopySize == 0)
         {
-            if (Arguments[i]->ParamShallowCopySize == 0)
-            {
-                Arguments[i]->Property->DestroyValue_InContainer(Params);
-            }
+            Arguments[i]->Property->DestroyValue_InContainer(Params);
         }
     }
 }

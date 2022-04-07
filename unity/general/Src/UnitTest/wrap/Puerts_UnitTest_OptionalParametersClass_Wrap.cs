@@ -610,26 +610,21 @@ namespace PuertsStaticWrap
                 BlittableCopy = false,
                 Constructor = Constructor,
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
-                {
-                    { new Puerts.MethodKey {Name = "Test", IsStatic = false}, M_Test },
-{ new Puerts.MethodKey {Name = "Test2", IsStatic = false}, M_Test2 },
-{ new Puerts.MethodKey {Name = "Test3", IsStatic = false}, M_Test3 },
-{ new Puerts.MethodKey {Name = "Test4", IsStatic = false}, M_Test4 },
-{ new Puerts.MethodKey {Name = "Test5", IsStatic = false}, M_Test5 },
-{ new Puerts.MethodKey {Name = "Test6", IsStatic = false}, M_Test6 },
-{ new Puerts.MethodKey {Name = "TestFilter", IsStatic = false}, M_TestFilter }
+                {   
+                    { new Puerts.MethodKey { Name = "Test", IsStatic = false}, M_Test },
+                    { new Puerts.MethodKey { Name = "Test2", IsStatic = false}, M_Test2 },
+                    { new Puerts.MethodKey { Name = "Test3", IsStatic = false}, M_Test3 },
+                    { new Puerts.MethodKey { Name = "Test4", IsStatic = false}, M_Test4 },
+                    { new Puerts.MethodKey { Name = "Test5", IsStatic = false}, M_Test5 },
+                    { new Puerts.MethodKey { Name = "Test6", IsStatic = false}, M_Test6 },
+                    { new Puerts.MethodKey { Name = "TestFilter", IsStatic = false}, M_TestFilter }
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
                 {
                     
                 },
-                LazyMethods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
-                {
-                    
-                },
-                LazyProperties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
-                {
-                    
+                LazyMembers = new System.Collections.Generic.List<Puerts.LazyMemberRegisterInfo>()
+                {   
                 }
             };
         }

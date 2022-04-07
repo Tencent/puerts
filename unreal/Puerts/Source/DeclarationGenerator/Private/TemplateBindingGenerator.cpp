@@ -3,6 +3,7 @@
 #include "TemplateBindingGenerator.h"
 #include "JSClassRegister.h"
 #include "Interfaces/IPluginManager.h"
+#include "CoreUObject.h"
 
 struct FGenImp
 {
@@ -67,6 +68,8 @@ struct FGenImp
 
     void GenClass(const puerts::JSClassDefinition* ClassDefinition)
     {
+        if (IsUEContainer(ClassDefinition->CPPTypeName))
+            return;
         Output << "    class " << ClassDefinition->CPPTypeName;
         if (ClassDefinition->CPPSuperTypeName)
         {
