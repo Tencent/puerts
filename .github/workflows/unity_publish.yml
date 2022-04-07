@@ -363,7 +363,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
-          asset_name: PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: "PuerTS_Nodejs_${{ github.event.inputs.tag_name }}_EDITOR_.tgz"
           asset_content_type: application/tgz
 
       # - name: Trigger demo/upm repository update
