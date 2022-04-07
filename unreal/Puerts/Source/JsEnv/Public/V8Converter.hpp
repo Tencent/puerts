@@ -112,6 +112,11 @@ V8_INLINE T* FastGetNativeObjectPointer(v8::Local<v8::Context> context, v8::Loca
     return DataTransfer::GetPointerFast<T>(Object);
 }
 
+V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
+{
+    return v8::Undefined(context->GetIsolate());
+}
+
 }    // namespace puerts
 
 namespace puerts
@@ -293,7 +298,7 @@ struct Converter<bool>
 };
 
 template <typename T>
-struct Converter<std::reference_wrapper<T>>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objecttype<T>::value && !is_uetype<T>::value>::type>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
     {
@@ -313,6 +318,38 @@ struct Converter<std::reference_wrapper<T>>
         else
         {
             return {};
+        }
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsObject();    // do not checked inner
+    }
+};
+
+template <typename T>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttype<T>::value || is_uetype<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
+    {
+        auto result = v8::Object::New(context->GetIsolate());
+        auto _unused = result->Set(context, 0, Converter<T>::toScript(context, value));
+        return result;
+    }
+
+    static std::reference_wrapper<T> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        static T _result;
+        if (!value.IsEmpty() && value->IsObject())
+        {
+            auto outer = value->ToObject(context).ToLocalChecked();
+            auto realvalue = outer->Get(context, 0).ToLocalChecked();
+            auto Ptr = Converter<typename std::decay<T>::type*>::toCpp(context, realvalue);
+            return Ptr ? *Ptr : _result;
+        }
+        else
+        {
+            return _result;
         }
     }
 

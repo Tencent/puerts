@@ -10,7 +10,7 @@ However, for any C++ constructs (attributes, methods, classes, structs, enums) n
 
 - C++/blueprints are called by TypeScript, in addition to the C++ class is a resident memory, the blueprint requires manual loading, the method/attribute access on other objects, etc.
 - Click the following button to make a declaration
-![puerts_gen_dts.png](../../../pic/puerts_gen_dts.png)
+![puerts_gen_dts.png](../../../doc/pic/puerts_gen_dts.png)
 - Alternatively, a declaration file can also be generated with the console command: `Puerts.Gen`
     - The plugin doesn't support the button being shown for UE5 EA currently, so you'll have to use the console command regardless.
 

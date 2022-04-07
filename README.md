@@ -1,4 +1,4 @@
-![Logo](./pic/puerts_logo.png)
+![Logo](./doc/pic/puerts_logo.png)
 
 [![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
 [![release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases)
@@ -26,19 +26,8 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 ## 安装
 <!-- 方法1. 下载项目 -->
-* git clone https://github.com/Tencent/puerts.git
-
-* 拷贝插件到您项目
-
-    - unreal engine
-    
-        + 拷贝puerts/unreal下的Puerts目录到您项目的Plugins目录下，可以参考[unreal demo](https://github.com/chexiongsheng/puerts_unreal_demo)
-    
-    - unity
-    
-        + 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下，可以参考[unity demo](https://github.com/chexiongsheng/puerts_unity_demo)
-        
-        + Plugins要单独下载[releases](https://github.com/Tencent/puerts/releases)，或者自行编译
+* [unreal](doc/unreal/install.md)
+* [unity](doc/unity/install.md)
 
 <!-- 方法2. 通过npm快速安装
 
@@ -53,6 +42,26 @@ npm i -g @puerts/cli
 ```
 puerts init
 ``` -->
+
+## 版本相关
+
+### 最新版本
+
+* unreal：待发布
+
+* [![unity](https://img.shields.io/badge/unity-v1.3.2-blue.svg)](https://github.com/Tencent/puerts/releases)
+
+### changelog
+
+* [unreal](doc/unreal/changelog.md)
+* [unity](doc/unity/changelog.md)
+
+### 已知问题
+
+各发布版本已知的，影响较大的bug及其修复办法
+
+* [unreal](doc/unreal/bugs.md)
+* [unity](doc/unity/bugs.md)
 
 ## 编程样例
 
@@ -134,17 +143,17 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ### Unity
 
-* [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/01_JsCallCs) ： js调用c#
+* [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/01_JsCallCs) ： js调用c#
 
-* [02_Require](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/02_Require) ： 加载js文件
+* [02_Require](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/02_Require) ： 加载js文件
 
-* [03_Callback](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/03_Callback) ： 回调基本演示
+* [03_Callback](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/03_Callback) ： 回调基本演示
 
-* [04_JsBehaviour](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/04_JsBehaviour) ： 用js模拟MonoBehaviour
+* [04_JsBehaviour](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/04_JsBehaviour) ： 用js模拟MonoBehaviour
 
-* [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
+* [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
 
-* [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/Assets/Examples/06_UIEvent) ：UI事件的演示
+* [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/Assets/Examples/06_UIEvent) ：UI事件的演示
 
 ## 技术支持
 

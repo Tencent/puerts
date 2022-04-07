@@ -70,8 +70,11 @@
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
     </Compile>
-    <Compile Include="..\Src\WrapperGenerate.cs">
-      <Link>Src\WrapperGenerate.cs</Link>
+    <Compile Include="..\Src\UnitTest\WrapperGenTest.cs">
+      <Link>Src\UnitTest\WrapperGenTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +85,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Src\UnitTest\wrap\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

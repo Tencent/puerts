@@ -47,7 +47,7 @@
 
 #if !defined(WITH_NODEJS)
 
-#if V8_MAJOR_VERSION < 8
+#if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
 
 #if PLATFORM_WINDOWS
 #include "Blob/Win64/NativesBlob.h"
@@ -275,9 +275,12 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
 #if PLATFORM_IOS
-    std::string Flags = "--jitless --no-expose-wasm";
-    v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
+    char Flags[] = "--jitless --no-expose-wasm";
+    v8::V8::SetFlagsFromString(Flags, sizeof(Flags));
 #endif
+
+    // char GCFlags[] = "--expose-gc";
+    // v8::V8::SetFlagsFromString(GCFlags, sizeof(GCFlags));
 
     Started = false;
     Inspector = nullptr;
@@ -286,7 +289,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
 #if !defined(WITH_NODEJS)
-#if V8_MAJOR_VERSION < 8
+#if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
     std::unique_ptr<v8::StartupData> NativesBlob;
     if (!NativesBlob)
     {
@@ -779,12 +782,14 @@ FJsEnvImpl::~FJsEnvImpl()
     StopPolling();
 #endif
 
+#ifndef WITH_QUICKJS
     for (auto& KV : HashToModuleInfo)
     {
         delete KV.second;
     }
     HashToModuleInfo.clear();
     PathToModule.Empty();
+#endif
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
@@ -809,28 +814,18 @@ FJsEnvImpl::~FJsEnvImpl()
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
-        for (auto Iter = ClassToTemplateMap.begin(); Iter != ClassToTemplateMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
+
+        ClassToTemplateMap.clear();
 
         CppObjectMapper.UnInitialize(Isolate);
 
-        for (auto Iter = ObjectMap.begin(); Iter != ObjectMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
+        ObjectMap.clear();
 
-        for (auto Iter = GeneratedObjectMap.begin(); Iter != GeneratedObjectMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
         GeneratedObjectMap.clear();
 
-        for (auto Iter = StructMap.begin(); Iter != StructMap.end(); Iter++)
-        {
-            Iter->second.Reset();
-        }
+        StructCache.clear();
+
+        ContainerCache.clear();
 
         for (auto Iter = ScriptStructFinalizeInfoMap.begin(); Iter != ScriptStructFinalizeInfoMap.end(); Iter++)
         {
@@ -1566,18 +1561,15 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
     }
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
+v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct,
+    void* Ptr, bool PassByPointer, bool ForceNoCache)
 {
     check(Ptr);    // must not null
 
-    //查询历史记录，当初这么改是因为一个结构体如果其第一个成员也是结构体，这个结构体的指针将和这个第一个成员的指针值一样，导致访问该成员也会返回外层结构体
-    //但问题是目前看，这部分是多余代码了，如果不是传指针才查，但不是传指针每次都是new堆内存，实际上是不可能查找到的，还是走到后面的逻辑
-    //另外，这有没更好的解决办法呢？记录下ScriptStruct，如果类型不一致才new？
-    if (!PassByPointer)
+    if (LIKELY(!ForceNoCache))    // default: false
     {
-        auto Iter = StructMap.find(Ptr);
-        if (Iter != StructMap.end())
+        auto Iter = StructCache.find(Ptr);
+        if (Iter != StructCache.end())
         {
             return v8::Local<v8::Value>::New(Isolate, Iter->second);
         }
@@ -1585,8 +1577,8 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
 
     // create and link
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
-    return GetJsClass(ScriptStruct, Context)->NewInstance(Context, 2, Args).ToLocalChecked();
+    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer), v8::Boolean::New(Isolate, ForceNoCache)};
+    return GetJsClass(ScriptStruct, Context)->NewInstance(Context, 3, Args).ToLocalChecked();
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddCppObject(
@@ -2422,13 +2414,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 {
     check(Ptr);    // must not null
 
-    if (!PassByPointer)
+    auto Iter = ContainerCache.find(Ptr);
+    if (Iter != ContainerCache.end())
     {
-        auto Iter = StructMap.find(Ptr);
-        if (Iter != StructMap.end())
-        {
-            return v8::Local<v8::Value>::New(Isolate, Iter->second);
-        }
+        return v8::Local<v8::Value>::New(Isolate, Iter->second);
     }
 
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
@@ -2462,17 +2451,20 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 }
 
 void FJsEnvImpl::BindStruct(
-    FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
+    FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer, bool ForceNoCache)
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
     DataTransfer::SetPointer(
         MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
 
+    if (LIKELY(!ForceNoCache || !PassByPointer))
+    {
+        StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    }
     if (!PassByPointer)
     {
-        StructMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
         ScriptStructFinalizeInfoMap[Ptr] = {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize};
-        StructMap[Ptr].SetWeak<FScriptStructWrapper>(
+        StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
 }
@@ -2486,7 +2478,7 @@ void FJsEnvImpl::BindCppObject(
 void FJsEnvImpl::UnBindStruct(void* Ptr)
 {
     ScriptStructFinalizeInfoMap.erase(Ptr);
-    StructMap.erase(Ptr);
+    StructCache.erase(Ptr);
 }
 
 void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
@@ -2497,13 +2489,13 @@ void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
 void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data))
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    StructMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-    StructMap[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
+    ContainerCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    ContainerCache[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBindContainer(void* Ptr)
 {
-    StructMap.erase(Ptr);
+    ContainerCache.erase(Ptr);
 }
 
 std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
@@ -2957,6 +2949,7 @@ bool FJsEnvImpl::LoadFile(const FString& RequiringDir, const FString& ModuleName
     return true;
 }
 
+#ifndef WITH_QUICKJS
 std::unordered_multimap<int, FJsEnvImpl::FModuleInfo*>::iterator FJsEnvImpl::FindModuleInfo(v8::Local<v8::Module> Module)
 {
     auto Range = HashToModuleInfo.equal_range(Module->GetIdentityHash());
@@ -3098,6 +3091,7 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
 
     return Module;
 }
+#endif
 
 void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor)
 {
@@ -3122,6 +3116,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
     v8::Context::Scope ContextScope(Context);
+#ifndef WITH_QUICKJS
     if (OutPath.EndsWith(".mjs"))
     {
         v8::TryCatch TryCatch(Isolate);
@@ -3146,6 +3141,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         }
     }
     else
+#endif
     {
         FString Script;
         FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());

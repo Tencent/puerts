@@ -17,7 +17,7 @@ namespace Puerts.UnitTest
     {
         private string root = Path.Combine(
             System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
-            "../../Assets/Puerts/Src/Resources"
+            "../../Assets/Puerts/Runtime/Resources"
         );
 
         public bool FileExists(string filepath)
@@ -1219,6 +1219,23 @@ namespace Puerts.UnitTest
             Func<string> func = jsEnv.ExecuteModule<Func<string>>("whatever.mjs", "func");
 
             Assert.True(func() == "hello world");
+
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportCSharpNamespace()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"
+                import csharp from 'csharp';
+                const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
+                export { func };
+            ");
+            var jsEnv = new JsEnv(loader);
+            var ns = jsEnv.ExecuteModule<JSObject>("whatever.mjs");
+
+            Assert.True(ns != null);
+            Assert.True(ns.GetType() == typeof(JSObject));
 
             jsEnv.Dispose();
         }
