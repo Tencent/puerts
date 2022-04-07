@@ -752,6 +752,9 @@ class ClassDefineBuilder
 
     InitializeFuncType constructor_{};
 
+    typedef void (*FinalizeFuncType)(void* Ptr);
+    FinalizeFuncType finalize_{};
+
     std::vector<GeneralFunctionReflectionInfo> constructorInfos_{};
     std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
     std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
@@ -775,6 +778,7 @@ public:
         InitializeFuncType constructor = ConstructorWrapper<T, Args...>::call;
         constructor_ = constructor;
         constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", ConstructorWrapper<T, Args...>::info()});
+        finalize_ = [](void* Ptr) { delete static_cast<T*>(Ptr); };
         return *this;
     }
 
@@ -785,6 +789,7 @@ public:
             constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", infos[i]});
         }
         constructor_ = constructor;
+        finalize_ = [](void* Ptr) { delete static_cast<T*>(Ptr); };
         return *this;
     }
 
@@ -867,7 +872,7 @@ public:
         ClassDef.Initialize = constructor_;
         if (constructor_)
         {
-            ClassDef.Finalize = [](void* Ptr) { delete static_cast<T*>(Ptr); };
+            ClassDef.Finalize = finalize_;
         }
 
         s_functions_ = std::move(functions_);
@@ -921,7 +926,7 @@ public:
         pesapi_finalize finalize = nullptr;
         if (constructor_)
         {
-            finalize = [](void* Ptr) { delete static_cast<T*>(Ptr); };
+            finalize = finalize_;
         }
         pesapi_define_class(className_, superClassName_, constructor_, finalize, properties.size(), properties.data());
     }
