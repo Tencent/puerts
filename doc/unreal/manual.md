@@ -56,11 +56,13 @@ let world = (argv.getByName("GameInstance") as UE.GameInstance).GetWorld();
 
 开启该功能，Puerts会构造一个默认的虚拟机
 
-* 引擎构造一个TypeScript（代理对象）时，要跑脚本，找的是这个虚拟机，但这个虚拟机本身相比自行构造的虚拟机没什么两样，自行构造上能用的，在这个虚拟机下都能用
+* 引擎构造一个TypeScript（代理对象）时，要跑脚本，找的是这个虚拟机，但这个虚拟机本身相比自行构造的虚拟机没什么两样，和UE的交互规则都一样
 
 * 该虚拟机不会启动一个启动脚本，也不会传参数，因而argv不可用，也没必要用
 
-## ts和引擎的相互调用
+* 原来的入口脚本可以通过覆盖ReceiveBeginPlay之类的回调来实现
+
+## TypeScript和引擎的相互调用
 
 ### 通用规则
 
@@ -80,20 +82,20 @@ UE里头，支持反射的API（标注了UCLASS，UPPROPERTY，UFUNCTION，USTRU
 
 * 目前不太推荐的[扩展函数](extension_methods.md)
 
-通过上述两种方式，可以把普通C++ API转成能被TypeScript的api，重启后重新生成声明文件即可。
+上述两种方式，都可以把普通C++ API转成能被TypeScript的api，重启后重新生成声明文件即可。
 
 ### 继承引擎类功能
 
 开启该功能后能做到特定写法的类能被UE编辑器识别。
 
-自行构造puerts::FJsEnv，TypeScript/JavaScript能被引擎调用的方式或者入口，只有通过DYNAMIC_DELEGATE来调用。大多数时候是能满足的：通过DYNAMIC_DELEGATE接受网络或者用户UI事件，处理后根据需要调用显示，服务器等。
+自行构造puerts::FJsEnv，TypeScript/JavaScript能被引擎调用的方式或者入口，只有通过DYNAMIC_DELEGATE来调用。大多数时候是能满足需求的：通过DYNAMIC_DELEGATE接受网络或者用户UI事件，处理后根据需要调用显示，服务器等。
 
 而开启该功能后本质上是新增了另外一种能被UE引擎调用的方式：
 
 * 根据TypeScript声明生成一个能被UE引擎识别、使用的代理蓝图类，这些类可能继承了某个UCLASS，也可能是静态蓝图函数库（继承BlueprintFunctionLibrary）。
    - 代理蓝图类就是普通的蓝图，只不过它的函数实现是空的
    
-* Puerts会启动一个默认的虚拟机加载脚本逻辑
+* Puerts会启动一个默认的虚拟机加载相关脚本逻辑
 
 * Puerts会拦截代理蓝图类的调用，重定向到默认的虚拟机里对应的脚本逻辑
 
