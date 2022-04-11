@@ -449,7 +449,7 @@ void FScriptStructWrapper::OnGarbageCollectedWithFree(const v8::WeakCallbackInfo
     Free(ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize, ScriptStructMemory);
 }
 
-void FScriptStructWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UScriptStruct>& Data)
+void FScriptStructWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data)
 {
     void* ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
     FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructMemory);

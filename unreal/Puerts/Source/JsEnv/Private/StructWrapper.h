@@ -88,7 +88,7 @@ public:
 
     static void OnGarbageCollectedWithFree(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data);
 
-    static void OnGarbageCollected(const v8::WeakCallbackInfo<UScriptStruct>& Data);
+    static void OnGarbageCollected(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data);
 
     static void* Alloc(UScriptStruct* InScriptStruct);
 

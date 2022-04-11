@@ -2447,6 +2447,11 @@ void FJsEnvImpl::BindStruct(
         StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
     }
+    else if (!ForceNoCache)
+    {
+        StructCache[Ptr].SetWeak<FScriptStructWrapper>(
+            ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+    }
 }
 
 void FJsEnvImpl::BindCppObject(
