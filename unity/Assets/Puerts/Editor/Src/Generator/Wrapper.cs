@@ -254,6 +254,21 @@ namespace Puerts.Editor
                         Operators = operatorGroups.Select(o => MethodGenInfo.FromType(type, false, o)).ToArray(),
                         Events = type.GetEvents(Utils.Flags)
                             .Where(m => !Utils.IsNotSupportedMember(m))
+                            .Where(e =>
+                            { 
+                                BindingMode mode = Utils.getBindingMode(e);
+                                if (mode == BindingMode.DontBinding) return false;
+                                if (mode == BindingMode.LazyBinding) 
+                                { 
+                                    var adder = e.GetAddMethod();
+                                    var remover = e.GetRemoveMethod();
+                                    if (adder != null && adder.IsPublic) lazyCollector.Add(adder);
+                                    if (remover != null && remover.IsPublic) lazyCollector.Add(remover);
+
+                                    return false; 
+                                }
+                                return true; 
+                            })
                             .Select(e => EventGenInfo.FromEventInfo(e))
                             .ToArray(),
 
