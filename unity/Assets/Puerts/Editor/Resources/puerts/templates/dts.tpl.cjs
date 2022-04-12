@@ -49,8 +49,7 @@ module.exports = function TypingTemplate(data, esmMode) {
 if (!esmMode) {
     tt`   
 declare module 'csharp' {
-    import * as CSharp from 'csharp';
-    export default CSharp;
+    export * as CSharp from 'csharp'
 }
     `
 }
