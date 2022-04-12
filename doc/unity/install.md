@@ -30,9 +30,8 @@ You can add it directly from GitHub on Unity 2019.4+. Note that you won't be abl
 <summary>Download code and native plugins manually  | available in all version</summary>
 以往支持的源码安装模式依旧支持。相比前两种方式管理起来稍麻烦，但对代码魔改更友好。
 
-1. 前往 [Github Releases](https://github.com/Tencent/puerts/releases) 下载你想要的版本的Plugins和Source Code
-2. 将`Source Code.zip`中`unity/Assets/Puerts`拷贝到你的unity目录
-3. 将`Plugins_xxx.zip`解压放入`Puerts/Runtime/Plugins`中
+1. 前往 [Github Releases](https://github.com/Tencent/puerts/releases) 下载PuerTS_V8_x.x.x.tgz 或是别的你需要的Puerts版本。
+2. 将压缩包内的Puerts文件夹解压至你的Assets目录
 
 > 如果你是2018以下版本，还需要你将Puerts代码内的内置js手动加上.txt后缀
 
