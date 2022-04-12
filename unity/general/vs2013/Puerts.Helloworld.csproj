@@ -48,6 +48,9 @@
     <Compile Include="..\Src\Helloworld.cs">
       <Link>Src\Helloworld.cs</Link>
     </Compile>
+    <Compile Include="..\Src\TxtLoader.cs">
+      <Link>Src\TxtLoader.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Puerts.Core.csproj">

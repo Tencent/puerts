@@ -5,47 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-using System.IO;
-using System.Reflection;
-using System.Diagnostics;
 using Puerts;
-using System.Collections.Generic;
-using System;
-
-public class TxtLoader : ILoader
-{
-    private string root = Path.Combine(
-        System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
-        "../../Assets/Puerts/Runtime/Resources"
-    );
-
-    public bool FileExists(string filepath)
-    {
-        return mockFileContent.ContainsKey(filepath) || File.Exists(Path.Combine(root, filepath));
-    }
-
-    public string ReadFile(string filepath, out string debugpath)
-    {
-        debugpath = Path.Combine(root, filepath);
-
-        string mockContent;
-        if (mockFileContent.TryGetValue(filepath, out mockContent))
-        {
-            return mockContent;
-        }
-
-        using (StreamReader reader = new StreamReader(debugpath))
-        {
-            return reader.ReadToEnd();
-        }
-    }
-
-    private Dictionary<string, string> mockFileContent = new Dictionary<string, string>();
-    public void AddMockFileContent(string fileName, string content)
-    {
-        mockFileContent.Add(fileName, content);
-    }
-}
 
 public class PuertsTest
 {

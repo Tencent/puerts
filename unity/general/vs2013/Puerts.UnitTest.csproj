@@ -49,6 +49,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Src\TxtLoader.cs">
+      <Link>Src\TxtLoader.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\ArrayBufferTest.cs">
       <Link>Src\UnitTest\ArrayBufferTest.cs</Link>
     </Compile>
@@ -86,9 +89,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Src\UnitTest\wrap\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
