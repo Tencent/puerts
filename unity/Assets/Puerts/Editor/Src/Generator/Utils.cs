@@ -14,6 +14,14 @@ using System.Runtime.CompilerServices;
 namespace Puerts.Editor
 {
     namespace Generator {
+        
+        public enum BindingMode {
+            FastBinding = 0, // generate static wrapper
+            SlowBinding = 1, // useless now. dont use
+            LazyBinding = 2, // reflect during first call
+            DontBinding = 3, // not able to called in runtime. Also will not generate d.ts
+        }
+
         class Utils {
 
             public const BindingFlags Flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
@@ -97,12 +105,6 @@ namespace Puerts.Editor
                 var getMethod = propertyInfo.GetGetMethod();
                 var setMethod = propertyInfo.GetSetMethod();
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
-            }
-            public enum BindingMode {
-                FastBinding = 0, // generate static wrapper
-                SlowBinding = 1, // useless now. dont use
-                LazyBinding = 2, // reflect during first call
-                DontBinding = 3, // not able to called in runtime. Also will not generate d.ts
             }
 
             internal static BindingMode getBindingMode(MemberInfo mbi) 
