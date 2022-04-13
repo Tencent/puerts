@@ -60,6 +60,11 @@ class TS_Player extends UE.Character {
 * 类名和去掉.ts后缀的文件名相同；
 * 把这个类export default。
 
+### 限制
+
+* 不支持继承蓝图，只支持继承原生类
+* 继承UserWidget或其子类并不能编辑
+
 ### 生命周期
 
 本模式下，继承UE类型的TypeScript类型的对象，生命周期由引擎管理。
