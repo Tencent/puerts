@@ -12,6 +12,21 @@
     
 * 解压到[YouProject/Plugins/Puerts/ThirdParty](unreal/Puerts/ThirdParty)
 
+### 发布包安装方式
+
+到[releases](https://github.com/Tencent/puerts/releases)找到你需要的版本，注意，该页面也包含Unity的发布包，Unreal引擎使用版本会以Unreal开头。
+
+下载符合你UE版本的安装包，解压到YouProject/Plugins即可，已经内含v8库。
+
+### mac注意事项
+
+mac下如果遇到移入废纸篓问题，请执行
+
+~~~bash
+cd Plugins/Puerts/ThirdParty
+find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine 
+~~~
+
 ### 虚拟机切换
 
 puerts支持多种脚本后端：V8，quickjs，nodejs
