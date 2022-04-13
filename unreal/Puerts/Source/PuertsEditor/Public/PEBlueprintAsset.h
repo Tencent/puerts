@@ -20,8 +20,7 @@ USTRUCT(BlueprintType)
 struct FPEGraphTerminalType
 {
     GENERATED_USTRUCT_BODY()
-    FPEGraphTerminalType()
-        : PinSubCategoryObject(nullptr)
+    FPEGraphTerminalType() : PinSubCategoryObject(nullptr)
     {
     }
 
@@ -36,11 +35,7 @@ USTRUCT(BlueprintType)
 struct FPEGraphPinType
 {
     GENERATED_USTRUCT_BODY()
-    FPEGraphPinType()
-        : PinSubCategoryObject(nullptr)
-        , PinContainerType(0)
-        , bIsReference(false)
-        , bIn(false)
+    FPEGraphPinType() : PinSubCategoryObject(nullptr), PinContainerType(0), bIsReference(false), bIn(false)
     {
     }
 
