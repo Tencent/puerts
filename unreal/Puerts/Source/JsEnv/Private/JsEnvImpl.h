@@ -73,6 +73,8 @@ public:
 
     virtual void LowMemoryNotification() override;
 
+    virtual void MinorGarbageCollection() override;
+
     virtual void WaitDebugger(double timeout) override
     {
         const auto startTime = FDateTime::Now();

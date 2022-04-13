@@ -33,6 +33,8 @@ public:
 
     virtual void LowMemoryNotification() = 0;
 
+    virtual void MinorGarbageCollection() = 0;
+
     virtual void WaitDebugger(double timeout) = 0;
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -63,6 +65,10 @@ public:
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments = TArray<TPair<FString, UObject*>>());
 
     void LowMemoryNotification();
+
+    // equivalent to Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection)
+    // It is only valid to call this function if --expose_gc was specified
+    void MinorGarbageCollection();
 
     void WaitDebugger(double timeout = 0);
 

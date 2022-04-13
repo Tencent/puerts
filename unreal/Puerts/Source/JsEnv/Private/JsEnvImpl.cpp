@@ -1096,6 +1096,13 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
+void FJsEnvImpl::MinorGarbageCollection()
+{
+#ifndef WITH_QUICKJS
+    MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+#endif
+}
+
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::FinishInjection(UClass* InClass)
 {
