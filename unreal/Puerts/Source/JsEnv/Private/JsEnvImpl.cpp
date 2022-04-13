@@ -807,10 +807,12 @@ FJsEnvImpl::~FJsEnvImpl()
 
         ContainerCache.clear();
 
+#if !WITH_BACKING_STORE_AUTO_FREE
         for (auto Iter = ScriptStructFinalizeInfoMap.begin(); Iter != ScriptStructFinalizeInfoMap.end(); Iter++)
         {
             FScriptStructWrapper::Free(Iter->second.Struct, Iter->second.Finalize, Iter->first);
         }
+#endif
 
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
@@ -2444,18 +2446,30 @@ void FJsEnvImpl::BindStruct(
     DataTransfer::SetPointer(
         MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
 
-    if (LIKELY(!ForceNoCache || !PassByPointer))
-    {
-        StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-    }
     if (!PassByPointer)
     {
+#if WITH_BACKING_STORE_AUTO_FREE
+        auto Backing = v8::ArrayBuffer::NewBackingStore(
+            Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
+            [](void* Data, size_t Length, void* DeleterData)
+            {
+                // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+                FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+            },
+            ScriptStructWrapper);
+        auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
+        JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+#else
+        StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
         ScriptStructFinalizeInfoMap[Ptr] = {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize};
         StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
+#endif
     }
     else if (!ForceNoCache)
     {
+        StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
         StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
     }
@@ -2469,7 +2483,9 @@ void FJsEnvImpl::BindCppObject(
 
 void FJsEnvImpl::UnBindStruct(void* Ptr)
 {
+#if !WITH_BACKING_STORE_AUTO_FREE
     ScriptStructFinalizeInfoMap.erase(Ptr);
+#endif
     StructCache.erase(Ptr);
 }
 

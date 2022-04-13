@@ -43,6 +43,12 @@
 #pragma warning(pop)
 #endif
 
+#if V8_MAJOR_VERSION < 8 || defined(WITH_QUICKJS) || (WITH_EDITOR && !defined(FORCE_USE_STATIC_V8_LIB))
+#define WITH_BACKING_STORE_AUTO_FREE 0
+#else
+#define WITH_BACKING_STORE_AUTO_FREE 1
+#endif
+
 namespace puerts
 {
 class JSError
@@ -478,12 +484,14 @@ private:
 
     FCppObjectMapper CppObjectMapper;
 
+#if !WITH_BACKING_STORE_AUTO_FREE
     struct ScriptStructFinalizeInfo
     {
         TWeakObjectPtr<UStruct> Struct;
         FinalizeFunc Finalize;
     };
     std::map<void*, ScriptStructFinalizeInfo> ScriptStructFinalizeInfoMap;
+#endif
 
     v8::UniquePersistent<v8::FunctionTemplate> ArrayTemplate;
 
