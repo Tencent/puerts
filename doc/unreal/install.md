@@ -18,14 +18,20 @@
 
 下载符合你UE版本的安装包，解压到YouProject/Plugins即可，已经内含v8库。
 
-### mac注意事项
+### 注意事项
 
-mac下如果遇到移入废纸篓问题，请执行
+* mac下如果遇到移入废纸篓问题，请执行
 
 ~~~bash
 cd Plugins/Puerts/ThirdParty
 find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine 
 ~~~
+
+* 纯蓝图工程提示“Plugin 'Puerts' failed to load because module 'JsEnv' could not be found.”
+
+纯蓝图工程不会自动编译Plugins，而Puerts目前的源码或者发布包内，都是C++源码。
+
+可以clone puerts的demo，在vs编译工程后拷贝到纯蓝图工程。
 
 ### 虚拟机切换
 
