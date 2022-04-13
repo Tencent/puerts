@@ -29,6 +29,7 @@ declare module "ue" {
     interface FixSizeArray<T> {
         Num(): number;
         Get(Index: number): T;
+        GetRef(Index: number): T;
         Set(Index: number, Value: T): void;
     }
     
@@ -36,6 +37,7 @@ declare module "ue" {
         Num(): number;
         Add(Value: T): void;
         Get(Index: number): T;
+        GetRef(Index: number): T;
         Set(Index: number, Value: T): void;
         Contains(Value: T): boolean;
         FindIndex(Value: T): number;
@@ -48,6 +50,7 @@ declare module "ue" {
         Num(): number;
         Add(Value: T): void;
         Get(Index: number): T;  // TODO - 这个接口要用Index吗？
+        GetRef(Index: number): T;
         // Set(Index: number, Value: T): void;
         Contains(Value: T): boolean;
         FindIndex(Value: T): number;
@@ -61,6 +64,7 @@ declare module "ue" {
         Num(): number;
         Add(Key: TKey, Value: TValue): void;
         Get(Key: TKey): TValue | undefined;
+        GetRef(Key: TKey): TValue | undefined;
         Set(Key: TKey, Value: TValue): void;    // 即Add()。TODO - 有存在的必要吗？
         Remove(Key: TKey): void;
         GetMaxIndex(): number;                  // TODO - 接口注释要说明返回的是kv的索引。只有调用了Empty后才会返回0
