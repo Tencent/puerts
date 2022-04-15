@@ -178,9 +178,9 @@ namespace Puerts.Editor
                         .ToArray();
                     var operatorGroups = type.GetMethods(Utils.Flags)
                         .Where(m => !Utils.IsNotSupportedMember(m) && m.IsSpecialName && m.Name.StartsWith("op_") && m.IsStatic)
-                        .Where(m => m.Name != "op_Explicit" && m.Name != "op_Implicit")
                         .Where(m =>
                         { 
+                            if (m.Name == "op_Explicit" || m.Name == "op_Implicit")  { lazyCollector.Add(m); return false; }
                             BindingMode mode = Utils.getBindingMode(m);
                             if (mode == BindingMode.DontBinding) return false;
                             if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
