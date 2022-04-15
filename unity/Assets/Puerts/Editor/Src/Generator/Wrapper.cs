@@ -287,6 +287,7 @@ namespace Puerts.Editor
             // represent a javascript function's parameter
             public class ParameterGenInfo : DataTypeInfo
             {
+                public bool IsIn;
                 public bool IsOut;
                 public bool IsByRef;
                 public string ExpectJsType;
@@ -302,6 +303,7 @@ namespace Puerts.Editor
                     var result = new ParameterGenInfo()
                     {
                         IsOut = !parameterInfo.IsIn && parameterInfo.IsOut && parameterInfo.ParameterType.IsByRef,
+                        IsIn = parameterInfo.IsIn,
                         IsByRef = parameterInfo.ParameterType.IsByRef,
                         TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType).GetFriendlyName(),
                         ExpectJsType = Utils.ToCode(ExpectJsType),
