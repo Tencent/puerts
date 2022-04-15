@@ -471,16 +471,16 @@ private:
 
     v8::Global<v8::Function> ReloadJs;
 
-    std::map<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
+    TMap<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
 
-    std::map<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
+    TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
 
-    std::map<UObject*, v8::UniquePersistent<v8::Value>> ObjectMap;
-    std::map<const class UObjectBase*, v8::UniquePersistent<v8::Value>> GeneratedObjectMap;
+    TMap<UObject*, v8::UniquePersistent<v8::Value>> ObjectMap;
+    TMap<const class UObjectBase*, v8::UniquePersistent<v8::Value>> GeneratedObjectMap;
 
-    std::map<void*, v8::UniquePersistent<v8::Value>> StructCache;
+    TMap<void*, v8::UniquePersistent<v8::Value>> StructCache;
 
-    std::map<void*, v8::UniquePersistent<v8::Value>> ContainerCache;
+    TMap<void*, v8::UniquePersistent<v8::Value>> ContainerCache;
 
     FCppObjectMapper CppObjectMapper;
 
@@ -490,7 +490,7 @@ private:
         TWeakObjectPtr<UStruct> Struct;
         FinalizeFunc Finalize;
     };
-    std::map<void*, ScriptStructFinalizeInfo> ScriptStructFinalizeInfoMap;
+    TMap<void*, ScriptStructFinalizeInfo> ScriptStructFinalizeInfoMap;
 #endif
 
     v8::UniquePersistent<v8::FunctionTemplate> ArrayTemplate;
@@ -574,7 +574,7 @@ private:
         bool InjectNotFinished;
     };
 
-    std::map<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
+    TMap<UTypeScriptGeneratedClass*, FBindInfo> BindInfoMap;
 
     void FinishInjection(UClass* InClass);
 
