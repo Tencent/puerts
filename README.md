@@ -49,7 +49,7 @@ puerts init
 
 * [![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.0)
 
-* [![unity](https://img.shields.io/badge/unity-v1.3.2-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v1.3.2)
+* [![unity](https://img.shields.io/badge/unity-v1.3.2f-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v1.3.2f)
 
 ### changelog
 
