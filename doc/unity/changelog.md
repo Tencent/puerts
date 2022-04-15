@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.3.2f] - 2022-04-15
+1. 修复event成员没有成功转为Lazy的问题 #739
+2. 修复2021下某些in成员在生成代码里被写成了ref的问题 #758
+3. 修复op_Implicit无法调用的问题 #767
+
 ## [1.3.2] - 2022-04-06
 1. 修复UPM安装时安卓会识别到iOS库的问题
 2. 修复旧有filter无效的问题
