@@ -372,13 +372,16 @@ void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
 {
     if (Processed.Contains(ToGen))
         return;
-    if (ProcessedByName.Contains(SafeName(ToGen->GetName())))
+    if (ToGen->IsNative() && ProcessedByName.Contains(SafeName(ToGen->GetName())))
     {
         UE_LOG(LogTemp, Warning, TEXT("duplicate name found in ue.d.ts generate: %s"), *SafeName(ToGen->GetName()));
         return;
     }
     Processed.Add(ToGen);
-    ProcessedByName.Add(SafeName(ToGen->GetName()));
+    if (ToGen->IsNative())
+    {
+        ProcessedByName.Add(SafeName(ToGen->GetName()));
+    }
 
     if (auto Class = Cast<UClass>(ToGen))
     {

@@ -795,22 +795,24 @@ FJsEnvImpl::~FJsEnvImpl()
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 
-        ClassToTemplateMap.clear();
+        ClassToTemplateMap.Empty();
 
         CppObjectMapper.UnInitialize(Isolate);
 
-        ObjectMap.clear();
+        ObjectMap.Empty();
 
-        GeneratedObjectMap.clear();
+        GeneratedObjectMap.Empty();
 
-        StructCache.clear();
+        StructCache.Empty();
 
-        ContainerCache.clear();
+        ContainerCache.Empty();
 
-        for (auto Iter = ScriptStructFinalizeInfoMap.begin(); Iter != ScriptStructFinalizeInfoMap.end(); Iter++)
+#if !WITH_BACKING_STORE_AUTO_FREE
+        for (auto& KV : ScriptStructFinalizeInfoMap)
         {
-            FScriptStructWrapper::Free(Iter->second.Struct, Iter->second.Finalize, Iter->first);
+            FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
         }
+#endif
 
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
@@ -840,12 +842,7 @@ FJsEnvImpl::~FJsEnvImpl()
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         TsDynamicInvoker.Reset();
-        for (auto Iter = BindInfoMap.begin(); Iter != BindInfoMap.end(); Iter++)
-        {
-            Iter->second.Constructor.Reset();
-            Iter->second.Prototype.Reset();
-        }
-        BindInfoMap.clear();
+        BindInfoMap.Empty();
 #endif
 
         for (auto& Pair : TickerDelegateHandleMap)
@@ -1096,6 +1093,13 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
+void FJsEnvImpl::MinorGarbageCollection()
+{
+#ifndef WITH_QUICKJS
+    MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+#endif
+}
+
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 void FJsEnvImpl::FinishInjection(UClass* InClass)
 {
@@ -1104,11 +1108,11 @@ void FJsEnvImpl::FinishInjection(UClass* InClass)
         auto TempTypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(InClass);
         if (TempTypeScriptGeneratedClass)    // InjectNotFinished状态下，其子类的CDO对象构建，把UFunction设置为Native
         {
-            auto Iter = BindInfoMap.find(TempTypeScriptGeneratedClass);
-            if (Iter != BindInfoMap.end() && Iter->second.InjectNotFinished)
+            auto BindInfoPtr = BindInfoMap.Find(TempTypeScriptGeneratedClass);
+            if (BindInfoPtr && BindInfoPtr->InjectNotFinished)
             {
                 TempTypeScriptGeneratedClass->RedirectToTypeScriptFinish();
-                Iter->second.InjectNotFinished = false;
+                BindInfoPtr->InjectNotFinished = false;
             }
         }
         InClass = InClass->GetSuperClass();
@@ -1120,9 +1124,9 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
+    auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
 
-    if (Iter == BindInfoMap.end() || ForceReinject)    // create and link
+    if (!BindInfoPtr || ForceReinject)    // create and link
     {
         auto Package = Cast<UPackage>(TypeScriptGeneratedClass->GetOuter());
         if (!Package || TypeScriptGeneratedClass->NotSupportInject())
@@ -1156,13 +1160,13 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
             v8::Context::Scope ContextScope(Context);
             auto LocalRequire = Require.Get(Isolate);
 
-            if (Iter == BindInfoMap.end())
+            if (!BindInfoPtr)
             {
                 FBindInfo BindInfo;
                 BindInfo.Name = *ModuleName;
                 BindInfo.Prototype.Reset(Isolate, v8::Object::New(Isolate));
                 BindInfo.InjectNotFinished = true;
-                BindInfoMap[TypeScriptGeneratedClass] = std::move(BindInfo);
+                BindInfoMap.Emplace(TypeScriptGeneratedClass, std::move(BindInfo));
             }
 
             v8::TryCatch TryCatch(Isolate);
@@ -1304,7 +1308,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             for (FObjectIterator It(TypeScriptGeneratedClass); It; ++It)
                             {
                                 auto Object = *It;
-                                if (GeneratedObjectMap.find(Object) != GeneratedObjectMap.end())
+                                if (GeneratedObjectMap.Find(Object))
                                     continue;
                                 if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                                     continue;    //跳过父类重新编译后临时状态的对象
@@ -1314,7 +1318,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 // TsConstruct(TypeScriptGeneratedClass, Object);
                                 auto JSObject =
                                     FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
-                                GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+                                GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
                                 UnBind(TypeScriptGeneratedClass, Object);
                             }
                         }
@@ -1406,10 +1410,10 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
                 // MakeSureInject(TypeScriptGeneratedClass, true, true);
                 TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
                 TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
-                if (Iter != BindInfoMap.end())
+                auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
+                if (BindInfoPtr)
                 {
-                    Iter->second.InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                    BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
                 }
             }
         }
@@ -1418,10 +1422,10 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
             TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
             TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
             TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-            auto Iter = BindInfoMap.find(TypeScriptGeneratedClass);
-            if (Iter != BindInfoMap.end())
+            auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
+            if (BindInfoPtr)
             {
-                Iter->second.InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
             }
         }
     }
@@ -1486,14 +1490,14 @@ void FJsEnvImpl::Bind(
     UserObjectRetainer.Retain(UEObject);
     DataTransfer::SetPointer(MainIsolate, JSObject, UEObject, 0);
     DataTransfer::SetPointer(MainIsolate, JSObject, nullptr, 1);
-    ObjectMap[UEObject] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    ObjectMap.Emplace(UEObject, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
     ObjectMap[UEObject].SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
 {
-    auto Iter = ObjectMap.find(UEObject);
-    if (Iter != ObjectMap.end())
+    auto PersistentValuePtr = ObjectMap.Find(UEObject);
+    if (PersistentValuePtr)
     {
         if (ResetPointer)
         {
@@ -1503,9 +1507,9 @@ void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
             auto Context = DefaultContext.Get(Isolate);
             v8::Context::Scope ContextScope(Context);
 
-            DataTransfer::SetPointer(MainIsolate, Iter->second.Get(Isolate).As<v8::Object>(), RELEASED_UOBJECT, 0);
+            DataTransfer::SetPointer(MainIsolate, PersistentValuePtr->Get(Isolate).As<v8::Object>(), RELEASED_UOBJECT, 0);
         }
-        ObjectMap.erase(UEObject);
+        ObjectMap.Remove(UEObject);
         UserObjectRetainer.Release(UEObject);
     }
 }
@@ -1522,14 +1526,13 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
         return v8::Undefined(Isolate);
     }
 
-    auto Iter = ObjectMap.find(UEObject);
-    if (Iter == ObjectMap.end())    // create and link
+    auto PersistentValuePtr = ObjectMap.Find(UEObject);
+    if (!PersistentValuePtr)    // create and link
     {
-        auto Iter2 = GeneratedObjectMap.find(UEObject);
-        if (Iter2 !=
-            GeneratedObjectMap.end())    // TODO: 后续尝试改为新建一个对象，这个对象持有UObject的引用，并且把调用转发到Iter2->second
+        auto PersistentValuePtr2 = GeneratedObjectMap.Find(UEObject);
+        if (PersistentValuePtr2)    // TODO: 后续尝试改为新建一个对象，这个对象持有UObject的引用，并且把调用转发到Iter2->second
         {
-            return v8::Local<v8::Value>::New(Isolate, Iter2->second);
+            return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr2);
         }
         auto BindTo = v8::External::New(Context->GetIsolate(), UEObject);
         v8::Handle<v8::Value> Args[] = {BindTo};
@@ -1537,7 +1540,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
     }
     else
     {
-        return v8::Local<v8::Value>::New(Isolate, Iter->second);
+        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
     }
 }
 
@@ -1548,10 +1551,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local
 
     if (LIKELY(!ForceNoCache))    // default: false
     {
-        auto Iter = StructCache.find(Ptr);
-        if (Iter != StructCache.end())
+        auto PersistentValuePtr = StructCache.Find(Ptr);
+        if (PersistentValuePtr)
         {
-            return v8::Local<v8::Value>::New(Isolate, Iter->second);
+            return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
         }
     }
 
@@ -1679,7 +1682,7 @@ void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersi
     v8::TryCatch TryCatch(Isolate);
 
     auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
-    GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
     UnBind(Class, Object);
 
     if (!Prototype.IsEmpty())
@@ -1735,8 +1738,8 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         }
     }
 
-    auto Iter = BindInfoMap.find(Class);
-    if (Iter == BindInfoMap.end())
+    auto BindInfoPtr = BindInfoMap.Find(Class);
+    if (!BindInfoPtr)
     {
         //保证CDO先完成构造, 这样MakeSureInject也只需要在构造CDO时执行
         bool bPending = false;
@@ -1748,10 +1751,10 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         {
             ConstructPendingObject(CDO);
         }
-        Iter = BindInfoMap.find(Class);
+        BindInfoPtr = BindInfoMap.Find(Class);
     }
 
-    if (Iter == BindInfoMap.end() || Iter->second.InjectNotFinished)
+    if (!BindInfoPtr || BindInfoPtr->InjectNotFinished)
     {
         // Logger->Warn(FString::Printf(TEXT("force %s injection in %s(%p) construct"), *Class->GetName(), *Object->GetName(),
         // Object));
@@ -1762,10 +1765,10 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
             // Object));
             FinishInjection(Class);
         }
-        Iter = BindInfoMap.find(Class);
+        BindInfoPtr = BindInfoMap.Find(Class);
     }
 
-    if (Iter != BindInfoMap.end())
+    if (BindInfoPtr)
     {
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -1776,27 +1779,27 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         v8::TryCatch TryCatch(Isolate);
 
         v8::Local<v8::Object> JSObject;
-        auto Iter2 = GeneratedObjectMap.find(Object);
-        if (Iter2 == GeneratedObjectMap.end())
+        auto PersistentValuePtr = GeneratedObjectMap.Find(Object);
+        if (!PersistentValuePtr)
         {
             JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
-            GeneratedObjectMap[Object] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+            GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
             UnBind(Class, Object);
         }
         else
         {
-            JSObject = Iter2->second.Get(Isolate).As<v8::Object>();
+            JSObject = PersistentValuePtr->Get(Isolate).As<v8::Object>();
         }
 
         //假如是UTypeScriptGeneratedClass的对象，设置成间接Prototype，后续刷新代码对象会自动更新
-        if (Object->GetClass() == Class && !Iter->second.Prototype.IsEmpty())
+        if (Object->GetClass() == Class && !BindInfoPtr->Prototype.IsEmpty())
         {
-            __USE(JSObject->SetPrototype(Context, Iter->second.Prototype.Get(Isolate)));
+            __USE(JSObject->SetPrototype(Context, BindInfoPtr->Prototype.Get(Isolate)));
         }
 
-        if (!Iter->second.Constructor.IsEmpty())
+        if (!BindInfoPtr->Constructor.IsEmpty())
         {
-            __USE(Iter->second.Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr));
+            __USE(BindInfoPtr->Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr));
         }
         if (TryCatch.HasCaught())
         {
@@ -1815,8 +1818,8 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    auto Iter = GeneratedObjectMap.find(ObjectBase);
-    if (Iter != GeneratedObjectMap.end())
+    auto PersistentValuePtr = GeneratedObjectMap.Find(ObjectBase);
+    if (PersistentValuePtr)
     {
         // UE_LOG(LogTemp, Warning, TEXT("NotifyUObjectDeleted: %s(%p)"), *ObjectBase->GetClass()->GetName(), Object);
         auto Isolate = MainIsolate;
@@ -1825,20 +1828,20 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
         auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
         v8::Context::Scope ContextScope(Context);
 
-        auto JSObject = Iter->second.Get(Isolate)->ToObject(Context).ToLocalChecked();
+        auto JSObject = PersistentValuePtr->Get(Isolate)->ToObject(Context).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, JSObject, RELEASED_UOBJECT, 0);
         DataTransfer::SetPointer(Isolate, JSObject, nullptr, 1);
-        GeneratedObjectMap.erase(ObjectBase);
+        GeneratedObjectMap.Remove(ObjectBase);
     }
 
     TryReleaseType((UStruct*) ObjectBase);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     UTypeScriptGeneratedClass* GeneratedClass = (UTypeScriptGeneratedClass*) ObjectBase;
-    auto IterBIM = BindInfoMap.find(GeneratedClass);
-    if (IterBIM != BindInfoMap.end())
+    auto BindInfoPtr = BindInfoMap.Find(GeneratedClass);
+    if (BindInfoPtr)
     {
-        BindInfoMap.erase(IterBIM);
+        BindInfoMap.Remove(GeneratedClass);
     }
 #endif
 
@@ -1855,11 +1858,11 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
 
 void FJsEnvImpl::TryReleaseType(UStruct* Struct)
 {
-    if (ClassToTemplateMap.find(Struct) != ClassToTemplateMap.end())
+    if (ClassToTemplateMap.Find(Struct))
     {
         // Logger->Warn(FString::Printf(TEXT("release class: %s"), *Struct->GetName()));
         ClassToTemplateMap[Struct].Reset();
-        ClassToTemplateMap.erase(Struct);
+        ClassToTemplateMap.Remove(Struct);
     }
 }
 
@@ -1905,7 +1908,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    if (GeneratedObjectMap.find(ContextObject) == GeneratedObjectMap.end())
+    if (!GeneratedObjectMap.Find(ContextObject))
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
             *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
@@ -1955,15 +1958,15 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
         if (!Function->HasAnyFunctionFlags(FUNC_Static))
         {
-            const auto ObjIter = GeneratedObjectMap.find(ContextObject);
-            if (ObjIter == GeneratedObjectMap.end())
+            const auto PersistentValuePtr = GeneratedObjectMap.Find(ContextObject);
+            if (!PersistentValuePtr)
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
                     *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
                 SkipFunction(Stack, RESULT_PARAM, Function);
                 return;
             }
-            ThisObj = ObjIter->second.Get(Isolate);
+            ThisObj = PersistentValuePtr->Get(Isolate);
         }
 
         v8::TryCatch TryCatch(Isolate);
@@ -2394,10 +2397,10 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 {
     check(Ptr);    // must not null
 
-    auto Iter = ContainerCache.find(Ptr);
-    if (Iter != ContainerCache.end())
+    auto PersistentValuePtr = ContainerCache.Find(Ptr);
+    if (PersistentValuePtr)
     {
-        return v8::Local<v8::Value>::New(Isolate, Iter->second);
+        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
     }
 
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
@@ -2437,18 +2440,30 @@ void FJsEnvImpl::BindStruct(
     DataTransfer::SetPointer(
         MainIsolate, JSObject, static_cast<UScriptStruct*>(ScriptStructWrapper->Struct.Get()), 1);    // add type info
 
-    if (LIKELY(!ForceNoCache || !PassByPointer))
-    {
-        StructCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-    }
     if (!PassByPointer)
     {
-        ScriptStructFinalizeInfoMap[Ptr] = {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize};
+#if WITH_BACKING_STORE_AUTO_FREE
+        auto Backing = v8::ArrayBuffer::NewBackingStore(
+            Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
+            [](void* Data, size_t Length, void* DeleterData)
+            {
+                // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+                FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+            },
+            ScriptStructWrapper);
+        auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
+        JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+#else
+        StructCache.Emplace(Ptr, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
+        ScriptStructFinalizeInfoMap.Add(Ptr, {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize});
         StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
+#endif
     }
     else if (!ForceNoCache)
     {
+        StructCache.Emplace(Ptr, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
         StructCache[Ptr].SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
     }
@@ -2462,8 +2477,10 @@ void FJsEnvImpl::BindCppObject(
 
 void FJsEnvImpl::UnBindStruct(void* Ptr)
 {
-    ScriptStructFinalizeInfoMap.erase(Ptr);
-    StructCache.erase(Ptr);
+#if !WITH_BACKING_STORE_AUTO_FREE
+    ScriptStructFinalizeInfoMap.Remove(Ptr);
+#endif
+    StructCache.Remove(Ptr);
 }
 
 void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
@@ -2474,40 +2491,40 @@ void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
 void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data))
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    ContainerCache[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
+    ContainerCache.Emplace(Ptr, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
     ContainerCache[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBindContainer(void* Ptr)
 {
-    ContainerCache.erase(Ptr);
+    ContainerCache.Remove(Ptr);
 }
 
 std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
 {
     const auto FullName = InStruct->GetFullName();
 
-    const auto Iter = TypeReflectionMap.find(FullName);
-    if (Iter == TypeReflectionMap.end())
+    auto TypeReflectionPtr = TypeReflectionMap.Find(FullName);
+    if (!TypeReflectionPtr)
     {
         auto Ret = std::make_shared<FStructWrapper>(InStruct);
-        TypeReflectionMap[FullName] = Ret;
+        TypeReflectionMap.Add(FullName, Ret);
         // UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper new %s // %s"), *InStruct->GetName(), *FullName);
         return Ret;
     }
     else
     {
         // UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
-        Iter->second->Init(InStruct);
-        return Iter->second;
+        (*TypeReflectionPtr)->Init(InStruct);
+        return (*TypeReflectionPtr);
     }
 }
 
 v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct, bool& Existed)
 {
     auto Isolate = MainIsolate;
-    auto Iter = ClassToTemplateMap.find(InStruct);
-    if (Iter == ClassToTemplateMap.end())
+    auto TemplatePtr = ClassToTemplateMap.Find(InStruct);
+    if (!TemplatePtr)
     {
         if (!ExtensionMethodsMapInited)
         {
@@ -2556,7 +2573,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
             }
         }
 
-        ClassToTemplateMap[InStruct] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
+        ClassToTemplateMap.Emplace(InStruct, v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template));
 
         Existed = false;
         return HandleScope.Escape(Template);
@@ -2564,7 +2581,7 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
     else
     {
         Existed = true;
-        return v8::Local<v8::FunctionTemplate>::New(Isolate, Iter->second);
+        return v8::Local<v8::FunctionTemplate>::New(Isolate, *TemplatePtr);
     }
 }
 
