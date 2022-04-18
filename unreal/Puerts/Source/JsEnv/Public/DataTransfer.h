@@ -191,7 +191,7 @@ public:
         return reinterpret_cast<void*>(High | Low);
     }
 
-    FORCEINLINE static void SplitAddressToHighPartOfTwo(void* Address, UPTRINT& High, UPTRINT& Low)
+    FORCEINLINE static void SplitAddressToHighPartOfTwo(const void* Address, UPTRINT& High, UPTRINT& Low)
     {
         High = reinterpret_cast<UPTRINT>(Address) & (((UPTRINT) -1) << (sizeof(UPTRINT) / 2));    //清除低位
         Low = reinterpret_cast<UPTRINT>(Address) << (sizeof(UPTRINT) / 2);
@@ -212,7 +212,7 @@ public:
     }
 
     //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
-    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, void* Ptr, int Index)
+    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, const void* Ptr, int Index)
     {
         // Object->SetInternalField(Index, v8::External::New(Isolate, Ptr));
         // Object->SetAlignedPointerInInternalField(Index, Ptr);
@@ -230,9 +230,9 @@ public:
     }
 
     static v8::Local<v8::Value> FindOrAddCData(
-        v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void* Ptr, bool PassByPointer);
+        v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer);
 
-    static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
+    static bool IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject);
 
     static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
 

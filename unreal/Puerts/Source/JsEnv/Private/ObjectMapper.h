@@ -30,9 +30,9 @@ public:
     virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr) = 0;
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void* Ptr, bool PassByPointer) = 0;
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
 
-    virtual bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) = 0;
+    virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
 
     virtual ~ICppObjectMapper()
     {

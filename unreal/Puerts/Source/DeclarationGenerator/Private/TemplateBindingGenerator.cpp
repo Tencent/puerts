@@ -68,12 +68,12 @@ struct FGenImp
 
     void GenClass(const puerts::JSClassDefinition* ClassDefinition)
     {
-        if (IsUEContainer(ClassDefinition->CPPTypeName))
+        if (IsUEContainer(ClassDefinition->ScriptName))
             return;
-        Output << "    class " << ClassDefinition->CPPTypeName;
-        if (ClassDefinition->CPPSuperTypeName)
+        Output << "    class " << ClassDefinition->ScriptName;
+        if (ClassDefinition->SuperTypeId)
         {
-            Output << " extends " << ClassDefinition->CPPSuperTypeName;
+            Output << " extends " << puerts::FindClassByID(ClassDefinition->SuperTypeId)->ScriptName;
         }
         Output << " {\n";
 
@@ -151,7 +151,7 @@ void UTemplateBindingGenerator::Gen_Implementation() const
     puerts::ForeachRegisterClass(
         [&](const puerts::JSClassDefinition* ClassDefinition)
         {
-            if (ClassDefinition->CPPTypeName)
+            if (ClassDefinition->TypeId && ClassDefinition->ScriptName)
             {
                 Gen.GenClass(ClassDefinition);
             }

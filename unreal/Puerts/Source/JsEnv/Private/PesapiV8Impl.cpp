@@ -270,8 +270,8 @@ bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
 pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    return v8impl::PesapiValueFromV8LocalValue(::puerts::DataTransfer::FindOrAddCData(
-        context->GetIsolate(), context, static_cast<const char*>(class_id), object_ptr, copy));
+    return v8impl::PesapiValueFromV8LocalValue(
+        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, copy));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
@@ -523,12 +523,13 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     }
 }
 
-void pesapi_define_class(const char* type_name, const char* super_type_name, pesapi_constructor constructor,
+void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
     pesapi_finalize finalize, size_t property_count, const pesapi_property_descriptor* properties)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
-    classDef.CPPTypeName = type_name;
-    classDef.CPPSuperTypeName = super_type_name;
+    classDef.TypeId = type_id;
+    classDef.SuperTypeId = super_type_id;
+    classDef.ScriptName = type_name;
 
     std::vector<puerts::JSFunctionInfo> p_methods;
     std::vector<puerts::JSFunctionInfo> p_functions;

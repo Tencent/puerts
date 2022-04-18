@@ -742,7 +742,7 @@ class ClassDefineBuilder
 
     const char* className_ = nullptr;
 
-    const char* superClassName_ = nullptr;
+    const void* superTypeId_ = nullptr;
 
     std::vector<GeneralFunctionInfo> functions_{};
 
@@ -768,7 +768,7 @@ public:
     template <typename S>
     ClassDefineBuilder<T>& Extends()
     {
-        superClassName_ = ScriptTypeName<S>::value;
+        superTypeId_ = StaticTypeId<S>::get();
         return *this;
     }
 
@@ -865,8 +865,9 @@ public:
         }
         else
         {
-            ClassDef.CPPTypeName = className_;
-            ClassDef.CPPSuperTypeName = superClassName_;
+            ClassDef.ScriptName = className_;
+            ClassDef.TypeId = StaticTypeId<T>::get();
+            ClassDef.SuperTypeId = superTypeId_;
         }
 
         ClassDef.Initialize = constructor_;
