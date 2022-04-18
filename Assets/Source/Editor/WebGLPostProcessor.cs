@@ -27,28 +27,29 @@ public class WebGLPuertsPostProcessor {
             UnityEngine.Debug.Log("上一次构建路径为空，生成至：" + lastBuiltPath);
         }
         JsEnv jsenv = new JsEnv();
-        try {
-            Action<string> postProcess = jsenv.Eval<Action<string>>(@"
-                (function() {
-                    const nodeModuleRequire = require('module').createRequire('" + PuertsWebglJSRoot + @"')
-                    const cp = require('child_process');
-                    const mkdirp = nodeModuleRequire('mkdirp');
-                    var csharp = puertsRequire('csharp')
-                    try {
-                        mkdirp.sync('" + lastBuiltPath + @"')
-                        cp.execSync('npm run build && mv ./PuertsDLLMock/dist/puerts-runtime.js " + lastBuiltPath + @"', {
-                            cwd: '" + PuertsWebglJSRoot + @"'
-                        });
-                    } catch(e) {
-                        csharp.UnityEngine.Debug.Log(e.stdout.toString());
-                        csharp.UnityEngine.Debug.LogError(e.stderr.toString());
-                        return;
-                    }
+        // JsEnv jsenv = new JsEnv(new DefaultLoader(), 9222);
+        // jsenv.WaitDebugger();
 
-                    return nodeModuleRequire('./glob-js/index.js')." + runEntry + @";
-                })()
-            ");
-            postProcess(lastBuiltPath);
+        Action postProcess = jsenv.Eval<Action>(@"
+            (function() {
+                const nodeModuleRequire = require('module').createRequire('" + PuertsWebglJSRoot + @"')
+                const cp = require('child_process');
+                const mkdirp = nodeModuleRequire('mkdirp');
+                const csharp = puertsRequire('csharp');
+
+                try {
+                    const build = require('" + PuertsWebglJSRoot + @"/build.js');
+                    build('" + lastBuiltPath + @"');
+                    nodeModuleRequire('./glob-js/index.js')." + runEntry + @"('" + lastBuiltPath + @"');
+                } catch(e) {
+                    console.log(e.stack);
+                    return;
+                }
+            })
+        ");
+        
+        try {
+            postProcess();
         } 
         catch(Exception e) 
         {
