@@ -929,7 +929,8 @@ public:
         {
             finalize = finalize_;
         }
-        pesapi_define_class(className_, superClassName_, constructor_, finalize, properties.size(), properties.data());
+        pesapi_define_class(
+            StaticTypeId<T>::get(), superTypeId_, className_, constructor_, finalize, properties.size(), properties.data());
     }
 #endif
 };
