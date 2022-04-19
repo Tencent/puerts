@@ -12,6 +12,7 @@
 
 #include <type_traits>
 #include <string>
+#include <cstring>
 #include <functional>
 #include <vector>
 #include <pesapi.h>
