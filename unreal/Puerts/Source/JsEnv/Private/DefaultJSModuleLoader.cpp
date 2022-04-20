@@ -10,7 +10,11 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Algo/Reverse.h"
+#if (ENGINE_MAJOR_VERSION >= 5)
+#include "HAL/PlatformFileManager.h"
+#else
 #include "HAL/PlatformFilemanager.h"
+#endif
 
 namespace puerts
 {
