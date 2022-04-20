@@ -192,7 +192,7 @@ PESAPI_EXTERN pesapi_env pesapi_get_env_from_holder(pesapi_env_holder env_holder
 PESAPI_EXTERN pesapi_env_holder pesapi_duplicate_env_holder(pesapi_env_holder env_holder);
 PESAPI_EXTERN void pesapi_release_env_holder(pesapi_env_holder env_holder);
 
-PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder);
+PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env env);
 PESAPI_EXTERN bool pesapi_has_caught(pesapi_scope scope);
 PESAPI_EXTERN const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack);
 PESAPI_EXTERN void pesapi_close_scope(pesapi_scope scope);

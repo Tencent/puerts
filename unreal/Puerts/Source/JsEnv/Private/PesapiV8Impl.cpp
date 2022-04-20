@@ -396,11 +396,12 @@ void pesapi_release_env_holder(pesapi_env_holder env_holder)
     }
 }
 
-pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder)
+pesapi_scope pesapi_open_scope(pesapi_env env)
 {
-    env_holder->isolate->Enter();
-    auto scope = new pesapi_scope__(env_holder->isolate);
-    env_holder->context_persistent.Get(env_holder->isolate)->Enter();
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    context->GetIsolate()->Enter();
+    auto scope = new pesapi_scope__(context->GetIsolate());
+    context->Enter();
     return scope;
 }
 
