@@ -523,6 +523,8 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     }
 }
 
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
     pesapi_finalize finalize, size_t property_count, const pesapi_property_descriptor* properties)
 {
@@ -567,6 +569,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     puerts::RegisterJSClass(classDef);
 }
+MSVC_PRAGMA(warning(pop))
 
 EXTERN_C_END
 
