@@ -309,7 +309,8 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     auto Iter = NamespaceMap.find(Obj);
     if (Iter == NamespaceMap.end())
     {
-        UPackage* Pkg = Obj->GetPackage();
+        //UPackage* Pkg = Obj->GetPackage(); //replace UObjectBaseUtility::GetPackage (in 4.26, not in 4.24) with UObjectBaseUtility::GetOutermost (in 4.24). GetOutermost has the same behavior as GetPackage.
+        UPackage* Pkg = Obj->GetOutermost();
         if (Pkg)
         {
             TArray<FString> PathFrags;
