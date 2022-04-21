@@ -1,4 +1,6 @@
 请在标题注明[unity]或者[unreal]!!!!
+please mark [unity] or [unreal] in title!!!
+
 ---
 name: "\U0001F41B bug issue"
 about: submit a bug report +_+
