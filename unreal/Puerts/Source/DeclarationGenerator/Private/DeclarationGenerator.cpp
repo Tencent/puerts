@@ -309,7 +309,11 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     auto Iter = NamespaceMap.find(Obj);
     if (Iter == NamespaceMap.end())
     {
+#if ENGINE_MINOR_VERSION > 25 || ENGINE_MAJOR_VERSION > 4
         UPackage* Pkg = Obj->GetPackage();
+#else
+        UPackage* Pkg = Obj->GetOutermost();
+#endif
         if (Pkg)
         {
             TArray<FString> PathFrags;
