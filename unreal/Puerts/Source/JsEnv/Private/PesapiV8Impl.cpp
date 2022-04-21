@@ -363,10 +363,10 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
     (*info).GetReturnValue().Set(v8impl::V8LocalValueFromPesapiValue(value));
 }
 
-void pesapi_throw_by_string(pesapi_env env, const char* msg)
+void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    v8::Isolate* isolate = context->GetIsolate();
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    v8::Isolate* isolate = info->GetIsolate();
     isolate->ThrowException(
         v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
 }

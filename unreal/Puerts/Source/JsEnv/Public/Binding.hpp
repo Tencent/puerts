@@ -386,7 +386,7 @@ private:
 
         if (!self)
         {
-            ThrowException(GetContext(info), "access a null object");
+            ThrowException(info, "access a null object");
             return true;
         }
 
@@ -414,7 +414,7 @@ private:
 
         if (!self)
         {
-            ThrowException(GetContext(info), "access a null object");
+            ThrowException(info, "access a null object");
             return true;
         }
 
@@ -471,7 +471,7 @@ struct FuncCallWrapper<Ret (*)(Args...), func>
         using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true>;
         if (!Helper::call(func, info))
         {
-            ThrowException(GetContext(info), "invalid parameter!");
+            ThrowException(info, "invalid parameter!");
         }
     }
     static const CFunctionInfo* info()
@@ -499,7 +499,7 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func>
         using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true>;
         if (!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
-            ThrowException(GetContext(info), "invalid parameter!");
+            ThrowException(info, "invalid parameter!");
         }
     }
     static const CFunctionInfo* info()
@@ -528,7 +528,7 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func>
         using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true>;
         if (!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
-            ThrowException(GetContext(info), "invalid parameter!");
+            ThrowException(info, "invalid parameter!");
         }
     }
     static const CFunctionInfo* info()
@@ -585,7 +585,7 @@ struct OverloadsRecursion
     {
         if (!_call(info))
         {
-            ThrowException(GetContext(info), "invalid parameter!");
+            ThrowException(info, "invalid parameter!");
         }
     }
 };
@@ -633,7 +633,7 @@ struct ConstructorRecursion
         auto Ret = _call(info);
         if (!Ret)
         {
-            ThrowException(GetContext(info), "invalid parameter!");
+            ThrowException(info, "invalid parameter!");
         }
         return Ret;
     }
@@ -677,7 +677,7 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<!is_objecttyp
         auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
         if (!self)
         {
-            ThrowException(context, "access a null object");
+            ThrowException(info, "access a null object");
             return;
         }
         SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
@@ -689,7 +689,7 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<!is_objecttyp
         auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
         if (!self)
         {
-            ThrowException(context, "access a null object");
+            ThrowException(info, "access a null object");
             return;
         }
         self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
@@ -710,7 +710,7 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
         auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
         if (!self)
         {
-            ThrowException(context, "access a null object");
+            ThrowException(info, "access a null object");
             return;
         }
         SetReturn(info, internal::TypeConverter<Ret*>::toScript(context, &(self->*member)));
@@ -722,7 +722,7 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
         auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
         if (!self)
         {
-            ThrowException(context, "access a null object");
+            ThrowException(info, "access a null object");
             return;
         }
         self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));

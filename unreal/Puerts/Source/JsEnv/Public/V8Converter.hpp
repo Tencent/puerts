@@ -85,9 +85,9 @@ V8_INLINE v8::Local<v8::Object> GetHolder(const v8::FunctionCallbackInfo<v8::Val
     return info.Holder();
 }
 
-V8_INLINE void ThrowException(v8::Local<v8::Context> context, const char* msg)
+V8_INLINE void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
 {
-    v8::Isolate* isolate = context->GetIsolate();
+    v8::Isolate* isolate = info.GetIsolate();
     isolate->ThrowException(
         v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
 }

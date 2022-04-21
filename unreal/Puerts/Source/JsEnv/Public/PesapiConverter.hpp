@@ -109,9 +109,9 @@ inline pesapi_value GetHolder(pesapi_callback_info info)
     return pesapi_get_holder(info);
 }
 
-inline void ThrowException(pesapi_env env, const char* msg)
+inline void ThrowException(pesapi_callback_info info, const char* msg)
 {
-    pesapi_throw_by_string(env, msg);
+    pesapi_throw_by_string(info, msg);
 }
 
 inline void SetReturn(pesapi_callback_info info, pesapi_value value)
