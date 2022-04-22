@@ -176,6 +176,9 @@ PESAPI_EXTERN pesapi_value pesapi_get_value_from_holder(pesapi_env env, pesapi_v
 PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
 PESAPI_EXTERN void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);
 
+PESAPI_EXTERN pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value object, uint32_t key);
+PESAPI_EXTERN void pesapi_set_property_uint32(pesapi_env env, pesapi_value object, uint32_t key, pesapi_value value);
+
 PESAPI_EXTERN pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 
