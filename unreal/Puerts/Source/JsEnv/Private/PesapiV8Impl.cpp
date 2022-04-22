@@ -524,15 +524,127 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     }
 }
 
+struct pesapi_type_info__
+{
+    const char* name;
+    bool is_pointer;
+    bool is_const;
+    bool is_ref;
+    bool is_primitive;
+};
+
+struct pesapi_signature_info__
+{
+    pesapi_type_info return_type;
+    size_t parameter_count;
+    pesapi_type_info parameter_types;
+};
+
+struct pesapi_property_descriptor__
+{
+    const char* name;
+    bool is_static;
+    pesapi_callback method;
+    pesapi_callback getter;
+    pesapi_callback setter;
+    void* data;
+
+    union
+    {
+        pesapi_type_info type_info;
+        pesapi_signature_info signature_info;
+    } info;
+};
+
+pesapi_type_info pesapi_alloc_type_infos(size_t count)
+{
+    auto ret = new pesapi_type_info__[count];
+    memset(ret, 0, sizeof(pesapi_type_info__) * count);
+    return ret;
+}
+
+void pesapi_set_type_info(
+    pesapi_type_info type_infos, size_t index, const char* name, bool is_pointer, bool is_const, bool is_ref, bool is_primitive)
+{
+    type_infos[index] = {name, is_pointer, is_const, is_ref, is_primitive};
+}
+
+pesapi_signature_info pesapi_create_signature_info(
+    pesapi_type_info return_type, size_t parameter_count, pesapi_type_info parameter_types)
+{
+    return new pesapi_signature_info__{return_type, parameter_count, parameter_types};
+}
+
+pesapi_property_descriptor pesapi_alloc_property_descriptors(size_t count)
+{
+    auto ret = new pesapi_property_descriptor__[count];
+    memset(ret, 0, sizeof(pesapi_property_descriptor__) * count);
+    return ret;
+}
+
+void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
+    pesapi_callback method, void* data, pesapi_signature_info signature_info)
+{
+    properties[index].name = name;
+    properties[index].is_static = is_static;
+    properties[index].method = method;
+    properties[index].data = data;
+    properties[index].info.signature_info = signature_info;
+}
+
+void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
+    pesapi_callback getter, pesapi_callback setter, void* data, pesapi_type_info type_info)
+{
+    properties[index].name = name;
+    properties[index].is_static = is_static;
+    properties[index].getter = getter;
+    properties[index].setter = setter;
+    properties[index].data = data;
+    properties[index].info.type_info = type_info;
+}
+
+static void free_property_descriptor(pesapi_property_descriptor properties, size_t property_count)
+{
+    for (size_t i = 0; i < property_count; i++)
+    {
+        pesapi_property_descriptor p = properties + i;
+        if (p->getter != nullptr || p->setter != nullptr)
+        {
+            if (p->info.type_info)
+            {
+                delete[] p->info.type_info;
+            }
+        }
+        else if (p->method != nullptr)
+        {
+            if (p->info.signature_info)
+            {
+                if (p->info.signature_info->return_type)
+                {
+                    delete p->info.signature_info->return_type;
+                }
+                if (p->info.signature_info->parameter_types)
+                {
+                    delete[] p->info.signature_info->parameter_types;
+                }
+                delete p->info.signature_info;
+            }
+        }
+    }
+}
+
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, const pesapi_property_descriptor* properties)
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
     classDef.ScriptName = type_name;
+
+    classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
+    classDef.Finalize = finalize;
 
     std::vector<puerts::JSFunctionInfo> p_methods;
     std::vector<puerts::JSFunctionInfo> p_functions;
@@ -540,7 +652,7 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 
     for (int i = 0; i < property_count; i++)
     {
-        const pesapi_property_descriptor* p = properties + i;
+        pesapi_property_descriptor p = properties + i;
         if (p->getter != nullptr || p->setter != nullptr)
         {
             p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
@@ -559,6 +671,8 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
             }
         }
     }
+
+    free_property_descriptor(properties, property_count);
 
     p_methods.push_back({nullptr, nullptr, nullptr});
     p_functions.push_back({nullptr, nullptr, nullptr});

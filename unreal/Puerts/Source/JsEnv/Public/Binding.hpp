@@ -909,28 +909,29 @@ public:
 #else
     void Register()
     {
-        std::vector<pesapi_property_descriptor> properties;
+        size_t properties_count = functions_.size() + methods_.size() + properties_.size();
+        auto properties = pesapi_alloc_property_descriptors(properties_count);
+        size_t pos = 0;
         for (const auto& func : functions_)
         {
-            properties.push_back({func.Name, true, func.Callback});
+            pesapi_set_method_info(properties, pos++, func.Name, true, func.Callback, nullptr, nullptr);
         }
 
         for (const auto& method : methods_)
         {
-            properties.push_back({method.Name, false, method.Callback});
+            pesapi_set_method_info(properties, pos++, method.Name, false, method.Callback, nullptr, nullptr);
         }
 
         for (const auto& prop : properties_)
         {
-            properties.push_back({prop.Name, false, nullptr, prop.Getter, prop.Setter});
+            pesapi_set_property_info(properties, pos++, prop.Name, false, prop.Getter, prop.Setter, nullptr, nullptr);
         }
         pesapi_finalize finalize = nullptr;
         if (constructor_)
         {
             finalize = finalize_;
         }
-        pesapi_define_class(
-            StaticTypeId<T>::get(), superTypeId_, className_, constructor_, finalize, properties.size(), properties.data());
+        pesapi_define_class(StaticTypeId<T>::get(), superTypeId_, className_, constructor_, finalize, properties_count, properties);
     }
 #endif
 };
