@@ -661,6 +661,14 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
     }
 }
 
+#ifndef MSVC_PRAGMA
+#if !defined(__clang__) && defined(_MSC_VER)
+#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
+#else
+#define MSVC_PRAGMA(...)
+#endif
+#endif
+
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
