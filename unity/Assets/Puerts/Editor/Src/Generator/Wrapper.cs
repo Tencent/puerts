@@ -124,15 +124,15 @@ namespace Puerts.Editor
                         })
                         .ToArray();
 
-                    var extensionMethodsList = Puerts.Utils.GetExtensionMethodsOf(type);
+                    var extensionMethodsList = Puerts.Editor.Generator.Utils.GetExtensionMethods(type, new HashSet<Type>(genTypes));
                     if (extensionMethodsList != null)
                     {
-                        extensionMethodsList = extensionMethodsList
+                        extensionMethodsList = new List<MethodInfo>(extensionMethodsList)
                             .Where(m => !Utils.IsNotSupportedMember(m))
-                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsNotGenericOrValidGeneric(m));
+                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsNotGenericOrValidGeneric(m)).ToArray();
                         if (genTypes != null)
                         {
-                            extensionMethodsList = extensionMethodsList.Where(m => genTypes.Contains(m.DeclaringType));
+                            extensionMethodsList = extensionMethodsList.Where(m => genTypes.Contains(m.DeclaringType)).ToArray();
                         }
                         extensionMethodsList
                             .Where(m => 
