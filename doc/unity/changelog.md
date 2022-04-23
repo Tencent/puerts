@@ -27,4 +27,4 @@ you can get the english version change log at [Github Release](https://github.co
     在filter中return false的成员，以前会在TypeRegister时被反射，并在后续代码中依然能被调用
     新的版本里，PuerTS继续兼容了这种调用。但这类成员的反射时机不再是TypeRegister阶段，而是在该成员被首次使用时。
  7. filter的新写法
-     为了适配新增的懒绑定模式，filter除了return false，现在还增加了返回BindingMode的模式，可选值：`FastBinding`(即会生成static wrapper)、LazyBinding(前面提到的首次调用时反射)、NoBinding(完全不允许JS调用)。例子可以查看仓库中 U2018Compatible.cs
+     为了适配新增的懒绑定模式，filter除了return false，现在还增加了返回BindingMode的模式，可选值：`FastBinding`(即会生成static wrapper)、`LazyBinding`(前面提到的首次调用时反射)、`DontBinding`(完全不允许JS调用)。例子可以查看仓库中 U2018Compatible.cs
