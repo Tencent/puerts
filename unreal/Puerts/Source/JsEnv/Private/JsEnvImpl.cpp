@@ -1544,24 +1544,25 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
     }
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct,
-    void* Ptr, bool PassByPointer, bool ForceNoCache)
+v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
+    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
     check(Ptr);    // must not null
 
-    if (LIKELY(!ForceNoCache))    // default: false
+    auto HeaderPtr = StructCache.Find(Ptr);
+    if (HeaderPtr)
     {
-        auto PersistentValuePtr = StructCache.Find(Ptr);
-        if (PersistentValuePtr)
+        auto CacheNodePtr = HeaderPtr->Find(ScriptStruct);
+        if (CacheNodePtr)
         {
-            return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+            return CacheNodePtr->Value.Get(Isolate);
         }
     }
 
     // create and link
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer), v8::Boolean::New(Isolate, ForceNoCache)};
-    return GetJsClass(ScriptStruct, Context)->NewInstance(Context, 3, Args).ToLocalChecked();
+    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
+    return GetJsClass(ScriptStruct, Context)->NewInstance(Context, 2, Args).ToLocalChecked();
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddCppObject(
@@ -2434,7 +2435,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
 }
 
 void FJsEnvImpl::BindStruct(
-    FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer, bool ForceNoCache)
+    FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
     DataTransfer::SetPointer(
@@ -2455,16 +2456,26 @@ void FJsEnvImpl::BindStruct(
         auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
         JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
 #else
-        StructCache.Emplace(Ptr, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
+        auto CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
+        CacheNodePtr->Value.Reset(MainIsolate, JSObject);
         ScriptStructFinalizeInfoMap.Add(Ptr, {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize});
-        StructCache[Ptr].SetWeak<FScriptStructWrapper>(
+        CacheNodePtr->Value.SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
 #endif
     }
-    else if (!ForceNoCache)
+    else
     {
-        StructCache.Emplace(Ptr, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
-        StructCache[Ptr].SetWeak<FScriptStructWrapper>(
+        auto CacheNodePtr = StructCache.Find(Ptr);
+        if (CacheNodePtr)
+        {
+            CacheNodePtr = CacheNodePtr->Add(ScriptStructWrapper->Struct.Get());
+        }
+        else
+        {
+            CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
+        }
+        CacheNodePtr->Value.Reset(MainIsolate, JSObject);
+        CacheNodePtr->Value.SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
     }
 }
@@ -2475,12 +2486,20 @@ void FJsEnvImpl::BindCppObject(
     CppObjectMapper.BindCppObject(InIsolate, ClassDefinition, Ptr, JSObject, PassByPointer);
 }
 
-void FJsEnvImpl::UnBindStruct(void* Ptr)
+void FJsEnvImpl::UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr)
 {
 #if !WITH_BACKING_STORE_AUTO_FREE
     ScriptStructFinalizeInfoMap.Remove(Ptr);
 #endif
-    StructCache.Remove(Ptr);
+    auto CacheNodePtr = StructCache.Find(Ptr);
+    if (CacheNodePtr)
+    {
+        auto Removed = CacheNodePtr->Remove(ScriptStructWrapper->Struct.Get(), true);
+        if (!CacheNodePtr->TypeId)    // last one
+        {
+            StructCache.Remove(Ptr);
+        }
+    }
 }
 
 void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)

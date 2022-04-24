@@ -63,7 +63,7 @@ v8::Local<v8::Value> DataTransfer::FindOrAddObject(
 v8::Local<v8::Value> DataTransfer::FindOrAddStruct(
     v8::Isolate* Isolate, v8::Local<v8::Context> Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer)
 {
-    return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer, true);
+    return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(Isolate, Context, ScriptStruct, Ptr, PassByPointer);
 }
 
 bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, UStruct* Struct, v8::Local<v8::Object> JsObject)

@@ -133,8 +133,6 @@ public:
 
     std::unique_ptr<FPropertyTranslator> Inner;
 
-    bool ForceNoCache = false;
-
     static void Getter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void Getter(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);

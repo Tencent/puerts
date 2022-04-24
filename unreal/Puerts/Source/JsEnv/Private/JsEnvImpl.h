@@ -23,6 +23,7 @@
 #include "TypeScriptGeneratedClass.h"
 #endif
 #include "ContainerMeta.h"
+#include "ObjectCacheNode.h"
 #include <unordered_map>
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
@@ -121,15 +122,15 @@ public:
     virtual v8::Local<v8::Value> FindOrAdd(
         v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) override;
 
-    virtual void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject,
-        bool PassByPointer, bool ForceNoCache) override;
+    virtual void BindStruct(
+        FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) override;
 
-    virtual void UnBindStruct(void* Ptr) override;
+    virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) override;
 
     virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr) override;
 
-    virtual v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct,
-        void* Ptr, bool PassByPointer, bool ForceNoCache) override;
+    virtual v8::Local<v8::Value> FindOrAddStruct(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) override;
 
     virtual void BindCppObject(v8::Isolate* InIsolate, JSClassDefinition* ClassDefinition, void* Ptr,
         v8::Local<v8::Object> JSObject, bool PassByPointer) override;
@@ -478,7 +479,7 @@ private:
     TMap<UObject*, v8::UniquePersistent<v8::Value>> ObjectMap;
     TMap<const class UObjectBase*, v8::UniquePersistent<v8::Value>> GeneratedObjectMap;
 
-    TMap<void*, v8::UniquePersistent<v8::Value>> StructCache;
+    TMap<void*, FObjectCacheNode> StructCache;
 
     TMap<void*, v8::UniquePersistent<v8::Value>> ContainerCache;
 
