@@ -85,7 +85,10 @@ declare module 'csharp' {
                 if (type.IsDelegate) {
                     // delegate, means function in typescript
                     t`
-                    { ${type.DelegateDef.replace('=>', ':')}; }
+                    { 
+                        ${type.DelegateDef.replace('=>', ':')}; 
+                        Invoke: ${type.DelegateDef}; 
+                    }
                     ${(!type.IsGenericTypeDefinition ? `var ${type.Name}: { new (func: ${type.DelegateDef}): ${type.Name}; }` : '')}
                     `;
                 }

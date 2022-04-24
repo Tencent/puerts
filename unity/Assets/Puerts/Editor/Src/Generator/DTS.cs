@@ -141,6 +141,7 @@ namespace Puerts.Editor
                         .Where(m => genTypeSet.Contains(m.DeclaringType) && methodNames.Contains(m.Name))
                         .Concat(declMethods)
                         .Where(m => !Utils.IsNotSupportedMember(m, true) && !Utils.IsGetterOrSetter(m) && (type.IsGenericTypeDefinition && !m.IsGenericMethodDefinition || Puerts.Utils.IsNotGenericOrValidGeneric(m)))
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding)
                         .Cast<MethodBase>()
                         .Distinct();
 
@@ -261,7 +262,9 @@ namespace Puerts.Editor
                         Name = type.Name.Replace('`', '$'),
                         Document = DocResolver.GetTsDocument(type),
                         Methods = genTypeSet.Contains(type) ? TsMethodGenInfo.FromType(type, genTypeSet) : new TsMethodGenInfo[] { },
-                        Properties = genTypeSet.Contains(type) ? type.GetFields(Utils.Flags).Where(m => !Utils.IsNotSupportedMember(m, true))
+                        Properties = genTypeSet.Contains(type) ? type.GetFields(Utils.Flags)
+                            .Where(m => !Utils.IsNotSupportedMember(m, true))
+                            .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding)
                             .Select(f => new TsPropertyGenInfo()
                             {
                                 Name = f.Name,
@@ -270,7 +273,9 @@ namespace Puerts.Editor
                                 IsStatic = f.IsStatic
                             })
                             .Concat(
-                                type.GetProperties(Utils.Flags).Where(m => m.Name != "Item").Where(m => !Utils.IsNotSupportedMember(m, true))
+                                type.GetProperties(Utils.Flags).Where(m => m.Name != "Item")
+                                .Where(m => !Utils.IsNotSupportedMember(m, true))
+                                .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding)
                                 .Select(p => new TsPropertyGenInfo()
                                 {
                                     Name = p.Name,
