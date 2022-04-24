@@ -17,21 +17,22 @@ namespace puerts
 class FObjectCacheNode
 {
 public:
-    V8_INLINE FObjectCacheNode(void* TypeId_) : TypeId(TypeId_), Next(nullptr)
+    V8_INLINE FObjectCacheNode(const void* TypeId_) : TypeId(TypeId_), Next(nullptr)
     {
     }
 
-    V8_INLINE FObjectCacheNode(void* TypeId_, FObjectCacheNode* Next_) : TypeId(TypeId_), Next(Next_)
+    V8_INLINE FObjectCacheNode(const void* TypeId_, FObjectCacheNode* Next_) : TypeId(TypeId_), Next(Next_)
     {
     }
 
-    V8_INLINE FObjectCacheNode(FObjectCacheNode&& other) : TypeId(other.TypeId), Next(other.Next), Value(std::move(other.Value))
+    V8_INLINE FObjectCacheNode(FObjectCacheNode&& other) noexcept
+        : TypeId(other.TypeId), Next(other.Next), Value(std::move(other.Value))
     {
         other.TypeId = nullptr;
         other.Next = nullptr;
     }
 
-    V8_INLINE FObjectCacheNode& operator=(FObjectCacheNode&& rhs)
+    V8_INLINE FObjectCacheNode& operator=(FObjectCacheNode&& rhs) noexcept
     {
         TypeId = rhs.TypeId;
         Next = rhs.Next;
@@ -47,7 +48,7 @@ public:
             delete Next;
     }
 
-    V8_INLINE FObjectCacheNode* Find(void* TypeId_)
+    V8_INLINE FObjectCacheNode* Find(const void* TypeId_)
     {
         if (TypeId_ == TypeId)
         {
@@ -60,7 +61,7 @@ public:
         return nullptr;
     }
 
-    V8_INLINE FObjectCacheNode* Remove(void* TypeId_, bool IsHead)
+    V8_INLINE FObjectCacheNode* Remove(const void* TypeId_, bool IsHead)
     {
         if (TypeId_ == TypeId)
         {
@@ -94,13 +95,13 @@ public:
         return nullptr;
     }
 
-    V8_INLINE FObjectCacheNode* Add(void* TypeId_)
+    V8_INLINE FObjectCacheNode* Add(const void* TypeId_)
     {
         Next = new FObjectCacheNode(TypeId_, Next);
         return Next;
     }
 
-    void* TypeId;
+    const void* TypeId;
 
     FObjectCacheNode* Next;
 
