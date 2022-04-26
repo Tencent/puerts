@@ -161,37 +161,44 @@ namespace Puerts
             {
                 PuertsDLL.CreateInspector(isolate, debugPort);
             }
-
-            bool isNode = PuertsDLL.GetLibBackend() == 1;
-            ExecuteModule("puerts/init.mjs");
-            ExecuteModule("puerts/log.mjs");
-            ExecuteModule("puerts/cjsload.mjs");
-            ExecuteModule("puerts/modular.mjs");
-            ExecuteModule("puerts/csharp.mjs");
-            ExecuteModule("puerts/timer.mjs");
-            
-            ExecuteModule("puerts/events.mjs");
-            ExecuteModule("puerts/promises.mjs");
-#if !PUERTS_GENERAL
-            if (!isNode) 
+            try 
             {
+                bool isNode = PuertsDLL.GetLibBackend() == 1;
+                ExecuteModule("puerts/init.mjs");
+                ExecuteModule("puerts/log.mjs");
+                ExecuteModule("puerts/cjsload.mjs");
+                ExecuteModule("puerts/modular.mjs");
+                ExecuteModule("puerts/csharp.mjs");
+                ExecuteModule("puerts/timer.mjs");
+                
+                ExecuteModule("puerts/events.mjs");
+                ExecuteModule("puerts/promises.mjs");
+#if !PUERTS_GENERAL
+                if (!isNode) 
+                {
 #endif
-                ExecuteModule("puerts/polyfill.mjs");
+                    ExecuteModule("puerts/polyfill.mjs");
 #if !PUERTS_GENERAL
-            }
-            else
-            {
-                ExecuteModule("puerts/nodepatch.mjs");
-            }
+                }
+                else
+                {
+                    ExecuteModule("puerts/nodepatch.mjs");
+                }
 #endif
 
 #if UNITY_EDITOR
-            if (OnJsEnvCreate != null) 
-            {
-                OnJsEnvCreate(this, loader, debugPort);
-            }
-            this.debugPort = debugPort;
+                if (OnJsEnvCreate != null) 
+                {
+                    OnJsEnvCreate(this, loader, debugPort);
+                }
+                this.debugPort = debugPort;
 #endif
+            } 
+            catch (Exception ex)
+            {
+                Dispose();
+                throw ex;
+            }
         }
 
         internal string ResolveModuleContent(string identifer) 
