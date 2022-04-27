@@ -217,6 +217,10 @@ namespace puerts
         {
             Templates[i].Reset();
         }
+        for (int i = 0; i < Metadatas.size(); ++i)
+        {
+            Metadatas[i].Reset();
+        }
 
         {
             auto Isolate = MainIsolate;
@@ -503,7 +507,12 @@ namespace puerts
         
         Template->InstanceTemplate()->SetInternalFieldCount(3);//1: object id, 2: type id, 3: magic
         Templates.push_back(v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template));
+        auto Map = v8::Map::New(Isolate);
+        Metadatas.push_back(v8::UniquePersistent<v8::Map>(Isolate, Map));
+
         NameToTemplateID[FullName] = ClassId;
+        Map->Set(Context, FV8Utils::V8String(Isolate, "classid"), v8::Number::New(Isolate, ClassId));
+        Template->SetClassName(FV8Utils::V8String(Isolate, FullName));
 
         if (BaseClassId >= 0)
         {
@@ -534,7 +543,7 @@ namespace puerts
         return true;
     }
 
-    bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete)
+    bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool NotReadonlyStatic)
     {
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -546,9 +555,22 @@ namespace puerts
 
         auto Attr = (Setter == nullptr) ? v8::ReadOnly : v8::None;
 
-        if (DontDelete)
+        if (!NotReadonlyStatic) 
         {
-            Attr = (v8::PropertyAttribute)(Attr | v8::DontDelete);
+            v8::Local<v8::Map> Metadata = Metadatas[ClassID].Get(Isolate);
+            v8::Local<v8::Set> ReadonlyStaticMembersSet;
+            v8::Local<v8::Value> NameOfTheSet = FV8Utils::V8String(Isolate, "readonlyStaticMembers");
+            v8::Local<v8::Value> ReadonlyStaticMembersSetValue = Metadata->Get(Context, NameOfTheSet).ToLocalChecked();
+            if (ReadonlyStaticMembersSetValue->IsNullOrUndefined())
+            {
+                ReadonlyStaticMembersSet = v8::Set::New(Isolate);
+                Metadata->Set(Context, NameOfTheSet, ReadonlyStaticMembersSet);
+            }
+            else
+            {
+                ReadonlyStaticMembersSet = v8::Local<v8::Set>::Cast(ReadonlyStaticMembersSetValue);
+            }
+            ReadonlyStaticMembersSet->Add(Context, FV8Utils::V8String(Isolate, Name));
         }
 
         if (IsStatic)
@@ -558,7 +580,8 @@ namespace puerts
         }
         else
         {
-            Templates[ClassID].Get(Isolate)->PrototypeTemplate()->SetAccessorProperty(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Getter, GetterData)
+            Templates[ClassID].Get(Isolate)->PrototypeTemplate()->SetAccessorProperty(FV8Utils::V8String(Isolate, Name),
+                ToTemplate(Isolate, IsStatic, Getter, GetterData)
                 , Setter == nullptr ? v8::Local<v8::FunctionTemplate>() : ToTemplate(Isolate, IsStatic, Setter, SetterData), Attr);
         }
 
@@ -573,7 +596,7 @@ namespace puerts
         auto Context = Isolate->GetCurrentContext();
 
         auto Result = Templates[ClassID].Get(Isolate)->GetFunction(Context).ToLocalChecked();
-        Result->Set(Context, FV8Utils::V8String(Isolate, "$cid"), v8::Integer::New(Isolate, ClassID));
+        Result->Set(Context, FV8Utils::V8String(Isolate, "__puertsMetadata"), Metadatas[ClassID].Get(Isolate));
         return Result;
     }
 

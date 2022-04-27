@@ -24,17 +24,20 @@ function csTypeToClass(csType) {
             if (currentCls === Object || currentCls === Function || currentCls.__static_inherit__) break;
         }
 
-        for(var key in cls) {
-            let desc = Object.getOwnPropertyDescriptor(cls, key);
-            if (desc && desc.configurable && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
-                let val = cls[key];
-                Object.defineProperty(cls, key, {
-                    value: val,
-                    writable: false,
-                    configurable: false
-                });
-                if (cls.__p_isEnum && (typeof val) == 'number') {
-                    cls[val] = key;
+        let readonlyStaticMembers;
+        if (readonlyStaticMembers = cls.__puertsMetadata.get('readonlyStaticMembers')) {
+            for (var key in cls) {
+                let desc = Object.getOwnPropertyDescriptor(cls, key);
+                if (readonlyStaticMembers.has(key) && desc && (typeof desc.get) == 'function' && (typeof desc.value) == 'undefined') {
+                    let val = cls[key];
+                    Object.defineProperty(cls, key, {
+                        value: val,
+                        writable: false,
+                        configurable: false
+                    });
+                    if (cls.__p_isEnum && (typeof val) == 'number') {
+                        cls[val] = key;
+                    }
                 }
             }
         }

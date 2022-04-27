@@ -539,4 +539,10 @@ namespace Puerts.UnitTest
             return lastCallbackValue == null ? null : lastCallbackValue.GetType();
         }
     }
+
+    public class ReadonlyStaticTest
+    {
+        public readonly static int ReadonlyStaticField = 1;
+        public static int StaticField = 3;
+    }
 }

@@ -205,6 +205,8 @@ private:
 
     std::vector<v8::UniquePersistent<v8::FunctionTemplate>> Templates;
 
+    std::vector<v8::UniquePersistent<v8::Map>> Metadatas;
+
     std::map<std::string, int> NameToTemplateID;
 
     std::map<void*, v8::UniquePersistent<v8::Value>> ObjectMap;
