@@ -422,7 +422,9 @@ V8_EXPORT int GetTypeIdFromValue(v8::Isolate* Isolate, v8::Value *Value, int IsO
         {
             auto Context = Isolate->GetCurrentContext();
             auto Function = v8::Local<v8::Function>::Cast(Value->ToObject(Context).ToLocalChecked());
-            auto MaybeValue = Function->Get(Context, FV8Utils::V8String(Isolate, "$cid"));
+            auto MaybeMap = Function->Get(Context, FV8Utils::V8String(Isolate, "__puertsMetadata"));
+            if (MaybeMap.IsEmpty()) return -1;
+            auto MaybeValue = v8::Local<v8::Map>::Cast(MaybeMap.ToLocalChecked())->Get(Context, FV8Utils::V8String(Isolate, "classid"));
             if (MaybeValue.IsEmpty()) return -1;
             auto Value = MaybeValue.ToLocalChecked();
             if (!Value->IsInt32()) return -1;

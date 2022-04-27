@@ -527,4 +527,10 @@ namespace Puerts.UnitTest
         }
     
     }
+
+    public class ReadonlyStaticTest
+    {
+        public readonly static int ReadonlyStaticField = 1;
+        public static int StaticField = 3;
+    }
 }

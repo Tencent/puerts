@@ -765,6 +765,26 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, 12);
         }
 
+        [Test]
+        public void ReadonlyStaticFieldTest()
+        {
+            // readonly static的字段无法在js中修改，并且读取它时不会产生跨语言
+            var jsEnv = new JsEnv(new TxtLoader());
+            Assert.True(Puerts.UnitTest.ReadonlyStaticTest.ReadonlyStaticField == 1);
+            Assert.True(Puerts.UnitTest.ReadonlyStaticTest.StaticField == 3);
+            var ret = jsEnv.Eval<bool>(@"
+                const CS = require('csharp');
+                CS.Puerts.UnitTest.ReadonlyStaticTest.ReadonlyStaticField = 2;
+                CS.Puerts.UnitTest.ReadonlyStaticTest.StaticField = 4;
+                typeof Object.getOwnPropertyDescriptor(CS.Puerts.UnitTest.ReadonlyStaticTest, 'ReadonlyStaticField').get == 'undefined' &&
+                !typeof Object.getOwnPropertyDescriptor(CS.Puerts.UnitTest.ReadonlyStaticTest, 'ReadonlyStaticField').configurable
+                typeof Object.getOwnPropertyDescriptor(CS.Puerts.UnitTest.ReadonlyStaticTest, 'StaticField').configurable
+            ");
+            Assert.True(Puerts.UnitTest.ReadonlyStaticTest.ReadonlyStaticField == 1);
+            Assert.True(Puerts.UnitTest.ReadonlyStaticTest.StaticField == 4);
+            Assert.True(ret);
+            jsEnv.Dispose();
+        }
 
         [Test]
         public void OperatorAddTest()
