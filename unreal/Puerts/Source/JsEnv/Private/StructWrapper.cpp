@@ -399,6 +399,10 @@ void FScriptStructWrapper::New(
             if (ExternalInitialize)
             {
                 Memory = ExternalInitialize(Info);
+                if (!Memory)    // do not bind nullptr
+                {
+                    return;
+                }
             }
             else
             {

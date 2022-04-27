@@ -608,6 +608,7 @@ static void _FBox2DMinGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, &(Self->Min), true);
 
+    puerts::DataTransfer::LinkOuter<FBox2D, FVector2D>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FBox2DMinSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -640,6 +641,7 @@ static void _FBox2DMaxGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, &(Self->Max), true);
 
+    puerts::DataTransfer::LinkOuter<FBox2D, FVector2D>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FBox2DMaxSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -671,6 +673,7 @@ static void _FBox2DbIsValidGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Boolean::New(Isolate, Self->bIsValid);
+    puerts::DataTransfer::LinkOuter<FBox2D, bool>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FBox2DbIsValidSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)

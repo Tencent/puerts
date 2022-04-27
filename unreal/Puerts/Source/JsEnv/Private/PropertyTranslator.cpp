@@ -37,6 +37,8 @@ void FPropertyTranslator::Getter(
         return;
     }
 
+    v8::Local<v8::Value> Ret;
+
     if (OwnerIsClass)
     {
         UObject* Object = FV8Utils::GetUObject(Info.Holder());
@@ -50,7 +52,7 @@ void FPropertyTranslator::Getter(
             FV8Utils::ThrowException(Isolate, "access a invalid object");
             return;
         }
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, Object, true));
+        Ret = UEToJsInContainer(Isolate, Context, Object, true);
     }
     else
     {
@@ -60,8 +62,13 @@ void FPropertyTranslator::Getter(
             FV8Utils::ThrowException(Isolate, "access a null struct");
             return;
         }
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, Ptr, true));
+        Ret = UEToJsInContainer(Isolate, Context, Ptr, true);
     }
+    if (NeedLinkOuter)
+    {
+        LinkOuterImpl(Context, Info.Holder(), Ret);
+    }
+    Info.GetReturnValue().Set(Ret);
 }
 
 void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info)

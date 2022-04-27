@@ -807,13 +807,6 @@ FJsEnvImpl::~FJsEnvImpl()
 
         ContainerCache.Empty();
 
-#if !WITH_BACKING_STORE_AUTO_FREE
-        for (auto& KV : ScriptStructFinalizeInfoMap)
-        {
-            FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
-        }
-#endif
-
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
         {
             Iter->second.JSObject.Reset();
@@ -918,6 +911,14 @@ FJsEnvImpl::~FJsEnvImpl()
     delete CreateParams.array_buffer_allocator;
 
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
+
+    // quickjs will call UnBind in vm dispose, so cleanup move to here
+#if !WITH_BACKING_STORE_AUTO_FREE
+    for (auto& KV : ScriptStructFinalizeInfoMap)
+    {
+        FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
+    }
+#endif
 }
 
 void FJsEnvImpl::InitExtensionMethodsMap()

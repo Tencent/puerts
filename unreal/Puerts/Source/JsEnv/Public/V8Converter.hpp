@@ -97,6 +97,12 @@ V8_INLINE void SetReturn(const v8::FunctionCallbackInfo<v8::Value>& info, v8::Lo
     info.GetReturnValue().Set(value);
 }
 
+template <typename T1, typename T2>
+V8_INLINE void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+{
+    LinkOuterImpl(Context, Outer, Inner);
+}
+
 V8_INLINE void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, v8::Local<v8::Value> value)
 {
     if (holder->IsObject())

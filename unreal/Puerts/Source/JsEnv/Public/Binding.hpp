@@ -713,7 +713,9 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
             ThrowException(info, "access a null object");
             return;
         }
-        SetReturn(info, internal::TypeConverter<Ret*>::toScript(context, &(self->*member)));
+        auto ret = internal::TypeConverter<Ret*>::toScript(context, &(self->*member));
+        LinkOuter<Ins, Ret>(context, GetThis(info), ret);
+        SetReturn(info, ret);
     }
 
     static void setter(CallbackInfoType info)

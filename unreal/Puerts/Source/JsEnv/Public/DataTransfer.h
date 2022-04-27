@@ -28,6 +28,21 @@
 
 namespace puerts
 {
+template <typename T, typename FT, typename = void>
+struct TOuterLinker
+{
+    V8_INLINE static void Link(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+    }
+};
+
+V8_INLINE void LinkOuterImpl(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+{
+#ifdef WITH_OUTER_LINK
+    Inner.As<v8::Object>()->Set(Context, 0, Outer);
+#endif
+}
+
 #if USING_IN_UNREAL_ENGINE
 FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR* Name)
 {
@@ -178,6 +193,15 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
         return T::StaticStruct();
     }
 };
+
+template <typename T, typename FT>
+struct TOuterLinker<T, FT, ToVoid<decltype(&TScriptStructTraits<FT>::Get)>>
+{
+    V8_INLINE static void Link(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+        LinkOuterImpl(Context, Outer, Inner);
+    }
+};
 #endif
 
 class JSENV_API DataTransfer
@@ -269,5 +293,11 @@ public:
 
     static void ThrowException(v8::Isolate* Isolate, const char* Message);
 #endif
+
+    template <typename T1, typename T2>
+    FORCEINLINE static void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+        TOuterLinker<T1, T2>::Link(Context, Outer, Inner);
+    }
 };
 }    // namespace puerts

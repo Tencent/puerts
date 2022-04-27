@@ -119,6 +119,12 @@ inline void SetReturn(pesapi_callback_info info, pesapi_value value)
     pesapi_add_return(info, value);
 }
 
+template <typename T1, typename T2>
+V8_INLINE void LinkOuter(pesapi_env env, pesapi_value outer, pesapi_value inner)
+{
+    pesapi_set_property_uint32(env, inner, 0, outer);
+}
+
 inline void UpdateRefValue(pesapi_env env, pesapi_value holder, pesapi_value value)
 {
     if (pesapi_is_object(env, holder))

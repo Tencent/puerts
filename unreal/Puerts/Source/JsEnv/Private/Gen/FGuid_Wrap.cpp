@@ -274,6 +274,7 @@ static void _FGuidAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->A);
+    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -305,6 +306,7 @@ static void _FGuidBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->B);
+    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -336,6 +338,7 @@ static void _FGuidCGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->C);
+    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidCSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -367,6 +370,7 @@ static void _FGuidDGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->D);
+    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidDSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
