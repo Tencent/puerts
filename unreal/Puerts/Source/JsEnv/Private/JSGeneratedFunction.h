@@ -33,6 +33,8 @@ class UJSGeneratedFunction : public UFunction
 public:
     DECLARE_FUNCTION(execCallJS);
 
+    DECLARE_FUNCTION(execCallMixin);
+
     v8::UniquePersistent<v8::Function> JsFunction;
 
     TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;

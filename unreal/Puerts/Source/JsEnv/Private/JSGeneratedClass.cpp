@@ -13,6 +13,8 @@
 #include "JSAnimGeneratedClass.h"
 #include "FunctionParametersDuplicate.h"
 
+#define OLD_METHOD_PREFIX "__puerts_old__"
+
 UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker,
     v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
 {
@@ -82,24 +84,25 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
 }
 
 void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative)
+    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative, bool IsMixinFunc)
 {
-    bool Replace = Super->GetOuter() == Class;
+    bool Existed = Super->GetOuter() == Class;
     FName FunctionName = Super->GetFName();
-    if (Replace)
+    if (Existed)
     {
         if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super))    //这种情况只需简单替换下js函数
         {
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super, false);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
-            MaybeJSFunction->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
+            MaybeJSFunction->SetNativeFunc(IsMixinFunc ? &UJSGeneratedFunction::execCallMixin : &UJSGeneratedFunction::execCallJS);
             return;
         }
         // UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
         //同一Outer下的同名对象只能有一个...
-        Super->Rename(*FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT("__Removed")), Super->GetOuter(),
+        Super->Rename(*FString::Printf(TEXT("%s%s"), TEXT(OLD_METHOD_PREFIX), *Super->GetName()), Class,
             REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+        Class->AddFunctionToFunctionMap(Super, Super->GetFName());
         // UE_LOG(LogTemp, Error, TEXT("rename to %s"), *Super->GetName());
     }
 
@@ -119,7 +122,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     Function->ReturnValueOffset = MAX_uint16;
     Function->FirstPropertyToInit = NULL;
 
-    if (!Replace)
+    if (!Existed)
     {
         // UE_LOG(LogTemp, Error, TEXT("new function %s"), *FunctionName.ToString());
         Function->SetSuperStruct(Super);
@@ -140,13 +143,13 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         Function->FunctionFlags |= FUNC_Native;    //让UE不走解析
     }
 
-    Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
+    Function->SetNativeFunc(IsMixinFunc ? &UJSGeneratedFunction::execCallMixin : &UJSGeneratedFunction::execCallJS);
 
     Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
 
-    if (Replace)
+    if (Existed && !IsMixinFunc)
     {
         Function->Next = Super->Next;
         if (Class->Children == Super)    // first one
@@ -169,6 +172,50 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         Class->Children = Function;
     }
     Class->AddFunctionToFunctionMap(Function, Function->GetFName());
+}
+
+void UJSGeneratedClass::Restore(UClass* Class)
+{
+    FString OrphanedClassString = FString::Printf(TEXT("ORPHANED_DATA_ONLY_%s"), *Class->GetName());
+    FName OrphanedClassName =
+        MakeUniqueObjectName(GetTransientPackage(), UBlueprintGeneratedClass::StaticClass(), FName(*OrphanedClassString));
+    UClass* OrphanedClass = NewObject<UBlueprintGeneratedClass>(GetTransientPackage(), OrphanedClassName, RF_Public | RF_Transient);
+    OrphanedClass->ClassAddReferencedObjects = Class->AddReferencedObjects;
+    OrphanedClass->ClassFlags |= CLASS_CompiledFromBlueprint;
+    OrphanedClass->ClassGeneratedBy = Class->ClassGeneratedBy;
+
+    auto PP = &Class->Children;
+    while (*PP)
+    {
+        if (auto JGF = Cast<UJSGeneratedFunction>(*PP))    // to delte
+        {
+            JGF->JsFunction.Reset();
+            *PP = JGF->Next;
+            Class->RemoveFunctionFromFunctionMap(JGF);
+            JGF->Rename(nullptr, OrphanedClass, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+            FLinkerLoad::InvalidateExport(JGF);
+        }
+        else
+        {
+            PP = &(*PP)->Next;
+        }
+    }
+    PP = &Class->Children;
+    while (*PP)
+    {
+        if (auto Function = Cast<UFunction>(*PP))
+        {
+            if (Function->GetName().StartsWith(TEXT(OLD_METHOD_PREFIX)))
+            {
+                Class->RemoveFunctionFromFunctionMap(Function);
+                Function->Rename(*Function->GetName().Mid(strlen(OLD_METHOD_PREFIX)), Class,
+                    REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
+                Class->AddFunctionToFunctionMap(Function, Function->GetFName());
+            }
+        }
+        PP = &(*PP)->Next;
+    }
+    Class->ClearFunctionMapsCaches();
 }
 
 void UJSGeneratedClass::InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr)

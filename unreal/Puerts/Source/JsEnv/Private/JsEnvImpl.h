@@ -201,6 +201,8 @@ public:
 
     void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
+    void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
+
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
     void NotifyReBind(UTypeScriptGeneratedClass* Class);
@@ -271,7 +273,12 @@ private:
 
     void NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     void MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    TArray<TWeakObjectPtr<UClass>> MixinClasses;
+    void Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info);
+#endif
 
     void FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -562,6 +569,13 @@ private:
         {
             if (Parent)
                 Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
+        }
+
+        virtual void InvokeMixinMethod(
+            UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
+        {
+            if (Parent)
+                Parent->InvokeMixinMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 #endif
         FJsEnvImpl* Parent;

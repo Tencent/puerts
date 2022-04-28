@@ -103,6 +103,7 @@ var global = global || (function () { return this; }());
     global.__tgjsUEClassToJSClass = undefined;
     
     function blueprint(path) {
+        console.warn('deprecated! use blueprint.tojs instead');
         let uclass = UE.Struct.Load(path);
         if (uclass) {
             let jsclass = UEClassToJSClass(uclass);
@@ -112,6 +113,39 @@ var global = global || (function () { return this; }());
             throw new Error("can not load type in " + path);
         }
     }
+    
+    blueprint.tojs = UEClassToJSClass;
+    
+    let __tgjsMixin = global.__tgjsMixin;
+    global.__tgjsMixin = undefined;
+    
+    function mixin(to, mixinClass) {
+        let mixinMethods = Object.create(null);
+        let names = Object.getOwnPropertyNames(mixinClass.prototype);
+        for(var i = 0; i < names.length; ++i) {
+            let name = names[i];
+            let descriptor = Object.getOwnPropertyDescriptor(mixinClass.prototype, name);
+            if (typeof descriptor.value === 'function' && name != "constructor") {
+                 mixinMethods[name] = mixinClass.prototype[name];
+            }
+        }
+        let cls = __tgjsMixin(to.StaticClass(), mixinMethods);
+        
+        let jsCls = UEClassToJSClass(cls);
+        Object.getOwnPropertyNames(mixinMethods).forEach(name => {
+            if (!jsCls.prototype.hasOwnProperty(name)) {
+                Object.defineProperty(
+                    jsCls.prototype,
+                    name,
+                    Object.getOwnPropertyDescriptor(mixinMethods, name) ||
+                    Object.create(null)
+                );
+            }
+        });
+        return jsCls;
+    }
+    
+    blueprint.mixin = mixin;
     
     puerts.blueprint = blueprint;
     

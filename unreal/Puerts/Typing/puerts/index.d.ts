@@ -38,6 +38,14 @@ declare module "puerts" {
     function blueprint<T extends {
         new (...args:any[]): Object;
     }>(path:string): T;
+
+    namespace blueprint {
+        function tojs<T extends typeof Object>(cls:Class): T;
+        function mixin<T extends typeof Object, U>(to:T, mixinMethods:U) : {
+            new (Outer?: Object, Name?: string, ObjectFlags?: number) : InstanceType<T> & (U extends new (...args: any) => infer R ? (R extends InstanceType<T> ? R : never) : never);
+            StaticClass(): Class;
+        };
+    }
     
     function on(eventType: string, listener: Function, prepend?: boolean) : void;
     
