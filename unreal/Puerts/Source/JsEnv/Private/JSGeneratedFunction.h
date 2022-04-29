@@ -40,4 +40,6 @@ public:
     TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
+
+    bool TakeJsObjectRef;
 };

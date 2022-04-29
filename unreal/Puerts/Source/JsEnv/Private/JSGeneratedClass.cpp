@@ -12,6 +12,7 @@
 #include "JSWidgetGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
 #include "FunctionParametersDuplicate.h"
+#include "JSLogger.h"
 
 #define OLD_METHOD_PREFIX "__puerts_old__"
 
@@ -84,7 +85,7 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
 }
 
 void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative, bool IsMixinFunc)
+    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative, bool IsMixinFunc, bool TakeJsObjectRef)
 {
     bool Existed = Super->GetOuter() == Class;
     FName FunctionName = Super->GetFName();
@@ -92,10 +93,17 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     {
         if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super))    //这种情况只需简单替换下js函数
         {
+            if (IsMixinFunc)
+            {
+                UE_LOG(Puerts, Error, TEXT("Try to mixin a function[%s:%s] already mixin by anthor vm"), *Class->GetName(),
+                    *Super->GetName());
+                return;
+            }
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super, false);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
             MaybeJSFunction->SetNativeFunc(IsMixinFunc ? &UJSGeneratedFunction::execCallMixin : &UJSGeneratedFunction::execCallJS);
+            MaybeJSFunction->TakeJsObjectRef = TakeJsObjectRef;
             return;
         }
         // UE_LOG(LogTemp, Error, TEXT("replace %s of %s"), *Super->GetName(), *Class->GetName());
@@ -148,6 +156,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
+    Function->TakeJsObjectRef = TakeJsObjectRef;
 
     if (Existed && !IsMixinFunc)
     {

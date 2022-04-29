@@ -1978,7 +1978,26 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
     auto Context = DefaultContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
 
-    v8::Local<v8::Value> Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
+    v8::Local<v8::Value> Self;
+
+    if (Function->TakeJsObjectRef)
+    {
+        auto GeneratedObjectPtr = GeneratedObjectMap.Find(ContextObject);
+        if (GeneratedObjectPtr)
+        {
+            Self = GeneratedObjectPtr->Get(Isolate);
+        }
+        else
+        {
+            Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject)->ToObject(Context).ToLocalChecked();
+            GeneratedObjectMap.Emplace(ContextObject, v8::UniquePersistent<v8::Value>(MainIsolate, Self));
+            UnBind(ContextObject->GetClass(), ContextObject);
+        }
+    }
+    else
+    {
+        Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
+    }
 
     v8::TryCatch TryCatch(Isolate);
 
@@ -3520,7 +3539,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
             {
                 // Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
                 UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()),
-                    DynamicInvoker, true, false);
+                    DynamicInvoker, true, false, true);
                 overrided.Add(FunctionFName);
             }
         }
@@ -3570,6 +3589,12 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     MixinClasses.Add(To);
     auto MixinMethods = Info[1]->ToObject(Context).ToLocalChecked();
 
+    bool TakeJsObjectRef = false;
+    if (Info[2]->IsBoolean())
+    {
+        TakeJsObjectRef = Info[2]->BooleanValue(Isolate);
+    }
+
     auto Keys = MixinMethods->GetOwnPropertyNames(Context).ToLocalChecked();
     for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
     {
@@ -3578,7 +3603,8 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Function)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
-            UJSGeneratedClass::Override(Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), DynamicInvoker, true, true);
+            UJSGeneratedClass::Override(
+                Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), DynamicInvoker, true, true, TakeJsObjectRef);
         }
     }
     To->ClearFunctionMapsCaches();
