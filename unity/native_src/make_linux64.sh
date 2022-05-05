@@ -11,7 +11,7 @@ then
 fi
 
 mkdir -p build_linux64_$ENGINE && cd build_linux64_$ENGINE
-cmake -DJS_ENGINE=$ENGINE ../
+cmake -DJS_ENGINE=$ENGINE -DCMAKE_BUILD_TYPE=$CONFIG ../
 cd ..
 cmake --build build_linux64_$ENGINE --config $CONFIG
 mkdir -p ../Assets/Plugins/x86_64/

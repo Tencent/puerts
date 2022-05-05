@@ -11,7 +11,7 @@ then
 fi
 
 mkdir -p build_osx_$ENGINE && cd build_osx_$ENGINE
-cmake -DJS_ENGINE=$ENGINE -GXcode ../
+cmake -DJS_ENGINE=$ENGINE -DCMAKE_BUILD_TYPE=$CONFIG -GXcode ../
 cd ..
 cmake --build build_osx_$ENGINE --config $CONFIG
 cmake --install build_osx_$ENGINE --config $CONFIG --prefix "$(pwd)/build_osx_$ENGINE"

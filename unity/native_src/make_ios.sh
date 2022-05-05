@@ -11,7 +11,7 @@ then
 fi
 
 mkdir -p build_ios_$ENGINE && cd build_ios_$ENGINE
-cmake -DJS_ENGINE=$ENGINE -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ../
+cmake -DJS_ENGINE=$ENGINE -DCMAKE_BUILD_TYPE=$CONFIG -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ../
 cd ..
 cmake --build build_ios_$ENGINE --config $CONFIG
 mkdir -p ../Assets/Plugins/iOS/

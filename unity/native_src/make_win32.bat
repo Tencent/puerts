@@ -11,7 +11,7 @@ if "%CONFIG%"=="Debug" (
 )
 
 mkdir build32_%ENGINE% & pushd build32_%ENGINE%
-cmake -DJS_ENGINE=%ENGINE% -G "Visual Studio 16 2019" -A Win32 ..
+cmake -DJS_ENGINE=%ENGINE% -DCMAKE_BUILD_TYPE=%CONFIG% -G "Visual Studio 16 2019" -A Win32 ..
 popd
 cmake --build build32_%ENGINE% --config %CONFIG%
 md ..\Assets\Plugins\x86
