@@ -191,10 +191,10 @@ public:
     virtual v8::Local<v8::Value> CreateArray(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
 
-    void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms);
+    void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
+    void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
         const v8::UniquePersistent<v8::Object>& Prototype);
 
     void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object);
@@ -420,6 +420,8 @@ public:
     };
 
     TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
+
+    TSharedPtr<IDynamicInvoker> MixinInvoker;
 #endif
 private:
     puerts::FObjectRetainer UserObjectRetainer;
@@ -551,17 +553,17 @@ private:
         {
         }
 
-        virtual void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms) override
+        virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) override
         {
             if (Parent)
-                Parent->InvokeJsCallback(Proxy, Parms);
+                Parent->InvokeDelegateCallback(Proxy, Params);
         }
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        virtual void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
+        virtual void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
             const v8::UniquePersistent<v8::Object>& Prototype) override
         {
             if (Parent)
-                Parent->Construct(Class, Object, Constructor, Prototype);
+                Parent->JsConstruct(Class, Object, Constructor, Prototype);
         }
 
         virtual void InvokeJsMethod(

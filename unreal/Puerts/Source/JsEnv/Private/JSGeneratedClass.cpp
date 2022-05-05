@@ -79,7 +79,7 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
         auto PinedDynamicInvoker = JSGeneratedClass->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
-            PinedDynamicInvoker->Construct(JSGeneratedClass, Object, JSGeneratedClass->Constructor, JSGeneratedClass->Prototype);
+            PinedDynamicInvoker->JsConstruct(JSGeneratedClass, Object, JSGeneratedClass->Constructor, JSGeneratedClass->Prototype);
         }
     }
 }

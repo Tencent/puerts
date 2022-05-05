@@ -726,6 +726,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
+    MixinInvoker = DynamicInvoker;
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
 #endif
@@ -911,6 +912,7 @@ FJsEnvImpl::~FJsEnvImpl()
     }
 
     DynamicInvoker.Reset();
+    MixinInvoker.Reset();
 
     SoftObjectPtrTemplate.Reset();
     MulticastDelegateTemplate.Reset();
@@ -1665,7 +1667,7 @@ v8::Local<v8::Value> FJsEnvImpl::CreateArray(
     return Array;
 }
 
-void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
+void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1684,7 +1686,7 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 
     v8::TryCatch TryCatch(Isolate);
 
-    JsCallbackPrototypeMap[SignatureFunction]->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Parms);
+    JsCallbackPrototypeMap[SignatureFunction]->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Params);
 
     if (TryCatch.HasCaught())
     {
@@ -1693,7 +1695,7 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
+void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
     const v8::UniquePersistent<v8::Object>& Prototype)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -3604,7 +3606,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
             UJSGeneratedClass::Override(
-                Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), DynamicInvoker, true, true, TakeJsObjectRef);
+                Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
         }
     }
     To->ClearFunctionMapsCaches();
