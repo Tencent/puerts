@@ -133,14 +133,12 @@ var global = global || (function () { return this; }());
         
         let jsCls = UEClassToJSClass(cls);
         Object.getOwnPropertyNames(mixinMethods).forEach(name => {
-            if (!jsCls.prototype.hasOwnProperty(name)) {
-                Object.defineProperty(
-                    jsCls.prototype,
-                    name,
-                    Object.getOwnPropertyDescriptor(mixinMethods, name) ||
-                    Object.create(null)
-                );
-            }
+            Object.defineProperty(
+                jsCls.prototype,
+                name,
+                Object.getOwnPropertyDescriptor(mixinMethods, name) ||
+                Object.create(null)
+            );
         });
         return jsCls;
     }
