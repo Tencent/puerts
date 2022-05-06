@@ -10,11 +10,10 @@
 #include "JsEnvGroup.h"
 #include "JsEnvImpl.h"
 #include "TsDynamicInvoker.h"
-#include "DynamicInvoker.h"
 
 namespace puerts
 {
-class FGroupDynamicInvoker : public ITsDynamicInvoker, public IDynamicInvoker
+class FGroupDynamicInvoker : public ITsDynamicInvoker
 {
 public:
     FGroupDynamicInvoker(std::vector<FJsEnvImpl*> InJsEnvs) : JsEnvs(InJsEnvs)
@@ -45,29 +44,6 @@ public:
             JsEnvs[i]->NotifyReBind(Class);
         }
     }
-
-    virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) override
-    {
-        ensureMsgf(false, TEXT("InvokeDelegateCallback in GroupDynamicInvoker"));
-    }
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    virtual void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
-        const v8::UniquePersistent<v8::Object>& Prototype) override
-    {
-        ensureMsgf(false, TEXT("JsConstruct in GroupDynamicInvoker"));
-    }
-
-    virtual void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-    {
-        ensureMsgf(false, TEXT("InvokeJsMethod in GroupDynamicInvoker"));
-    }
-
-    virtual void InvokeMixinMethod(
-        UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
-    {
-        JsEnvs[GetSelectIndex(ContextObject)]->InvokeMixinMethod(ContextObject, Function, Stack, RESULT_PARAM);
-    }
-#endif
 
     std::vector<FJsEnvImpl*> JsEnvs;
 
@@ -112,7 +88,6 @@ void FJsEnvGroup::Init()
     for (int i = 0; i < JsEnvs.size(); i++)
     {
         JsEnvs[i]->TsDynamicInvoker = GroupDynamicInvoker;
-        JsEnvs[i]->MixinInvoker = GroupDynamicInvoker;
     }
 }
 
