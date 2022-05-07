@@ -420,8 +420,9 @@ public:
     };
 
     TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
-#endif
 
+    TSharedPtr<IDynamicInvoker> MixinInvoker;
+#endif
 private:
     puerts::FObjectRetainer UserObjectRetainer;
 

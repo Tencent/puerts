@@ -140,7 +140,7 @@ var global = global || (function () { return this; }());
                 Object.create(null)
             );
         });
-        return [jsCls, cls];
+        return jsCls;
     }
     
     blueprint.mixin = mixin;

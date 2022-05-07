@@ -726,7 +726,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
-
+    MixinInvoker = DynamicInvoker;
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
 #endif
@@ -912,6 +912,7 @@ FJsEnvImpl::~FJsEnvImpl()
     }
 
     DynamicInvoker.Reset();
+    MixinInvoker.Reset();
 
     SoftObjectPtrTemplate.Reset();
     MulticastDelegateTemplate.Reset();
@@ -3576,37 +3577,18 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     CHECK_V8_ARGS(EArgObject, EArgObject);
 
-    auto Des = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
-    if (!Des || Des->IsNative())
+    auto To = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
+    if (!To || To->IsNative())
     {
         FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
         return;
     }
-
-    UBlueprint* DesBlueprint = nullptr;
-
-    for (TObjectIterator<UBlueprint> It; It; ++It)
+    if (MixinClasses.ContainsByPredicate([To](TWeakObjectPtr<UClass> Item) { return Item == To; }))
     {
-        UBlueprint* BP = *It;
-        if (BP->GeneratedClass == Des)
-        {
-            DesBlueprint = BP;
-            break;
-        }
-    }
-
-    if (!DesBlueprint)
-    {
-        FV8Utils::ThrowException(Isolate, "can not find the blueprint for class");
+        FV8Utils::ThrowException(Isolate, "had mixin");
         return;
     }
-
-    FObjectDuplicationParameters Params(DesBlueprint, DesBlueprint->GetOuter());
-    Params.ApplyFlags = RF_Transient;
-    Params.DestName = MakeUniqueObjectName(DesBlueprint->GetOuter(), UBlueprint::StaticClass(), DesBlueprint->GetFName());
-    auto ToBlueprint = (UBlueprint*) StaticDuplicateObjectEx(Params);
-    auto To = (UClass*) ToBlueprint->GeneratedClass;
-
+    MixinClasses.Add(To);
     auto MixinMethods = Info[1]->ToObject(Context).ToLocalChecked();
 
     bool TakeJsObjectRef = false;
@@ -3624,16 +3606,11 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
             UJSGeneratedClass::Override(
-                Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), DynamicInvoker, true, true, TakeJsObjectRef);
+                Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
         }
     }
-
-    MixinClasses.Add(To);
     To->ClearFunctionMapsCaches();
-    To->Bind();
-    To->StaticLink(true);
-
-    Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, To->GetClass(), To));
+    Info.GetReturnValue().Set(Info[0]);
 }
 #endif
 
