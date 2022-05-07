@@ -83,6 +83,9 @@ namespace puerts {
         const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
         if (Code == nullptr) 
         {
+            std::string ErrorMessage = std::string("module not found") + name_std;
+            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
+            JS_Throw(ctx, ex);
             return nullptr;
         }
         JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
@@ -138,16 +141,21 @@ namespace puerts {
 
         v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
         v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
-        // if (ret.IsNothing() || !ret.ToChecked()) 
-        if (TryCatch.HasCaught())
+        if (ret.IsNothing() || !ret.ToChecked())
         {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            if (TryCatch.HasCaught())
+            {
+                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            }
             return false;
         }
         v8::MaybeLocal<v8::Value> evalRet = ModuleChecked->Evaluate(Context);
-        if (TryCatch.HasCaught()) // evalRet.IsEmpty()
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+        if (evalRet.IsEmpty())
+        {   
+            if (TryCatch.HasCaught())
+            {
+                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            }
             return false;
         }
         else
