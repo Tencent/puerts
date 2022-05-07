@@ -22,11 +22,17 @@ namespace Puerts.UnitTest
         public void ESModuleNotFound()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            Assert.Catch(() =>
+            try 
             {
                 jsEnv.ExecuteModule("whatever.mjs");
-            });
-            jsEnv.Dispose();
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(e.Message.Contains("whatever.mjs"));
+                jsEnv.Dispose();
+                return;
+            }
+            Assert.True(false);
         }
         [Test]
         public void ESModuleCompileError()
@@ -34,11 +40,17 @@ namespace Puerts.UnitTest
             var loader = new TxtLoader();
             loader.AddMockFileContent("whatever.mjs", @"export delete;");
             var jsEnv = new JsEnv(loader);
-            Assert.Catch(() =>
+            try 
             {
                 jsEnv.ExecuteModule("whatever.mjs");
-            });
-            jsEnv.Dispose();
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(e.Message.Contains("export"));
+                jsEnv.Dispose();
+                return;
+            }
+            Assert.True(false);
         }
         [Test]
         public void ESModuleEvaluateError()
@@ -46,10 +58,86 @@ namespace Puerts.UnitTest
             var loader = new TxtLoader();
             loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
             var jsEnv = new JsEnv(loader);
-            Assert.Catch(() =>
+            try 
             {
                 jsEnv.ExecuteModule("whatever.mjs");
-            });
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(e.Message.Contains("not a function"));
+                jsEnv.Dispose();
+                return;
+            }
+            Assert.True(false);
+        }
+        [Test]
+        public void ESModuleImportNotFound()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("entry.mjs", @"import 'whatever.mjs'");
+            var jsEnv = new JsEnv(loader);
+            try 
+            {
+                jsEnv.ExecuteModule("entry.mjs");
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(e.Message.Contains("whatever.mjs"));
+                jsEnv.Dispose();
+                return;
+            }
+            Assert.True(false);
+        }
+        [Test]
+        public void ESModuleImportCompileError()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"export delete;");
+            loader.AddMockFileContent("entry.mjs", @"import 'whatever.mjs'");
+            var jsEnv = new JsEnv(loader);
+            try 
+            {
+                jsEnv.ExecuteModule("entry.mjs");
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(e.Message.Contains("export"));
+                jsEnv.Dispose();
+                return;
+            }
+            Assert.True(false);
+        }
+        [Test]
+        public void ESModuleImportEvaluateError()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
+            loader.AddMockFileContent("entry.mjs", @"import 'whatever.mjs'");
+            var jsEnv = new JsEnv(loader);
+            try 
+            {
+                jsEnv.ExecuteModule("entry.mjs");
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(e.Message.Contains("not a function"));
+                jsEnv.Dispose();
+                return;
+            }
+            Assert.True(false);
+        }
+        [Test]
+        public void ESModuleExecuteCJS()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            var jsEnv = new JsEnv(loader);
+            string str = jsEnv.ExecuteModule<string>("whatever.cjs", "default");
+
+            Assert.True(str == "hello world");
+
             jsEnv.Dispose();
         }
         [Test]
