@@ -558,6 +558,20 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 ->GetFunction(Context)
                 .ToLocalChecked())
         .Check();
+
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsMixin"),
+            v8::FunctionTemplate::New(
+                Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                    Self->Mixin(Info);
+                },
+                This)
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
 #endif
 
     Global
@@ -712,6 +726,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
 
     DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
+    MixinInvoker = DynamicInvoker;
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
 #endif
@@ -897,6 +912,7 @@ FJsEnvImpl::~FJsEnvImpl()
     }
 
     DynamicInvoker.Reset();
+    MixinInvoker.Reset();
 
     SoftObjectPtrTemplate.Reset();
     MulticastDelegateTemplate.Reset();
@@ -917,6 +933,16 @@ FJsEnvImpl::~FJsEnvImpl()
     for (auto& KV : ScriptStructFinalizeInfoMap)
     {
         FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
+    }
+#endif
+
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+    for (size_t i = 0; i < MixinClasses.Num(); i++)
+    {
+        if (MixinClasses[i].IsValid())
+        {
+            UJSGeneratedClass::Restore(MixinClasses[i].Get());
+        }
     }
 #endif
 }
@@ -1641,7 +1667,7 @@ v8::Local<v8::Value> FJsEnvImpl::CreateArray(
     return Array;
 }
 
-void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
+void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1660,7 +1686,7 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 
     v8::TryCatch TryCatch(Isolate);
 
-    JsCallbackPrototypeMap[SignatureFunction]->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Parms);
+    JsCallbackPrototypeMap[SignatureFunction]->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Params);
 
     if (TryCatch.HasCaught())
     {
@@ -1669,7 +1695,7 @@ void FJsEnvImpl::InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms)
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-void FJsEnvImpl::Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
+void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
     const v8::UniquePersistent<v8::Object>& Prototype)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -1910,23 +1936,75 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    if (!GeneratedObjectMap.Find(ContextObject))
-    {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
-            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        SkipFunction(Stack, RESULT_PARAM, Function);
-        return;
-    }
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = DefaultContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
 
+    v8::Local<v8::Value> Self;
+    auto GeneratedObjectPtr = GeneratedObjectMap.Find(ContextObject);
+    if (GeneratedObjectPtr)
+    {
+        Self = GeneratedObjectPtr->Get(Isolate);
+    }
+
+    if (Self.IsEmpty())
+    {
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
+            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
+        SkipFunction(Stack, RESULT_PARAM, Function);
+        return;
+    }
+
     v8::TryCatch TryCatch(Isolate);
 
-    Function->FunctionTranslator->CallJs(Isolate, Context, Function->JsFunction.Get(Isolate),
-        GeneratedObjectMap[ContextObject].Get(Isolate), ContextObject, Stack, RESULT_PARAM);
+    Function->FunctionTranslator->CallJs(
+        Isolate, Context, Function->JsFunction.Get(Isolate), Self, ContextObject, Stack, RESULT_PARAM);
+
+    if (TryCatch.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: %s"), *ContextObject->GetClass()->GetName(),
+            *Function->GetName(), ContextObject, *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+    }
+}
+
+void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM)
+{
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
+    auto Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = DefaultContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    v8::Local<v8::Value> Self;
+
+    if (Function->TakeJsObjectRef)
+    {
+        auto GeneratedObjectPtr = GeneratedObjectMap.Find(ContextObject);
+        if (GeneratedObjectPtr)
+        {
+            Self = GeneratedObjectPtr->Get(Isolate);
+        }
+        else
+        {
+            Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject)->ToObject(Context).ToLocalChecked();
+            GeneratedObjectMap.Emplace(ContextObject, v8::UniquePersistent<v8::Value>(MainIsolate, Self));
+            UnBind(ContextObject->GetClass(), ContextObject);
+        }
+    }
+    else
+    {
+        Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
+    }
+
+    v8::TryCatch TryCatch(Isolate);
+
+    Function->FunctionTranslator->CallJs(
+        Isolate, Context, Function->JsFunction.Get(Isolate), Self, ContextObject, Stack, RESULT_PARAM);
 
     if (TryCatch.HasCaught())
     {
@@ -3462,8 +3540,8 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
             if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
             {
                 // Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
-                UJSGeneratedClass::Override(
-                    Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, true);
+                UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()),
+                    DynamicInvoker, true, false, true);
                 overrided.Add(FunctionFName);
             }
         }
@@ -3490,6 +3568,94 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     auto Result = FindOrAdd(Isolate, Context, Class->GetClass(), Class);
     Info.GetReturnValue().Set(Result);
+}
+
+void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    CHECK_V8_ARGS(EArgObject, EArgObject);
+
+    auto To = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
+    if (!To || To->IsNative())
+    {
+        FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
+        return;
+    }
+    if (MixinClasses.ContainsByPredicate([To](TWeakObjectPtr<UClass> Item) { return Item == To; }))
+    {
+        FV8Utils::ThrowException(Isolate, "had mixin");
+        return;
+    }
+
+    auto MixinMethods = Info[1]->ToObject(Context).ToLocalChecked();
+
+    bool TakeJsObjectRef = false;
+    if (Info[2]->IsBoolean())
+    {
+        TakeJsObjectRef = Info[2]->BooleanValue(Isolate);
+    }
+
+    bool Inherit = false;
+    if (Info[3]->IsBoolean())
+    {
+        Inherit = Info[3]->BooleanValue(Isolate);
+    }
+
+    UClass* New = To;
+
+    if (Inherit)
+    {
+        New = NewObject<UClass>(To->GetOuter(), To->GetClass(),
+            MakeUniqueObjectName(To->GetOuter(), To->GetClass(), *(To->GetName() + TEXT("_MixinGen_"))));
+        New->PropertyLink = To->PropertyLink;
+        New->ClassWithin = To->ClassWithin;
+        New->ClassConfigName = To->ClassConfigName;
+        New->ClassFlags = To->ClassFlags;
+        New->ClassCastFlags = To->ClassCastFlags;
+        New->ClassConstructor = To->ClassConstructor;
+        New->SetSuperStruct(To);
+    }
+
+    auto Keys = MixinMethods->GetOwnPropertyNames(Context).ToLocalChecked();
+    for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
+    {
+        auto Key = Keys->Get(Context, i).ToLocalChecked();
+        auto Function = To->FindFunctionByName(FV8Utils::ToFName(Isolate, Key));
+        if (Function)
+        {
+            auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
+            UJSGeneratedClass::Override(
+                Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
+        }
+    }
+
+    if (Inherit)
+    {
+        New->Bind();
+        New->StaticLink(true);
+
+        auto CDO = New->GetDefaultObject();
+        if (auto AnimClass = Cast<UAnimBlueprintGeneratedClass>(New))
+        {
+            AnimClass->UpdateCustomPropertyListForPostConstruction();
+        }
+        else if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
+        {
+            WidgetClass->UpdateCustomPropertyListForPostConstruction();
+        }
+        else if (auto BPClass = Cast<UBlueprintGeneratedClass>(New))
+        {
+            BPClass->UpdateCustomPropertyListForPostConstruction();
+        }
+    }
+    else
+    {
+        To->ClearFunctionMapsCaches();
+    }
+    MixinClasses.Add(New);
+    Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
 }
 #endif
 

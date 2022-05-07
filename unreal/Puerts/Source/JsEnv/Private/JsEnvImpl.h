@@ -191,15 +191,17 @@ public:
     virtual v8::Local<v8::Value> CreateArray(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, FPropertyTranslator* Property, void* ArrayPtr) override;
 
-    void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms);
+    void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
+    void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
         const v8::UniquePersistent<v8::Object>& Prototype);
 
     void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object);
 
     void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
+
+    void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
@@ -271,7 +273,12 @@ private:
 
     void NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+#if !defined(ENGINE_INDEPENDENT_JSENV)
     void MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    TArray<TWeakObjectPtr<UClass>> MixinClasses;
+    void Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info);
+#endif
 
     void FindModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -413,6 +420,8 @@ public:
     };
 
     TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
+
+    TSharedPtr<IDynamicInvoker> MixinInvoker;
 #endif
 private:
     puerts::FObjectRetainer UserObjectRetainer;
@@ -544,17 +553,17 @@ private:
         {
         }
 
-        virtual void InvokeJsCallback(UDynamicDelegateProxy* Proxy, void* Parms) override
+        virtual void InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Params) override
         {
             if (Parent)
-                Parent->InvokeJsCallback(Proxy, Parms);
+                Parent->InvokeDelegateCallback(Proxy, Params);
         }
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-        virtual void Construct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
+        virtual void JsConstruct(UClass* Class, UObject* Object, const v8::UniquePersistent<v8::Function>& Constructor,
             const v8::UniquePersistent<v8::Object>& Prototype) override
         {
             if (Parent)
-                Parent->Construct(Class, Object, Constructor, Prototype);
+                Parent->JsConstruct(Class, Object, Constructor, Prototype);
         }
 
         virtual void InvokeJsMethod(
@@ -562,6 +571,13 @@ private:
         {
             if (Parent)
                 Parent->InvokeJsMethod(ContextObject, Function, Stack, RESULT_PARAM);
+        }
+
+        virtual void InvokeMixinMethod(
+            UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
+        {
+            if (Parent)
+                Parent->InvokeMixinMethod(ContextObject, Function, Stack, RESULT_PARAM);
         }
 #endif
         FJsEnvImpl* Parent;

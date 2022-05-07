@@ -6,6 +6,12 @@ on:
       backend:
         description: 'js backend'     
         required: true
+      config:
+        type: choice
+        description: Release Or Debug
+        options:
+        - Release
+        - Debug
 
 env:
   RUNID: 613573412
@@ -38,12 +44,12 @@ jobs:
           ls ~/android-ndk-r21b
           cd unity/native_src
           chmod 777 make_android.sh
-          ./make_android.sh ${{ github.event.inputs.backend }}
+          ./make_android.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins(${{ github.event.inputs.backend }})
+          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
   ios:
     runs-on: macos-10.15
 
@@ -64,12 +70,12 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh ${{ github.event.inputs.backend }}
+          sh ./make_ios.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins(${{ github.event.inputs.backend }})
+          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
   osx_arm64:
     runs-on: macos-11
 
@@ -88,12 +94,12 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx_arm64.sh ${{ github.event.inputs.backend }}
+          sh ./make_osx_arm64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins(${{ github.event.inputs.backend }})
+          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
   osx:
     runs-on: macos-10.15
 
@@ -114,12 +120,12 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh ${{ github.event.inputs.backend }}
+          sh ./make_osx.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins(${{ github.event.inputs.backend }})
+          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
   windows:
     runs-on: windows-2019
 
@@ -139,13 +145,13 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat ${{ github.event.inputs.backend }}
+          .\make_win64.bat ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
           # .\make_win32.bat ${{ github.event.inputs.backend }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins(${{ github.event.inputs.backend }})
+          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
   linux64:
     runs-on: ubuntu-latest
 
@@ -170,10 +176,10 @@ jobs:
         run: |
           cd unity/native_src
           chmod 777 make_linux64.sh
-          ./make_linux64.sh ${{ github.event.inputs.backend }}
+          ./make_linux64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins(${{ github.event.inputs.backend }})
+          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
  
