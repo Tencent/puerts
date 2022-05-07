@@ -119,7 +119,8 @@ var global = global || (function () { return this; }());
     let __tgjsMixin = global.__tgjsMixin;
     global.__tgjsMixin = undefined;
     
-    function mixin(to, mixinClass, objectTakeByNative) {
+    function mixin(to, mixinClass, config) {
+        config = config || {};
         let mixinMethods = Object.create(null);
         let names = Object.getOwnPropertyNames(mixinClass.prototype);
         for(var i = 0; i < names.length; ++i) {
@@ -129,7 +130,7 @@ var global = global || (function () { return this; }());
                  mixinMethods[name] = mixinClass.prototype[name];
             }
         }
-        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, objectTakeByNative);
+        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit);
         
         let jsCls = UEClassToJSClass(cls);
         Object.getOwnPropertyNames(mixinMethods).forEach(name => {
@@ -140,6 +141,10 @@ var global = global || (function () { return this; }());
                 Object.create(null)
             );
         });
+                
+        if (config.inherit) {
+            config.generatedClass = cls;
+        }
         return jsCls;
     }
     

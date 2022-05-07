@@ -3588,13 +3588,34 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         FV8Utils::ThrowException(Isolate, "had mixin");
         return;
     }
-    MixinClasses.Add(To);
+
     auto MixinMethods = Info[1]->ToObject(Context).ToLocalChecked();
 
     bool TakeJsObjectRef = false;
     if (Info[2]->IsBoolean())
     {
         TakeJsObjectRef = Info[2]->BooleanValue(Isolate);
+    }
+
+    bool Inherit = false;
+    if (Info[3]->IsBoolean())
+    {
+        Inherit = Info[3]->BooleanValue(Isolate);
+    }
+
+    UClass* New = To;
+
+    if (Inherit)
+    {
+        New = NewObject<UClass>(To->GetOuter(), To->GetClass(),
+            MakeUniqueObjectName(To->GetOuter(), To->GetClass(), *(To->GetName() + TEXT("_MixinGen_"))));
+        New->PropertyLink = To->PropertyLink;
+        New->ClassWithin = To->ClassWithin;
+        New->ClassConfigName = To->ClassConfigName;
+        New->ClassFlags = To->ClassFlags;
+        New->ClassCastFlags = To->ClassCastFlags;
+        New->ClassConstructor = To->ClassConstructor;
+        New->SetSuperStruct(To);
     }
 
     auto Keys = MixinMethods->GetOwnPropertyNames(Context).ToLocalChecked();
@@ -3606,11 +3627,35 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
             UJSGeneratedClass::Override(
-                Isolate, To, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
+                Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
         }
     }
-    To->ClearFunctionMapsCaches();
-    Info.GetReturnValue().Set(Info[0]);
+
+    if (Inherit)
+    {
+        New->Bind();
+        New->StaticLink(true);
+
+        auto CDO = New->GetDefaultObject();
+        if (auto AnimClass = Cast<UAnimBlueprintGeneratedClass>(New))
+        {
+            AnimClass->UpdateCustomPropertyListForPostConstruction();
+        }
+        else if (auto WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(New))
+        {
+            WidgetClass->UpdateCustomPropertyListForPostConstruction();
+        }
+        else if (auto BPClass = Cast<UBlueprintGeneratedClass>(New))
+        {
+            BPClass->UpdateCustomPropertyListForPostConstruction();
+        }
+    }
+    else
+    {
+        To->ClearFunctionMapsCaches();
+    }
+    MixinClasses.Add(New);
+    Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
 }
 #endif
 
