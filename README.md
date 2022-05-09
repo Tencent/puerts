@@ -104,26 +104,12 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [unreal手册](doc/unreal/manual.md)
 * [unity手册](doc/unity/manual.md)
 
-## 支持的引擎，平台 | Supported platform
-
-### 引擎 | Engine
-
-* unreal engine 4.22 ~ latest
-
-* unity 5 ~ latest
-
-### 平台 | Platform
-
-* iOS，Android，Windows，Macos
-
-* 任意.net环境 | Any .net project
-
-## 详细信息
+## 详细信息 | detailed README
 
 * [unreal](unreal/README.md)
 * [unity](unity/README.md)
 
-## 示例
+## 示例 | Example
 
 ### Unreal
 
@@ -150,6 +136,19 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/Assets/Examples/06_UIEvent) ：UI事件的演示
+
+## 引擎 | Supported Engine
+
+* unreal engine 4.22 ~ latest
+
+* unity 5 ~ latest
+
+## 平台 | Supported Platform
+
+* iOS，Android，Windows，Macos
+
+* 任意.net环境 | Any .net project
+
 
 ## 技术支持 | Support
 
