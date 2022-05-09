@@ -771,7 +771,7 @@ void UPEBlueprintAsset::AddFunction(FName InName, bool IsVoid, FPEGraphPinType I
             TSet<FName> OutputSet;
             for (auto& Pair : OutputParameterTypes)
             {
-                RetChanged = RetChanged || TryAddOutput(TargetNodes, Pair.Key, Pair.Value);
+                RetChanged = TryAddOutput(TargetNodes, Pair.Key, Pair.Value) || RetChanged;
                 if (RetChanged)
                     CanChangeCheck();
                 OutputSet.Add(Pair.Key);

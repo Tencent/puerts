@@ -24,7 +24,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
-## 安装
+## 安装 | Installation
 <!-- 方法1. 下载项目 -->
 * [unreal](doc/unreal/install.md)
 * [unity](doc/unity/install.md)
@@ -43,9 +43,9 @@ npm i -g @puerts/cli
 puerts init
 ``` -->
 
-## 版本相关
+## 版本相关 | About version
 
-### 最新版本
+### 最新版本 | Latest version
 
 * [![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.0)
 
@@ -56,14 +56,14 @@ puerts init
 * [unreal](doc/unreal/changelog.md)
 * [unity](doc/unity/changelog.md)
 
-### 已知问题
+### 已知问题 | Known problem
 
 各发布版本已知的，影响较大的bug及其修复办法
 
 * [unreal](doc/unreal/bugs.md)
 * [unity](doc/unity/bugs.md)
 
-## 编程样例
+## 编程样例 | Example
 
 Unity
 
@@ -88,42 +88,28 @@ console.log(actor.GetName());
 console.log(actor.K2_GetActorLocation().ToString());
 ```
 
-## 调试
+## 调试 | Debugging
 
 * [unreal](doc/unreal/vscode_debug.md)
 * [unity](doc/unity/vscode_debug.md)
 
-## 常见问题
+## 常见问题 | FAQ
 
 * [general faq](doc/faq.md)
 * [unreal faq](doc/unreal/faq.md)
 * [unity faq](doc/unity/faq.md)
 
-## 使用文档
+## 使用文档 | Manual
 
 * [unreal手册](doc/unreal/manual.md)
 * [unity手册](doc/unity/manual.md)
 
-## 支持的引擎，平台
-
-### 引擎
-
-* unreal engine 4.22 ~ 最新版本
-
-* unity 5 ~ 最新版本
-
-### 平台
-
-* iOS，Android，Windows，Macos
-
-* 任意.net环境
-
-## 详细信息
+## 详细信息 | detailed README
 
 * [unreal](unreal/README.md)
 * [unity](unity/README.md)
 
-## 示例
+## 示例 | Example
 
 ### Unreal
 
@@ -151,7 +137,22 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/Assets/Examples/06_UIEvent) ：UI事件的演示
 
-## 技术支持
+## 引擎 | Supported Engine
+
+* unreal engine 4.22 ~ latest
+
+* unity 5 ~ latest
+
+## 平台 | Supported Platform
+
+* iOS，Android，Windows，Macos
+
+* 任意.net环境 | Any .net project
+
+
+## 技术支持 | Support
+
+[Github Discussion](https://github.com/Tencent/puerts/discussions)
 
 QQ群：942696334
 
