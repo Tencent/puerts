@@ -1010,6 +1010,7 @@ namespace Puerts.UnitTest
             Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Single));
             Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
+
         [Test]
         public void DelegateGC()
         {
@@ -1028,6 +1029,27 @@ namespace Puerts.UnitTest
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
             jsEnv.Tick();
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void JSGetLastException()
+        {
+            var loader = new TxtLoader();
+            var jsEnv = new JsEnv(loader);
+            try
+            {
+                jsEnv.Eval(@"
+                    throw new Error('hello error');
+                ");
+            }
+            catch (Exception e) { }
+
+            string jsErrorMessage = jsEnv.Eval<string>(@"
+                const csharp = require('csharp');
+                puerts.getLastException().message
+            ");
+            Assert.True(jsErrorMessage == "hello error");
             jsEnv.Dispose();
         }
     }

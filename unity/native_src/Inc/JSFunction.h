@@ -85,6 +85,8 @@ public:
 
     std::string LastExceptionInfo;
 
+    v8::UniquePersistent<v8::Value> LastException;
+
     FResultInfo ResultInfo;
 
     int32_t Index;
