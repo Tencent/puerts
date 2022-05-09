@@ -51,6 +51,19 @@ namespace puerts
         Info.GetReturnValue().Set(Result.ToLocalChecked());
     }
 
+    static void GetLastException(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        v8::Isolate* Isolate = Info.GetIsolate();
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        Info.GetReturnValue().Set(JsEngine->LastException.Get(Isolate));
+    }
+
+    void JSEngine::SetLastException(v8::Local<v8::Value> Exception)
+    {
+        LastException.Reset(MainIsolate, Exception);
+        LastExceptionInfo = FV8Utils::ExceptionToString(MainIsolate, Exception);
+    }
+
 #if WITH_NODEJS
     void JSEngine::JSEngineWithNode()
     {
@@ -135,6 +148,7 @@ namespace puerts
 
         MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(MainIsolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+        Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(MainIsolate, v8::Map::New(MainIsolate));
 
@@ -197,6 +211,7 @@ namespace puerts
         {
             Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
             Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+            Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
         }
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
@@ -224,6 +239,7 @@ namespace puerts
 
         JSObjectIdMap.Reset();
         JsPromiseRejectCallback.Reset();
+        LastException.Reset();
 
         for (int i = 0; i < Templates.size(); ++i)
         {

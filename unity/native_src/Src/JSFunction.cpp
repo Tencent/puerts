@@ -106,7 +106,9 @@ namespace puerts
         
         if (TryCatch.HasCaught())
         {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            v8::Local<v8::Value> Exception = TryCatch.Exception();
+            LastException.Reset(Isolate, Exception);
+            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
             return false;
         }
         else

@@ -896,6 +896,35 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
         }
         [Test]
+        public void Int64Value()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let value = new CS.Puerts.Int64Value(512n);
+                CS.Puerts.UnitTest.TypedValue.Callback(value);
+            ");
+
+            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
+            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+        }
+        [Test]
+        public void FloatValue()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let value = new CS.Puerts.FloatValue(512.256);
+                CS.Puerts.UnitTest.TypedValue.Callback(value);
+            ");
+
+            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Single));
+            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+        }
+
+        [Test]
         public void DelegateGC()
         {
             var jsEnv = new JsEnv(new TxtLoader());
@@ -913,6 +942,27 @@ namespace Puerts.UnitTest
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
             jsEnv.Tick();
+            jsEnv.Dispose();
+        }
+        
+        [Test]
+        public void JSGetLastException()
+        {
+            var loader = new TxtLoader();
+            var jsEnv = new JsEnv(loader);
+            try
+            {
+                jsEnv.Eval(@"
+                    throw new Error('hello error');
+                ");
+            }
+            catch (Exception e) { }
+
+            string jsErrorMessage = jsEnv.Eval<string>(@"
+                const csharp = require('csharp');
+                puerts.getLastException().message
+            ");
+            Assert.True(jsErrorMessage == "hello error");
             jsEnv.Dispose();
         }
     }
