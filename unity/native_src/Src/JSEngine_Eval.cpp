@@ -58,7 +58,7 @@ namespace puerts {
         if (!v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
                 .ToLocal(&Module)) 
         {
-            JsEngine->LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            JsEngine->SetLastException(TryCatch.Exception());
             return v8::MaybeLocal<v8::Module>();
         }
 
@@ -106,7 +106,6 @@ namespace puerts {
     {
         if (ModuleResolver == nullptr) 
         {
-            LastExceptionInfo = "ModuleResolver is not registered";
             return false;
         }
         v8::Isolate* Isolate = MainIsolate;
@@ -145,7 +144,7 @@ namespace puerts {
         {
             if (TryCatch.HasCaught())
             {
-                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+                SetLastException(TryCatch.Exception());
             }
             return false;
         }
@@ -154,7 +153,7 @@ namespace puerts {
         {   
             if (TryCatch.HasCaught())
             {
-                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+                SetLastException(TryCatch.Exception());
             }
             return false;
         }
@@ -184,7 +183,7 @@ namespace puerts {
         JSModuleDef* EntryModule = js_module_loader(ctx , Path, nullptr);
         if (EntryModule == nullptr) {
             Isolate->handleException();
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            SetLastException(TryCatch.Exception());
             return false;
         }
 
@@ -195,7 +194,7 @@ namespace puerts {
         if (JS_IsException(evalRet)) {
             JS_FreeValue(ctx, evalRet);
             MainIsolate->handleException();
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            SetLastException(TryCatch.Exception());
             return false;
 
         } else {
@@ -240,13 +239,13 @@ namespace puerts {
         auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
         if (CompiledScript.IsEmpty())
         {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            SetLastException(TryCatch.Exception());
             return false;
         }
         auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);//error info output
         if (TryCatch.HasCaught())
         {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            SetLastException(TryCatch.Exception());
             return false;
         }
 
