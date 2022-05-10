@@ -115,7 +115,8 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     }
 
     // UE_LOG(LogTemp, Error, TEXT("new function name %s"), *FunctionName.ToString());
-    UJSGeneratedFunction* Function = NewObject<UJSGeneratedFunction>(Class, FunctionName, RF_Public);
+    UJSGeneratedFunction* Function = Cast<UJSGeneratedFunction>(
+        StaticDuplicateObject(Super, Class, FunctionName, RF_Transient, UJSGeneratedFunction::StaticClass()));
 
     for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
              EFieldIteratorFlags::IncludeInterfaces);
@@ -127,9 +128,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         }
     }
 
-    Function->ReturnValueOffset = MAX_uint16;
-    Function->FirstPropertyToInit = NULL;
-
     if (!Existed)
     {
         // UE_LOG(LogTemp, Error, TEXT("new function %s"), *FunctionName.ToString());
@@ -140,8 +138,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
         // UE_LOG(LogTemp, Error, TEXT("replace function %s"), *FunctionName.ToString());
         Function->SetSuperStruct(Super->GetSuperStruct());
     }
-
-    DuplicateParameters(Super, Function);
 
     Function->Bind();
     Function->StaticLink(true);

@@ -68,6 +68,14 @@ std::shared_ptr<FFunctionTranslator> FStructWrapper::GetFunctionTranslator(UFunc
     return Iter->second;
 }
 
+void FStructWrapper::RefreshMethod(UFunction* InFunction)
+{
+    if (!InFunction->HasAnyFunctionFlags(FUNC_Static))
+    {
+        GetMethodTranslator(InFunction, false);
+    }
+}
+
 void FStructWrapper::InitTemplateProperties(v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template)
 {
     auto ClassDefinition = FindClassByType(Struct.Get());

@@ -3619,15 +3619,18 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto Keys = MixinMethods->GetOwnPropertyNames(Context).ToLocalChecked();
+    TArray<FName> ReplaceMethodNames;
     for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
     {
         auto Key = Keys->Get(Context, i).ToLocalChecked();
-        auto Function = To->FindFunctionByName(FV8Utils::ToFName(Isolate, Key));
+        auto MethodName = FV8Utils::ToFName(Isolate, Key);
+        auto Function = To->FindFunctionByName(MethodName);
         if (Function)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
             UJSGeneratedClass::Override(
                 Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
+            ReplaceMethodNames.Add(MethodName);
         }
     }
 
@@ -3653,6 +3656,11 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     else
     {
         To->ClearFunctionMapsCaches();
+        auto StructWrapper = GetStructWrapper(To);
+        for (int i = 0; i < ReplaceMethodNames.Num(); i++)
+        {
+            StructWrapper->RefreshMethod(To->FindFunctionByName(ReplaceMethodNames[i]));
+        }
     }
     MixinClasses.Add(New);
     Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
