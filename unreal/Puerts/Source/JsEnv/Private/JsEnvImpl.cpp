@@ -921,6 +921,16 @@ FJsEnvImpl::~FJsEnvImpl()
     MapTemplate.Reset();
     SetTemplate.Reset();
     ArrayTemplate.Reset();
+
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+    for (size_t i = 0; i < MixinClasses.Num(); i++)
+    {
+        if (MixinClasses[i].IsValid())
+        {
+            UJSGeneratedClass::Restore(MixinClasses[i].Get());
+        }
+    }
+#endif
     DefaultContext.Reset();
     MainIsolate->Dispose();
     MainIsolate = nullptr;
@@ -933,16 +943,6 @@ FJsEnvImpl::~FJsEnvImpl()
     for (auto& KV : ScriptStructFinalizeInfoMap)
     {
         FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
-    }
-#endif
-
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    for (size_t i = 0; i < MixinClasses.Num(); i++)
-    {
-        if (MixinClasses[i].IsValid())
-        {
-            UJSGeneratedClass::Restore(MixinClasses[i].Get());
-        }
     }
 #endif
 }
