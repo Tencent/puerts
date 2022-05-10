@@ -3578,7 +3578,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CHECK_V8_ARGS(EArgObject, EArgObject);
 
     auto To = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
-    if (!To || To->IsNative())
+    if (!To)
     {
         FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
         return;
