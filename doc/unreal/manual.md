@@ -84,6 +84,12 @@ UE里头，支持反射的API（标注了UCLASS，UPPROPERTY，UFUNCTION，USTRU
 
 上述两种方式，都可以把普通C++ API转成能被TypeScript的api，重启后重新生成声明文件即可。
 
+### 蓝图mixin功能
+
+把一个ts类mixin到一个蓝图类（或者原生声明为UCLASS的类）的能力。
+
+蓝图mixin的介绍看[这里](mixin.md)
+
 ### 继承引擎类功能
 
 开启该功能后能做到特定写法的类能被UE编辑器识别。
@@ -100,3 +106,4 @@ UE里头，支持反射的API（标注了UCLASS，UPPROPERTY，UFUNCTION，USTRU
 * Puerts会拦截代理蓝图类的调用，重定向到默认的虚拟机里对应的脚本逻辑
 
 继承引擎类功能的启用和使用看[这里](uclass_extends.md)
+
