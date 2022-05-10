@@ -23,6 +23,9 @@
    
 ### 基本用法
 
+本文完整例子看[这里](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingMixin.ts)，将Start脚本改为UsingMixin即可运行。
+
+
 #### 加载被mixin的蓝图类
 
 ~~~typescript
