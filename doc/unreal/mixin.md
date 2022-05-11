@@ -110,6 +110,39 @@ type MixinConfig = { objectTakeByNative?:boolean, inherit?:boolean, generatedCla
 
 * inherit和generatedClass是配合使用的，默认为false，表示重定向的是原蓝图类，如果为true的话，将会先动态生成一个继承类，然后重定向生成的类，然后该生成类会通过generatedClass字段返回
 
+#### super关键字的说明
+
+假设有个蓝图类MixinSuperTestDerived继承了蓝图类MixinSuperTestBase，这两个类都有Foo方法，我们要通过mixin覆盖MixinSuperTestDerived上的Foo，在ts逻辑中需要调用基类（蓝图类）的Foo要怎么处理。
+
+直接在前面介绍的不extends任何类的mixin类中调用super会报错。
+
+如下代码会报语法错误。
+
+~~~
+class DerivedClassMixin {
+    Foo():void {
+        console.log("i am ts mixin");
+        super.Foo();
+    }
+}
+
+~~~
+
+这时可以通过添加个中转类来解决问题
+
+~~~
+interface MixinSuperTestBasePlaceHold extends UE.Game.StarterContent.MixinSuperTestBase.MixinSuperTestBase_C {};
+class MixinSuperTestBasePlaceHold {}
+Object.setPrototypeOf(MixinSuperTestBasePlaceHold.prototype, MixinSuperTestBase.prototype);
+
+class DerivedClassMixin extends MixinSuperTestBasePlaceHold {
+    Foo():void {
+        console.log("i am ts mixin");
+        super.Foo();
+    }
+}
+~~~
+
 #### 新增字段
 
 新增字段其实是存放在stub对象里，因而：
