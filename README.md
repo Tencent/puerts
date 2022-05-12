@@ -26,11 +26,11 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 ## How to Install | 最新版本安装
 
-* [![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](doc/unreal/install.md)
+* [click it>![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](doc/unreal/install.md)
 
-* [![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](doc/unity/install.md)
+* [click it>![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](doc/unity/install.md)
 
-### changelog
+### Changelog
 
 * [unreal](doc/unreal/changelog.md)
 * [unity](doc/unity/changelog.md)
