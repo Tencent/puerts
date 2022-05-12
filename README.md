@@ -24,46 +24,25 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
-## 安装 | Installation
-<!-- 方法1. 下载项目 -->
-* [unreal](doc/unreal/install.md)
-* [unity](doc/unity/install.md)
+## How to Install | 最新版本安装
 
-<!-- 方法2. 通过npm快速安装
+* [![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](doc/unreal/install.md)
 
-1. 已经安装好Node.js后，执行以下命令下载安装器
-
-```
-npm i -g @puerts/cli
-```
-
-2. 随后，你可以在unreal项目根目录(包含*.uproject文件)或是unity项目根目录(包含Assets目录)执行以下命令安装puerts
-
-```
-puerts init
-``` -->
-
-## 版本相关 | About version
-
-### 最新版本 | Latest version
-
-* [![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.0)
-
-* [![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v1.3.3)
+* [![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](doc/unity/install.md)
 
 ### changelog
 
 * [unreal](doc/unreal/changelog.md)
 * [unity](doc/unity/changelog.md)
 
-### 已知问题 | Known problem
+### Known problem | 已知问题
 
 各发布版本已知的，影响较大的bug及其修复办法
 
 * [unreal](doc/unreal/bugs.md)
 * [unity](doc/unity/bugs.md)
 
-## 编程样例 | Example
+## Example | 编程样例
 
 Unity
 
@@ -88,28 +67,25 @@ console.log(actor.GetName());
 console.log(actor.K2_GetActorLocation().ToString());
 ```
 
-## 调试 | Debugging
-
-* [unreal](doc/unreal/vscode_debug.md)
-* [unity](doc/unity/vscode_debug.md)
-
-## 常见问题 | FAQ
+## FAQ | 常见问题
 
 * [general faq](doc/faq.md)
 * [unreal faq](doc/unreal/faq.md)
 * [unity faq](doc/unity/faq.md)
 
-## 使用文档 | Manual
+## Manual | 使用文档
 
 * [unreal手册](doc/unreal/manual.md)
 * [unity手册](doc/unity/manual.md)
+* [unreal调试](doc/unreal/vscode_debug.md)
+* [unity调试](doc/unity/vscode_debug.md)
 
-## 详细信息 | detailed README
+## Detailed Readme | 详细信息
 
 * [unreal](unreal/README.md)
 * [unity](unity/README.md)
 
-## 示例 | Example
+## Example | 示例
 
 ### Unreal
 
@@ -139,20 +115,20 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/Assets/Examples/06_UIEvent) ：UI事件的演示
 
-## 引擎 | Supported Engine
+## Supported Engine | 引擎
 
 * unreal engine 4.22 ~ latest
 
 * unity 5 ~ latest
 
-## 平台 | Supported Platform
+## Supported Platform | 平台
 
 * iOS，Android，Windows，Macos
 
 * 任意.net环境 | Any .net project
 
 
-## 技术支持 | Support
+## Ask for help | 技术支持
 
 [Github Discussion](https://github.com/Tencent/puerts/discussions)
 
