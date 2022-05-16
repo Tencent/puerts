@@ -636,7 +636,7 @@ namespace Puerts
 #endif
             }
             PuertsDLL.LogicTick(isolate);
-            tickHandler.ForEach(fn =>
+            foreach (var fn in tickHandler)
             {
                 IntPtr resultInfo = GenericDelegate.InvokeJSFunction(
                     this, fn, 0, false, 
@@ -647,8 +647,7 @@ namespace Puerts
                     var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
                     throw new Exception(exceptionInfo);
                 }
-
-            });
+            }
 #if THREAD_SAFE
             }
 #endif
