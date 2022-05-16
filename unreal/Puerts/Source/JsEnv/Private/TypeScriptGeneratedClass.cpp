@@ -87,26 +87,30 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
             PendingConstructJob = FFunctionGraphTask::CreateAndDispatchWhenReady(
                 [Class, Self]()
                 {
-                    if (Class.IsValid() && Self.IsValid())
+                    if (Class.IsValid())
                     {
-                        auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
-                        if (PinedDynamicInvoker)
+                        if (Self.IsValid())
                         {
-                            PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
+                            auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
+                            if (PinedDynamicInvoker)
+                            {
+                                PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
+                            }
+                            else
+                            {
+                                UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
+                                    *Self->GetName(), Self.Get());
+                            }
                         }
                         else
                         {
-                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
-                                *Self->GetName(), Self.Get());
+                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
                         }
+                        Class->PendingConstructJob = nullptr;
                     }
                     else
                     {
-                        UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class or Self invalid"));
-                    }
-                    if (Class.IsValid())
-                    {
-                        Class->PendingConstructJob = nullptr;
+                        UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class invalid"));
                     }
                 },
                 TStatId{}, nullptr, ENamedThreads::GameThread);
