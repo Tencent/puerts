@@ -1437,10 +1437,14 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
                 // MakeSureInject(TypeScriptGeneratedClass, true, true);
                 TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
                 TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
-                if (BindInfoPtr)
+                if (IsInGameThread())
                 {
-                    BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                    // 其实目前在编辑器下Start后才启动虚拟机，这部分本来防止蓝图刷新的代码其实用不上了
+                    auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
+                    if (BindInfoPtr)
+                    {
+                        BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                    }
                 }
             }
         }
@@ -1449,10 +1453,13 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
             TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
             TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
             TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-            auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
-            if (BindInfoPtr)
+            if (IsInGameThread())
             {
-                BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
+                if (BindInfoPtr)
+                {
+                    BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                }
             }
         }
     }
