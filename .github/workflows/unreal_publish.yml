@@ -20,17 +20,18 @@ jobs:
           
       - name: Create Release Asset
         run: |
+          cp -r README.md LICENSE doc unreal
           wget -O v8_for_ue425.tgz -q  ${{env.UE425_V8}} 
           tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts.tgz Puerts ReactUMG
+          tar cvfz puerts.tgz Puerts ReactUMG README.md LICENSE doc
           mv puerts.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts_for_ue424_or_below.tgz Puerts ReactUMG
+          tar cvfz puerts_for_ue424_or_below.tgz Puerts ReactUMG README.md LICENSE doc
           mv puerts_for_ue424_or_below.tgz ..
           
       - name: Create Release

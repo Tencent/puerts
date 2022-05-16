@@ -32,20 +32,12 @@ namespace puerts {
             return v8::Local<v8::Module>::New(Isolate, Iter->second);
         }
         v8::Local<v8::Module> Module;
-        const char* Code;
-
-        if (Specifier_std.substr(Specifier_length - 4, Specifier_length).compare(".mjs") == 0) 
+        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
+        if (Code == nullptr) 
         {
-
-            Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
-            if (Code == nullptr) 
-            {
-                return v8::MaybeLocal<v8::Module>();
-            }
-        } 
-        else 
-        {
-            Code = (CjsModulePrepend + Specifier_std + CjsModuleAppend).c_str();
+            std::string ErrorMessage = std::string("module not found") + Specifier_std;
+            Isolate->ThrowException(v8::Exception::Error(FV8Utils::V8String(Isolate, ErrorMessage.c_str())));
+            return v8::MaybeLocal<v8::Module>();
         }
         v8::ScriptOrigin Origin(Specifier,
                             v8::Integer::New(Isolate, 0),                      // line offset
@@ -88,18 +80,13 @@ namespace puerts {
             return Iter->second;
         }
 
-        const char* Code;
-        if (name_length > 4 && name_std.substr(name_length - 4, name_length).compare(".mjs") == 0) 
+        const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
+        if (Code == nullptr) 
         {
-            Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
-            if (Code == nullptr) 
-            {
-                return nullptr;
-            }
-        } 
-        else 
-        {
-            Code = (CjsModulePrepend + name_std + CjsModuleAppend).c_str();
+            std::string ErrorMessage = std::string("module not found") + name_std;
+            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
+            JS_Throw(ctx, ex);
+            return nullptr;
         }
         JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
@@ -154,15 +141,21 @@ namespace puerts {
 
         v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
         v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
-        if (ret.IsNothing() || !ret.ToChecked()) 
+        if (ret.IsNothing() || !ret.ToChecked())
         {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            if (TryCatch.HasCaught())
+            {
+                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            }
             return false;
         }
         v8::MaybeLocal<v8::Value> evalRet = ModuleChecked->Evaluate(Context);
-        if (evalRet.IsEmpty()) 
-        {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+        if (evalRet.IsEmpty())
+        {   
+            if (TryCatch.HasCaught())
+            {
+                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            }
             return false;
         }
         else

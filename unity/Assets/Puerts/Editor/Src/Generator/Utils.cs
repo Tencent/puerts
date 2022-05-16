@@ -14,6 +14,14 @@ using System.Runtime.CompilerServices;
 namespace Puerts.Editor
 {
     namespace Generator {
+        
+        public enum BindingMode {
+            FastBinding = 0, // generate static wrapper
+            SlowBinding = 1, // not implemented now. dont use
+            LazyBinding = 2, // reflect during first call
+            DontBinding = 4, // not able to called in runtime. Also will not generate d.ts
+        }
+
         class Utils {
 
             public const BindingFlags Flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
@@ -98,33 +106,30 @@ namespace Puerts.Editor
                 var setMethod = propertyInfo.GetSetMethod();
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
             }
-            public enum BindingMode {
-                FastBinding = 0, // generate static wrapper
-                SlowBinding = 1, // useless now. dont use
-                LazyBinding = 2, // reflect during first call
-                DontBinding = 3, // not able to called in runtime. Also will not generate d.ts
-            }
 
             internal static BindingMode getBindingMode(MemberInfo mbi) 
             {
+                BindingMode strictestMode = BindingMode.FastBinding;
                 if (filters != null && filters.Count > 0)
                 {
                     foreach (var filter in filters)
                     {
+                        BindingMode mode = BindingMode.FastBinding;
                         if (filter.ReturnType == typeof(bool))
                         {
-                            if ((bool)filter.Invoke(null, new object[] { mbi }))
+                            if ((bool)filter.Invoke(null, new object[] { mbi })) 
                             {
-                                return BindingMode.LazyBinding;
+                                mode = BindingMode.LazyBinding;
                             }
                         }
                         else if (filter.ReturnType == typeof(BindingMode))
                         {
-                            return (BindingMode)filter.Invoke(null, new object[] { mbi });
+                            mode = (BindingMode)filter.Invoke(null, new object[] { mbi });
                         }
+                        strictestMode = strictestMode < mode ? mode : strictestMode;
                     }
                 }
-                return BindingMode.FastBinding;
+                return strictestMode;
             }
 
             public static bool IsNotSupportedMember(MemberInfo mbi, bool notFiltEII = false)

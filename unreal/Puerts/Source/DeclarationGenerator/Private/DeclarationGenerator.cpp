@@ -32,6 +32,9 @@
 #include "CodeGenerator.h"
 #include "JSClassRegister.h"
 #include "Engine/CollisionProfile.h"
+#if (ENGINE_MAJOR_VERSION >= 5)
+#include "ToolMenus.h"
+#endif
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -306,7 +309,11 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     auto Iter = NamespaceMap.find(Obj);
     if (Iter == NamespaceMap.end())
     {
+#if ENGINE_MINOR_VERSION > 25 || ENGINE_MAJOR_VERSION > 4
         UPackage* Pkg = Obj->GetPackage();
+#else
+        UPackage* Pkg = Obj->GetOutermost();
+#endif
         if (Pkg)
         {
             TArray<FString> PathFrags;
@@ -369,13 +376,16 @@ void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
 {
     if (Processed.Contains(ToGen))
         return;
-    if (ProcessedByName.Contains(SafeName(ToGen->GetName())))
+    if (ToGen->IsNative() && ProcessedByName.Contains(SafeName(ToGen->GetName())))
     {
         UE_LOG(LogTemp, Warning, TEXT("duplicate name found in ue.d.ts generate: %s"), *SafeName(ToGen->GetName()));
         return;
     }
     Processed.Add(ToGen);
-    ProcessedByName.Add(SafeName(ToGen->GetName()));
+    if (ToGen->IsNative())
+    {
+        ProcessedByName.Add(SafeName(ToGen->GetName()));
+    }
 
     if (auto Class = Cast<UClass>(ToGen))
     {
@@ -1030,10 +1040,38 @@ private:
     TSharedPtr<class FUICommandList> PluginCommands;
     TUniquePtr<FAutoConsoleCommand> ConsoleCommand;
 
+#if (ENGINE_MAJOR_VERSION >= 5)
+    void RegisterMenus()
+    {
+        // Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
+        FToolMenuOwnerScoped OwnerScoped(this);
+
+        {
+            UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+            {
+                FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+                Section.AddMenuEntryWithCommandList(FGenDTSCommands::Get().PluginAction, PluginCommands);
+            }
+        }
+
+        {
+            UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
+            {
+                FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("PluginTools");
+                {
+                    FToolMenuEntry& Entry =
+                        Section.AddEntry(FToolMenuEntry::InitToolBarButton(FGenDTSCommands::Get().PluginAction));
+                    Entry.SetCommandList(PluginCommands);
+                }
+            }
+        }
+    }
+#else
     void AddToolbarExtension(FToolBarBuilder& Builder)
     {
         Builder.AddToolBarButton(FGenDTSCommands::Get().PluginAction);
     }
+#endif
 
     void GenUeDts()
     {
@@ -1074,6 +1112,10 @@ public:
         PluginCommands->MapAction(FGenDTSCommands::Get().PluginAction,
             FExecuteAction::CreateRaw(this, &FDeclarationGenerator::GenUeDts), FCanExecuteAction());
 
+#if (ENGINE_MAJOR_VERSION >= 5)
+        UToolMenus::RegisterStartupCallback(
+            FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FDeclarationGenerator::RegisterMenus));
+#else
         FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 
         {
@@ -1083,6 +1125,7 @@ public:
 
             LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
         }
+#endif
 
         ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen"), TEXT("Execute GenDTS action"),
             FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
@@ -1091,6 +1134,9 @@ public:
     void ShutdownModule() override
     {
         // IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this);
+#if (ENGINE_MAJOR_VERSION >= 5)
+        UToolMenus::UnRegisterStartupCallback(this);
+#endif
         FGenDTSStyle::Shutdown();
         FGenDTSCommands::Unregister();
     }

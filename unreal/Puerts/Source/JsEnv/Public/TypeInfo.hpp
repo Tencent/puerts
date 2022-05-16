@@ -83,6 +83,16 @@ struct ScriptTypeName<void>
 };
 
 template <typename T>
+struct StaticTypeId
+{
+    static void* get()
+    {
+        static T* dummy = nullptr;
+        return &dummy;
+    }
+};
+
+template <typename T>
 struct is_uetype : public std::false_type
 {
 };

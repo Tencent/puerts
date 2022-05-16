@@ -19,10 +19,11 @@
 USTRUCT(BlueprintType)
 struct FPEGraphTerminalType
 {
-public:
     GENERATED_USTRUCT_BODY()
+    FPEGraphTerminalType() : PinSubCategoryObject(nullptr)
+    {
+    }
 
-public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
 
@@ -33,10 +34,11 @@ public:
 USTRUCT(BlueprintType)
 struct FPEGraphPinType
 {
-public:
     GENERATED_USTRUCT_BODY()
+    FPEGraphPinType() : PinSubCategoryObject(nullptr), PinContainerType(0), bIsReference(false), bIn(false)
+    {
+    }
 
-public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PEBlueprintAsset")
     FName PinCategory;
 

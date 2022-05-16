@@ -13,40 +13,6 @@ using System.Reflection;
 
 namespace Puerts.UnitTest
 {
-    public class TxtLoader : ILoader
-    {
-        private string root = Path.Combine(
-            System.Text.RegularExpressions.Regex.Replace(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase), "^file:(\\\\)?", ""),
-            "../../Assets/Puerts/Runtime/Resources"
-        );
-
-        public bool FileExists(string filepath)
-        {
-            return mockFileContent.ContainsKey(filepath) || File.Exists(Path.Combine(root, filepath));
-        }
-
-        public string ReadFile(string filepath, out string debugpath)
-        {
-            debugpath = Path.Combine(root, filepath);
-
-            string mockContent;
-            if (mockFileContent.TryGetValue(filepath, out mockContent))
-            {
-                return mockContent;
-            }
-
-            using (StreamReader reader = new StreamReader(debugpath))
-            {
-                return reader.ReadToEnd();
-            }
-        }
-
-        private Dictionary<string, string> mockFileContent = new Dictionary<string, string>();
-        public void AddMockFileContent(string fileName, string content) {
-            mockFileContent.Add(fileName, content);
-        }
-    }
-
     [TestFixture]
     public class PuertsTest
     {
@@ -492,21 +458,6 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void ExceptionTest()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            var res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.DerivedClass();
-                let res;
-                try{obj.adds(i,j);}catch(e){res = -1;}
-                res;
-            ");
-            jsEnv.Dispose();
-            Assert.AreEqual(res, -1);
-        }
-
-        [Test]
         public void TryCatchFinallyTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
@@ -578,70 +529,6 @@ namespace Puerts.UnitTest
 
 
         [Test]
-        public void ErrorParamTest()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.DerivedClass();
-                let res;
-                try { res = obj.TestErrorParam('1');} catch(e){res = -1};
-                res;
-            ");
-            jsEnv.Dispose();
-            Assert.AreEqual(res, -1);
-        }
-
-        [Test]
-        public void ErrorParamStructTest()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.DerivedClass();
-                let s = new CS.Puerts.UnitTest.S(1,'anna');
-                let res;
-                try { res = obj.TestErrorParamStruct(1);} catch(e){res = -1};
-                res;
-            ");
-            jsEnv.Dispose();
-            Assert.AreEqual(res, -1);
-        }
-
-        [Test]
-        public void ErrorParamClassTest()
-        {
-            Assert.Catch(() =>
-            {
-                var jsEnv = new JsEnv(new TxtLoader());
-                jsEnv.Eval(@"
-                    const CS = require('csharp');
-                    let obj = new CS.Puerts.UnitTest.DerivedClass();
-                    let iobj = new CS.Puerts.UnitTest.ISubA();
-                    obj.TestErrorParamClass(undefined);"
-                );
-                jsEnv.Dispose();
-            });
-        }
-
-        [Test]
-        public void ErrorParamDerivedClassTest()
-        {
-
-            var jsEnv = new JsEnv(new TxtLoader());
-            var res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.BaseClass();
-                let iobj = new CS.Puerts.UnitTest.ISubA();
-                let res;
-                try {res = iobj.TestDerivedObj(obj,1,'gyx');} catch(e){res = -1;}
-                res;
-            ");
-            jsEnv.Dispose();
-            Assert.AreEqual(res, -1);
-        }
-
-        [Test]
         public void ParamBaseClassTest()
         {
 
@@ -656,23 +543,6 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Dispose();
             Assert.AreEqual(res, "gyx10 10");
-        }
-
-        [Test]
-        public void ErrorParamRefStructTest()
-        {
-            Assert.Catch(() =>
-            {
-                var jsEnv = new JsEnv(new TxtLoader());
-                jsEnv.Eval(@"
-                    const CS = require('csharp');
-                    const PUERTS = require('puerts');
-                    let obj = new CS.Puerts.UnitTest.DerivedClass();
-                    let s = new CS.Puerts.UnitTest.S(1,'gyx');
-                    obj.PrintStructRef(s);"
-                );
-                jsEnv.Dispose();
-            });
         }
 
         [Test]
@@ -692,26 +562,6 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Dispose();
             Assert.AreEqual(res, 666);
-        }
-
-        [Test]
-        public void ErrorParamStringArrayTest()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                const PUERTS = require('puerts');
-                let obj = new CS.Puerts.UnitTest.ISubA();
-                let arrayString = CS.System.Array.CreateInstance(PUERTS.$typeof(CS.System.String), 3);
-                arrayString.set_Item(0, '111');
-                arrayString.set_Item(1, '222');
-                arrayString.set_Item(2, '333');
-                let res;
-                try {res = obj.TestArrInt(arrayString); } catch(e){res = -1;}
-                res;
-            ");
-            jsEnv.Dispose();
-            Assert.AreEqual(res, -1);
         }
 
         [Test]
@@ -1158,85 +1008,6 @@ namespace Puerts.UnitTest
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
             jsEnv.Tick();
-            jsEnv.Dispose();
-        }
-        [Test]
-        public void EvalError()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            Assert.Catch(() =>
-            {
-                jsEnv.Eval(@"
-                    var obj = {}; obj.func();
-                ");
-            });
-            jsEnv.Dispose();
-        }
-        [Test]
-        public void ESModuleNotFound()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            Assert.Catch(() =>
-            {
-                jsEnv.ExecuteModule("whatever.mjs");
-            });
-            jsEnv.Dispose();
-        }
-        [Test]
-        public void ESModuleCompileError()
-        {
-            var loader = new TxtLoader();
-            loader.AddMockFileContent("whatever.mjs", @"export delete;");
-            var jsEnv = new JsEnv(loader);
-            Assert.Catch(() =>
-            {
-                jsEnv.ExecuteModule("whatever.mjs");
-            });
-            jsEnv.Dispose();
-        }
-        [Test]
-        public void ESModuleEvaluateError()
-        {
-            var loader = new TxtLoader();
-            loader.AddMockFileContent("whatever.mjs", @"var obj = {}; obj.func();");
-            var jsEnv = new JsEnv(loader);
-            Assert.Catch(() =>
-            {
-                jsEnv.ExecuteModule("whatever.mjs");
-            });
-            jsEnv.Dispose();
-        }
-        [Test]
-        public void ESModuleImportCSharp()
-        {
-            var loader = new TxtLoader();
-            loader.AddMockFileContent("whatever.mjs", @"
-                import csharp from 'csharp';
-                const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
-                export { func };
-            ");
-            var jsEnv = new JsEnv(loader);
-            Func<string> func = jsEnv.ExecuteModule<Func<string>>("whatever.mjs", "func");
-
-            Assert.True(func() == "hello world");
-
-            jsEnv.Dispose();
-        }
-        [Test]
-        public void ESModuleImportCSharpNamespace()
-        {
-            var loader = new TxtLoader();
-            loader.AddMockFileContent("whatever.mjs", @"
-                import csharp from 'csharp';
-                const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
-                export { func };
-            ");
-            var jsEnv = new JsEnv(loader);
-            var ns = jsEnv.ExecuteModule<JSObject>("whatever.mjs");
-
-            Assert.True(ns != null);
-            Assert.True(ns.GetType() == typeof(JSObject));
-
             jsEnv.Dispose();
         }
     }

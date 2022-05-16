@@ -107,6 +107,11 @@ public:
         return UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Value)));
     }
 
+    FORCEINLINE static FName ToFName(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
+    {
+        return UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Value)));
+    }
+
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const FString& String)
     {
         // return ToV8String(Isolate, TCHAR_TO_UTF8(*String));

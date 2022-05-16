@@ -1643,6 +1643,7 @@ static void _FQuatXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->X);
+    puerts::DataTransfer::LinkOuter<FQuat, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FQuatXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1674,6 +1675,7 @@ static void _FQuatYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->Y);
+    puerts::DataTransfer::LinkOuter<FQuat, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FQuatYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1705,6 +1707,7 @@ static void _FQuatZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->Z);
+    puerts::DataTransfer::LinkOuter<FQuat, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FQuatZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1736,6 +1739,7 @@ static void _FQuatWGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->W);
+    puerts::DataTransfer::LinkOuter<FQuat, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FQuatWSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)

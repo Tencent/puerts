@@ -1089,6 +1089,7 @@ static void _FRotatorPitchGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->Pitch);
+    puerts::DataTransfer::LinkOuter<FRotator, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FRotatorPitchSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1120,6 +1121,7 @@ static void _FRotatorYawGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->Yaw);
+    puerts::DataTransfer::LinkOuter<FRotator, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FRotatorYawSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1151,6 +1153,7 @@ static void _FRotatorRollGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->Roll);
+    puerts::DataTransfer::LinkOuter<FRotator, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FRotatorRollSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)

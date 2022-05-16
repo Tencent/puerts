@@ -1,7 +1,8 @@
 ![Logo](./doc/pic/puerts_logo.png)
 
-[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
-[![release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/Tencent/puerts/releases)
+[![license](https://img.shields.io/badge/license-BSD_3_Clause-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
+[![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](doc/unreal/install.md)
+[![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](doc/unity/install.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 ![CI](https://github.com/Tencent/puerts/workflows/CI/badge.svg)
 
@@ -24,46 +25,25 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
-## 安装
-<!-- 方法1. 下载项目 -->
-* [unreal](doc/unreal/install.md)
-* [unity](doc/unity/install.md)
+## How to Install | 最新版本安装
 
-<!-- 方法2. 通过npm快速安装
+* click it ->[![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](doc/unreal/install.md)
 
-1. 已经安装好Node.js后，执行以下命令下载安装器
+* click it ->[![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](doc/unity/install.md)
 
-```
-npm i -g @puerts/cli
-```
-
-2. 随后，你可以在unreal项目根目录(包含*.uproject文件)或是unity项目根目录(包含Assets目录)执行以下命令安装puerts
-
-```
-puerts init
-``` -->
-
-## 版本相关
-
-### 最新版本
-
-* unreal：待发布
-
-* [![unity](https://img.shields.io/badge/unity-v1.3.2-blue.svg)](https://github.com/Tencent/puerts/releases)
-
-### changelog
+### Changelog
 
 * [unreal](doc/unreal/changelog.md)
 * [unity](doc/unity/changelog.md)
 
-### 已知问题
+### Known problem | 已知问题
 
 各发布版本已知的，影响较大的bug及其修复办法
 
 * [unreal](doc/unreal/bugs.md)
 * [unity](doc/unity/bugs.md)
 
-## 编程样例
+## Example | 编程样例
 
 Unity
 
@@ -88,50 +68,27 @@ console.log(actor.GetName());
 console.log(actor.K2_GetActorLocation().ToString());
 ```
 
-## 调试
-
-* [unreal](doc/unreal/vscode_debug.md)
-* [unity](doc/unity/vscode_debug.md)
-
-## 常见问题
+## FAQ | 常见问题
 
 * [general faq](doc/faq.md)
 * [unreal faq](doc/unreal/faq.md)
 * [unity faq](doc/unity/faq.md)
 
-## 使用文档
+## Manual | 使用文档
 
 * [unreal手册](doc/unreal/manual.md)
 * [unity手册](doc/unity/manual.md)
-* [unreal下脚本和引擎交互](doc/unreal/interact_with_uclass.md)
-* [纯c++api的支持](doc/unreal/template_binding.md)
+* [unreal调试](doc/unreal/vscode_debug.md)
+* [unity调试](doc/unity/vscode_debug.md)
 
-## 支持的引擎，平台
-
-### 引擎
-
-* unreal engine 4.22 ~ 最新版本
-
-* unity 5 ~ 最新版本
-
-### 平台
-
-* iOS，Android，Windows，Macos
-
-* 任意.net环境
-
-## 详细信息
+## Detailed Readme | 详细信息
 
 * [unreal](unreal/README.md)
 * [unity](unity/README.md)
 
-## 示例
+## Example | 示例
 
-### Unreal继承引擎类模式
-
-* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的继承引擎类模式
-
-### Unreal自创建虚拟机模式
+### Unreal
 
 * [QuickStart.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/QuickStart.ts) ： 演示TypeScript和UE4引擎互相调用
 
@@ -140,6 +97,10 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [AsyncTest.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/AsyncTest.ts) ： 将异步加载蓝图，Delay封装成async/await
 
 * [UsingWidget.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingWidget.ts) ： UI加载，绑定事件，获取数据的演示
+
+* [UsingMixin.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingMixin.ts)：演示mixin功能的使用
+
+* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](doc/unreal/manual.md)
 
 ### Unity
 
@@ -155,7 +116,22 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/Puerts_Demo/Assets/Examples/Assets/Examples/06_UIEvent) ：UI事件的演示
 
-## 技术支持
+## Supported Engine | 引擎
+
+* unreal engine 4.22 ~ latest
+
+* unity 5 ~ latest
+
+## Supported Platform | 平台
+
+* iOS，Android，Windows，Macos
+
+* 任意.net环境 | Any .net project
+
+
+## Ask for help | 技术支持
+
+[Github Discussion](https://github.com/Tencent/puerts/discussions)
 
 QQ群：942696334
 

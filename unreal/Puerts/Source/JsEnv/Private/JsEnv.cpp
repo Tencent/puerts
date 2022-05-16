@@ -33,6 +33,11 @@ void FJsEnv::LowMemoryNotification()
     GameScript->LowMemoryNotification();
 }
 
+void FJsEnv::MinorGarbageCollection()
+{
+    GameScript->MinorGarbageCollection();
+}
+
 void FJsEnv::WaitDebugger(double timeout)
 {
     GameScript->WaitDebugger(timeout);

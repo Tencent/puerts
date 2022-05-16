@@ -16,7 +16,7 @@ namespace puerts
     v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size)
     {
         v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
-        void* Buff = Ab->GetBackingStore().get()->Data();
+        void* Buff = Ab->GetBackingStore()->Data();
         ::memcpy(Buff, Ptr, Size);
         return Ab;
     }
@@ -74,7 +74,11 @@ namespace puerts
                 printf("InitializeNodeWithArgs failed\n");
             }
         }
-        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform done");
+        std::string Flags = "";
+#if PUERTS_DEBUG
+        Flags += "--expose-gc";
+#endif
+        v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
         NodeUVLoop = new uv_loop_t;
         const int Ret = uv_loop_init(NodeUVLoop);
@@ -148,10 +152,15 @@ namespace puerts
             v8::V8::InitializePlatform(GPlatform.get());
             v8::V8::Initialize();
         }
-#if PLATFORM_IOS
-        std::string Flags = "--jitless --no-expose-wasm";
-        v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
+
+        std::string Flags = "";
+#if PUERTS_DEBUG
+        Flags += "--expose-gc";
 #endif
+#if PLATFORM_IOS
+        Flags += "--jitless --no-expose-wasm";
+#endif
+        v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 
         v8::StartupData SnapshotBlob;
         SnapshotBlob.data = (const char *)SnapshotBlobCode;

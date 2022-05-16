@@ -23,6 +23,8 @@ public class JsEnv : ModuleRules
     private bool UseQuickjs = false;
 
     private bool WithFFI = false;
+    
+    private bool ForceStaticLibInEditor = false;
 
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
@@ -55,17 +57,17 @@ public class JsEnv : ModuleRules
         {
             ThirdPartyNodejs(Target);
         }
-        else if (UseNewV8)
-        {
-            ThirdParty(Target);
-        }
         else if (UseQuickjs)
         {
             ThirdPartyQJS(Target);
         }
-		 else if (UseCustomV8)
+		else if (UseCustomV8)
         {
             ThirdPartyCustom(Target);
+        }
+        else if (UseNewV8)
+        {
+            ThirdParty(Target);
         }
         else
         {
@@ -440,7 +442,7 @@ public class JsEnv : ModuleRules
         string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8", "Lib"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            if (!Target.bBuildEditor)
+            if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "wee8.lib"));
@@ -461,7 +463,7 @@ public class JsEnv : ModuleRules
         {
             //PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
             //PublicFrameworks.AddRange(new string[] { "WebKit" });
-            if (!Target.bBuildEditor)
+            if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
@@ -481,6 +483,11 @@ public class JsEnv : ModuleRules
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+        }
+
+        if (ForceStaticLibInEditor)
+        {
+            PrivateDefinitions.Add("FORCE_USE_STATIC_V8_LIB");
         }
     }
     

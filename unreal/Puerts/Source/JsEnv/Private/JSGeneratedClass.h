@@ -32,7 +32,9 @@ public:
         v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype);
 
     static void Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-        TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative);
+        TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative, bool IsMixinFunc, bool TakeJsObjectRef);
+
+    static void Restore(UClass* Class);
 
     void InitPropertiesFromCustomList(uint8* DataPtr, const uint8* DefaultDataPtr) override;
 

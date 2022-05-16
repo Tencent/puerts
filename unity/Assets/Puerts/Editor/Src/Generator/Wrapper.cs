@@ -117,36 +117,36 @@ namespace Puerts.Editor
                         .Where(m => !m.IsSpecialName && Puerts.Utils.IsNotGenericOrValidGeneric(m))
                         .Where(m => 
                         { 
-                            Utils.BindingMode mode = Utils.getBindingMode(m);
-                            if (mode == Utils.BindingMode.DontBinding) return false;
-                            if (mode == Utils.BindingMode.LazyBinding) lazyCollector.Add(m); 
+                            BindingMode mode = Utils.getBindingMode(m);
+                            if (mode == BindingMode.DontBinding) return false;
+                            if (mode == BindingMode.LazyBinding) lazyCollector.Add(m); 
                             return true; 
                         })
                         .ToArray();
 
-                    var extensionMethodsList = Puerts.Utils.GetExtensionMethodsOf(type);
+                    var extensionMethodsList = Puerts.Editor.Generator.Utils.GetExtensionMethods(type, new HashSet<Type>(genTypes));
                     if (extensionMethodsList != null)
                     {
-                        extensionMethodsList = extensionMethodsList
+                        extensionMethodsList = new List<MethodInfo>(extensionMethodsList)
                             .Where(m => !Utils.IsNotSupportedMember(m))
-                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsNotGenericOrValidGeneric(m));
+                            .Where(m => !m.IsGenericMethodDefinition || Puerts.Utils.IsNotGenericOrValidGeneric(m)).ToArray();
                         if (genTypes != null)
                         {
-                            extensionMethodsList = extensionMethodsList.Where(m => genTypes.Contains(m.DeclaringType));
+                            extensionMethodsList = extensionMethodsList.Where(m => genTypes.Contains(m.DeclaringType)).ToArray();
                         }
                         extensionMethodsList
                             .Where(m => 
                             { 
-                                Utils.BindingMode mode = Utils.getBindingMode(m);
-                                if (mode == Utils.BindingMode.DontBinding) return false;
-                                if (mode == Utils.BindingMode.LazyBinding) lazyCollector.Add(m); 
+                                BindingMode mode = Utils.getBindingMode(m);
+                                if (mode == BindingMode.DontBinding) return false;
+                                if (mode == BindingMode.LazyBinding) lazyCollector.Add(m); 
                                 return true; 
                             });
                     }
 
                     foreach (var m in methodLists)
                     {
-                        if (lazyCollector.Contains(m.Name) && Utils.getBindingMode(m) != Utils.BindingMode.LazyBinding)
+                        if (lazyCollector.Contains(m.Name) && Utils.getBindingMode(m) != BindingMode.LazyBinding)
                         {
                             lazyCollector.Remove(m.Name);
                         }
@@ -155,7 +155,7 @@ namespace Puerts.Editor
                     {
                         foreach (var m in extensionMethodsList)
                         {
-                            if (lazyCollector.Contains(m.Name) && Utils.getBindingMode(m) != Utils.BindingMode.LazyBinding)
+                            if (lazyCollector.Contains(m.Name) && Utils.getBindingMode(m) != BindingMode.LazyBinding)
                             { 
                                 lazyCollector.Remove(m.Name); 
                             }
@@ -178,12 +178,12 @@ namespace Puerts.Editor
                         .ToArray();
                     var operatorGroups = type.GetMethods(Utils.Flags)
                         .Where(m => !Utils.IsNotSupportedMember(m) && m.IsSpecialName && m.Name.StartsWith("op_") && m.IsStatic)
-                        .Where(m => m.Name != "op_Explicit" && m.Name != "op_Implicit")
                         .Where(m =>
                         { 
-                            Utils.BindingMode mode = Utils.getBindingMode(m);
-                            if (mode == Utils.BindingMode.DontBinding) return false;
-                            if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
+                            if (m.Name == "op_Explicit" || m.Name == "op_Implicit")  { lazyCollector.Add(m); return false; }
+                            BindingMode mode = Utils.getBindingMode(m);
+                            if (mode == BindingMode.DontBinding) return false;
+                            if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
                             return true; 
                         })
                         .GroupBy(m => new MethodKey { Name = m.Name, IsStatic = m.IsStatic })
@@ -192,9 +192,9 @@ namespace Puerts.Editor
                         .Where(m => !Utils.IsNotSupportedMember(m))
                         .Where(m =>
                         { 
-                            Utils.BindingMode mode = Utils.getBindingMode(m);
-                            if (mode == Utils.BindingMode.DontBinding) return false;
-                            if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
+                            BindingMode mode = Utils.getBindingMode(m);
+                            if (mode == BindingMode.DontBinding) return false;
+                            if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
                             return true; 
                         })
                         .Cast<MethodBase>()
@@ -230,9 +230,9 @@ namespace Puerts.Editor
                             .Where(p => !p.IsSpecialName && p.GetIndexParameters().GetLength(0) == 0)
                             .Where(p =>
                             { 
-                                Utils.BindingMode mode = Utils.getBindingMode(p);
-                                if (mode == Utils.BindingMode.DontBinding) return false;
-                                if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(p); return false; }
+                                BindingMode mode = Utils.getBindingMode(p);
+                                if (mode == BindingMode.DontBinding) return false;
+                                if (mode == BindingMode.LazyBinding) { lazyCollector.Add(p); return false; }
                                 return true; 
                             })
                             .Select(p => PropertyGenInfo.FromPropertyInfo(p))
@@ -241,9 +241,9 @@ namespace Puerts.Editor
                                     .Where(f => !Utils.IsNotSupportedMember(f))
                                     .Where(f =>
                                     { 
-                                        Utils.BindingMode mode = Utils.getBindingMode(f);
-                                        if (mode == Utils.BindingMode.DontBinding) return false;
-                                        if (mode == Utils.BindingMode.LazyBinding) { lazyCollector.Add(f); return false; }
+                                        BindingMode mode = Utils.getBindingMode(f);
+                                        if (mode == BindingMode.DontBinding) return false;
+                                        if (mode == BindingMode.LazyBinding) { lazyCollector.Add(f); return false; }
                                         return true; 
                                     })
                                     .Select(f => PropertyGenInfo.FromFieldInfo(f))
@@ -254,6 +254,21 @@ namespace Puerts.Editor
                         Operators = operatorGroups.Select(o => MethodGenInfo.FromType(type, false, o)).ToArray(),
                         Events = type.GetEvents(Utils.Flags)
                             .Where(m => !Utils.IsNotSupportedMember(m))
+                            .Where(e =>
+                            { 
+                                BindingMode mode = Utils.getBindingMode(e);
+                                if (mode == BindingMode.DontBinding) return false;
+                                if (mode == BindingMode.LazyBinding) 
+                                { 
+                                    var adder = e.GetAddMethod();
+                                    var remover = e.GetRemoveMethod();
+                                    if (adder != null && adder.IsPublic) lazyCollector.Add(adder);
+                                    if (remover != null && remover.IsPublic) lazyCollector.Add(remover);
+
+                                    return false; 
+                                }
+                                return true; 
+                            })
                             .Select(e => EventGenInfo.FromEventInfo(e))
                             .ToArray(),
 
@@ -272,6 +287,7 @@ namespace Puerts.Editor
             // represent a javascript function's parameter
             public class ParameterGenInfo : DataTypeInfo
             {
+                public bool IsIn;
                 public bool IsOut;
                 public bool IsByRef;
                 public string ExpectJsType;
@@ -287,6 +303,7 @@ namespace Puerts.Editor
                     var result = new ParameterGenInfo()
                     {
                         IsOut = !parameterInfo.IsIn && parameterInfo.IsOut && parameterInfo.ParameterType.IsByRef,
+                        IsIn = parameterInfo.IsIn,
                         IsByRef = parameterInfo.ParameterType.IsByRef,
                         TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType).GetFriendlyName(),
                         ExpectJsType = Utils.ToCode(ExpectJsType),

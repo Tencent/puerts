@@ -9,6 +9,7 @@
 #include "FunctionTranslator.h"
 #include "V8Utils.h"
 #include "Misc/DefaultValueHelper.h"
+#include <mutex>
 
 static TMap<FName, TMap<FName, TMap<FName, FString>>> ParamDefaultMetas;
 
@@ -16,7 +17,7 @@ static TMap<FName, TMap<FName, FString>>* PC = nullptr;
 static TMap<FName, FString>* PF = nullptr;
 
 PRAGMA_DISABLE_OPTIMIZATION
-static int ParamDefaultMetasInit()
+static void ParamDefaultMetasInit()
 {
     // PC = &ParamDefaultMetas.Add(TEXT("MainObject"));
     // PF = &PC->Add(TEXT("DefaultTest"));
@@ -24,14 +25,15 @@ static int ParamDefaultMetasInit()
     // PF->Add(TEXT("I"), TEXT("10"));
     // PF->Add(TEXT("Vec"), TEXT("1.100000,2.200000,3.300000"));
 #include "InitParamDefaultMetas.inl"
-    return 0;
+    return;
 }
 PRAGMA_ENABLE_OPTIMIZATION
 
-int gDummy_ParamDefaultMetasInit_Ret = ParamDefaultMetasInit();
+std::once_flag ParamDefaultMetasInitFlag;
 
 TMap<FName, FString>* GetParamDefaultMetaFor(UFunction* InFunction)
 {
+    std::call_once(ParamDefaultMetasInitFlag, ParamDefaultMetasInit);
     UClass* OuterClass = InFunction->GetOuterUClass();
     auto ClassParamDefaultMeta = ParamDefaultMetas.Find(OuterClass->GetFName());
     if (ClassParamDefaultMeta)
