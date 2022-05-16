@@ -20,6 +20,11 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     UTypeScriptGeneratedClass* Class = Cast<UTypeScriptGeneratedClass>(Func->GetOuter());
     if (Class)
     {
+        if (Class->PendingConstructJob)
+        {
+            Class->PendingConstructJob->Wait();
+        }
+
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -67,7 +72,49 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
-        PinedDynamicInvoker->TsConstruct(this, Object);
+        if (IsInGameThread())
+        {
+            if (PendingConstructJob)
+            {
+                PendingConstructJob->Wait();
+            }
+            PinedDynamicInvoker->TsConstruct(this, Object);
+        }
+        else if (!PendingConstructJob)
+        {
+            TWeakObjectPtr<UTypeScriptGeneratedClass> Class = this;
+            TWeakObjectPtr<UObject> Self = Object;
+            PendingConstructJob = FFunctionGraphTask::CreateAndDispatchWhenReady(
+                [Class, Self]()
+                {
+                    if (Class.IsValid() && Self.IsValid())
+                    {
+                        auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
+                        if (PinedDynamicInvoker)
+                        {
+                            PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
+                        }
+                        else
+                        {
+                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
+                                *Self->GetName(), Self.Get());
+                        }
+                    }
+                    else
+                    {
+                        UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class or Self invalid"));
+                    }
+                    if (Class.IsValid())
+                    {
+                        Class->PendingConstructJob = nullptr;
+                    }
+                },
+                TStatId{}, nullptr, ENamedThreads::GameThread);
+        }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("not in gamethread and has exsited pending construct job"));
+        }
     }
     else
     {

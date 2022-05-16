@@ -288,12 +288,6 @@ private:
 
     void DispatchProtocolMessage(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    void OnAsyncLoadingFlushUpdate();
-
-    void ConstructPendingObject(UObject* PendingObject);
-#endif
-
 #ifndef WITH_QUICKJS
     v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> Context, const FString& FileName);
 
@@ -630,12 +624,6 @@ private:
     v8::Global<v8::Map> ManualReleaseCallbackMap;
 
     std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
-
-    FCriticalSection PendingConstructLock;
-
-    TArray<TWeakObjectPtr<UObject>> PendingConstructObjects;
-
-    FDelegateHandle AsyncLoadingFlushUpdateHandle;
 
 #ifndef WITH_QUICKJS
     TMap<FString, v8::Global<v8::Module>> PathToModule;

@@ -755,10 +755,6 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    AsyncLoadingFlushUpdateHandle = FCoreDelegates::OnAsyncLoadingFlushUpdate.AddRaw(this, &FJsEnvImpl::OnAsyncLoadingFlushUpdate);
-#endif
-
     UserObjectRetainer.SetName(TEXT("Puerts_UserObjectRetainer"));
     SysObjectRetainer.SetName(TEXT("Puerts_SysObjectRetainer"));
 
@@ -784,10 +780,6 @@ FJsEnvImpl::~FJsEnvImpl()
     }
     HashToModuleInfo.clear();
     PathToModule.Empty();
-#endif
-
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-    FCoreDelegates::OnAsyncLoadingFlushUpdate.Remove(AsyncLoadingFlushUpdateHandle);
 #endif
 
     for (int i = 0; i < ManualReleaseCallbackList.size(); i++)
@@ -1739,21 +1731,9 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePer
 void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
 {
     bool IsCDO = Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
-    //蓝图类的CDO会在后台线程构造, 需要将其延迟到主线程执行
     if (!IsInGameThread())
     {
-        if (IsCDO)
-        {
-            FScopeLock Lock(&PendingConstructLock);
-            PendingConstructObjects.AddUnique(Object);
-            Logger->Warn(FString::Printf(TEXT("TypeScript Object %s(%p) construct delayed!"), *Object->GetName(), Object));
-        }
-        else
-        {
-            Logger->Error(
-                FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), Object));
-        }
-        return;
+        Logger->Error(FString::Printf(TEXT("Construct TypeScript Object %s(%p) on illegal thread!"), *Object->GetName(), Object));
     }
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -1774,20 +1754,6 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
     }
 
     auto BindInfoPtr = BindInfoMap.Find(Class);
-    if (!BindInfoPtr)
-    {
-        //保证CDO先完成构造, 这样MakeSureInject也只需要在构造CDO时执行
-        bool bPending = false;
-        {
-            FScopeLock Lock(&PendingConstructLock);
-            bPending = PendingConstructObjects.RemoveSingle(CDO) > 0;
-        }
-        if (bPending)
-        {
-            ConstructPendingObject(CDO);
-        }
-        BindInfoPtr = BindInfoMap.Find(Class);
-    }
 
     if (!BindInfoPtr || BindInfoPtr->InjectNotFinished)
     {
@@ -2071,62 +2037,6 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
-}
-
-void FJsEnvImpl::OnAsyncLoadingFlushUpdate()
-{
-    if (!IsInGameThread())
-    {
-        Logger->Warn(FString::Printf(TEXT("OnAsyncLoadingFlushUpdate called on illegal thread!")));
-        return;
-    }
-
-    TArray<UObject*> ReadiedObjects;
-    {
-        FScopeLock Lock(&PendingConstructLock);
-        for (auto i = PendingConstructObjects.Num() - 1; i >= 0; --i)
-        {
-            if (PendingConstructObjects[i].IsValid())
-            {
-                auto PendingObject = PendingConstructObjects[i].Get();
-                if (!PendingObject->HasAnyFlags(RF_NeedPostLoad) &&
-                    !PendingObject->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
-                {
-                    auto Class = PendingObject->GetClass();
-                    if (!Class->HasAnyFlags(RF_NeedPostLoad) && !Class->HasAnyInternalFlags(EInternalObjectFlags::AsyncLoading))
-                    {
-                        ReadiedObjects.Add(PendingObject);
-                        PendingConstructObjects.RemoveAt(i);
-                    }
-                }
-            }
-        }
-    }
-
-    for (auto i = ReadiedObjects.Num() - 1; i >= 0; --i)
-    {
-        ConstructPendingObject(ReadiedObjects[i]);
-    }
-}
-
-void FJsEnvImpl::ConstructPendingObject(UObject* PendingObject)
-{
-    TArray<UTypeScriptGeneratedClass*> SuperClasses;
-    UClass* Class = PendingObject->GetClass();
-    while (Class != nullptr)
-    {
-        if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
-        {
-            SuperClasses.Add(TypeScriptGeneratedClass);
-        }
-        Class = Class->GetSuperClass();
-    }
-
-    //从基类到派生类依次构造
-    for (int32 i = SuperClasses.Num() - 1; i >= 0; --i)
-    {
-        TsConstruct(SuperClasses[i], PendingObject);
-    }
 }
 #endif
 
