@@ -2474,11 +2474,11 @@ void FJsEnvImpl::BindStruct(
             },
             ScriptStructWrapper);
         auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
-        
+
         // --> modified by ksg begin
         // songfuhao: 解决打包时报错 warn_unused_result 问题
         // JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
-        (void)JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+        (void) JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
         // --< end
 #else
         auto CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
