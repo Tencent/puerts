@@ -12,7 +12,6 @@
 
 #include "CoreMinimal.h"
 #include "JsEnv.h"
-#include "TsDynamicInvoker.h"
 
 namespace puerts
 {

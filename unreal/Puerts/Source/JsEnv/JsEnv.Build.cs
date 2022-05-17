@@ -23,12 +23,11 @@ public class JsEnv : ModuleRules
     private bool UseQuickjs = false;
 
     private bool WithFFI = false;
+    
+    private bool ForceStaticLibInEditor = false;
 
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
-        //tiansen 修改js脚本查询路径
-        PublicDefinitions.Add("ENGINE_JS_SEARCH_PATH=\"Typescript/PuertsUnreal/Content/JavaScript\"");
-
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
 
@@ -55,17 +54,13 @@ public class JsEnv : ModuleRules
         {
             ThirdPartyNodejs(Target);
         }
-        else if (UseNewV8)
-        {
-            ThirdParty(Target);
-        }
         else if (UseQuickjs)
         {
             ThirdPartyQJS(Target);
         }
-		 else if (UseCustomV8)
+        else if (UseNewV8)
         {
-            ThirdPartyCustom(Target);
+            ThirdParty(Target);
         }
         else
         {
@@ -74,149 +69,14 @@ public class JsEnv : ModuleRules
         
         if (WithFFI) AddFFI(Target);
 
-        //string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
-        //string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
-        //DirectoryCopy(coreJSPath, destDirName, true);
-    }
-	    void ThirdPartyCustom(ReadOnlyTargetRules Target)
-    {
-        PublicDefinitions.Add("V8_COMPRESS_POINTERS");
-        
-        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Library"));
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            bool UseMonolith = Target.LinkType == TargetLinkType.Monolithic;
-            string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Win64");
-            if (UseMonolith)
-            {
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8_monolith.lib"));
-            }
-            else
-            {
-                PublicRuntimeLibraryPaths.Add(V8LibraryPath);
-                System.Action<string> AddLib = (string Name)=> {
-                    string DllName = Name + ".dll";
-                    string LibName = DllName + ".lib";
-                    string DllFullPath = Path.Combine(V8LibraryPath, DllName);
-                    string LibFullName = Path.Combine(V8LibraryPath, LibName);
-
-                    PublicAdditionalLibraries.Add(LibFullName);
-                    PublicDelayLoadDLLs.Add(DllFullPath);
-                    RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "../../Binaries/Win64", DllName), DllFullPath);
-                };
-
-                AddLib("zlib");
-                AddLib("v8_libbase");
-                AddLib("v8");
-                AddLib("v8_libplatform");
-            }
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Android)
-        {
-            if (Target.Version.MajorVersion == 5 || (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25))
-            {
-                // for armv7
-                string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armv7a-release", "8.4.371.19");
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
-                // for arm64
-                V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "arm64-release", "8.5.210.20");
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_monolith.a"));
-            }
-            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 25)
-            {
-                // for armv7
-                string V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "armv7a-release", "7.4.288");
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libinspector.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_base.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_external_snapshot.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
-                // for arm64
-                V8LibraryPath = Path.Combine(LibraryPath, "V8", "Android", "arm64-release", "7.4.288");
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libinspector.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_base.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_external_snapshot.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
-            }
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Mac)
-        {
-            PublicFrameworks.AddRange(new string[] { "WebKit"});
-            string V8LibraryPath = Path.Combine(LibraryPath, "V8", "macOS");
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libbindings.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libencoding.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libinspector.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libinspector_string_conversions.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libtorque_base.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libtorque_generated_definitions.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libtorque_generated_initializers.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_base_without_compiler.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_compiler.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_external_snapshot.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_init.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_initializers.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_nosnapshot.a"));
-            
-            PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "macOS"), "libffi.a"));
-        }
-        else if (Target.Platform == UnrealTargetPlatform.IOS)
-        {
-            PublicFrameworks.AddRange(new string[] { "WebKit"});
-            string V8LibraryPath = Path.Combine(LibraryPath, "V8", "iOS", "arm64");
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libbindings.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libencoding.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libinspector.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libinspector_string_conversions.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libtorque_generated_definitions.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_base_without_compiler.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_compiler.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_external_snapshot.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
-            
-            PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
-        }
-
-        string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
-        // External headers
-        if (Target.Platform == UnrealTargetPlatform.Android)
-        {
-            if (Target.Version.MajorVersion == 5 || (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion >= 25))
-            {
-                PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "8.5.210.20") });
-            }
-            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 25)
-            {
-                PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "7.4.288") });
-            }
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "asio") });
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Win64 ||
-            Target.Platform == UnrealTargetPlatform.IOS ||
-            Target.Platform == UnrealTargetPlatform.Mac ||
-            Target.Platform == UnrealTargetPlatform.Linux)
-        {
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "v8", "8.5.210.20") });
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
-            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "asio") });
-        }
-
-        //if (Target.Platform == UnrealTargetPlatform.Mac)
-        //{
-        //    PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "macOS") });
-        //}
-        //else if (Target.Platform == UnrealTargetPlatform.IOS)
-        //{
-        //    PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "iOS") });
-        //}
+        // --> modified by ksg begin
+        // songfuhao: 根据 KTS 插件路径修改拷贝文件位置
+        // string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
+        // string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
+        string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content", "JavaScript"));
+        string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "..", "Content", "Generated", "scripts"));
+        DirectoryCopy(coreJSPath, destDirName, true);
+        // --< end
     }
 
     void OldThirdParty(ReadOnlyTargetRules Target)
@@ -440,7 +300,7 @@ public class JsEnv : ModuleRules
         string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8", "Lib"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            if (!Target.bBuildEditor)
+            if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "wee8.lib"));
@@ -461,7 +321,7 @@ public class JsEnv : ModuleRules
         {
             //PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
             //PublicFrameworks.AddRange(new string[] { "WebKit" });
-            if (!Target.bBuildEditor)
+            if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
@@ -481,6 +341,11 @@ public class JsEnv : ModuleRules
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
+        }
+
+        if (ForceStaticLibInEditor)
+        {
+            PrivateDefinitions.Add("FORCE_USE_STATIC_V8_LIB");
         }
     }
     

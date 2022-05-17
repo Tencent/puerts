@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -30,9 +30,9 @@ public:
     virtual void UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr) = 0;
 
     virtual v8::Local<v8::Value> FindOrAddCppObject(
-        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void* Ptr, bool PassByPointer) = 0;
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
 
-    virtual bool IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject) = 0;
+    virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
 
     virtual ~ICppObjectMapper()
     {
@@ -50,16 +50,15 @@ public:
     virtual v8::Local<v8::Value> FindOrAdd(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) = 0;
 
-    virtual void BindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject,
-        bool PassByPointer, bool ForceNoCache) = 0;
+    virtual void BindStruct(
+        FScriptStructWrapper* ScriptStructWrapper, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer) = 0;
 
-    virtual void UnBindStruct(void* Ptr) = 0;
+    virtual void UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr) = 0;
 
     // PassByPointer为false代表需要在js对象释放时，free相应的内存
-    // ForceNoCache强制别cache，在结构体嵌套时，第一个成员为结构体时，可强制别cache
     // 相关信息见该issue：https://github.com/Tencent/puerts/issues/693
-    virtual v8::Local<v8::Value> FindOrAddStruct(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct,
-        void* Ptr, bool PassByPointer, bool ForceNoCache = false) = 0;
+    virtual v8::Local<v8::Value> FindOrAddStruct(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UScriptStruct* ScriptStruct, void* Ptr, bool PassByPointer) = 0;
 
     virtual void Merge(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) = 0;

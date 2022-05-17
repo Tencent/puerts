@@ -15,15 +15,15 @@
 namespace puerts
 {
 v8::Local<v8::Value> DataTransfer::FindOrAddCData(
-    v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void* Ptr, bool PassByPointer)
+    v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer)
 {
     return IsolateData<ICppObjectMapper>(Isolate)->FindOrAddCppObject(
-        Isolate, Context, CDataName, const_cast<void*>(Ptr), PassByPointer);
+        Isolate, Context, TypeId, const_cast<void*>(Ptr), PassByPointer);
 }
 
-bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject)
+bool DataTransfer::IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject)
 {
-    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(CDataName, JsObject);
+    return IsolateData<ICppObjectMapper>(Isolate)->IsInstanceOfCppObject(TypeId, JsObject);
 }
 
 v8::Local<v8::Value> DataTransfer::UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value)

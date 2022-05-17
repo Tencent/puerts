@@ -514,6 +514,7 @@ static void _FIntVectorXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->X);
+    puerts::DataTransfer::LinkOuter<FIntVector, int32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FIntVectorXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -545,6 +546,7 @@ static void _FIntVectorYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->Y);
+    puerts::DataTransfer::LinkOuter<FIntVector, int32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FIntVectorYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -576,6 +578,7 @@ static void _FIntVectorZGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->Z);
+    puerts::DataTransfer::LinkOuter<FIntVector, int32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FIntVectorZSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)

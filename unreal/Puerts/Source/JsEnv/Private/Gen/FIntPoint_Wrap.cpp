@@ -612,6 +612,7 @@ static void _FIntPointXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->X);
+    puerts::DataTransfer::LinkOuter<FIntPoint, int32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FIntPointXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -643,6 +644,7 @@ static void _FIntPointYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->Y);
+    puerts::DataTransfer::LinkOuter<FIntPoint, int32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FIntPointYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)

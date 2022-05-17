@@ -61,8 +61,9 @@ struct NamedPropertyInfo
 
 struct JSENV_API JSClassDefinition
 {
-    const char* CPPTypeName;
-    const char* CPPSuperTypeName;
+    const void* TypeId;
+    const void* SuperTypeId;
+    const char* ScriptName;
     const char* UETypeName;
     InitializeFunc Initialize;
     JSFunctionInfo* Methods;      //成员方法
@@ -76,16 +77,16 @@ struct JSENV_API JSClassDefinition
     NamedPropertyInfo* PropertyInfos;
 };
 
-#define JSClassEmptyDefinition             \
-    {                                      \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
+#define JSClassEmptyDefinition                \
+    {                                         \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
-const JSClassDefinition* FindClassByID(const char* Name);
+JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId);
 
 const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 

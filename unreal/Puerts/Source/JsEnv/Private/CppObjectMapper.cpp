@@ -58,7 +58,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
 }
 
 v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const char* CDataName, void* Ptr, bool PassByPointer)
+    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer)
 {
     if (Ptr == nullptr)
     {
@@ -77,7 +77,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     // create and link
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
     v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
-    auto ClassDefinition = FindClassByID(CDataName);
+    auto ClassDefinition = FindClassByID(TypeId);
     if (ClassDefinition)
     {
         return GetTemplateOfClass(Isolate, ClassDefinition)
@@ -90,14 +90,14 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     {
         auto Result = PointerConstrutor.Get(Isolate)->NewInstance(Context, 0, nullptr).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
-        DataTransfer::SetPointer(Isolate, Result, const_cast<char*>(CDataName), 1);
+        DataTransfer::SetPointer(Isolate, Result, TypeId, 1);
         return Result;
     }
 }
 
-bool FCppObjectMapper::IsInstanceOfCppObject(const char* CDataName, v8::Local<v8::Object> JsObject)
+bool FCppObjectMapper::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject)
 {
-    return DataTransfer::GetPointerFast<const char>(JsObject, 1) == CDataName;
+    return DataTransfer::GetPointerFast<const char>(JsObject, 1) == TypeId;
 }
 
 static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -136,7 +136,7 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition)
 {
-    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->CPPTypeName);
+    auto Iter = CDataNameToTemplateMap.find(ClassDefinition->TypeId);
     if (Iter == CDataNameToTemplateMap.end())
     {
         v8::EscapableHandleScope HandleScope(Isolate);
@@ -180,15 +180,15 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ++FunctionInfo;
         }
 
-        if (ClassDefinition->CPPSuperTypeName)
+        if (ClassDefinition->SuperTypeId)
         {
-            if (auto SuperDefinition = FindClassByID(ClassDefinition->CPPSuperTypeName))
+            if (auto SuperDefinition = FindClassByID(ClassDefinition->SuperTypeId))
             {
                 Template->Inherit(GetTemplateOfClass(Isolate, SuperDefinition));
             }
         }
 
-        CDataNameToTemplateMap[ClassDefinition->CPPTypeName] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
+        CDataNameToTemplateMap[ClassDefinition->TypeId] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
 
         return HandleScope.Escape(Template);
     }
@@ -211,7 +211,7 @@ void FCppObjectMapper::BindCppObject(
     v8::Isolate* Isolate, JSClassDefinition* ClassDefinition, void* Ptr, v8::Local<v8::Object> JSObject, bool PassByPointer)
 {
     DataTransfer::SetPointer(Isolate, JSObject, Ptr, 0);
-    DataTransfer::SetPointer(Isolate, JSObject, const_cast<char*>(ClassDefinition->CPPTypeName), 1);
+    DataTransfer::SetPointer(Isolate, JSObject, ClassDefinition->TypeId, 1);
 
     if (!PassByPointer)    //指针传递不用处理GC
     {

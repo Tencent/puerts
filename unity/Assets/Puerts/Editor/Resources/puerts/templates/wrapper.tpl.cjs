@@ -95,7 +95,7 @@ let csharpKeywords = {};
  * @param {*} idx 
  * @returns 
  */
-const paramListLambda = (paramInfo, idx) => `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? "ref " : "")}Arg${idx}`;
+const paramListLambda = (paramInfo, idx) => `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}Arg${idx}`;
 
 /**
  * this template is for generating the c# wrapper class
