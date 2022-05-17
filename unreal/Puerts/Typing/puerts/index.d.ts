@@ -30,7 +30,10 @@ declare module "puerts" {
     }
     
     function merge(des: {}, src: {}): void;
+    // --> modified by kg begin
+    // songfuhao: 暴露registerBuildinModule接口用于注册内置模块
     function registerBuildinModule(name: string, module: any): void;
+    // --< end
     
     //function requestJitModuleMethod(moduleName: string, methodName: string, callback: (err: Error, result: any)=> void, ... args: any[]): void;
     

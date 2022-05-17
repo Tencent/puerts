@@ -308,20 +308,24 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     }
 
     // 初始化Isolate和DefaultContext
-    // v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
+    v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
+    // --> modified by kg begin
+    // liangcheng: 添加异常时 Callback
     v8::V8::SetDcheckErrorHandler(
         [](const char* file, int line, const char* message)
         {
             UE_LOG(Puerts, Error, TEXT("DcheckErrorCallback: file: %s, line: %d, message: %s"), ANSI_TO_TCHAR(file), line,
                 ANSI_TO_TCHAR(message));
         });
+    // --< end
 
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 #if WITH_QUICKJS
     MainIsolate = InExternalRuntime ? v8::Isolate::New(InExternalRuntime) : v8::Isolate::New(CreateParams);
 #else
     check(!InExternalRuntime && !InExternalContext);
-    // Kingsoft modify
+    // --> modified by kg begin
+    // liangcheng: 添加添加异常时 Callback
     // MainIsolate = v8::Isolate::New(CreateParams);
     MainIsolate = v8::Isolate::Allocate();
     MainIsolate->SetFatalErrorHandler(
@@ -334,8 +338,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
             UE_LOG(Puerts, Error, TEXT("OOMErrorCallback: location: %s, is_heap_oom: %d"), ANSI_TO_TCHAR(location),
                 is_heap_oom ? 1 : 0);
         });
-
     v8::Isolate::Initialize(MainIsolate, CreateParams);
+    // --< end
 #endif
     auto Isolate = MainIsolate;
     Isolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
@@ -2470,7 +2474,12 @@ void FJsEnvImpl::BindStruct(
             },
             ScriptStructWrapper);
         auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
-        JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+        
+        // --> modified by ksg begin
+        // songfuhao: 解决打包时报错 warn_unused_result 问题
+        // JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+        (void)JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+        // --< end
 #else
         auto CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
         CacheNodePtr->Value.Reset(MainIsolate, JSObject);

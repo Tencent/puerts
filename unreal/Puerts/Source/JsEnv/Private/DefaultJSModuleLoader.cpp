@@ -20,9 +20,6 @@ namespace puerts
 {
 static FString PathNormalize(const FString& PathIn)
 {
-    // --> modified by ksg begin
-    // liangcheng: 原生算法并不能将path转换成绝对路径，当require相对路径不一样，则会重复require
-    /**
     TArray<FString> PathFrags;
     PathIn.ParseIntoArray(PathFrags, TEXT("/"));
     Algo::Reverse(PathFrags);
@@ -51,9 +48,6 @@ static FString PathNormalize(const FString& PathIn)
     {
         return FString::Join(NewPathFrags, TEXT("/"));
     }
-    */
-    return FPaths::ConvertRelativePathToFull(PathIn);
-    // --< end
 }
 
 bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FString& AbsolutePath)
@@ -123,16 +117,9 @@ bool DefaultJSModuleLoader::Search(const FString& RequiredDir, const FString& Re
         }
     }
 
-    // --> modified by ksg begin
-    // songfuhao: 移除默认寻址 JavaScript 目录规则，新增默认寻址Puerts插件目录规则
-    // tiansen: 使用ENGINE_JS_SEARCH_PATH宏替换写死路径
-    /**
     return SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath) ||
            (ScriptRoot != TEXT("JavaScript") &&
                SearchModuleInDir(FPaths::ProjectContentDir() / TEXT("JavaScript"), RequiredModule, Path, AbsolutePath));
-    */
-    return SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath) ||
-           SearchModuleInDir(FPaths::ProjectPluginsDir() / ENGINE_JS_SEARCH_PATH, RequiredModule, Path, AbsolutePath);
 }
 
 bool DefaultJSModuleLoader::Load(const FString& Path, TArray<uint8>& Content)
