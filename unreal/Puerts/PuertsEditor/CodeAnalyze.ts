@@ -3821,11 +3821,6 @@ function watch(configFilePath:string) {
                                         bp.ClearParameter();
                                         return;
                                     }
-                                    if (paramPinType.pinType.PinContainerType == UE.EPinContainerType.Array && paramPinType.pinType.bIsReference == false) {
-                                        console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has TArray<T> parameter, using $InRef<UE.TArray<T>> instead!");
-                                        bp.ClearParameter();
-                                        return;
-                                    }
                                     postProcessPinType(signature.parameters[i].valueDeclaration, paramPinType.pinType, false);
                                     // bp.AddParameter(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType);
                                     bp.AddParameterWithMetaData(signature.parameters[i].getName(), paramPinType.pinType, paramPinType.pinValueType, compileParamMetaData(signature.parameters[i]));
