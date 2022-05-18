@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.3.4] - 2022-05-18
+1. dts中的csharp模块现在和node.js一样使用`export = `导出 #750
+2. 修复生成扩展函数时，忽略了路径带Editor的Assembly的内容 #735
+3. 添加执行内置脚本时的Try Catch，并且这个时候会自动Destroy创建出来的Isolate 
+4. Debug版本的Plugin现在全局会有手动gc函数（正常情况还是建议使用JsEnv.LowMemoryNotification）
+
 ## [1.3.3] - 2022-04-17
 1. 修复event成员没有成功转为Lazy的问题 #739
 2. 修复2021下某些in成员在生成代码里被写成了ref的问题 #758
