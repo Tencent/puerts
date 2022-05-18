@@ -17,6 +17,9 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallJS)
 
     if (Func)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Func->Isolate);
+#endif
         auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -35,6 +38,9 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
 
     if (Func)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Func->Isolate);
+#endif
         auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {

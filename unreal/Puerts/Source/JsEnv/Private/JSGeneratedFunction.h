@@ -42,4 +42,8 @@ public:
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
 
     bool TakeJsObjectRef;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
 };

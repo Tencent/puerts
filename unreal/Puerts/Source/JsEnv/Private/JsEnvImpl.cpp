@@ -318,6 +318,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MainIsolate = v8::Isolate::New(CreateParams);
 #endif
     auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+    UserObjectRetainer.Isolate = Isolate;
+    SysObjectRetainer.Isolate = Isolate;
+#endif
     Isolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
 
     v8::Isolate::Scope Isolatescope(Isolate);
@@ -350,6 +355,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop, Platform);
 
     auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+    UserObjectRetainer.Isolate = Isolate;
+    SysObjectRetainer.Isolate = Isolate;
+#endif
     Isolate->SetData(0, static_cast<IObjectMapper*>(this));    //直接传this会有问题，强转后地址会变
 
     // v8::Locker locker(Isolate);
@@ -799,6 +809,9 @@ FJsEnvImpl::~FJsEnvImpl()
 
     {
         auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 
@@ -889,30 +902,30 @@ FJsEnvImpl::~FJsEnvImpl()
         auto Platform = static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform());
         Platform->UnregisterIsolate(Isolate);
 #endif
+
+        if (InspectorChannel)
+        {
+            delete InspectorChannel;
+            InspectorChannel = nullptr;
+        }
+
+        if (Inspector)
+        {
+            delete Inspector;
+            Inspector = nullptr;
+        }
+
+        DynamicInvoker.Reset();
+        MixinInvoker.Reset();
+
+        SoftObjectPtrTemplate.Reset();
+        MulticastDelegateTemplate.Reset();
+        DelegateTemplate.Reset();
+        FixSizeArrayTemplate.Reset();
+        MapTemplate.Reset();
+        SetTemplate.Reset();
+        ArrayTemplate.Reset();
     }
-
-    if (InspectorChannel)
-    {
-        delete InspectorChannel;
-        InspectorChannel = nullptr;
-    }
-
-    if (Inspector)
-    {
-        delete Inspector;
-        Inspector = nullptr;
-    }
-
-    DynamicInvoker.Reset();
-    MixinInvoker.Reset();
-
-    SoftObjectPtrTemplate.Reset();
-    MulticastDelegateTemplate.Reset();
-    DelegateTemplate.Reset();
-    FixSizeArrayTemplate.Reset();
-    MapTemplate.Reset();
-    SetTemplate.Reset();
-    ArrayTemplate.Reset();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     for (size_t i = 0; i < MixinClasses.Num(); i++)
@@ -943,6 +956,9 @@ void FJsEnvImpl::InitExtensionMethodsMap()
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
 #endif
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     for (TObjectIterator<UClass> It; It; ++It)
@@ -1109,11 +1125,17 @@ void FJsEnvImpl::LowMemoryNotification()
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
     MainIsolate->LowMemoryNotification();
 }
 
 void FJsEnvImpl::MinorGarbageCollection()
 {
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
 #ifndef WITH_QUICKJS
     MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
 #endif
@@ -1403,6 +1425,9 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
     // Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     JsHotReload(ModuleName, JsSource);
 }
@@ -1427,6 +1452,9 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
             if (UNLIKELY(IsCDO))
             {
                 // MakeSureInject(TypeScriptGeneratedClass, true, true);
+#ifdef THREAD_SAFE
+                TypeScriptGeneratedClass->Isolate = MainIsolate;
+#endif
                 TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
                 TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
                 if (IsInGameThread())
@@ -1443,6 +1471,9 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
         else if (UNLIKELY(!IsCDO && Class == UTypeScriptGeneratedClass::StaticClass()))
         {
             TypeScriptGeneratedClass = static_cast<UTypeScriptGeneratedClass*>(Object);
+#ifdef THREAD_SAFE
+            TypeScriptGeneratedClass->Isolate = MainIsolate;
+#endif
             TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
             TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
             if (IsInGameThread())
@@ -1459,6 +1490,9 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
 
 void FJsEnvImpl::RebindJs()
 {
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
     for (TObjectIterator<UClass> It; It; ++It)
     {
         UClass* Class = *It;
@@ -1500,6 +1534,9 @@ FString FJsEnvImpl::CurrentStackTrace()
 {
 #ifndef WITH_QUICKJS
     v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
 
@@ -1819,6 +1856,9 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
     auto PersistentValuePtr = GeneratedObjectMap.Find(ObjectBase);
     if (PersistentValuePtr)
     {
@@ -2102,6 +2142,9 @@ bool FJsEnvImpl::AddToDelegate(
     {
         // UE_LOG(LogTemp, Warning, TEXT("new delegate proxy"));
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
+#ifdef THREAD_SAFE
+        DelegateProxy->Isolate = Isolate;
+#endif
         DelegateProxy->Owner = Iter->second.Owner;
         DelegateProxy->SignatureFunction = Iter->second.SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
@@ -2164,6 +2207,9 @@ FScriptDelegate FJsEnvImpl::NewManualReleaseDelegate(
     if (MaybeProxy.IsEmpty() || !MaybeProxy.ToLocalChecked()->IsExternal())
     {
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
+#ifdef THREAD_SAFE
+        DelegateProxy->Isolate = Isolate;
+#endif
         DelegateProxy->Owner = DelegateProxy;
         DelegateProxy->SignatureFunction = SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
@@ -2342,6 +2388,11 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+    auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+
     std::vector<void*> PendingToRemove;
     for (auto& KV : DelegateMap)
     {
@@ -2350,7 +2401,9 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
             PendingToRemove.push_back(KV.first);
         }
     }
-    auto Isolate = MainIsolate;
+    if (PendingToRemove.size() == 0)
+        return true;
+
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
@@ -2891,6 +2944,9 @@ void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UO
     }
 
     auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);

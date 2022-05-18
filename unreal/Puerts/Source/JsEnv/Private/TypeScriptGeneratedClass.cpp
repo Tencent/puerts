@@ -25,6 +25,9 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
             Class->PendingConstructJob->Wait();
         }
 
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Class->Isolate);
+#endif
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -69,6 +72,14 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
         GetSuperClass()->ClassConstructor(ObjectInitializer);
     }
 
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+    auto PinedDynamicInvoker = DynamicInvoker.Pin();
+    if (PinedDynamicInvoker)
+    {
+        PinedDynamicInvoker->TsConstruct(this, Object);
+    }
+#else
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
@@ -120,6 +131,7 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
             UE_LOG(Puerts, Error, TEXT("not in gamethread and has exsited pending construct job"));
         }
     }
+#endif
     else
     {
         UE_LOG(Puerts, Error, TEXT("call TsConstruct of %s(%p) fail!, DynamicInvoker invalid"), *Object->GetName(), Object);

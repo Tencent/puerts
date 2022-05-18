@@ -48,4 +48,8 @@ public:
     v8::UniquePersistent<v8::Object> Prototype;
 
     TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
 };

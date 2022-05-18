@@ -84,6 +84,9 @@ public:
 
     virtual void WaitDebugger(double timeout) override
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(MainIsolate);
+#endif
         const auto startTime = FDateTime::Now();
         while (Inspector && !Inspector->Tick())
         {

@@ -24,6 +24,9 @@ UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPt
     if (Cast<UWidgetBlueprintGeneratedClass>(Parent))
     {
         auto JSGeneratedClass = NewObject<UJSWidgetGeneratedClass>(Outer, *Name, RF_Public);
+#ifdef THREAD_SAFE
+        JSGeneratedClass->Isolate = Isolate;
+#endif
         JSGeneratedClass->DynamicInvoker = DynamicInvoker;
         JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
         JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
@@ -33,6 +36,9 @@ UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPt
     else if (Cast<UAnimBlueprintGeneratedClass>(Parent))
     {
         auto JSGeneratedClass = NewObject<UJSAnimGeneratedClass>(Outer, *Name, RF_Public);
+#ifdef THREAD_SAFE
+        JSGeneratedClass->Isolate = Isolate;
+#endif
         JSGeneratedClass->DynamicInvoker = DynamicInvoker;
         JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
         JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
@@ -42,6 +48,9 @@ UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPt
     else
     {
         auto JSGeneratedClass = NewObject<UJSGeneratedClass>(Outer, *Name, RF_Public);
+#ifdef THREAD_SAFE
+        JSGeneratedClass->Isolate = Isolate;
+#endif
         JSGeneratedClass->DynamicInvoker = DynamicInvoker;
         JSGeneratedClass->Constructor = v8::UniquePersistent<v8::Function>(Isolate, Constructor);
         JSGeneratedClass->Prototype = v8::UniquePersistent<v8::Object>(Isolate, Prototype);
@@ -76,6 +85,9 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
 
     if (auto JSGeneratedClass = Cast<UJSGeneratedClass>(Class))
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(JSGeneratedClass->Isolate);
+#endif
         auto PinedDynamicInvoker = JSGeneratedClass->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -99,6 +111,9 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
                     *Super->GetName());
                 return;
             }
+#ifdef THREAD_SAFE
+            MaybeJSFunction->Isolate = Isolate;
+#endif
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super, false);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
@@ -149,6 +164,9 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 
     Function->SetNativeFunc(IsMixinFunc ? &UJSGeneratedFunction::execCallMixin : &UJSGeneratedFunction::execCallJS);
 
+#ifdef THREAD_SAFE
+    Function->Isolate = Isolate;
+#endif
     Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);

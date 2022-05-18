@@ -11,6 +11,13 @@
 #include "CoreMinimal.h"
 #include "UObject/GCObject.h"
 
+#ifdef THREAD_SAFE
+namespace v8
+{
+class Isolate;
+}
+#endif
+
 namespace puerts
 {
 class JSENV_API FObjectRetainer : public FGCObject
@@ -32,6 +39,10 @@ public:
     }
 
     virtual FString GetReferencerName() const override;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
 
 private:
     TSet<UObject*> RetainedObjects;

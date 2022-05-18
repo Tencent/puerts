@@ -40,4 +40,8 @@ public:
     TWeakObjectPtr<UObject> Owner;
 
     v8::UniquePersistent<v8::Function> JsFunction;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
 };
