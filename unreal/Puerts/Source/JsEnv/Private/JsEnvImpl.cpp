@@ -3513,8 +3513,8 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
             if (!MaybeValue.IsEmpty() && MaybeValue.ToLocalChecked()->IsFunction())
             {
                 // Logger->Warn(FString::Printf(TEXT("override: %s"), *Function->GetName()));
-                UJSGeneratedClass::Override(Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()),
-                    DynamicInvoker, true, false, true);
+                UJSGeneratedClass::Override(
+                    Isolate, Class, Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, true);
                 overrided.Add(FunctionFName);
             }
         }
@@ -3601,8 +3601,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Function)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
-            UJSGeneratedClass::Override(
-                Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, true, true, TakeJsObjectRef);
+            UJSGeneratedClass::Mixin(Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, TakeJsObjectRef);
             ReplaceMethodNames.Add(MethodName);
         }
     }

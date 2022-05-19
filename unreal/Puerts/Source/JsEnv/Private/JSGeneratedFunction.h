@@ -46,4 +46,10 @@ public:
 #ifdef THREAD_SAFE
     v8::Isolate* Isolate;
 #endif
+
+    UFunction* Original = nullptr;
+
+    FNativeFuncPtr OriginalFunc = nullptr;
+
+    EFunctionFlags OriginalFunctionFlags;
 };
