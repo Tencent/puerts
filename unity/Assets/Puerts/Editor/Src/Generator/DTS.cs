@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace Puerts.Editor
 {
@@ -466,14 +465,7 @@ namespace Puerts.Editor
                     foreach (var t in refTypes.Distinct())
                     {
                         var info = TsTypeGenInfo.FromType(t, genTypeSet);
-                        try 
-                        {
-                            tsTypeGenInfos.Add(info.FullName, info);                     
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogError($"Add {info.FullName} failed!\n{e.ToString()}");
-                        }
+                        tsTypeGenInfos.Add(info.FullName, info);
                     }
                     foreach (var info in tsTypeGenInfos)
                     {
