@@ -100,7 +100,7 @@ declare module "ue" {
         T extends {new (...args:any[]): infer R} ? R :
         never;
 
-    type SupportedContainerKVType = BuiltinBool | BuiltinByte | BuiltinInt | BuiltinFloat | BuiltinInt64 | BuiltinString | BuiltinText | BuiltinName | {StaticClass(): Class}
+    type SupportedContainerKVType = BuiltinBool | BuiltinByte | BuiltinInt | BuiltinFloat | BuiltinInt64 | BuiltinString | BuiltinText | BuiltinName | {StaticClass(): ScriptStruct} | {StaticStruct(): ScriptStruct}
 
     function NewArray<T extends SupportedContainerKVType>(t: T): TArray<ContainerKVType<T>>;
     function NewSet<T extends SupportedContainerKVType>(t: T): TSet<ContainerKVType<T>>;
