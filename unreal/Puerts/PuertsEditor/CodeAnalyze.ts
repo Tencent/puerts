@@ -1784,7 +1784,7 @@ function watch(configFilePath:string) {
                 return isSubclassOf(baseTypes[0], baseTypeName);
             }
 
-            function getUClassOfType(type: ts.Type) : UE.Struct {
+            function getUClassOfType(type: ts.Type) : UE.Object {
                 if (!type) return undefined;
                 let moduleNames = getModuleNames(type);
                 if (moduleNames.length > 0 && moduleNames[0] == 'ue') {
@@ -1799,7 +1799,7 @@ function watch(configFilePath:string) {
                         }
                     } else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Struct.Load(classPath);
+                        return UE.Field.Load(classPath);
                     }
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
