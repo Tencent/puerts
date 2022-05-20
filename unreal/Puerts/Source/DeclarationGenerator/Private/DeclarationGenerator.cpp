@@ -1008,8 +1008,11 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 
     GenResolvedFunctions(Struct, StringBuffer);
 
-    StringBuffer << "    static StaticClass(): Class;\n";
-
+    StringBuffer << "    /**\n";
+    StringBuffer << "     * @deprecated use StaticStruct instead.\n";
+    StringBuffer << "     */\n";
+    StringBuffer << "    static StaticClass(): ScriptStruct;\n";
+    StringBuffer << "    static StaticStruct(): ScriptStruct;\n";
     StringBuffer << "}\n\n";
 
     NamespaceBegin(Struct);

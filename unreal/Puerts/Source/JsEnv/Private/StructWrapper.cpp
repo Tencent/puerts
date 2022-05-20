@@ -230,6 +230,12 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
     Result->Set(FV8Utils::InternalString(Isolate, "StaticClass"),
         v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
 
+    if (!Struct->IsA<UClass>())
+    {
+        Result->Set(FV8Utils::InternalString(Isolate, "StaticStruct"),
+            v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
+    }
+
 #ifndef WITH_QUICKJS
     Result->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
         [](v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
