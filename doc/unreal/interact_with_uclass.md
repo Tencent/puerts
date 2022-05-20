@@ -14,6 +14,14 @@
 
 * 或者，也可以通过控制台命令生成声明文件：`Puerts.Gen`
 
+   - Puerts.Gen默认仅生成UCLASS及被UCLASS引用的USTRUCT，UENUM
+   
+   - 如果希望增加未引用的USTRUCT，执行`Puerts.Gen STRUCT`
+   
+   - 如果希望增加未引用的UENUM，执行`Puerts.Gen ENUM`
+   
+   - 如果希望增加未引用的USTRUCT、UENUM，执行`Puerts.Gen ALL`
+
 ## 成员及函数
 
 ~~~typescript
