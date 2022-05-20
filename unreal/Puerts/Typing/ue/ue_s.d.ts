@@ -24,6 +24,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_Guid__: boolean;
+        
     }
     class Box2D {
         constructor();
@@ -59,6 +61,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_Box2D__: boolean;
+        
     }
     class Color {
         constructor();
@@ -89,6 +93,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_Color__: boolean;
         
     }
     class LinearColor {
@@ -141,6 +147,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_LinearColor__: boolean;
         
     }
     class Quat {
@@ -215,6 +223,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_Quat__: boolean;
+        
     }
     class Rotator {
         constructor();
@@ -269,6 +279,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_Rotator__: boolean;
         
     }
     class Transform {
@@ -365,6 +377,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_Transform__: boolean;
         
     }
     class Vector {
@@ -487,6 +501,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_Vector__: boolean;
+        
     }
     class Vector2D {
         constructor();
@@ -549,6 +565,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_Vector2D__: boolean;
+        
     }
     class Vector4 {
         constructor(InVector: Vector, InW: number);
@@ -600,6 +618,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_Vector4__: boolean;
+        
     }
     class IntPoint {
         constructor();
@@ -634,6 +654,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_IntPoint__: boolean;
+        
     }
     class IntVector {
         constructor();
@@ -666,6 +688,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_IntVector__: boolean;
+        
     }
     class FMatrix {
         constructor();
@@ -675,6 +699,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_FMatrix__: boolean;
         
     }
     namespace FStructuredArchive {
@@ -687,6 +713,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_FSlot__: boolean;
+        
     }
     }
     class FArchive {
@@ -698,6 +726,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_FArchive__: boolean;
+        
     }
     class TSizedDefaultAllocator<T> {
         constructor();
@@ -707,6 +737,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_TSizedDefaultAllocatorT__: boolean;
         
     }
     class FPlane {
@@ -718,6 +750,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_FPlane__: boolean;
+        
     }
     class FFloat16Color {
         constructor();
@@ -727,6 +761,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_FFloat16Color__: boolean;
         
     }
     class UPackageMap {
@@ -738,6 +774,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_UPackageMap__: boolean;
+        
     }
     class FIntVector4 {
         constructor();
@@ -747,6 +785,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_FIntVector4__: boolean;
         
     }
     class VectorRegister {
@@ -758,6 +798,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_VectorRegister__: boolean;
+        
     }
     class ScalarRegister {
         constructor();
@@ -768,6 +810,8 @@ declare module "ue" {
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
         
+        private __tid_ScalarRegister__: boolean;
+        
     }
     class FOutputDevice {
         constructor();
@@ -777,6 +821,8 @@ declare module "ue" {
          */
         static StaticClass(): ScriptStruct;
         static StaticStruct(): ScriptStruct;
+        
+        private __tid_FOutputDevice__: boolean;
         
     }
 

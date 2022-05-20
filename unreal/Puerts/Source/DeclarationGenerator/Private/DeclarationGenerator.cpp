@@ -846,7 +846,8 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
-    StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n";
+    StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n\n";
+    StringBuffer << "    private __tid_" << SafeName(Class->GetName()) << "__: boolean;\n";
 
     StringBuffer << "}\n\n";
 
@@ -1013,6 +1014,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
     StringBuffer << "     */\n";
     StringBuffer << "    static StaticClass(): ScriptStruct;\n";
     StringBuffer << "    static StaticStruct(): ScriptStruct;\n";
+    StringBuffer << "    private __tid_" << SafeName(Struct->GetName()) << "__: boolean;\n";
     StringBuffer << "}\n\n";
 
     NamespaceBegin(Struct);
