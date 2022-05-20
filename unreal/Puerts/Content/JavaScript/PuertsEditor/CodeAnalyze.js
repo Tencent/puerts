@@ -1343,7 +1343,15 @@ function watch(configFilePath) {
                                 let baseTypes = type.getBaseTypes();
                                 if (!baseTypes || baseTypes.length != 1)
                                     return;
-                                let baseTypeUClass = getUClassOfType(baseTypes[0]);
+                                let structOfType = getUClassOfType(baseTypes[0]);
+                                let baseTypeUClass = undefined;
+                                if (structOfType.GetClass().IsChildOf(UE.Class.StaticClass())) {
+                                    baseTypeUClass = structOfType;
+                                }
+                                else {
+                                    console.warn("do not support UStruct:" + checker.typeToString(type));
+                                    return;
+                                }
                                 if (baseTypeUClass) {
                                     if (isSubclassOf(type, "Subsystem")) {
                                         console.warn("do not support Subsystem " + checker.typeToString(type));
@@ -1390,10 +1398,7 @@ function watch(configFilePath) {
                         try {
                             let jsCls = UE[type.symbol.getName()];
                             if (typeof jsCls.StaticClass == 'function') {
-                                let cls = jsCls.StaticClass();
-                                if (cls.GetClass().IsChildOf(UE.Class.StaticClass())) {
-                                    return cls;
-                                }
+                                return jsCls.StaticClass();
                             }
                         }
                         catch (e) {
@@ -1402,7 +1407,7 @@ function watch(configFilePath) {
                     }
                     else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Class.Load(classPath);
+                        return UE.Struct.Load(classPath);
                     }
                 }
                 else if (type.symbol && type.symbol.valueDeclaration) {

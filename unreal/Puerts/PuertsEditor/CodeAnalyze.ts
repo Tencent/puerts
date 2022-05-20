@@ -1734,7 +1734,17 @@ function watch(configFilePath:string) {
                                 
                                 let baseTypes = type.getBaseTypes();
                                 if (!baseTypes || baseTypes.length != 1) return;
-                                let baseTypeUClass = getUClassOfType(baseTypes[0]);
+                                let structOfType = getUClassOfType(baseTypes[0]);
+                                let baseTypeUClass:UE.Class = undefined;
+
+                                if (structOfType.GetClass().IsChildOf(UE.Class.StaticClass())) {
+                                    baseTypeUClass = structOfType as UE.Class;
+                                }
+                                else {
+                                    console.warn("do not support UStruct:" + checker.typeToString(type));
+                                    return;
+                                }
+
                                 if (baseTypeUClass) {
                                     if (isSubclassOf(type, "Subsystem")) {
                                         console.warn("do not support Subsystem " + checker.typeToString(type));
@@ -1774,7 +1784,7 @@ function watch(configFilePath:string) {
                 return isSubclassOf(baseTypes[0], baseTypeName);
             }
 
-            function getUClassOfType(type: ts.Type) : UE.Class {
+            function getUClassOfType(type: ts.Type) : UE.Struct {
                 if (!type) return undefined;
                 let moduleNames = getModuleNames(type);
                 if (moduleNames.length > 0 && moduleNames[0] == 'ue') {
@@ -1782,17 +1792,14 @@ function watch(configFilePath:string) {
                         try {
                             let jsCls = (UE as any)[type.symbol.getName()]; 
                             if (typeof jsCls.StaticClass == 'function') {
-                                let cls = jsCls.StaticClass();
-                                if (cls.GetClass().IsChildOf(UE.Class.StaticClass())) {
-                                    return cls;
-                                }
+                                return jsCls.StaticClass();
                             } 
                         } catch (e) {
                             console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
                         }
                     } else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Class.Load(classPath);
+                        return UE.Struct.Load(classPath);
                     }
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
@@ -1819,7 +1826,7 @@ function watch(configFilePath:string) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0);
                         bp.Save();
                         return bp.GeneratedClass;
                     }
