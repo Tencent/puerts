@@ -1774,7 +1774,7 @@ function watch(configFilePath:string) {
                 return isSubclassOf(baseTypes[0], baseTypeName);
             }
 
-            function getUClassOfType(type: ts.Type) : UE.Object {
+            function getUClassOfType(type: ts.Type) : UE.Class {
                 if (!type) return undefined;
                 let moduleNames = getModuleNames(type);
                 if (moduleNames.length > 0 && moduleNames[0] == 'ue') {
@@ -1782,14 +1782,17 @@ function watch(configFilePath:string) {
                         try {
                             let jsCls = (UE as any)[type.symbol.getName()]; 
                             if (typeof jsCls.StaticClass == 'function') {
-                                return jsCls.StaticClass();
+                                let cls = jsCls.StaticClass();
+                                if (cls.GetClass().IsChildOf(UE.Class.StaticClass())) {
+                                    return cls;
+                                }
                             } 
                         } catch (e) {
                             console.error(`load ue type [${type.symbol.getName()}], throw: ${e}`);
                         }
                     } else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Field.Load(classPath);
+                        return UE.Class.Load(classPath);
                     }
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;

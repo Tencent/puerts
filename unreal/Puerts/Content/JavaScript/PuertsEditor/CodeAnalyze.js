@@ -1390,7 +1390,10 @@ function watch(configFilePath) {
                         try {
                             let jsCls = UE[type.symbol.getName()];
                             if (typeof jsCls.StaticClass == 'function') {
-                                return jsCls.StaticClass();
+                                let cls = jsCls.StaticClass();
+                                if (cls.GetClass().IsChildOf(UE.Class.StaticClass())) {
+                                    return cls;
+                                }
                             }
                         }
                         catch (e) {
@@ -1399,7 +1402,7 @@ function watch(configFilePath) {
                     }
                     else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Field.Load(classPath);
+                        return UE.Class.Load(classPath);
                     }
                 }
                 else if (type.symbol && type.symbol.valueDeclaration) {
