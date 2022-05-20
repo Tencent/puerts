@@ -2503,7 +2503,7 @@ void FJsEnvImpl::BindStruct(
             },
             ScriptStructWrapper);
         auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
-        JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder);
+        __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
 #else
         auto CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
         CacheNodePtr->Value.Reset(MainIsolate, JSObject);

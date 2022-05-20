@@ -22,7 +22,11 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     {
         if (Class->PendingConstructJob)
         {
+#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
             Class->PendingConstructJob->Wait();
+#else
+            FTaskGraphInterface::Get().WaitUntilTaskCompletes(Class->PendingConstructJob, ENamedThreads::AnyThread);
+#endif
         }
 
 #ifdef THREAD_SAFE
@@ -87,7 +91,11 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
         {
             if (PendingConstructJob)
             {
+#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
                 PendingConstructJob->Wait();
+#else
+                FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
+#endif
             }
             PinedDynamicInvoker->TsConstruct(this, Object);
         }
