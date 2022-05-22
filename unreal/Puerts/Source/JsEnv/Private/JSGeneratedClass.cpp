@@ -191,7 +191,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 }
 
 void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef)
+    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;
 
@@ -204,8 +204,11 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
         }
         if (MaybeJSFunction)
         {
-            UE_LOG(Puerts, Error, TEXT("Try to mixin a function[%s:%s] already mixin by anthor vm"), *Class->GetName(),
-                *Super->GetName());
+            if (Warning)
+            {
+                UE_LOG(Puerts, Warning, TEXT("Try to mixin a function[%s:%s] already mixin by anthor vm"), *Class->GetName(),
+                    *Super->GetName());
+            }
             return;
         }
     }

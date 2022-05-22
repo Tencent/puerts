@@ -35,7 +35,7 @@ public:
         TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative);
 
     static void Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-        TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef);
+        TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef, bool Warning);
 
     static void Restore(UClass* Class);
 

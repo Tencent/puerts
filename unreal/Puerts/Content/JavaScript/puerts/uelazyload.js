@@ -130,7 +130,7 @@ var global = global || (function () { return this; }());
                  mixinMethods[name] = mixinClass.prototype[name];
             }
         }
-        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit);
+        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit, config.noMixinedWarning);
         
         let jsCls = UEClassToJSClass(cls);
         Object.getOwnPropertyNames(mixinMethods).forEach(name => {
@@ -151,6 +151,12 @@ var global = global || (function () { return this; }());
     }
     
     blueprint.mixin = mixin;
+    
+    function unmixin(to) {
+        __tgjsMixin(to.StaticClass(), {}, undefined, undefined, undefined, true);
+    }
+    
+    blueprint.unmixin = unmixin;
     
     puerts.blueprint = blueprint;
     

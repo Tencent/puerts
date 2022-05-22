@@ -3556,7 +3556,16 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
         return;
     }
-    if (MixinClasses.ContainsByPredicate([To](TWeakObjectPtr<UClass> Item) { return Item == To; }))
+
+    // release
+    if (Info[5]->IsBoolean() && Info[5]->BooleanValue(Isolate))
+    {
+        MixinClasses.Remove(To);
+        UJSGeneratedClass::Restore(To);
+        return;
+    }
+
+    if (MixinClasses.Contains(To))
     {
         FV8Utils::ThrowException(Isolate, "had mixin");
         return;
@@ -3574,6 +3583,12 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     if (Info[3]->IsBoolean())
     {
         Inherit = Info[3]->BooleanValue(Isolate);
+    }
+
+    bool NoWarning = false;
+    if (Info[4]->IsBoolean())
+    {
+        NoWarning = Info[4]->BooleanValue(Isolate);
     }
 
     UClass* New = To;
@@ -3601,7 +3616,8 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Function)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
-            UJSGeneratedClass::Mixin(Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, TakeJsObjectRef);
+            UJSGeneratedClass::Mixin(
+                Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, TakeJsObjectRef, !NoWarning);
             ReplaceMethodNames.Add(MethodName);
         }
     }
