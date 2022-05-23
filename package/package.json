@@ -11,5 +11,8 @@
       "email": "zombieyang@tencent.com",
       "url": "https://github.com/puerts"
     },
-    "category": "Libraries"
+    "category": "Libraries",
+    "dependencies": {
+      "com.tencent.puerts.core": "^1.3.3"
+    }
 }
