@@ -239,6 +239,8 @@ private:
 
     void Log(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void SearchModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     void LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
