@@ -241,6 +241,8 @@ private:
 
     void LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
+
     void LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);

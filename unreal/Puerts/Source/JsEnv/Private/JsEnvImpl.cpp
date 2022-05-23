@@ -2714,58 +2714,14 @@ v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
     return JSObject;
 }
 
-void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
+v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    CHECK_V8_ARGS(EArgString);
-
-    FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
-
-    UObject* ClassPackage = ANY_PACKAGE;
-    UField* Type = FindObject<UClass>(ClassPackage, *TypeName);
-
-    if (!Type)
+    if (const auto Struct = Cast<UStruct>(Type))
     {
-        Type = FindObject<UScriptStruct>(ClassPackage, *TypeName);
+        return GetJsClass(Struct, Context);
     }
 
-    if (!Type)
-    {
-        Type = FindObject<UEnum>(ClassPackage, *TypeName);
-    }
-
-    if (!Type)
-    {
-        Type = LoadObject<UClass>(nullptr, *TypeName);
-    }
-
-    if (!Type)
-    {
-        Type = LoadObject<UScriptStruct>(nullptr, *TypeName);
-    }
-
-    if (!Type)
-    {
-        Type = LoadObject<UEnum>(nullptr, *TypeName);
-    }
-
-    if (auto Struct = Cast<UStruct>(Type))
-    {
-        if (!Struct->IsNative())
-        {
-            FV8Utils::ThrowException(
-                Isolate, FString::Printf(
-                             TEXT("%s is blueprint type, load it using UE.Class.Load('path/to/your/blueprint/file')."), *TypeName));
-            return;
-        }
-        Info.GetReturnValue().Set(GetJsClass(Struct, Context));
-    }
-    else if (auto Enum = Cast<UEnum>(Type))
+    if (const auto Enum = Cast<UEnum>(Type))
     {
         auto Result = v8::Object::New(Isolate);
         for (int i = 0; i < Enum->NumEnums(); ++i)
@@ -2824,11 +2780,48 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
             }
         }
 #endif
-        Info.GetReturnValue().Set(Result);
+        return Result;
+    }
+
+    return v8::Undefined(Isolate);
+}
+
+void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgString);
+
+    const FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
+
+    UObject* ClassPackage = ANY_PACKAGE;
+    UField* Type = FindObject<UField>(ClassPackage, *TypeName);
+
+    if (!Type)
+    {
+        Type = LoadObject<UField>(nullptr, *TypeName);
+    }
+
+    if (Type && !Type->IsNative())
+    {
+        FV8Utils::ThrowException(Isolate,
+            FString::Printf(TEXT("%s is blueprint type, load it using UE.Class.Load('path/to/your/blueprint/file')."), *TypeName));
+        return;
+    }
+
+    auto Result = UETypeToJsClass(Isolate, Context, Type);
+
+    if (Result->IsUndefined())
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not find type:%s"), *TypeName));
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("can not find type:%s"), *TypeName));
+        Info.GetReturnValue().Set(Result);
     }
 }
 
@@ -2842,15 +2835,15 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
 
     CHECK_V8_ARGS(EArgObject);
 
-    auto Struct = Cast<UStruct>(FV8Utils::GetUObject(Context, Info[0]));
+    UField* Type = Cast<UField>(FV8Utils::GetUObject(Context, Info[0]));
 
-    if (Struct)
+    if (Type)
     {
-        Info.GetReturnValue().Set(GetJsClass(Struct, Context));
+        Info.GetReturnValue().Set(UETypeToJsClass(Isolate, Context, Type));
     }
     else
     {
-        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("argument #0 expect a UStruct")));
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("argument #0 expect a UField")));
     }
 }
 

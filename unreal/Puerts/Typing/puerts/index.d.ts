@@ -46,7 +46,9 @@ declare module "puerts" {
             new (Outer?: Object, Name?: string, ObjectFlags?: number) : R;
             StaticClass(): Class;
         };
-        function unmixin<T extends typeof Object>(to:T):void
+        function unmixin<T extends typeof Object>(to:T): void
+        function load(cls: any): void
+        function unload(cls: any): void
     }
     
     function on(eventType: string, listener: Function, prepend?: boolean) : void;

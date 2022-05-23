@@ -26,6 +26,20 @@ var global = global || (function () { return this; }());
         }
     });
     
+    function createNamespaceOrClass(path, parentDir) {
+        return new Proxy({__path: path, __parent:parentDir}, {
+            get: function(node, name) {
+                if (!(name in node)) {
+                    if (name === '__parent' || name === '__path') return undefined;
+                    node[name] = createNamespaceOrClass(name, node);
+                }
+                return node[name];
+            }
+        });
+    }
+    
+    cache["Game"] = createNamespaceOrClass("Game");
+    
     puerts.registerBuildinModule('ue', UE);
     
     let CPP = new Proxy(cache, {
@@ -104,10 +118,10 @@ var global = global || (function () { return this; }());
     
     function blueprint(path) {
         console.warn('deprecated! use blueprint.tojs instead');
-        let uclass = UE.Struct.Load(path);
-        if (uclass) {
-            let jsclass = UEClassToJSClass(uclass);
-            jsclass.__puerts_uclass = uclass;
+        let ufield = UE.Field.Load(path);
+        if (ufield) {
+            let jsclass = UEClassToJSClass(ufield);
+            jsclass.__puerts_ufield = ufield;
             return jsclass;
         } else {
             throw new Error("can not load type in " + path);
@@ -157,6 +171,46 @@ var global = global || (function () { return this; }());
     }
     
     blueprint.unmixin = unmixin;
+    
+    function blueprint_load(cls) {
+        if (cls.__path) {
+            let c = cls
+            let path = `.${c.__path}`
+            c = c.__parent;
+            while (c && c.__path) {
+                path = `/${c.__path}${path}`
+                c = c.__parent;
+            }
+            let ufield = UE.Field.Load(path);
+            if (!ufield) {
+                throw new Error(`load ${path} fail!`);
+            }
+            let jsclass = UEClassToJSClass(ufield);
+            jsclass.__puerts_ufield = ufield;
+            
+            if (cls.__parent) {
+                jsclass.__parent = cls.__parent;
+                jsclass.__name = cls.__path;
+                cls.__parent[cls.__path] = jsclass;
+            }
+            
+        } else {
+            throw new Error("argument #0 is not a unload type");
+        }
+    }
+    
+    blueprint.load = blueprint_load;
+    
+    function blueprint_unload(cls) {
+        if (cls.__puerts_ufield) {
+            delete cls.__puerts_ufield;
+            if (cls.__parent) {
+                cls.__parent[cls.__name] = createNamespaceOrClass(cls.__name, cls.__parent);
+            }
+        }
+    }
+    
+    blueprint.unload = blueprint_unload;
     
     puerts.blueprint = blueprint;
     
