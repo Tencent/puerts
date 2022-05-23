@@ -1909,6 +1909,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     }
 
     TsFunctionMap.erase((UFunction*) ObjectBase);
+    ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
 }
 
 void FJsEnvImpl::TryReleaseType(UStruct* Struct)
@@ -2754,6 +2755,8 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
             auto Value = Enum->GetValueByIndex(i);
             __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
         }
+        __USE(Result->Set(
+            Context, FV8Utils::ToV8String(Isolate, "__puerts_ufield"), FindOrAdd(Isolate, Context, Enum->GetClass(), Enum)));
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         if (Enum == StaticEnum<EObjectTypeQuery>())
         {
@@ -2874,9 +2877,9 @@ bool FJsEnvImpl::GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Lo
         *PropertyPtr = ContainerMeta.GetBuiltinProperty((BuiltinType) Type);
         return true;
     }
-    else if (auto Struct = Cast<UStruct>(FV8Utils::GetUObject(Context, Value)))
+    else if (auto Field = Cast<UField>(FV8Utils::GetUObject(Context, Value)))
     {
-        *PropertyPtr = ContainerMeta.GetObjectProperty(Struct);
+        *PropertyPtr = ContainerMeta.GetObjectProperty(Field);
         return *PropertyPtr != nullptr;
     }
     else

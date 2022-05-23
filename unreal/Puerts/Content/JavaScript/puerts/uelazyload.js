@@ -217,27 +217,34 @@ var global = global || (function () { return this; }());
     const newContainer = global.__tgjsNewContainer;
     global.__tgjsNewContainer = undefined;
     
-    function NewArray(t1) {
-        if (typeof t1 !== 'number') {
-            t1 = t1.StaticClass();
+    function translateType(t) {
+        if (typeof t !== 'number') {
+            if (t.hasOwnProperty('__puerts_ufield')) {
+                return t.__puerts_ufield
+            } else {
+                return t.StaticClass();
+            }
+        } else {
+            return t;
         }
+    }
+    
+    function NewArray(t1) {
+        t1 = translateType(t1);
+
         return newContainer(0, t1);
     }
     
     function NewSet(t1) {
-        if (typeof t1 !== 'number') {
-            t1 = t1.StaticClass();
-        }
+        t1 = translateType(t1);
+        
         return newContainer(1, t1);
     }
     
     function NewMap(t1, t2) {
-        if (typeof t1 !== 'number') {
-            t1 = t1.StaticClass();
-        }
-        if (typeof t2 !== 'number') {
-            t2 = t2.StaticClass();
-        }
+        t1 = translateType(t1);
+        t2 = translateType(t2);
+        
         return newContainer(2, t1, t2);
     }
     
