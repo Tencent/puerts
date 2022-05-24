@@ -1224,6 +1224,7 @@ public:
         BPFilter.bRecursivePaths = true;
         BPFilter.bRecursiveClasses = true;
         BPFilter.ClassNames.Add(FName(TEXT("Blueprint")));
+        BPFilter.ClassNames.Add(FName(TEXT("UserDefinedEnum")));
 
         AssetRegistry.GetAssets(BPFilter, AssetList);
         for (FAssetData const& Asset : AssetList)
