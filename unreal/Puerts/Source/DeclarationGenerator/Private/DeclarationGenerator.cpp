@@ -1099,7 +1099,7 @@ private:
 
     bool GenStruct = false;
 
-    bool GenEnum = false;
+    bool GenEnum = true;
 
     FName SearchPath = NAME_None;
 
@@ -1194,7 +1194,7 @@ public:
                     this->GenUeDts();
 
                     GenStruct = false;
-                    GenEnum = false;
+                    GenEnum = true;
                     SearchPath = NAME_None;
                 }));
     }
