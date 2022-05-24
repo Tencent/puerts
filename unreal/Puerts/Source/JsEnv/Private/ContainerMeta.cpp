@@ -203,7 +203,7 @@ void FContainerMeta::NotifyElementTypeDeleted(const UField* Field)
     if (Iter)
     {
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
-        (const_cast<UStruct*>(Field))->RemoveFromRoot();
+        (const_cast<UField*>(Field))->RemoveFromRoot();
 #else
         // delete *Iter;
 #endif
