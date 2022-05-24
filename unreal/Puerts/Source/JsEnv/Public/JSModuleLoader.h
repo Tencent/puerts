@@ -33,17 +33,17 @@ public:
     {
     }
 
-	virtual bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath) override;
+    virtual bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath) override;
 
-	virtual bool Load(const FString& Path, TArray<uint8>& Content) override;
+    virtual bool Load(const FString& Path, TArray<uint8>& Content) override;
 
-	virtual FString& GetScriptRoot() override;
+    virtual FString& GetScriptRoot() override;
 
-	virtual bool CheckExists(const FString& PathIn, FString& Path, FString& AbsolutePath);
+    virtual bool CheckExists(const FString& PathIn, FString& Path, FString& AbsolutePath);
 
-	virtual bool SearchModuleInDir(const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath);
+    virtual bool SearchModuleInDir(const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath);
 
-	virtual bool SearchModuleWithExtInDir(const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath);
+    virtual bool SearchModuleWithExtInDir(const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath);
 
     FString ScriptRoot;
 };
