@@ -57,6 +57,8 @@ obj.EnumTest(UE.EToTest.V1);
 
 ## 蓝图&其它资源加载
 
+### C++ LoadObject的等价操作
+
 ~~~typescript
 //加载蓝图类
 let bpClass = UE.Class.Load('/Game/StarterContent/TestBlueprint.TestBlueprint_C');
@@ -70,6 +72,35 @@ let bpActor = world.SpawnActor(bpClass, undefined, UE.ESpawnActorCollisionHandli
 let bulletImpact = UE.ParticleSystem.Load("/Game/BlockBreaker/ParticleSystems/PS_BulletImpact");
 let rifle = UE.StaticMesh.Load("/Game/BlockBreaker/Meshes/SM_Rifle");
 ~~~
+
+### blueprint.load /  blueprint.unload
+
+对一个蓝图类，蓝图结构体，蓝图枚举执行blueprint.load后，可以直接访问该蓝图
+
+~~~typescript
+blueprint.load(UE.Game.StarterContent.TestEnum.TestEnum);
+
+console.log(UE.Game.StarterContent.TestEnum.TestEnum.Blue);
+console.log(UE.Game.StarterContent.TestEnum.TestEnum.Red);
+console.log(UE.Game.StarterContent.TestEnum.TestEnum.Green);
+
+//等价于前面UE.Class.Load的例子
+blueprint.load(UE.Game.StarterContent.TestBlueprint.TestBlueprint_C)
+const TestBlueprint_C = UE.Game.StarterContent.TestBlueprint.TestBlueprint_C
+let bpActor = world.SpawnActor(TestBlueprint_C.StaticClass(), undefined, UE.ESpawnActorCollisionHandlingMethod.Undefined, undefined, undefined) as UE.TestBlueprint_C;
+~~~
+
+说明
+
+* blueprint.load只需执行一次，没被unload前都可用
+
+* blueprint.load执行过后，该类对应的(UClass, UScriptStruct, UEnum)示例都会被持有，需要通过blueprint.unload释放
+
+* 静态蓝图类（Blueprint Function Library）可以blueprint.load加载后使用
+
+### blueprint.tojs
+
+将一个UClass对象转换成ts的类
 
 ## TArray、TSet、TMap
 
