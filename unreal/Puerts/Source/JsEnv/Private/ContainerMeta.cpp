@@ -158,7 +158,7 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         UEnumProperty* EnumProp = new (EC_InternalUseOnlyConstructor, ScriptStruct, NAME_None, RF_Transient)
             UEnumProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, Enum);
-        UNumericProperty* UnderlyingProp = NewObject<UByteProperty>(Property, TEXT("UnderlyingType"));
+        UNumericProperty* UnderlyingProp = NewObject<UByteProperty>(EnumProp, TEXT("UnderlyingType"));
         EnumProp->AddCppProperty(UnderlyingProp);
         Ret = EnumProp;
 #else
@@ -203,7 +203,7 @@ void FContainerMeta::NotifyElementTypeDeleted(const UField* Field)
     if (Iter)
     {
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
-        (const_cast<UStruct*>(Struct))->RemoveFromRoot();
+        (const_cast<UStruct*>(Field))->RemoveFromRoot();
 #else
         // delete *Iter;
 #endif
