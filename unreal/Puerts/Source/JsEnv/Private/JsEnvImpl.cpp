@@ -2816,11 +2816,31 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     const FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
 
     UObject* ClassPackage = ANY_PACKAGE;
-    UField* Type = FindObject<UField>(ClassPackage, *TypeName);
+    UField* Type = FindObject<UClass>(ClassPackage, *TypeName);
 
     if (!Type)
     {
-        Type = LoadObject<UField>(nullptr, *TypeName);
+        Type = FindObject<UScriptStruct>(ClassPackage, *TypeName);
+    }
+
+    if (!Type)
+    {
+        Type = FindObject<UEnum>(ClassPackage, *TypeName);
+    }
+
+    if (!Type)
+    {
+        Type = LoadObject<UClass>(nullptr, *TypeName);
+    }
+
+    if (!Type)
+    {
+        Type = LoadObject<UScriptStruct>(nullptr, *TypeName);
+    }
+
+    if (!Type)
+    {
+        Type = LoadObject<UEnum>(nullptr, *TypeName);
     }
 
     if (Type && !Type->IsNative())
