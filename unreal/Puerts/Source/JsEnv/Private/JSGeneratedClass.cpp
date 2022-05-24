@@ -213,11 +213,13 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
         }
     }
 
-    const FName FunctionName =
-        Existed ? *FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT(MIXIN_METHOD_SUFFIX)) : Super->GetFName();
+    const FString FunctionName =
+        Existed ? *FString::Printf(TEXT("%s%s"), *Super->GetName(), TEXT(MIXIN_METHOD_SUFFIX)) : Super->GetName();
 
+    // "Failed to bind native" warning
+    Class->AddNativeFunction(*FunctionName, &UJSGeneratedFunction::execCallMixin);
     UJSGeneratedFunction* Function = Cast<UJSGeneratedFunction>(
-        StaticDuplicateObject(Super, Class, FunctionName, RF_Transient, UJSGeneratedFunction::StaticClass()));
+        StaticDuplicateObject(Super, Class, *FunctionName, RF_Transient, UJSGeneratedFunction::StaticClass()));
 
     for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
              EFieldIteratorFlags::IncludeInterfaces);
@@ -254,7 +256,6 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
 
     Function->FunctionFlags |= FUNC_Native;    //让UE不走解析
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallMixin);
-    Class->AddNativeFunction(*Function->GetName(), &UJSGeneratedFunction::execCallMixin);
     Function->Bind();
     Function->StaticLink(true);
 
