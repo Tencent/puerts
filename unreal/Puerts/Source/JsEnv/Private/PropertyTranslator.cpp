@@ -37,6 +37,8 @@ void FPropertyTranslator::Getter(
         return;
     }
 
+    v8::Local<v8::Value> Ret;
+
     if (OwnerIsClass)
     {
         UObject* Object = FV8Utils::GetUObject(Info.Holder());
@@ -50,7 +52,7 @@ void FPropertyTranslator::Getter(
             FV8Utils::ThrowException(Isolate, "access a invalid object");
             return;
         }
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, Object, true));
+        Ret = UEToJsInContainer(Isolate, Context, Object, true);
     }
     else
     {
@@ -60,8 +62,13 @@ void FPropertyTranslator::Getter(
             FV8Utils::ThrowException(Isolate, "access a null struct");
             return;
         }
-        Info.GetReturnValue().Set(UEToJsInContainer(Isolate, Context, Ptr, true));
+        Ret = UEToJsInContainer(Isolate, Context, Ptr, true);
     }
+    if (NeedLinkOuter)
+    {
+        LinkOuterImpl(Context, Info.Holder(), Ret);
+    }
+    Info.GetReturnValue().Set(Ret);
 }
 
 void FPropertyTranslator::Setter(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -565,16 +572,6 @@ public:
         {
             ParamShallowCopySize = StructProperty->Struct->GetStructureSize();
         }
-#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
-        auto Owner = Property->GetOwnerUObject();
-#else
-        auto Owner = Property->GetOuter();
-#endif
-        if (Owner && Owner->IsA<UScriptStruct>() && Property->GetOffset_ForInternal() == 0 &&
-            Owner->GetFName() != TEXT("PropertyMetaRoot"))
-        {
-            ForceNoCache = true;
-        }
     }
 
     v8::Local<v8::Value> UEToJs(
@@ -591,7 +588,7 @@ public:
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
-            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer, ForceNoCache);
+            Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,

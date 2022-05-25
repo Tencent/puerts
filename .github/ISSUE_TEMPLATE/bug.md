@@ -1,7 +1,9 @@
 ---
 name: "\U0001F41B bug issue"
+title: "[Unity]/[UE] I found a bug"
 about: submit a bug report +_+
 ---
+
 
 ## error log | 日志或报错信息
 

@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace Puerts.UnitTest
 {
-    class Timer
+    public class Timer
     {
         private double now = 0;
 

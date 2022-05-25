@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -270,8 +270,8 @@ bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
 pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    return v8impl::PesapiValueFromV8LocalValue(::puerts::DataTransfer::FindOrAddCData(
-        context->GetIsolate(), context, static_cast<const char*>(class_id), object_ptr, copy));
+    return v8impl::PesapiValueFromV8LocalValue(
+        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, copy));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
@@ -363,10 +363,10 @@ void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
     (*info).GetReturnValue().Set(v8impl::V8LocalValueFromPesapiValue(value));
 }
 
-void pesapi_throw_by_string(pesapi_env env, const char* msg)
+void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    v8::Isolate* isolate = context->GetIsolate();
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    v8::Isolate* isolate = info->GetIsolate();
     isolate->ThrowException(
         v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
 }
@@ -396,11 +396,12 @@ void pesapi_release_env_holder(pesapi_env_holder env_holder)
     }
 }
 
-pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder)
+pesapi_scope pesapi_open_scope(pesapi_env env)
 {
-    env_holder->isolate->Enter();
-    auto scope = new pesapi_scope__(env_holder->isolate);
-    env_holder->context_persistent.Get(env_holder->isolate)->Enter();
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    context->GetIsolate()->Enter();
+    auto scope = new pesapi_scope__(context->GetIsolate());
+    context->Enter();
     return scope;
 }
 
@@ -502,6 +503,34 @@ void pesapi_set_property(pesapi_env env, pesapi_value pobject, const char* key, 
     }
 }
 
+pesapi_value pesapi_get_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    if (object->IsObject())
+    {
+        auto MaybeValue = object.As<v8::Object>()->Get(context, key);
+        v8::Local<v8::Value> Val;
+        if (MaybeValue.ToLocal(&Val))
+        {
+            return v8impl::PesapiValueFromV8LocalValue(Val);
+        }
+    }
+    return pesapi_create_undefined(env);
+}
+
+void pesapi_set_property_uint32(pesapi_env env, pesapi_value pobject, uint32_t key, pesapi_value pvalue)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto object = v8impl::V8LocalValueFromPesapiValue(pobject);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+
+    if (object->IsObject())
+    {
+        auto _un_used = object.As<v8::Object>()->Set(context, key, value);
+    }
+}
+
 pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_value this_object, int argc, const pesapi_value argv[])
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -523,12 +552,135 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     }
 }
 
-void pesapi_define_class(const char* type_name, const char* super_type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, const pesapi_property_descriptor* properties)
+struct pesapi_type_info__
+{
+    const char* name;
+    bool is_pointer;
+    bool is_const;
+    bool is_ref;
+    bool is_primitive;
+};
+
+struct pesapi_signature_info__
+{
+    pesapi_type_info return_type;
+    size_t parameter_count;
+    pesapi_type_info parameter_types;
+};
+
+struct pesapi_property_descriptor__
+{
+    const char* name;
+    bool is_static;
+    pesapi_callback method;
+    pesapi_callback getter;
+    pesapi_callback setter;
+    void* data;
+
+    union
+    {
+        pesapi_type_info type_info;
+        pesapi_signature_info signature_info;
+    } info;
+};
+
+pesapi_type_info pesapi_alloc_type_infos(size_t count)
+{
+    auto ret = new pesapi_type_info__[count];
+    memset(ret, 0, sizeof(pesapi_type_info__) * count);
+    return ret;
+}
+
+void pesapi_set_type_info(
+    pesapi_type_info type_infos, size_t index, const char* name, bool is_pointer, bool is_const, bool is_ref, bool is_primitive)
+{
+    type_infos[index] = {name, is_pointer, is_const, is_ref, is_primitive};
+}
+
+pesapi_signature_info pesapi_create_signature_info(
+    pesapi_type_info return_type, size_t parameter_count, pesapi_type_info parameter_types)
+{
+    return new pesapi_signature_info__{return_type, parameter_count, parameter_types};
+}
+
+pesapi_property_descriptor pesapi_alloc_property_descriptors(size_t count)
+{
+    auto ret = new pesapi_property_descriptor__[count];
+    memset(ret, 0, sizeof(pesapi_property_descriptor__) * count);
+    return ret;
+}
+
+void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
+    pesapi_callback method, void* data, pesapi_signature_info signature_info)
+{
+    properties[index].name = name;
+    properties[index].is_static = is_static;
+    properties[index].method = method;
+    properties[index].data = data;
+    properties[index].info.signature_info = signature_info;
+}
+
+void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
+    pesapi_callback getter, pesapi_callback setter, void* data, pesapi_type_info type_info)
+{
+    properties[index].name = name;
+    properties[index].is_static = is_static;
+    properties[index].getter = getter;
+    properties[index].setter = setter;
+    properties[index].data = data;
+    properties[index].info.type_info = type_info;
+}
+
+static void free_property_descriptor(pesapi_property_descriptor properties, size_t property_count)
+{
+    for (size_t i = 0; i < property_count; i++)
+    {
+        pesapi_property_descriptor p = properties + i;
+        if (p->getter != nullptr || p->setter != nullptr)
+        {
+            if (p->info.type_info)
+            {
+                delete[] p->info.type_info;
+            }
+        }
+        else if (p->method != nullptr)
+        {
+            if (p->info.signature_info)
+            {
+                if (p->info.signature_info->return_type)
+                {
+                    delete p->info.signature_info->return_type;
+                }
+                if (p->info.signature_info->parameter_types)
+                {
+                    delete[] p->info.signature_info->parameter_types;
+                }
+                delete p->info.signature_info;
+            }
+        }
+    }
+}
+
+#ifndef MSVC_PRAGMA
+#if !defined(__clang__) && defined(_MSC_VER)
+#define MSVC_PRAGMA(Pragma) __pragma(Pragma)
+#else
+#define MSVC_PRAGMA(...)
+#endif
+#endif
+
+MSVC_PRAGMA(warning(push))
+MSVC_PRAGMA(warning(disable : 4191))
+void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
-    classDef.CPPTypeName = type_name;
-    classDef.CPPSuperTypeName = super_type_name;
+    classDef.TypeId = type_id;
+    classDef.SuperTypeId = super_type_id;
+    classDef.ScriptName = type_name;
+
+    classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
+    classDef.Finalize = finalize;
 
     std::vector<puerts::JSFunctionInfo> p_methods;
     std::vector<puerts::JSFunctionInfo> p_functions;
@@ -536,7 +688,7 @@ void pesapi_define_class(const char* type_name, const char* super_type_name, pes
 
     for (int i = 0; i < property_count; i++)
     {
-        const pesapi_property_descriptor* p = properties + i;
+        pesapi_property_descriptor p = properties + i;
         if (p->getter != nullptr || p->setter != nullptr)
         {
             p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
@@ -556,6 +708,8 @@ void pesapi_define_class(const char* type_name, const char* super_type_name, pes
         }
     }
 
+    free_property_descriptor(properties, property_count);
+
     p_methods.push_back({nullptr, nullptr, nullptr});
     p_functions.push_back({nullptr, nullptr, nullptr});
     p_properties.push_back({nullptr, nullptr, nullptr, nullptr});
@@ -566,6 +720,7 @@ void pesapi_define_class(const char* type_name, const char* super_type_name, pes
 
     puerts::RegisterJSClass(classDef);
 }
+MSVC_PRAGMA(warning(pop))
 
 EXTERN_C_END
 

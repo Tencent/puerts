@@ -83,6 +83,16 @@ struct ScriptTypeName<void>
 };
 
 template <typename T>
+struct StaticTypeId
+{
+    static void* get()
+    {
+        static T* dummy = nullptr;
+        return &dummy;
+    }
+};
+
+template <typename T>
 struct is_uetype : public std::false_type
 {
 };
@@ -133,11 +143,12 @@ public:
     };
     virtual bool IsUEType() const override
     {
-        return is_uetype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value;
+        return is_uetype<typename std::remove_const<typename std::remove_pointer<typename std::decay<T>::type>::type>::type>::value;
     };
     virtual bool IsObjectType() const override
     {
-        return is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value;
+        return is_objecttype<
+            typename std::remove_const<typename std::remove_pointer<typename std::decay<T>::type>::type>::type>::value;
     };
 
     static const CTypeInfo* get()

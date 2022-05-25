@@ -19,6 +19,8 @@
 #endif
 
 #pragma warning(push, 0)
+#include "ArrayBuffer.h"
+#include "JsObject.h"
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
@@ -92,6 +94,9 @@ public:
         Property = InProperty;
         PropertyWeakPtr = InProperty;
         OwnerIsClass = InProperty->GetOwnerClass() != nullptr;
+        NeedLinkOuter = !OwnerIsClass && InProperty->IsA<StructPropertyMacro>() &&
+                        StructProperty->Struct != FArrayBuffer::StaticStruct() &&
+                        StructProperty->Struct != FJsObject::StaticStruct();
     }
 
     virtual ~FPropertyTranslator()
@@ -129,11 +134,11 @@ public:
 
     bool OwnerIsClass;
 
+    bool NeedLinkOuter;
+
     size_t ParamShallowCopySize = 0;
 
     std::unique_ptr<FPropertyTranslator> Inner;
-
-    bool ForceNoCache = false;
 
     static void Getter(const v8::FunctionCallbackInfo<v8::Value>& Info);
 

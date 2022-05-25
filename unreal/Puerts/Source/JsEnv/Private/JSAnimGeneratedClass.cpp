@@ -16,10 +16,13 @@ void UJSAnimGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectIn
     auto Object = ObjectInitializer.GetObj();
     Class->GetSuperClass()->ClassConstructor(ObjectInitializer);
 
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Class->Isolate);
+#endif
     auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
-        PinedDynamicInvoker->Construct(Class, Object, Class->Constructor, Class->Prototype);
+        PinedDynamicInvoker->JsConstruct(Class, Object, Class->Constructor, Class->Prototype);
     }
 }
 

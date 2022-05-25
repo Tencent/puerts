@@ -46,32 +46,22 @@ module.exports = function TypingTemplate(data, esmMode) {
 
         ret += newLines.join('\n');
     }
-if (!esmMode) {
-    tt`   
-declare module 'csharp' {
-    import * as CSharp from 'csharp';
-    export default CSharp;
-}
-    `
-}
+
     tt`
 declare module 'csharp' {
-    ${esmMode ? `
-    export default CSharp;
-namespace CSharp {
-    `: ""}
-    interface $Ref<T> {
-        value: T
-    }
-    namespace System {
-        interface Array$1<T> extends System.Array {
-            get_Item(index: number):T;
-            
-            set_Item(index: number, value: T):void;
+    namespace CSharp {
+        interface $Ref<T> {
+            value: T
         }
-    }
-    ${data.TaskDef}
-    `
+        namespace System {
+            interface Array$1<T> extends System.Array {
+                get_Item(index: number):T;
+                
+                set_Item(index: number, value: T):void;
+            }
+        }
+        ${data.TaskDef}
+        `
 
     toJsArray(data.NamespaceInfos).forEach(ns=> {
         // namespace start;
@@ -81,7 +71,7 @@ namespace CSharp {
 
         toJsArray(ns.Types).forEach(type=> {
             // type start
-            t.indent = 8;
+            t.indent = 12;
             // the comment of the type
             t`
             ${type.Document}
@@ -95,7 +85,10 @@ namespace CSharp {
                 if (type.IsDelegate) {
                     // delegate, means function in typescript
                     t`
-                    { ${type.DelegateDef.replace('=>', ':')}; }
+                    { 
+                        ${type.DelegateDef.replace('=>', ':')}; 
+                        Invoke?: ${type.DelegateDef}; 
+                    }
                     ${(!type.IsGenericTypeDefinition ? `var ${type.Name}: { new (func: ${type.DelegateDef}): ${type.Name}; }` : '')}
                     `;
                 }
@@ -110,7 +103,7 @@ namespace CSharp {
                     // class or interface.
                     t`{
                     `;
-                    t.indent = 12;
+                    t.indent = 16;
                     
                     // properties start
                     distinctByName(type.Properties).forEach(property=> {
@@ -146,7 +139,7 @@ namespace CSharp {
                         `
                     });
                     // methods end
-                    t.indent = 8;
+                    t.indent = 12;
                     t`
                     }
                     `
@@ -154,14 +147,14 @@ namespace CSharp {
 
                 // extension methods start
                 if (type.ExtensionMethods.Length > 0) {
-                    t.indent = 8;
+                    t.indent = 12;
                     t`
                     ${type.Document}
                     interface ${type.Name} {
                     `
                     
                     toJsArray(type.ExtensionMethods).forEach(method=>{
-                        t.indent = 12;
+                        t.indent = 16;
                         
                         t`
                         ${method.Document}
@@ -171,7 +164,7 @@ namespace CSharp {
                         `
                     });
 
-                    t.indent = 8;
+                    t.indent = 12;
                     t`
                     }
                     `;
@@ -181,7 +174,7 @@ namespace CSharp {
                 
             } else {
                 // if the type is Puerts.JSObject, declare an alias for any;
-                t.indent = 8;
+                t.indent = 12;
                 t`type JSObject = any;`;
 
             }
@@ -189,7 +182,7 @@ namespace CSharp {
 
         // namespace end
         if (ns.Name) {
-            t.indent = 4;
+            t.indent = 8;
             t`
             }
             `
@@ -198,15 +191,24 @@ namespace CSharp {
     })
     
     // module end
+    t.indent = 4;
+    if (!esmMode) {
+        t`
+        }
+        export = CSharp;
+        `
+    } else {
+        
+        t`
+        }
+        export default CSharp;
+        `
+    }
+    
     t.indent = 0;
     t`
     }
     `
-    if (esmMode) {
-        t`
-    }
-        `
-    }
 
     return ret.replace(/\n(\s*)\n/g, '\n');
 };

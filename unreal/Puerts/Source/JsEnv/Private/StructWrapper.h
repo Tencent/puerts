@@ -58,6 +58,8 @@ protected:
 
     std::shared_ptr<FFunctionTranslator> GetMethodTranslator(UFunction* InFunction, bool IsExtension);
 
+    void RefreshMethod(UFunction* InFunction);
+
     void InitTemplateProperties(v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template);
 
     v8::Local<v8::FunctionTemplate> ToFunctionTemplate(v8::Isolate* Isolate, v8::FunctionCallback Construtor);

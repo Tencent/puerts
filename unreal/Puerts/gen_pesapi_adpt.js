@@ -12,7 +12,7 @@ var ptrGetter = [];
 
 for(var i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
-    if (line.startsWith('PESAPI_EXTERN') && line.endsWith(',')) {
+    if (line.startsWith('PESAPI_EXTERN') && (line.endsWith(',') || line.endsWith('('))) {
         var j = 1;
         while(true) {
             let l = lines[i + j];

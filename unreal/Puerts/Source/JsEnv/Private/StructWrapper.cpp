@@ -68,6 +68,14 @@ std::shared_ptr<FFunctionTranslator> FStructWrapper::GetFunctionTranslator(UFunc
     return Iter->second;
 }
 
+void FStructWrapper::RefreshMethod(UFunction* InFunction)
+{
+    if (!InFunction->HasAnyFunctionFlags(FUNC_Static))
+    {
+        GetMethodTranslator(InFunction, false);
+    }
+}
+
 void FStructWrapper::InitTemplateProperties(v8::Isolate* Isolate, UStruct* InStruct, v8::Local<v8::FunctionTemplate> Template)
 {
     auto ClassDefinition = FindClassByType(Struct.Get());
@@ -221,6 +229,12 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 
     Result->Set(FV8Utils::InternalString(Isolate, "StaticClass"),
         v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
+
+    if (!Struct->IsA<UClass>())
+    {
+        Result->Set(FV8Utils::InternalString(Isolate, "StaticStruct"),
+            v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
+    }
 
 #ifndef WITH_QUICKJS
     Result->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
@@ -388,19 +402,21 @@ void FScriptStructWrapper::New(
         void* Memory = nullptr;
 
         bool PassByPointer = false;
-        bool ForceNoCache = false;
 
-        if (Info.Length() == 3 && Info[0]->IsExternal())    // Call by Native
+        if (Info.Length() == 2 && Info[0]->IsExternal())    // Call by Native
         {
             Memory = v8::Local<v8::External>::Cast(Info[0])->Value();
             PassByPointer = Info[1]->BooleanValue(Isolate);
-            ForceNoCache = Info[2]->BooleanValue(Isolate);
         }
         else
         {
             if (ExternalInitialize)
             {
                 Memory = ExternalInitialize(Info);
+                if (!Memory)    // do not bind nullptr
+                {
+                    return;
+                }
             }
             else
             {
@@ -412,7 +428,7 @@ void FScriptStructWrapper::New(
                 }
             }
         }
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, PassByPointer, ForceNoCache);
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, PassByPointer);
     }
     else
     {
@@ -445,14 +461,14 @@ void FScriptStructWrapper::OnGarbageCollectedWithFree(const v8::WeakCallbackInfo
 {
     FScriptStructWrapper* ScriptStructWrapper = Data.GetParameter();
     void* ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructMemory);
+    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructWrapper, ScriptStructMemory);
     Free(ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize, ScriptStructMemory);
 }
 
 void FScriptStructWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<FScriptStructWrapper>& Data)
 {
     void* ScriptStructMemory = DataTransfer::MakeAddressWithHighPartOfTwo(Data.GetInternalField(0), Data.GetInternalField(1));
-    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(ScriptStructMemory);
+    FV8Utils::IsolateData<IObjectMapper>(Data.GetIsolate())->UnBindStruct(Data.GetParameter(), ScriptStructMemory);
 }
 
 void FClassWrapper::OnGarbageCollected(const v8::WeakCallbackInfo<UClass>& Data)

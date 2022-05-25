@@ -28,6 +28,21 @@
 
 namespace puerts
 {
+template <typename T, typename FT, typename = void>
+struct TOuterLinker
+{
+    V8_INLINE static void Link(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+    }
+};
+
+V8_INLINE void LinkOuterImpl(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+{
+#ifdef WITH_OUTER_LINK
+    Inner.As<v8::Object>()->Set(Context, 0, Outer);
+#endif
+}
+
 #if USING_IN_UNREAL_ENGINE
 FORCEINLINE UScriptStruct* GetScriptStructInCoreUObject(const TCHAR* Name)
 {
@@ -178,6 +193,15 @@ struct TScriptStructTraits<T, typename std::enable_if<HasStaticStructHelper<T>::
         return T::StaticStruct();
     }
 };
+
+template <typename T, typename FT>
+struct TOuterLinker<T, FT, ToVoid<decltype(&TScriptStructTraits<FT>::Get)>>
+{
+    V8_INLINE static void Link(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+        LinkOuterImpl(Context, Outer, Inner);
+    }
+};
 #endif
 
 class JSENV_API DataTransfer
@@ -191,7 +215,7 @@ public:
         return reinterpret_cast<void*>(High | Low);
     }
 
-    FORCEINLINE static void SplitAddressToHighPartOfTwo(void* Address, UPTRINT& High, UPTRINT& Low)
+    FORCEINLINE static void SplitAddressToHighPartOfTwo(const void* Address, UPTRINT& High, UPTRINT& Low)
     {
         High = reinterpret_cast<UPTRINT>(Address) & (((UPTRINT) -1) << (sizeof(UPTRINT) / 2));    //清除低位
         Low = reinterpret_cast<UPTRINT>(Address) << (sizeof(UPTRINT) / 2);
@@ -212,7 +236,7 @@ public:
     }
 
     //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);
-    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, void* Ptr, int Index)
+    FORCEINLINE static void SetPointer(v8::Isolate* Isolate, v8::Local<v8::Object> Object, const void* Ptr, int Index)
     {
         // Object->SetInternalField(Index, v8::External::New(Isolate, Ptr));
         // Object->SetAlignedPointerInInternalField(Index, Ptr);
@@ -230,9 +254,9 @@ public:
     }
 
     static v8::Local<v8::Value> FindOrAddCData(
-        v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* CDataName, const void* Ptr, bool PassByPointer);
+        v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer);
 
-    static bool IsInstanceOf(v8::Isolate* Isolate, const char* CDataName, v8::Local<v8::Object> JsObject);
+    static bool IsInstanceOf(v8::Isolate* Isolate, const void* TypeId, v8::Local<v8::Object> JsObject);
 
     static v8::Local<v8::Value> UnRef(v8::Isolate* Isolate, const v8::Local<v8::Value>& Value);
 
@@ -269,5 +293,11 @@ public:
 
     static void ThrowException(v8::Isolate* Isolate, const char* Message);
 #endif
+
+    template <typename T1, typename T2>
+    FORCEINLINE static void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+        TOuterLinker<T1, T2>::Link(Context, Outer, Inner);
+    }
 };
 }    // namespace puerts

@@ -12,6 +12,27 @@
     
 * 解压到[YouProject/Plugins/Puerts/ThirdParty](unreal/Puerts/ThirdParty)
 
+### 发布包安装方式
+
+到[releases](https://github.com/Tencent/puerts/releases)找到你需要的版本，注意，该页面也包含Unity的发布包，Unreal引擎使用版本会以Unreal开头。
+
+下载符合你UE版本的安装包，解压到YouProject/Plugins即可，已经内含v8库。
+
+### 注意事项
+
+* mac下如果遇到移入废纸篓问题，请执行
+
+~~~bash
+cd Plugins/Puerts/ThirdParty
+find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine 
+~~~
+
+* 纯蓝图工程提示“Plugin 'Puerts' failed to load because module 'JsEnv' could not be found.”
+
+纯蓝图工程不会自动编译Plugins，而Puerts目前的源码或者发布包内，都是C++源码。
+
+可以clone puerts的demo，在vs编译工程后拷贝到纯蓝图工程。
+
 ### 虚拟机切换
 
 puerts支持多种脚本后端：V8，quickjs，nodejs

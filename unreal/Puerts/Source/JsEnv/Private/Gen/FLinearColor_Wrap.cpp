@@ -1016,6 +1016,7 @@ static void _FLinearColorRGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->R);
+    puerts::DataTransfer::LinkOuter<FLinearColor, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FLinearColorRSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1047,6 +1048,7 @@ static void _FLinearColorGGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->G);
+    puerts::DataTransfer::LinkOuter<FLinearColor, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FLinearColorGSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1078,6 +1080,7 @@ static void _FLinearColorBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->B);
+    puerts::DataTransfer::LinkOuter<FLinearColor, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FLinearColorBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1109,6 +1112,7 @@ static void _FLinearColorAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->A);
+    puerts::DataTransfer::LinkOuter<FLinearColor, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FLinearColorASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)

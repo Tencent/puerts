@@ -70,7 +70,7 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     virtual void Begin(FString Namespace = TEXT("ue"));
 
-    void GenTypeScriptDeclaration();
+    void GenTypeScriptDeclaration(bool GenStruct = false, bool GenEnum = false);
 
     virtual void Gen(UObject* ToGen);
 

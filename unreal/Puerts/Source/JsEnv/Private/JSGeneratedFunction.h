@@ -33,9 +33,23 @@ class UJSGeneratedFunction : public UFunction
 public:
     DECLARE_FUNCTION(execCallJS);
 
+    DECLARE_FUNCTION(execCallMixin);
+
     v8::UniquePersistent<v8::Function> JsFunction;
 
     TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
+
+    bool TakeJsObjectRef;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
+
+    UFunction* Original = nullptr;
+
+    FNativeFuncPtr OriginalFunc = nullptr;
+
+    EFunctionFlags OriginalFunctionFlags;
 };
