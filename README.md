@@ -8,15 +8,34 @@
 
 [(English README Available)](./doc/en/README.md)
 ## What？
+ 
+> in English
+
+puerts is a TypeScript programming solution within game engines.
+* provides a JavaScript Runtime
+
+* allows TypeScript to access the host engine（module-binding on the JavaScript level and generating TypeScript declarations）
+
+> 说中文
 
 puerts是游戏引擎下的TypeScript编程解决方案
-
 * 提供了一个JavaScript运行时
 
 * 提供通过TypeScript访问宿主引擎的能力（JavaScript层面的绑定以及TypeScript声明生成）
+ 
 
 ## Why?
 
+> in English
+* Facililates game building processes by combining JavaScript packages and toolchains with the rendering power of professional game engines
+
+* In contrast to lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
+
+* High efficiency: supports reflection binding throughout the platform (engine) - no extra steps (code generation) needed for development.
+
+* High performance：supports static binding throughout the platform (engine) - takes care of complex scenes
+
+> 说中文
 * JavaScript生态有众多的库和工具链，结合专业商业引擎的渲染能力，快速打造游戏
 
 * 相比游戏领域常用的lua脚本，TypeScript的静态类型检查有助于编写更健壮，可维护性更好的程序
@@ -25,11 +44,11 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
+
 ## How to Install | 最新版本安装
 
-* click it ->[![unreal](https://img.shields.io/badge/unreal-v1.0.0-blue.svg)](doc/unreal/install.md)
-
-* click it ->[![unity](https://img.shields.io/badge/unity-v1.3.3-blue.svg)](doc/unity/install.md)
+* [unreal](doc/unreal/install.md)
+* [unity](doc/unity/install.md)
 
 ### Changelog
 
@@ -43,7 +62,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
 * [unreal](doc/unreal/bugs.md)
 * [unity](doc/unity/bugs.md)
 
-## Example | 编程样例
+## Code Sample | 编程样例
 
 Unity
 
@@ -76,17 +95,21 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## Manual | 使用文档
 
-* [unreal Manual](doc/unreal/manual.md)
-* [unity Manual](doc/unity/manual.md)
-* [unreal debugging](doc/unreal/vscode_debug.md)
-* [unity debugging](doc/unity/vscode_debug.md)
+* 
+* [Unreal Manual](doc/unreal/manual.md)
+* [Unreal debugging](doc/unreal/vscode_debug.md)
+* [TypeScript and unreal engine interaction](unreal/interact_with_uclass.md)
+* [Template-based static binding](unreal/template_binding.md)
+* 
+* [Unity Manual](doc/unity/manual.md)
+* [Unity debugging](doc/unity/vscode_debug.md)
 
 ## Detailed Readme | 详细信息
 
 * [unreal](unreal/README.md)
 * [unity](unity/README.md)
 
-## Example | 示例
+## Sample Projects | 示例
 
 ### Unreal
 
@@ -116,13 +139,13 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/0_Basic_Demo/Assets/Examples/06_UIEvent) ：UI事件的演示
 
-## Supported Engine | 引擎
+## Avaliable on these Engine | 引擎
 
 * unreal engine 4.22 ~ latest
 
 * unity 5 ~ latest
 
-## Supported Platform | 平台
+## Available on these Platform | 平台
 
 * iOS，Android，Windows，Macos
 
