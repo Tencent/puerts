@@ -97,6 +97,21 @@ void FStructWrapper::InitTemplateProperties(v8::Isolate* Isolate, UStruct* InStr
                 v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
             ++PropertyInfo;
         }
+
+        PropertyInfo = ClassDefinition->Variables;
+        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        {
+            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+            if (!PropertyInfo->Setter)
+                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+            auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
+                                           : v8::Local<v8::Value>();
+
+            Template->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
+            ++PropertyInfo;
+        }
     }
     for (TFieldIterator<PropertyMacro> PropertyIt(InStruct, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
     {

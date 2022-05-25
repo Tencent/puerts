@@ -66,20 +66,22 @@ struct JSENV_API JSClassDefinition
     const char* ScriptName;
     const char* UETypeName;
     InitializeFunc Initialize;
-    JSFunctionInfo* Methods;      //成员方法
-    JSFunctionInfo* Functions;    //静态方法
-    JSPropertyInfo* Properties;
+    JSFunctionInfo* Methods;       //成员方法
+    JSFunctionInfo* Functions;     //静态方法
+    JSPropertyInfo* Properties;    //成员属性
+    JSPropertyInfo* Variables;     //静态属性
     FinalizeFunc Finalize;
     // int InternalFieldCount;
     NamedFunctionInfo* ConstructorInfos;
     NamedFunctionInfo* MethodInfos;
     NamedFunctionInfo* FunctionInfos;
     NamedPropertyInfo* PropertyInfos;
+    NamedPropertyInfo* VariableInfos;
 };
 
-#define JSClassEmptyDefinition                \
-    {                                         \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
+#define JSClassEmptyDefinition                      \
+    {                                               \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);

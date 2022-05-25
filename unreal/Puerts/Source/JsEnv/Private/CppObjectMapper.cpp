@@ -160,6 +160,21 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
             ++PropertyInfo;
         }
 
+        PropertyInfo = ClassDefinition->Variables;
+        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        {
+            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+            if (!PropertyInfo->Setter)
+                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+            auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
+                                           : v8::Local<v8::Value>();
+            Template->SetAccessorProperty(
+                v8::String::NewFromUtf8(Isolate, PropertyInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
+            ++PropertyInfo;
+        }
+
         JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {

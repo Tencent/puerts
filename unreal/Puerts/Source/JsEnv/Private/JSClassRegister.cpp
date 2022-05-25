@@ -38,10 +38,12 @@ JSClassDefinition* JSClassDefinitionDuplicate(const JSClassDefinition* ClassDefi
     Ret->Methods = PropertyInfoDuplicate(ClassDefinition->Methods);
     Ret->Functions = PropertyInfoDuplicate(ClassDefinition->Functions);
     Ret->Properties = PropertyInfoDuplicate(ClassDefinition->Properties);
+    Ret->Variables = PropertyInfoDuplicate(ClassDefinition->Variables);
     Ret->ConstructorInfos = PropertyInfoDuplicate(ClassDefinition->ConstructorInfos);
     Ret->MethodInfos = PropertyInfoDuplicate(ClassDefinition->MethodInfos);
     Ret->FunctionInfos = PropertyInfoDuplicate(ClassDefinition->FunctionInfos);
     Ret->PropertyInfos = PropertyInfoDuplicate(ClassDefinition->PropertyInfos);
+    Ret->VariableInfos = PropertyInfoDuplicate(ClassDefinition->VariableInfos);
     return Ret;
 }
 
@@ -50,10 +52,12 @@ void JSClassDefinitionDelete(JSClassDefinition* ClassDefinition)
     delete[] ClassDefinition->Methods;
     delete[] ClassDefinition->Functions;
     delete[] ClassDefinition->Properties;
+    delete[] ClassDefinition->Variables;
     delete[] ClassDefinition->ConstructorInfos;
     delete[] ClassDefinition->MethodInfos;
     delete[] ClassDefinition->FunctionInfos;
     delete[] ClassDefinition->PropertyInfos;
+    delete[] ClassDefinition->VariableInfos;
     delete ClassDefinition;
 }
 

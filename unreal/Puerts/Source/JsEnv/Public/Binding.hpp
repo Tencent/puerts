@@ -25,6 +25,10 @@
 #define MakeProperty(M)                                                                                         \
     &(::puerts::PropertyWrapper<decltype(M), M>::getter), &(::puerts::PropertyWrapper<decltype(M), M>::setter), \
         ::puerts::PropertyWrapper<decltype(M), M>::info()
+#define MakeConstProperty(M) \
+    &(::puerts::PropertyWrapper<decltype(M), M>::getter), nullptr, ::puerts::PropertyWrapper<decltype(M), M>::info()
+#define MakeVariable(M) MakeProperty(M)
+#define MakeConstVariable(M) MakeConstProperty(M)
 #define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call), ::puerts::FuncCallWrapper<decltype(M), M>::info()
 #define SelectFunction(SIGNATURE, M) \
     &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
@@ -758,6 +762,27 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
     }
 };
 
+template <typename Ret, Ret* Variable>
+struct PropertyWrapper<Ret*, Variable>
+{
+    static void getter(CallbackInfoType info)
+    {
+        auto context = GetContext(info);
+        SetReturn(info, internal::TypeConverter<Ret>::toScript(context, *Variable));
+    }
+
+    static void setter(CallbackInfoType info)
+    {
+        auto context = GetContext(info);
+        *Variable = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+    }
+
+    static const char* info()
+    {
+        return ScriptTypeName<Ret>::value;
+    }
+};
+
 template <typename T>
 class ClassDefineBuilder
 {
@@ -774,6 +799,8 @@ class ClassDefineBuilder
 
     std::vector<GeneralPropertyInfo> properties_{};
 
+    std::vector<GeneralPropertyInfo> variables_{};
+
     InitializeFuncType constructor_{};
 
     typedef void (*FinalizeFuncType)(void* Ptr);
@@ -783,6 +810,7 @@ class ClassDefineBuilder
     std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
     std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
     std::vector<GeneralPropertyReflectionInfo> propertyInfos_{};
+    std::vector<GeneralPropertyReflectionInfo> variableInfos_{};
 
 public:
     explicit ClassDefineBuilder(const char* className) : className_(className)
@@ -868,6 +896,17 @@ public:
         return *this;
     }
 
+    ClassDefineBuilder<T>& Variable(
+        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const char* type = nullptr)
+    {
+        if (type)
+        {
+            variableInfos_.push_back(GeneralPropertyReflectionInfo{name, type});
+        }
+        variables_.push_back(GeneralPropertyInfo{name, getter, setter, nullptr});
+        return *this;
+    }
+
 #if !BUILDING_PES_EXTENSION
     void Register()
     {
@@ -875,11 +914,13 @@ public:
         static std::vector<JSFunctionInfo> s_functions_{};
         static std::vector<JSFunctionInfo> s_methods_{};
         static std::vector<JSPropertyInfo> s_properties_{};
+        static std::vector<JSPropertyInfo> s_variables_{};
 
         static std::vector<NamedFunctionInfo> s_constructorInfos_{};
         static std::vector<NamedFunctionInfo> s_methodInfos_{};
         static std::vector<NamedFunctionInfo> s_functionInfos_{};
         static std::vector<NamedPropertyInfo> s_propertyInfos_{};
+        static std::vector<NamedPropertyInfo> s_variableInfos_{};
 
         puerts::JSClassDefinition ClassDef = JSClassEmptyDefinition;
 
@@ -912,6 +953,10 @@ public:
         s_properties_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
         ClassDef.Properties = s_properties_.data();
 
+        s_variables_ = std::move(variables_);
+        s_variables_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        ClassDef.Variables = s_variables_.data();
+
         s_constructorInfos_ = std::move(constructorInfos_);
         s_constructorInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
         ClassDef.ConstructorInfos = s_constructorInfos_.data();
@@ -927,6 +972,10 @@ public:
         s_propertyInfos_ = std::move(propertyInfos_);
         s_propertyInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
         ClassDef.PropertyInfos = s_propertyInfos_.data();
+
+        s_variableInfos_ = std::move(variableInfos_);
+        s_variableInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+        ClassDef.VariableInfos = s_variableInfos_.data();
 
         puerts::RegisterJSClass(ClassDef);
     }
@@ -950,6 +999,12 @@ public:
         {
             pesapi_set_property_info(properties, pos++, prop.Name, false, prop.Getter, prop.Setter, nullptr, nullptr);
         }
+
+        for (const auto& prop : variables_)
+        {
+            pesapi_set_property_info(properties, pos++, prop.Name, true, prop.Getter, prop.Setter, nullptr, nullptr);
+        }
+
         pesapi_finalize finalize = nullptr;
         if (constructor_)
         {
