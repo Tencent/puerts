@@ -25,10 +25,10 @@
 #define MakeProperty(M)                                                                                         \
     &(::puerts::PropertyWrapper<decltype(M), M>::getter), &(::puerts::PropertyWrapper<decltype(M), M>::setter), \
         ::puerts::PropertyWrapper<decltype(M), M>::info()
-#define MakeConstProperty(M) \
+#define MakeReadonlyProperty(M) \
     &(::puerts::PropertyWrapper<decltype(M), M>::getter), nullptr, ::puerts::PropertyWrapper<decltype(M), M>::info()
 #define MakeVariable(M) MakeProperty(M)
-#define MakeConstVariable(M) MakeConstProperty(M)
+#define MakeReadonlyVariable(M) MakeReadonlyProperty(M)
 #define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call), ::puerts::FuncCallWrapper<decltype(M), M>::info()
 #define SelectFunction(SIGNATURE, M) \
     &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
