@@ -1847,7 +1847,7 @@ function watch(configFilePath:string) {
             function tsTypeToPinType(type: ts.Type, node: ts.Node) : { pinType: UE.PEGraphPinType, pinValueType?: UE.PEGraphTerminalType} | undefined {
                 if (!type) return undefined;
                 try {
-                    let typeNode = checker.typeToTypeNode(type);
+                    let typeNode = checker.typeToTypeNode(type, undefined, undefined);
                     //console.log(checker.typeToString(type), tds)
                     if (ts.isTypeReferenceNode(typeNode) && type.symbol) {
                         let typeName = type.symbol.getName();
