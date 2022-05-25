@@ -1586,17 +1586,20 @@ function watch(configFilePath:string) {
     let program = getProgramFromService();
     console.log ("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics =  ts.getPreEmitDiagnostics(program);
+    let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
+    var changed = false;
+    if (customSystem.fileExists(versionsFilePath)) {
+        try {
+            restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
+            console.log("restore versions from ", versionsFilePath);
+        } catch {}
+    }
     if (diagnostics.length > 0) {
+        fileNames.forEach(fileName => {
+            fileVersions[fileName].processed = restoredFileVersions[fileName].processed;
+        });
         logErrors(diagnostics);
     } else {
-        let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
-        var changed = false;
-        if (customSystem.fileExists(versionsFilePath)) {
-            try {
-                restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
-                console.log("restore versions from ", versionsFilePath);
-            } catch {}
-        }
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
