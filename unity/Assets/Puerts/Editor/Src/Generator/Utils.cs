@@ -144,7 +144,7 @@ namespace Puerts.Editor
                 if (mbi is FieldInfo)
                 {
                     FieldInfo fi = (mbi as FieldInfo);
-                    if (fi.FieldType.IsPointer)
+                    if (fi.FieldType.IsPointer || fi.FieldType.IsByRefLike)
                     {
                         return true;
                     }
@@ -160,7 +160,7 @@ namespace Puerts.Editor
                 if (mbi is PropertyInfo)
                 {
                     PropertyInfo pi = (mbi as PropertyInfo);
-                    if (pi.PropertyType.IsPointer)
+                    if (pi.PropertyType.IsPointer || pi.PropertyType.IsByRefLike)
                     {
                         return true;
                     }
@@ -179,7 +179,7 @@ namespace Puerts.Editor
                 if (mbi is MethodInfo)
                 {
                     MethodInfo mi = mbi as MethodInfo;
-                    if (mi.ReturnType.IsPointer)
+                    if (mi.ReturnType.IsPointer || mi.ReturnType.IsByRefLike)
                     {
                         return true;
                     }
@@ -196,7 +196,7 @@ namespace Puerts.Editor
                 if (mbi is MethodBase)
                 {
                     MethodBase mb = mbi as MethodBase;
-                    if (mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer))
+                    if (mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer || pInfo.ParameterType.IsByRefLike))
                     {
                         return true;
                     }
