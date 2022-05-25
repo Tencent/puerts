@@ -6,7 +6,6 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
 ![CI](https://github.com/Tencent/puerts/workflows/CI/badge.svg)
 
-[(English README Available)](./doc/en/README.md)
 ## What？
  
 > in English
@@ -44,6 +43,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
 
+---
 
 ## How to Install | 最新版本安装
 
@@ -55,16 +55,16 @@ puerts是游戏引擎下的TypeScript编程解决方案
 * [unreal](doc/unreal/changelog.md)
 * [unity](doc/unity/changelog.md)
 
-### Known issues | 已知问题
-
-各发布版本已知的，影响较大的bug及其修复办法
+### Known issues | 已知问题与解决办法
 
 * [unreal](doc/unreal/bugs.md)
 * [unity](doc/unity/bugs.md)
 
+---
+
 ## Code Sample | 编程样例
 
-Unity
+> Unity
 
 ```typescript
 import {UnityEngine} from 'csharp'
@@ -75,7 +75,7 @@ console.log(gameObject.name);
 gameObject.transform.position = new UnityEngine.Vector3(1, 2, 3);
 ```
 
-Unreal
+> Unreal
 
 ```typescript
 import * as UE from 'ue'
@@ -95,23 +95,20 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## Manual | 使用文档
 
-* 
+> Unreal
+* [Unreal Readme](unreal/README.md)
 * [Unreal Manual](doc/unreal/manual.md)
 * [Unreal debugging](doc/unreal/vscode_debug.md)
 * [TypeScript and unreal engine interaction](unreal/interact_with_uclass.md)
 * [Template-based static binding](unreal/template_binding.md)
-* 
+> Unity
+* [Unity Readme](unity/README.md)
 * [Unity Manual](doc/unity/manual.md)
 * [Unity debugging](doc/unity/vscode_debug.md)
 
-## Detailed Readme | 详细信息
+## Sample Projects | 示例项目
 
-* [unreal](unreal/README.md)
-* [unity](unity/README.md)
-
-## Sample Projects | 示例
-
-### Unreal
+> Unreal
 
 * [QuickStart.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/QuickStart.ts) ： 演示TypeScript和UE4引擎互相调用
 
@@ -125,7 +122,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](doc/unreal/manual.md)
 
-### Unity
+> Unity
 
 * [01_JsCallCs](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/0_Basic_Demo/Assets/Examples/01_JsCallCs) ： js调用c#
 
@@ -138,6 +135,8 @@ console.log(actor.K2_GetActorLocation().ToString());
 * [05_Typescript](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/0_Basic_Demo/Assets/Examples/05_Typescript) ： 包含了大部分TypeScript和C#互相调用的演示
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/0_Basic_Demo/Assets/Examples/06_UIEvent) ：UI事件的演示
+
+---
 
 ## Avaliable on these Engine | 引擎
 
