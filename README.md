@@ -36,7 +36,7 @@ puerts是游戏引擎下的TypeScript编程解决方案
 * [unreal](doc/unreal/changelog.md)
 * [unity](doc/unity/changelog.md)
 
-### Known problem | 已知问题
+### Known issues | 已知问题
 
 各发布版本已知的，影响较大的bug及其修复办法
 
