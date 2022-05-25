@@ -76,10 +76,10 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 ## Manual | 使用文档
 
-* [unreal手册](doc/unreal/manual.md)
-* [unity手册](doc/unity/manual.md)
-* [unreal调试](doc/unreal/vscode_debug.md)
-* [unity调试](doc/unity/vscode_debug.md)
+* [unreal Manual](doc/unreal/manual.md)
+* [unity Manual](doc/unity/manual.md)
+* [unreal debugging](doc/unreal/vscode_debug.md)
+* [unity debugging](doc/unity/vscode_debug.md)
 
 ## Detailed Readme | 详细信息
 
