@@ -237,6 +237,16 @@ public:
         }
     }
 
+    virtual const TArray<FString>& GetIgnoreClassListOnDTS()
+    {
+        return GetDefault<UPuertsSetting>()->IgnoreClassListOnDTS;
+    }
+
+    virtual const TArray<FString>& GetIgnoreStructListOnDTS()
+    {
+        return GetDefault<UPuertsSetting>()->IgnoreStructListOnDTS;
+    }
+
 private:
     TSharedPtr<puerts::FJsEnv> JsEnv;
 

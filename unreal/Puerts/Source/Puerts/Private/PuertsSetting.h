@@ -43,4 +43,12 @@ public:
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
         meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
     bool WatchDisable = false;
+
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
+        meta = (DisplayName = "D.ts Ignore Class Name List"))
+    TArray<FString> IgnoreClassListOnDTS;
+
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
+        meta = (DisplayName = "D.ts Ignore Struct Name List"))
+    TArray<FString> IgnoreStructListOnDTS;
 };
