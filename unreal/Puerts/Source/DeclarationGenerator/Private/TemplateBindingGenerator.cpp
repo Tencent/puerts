@@ -101,6 +101,15 @@ struct FGenImp
             ++PropertyInfo;
         }
 
+        puerts::NamedPropertyInfo* VariableInfo = ClassDefinition->VariableInfos;
+        while (VariableInfo && VariableInfo->Name && VariableInfo->Type)
+        {
+            int Pos = VariableInfo - ClassDefinition->VariableInfos;
+            Output << "        static " << (ClassDefinition->Variables[Pos].Setter ? "" : "readonly ") << VariableInfo->Name << ": "
+                   << VariableInfo->Type << ";\n";
+            ++VariableInfo;
+        }
+
         puerts::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Type)
         {

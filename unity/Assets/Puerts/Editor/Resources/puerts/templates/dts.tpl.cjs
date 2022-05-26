@@ -87,7 +87,7 @@ declare module 'csharp' {
                     t`
                     { 
                         ${type.DelegateDef.replace('=>', ':')}; 
-                        Invoke: ${type.DelegateDef}; 
+                        Invoke?: ${type.DelegateDef}; 
                     }
                     ${(!type.IsGenericTypeDefinition ? `var ${type.Name}: { new (func: ${type.DelegateDef}): ${type.Name}; }` : '')}
                     `;

@@ -103,6 +103,7 @@ class TsTestActor extends UE.Actor {
   - 不能在该函数中做js的初始化工作，比如no-blueprint标注的变量的初始化
   - 不能在该函数中申请js的资源，比如创建一个闭包函数，因为重载虚拟机后这些资源将失效，然而构造函数不会重新执行
 * 目前不支持在一个Actor的构造函数修改Component的属性，因为SpawnActor在构造完对象后，有个对Component的重置: [构造函数设置Component属性无效](https://github.com/Tencent/puerts/issues/287)
+* 开启AsyncLoadingThreadEnabled后，Constructor中不能调用CreateDefaultSubobject，否则Constructor延迟调用后，CreateDefaultSubobject会因为不再构造时机调用而报错
 
 ### 继承引擎类模式支持的数据类型
 

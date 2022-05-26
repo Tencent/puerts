@@ -97,10 +97,11 @@ declare module "ue" {
         T extends BuiltinByte | BuiltinInt | BuiltinFloat ? number :
         T extends BuiltinInt64 ? bigint :
         T extends BuiltinString | BuiltinText | BuiltinName ? string :
+        T extends {__typeKeyDoNoAccess: infer R} ? R :
         T extends {new (...args:any[]): infer R} ? R :
         never;
 
-    type SupportedContainerKVType = BuiltinBool | BuiltinByte | BuiltinInt | BuiltinFloat | BuiltinInt64 | BuiltinString | BuiltinText | BuiltinName | {StaticClass(): Class}
+    type SupportedContainerKVType = BuiltinBool | BuiltinByte | BuiltinInt | BuiltinFloat | BuiltinInt64 | BuiltinString | BuiltinText | BuiltinName | {StaticClass(): Class} | {StaticStruct(): ScriptStruct} | {__typeKeyDoNoAccess: any}
 
     function NewArray<T extends SupportedContainerKVType>(t: T): TArray<ContainerKVType<T>>;
     function NewSet<T extends SupportedContainerKVType>(t: T): TSet<ContainerKVType<T>>;

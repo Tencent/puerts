@@ -17,6 +17,9 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallJS)
 
     if (Func)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Func->Isolate);
+#endif
         auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -29,16 +32,24 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallJS)
 DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
 {
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    UJSGeneratedFunction* Func = Cast<UJSGeneratedFunction>(Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node);
-    check(Func);
+    UFunction* Func = Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node;
+    UJSGeneratedFunction* JsFunc = Cast<UJSGeneratedFunction>(Func);
+    if (!JsFunc)
+    {
+        JsFunc = Cast<UJSGeneratedFunction>(Func->GetSuperStruct());
+    }
+    check(JsFunc);
     // UE_LOG(LogTemp, Warning, TEXT("overrided function called, %s(%p)"), *Func->GetName(), Func);
 
-    if (Func)
+    if (JsFunc)
     {
-        auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Func->Isolate);
+#endif
+        auto PinedDynamicInvoker = JsFunc->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
-            PinedDynamicInvoker->InvokeMixinMethod(Context, Func, Stack, RESULT_PARAM);
+            PinedDynamicInvoker->InvokeMixinMethod(Context, JsFunc, Stack, RESULT_PARAM);
         }
     }
 #endif

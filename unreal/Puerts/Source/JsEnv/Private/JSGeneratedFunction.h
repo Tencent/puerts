@@ -42,4 +42,14 @@ public:
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
 
     bool TakeJsObjectRef;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
+
+    UFunction* Original = nullptr;
+
+    FNativeFuncPtr OriginalFunc = nullptr;
+
+    EFunctionFlags OriginalFunctionFlags;
 };

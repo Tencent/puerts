@@ -20,6 +20,18 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     UTypeScriptGeneratedClass* Class = Cast<UTypeScriptGeneratedClass>(Func->GetOuter());
     if (Class)
     {
+        if (Class->PendingConstructJob)
+        {
+#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
+            Class->PendingConstructJob->Wait();
+#else
+            FTaskGraphInterface::Get().WaitUntilTaskCompletes(Class->PendingConstructJob, ENamedThreads::AnyThread);
+#endif
+        }
+
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Class->Isolate);
+#endif
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -64,11 +76,70 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
         GetSuperClass()->ClassConstructor(ObjectInitializer);
     }
 
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
         PinedDynamicInvoker->TsConstruct(this, Object);
     }
+#else
+    auto PinedDynamicInvoker = DynamicInvoker.Pin();
+    if (PinedDynamicInvoker)
+    {
+        if (IsInGameThread())
+        {
+            if (PendingConstructJob)
+            {
+#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
+                PendingConstructJob->Wait();
+#else
+                FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
+#endif
+            }
+            PinedDynamicInvoker->TsConstruct(this, Object);
+        }
+        else if (!PendingConstructJob)
+        {
+            TWeakObjectPtr<UTypeScriptGeneratedClass> Class = this;
+            TWeakObjectPtr<UObject> Self = Object;
+            PendingConstructJob = FFunctionGraphTask::CreateAndDispatchWhenReady(
+                [Class, Self]()
+                {
+                    if (Class.IsValid())
+                    {
+                        if (Self.IsValid())
+                        {
+                            auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
+                            if (PinedDynamicInvoker)
+                            {
+                                PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
+                            }
+                            else
+                            {
+                                UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
+                                    *Self->GetName(), Self.Get());
+                            }
+                        }
+                        else
+                        {
+                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
+                        }
+                        Class->PendingConstructJob = nullptr;
+                    }
+                    else
+                    {
+                        UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class invalid"));
+                    }
+                },
+                TStatId{}, nullptr, ENamedThreads::GameThread);
+        }
+        else
+        {
+            UE_LOG(Puerts, Error, TEXT("not in gamethread and has exsited pending construct job"));
+        }
+    }
+#endif
     else
     {
         UE_LOG(Puerts, Error, TEXT("call TsConstruct of %s(%p) fail!, DynamicInvoker invalid"), *Object->GetName(), Object);

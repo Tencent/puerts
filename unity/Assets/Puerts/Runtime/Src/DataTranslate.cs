@@ -248,7 +248,7 @@ namespace Puerts
                         var result = genericDelegateFactory.Create(type, nativePtr);
                         if (result == null)
                         {
-                            throw new Exception("can not find delegate bridge for " + type.GetFriendlyName());
+                            throw new Exception("can not find delegate bridge for " + type.GetFriendlyName() + ", Please use JsEnv.UsingAction() Or JsEnv.UsingFunc() following the FAQ.");
                         }
                         return result;
                     }

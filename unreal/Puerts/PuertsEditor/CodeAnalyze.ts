@@ -1586,17 +1586,20 @@ function watch(configFilePath:string) {
     let program = getProgramFromService();
     console.log ("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics =  ts.getPreEmitDiagnostics(program);
+    let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
+    var changed = false;
+    if (customSystem.fileExists(versionsFilePath)) {
+        try {
+            restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
+            console.log("restore versions from ", versionsFilePath);
+        } catch {}
+    }
     if (diagnostics.length > 0) {
+        fileNames.forEach(fileName => {
+            fileVersions[fileName] = restoredFileVersions[fileName] || fileVersions[fileName];
+        });
         logErrors(diagnostics);
     } else {
-        let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
-        var changed = false;
-        if (customSystem.fileExists(versionsFilePath)) {
-            try {
-                restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
-                console.log("restore versions from ", versionsFilePath);
-            } catch {}
-        }
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
@@ -1734,7 +1737,17 @@ function watch(configFilePath:string) {
                                 
                                 let baseTypes = type.getBaseTypes();
                                 if (!baseTypes || baseTypes.length != 1) return;
-                                let baseTypeUClass = getUClassOfType(baseTypes[0]);
+                                let structOfType = getUClassOfType(baseTypes[0]);
+                                let baseTypeUClass:UE.Class = undefined;
+
+                                if (structOfType.GetClass().IsChildOf(UE.Class.StaticClass())) {
+                                    baseTypeUClass = structOfType as UE.Class;
+                                }
+                                else {
+                                    console.warn("do not support UStruct:" + checker.typeToString(type));
+                                    return;
+                                }
+
                                 if (baseTypeUClass) {
                                     if (isSubclassOf(type, "Subsystem")) {
                                         console.warn("do not support Subsystem " + checker.typeToString(type));
@@ -1816,7 +1829,7 @@ function watch(configFilePath:string) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0);
                         bp.Save();
                         return bp.GeneratedClass;
                     }
@@ -3818,11 +3831,6 @@ function watch(configFilePath:string) {
                                     let paramPinType = tsTypeToPinType(paramType, getSymbolTypeNode(signature.parameters[i]));
                                     if (!paramPinType)  {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
-                                        bp.ClearParameter();
-                                        return;
-                                    }
-                                    if (paramPinType.pinType.PinContainerType == UE.EPinContainerType.Array && paramPinType.pinType.bIsReference == false) {
-                                        console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has TArray<T> parameter, using $InRef<UE.TArray<T>> instead!");
                                         bp.ClearParameter();
                                         return;
                                     }

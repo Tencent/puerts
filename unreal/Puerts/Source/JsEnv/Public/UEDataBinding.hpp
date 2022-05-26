@@ -37,6 +37,7 @@
     puerts::DefineClass<TArray<CLS>>()                                                                   \
         .Method("Add", SelectFunction(int (TArray<CLS>::*)(const CLS&), &TArray<CLS>::Add))              \
         .Method("Get", SelectFunction(CLS& (TArray<CLS>::*) (int), &TArray<CLS>::operator[]))            \
+        .Method("GetRef", SelectFunction_PtrRet(CLS& (TArray<CLS>::*) (int), &TArray<CLS>::operator[]))  \
         .Method("Num", MakeFunction(&TArray<CLS>::Num))                                                  \
         .Method("Contains", MakeFunction(&TArray<CLS>::Contains<CLS>))                                   \
         .Method("FindIndex", SelectFunction(int (TArray<CLS>::*)(const CLS&) const, &TArray<CLS>::Find)) \

@@ -125,9 +125,9 @@ PropertyMacro* FContainerMeta::GetBuiltinProperty(BuiltinType type)
     return Ret;
 }
 
-PropertyMacro* FContainerMeta::GetObjectProperty(UStruct* Struct)
+PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 {
-    auto Iter = ObjectPropertyMap.Find(Struct);
+    auto Iter = ObjectPropertyMap.Find(Field);
     if (Iter)
     {
         return *Iter;
@@ -135,7 +135,7 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UStruct* Struct)
 
     PropertyMacro* Ret = nullptr;
 
-    if (auto Class = Cast<UClass>(Struct))
+    if (auto Class = Cast<UClass>(Field))
     {
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
@@ -144,13 +144,44 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UStruct* Struct)
         Ret = new FObjectProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, Class);
 #endif
     }
-    else if (auto ScriptStruct = Cast<UScriptStruct>(Struct))
+    else if (auto ScriptStruct = Cast<UScriptStruct>(Field))
     {
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
             UStructProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, ScriptStruct);
 #else
         Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, ScriptStruct);
+#endif
+    }
+    else if (auto Enum = Cast<UEnum>(Field))
+    {
+#if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
+        UEnumProperty* EnumProp = new (EC_InternalUseOnlyConstructor, ScriptStruct, NAME_None, RF_Transient)
+            UEnumProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, Enum);
+        UNumericProperty* UnderlyingProp = NewObject<UByteProperty>(EnumProp, TEXT("UnderlyingType"));
+        EnumProp->AddCppProperty(UnderlyingProp);
+        Ret = EnumProp;
+#else
+        if (Enum->GetCppForm() == UEnum::ECppForm::EnumClass)
+        {
+            FEnumProperty* EnumProp =
+                new FEnumProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, Enum);
+            FNumericProperty* UnderlyingProp = new FByteProperty(EnumProp, TEXT("UnderlyingType"), RF_Transient);
+            EnumProp->AddCppProperty(UnderlyingProp);
+            EnumProp->ElementSize = UnderlyingProp->ElementSize;
+            EnumProp->PropertyFlags |= CPF_IsPlainOldData | CPF_NoDestructor | CPF_ZeroConstructor;
+
+            Ret = EnumProp;
+        }
+        else
+        {
+            FByteProperty* ByteProp = new FByteProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+            ByteProp->Enum = Enum;
+
+            Ret = ByteProp;
+        }
+
+        Ret->SetPropertyFlags(CPF_HasGetValueTypeHash);
 #endif
     }
     else
@@ -162,21 +193,21 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UStruct* Struct)
     Ret->AddToRoot();
 #endif
 
-    ObjectPropertyMap.Add(Struct, Ret);
+    ObjectPropertyMap.Add(Field, Ret);
     return Ret;
 }
 
-void FContainerMeta::NotifyUStructDeleted(const UStruct* Struct)
+void FContainerMeta::NotifyElementTypeDeleted(const UField* Field)
 {
-    auto Iter = ObjectPropertyMap.Find(Struct);
+    auto Iter = ObjectPropertyMap.Find(Field);
     if (Iter)
     {
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
-        (const_cast<UStruct*>(Struct))->RemoveFromRoot();
+        (const_cast<UField*>(Field))->RemoveFromRoot();
 #else
         // delete *Iter;
 #endif
-        ObjectPropertyMap.Remove(Struct);
+        ObjectPropertyMap.Remove(Field);
     }
 }
 

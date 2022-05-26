@@ -12,6 +12,7 @@
 
 UsingUClass(UObject);
 UsingUClass(UClass);
+UsingUClass(UStruct);
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 UsingUClass(UWorld);    // for return type
 UsingUClass(USceneComponent);
@@ -36,6 +37,10 @@ struct AutoRegisterForUE
 #if !defined(ENGINE_INDEPENDENT_JSENV)
             .Method("GetWorld", MakeFunction(&UObject::GetWorld))
 #endif
+            .Register();
+
+        puerts::DefineClass<UStruct>()
+            .Method("IsChildOf", SelectFunction(bool (UStruct::*)(const UStruct*) const, &UStruct::IsChildOf))
             .Register();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)

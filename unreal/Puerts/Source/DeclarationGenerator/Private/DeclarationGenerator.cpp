@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -148,15 +148,31 @@ void FStringBuffer::Indent(int Num)
     }
 }
 
-TArray<UClass*> GetSortedClasses()
+TArray<UObject*> GetSortedClasses(bool GenStruct = false, bool GenEnum = false)
 {
-    TArray<UClass*> SortedClasses;
+    TArray<UObject*> SortedClasses;
     for (TObjectIterator<UClass> It; It; ++It)
     {
         SortedClasses.Add(*It);
     }
 
-    SortedClasses.Sort([&](const UClass& ClassA, const UClass& ClassB) -> bool { return ClassA.GetName() < ClassB.GetName(); });
+    if (GenStruct)
+    {
+        for (TObjectIterator<UScriptStruct> It; It; ++It)
+        {
+            SortedClasses.Add(*It);
+        }
+    }
+
+    if (GenEnum)
+    {
+        for (TObjectIterator<UEnum> It; It; ++It)
+        {
+            SortedClasses.Add(*It);
+        }
+    }
+
+    SortedClasses.Sort([&](const UObject& ClassA, const UObject& ClassB) -> bool { return ClassA.GetName() < ClassB.GetName(); });
 
     return SortedClasses;
 }
@@ -239,10 +255,12 @@ void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffe
 
 void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 {
-    TArray<UClass*> SortedClasses(GetSortedClasses());
+    TArray<UObject*> SortedClasses(GetSortedClasses());
     for (int i = 0; i < SortedClasses.Num(); ++i)
     {
-        UClass* Class = SortedClasses[i];
+        UClass* Class = Cast<UClass>(SortedClasses[i]);
+        if (!Class)
+            continue;
         bool IsExtensionMethod = IsChildOf(Class, "ExtensionMethods");
         if (IsExtensionMethod)
         {
@@ -280,14 +298,14 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
     }
 }
 
-void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration()
+void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool GenStruct, bool GenEnum)
 {
     Begin();
 
-    TArray<UClass*> SortedClasses(GetSortedClasses());
+    TArray<UObject*> SortedClasses(GetSortedClasses(GenStruct, GenEnum));
     for (int i = 0; i < SortedClasses.Num(); ++i)
     {
-        UClass* Class = SortedClasses[i];
+        UObject* Class = SortedClasses[i];
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
         if (Class->GetName().StartsWith("SKEL_") || Class->GetName().StartsWith("REINST_") ||
             Class->GetName().StartsWith("TRASHCLASS_") || Class->GetName().StartsWith("PLACEHOLDER-") ||
@@ -846,7 +864,8 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
-    StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n";
+    StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n\n";
+    StringBuffer << "    __tid_" << SafeName(Class->GetName()) << "__: boolean;\n";
 
     StringBuffer << "}\n\n";
 
@@ -874,6 +893,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
         // auto Value = Enum->GetValueByIndex(i);
         EnumListerrals.Add(SafeFieldName(Name, false));
     }
+    EnumListerrals.Add(TEXT("__typeKeyDoNoAccess"));
 
     StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", "));
 
@@ -1008,8 +1028,12 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 
     GenResolvedFunctions(Struct, StringBuffer);
 
-    StringBuffer << "    static StaticClass(): Class;\n";
-
+    StringBuffer << "    /**\n";
+    StringBuffer << "     * @deprecated use StaticStruct instead.\n";
+    StringBuffer << "     */\n";
+    StringBuffer << "    static StaticClass(): ScriptStruct;\n";
+    StringBuffer << "    static StaticStruct(): ScriptStruct;\n";
+    StringBuffer << "    private __tid_" << SafeName(Struct->GetName()) << "__: boolean;\n";
     StringBuffer << "}\n\n";
 
     NamespaceBegin(Struct);
@@ -1073,23 +1097,39 @@ private:
     }
 #endif
 
+    bool GenStruct = false;
+
+    bool GenEnum = true;
+
+    FName SearchPath = NAME_None;
+
     void GenUeDts()
     {
         LoadAllWidgetBlueprint();
         GenTypeScriptDeclaration();
 
-        TArray<UClass*> SortedClasses(GetSortedClasses());
+        TArray<UObject*> SortedClasses(GetSortedClasses());
         for (int i = 0; i < SortedClasses.Num(); ++i)
         {
-            UClass* Class = SortedClasses[i];
-            if (Class->ImplementsInterface(UCodeGenerator::StaticClass()))
+            UClass* Class = Cast<UClass>(SortedClasses[i]);
+            if (Class && Class->ImplementsInterface(UCodeGenerator::StaticClass()))
             {
                 ICodeGenerator::Execute_Gen(Class->GetDefaultObject());
             }
         }
 
-        FText DialogText = FText::Format(LOCTEXT("PluginButtonDialogText", "genertate finish, {0} store in {1}"),
-            FText::FromString(TEXT("ue.d.ts")), FText::FromString(TEXT("Content/Typing/ue")));
+        FName PackagePath = (SearchPath == NAME_None) ? FName(TEXT("/Game")) : SearchPath;
+
+        FString DialogMessage = FString::Printf(TEXT("genertate finish, %s store in %s, ([PATH=%s]"), TEXT("ue.d.ts"),
+            TEXT("Content/Typing/ue"), *PackagePath.ToString());
+
+        if (GenStruct)
+            DialogMessage += TEXT("|STRUCT");
+        if (GenEnum)
+            DialogMessage += TEXT("|ENUM");
+        DialogMessage += TEXT(")");
+
+        FText DialogText = FText::Format(LOCTEXT("PluginButtonDialogText", "{0}"), FText::FromString(DialogMessage));
         // FMessageDialog::Open(EAppMsgType::Ok, DialogText);
         FNotificationInfo Info(DialogText);
         Info.bFireAndForget = true;
@@ -1128,7 +1168,35 @@ public:
 #endif
 
         ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts.Gen"), TEXT("Execute GenDTS action"),
-            FConsoleCommandDelegate::CreateRaw(this, &FDeclarationGenerator::GenUeDts));
+            FConsoleCommandWithArgsDelegate::CreateLambda(
+                [this](const TArray<FString>& Args)
+                {
+                    for (auto& Arg : Args)
+                    {
+                        if (Arg.ToUpper().Equals(TEXT("ALL")))
+                        {
+                            GenStruct = true;
+                            GenEnum = true;
+                        }
+                        else if (Arg.ToUpper().Equals(TEXT("STRUCT")))
+                        {
+                            GenStruct = true;
+                        }
+                        else if (Arg.ToUpper().Equals(TEXT("ENUM")))
+                        {
+                            GenEnum = true;
+                        }
+                        else if (Arg.StartsWith(TEXT("PATH=")))
+                        {
+                            SearchPath = *Arg.Mid(5);
+                        }
+                    }
+                    this->GenUeDts();
+
+                    GenStruct = false;
+                    GenEnum = true;
+                    SearchPath = NAME_None;
+                }));
     }
 
     void ShutdownModule() override
@@ -1149,11 +1217,14 @@ public:
 
         TArray<FAssetData> AssetList;
 
+        FName PackagePath = (SearchPath == NAME_None) ? FName(TEXT("/Game")) : SearchPath;
+
         FARFilter BPFilter;
-        BPFilter.PackagePaths.Add(FName(TEXT("/Game")));
+        BPFilter.PackagePaths.Add(PackagePath);
         BPFilter.bRecursivePaths = true;
         BPFilter.bRecursiveClasses = true;
         BPFilter.ClassNames.Add(FName(TEXT("Blueprint")));
+        BPFilter.ClassNames.Add(FName(TEXT("UserDefinedEnum")));
 
         AssetRegistry.GetAssets(BPFilter, AssetList);
         for (FAssetData const& Asset : AssetList)
@@ -1166,7 +1237,7 @@ public:
     void GenTypeScriptDeclaration() override
     {
         FTypeScriptDeclarationGenerator TypeScriptDeclarationGenerator;
-        TypeScriptDeclarationGenerator.GenTypeScriptDeclaration();
+        TypeScriptDeclarationGenerator.GenTypeScriptDeclaration(GenStruct, GenEnum);
     }
 
     void GenReactDeclaration() override

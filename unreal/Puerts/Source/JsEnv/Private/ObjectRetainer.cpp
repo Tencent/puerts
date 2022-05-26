@@ -7,6 +7,11 @@
  */
 
 #include "ObjectRetainer.h"
+#ifdef THREAD_SAFE
+#pragma warning(push, 0)
+#include "v8.h"
+#pragma warning(pop)
+#endif
 
 namespace puerts
 {
@@ -33,6 +38,9 @@ void FObjectRetainer::Clear()
 
 void FObjectRetainer::AddReferencedObjects(FReferenceCollector& Collector)
 {
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     Collector.AddReferencedObjects(RetainedObjects);
 }
 

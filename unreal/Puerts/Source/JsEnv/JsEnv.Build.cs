@@ -26,10 +26,17 @@ public class JsEnv : ModuleRules
     
     private bool ForceStaticLibInEditor = false;
 
+    private bool ThreadSafe = false;
+
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
+        
+        if (ThreadSafe)
+        {
+            PrivateDefinitions.Add("THREAD_SAFE");
+        }
 
         PublicDependencyModuleNames.AddRange(new string[]
         {

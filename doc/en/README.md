@@ -19,7 +19,7 @@ puerts is a TypeScript programming solution within game engines.
 
 * In contrast to lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
 
-* High efficiency: supports reflection binding throughout the platform (engine) - no extra steps (code generation) needes for development.
+* High efficiency: supports reflection binding throughout the platform (engine) - no extra steps (code generation) needed for development.
 
 * High performance：supports static binding throughout the platform (engine) - takes care of complex scenes
 
