@@ -865,7 +865,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
     StringBuffer << "    static StaticClass(): Class;\n";
     StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
     StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n\n";
-    StringBuffer << "    private __tid_" << SafeName(Class->GetName()) << "__: boolean;\n";
+    StringBuffer << "    __tid_" << SafeName(Class->GetName()) << "__: boolean;\n";
 
     StringBuffer << "}\n\n";
 
