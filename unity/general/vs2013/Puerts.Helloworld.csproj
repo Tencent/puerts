@@ -14,7 +14,7 @@
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>itanium</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -32,7 +32,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\Bin\</OutputPath>
+    <OutputPath>.\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.Helloworld\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>obj\Any CPU\Release\Puerts.Helloworld</IntermediateOutputPath>
     <DefineConstants>

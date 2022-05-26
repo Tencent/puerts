@@ -9,4 +9,4 @@ popd
 cmake --build build64_%ENGINE%_test --config RelWithDebInfo
 md ..\Assets\Plugins\x86_64
 copy build64_%ENGINE%_test\RelWithDebInfo\puerts.dll ..\general\Bin\
-xcopy %ENGINE%\Lib\Win64\*.dll ..\general\Bin\
+xcopy %ENGINE%\Lib\Win64\*.dll ..\general\vs2013\Bin\

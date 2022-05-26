@@ -4,8 +4,10 @@ then
     ENGINE="v8"
 fi
 
-mkdir -p build_osx_$ENGINE && cd build_osx_$ENGINE
+OUTPUT=build_osx_$(echo $ENGINE)_test
+
+mkdir -p $OUTPUT && cd $OUTPUT
 cmake -DJS_ENGINE=$ENGINE -DFOR_UT=ON ../
 cd ..
-cmake --build build_osx_$ENGINE --config Debug
-cp -r build_osx_$ENGINE/libpuerts.dylib ../general/Bin/
+cmake --build $OUTPUT --config Debug
+cp -r $OUTPUT/libpuerts.dylib ../general/vs2013/Bin/
