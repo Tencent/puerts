@@ -76,6 +76,11 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
         GetSuperClass()->ClassConstructor(ObjectInitializer);
     }
 
+#if !WITH_EDITOR
+    if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+        return;
+#endif
+
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
