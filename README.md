@@ -87,12 +87,6 @@ console.log(actor.GetName());
 console.log(actor.K2_GetActorLocation().ToString());
 ```
 
-## FAQ | 常见问题
-
-* [general faq](doc/faq.md)
-* [unreal faq](doc/unreal/faq.md)
-* [unity faq](doc/unity/faq.md)
-
 ## Manual | 使用文档
 
 > Unreal
@@ -136,6 +130,12 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [06_UIEvent](https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/0_Basic_Demo/Assets/Examples/06_UIEvent) ：UI事件的演示
 
+## FAQ | 常见问题
+
+* [general faq](doc/faq.md)
+* [unreal faq](doc/unreal/faq.md)
+* [unity faq](doc/unity/faq.md)
+* 
 ---
 
 ## Avaliable on these Engine | 引擎
