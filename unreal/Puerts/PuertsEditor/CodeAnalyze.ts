@@ -1596,7 +1596,7 @@ function watch(configFilePath:string) {
     }
     if (diagnostics.length > 0) {
         fileNames.forEach(fileName => {
-            fileVersions[fileName].processed = restoredFileVersions[fileName].processed;
+            fileVersions[fileName] = restoredFileVersions[fileName];
         });
         logErrors(diagnostics);
     } else {

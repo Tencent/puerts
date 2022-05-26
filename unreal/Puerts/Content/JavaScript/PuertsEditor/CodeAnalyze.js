@@ -1213,7 +1213,7 @@ function watch(configFilePath) {
     }
     if (diagnostics.length > 0) {
         fileNames.forEach(fileName => {
-            fileVersions[fileName].processed = restoredFileVersions[fileName].processed;
+            fileVersions[fileName] = restoredFileVersions[fileName];
         });
         logErrors(diagnostics);
     }
