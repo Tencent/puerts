@@ -1,8 +1,13 @@
 # *.meta
-/general/Bin
-/general/Lib
+/general/vs2013/Bin
+/general/vs2013/Lib
 /general/vs2013/*/
 /general/vs2013/*.user
+/general/vs2022/Bin
+/general/vs2022/Lib
+/general/vs2022/*/obj
+/general/vs2022/*.user
+/general/vs2022/.vs
 /native_src/v8*
 /native_src/nodejs*
 /native_src/quickjs*

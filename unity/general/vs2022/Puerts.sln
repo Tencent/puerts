@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1703.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Helloworld", "Puerts.Helloworld/Puerts.Helloworld.csproj", "{CA037F41-D935-466B-861E-8477EB041FDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Core", "Puerts.Core/Puerts.Core.csproj", "{02872E6B-FE50-4814-9D88-06B7884E5E74}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CA037F41-D935-466B-861E-8477EB041FDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA037F41-D935-466B-861E-8477EB041FDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA037F41-D935-466B-861E-8477EB041FDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA037F41-D935-466B-861E-8477EB041FDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B489F56E-221F-45CE-B380-04017A911E6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B489F56E-221F-45CE-B380-04017A911E6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B489F56E-221F-45CE-B380-04017A911E6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B489F56E-221F-45CE-B380-04017A911E6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {26DB21F7-53E3-4103-A2ED-FE44DE3D1F36}
+	EndGlobalSection
+EndGlobal
