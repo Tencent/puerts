@@ -258,6 +258,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallMixin);
     Function->Bind();
     Function->StaticLink(true);
+    Function->ClearInternalFlags(EInternalObjectFlags::Native);
 
     if (Existed)
     {
