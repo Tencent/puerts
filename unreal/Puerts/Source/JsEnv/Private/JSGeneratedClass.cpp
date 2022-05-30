@@ -219,7 +219,8 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
     // "Failed to bind native" warning
     Class->AddNativeFunction(*FunctionName, &UJSGeneratedFunction::execCallMixin);
     UJSGeneratedFunction* Function = Cast<UJSGeneratedFunction>(
-        StaticDuplicateObject(Super, Class, *FunctionName, RF_Transient, UJSGeneratedFunction::StaticClass()));
+        StaticDuplicateObject(Super, Class, *FunctionName, RF_AllFlags, UJSGeneratedFunction::StaticClass()));
+    Function->SetFlags(Function->GetFlags() | RF_Transient);
 
     for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
              EFieldIteratorFlags::IncludeInterfaces);
