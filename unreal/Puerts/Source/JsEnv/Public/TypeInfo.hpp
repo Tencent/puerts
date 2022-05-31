@@ -119,6 +119,7 @@ public:
     virtual const CTypeInfo* Return() const = 0;
     virtual unsigned int ArgumentCount() const = 0;
     virtual const CTypeInfo* Argument(unsigned int index) const = 0;
+    virtual const char* CustomSignature() const = 0;
 };
 
 template <typename T>
@@ -183,10 +184,43 @@ public:
         return arguments_[index];
     }
 
+    virtual const char* CustomSignature() const override
+    {
+        return nullptr;
+    }
+
     static const CFunctionInfo* get()
     {
         static CFunctionInfoImpl instance{};
         return &instance;
+    }
+};
+
+class CFunctionInfoWithCustomSignature : public CFunctionInfo
+{
+    const char* _signature;
+
+public:
+    CFunctionInfoWithCustomSignature(const char* signature) : _signature(signature)
+    {
+    }
+
+    virtual const CTypeInfo* Return() const override
+    {
+        return nullptr;
+    }
+    virtual unsigned int ArgumentCount() const override
+    {
+        return 0;
+    }
+    virtual const CTypeInfo* Argument(unsigned int index) const override
+    {
+        return nullptr;
+    }
+
+    virtual const char* CustomSignature() const override
+    {
+        return _signature;
     }
 };
 

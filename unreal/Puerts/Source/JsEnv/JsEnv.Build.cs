@@ -28,6 +28,8 @@ public class JsEnv : ModuleRules
 
     private bool ThreadSafe = false;
 
+    private bool FTextAsString = true;
+
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -36,6 +38,11 @@ public class JsEnv : ModuleRules
         if (ThreadSafe)
         {
             PrivateDefinitions.Add("THREAD_SAFE");
+        }
+
+        if (!FTextAsString)
+        {
+            PublicDefinitions.Add("PUERTS_FTEXT_AS_OBJECT");
         }
 
         PublicDependencyModuleNames.AddRange(new string[]

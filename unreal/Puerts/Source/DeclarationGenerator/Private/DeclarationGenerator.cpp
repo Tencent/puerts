@@ -450,9 +450,17 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         StringBuffer << "bigint";
     }
-    else if (Property->IsA<StrPropertyMacro>() || Property->IsA<NamePropertyMacro>() || Property->IsA<TextPropertyMacro>())
+    else if (Property->IsA<StrPropertyMacro>() || Property->IsA<NamePropertyMacro>())
     {
         StringBuffer << "string";
+    }
+    else if (Property->IsA<TextPropertyMacro>())
+    {
+#ifndef PUERTS_FTEXT_AS_OBJECT
+        StringBuffer << "string";
+#else
+        StringBuffer << "cpp.FText";
+#endif
     }
     else if (EnumPropertyMacro* EnumProperty = CastFieldMacro<EnumPropertyMacro>(Property))
     {
