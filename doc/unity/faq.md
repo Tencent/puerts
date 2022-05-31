@@ -60,7 +60,7 @@ unity默认会进行代码剪裁，简而言之unity发现某引擎api，系统a
 解决办法：1、对要调用的api生成wrap代码，这样c#里头就有了引用；2、通过link.xml告知unity别剪裁，link.xml的配置请参考unity官方文档。
 
 ## 编辑器下运行正常，打包的时候生成代码报“没有某方法/属性/字段定义”怎么办？
-往往是由于该方法/属性/字段是扩在条件编译里头，只在UNITY_EDITOR下有效，这时需要把这方法/属性/字段通过Filter标签过滤，之后重新执行代码生成并打包。([discussions说明](/discussions/806))
+往往是由于该方法/属性/字段是扩在条件编译里头，只在UNITY_EDITOR下有效，这时需要把这方法/属性/字段通过Filter标签过滤，之后重新执行代码生成并打包。([discussions说明](https://github.com/Tencent/puerts/discussions/806))
 
 ## 编辑器下运行正常，打包后调用扩展方法报错(不生成静态代码)
 默认打包后不再使用反射获取扩展函数, 可使用`PUERTS_REFLECT_ALL_EXTENSION`宏来开启反射.(反射速度慢, 建议在任何时候都应该生成静态代码)
