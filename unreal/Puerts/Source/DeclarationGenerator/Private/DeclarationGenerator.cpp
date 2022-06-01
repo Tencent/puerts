@@ -899,6 +899,11 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
 #endif
                                                   : Enum->GetNameStringByIndex(i);
         // auto Value = Enum->GetValueByIndex(i);
+        auto FirstChar = Name[0];
+        if (FirstChar >= (TCHAR) '0' && FirstChar <= (TCHAR) '9')
+        {
+            continue;
+        }
         EnumListerrals.Add(SafeFieldName(Name, false));
     }
     EnumListerrals.Add(TEXT("__typeKeyDoNoAccess"));
