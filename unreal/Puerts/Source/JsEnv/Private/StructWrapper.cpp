@@ -379,7 +379,7 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (Class && Info.Length() == 1 && Info[0]->IsString())
     {
-        auto Object = StaticLoadObject(Class, nullptr, *FV8Utils::ToFString(Isolate, Info[0]));
+        auto Object = StaticLoadObject(Class, nullptr, *FV8Utils::ToFString(Isolate, Info[0]), nullptr, LOAD_NoWarn);
         if (Object)
         {
             auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);

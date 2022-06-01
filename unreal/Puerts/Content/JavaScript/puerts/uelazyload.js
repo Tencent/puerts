@@ -41,18 +41,25 @@ var global = global || (function () { return this; }());
                         node[name] = createNamespaceOrClass(name, node, TNAMESPACE);
                         blueprint_load(node[name]);
                     } else {
-                        let newNodeType = TNAMESPACE;
+                        let newNodeType = node.__type;
                         
-                        let path = `/${name}.${name}`
-                        let c = node;
-                        while (c && c.__path) {
-                            path = `/${c.__path}${path}`
-                            c = c.__parent;
-                        }
-                        const obj = UE.Object.Load(path);
-                        if (obj) {
-                            if (obj.GetClass().GetName() === 'UserDefinedEnum') {
-                                newNodeType = TENUM;
+                        if (newNodeType === TNAMESPACE) {
+                            let path = `/${name}.${name}`
+                            let c = node;
+                            while (c && c.__path) {
+                                path = `/${c.__path}${path}`
+                                c = c.__parent;
+                            }
+                            const obj = UE.Object.Load(path);
+                            if (obj) {
+                                const typeName = obj.GetClass().GetName();
+                                if (typeName === 'UserDefinedEnum') {
+                                    newNodeType = TENUM;
+                                } else if (typeName === 'UserDefinedStruct') {
+                                    newNodeType = TSTRUCT;
+                                } else {
+                                    newNodeType = TBLUEPRINT;
+                                }
                             }
                         }
                         
@@ -64,7 +71,7 @@ var global = global || (function () { return this; }());
         });
     }
     
-    cache["Game"] = createNamespaceOrClass("Game", TNAMESPACE);
+    cache["Game"] = createNamespaceOrClass("Game", undefined, TNAMESPACE);
     
     puerts.registerBuildinModule('ue', UE);
     
