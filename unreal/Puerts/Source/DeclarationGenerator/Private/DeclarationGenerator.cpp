@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -35,6 +35,8 @@
 #if (ENGINE_MAJOR_VERSION >= 5)
 #include "ToolMenus.h"
 #endif
+
+#include "PuertsModule.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -307,6 +309,11 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool GenStruct, b
     {
         UObject* Class = SortedClasses[i];
         checkfSlow(Class != nullptr, TEXT("Class name corruption!"));
+        const TArray<FString>& IgnoreClassListOnDTS = IPuertsModule::Get().GetIgnoreClassListOnDTS();
+        if (IgnoreClassListOnDTS.Contains(Class->GetName()))
+        {
+            continue;
+        }
         if (Class->GetName().StartsWith("SKEL_") || Class->GetName().StartsWith("REINST_") ||
             Class->GetName().StartsWith("TRASHCLASS_") || Class->GetName().StartsWith("PLACEHOLDER-") ||
             Class->GetName().StartsWith("HOTRELOADED_"))
@@ -483,6 +490,12 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     {
         if (StructProperty->Struct->GetName() != TEXT("ArrayBuffer") && StructProperty->Struct->GetName() != TEXT("JsObject"))
         {
+            const FString& Name = GetNameWithNamespace(StructProperty->Struct);
+            const TArray<FString>& IgnoreStructListOnDTS = IPuertsModule::Get().GetIgnoreStructListOnDTS();
+            if (IgnoreStructListOnDTS.Contains(Name))
+            {
+                return false;
+            }
             AddToGen.Add(StructProperty->Struct);
         }
         if (StructProperty->Struct->GetName() == TEXT("JsObject"))
@@ -531,8 +544,14 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto ObjectProperty = CastFieldMacro<ObjectPropertyMacro>(Property))
     {
+        const FString& Name = GetNameWithNamespace(ObjectProperty->PropertyClass);
+        const TArray<FString>& IgnoreClassListOnDTS = IPuertsModule::Get().GetIgnoreClassListOnDTS();
+        if (IgnoreClassListOnDTS.Contains(Name))
+        {
+            return false;
+        }
         AddToGen.Add(ObjectProperty->PropertyClass);
-        StringBuffer << GetNameWithNamespace(ObjectProperty->PropertyClass);
+        StringBuffer << Name;
     }
     else if (auto DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property))
     {
