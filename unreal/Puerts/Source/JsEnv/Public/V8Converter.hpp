@@ -345,17 +345,27 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 
     static std::reference_wrapper<T> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+#ifdef NOT_THREAD_SAFE
         static T _result;
+#endif
         if (!value.IsEmpty() && value->IsObject())
         {
             auto outer = value->ToObject(context).ToLocalChecked();
             auto realvalue = outer->Get(context, 0).ToLocalChecked();
+#ifdef NOT_THREAD_SAFE
             auto Ptr = Converter<typename std::decay<T>::type*>::toCpp(context, realvalue);
             return Ptr ? *Ptr : _result;
+#else
+            return *Converter<typename std::decay<T>::type*>::toCpp(context, realvalue);
+#endif
         }
         else
         {
+#ifdef NOT_THREAD_SAFE
             return _result;
+#else
+            return *(static_cast<T*>(nullptr));
+#endif
         }
     }
 

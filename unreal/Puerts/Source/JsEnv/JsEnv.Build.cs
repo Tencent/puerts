@@ -35,10 +35,7 @@ public class JsEnv : ModuleRules
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
         
-        if (ThreadSafe)
-        {
-            PrivateDefinitions.Add("THREAD_SAFE");
-        }
+        PublicDefinitions.Add(ThreadSafe ? "THREAD_SAFE" : "NOT_THREAD_SAFE");
 
         if (!FTextAsString)
         {

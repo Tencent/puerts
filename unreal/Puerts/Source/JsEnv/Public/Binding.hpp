@@ -313,12 +313,14 @@ private:
 
         static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value)
         {
+#ifdef NOT_THREAD_SAFE
             if (&(TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, GetUndefined(context)).get()) !=
                 &(value.get()))
             {
                 return;
             }
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context, &(value.get())));
+#endif
         }
     };
 
