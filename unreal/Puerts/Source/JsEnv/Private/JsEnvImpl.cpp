@@ -862,10 +862,7 @@ FJsEnvImpl::~FJsEnvImpl()
             }
         }
 
-        for (auto Iter = TsFunctionMap.begin(); Iter != TsFunctionMap.end(); Iter++)
-        {
-            Iter->second.JsFunction.Reset();
-        }
+        TsFunctionMap.Empty();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         TsDynamicInvoker.Reset();
@@ -1315,17 +1312,18 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                     // Logger->Warn(FString::Printf(TEXT("override: %s:%s"), *TypeScriptGeneratedClass->GetName(),
                                     // *Function->GetName())); UJSGeneratedClass::Override(Isolate, TypeScriptGeneratedClass,
                                     // Function, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()), DynamicInvoker, false);
-                                    auto FuncIter = TsFunctionMap.find(Function);
-                                    if (FuncIter == TsFunctionMap.end())
+                                    auto FuncInfo = TsFunctionMap.Find(Function);
+                                    if (!FuncInfo)
                                     {
-                                        TsFunctionMap[Function] = {v8::UniquePersistent<v8::Function>(Isolate,
-                                                                       v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
-                                            std::make_unique<puerts::FFunctionTranslator>(Function, false)};
+                                        TsFunctionMap.Add(
+                                            Function, {v8::UniquePersistent<v8::Function>(
+                                                           Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
+                                                          std::make_unique<puerts::FFunctionTranslator>(Function, false)});
                                     }
                                     else
                                     {
-                                        FuncIter->second.FunctionTranslator->Init(Function, false);
-                                        FuncIter->second.JsFunction = v8::UniquePersistent<v8::Function>(
+                                        FuncInfo->FunctionTranslator->Init(Function, false);
+                                        FuncInfo->JsFunction = v8::UniquePersistent<v8::Function>(
                                             Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()));
                                     }
                                     TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
@@ -1908,7 +1906,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
         GeneratedClasses.Remove(Class);
     }
 
-    TsFunctionMap.erase((UFunction*) ObjectBase);
+    TsFunctionMap.Remove((UFunction*) ObjectBase);
     ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
 }
 
@@ -2046,8 +2044,8 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
-    auto FuncIter = TsFunctionMap.find(Function);
-    if (FuncIter == TsFunctionMap.end())
+    auto FuncInfo = TsFunctionMap.Find(Function);
+    if (!FuncInfo)
     {
         Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
             *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
@@ -2079,8 +2077,8 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
         v8::TryCatch TryCatch(Isolate);
 
-        FuncIter->second.FunctionTranslator->CallJs(
-            Isolate, Context, FuncIter->second.JsFunction.Get(Isolate), ThisObj, ContextObject, Stack, RESULT_PARAM);
+        FuncInfo->FunctionTranslator->CallJs(
+            Isolate, Context, FuncInfo->JsFunction.Get(Isolate), ThisObj, ContextObject, Stack, RESULT_PARAM);
 
         if (TryCatch.HasCaught())
         {
