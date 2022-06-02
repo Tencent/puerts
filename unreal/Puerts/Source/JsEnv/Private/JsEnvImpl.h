@@ -612,6 +612,8 @@ private:
 
     TMap<UFunction*, TsFunctionInfo> TsFunctionMap;
 
+    TMap<UFunction*, v8::UniquePersistent<v8::Function>> MixinFunctionMap;
+
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 
     bool ExtensionMethodsMapInited = false;

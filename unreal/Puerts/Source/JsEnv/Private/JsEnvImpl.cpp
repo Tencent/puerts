@@ -863,6 +863,7 @@ FJsEnvImpl::~FJsEnvImpl()
         }
 
         TsFunctionMap.Empty();
+        MixinFunctionMap.Empty();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         TsDynamicInvoker.Reset();
@@ -1907,6 +1908,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     }
 
     TsFunctionMap.Remove((UFunction*) ObjectBase);
+    MixinFunctionMap.Remove((UFunction*) ObjectBase);
     ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
 }
 
@@ -2027,10 +2029,18 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
         Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
     }
 
+    auto JsFuncPtr = MixinFunctionMap.Find(Function);
+    if (!JsFuncPtr)
+    {
+        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
+            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
+        SkipFunction(Stack, RESULT_PARAM, Function);
+        return;
+    }
+
     v8::TryCatch TryCatch(Isolate);
 
-    Function->FunctionTranslator->CallJs(
-        Isolate, Context, Function->JsFunction.Get(Isolate), Self, ContextObject, Stack, RESULT_PARAM);
+    Function->FunctionTranslator->CallJs(Isolate, Context, JsFuncPtr->Get(Isolate), Self, ContextObject, Stack, RESULT_PARAM);
 
     if (TryCatch.HasCaught())
     {
@@ -3659,8 +3669,9 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Function)
         {
             auto JsFunc = MixinMethods->Get(Context, Key).ToLocalChecked();
-            UJSGeneratedClass::Mixin(
-                Isolate, New, Function, v8::Local<v8::Function>::Cast(JsFunc), MixinInvoker, TakeJsObjectRef, !NoWarning);
+            auto MixinedFunc = UJSGeneratedClass::Mixin(Isolate, New, Function, MixinInvoker, TakeJsObjectRef, !NoWarning);
+            MixinFunctionMap.Emplace(
+                MixinedFunc, v8::UniquePersistent<v8::Function>(Isolate, v8::Local<v8::Function>::Cast(JsFunc)));
             ReplaceMethodNames.Add(MethodName);
         }
     }

@@ -190,7 +190,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     Class->AddFunctionToFunctionMap(Function, Function->GetFName());
 }
 
-void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
+UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
     TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;
@@ -209,7 +209,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
                 UE_LOG(Puerts, Warning, TEXT("Try to mixin a function[%s:%s] already mixin by anthor vm"), *Class->GetName(),
                     *Super->GetName());
             }
-            return;
+            return MaybeJSFunction;
         }
     }
 
@@ -228,7 +228,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
     {
         if (*It == Function)
         {
-            return;
+            return Function;
         }
     }
 
@@ -246,7 +246,6 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
 #ifdef THREAD_SAFE
     Function->Isolate = Isolate;
 #endif
-    Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
     Function->TakeJsObjectRef = TakeJsObjectRef;
@@ -271,6 +270,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
         Class->AddNativeFunction(*Super->GetName(), &UJSGeneratedFunction::execCallMixin);
         Super->SetSuperStruct(Function);
     }
+    return Function;
 }
 
 void UJSGeneratedClass::Restore(UClass* Class)
