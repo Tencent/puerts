@@ -162,7 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs_17/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/nodejs_16/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -176,7 +176,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend nodejs_17
+          node make.js --platform osx --backend nodejs_16
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -264,7 +264,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs_17/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/nodejs_16/backend.rc)" >> $GITHUB_ENV
         shell: bash
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
@@ -277,7 +277,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend nodejs_17 --arch=x64
+          node make.js --platform win --backend nodejs_16 --arch=x64
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
