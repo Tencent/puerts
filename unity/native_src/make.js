@@ -106,8 +106,9 @@ const platformCompileConfig = {
                 sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 if (options.config != 'Release') {
-                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
-                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/Bin')
+                    sx.mkdir('-p', '../general/vs2013/Bin');
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/vs2013/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/vs2013/Bin')
                 }
                 sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH + "/puerts.bundle")
                 sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, OUTPUT_PATH)
@@ -122,8 +123,9 @@ const platformCompileConfig = {
                 sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 if (options.config != 'Release') {
-                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
-                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/Bin')
+                    sx.mkdir('-p', '../general/vs2022/Bin');
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/vs2022/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/vs2022/Bin')
                 }
                 sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/macOS_arm64/*.dylib`, OUTPUT_PATH)
@@ -140,8 +142,9 @@ const platformCompileConfig = {
                 sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
                 
                 if (options.config != 'Release') {
-                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, '../general/Bin')
-                    sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, '../general/Bin')
+                    sx.mkdir('-p', '../general/vs2013/Bin');
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, '../general/vs2013/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, '../general/vs2013/Bin')
                 }
                 sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, OUTPUT_PATH)

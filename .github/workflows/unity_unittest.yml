@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
         shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
@@ -39,7 +39,7 @@ jobs:
         run: |
           md unity\general\vs2013\Bin
           cd unity\native_src
-          node make.js --platform win --arch x64 --config Debug
+          node make.js --platform win --arch x64 --backend v8_9.4 --config Debug
       - name: UnitTest
         run: |
           cd unity\general\vs2013
@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/nodejs_17/backend.rc)" >> $GITHUB_ENV
         shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
@@ -100,8 +100,11 @@ jobs:
         run: |
           md unity\general\vs2013\Bin
           cd unity\native_src
-          node make.js --platform win --arch x64 --backend nodejs --config Debug
+          node make.js --platform win --arch x64 --backend nodejs_17 --config Debug
       - name: UnitTest
         run: |
           cd unity\general\vs2013
           nuget restore Puerts.sln
+          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
+          msbuild /property:Configuration=Release Puerts.sln
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll   

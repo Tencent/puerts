@@ -11,11 +11,11 @@ public class PuertsTest
 {
     public static void Main()
     {
-        var loader = new TxtLoader();
-        loader.AddMockFileContent("whatever.mjs", @"export delete;");
-        loader.AddMockFileContent("entry.mjs", @"import 'whatever.mjs'");
-        var jsEnv = new JsEnv(loader);
-        jsEnv.ExecuteModule("entry.mjs");
+        var jsEnv = new JsEnv(new TxtLoader());
+        jsEnv.Eval(@"
+            const CS = require('csharp');
+            CS.System.Console.WriteLine('hello world');
+        ");
         jsEnv.Dispose();
     }
 }
