@@ -16,6 +16,23 @@ if (!fs.existsSync(`${pwd}/node_modules`)) {
 }
 
 const sx = require('shelljs');
+const iconv = require('iconv-lite')
+const sxExecAsync = async function(command) {
+    return new Promise(resolve=> {  
+        options.async = true;
+        let child = sx.exec(command, {
+            async: true,
+            silent: true,
+            encoding: 'binary'
+        }, resolve);
+        child.stdout.on('data', function(data) {
+            console.log(iconv.decode(data, process.platform == 'win32' ? "gb2312" : 'utf-8'));
+        })
+        child.stderr.on('data', function(data) {
+            console.error(iconv.decode(data, process.platform == 'win32' ? "gb2312" : 'utf-8'));
+        })
+    })
+}
 const { program, Option } = require('commander');
 program.addOption(
     new Option("--platform <platform>", "the target platform")
@@ -41,7 +58,7 @@ if (!fs.existsSync(`${pwd}/${options.backend}`)) {
     console.error("[Puer] Cannot find JS backend library");
     process.exit();
 }
-const checkCMake = sx.exec("cmake --version");
+const checkCMake = sx.exec("cmake --version", { silent: true });
 if (checkCMake.stderr && !checkCMake.stdout) {
     console.error("[Puer] CMake is not installed");
     process.exit();
@@ -55,28 +72,28 @@ const platformCompileConfig = {
     'android': {
         'armv7': {
             outputPluginPath: 'Android/libs/armeabi-v7a/',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
                 const API = 'android-18';
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
-                sx.exec(`cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 sx.cp(`${CMAKE_BUILD_PATH}/libpuerts.so`, OUTPUT_PATH)
             }
         },
         'arm64': {
             outputPluginPath: 'Android/libs/arm64-v8a/',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
                 const API = 'android-18';
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
-                sx.exec(`cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 sx.cp(`${CMAKE_BUILD_PATH}/libpuerts.so`, OUTPUT_PATH)
             }
@@ -85,11 +102,11 @@ const platformCompileConfig = {
     'ios': {
         'arm64': {
             outputPluginPath: 'iOS',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 sx.cd(CMAKE_BUILD_PATH);
-                sx.exec(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`)
+                await sxExecAsync(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`)
                 sx.cd("..")
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 sx.cp(`${CMAKE_BUILD_PATH}/${options.config}-iphoneos/libpuerts.a`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/iOS/arm64/*.a`, OUTPUT_PATH)
@@ -99,11 +116,11 @@ const platformCompileConfig = {
     'osx': {
         'x64': {
             outputPluginPath: 'macOS/x86_64',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 sx.cd(CMAKE_BUILD_PATH);
-                sx.exec(`cmake -DJS_ENGINE=${options.backend} -GXcode ..`)
+                await sxExecAsync(`cmake -DJS_ENGINE=${options.backend} -GXcode ..`)
                 sx.cd("..")
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 if (options.config != 'Release') {
                     sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
@@ -115,11 +132,11 @@ const platformCompileConfig = {
         },
         'arm64': {
             outputPluginPath: 'macOS/arm64',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 sx.cd(CMAKE_BUILD_PATH);
-                sx.exec(`cmake -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`)
+                await sxExecAsync(`cmake -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`)
                 sx.cd("..")
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 if (options.config != 'Release') {
                     sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
@@ -133,11 +150,11 @@ const platformCompileConfig = {
     'win': {
         'x64': {
             outputPluginPath: 'x86_64',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 sx.cd(CMAKE_BUILD_PATH);                         
-                sx.exec(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`)
+                await sxExecAsync(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`)
                 sx.cd("..")
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
                 
                 if (options.config != 'Release') {
                     sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, '../general/Bin')
@@ -149,11 +166,11 @@ const platformCompileConfig = {
         },
         'ia32': {
             outputPluginPath: 'x86',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 sx.cd(CMAKE_BUILD_PATH);
-                sx.exec(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`)
+                await sxExecAsync(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`)
                 sx.cd("..")
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
                 
                 sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/Win32/*.dll`, OUTPUT_PATH)
@@ -163,11 +180,11 @@ const platformCompileConfig = {
     'linux': {
         'x64': {
             outputPluginPath: 'x86_64',
-            hook: function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
+            hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 sx.cd(CMAKE_BUILD_PATH);
-                sx.exec(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`)
+                await sxExecAsync(`cmake -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`)
                 sx.cd("..")
-                sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
                 
                 sx.cp(`${CMAKE_BUILD_PATH}/libpuerts.so`, OUTPUT_PATH)
             }
