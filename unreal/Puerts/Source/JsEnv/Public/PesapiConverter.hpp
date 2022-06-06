@@ -343,7 +343,7 @@ struct Converter<std::reference_wrapper<T>>
         return pesapi_create_ref(env, Converter<T>::toScript(env, value));
     }
 
-    static std::reference_wrapper<T> toCpp(pesapi_env env, pesapi_value value)
+    static T* toCpp(pesapi_env env, pesapi_value value)
     {
         if (pesapi_is_object(env, value))
         {
