@@ -167,12 +167,12 @@ namespace puerts
             v8::V8::Initialize();
         }
 
-        std::string Flags = "";
+        std::string Flags = "--no-harmony-top-level-await";
 #if PUERTS_DEBUG
-        Flags += "--expose-gc";
+        Flags += " --expose-gc";
 #endif
 #if PLATFORM_IOS
-        Flags += "--jitless --no-expose-wasm";
+        Flags += " --jitless --no-expose-wasm";
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 

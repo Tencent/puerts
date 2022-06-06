@@ -65,6 +65,32 @@ namespace puerts {
         JsEngine->ModuleCacheMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
         return Module;
     }
+
+    bool LinkModule(
+        v8::Local<v8::Context> Context,
+        v8::Local<v8::Module> RefModule
+    )
+    {
+        v8::Isolate* Isolate = Context->GetIsolate();
+        JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+
+        for (int i = 0, length = RefModule->GetModuleRequestsLength(); i < length; i++)
+        {
+            v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
+
+            v8::MaybeLocal<v8::Module> MaybeModule = ResolveModule(Context, Specifier_v8, RefModule);
+            if (MaybeModule.IsEmpty())
+            {
+                return false;
+            }
+            if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 #else 
     JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque) {
         JSRuntime *rt = JS_GetRuntime(ctx);
@@ -135,10 +161,22 @@ namespace puerts {
 
         if (Module.IsEmpty())
         {
+            if (TryCatch.HasCaught())
+            {
+                SetLastException(TryCatch.Exception());
+            }
+            return false;
+        }
+        v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
+        if (!LinkModule(Context, ModuleChecked))
+        {
+            if (TryCatch.HasCaught())
+            {
+                SetLastException(TryCatch.Exception());
+            }
             return false;
         }
 
-        v8::Local<v8::Module> ModuleChecked = Module.ToLocalChecked();
         v8::Maybe<bool> ret = ModuleChecked->InstantiateModule(Context, ResolveModule);
         if (ret.IsNothing() || !ret.ToChecked())
         {
