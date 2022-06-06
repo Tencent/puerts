@@ -46,6 +46,10 @@ public:
 
     virtual void MakeSharedJsEnv() = 0;
 
+    virtual const TArray<FString>& GetIgnoreClassListOnDTS() = 0;
+
+    virtual const TArray<FString>& GetIgnoreStructListOnDTS() = 0;
+
 #if WITH_EDITOR
     virtual bool IsInPIE() = 0;
 #endif

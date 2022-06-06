@@ -16,6 +16,9 @@
 #include "ArrayBuffer.h"
 #include "ContainerWrapper.h"
 #include "JsObject.h"
+#ifdef PUERTS_FTEXT_AS_OBJECT
+#include "TypeInfo.hpp"
+#endif
 
 namespace puerts
 {
@@ -414,13 +417,21 @@ public:
     v8::Local<v8::Value> UEToJs(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
     {
+#ifndef PUERTS_FTEXT_AS_OBJECT
         return FV8Utils::ToV8String(Isolate, TextProperty->GetPropertyValue(ValuePtr));
+#else
+        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, puerts::StaticTypeId<FText>::get(), ValuePtr, true);
+#endif
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
+#ifndef PUERTS_FTEXT_AS_OBJECT
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(FV8Utils::ToFString(Isolate, Value)));
+#else
+        TextProperty->SetPropertyValue(ValuePtr, *DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>()));
+#endif
         return true;
     }
 };

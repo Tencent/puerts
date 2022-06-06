@@ -41,10 +41,8 @@ jobs:
           export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
-          ls ~/android-ndk-r21b
           cd unity/native_src
-          chmod 777 make_android.sh
-          ./make_android.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform android --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -70,7 +68,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform ios --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -94,7 +92,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx_arm64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform osx --arch arm64 --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -120,7 +118,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform osx --arch x64 --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -145,8 +143,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-          # .\make_win32.bat ${{ github.event.inputs.backend }}
+          node make.js --platform win --arch x64 --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -175,8 +172,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_linux64.sh
-          ./make_linux64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform linux --arch x64 --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:

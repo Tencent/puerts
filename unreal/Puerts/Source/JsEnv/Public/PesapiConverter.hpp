@@ -364,14 +364,20 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 
     static std::reference_wrapper<T> toCpp(pesapi_env env, pesapi_value value)
     {
+#ifdef NOT_THREAD_SAFE
         static T _result;
+#endif
         if (pesapi_is_object(env, value))
         {
             return Converter<T>::toCpp(env, pesapi_get_value_ref(env, value));
         }
         else
         {
+#ifdef NOT_THREAD_SAFE
             return _result;
+#else
+            return *(static_cast<T*>(nullptr));
+#endif
         }
     }
 

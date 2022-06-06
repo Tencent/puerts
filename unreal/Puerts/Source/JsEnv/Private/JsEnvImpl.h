@@ -610,7 +610,9 @@ private:
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 
-    std::map<UFunction*, TsFunctionInfo> TsFunctionMap;
+    TMap<UFunction*, TsFunctionInfo> TsFunctionMap;
+
+    TMap<UFunction*, v8::UniquePersistent<v8::Function>> MixinFunctionMap;
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 

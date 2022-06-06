@@ -190,7 +190,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     Class->AddFunctionToFunctionMap(Function, Function->GetFName());
 }
 
-void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
+UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
     TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;
@@ -209,7 +209,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
                 UE_LOG(Puerts, Warning, TEXT("Try to mixin a function[%s:%s] already mixin by anthor vm"), *Class->GetName(),
                     *Super->GetName());
             }
-            return;
+            return MaybeJSFunction;
         }
     }
 
@@ -219,7 +219,8 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
     // "Failed to bind native" warning
     Class->AddNativeFunction(*FunctionName, &UJSGeneratedFunction::execCallMixin);
     UJSGeneratedFunction* Function = Cast<UJSGeneratedFunction>(
-        StaticDuplicateObject(Super, Class, *FunctionName, RF_Transient, UJSGeneratedFunction::StaticClass()));
+        StaticDuplicateObject(Super, Class, *FunctionName, RF_AllFlags, UJSGeneratedFunction::StaticClass()));
+    Function->SetFlags(Function->GetFlags() | RF_Transient);
 
     for (TFieldIterator<UFunction> It(Class, EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated,
              EFieldIteratorFlags::IncludeInterfaces);
@@ -227,7 +228,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
     {
         if (*It == Function)
         {
-            return;
+            return Function;
         }
     }
 
@@ -245,7 +246,6 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
 #ifdef THREAD_SAFE
     Function->Isolate = Isolate;
 #endif
-    Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
     Function->TakeJsObjectRef = TakeJsObjectRef;
@@ -258,6 +258,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallMixin);
     Function->Bind();
     Function->StaticLink(true);
+    Function->ClearInternalFlags(EInternalObjectFlags::Native);
 
     if (Existed)
     {
@@ -269,6 +270,7 @@ void UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Su
         Class->AddNativeFunction(*Super->GetName(), &UJSGeneratedFunction::execCallMixin);
         Super->SetSuperStruct(Function);
     }
+    return Function;
 }
 
 void UJSGeneratedClass::Restore(UClass* Class)

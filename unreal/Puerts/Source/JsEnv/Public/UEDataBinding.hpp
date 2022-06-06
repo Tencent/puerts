@@ -91,6 +91,7 @@ struct Converter<FName>
     }
 };
 
+#ifndef PUERTS_FTEXT_AS_OBJECT
 template <>
 struct Converter<FText>
 {
@@ -110,6 +111,7 @@ struct Converter<FText>
         return value->IsString();
     }
 };
+#endif
 
 template <>
 struct Converter<FArrayBuffer>
@@ -199,11 +201,13 @@ struct ScriptTypeName<FName>
     static constexpr const char* value = "string";
 };
 
+#ifndef PUERTS_FTEXT_AS_OBJECT
 template <>
 struct ScriptTypeName<FText>
 {
     static constexpr const char* value = "string";
 };
+#endif
 
 template <>
 struct ScriptTypeName<FArrayBuffer>
