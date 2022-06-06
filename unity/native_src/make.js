@@ -16,11 +16,24 @@ if (!fs.existsSync(`${pwd}/node_modules`)) {
 }
 
 const sx = require('shelljs');
-const { program } = require('commander');
-program.option("--platform <platform>", "the target platform", nodePlatformToPuerPlatform[process.platform]);
-program.option("--arch <arch>", "the target architecture", "");
+const { program, Option } = require('commander');
+program.addOption(
+    new Option("--platform <platform>", "the target platform")
+        .default("")
+        .choices(["win", "osx", "linux", "android", "ios"])
+);
+program.addOption(
+    new Option("--arch <arch>", "the target architecture")
+        .default("")
+        .choices(["ia32", "x64", "arm64", "armv7"])
+);
+program.addOption(
+    new Option("--config <ReleaseOrDebug>", "the target architecture")
+    .default("Release")
+    .choices(["Release", "Debug"])
+);
 program.option("--backend <backend>", "the JS backend will be used", "v8");
-program.option("--config <ReleaseOrDebug>", "the target architecture", "Release");
+
 program.parse(process.argv);
 const options = program.opts();
 
@@ -33,7 +46,7 @@ if (checkCMake.stderr && !checkCMake.stdout) {
     console.error("[Puer] CMake is not installed");
     process.exit();
 }
-if (options.arch == "win32" && options.config == "Debug") {
+if (options.platform == "win" && options.config != "Release") {
     options.config = "RelWithDebInfo"
 }
 
@@ -92,6 +105,10 @@ const platformCompileConfig = {
                 sx.cd("..")
                 sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
+                if (options.config != 'Release') {
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/Bin')
+                }
                 sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH + "/puerts.bundle")
                 sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, OUTPUT_PATH)
             }
@@ -104,6 +121,10 @@ const platformCompileConfig = {
                 sx.cd("..")
                 sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
+                if (options.config != 'Release') {
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/Bin')
+                }
                 sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/macOS_arm64/*.dylib`, OUTPUT_PATH)
             }
@@ -118,8 +139,12 @@ const platformCompileConfig = {
                 sx.cd("..")
                 sx.exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
                 
+                if (options.config != 'Release') {
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, '../general/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, '../general/Bin')
+                }
                 sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, OUTPUT_PATH)
-                sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, OUTPUT_PATH)  
+                sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, OUTPUT_PATH)
             }
         },
         'ia32': {
@@ -152,11 +177,15 @@ const platformCompileConfig = {
 
 
 /////////////////// make
-if (!options.arch) {
+if (options.platform && !options.arch) {
     Object.keys(platformCompileConfig[options.platform]).forEach(arch=> {
         options.arch = arch;
         runMake();
     });
+
+} else if (!options.platform && !options.arch) {
+    options.platform = nodePlatformToPuerPlatform[process.platform]
+    options.arch = process.arch;
 
 } else {
     runMake();
