@@ -294,10 +294,13 @@ private:
     static constexpr auto ArgsLength = sizeof...(Args);
     using ArgumentsTupleType = std::tuple<typename ArgumentTupleType<Args>::type...>;
 
+    using ArgumentsTempTupleType = std::tuple<typename std::decay<Args>::type...>;
+
     template <typename T, typename Enable = void>
     struct RefValueSync
     {
-        static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value)
+        static void Sync(
+            ContextType context, ValueType holder, typename std::decay<T>::type value, typename std::decay<T>::type* temp)
         {
         }
     };
@@ -306,28 +309,27 @@ private:
     struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value &&
                                                    !std::is_const<typename std::remove_reference<T>::type>::value>::type>
     {
-        static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value)
+        static void Sync(
+            ContextType context, ValueType holder, typename std::decay<T>::type value, typename std::decay<T>::type* temp)
         {
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value));
         }
 
-        static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value)
+        static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value,
+            typename std::decay<T>::type* temp)
         {
-#ifdef NOT_THREAD_SAFE
-            if (&(TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, GetUndefined(context)).get()) !=
-                &(value.get()))
+            if (temp != &(value.get()))
             {
                 return;
             }
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context, &(value.get())));
-#endif
         }
     };
 
     template <int, typename...>
     struct RefValuesSync
     {
-        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs)
+        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs, ArgumentsTempTupleType& temp)
         {
         }
     };
@@ -335,10 +337,10 @@ private:
     template <int Pos, typename T, typename... Rest>
     struct RefValuesSync<Pos, T, Rest...>
     {
-        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs)
+        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs, ArgumentsTempTupleType& temp)
         {
-            RefValueSync<T>::Sync(context, GetArg(info, Pos), std::get<Pos>(cppArgs));
-            RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgs);
+            RefValueSync<T>::Sync(context, GetArg(info, Pos), std::get<Pos>(cppArgs), &std::get<Pos>(temp));
+            RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgs, temp);
         }
     };
 
@@ -363,6 +365,26 @@ private:
         }
     };
 
+    template <typename T>
+    struct ArgumentConverter
+    {
+        static T Convert(ContextType context, ValueType val, T* temp)
+        {
+            return TypeConverter<T>::toCpp(context, val);
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<std::reference_wrapper<T>>
+    {
+        static std::reference_wrapper<T> Convert(ContextType context, ValueType val, T* temp)
+        {
+            T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
+            ret = ret ? ret : temp;
+            return *ret;
+        }
+    };
+
     template <typename Func, size_t... index>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
@@ -373,12 +395,15 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
+                context, GetArg(info, index), &std::get<index>(temp))...);
 
         func(std::forward<Args>(std::get<index>(cppArgs))...);
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -393,13 +418,16 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
+                context, GetArg(info, index), &std::get<index>(temp))...);
 
         SetReturn(
             info, ReturnConverter<Ret>::Convert(context, std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgs))...))));
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -422,12 +450,15 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
+                context, GetArg(info, index), &std::get<index>(temp))...);
 
         (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -450,13 +481,16 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
+                context, GetArg(info, index), &std::get<index>(temp))...);
 
         SetReturn(info, ReturnConverter<Ret>::Convert(
                             context, std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgs))...))));
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
