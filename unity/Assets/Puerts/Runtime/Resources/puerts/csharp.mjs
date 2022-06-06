@@ -45,8 +45,11 @@ function csTypeToClass(csType) {
                         configurable: false
                     })
                 );
-                if (cls.__p_isEnum && (typeof val) == 'number') {
-                    cls[val] = key;
+                if (cls.__p_isEnum) {
+                    const val = cls[key];
+                    if ((typeof val) == 'number') {
+                        cls[val] = key;
+                    }
                 }
             }
         }
