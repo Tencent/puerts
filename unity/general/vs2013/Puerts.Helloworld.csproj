@@ -14,11 +14,11 @@
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>itanium</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\Bin\</OutputPath>
+    <OutputPath>.\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>obj\Any CPU\Debug\Puerts.Helloworld</IntermediateOutputPath>
     <DefineConstants>_DEBUG;DEBUG;TRACE;</DefineConstants>

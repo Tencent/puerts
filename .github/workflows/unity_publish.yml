@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -35,10 +35,8 @@ jobs:
           export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
-          ls ~/android-ndk-r21b
           cd unity/native_src
-          chmod 777 make_android.sh
-          ./make_android.sh
+          node make.js --platform android --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -68,10 +66,8 @@ jobs:
           export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
-          ls ~/android-ndk-r21b
           cd unity/native_src
-          chmod 777 make_android.sh
-          ./make_android.sh quickjs
+          node make.js --platform android --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -83,7 +79,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -97,7 +93,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh
+          node make.js --platform ios --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -123,7 +119,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh quickjs
+          node make.js --platform ios --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -135,7 +131,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -149,7 +145,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh
+          node make.js --platform osx --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -161,7 +157,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/nodejs_17/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -175,7 +171,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh nodejs
+          node make.js --platform osx --backend nodejs_17
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -201,7 +197,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh quickjs
+          node make.js --platform osx --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -213,7 +209,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -225,8 +221,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat
-          .\make_win32.bat
+          node make.js --platform win
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -238,7 +233,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/nodejs_17/backend.rc)" >> $GITHUB_ENV
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -250,7 +245,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat nodejs
+          node make.js --platform win --backend nodejs_17 --arch x64
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -274,8 +269,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat quickjs
-          .\make_win32.bat quickjs
+          node make.js --platform win --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -292,7 +286,7 @@ jobs:
           sudo apt-get install libc++abi-dev
       - uses: actions/checkout@v2
       - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8/backend.rc)" >> $GITHUB_ENV
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
         shell: bash
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
@@ -305,8 +299,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_linux64.sh
-          ./make_linux64.sh
+          node make.js --platform linux --arch x64 --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
