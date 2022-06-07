@@ -33,8 +33,10 @@ jobs:
           export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
+          ls ~/android-ndk-r21b
           cd unity/native_src
-          node make.js --platform android
+          chmod 777 make_android.sh
+          ./make_android.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -62,8 +64,10 @@ jobs:
           export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
+          ls ~/android-ndk-r21b
           cd unity/native_src
-          node make.js --platform android --backend quickjs
+          chmod 777 make_android.sh
+          ./make_android.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -87,7 +91,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios
+          sh ./make_ios.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -111,7 +115,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend quickjs
+          sh ./make_ios.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -135,7 +139,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx
+          sh ./make_osx.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -159,7 +163,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend nodejs
+          sh ./make_osx.sh nodejs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -183,7 +187,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend quickjs
+          sh ./make_osx.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -205,7 +209,8 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win
+          .\make_win64.bat
+          .\make_win32.bat
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -227,7 +232,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend nodejs --arch=x64
+          .\make_win64.bat nodejs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -249,7 +254,8 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend quickjs
+          .\make_win64.bat quickjs
+          .\make_win32.bat quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -276,7 +282,8 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform linux --arch=x64
+          chmod 777 make_linux64.sh
+          ./make_linux64.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
