@@ -74,7 +74,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/armeabi-v7a/',
             hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = 'android-18';
+                const API = 'android-21';
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
@@ -88,7 +88,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/arm64-v8a/',
             hook: async function(CMAKE_BUILD_PATH, OUTPUT_PATH, options) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = 'android-18';
+                const API = 'android-21';
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
@@ -127,7 +127,10 @@ const platformCompileConfig = {
                     sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/vs2013/Bin')
                     sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/vs2013/Bin')
                 }
-                sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH + "/puerts.bundle")
+                sx.ls('-l', `${CMAKE_BUILD_PATH}`);
+                sx.ls('-l', `${CMAKE_BUILD_PATH}/${options.config}`);
+                sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH)
+                sx.mv(`${OUTPUT_PATH}/libpuerts.dylib`, OUTPUT_PATH + "/puerts.bundle")
                 sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, OUTPUT_PATH)
             }
         },
@@ -142,9 +145,11 @@ const platformCompileConfig = {
                 if (options.config != 'Release') {
                     sx.mkdir('-p', '../general/vs2022/Bin');
                     sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/vs2022/Bin')
-                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/vs2022/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/macOS_arm64/*.dylib`, '../general/vs2022/Bin')
                 }
-                sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH)
+                sx.ls('-l', `${CMAKE_BUILD_PATH}`);
+                sx.ls('-l', `${CMAKE_BUILD_PATH}/${options.config}`);
+                sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/macOS_arm64/*.dylib`, OUTPUT_PATH)
             }
         }
@@ -197,25 +202,32 @@ const platformCompileConfig = {
 
 
 /////////////////// make
-if (options.platform && !options.arch) {
-    Object.keys(platformCompileConfig[options.platform]).forEach(arch=> {
-        options.arch = arch;
+;(async function() {
+    if (options.platform && !options.arch) {
+        let promiseChain = Promise.resolve();
+        Object.keys(platformCompileConfig[options.platform]).forEach(arch=> {
+            promiseChain = promiseChain.then(function() {
+                options.arch = arch;
+                return runMake()
+            })
+        });
+    
+    } else if (!options.platform && !options.arch) {
+        options.platform = nodePlatformToPuerPlatform[process.platform]
+        options.arch = process.arch;
         runMake();
-    });
+    
+    } else {
+        runMake();
+    }
+})()
 
-} else if (!options.platform && !options.arch) {
-    options.platform = nodePlatformToPuerPlatform[process.platform]
-    options.arch = process.arch;
-
-} else {
-    runMake();
-}
-function runMake() {
+async function runMake() {
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = pwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug": ""}`
     const OUTPUT_PATH = pwd + '/../Assets/Plugins/' + BuildConfig.outputPluginPath;
     
     sx.mkdir('-p', CMAKE_BUILD_PATH);
     sx.mkdir('-p', OUTPUT_PATH)
-    BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);    
+    await BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);    
 }
