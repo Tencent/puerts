@@ -140,7 +140,7 @@ const platformCompileConfig = {
 
                 if (options.config != 'Release') {
                     sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, '../general/Bin')
-                    sx.cp('-r', `${options.backend}/Lib/macOS/*.dylib`, '../general/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/macOS_arm64/*.dylib`, '../general/Bin')
                 }
                 sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/macOS_arm64/*.dylib`, OUTPUT_PATH)
@@ -194,25 +194,32 @@ const platformCompileConfig = {
 
 
 /////////////////// make
-if (options.platform && !options.arch) {
-    Object.keys(platformCompileConfig[options.platform]).forEach(arch=> {
-        options.arch = arch;
+;(async function() {
+    if (options.platform && !options.arch) {
+        const promiseChain = Promise.resolve();
+        Object.keys(platformCompileConfig[options.platform]).forEach(arch=> {
+            promiseChain.then(function() {
+                options.arch = arch;
+                return runMake()
+            })
+        });
+    
+    } else if (!options.platform && !options.arch) {
+        options.platform = nodePlatformToPuerPlatform[process.platform]
+        options.arch = process.arch;
         runMake();
-    });
+    
+    } else {
+        runMake();
+    }
+})()
 
-} else if (!options.platform && !options.arch) {
-    options.platform = nodePlatformToPuerPlatform[process.platform]
-    options.arch = process.arch;
-
-} else {
-    runMake();
-}
-function runMake() {
+async function runMake() {
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = pwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug": ""}`
     const OUTPUT_PATH = pwd + '/../Assets/Plugins/' + BuildConfig.outputPluginPath;
     
     sx.mkdir('-p', CMAKE_BUILD_PATH);
     sx.mkdir('-p', OUTPUT_PATH)
-    BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);    
+    await BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);    
 }
