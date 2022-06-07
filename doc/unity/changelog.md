@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-preview.0] - 2022-06-07
+1. 支持apple silicon芯片 #591
+2. 升级默认v8到9.4版本，nodejs到16版本
+3. 所有属性改为configurable #667
+4. 添加`require('puerts').getLastException`接口 #629
+
 ## [1.3.4] - 2022-05-18
 1. dts中的csharp模块现在和node.js一样使用`export = `导出 #750
 2. 修复生成扩展函数时，忽略了路径带Editor的Assembly的内容 #735
