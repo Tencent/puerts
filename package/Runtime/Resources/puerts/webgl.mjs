@@ -1,2 +1,4 @@
-globalThis.csharp = require('csharp')
-globalThis.puerts = require('puerts')
+var global = global || globalThis || (function () { return this; }());
+
+global.csharp = puertsRequire('csharp')
+global.puerts = puertsRequire('puerts')
