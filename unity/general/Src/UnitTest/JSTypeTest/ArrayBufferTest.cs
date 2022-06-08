@@ -194,5 +194,24 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual("1", res);
         }
+        
+        [Test]
+        public void JSFunctionInvokeWithArrayBuffer()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingFunc<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer>();
+
+            Func<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer> callback = jsEnv.Eval<Func<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer>>(@"
+                (function() {
+                    const CS = require('csharp');
+                
+                    return function(data, length) {
+                        return data.slice(0, length - 1)
+                    };
+                })()
+            ");
+            Puerts.ArrayBuffer ab = callback(new Puerts.ArrayBuffer(new byte[] { 1, 2, 3 }), 3);
+            Assert.True(ab.Count == 2);
+        }
     }
 }
