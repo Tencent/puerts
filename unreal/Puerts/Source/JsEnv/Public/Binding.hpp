@@ -330,11 +330,12 @@ private:
         static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value,
             typename std::decay<T>::type* temp)
         {
-            if (temp != &(value.get()))
-            {
-                return;
-            }
-            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context, &(value.get())));
+            // if (temp != &(value.get()))
+            //{
+            //    return;
+            //}
+            // UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context,
+            // &(value.get())));
         }
     };
 
