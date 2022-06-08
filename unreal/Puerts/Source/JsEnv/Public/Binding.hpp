@@ -294,7 +294,19 @@ private:
     static constexpr auto ArgsLength = sizeof...(Args);
     using ArgumentsTupleType = std::tuple<typename ArgumentTupleType<Args>::type...>;
 
-    using ArgumentsTempTupleType = std::tuple<typename std::decay<Args>::type...>;
+    template <typename T, typename = void>
+    struct ArgumentTempTupleType
+    {
+        using type = typename std::decay<T>::type;
+    };
+
+    template <typename T>
+    struct ArgumentTempTupleType<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+    {
+        using type = typename std::decay<T>::type;
+    };
+
+    using ArgumentsTempTupleType = std::tuple<typename ArgumentTempTupleType<Args>::type...>;
 
     template <typename T, typename Enable = void>
     struct RefValueSync
@@ -323,6 +335,16 @@ private:
                 return;
             }
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context, &(value.get())));
+        }
+    };
+
+    template <typename T>
+    struct RefValueSync<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+    {
+        static void Sync(
+            ContextType context, ValueType holder, typename std::decay<T>::type* value, typename std::decay<T>::type* temp)
+        {
+            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, *value));
         }
     };
 
@@ -365,7 +387,7 @@ private:
         }
     };
 
-    template <typename T>
+    template <typename T, typename Enable = void>
     struct ArgumentConverter
     {
         static T Convert(ContextType context, ValueType val, T* temp)
@@ -382,6 +404,16 @@ private:
             T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
             ret = ret ? ret : temp;
             return *ret;
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+    {
+        static T* Convert(ContextType context, ValueType val, T* temp)
+        {
+            *temp = TypeConverter<T*>::toCpp(context, val);
+            return temp;
         }
     };
 

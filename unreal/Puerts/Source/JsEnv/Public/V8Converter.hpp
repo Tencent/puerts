@@ -330,6 +330,33 @@ struct Converter<std::reference_wrapper<T>>
     }
 };
 
+template <typename T>
+struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
+    {
+        auto result = v8::Object::New(context->GetIsolate());
+        auto _unused = result->Set(context, 0, Converter<T>::toScript(context, value));
+        return result;
+    }
+
+    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (!value.IsEmpty() && value->IsObject())
+        {
+            auto outer = value->ToObject(context).ToLocalChecked();
+            auto realvalue = outer->Get(context, 0).ToLocalChecked();
+            return Converter<typename std::decay<T>::type>::toCpp(context, realvalue);
+        }
+        return {};
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsObject();    // do not checked inner
+    }
+};
+
 template <class T>
 struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value &&
                                             is_objecttype<T>::value && !is_uetype<T>::value>::type>
@@ -350,4 +377,10 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
 };
 
 }    // namespace converter
+
+template <>
+struct is_script_type<std::string> : std::true_type
+{
+};
+
 }    // namespace puerts
