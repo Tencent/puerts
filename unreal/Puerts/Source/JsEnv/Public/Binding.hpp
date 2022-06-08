@@ -390,20 +390,35 @@ private:
     template <typename T, typename Enable = void>
     struct ArgumentConverter
     {
-        static T Convert(ContextType context, ValueType val, T* temp)
+        using DecayType = typename std::decay<T>::type;
+
+        static DecayType Convert(ContextType context, ValueType val, DecayType* temp)
         {
-            return TypeConverter<T>::toCpp(context, val);
+            return TypeConverter<DecayType>::toCpp(context, val);
         }
     };
 
     template <typename T>
-    struct ArgumentConverter<std::reference_wrapper<T>>
+    struct ArgumentConverter<T&, typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
+                                                             is_uetype<typename std::decay<T>::type>::value) &&
+                                                         !std::is_const<T>::value>::type>
     {
         static std::reference_wrapper<T> Convert(ContextType context, ValueType val, T* temp)
         {
             T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
             ret = ret ? ret : temp;
             return *ret;
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T&,
+        typename std::enable_if<!is_objecttype<typename std::decay<T>::type>::value &&
+                                !is_uetype<typename std::decay<T>::type>::value && !std::is_const<T>::value>::type>
+    {
+        static T Convert(ContextType context, ValueType val, T* temp)
+        {
+            return TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
         }
     };
 
@@ -430,8 +445,7 @@ private:
         ArgumentsTempTupleType temp;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
-                context, GetArg(info, index), &std::get<index>(temp))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         func(std::forward<Args>(std::get<index>(cppArgs))...);
 
@@ -453,8 +467,7 @@ private:
         ArgumentsTempTupleType temp;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
-                context, GetArg(info, index), &std::get<index>(temp))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         SetReturn(
             info, ReturnConverter<Ret>::Convert(context, std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgs))...))));
@@ -485,8 +498,7 @@ private:
         ArgumentsTempTupleType temp;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
-                context, GetArg(info, index), &std::get<index>(temp))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
 
@@ -516,8 +528,7 @@ private:
         ArgumentsTempTupleType temp;
 
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            ArgumentConverter<typename ArgumentTupleType<Args>::type>::Convert(
-                context, GetArg(info, index), &std::get<index>(temp))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         SetReturn(info, ReturnConverter<Ret>::Convert(
                             context, std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgs))...))));
