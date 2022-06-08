@@ -582,8 +582,8 @@ V8_EXPORT void PushNullForJSFunction(JSFunction *Function)
 {
     FValue Value;
     Value.Type = puerts::NullOrUndefined;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushDateForJSFunction(JSFunction *Function, double DateValue)
@@ -591,8 +591,8 @@ V8_EXPORT void PushDateForJSFunction(JSFunction *Function, double DateValue)
     FValue Value;
     Value.Type = puerts::Date;
     Value.Number = DateValue;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushBooleanForJSFunction(JSFunction *Function, int B)
@@ -600,8 +600,8 @@ V8_EXPORT void PushBooleanForJSFunction(JSFunction *Function, int B)
     FValue Value;
     Value.Type = puerts::Boolean;
     Value.Boolean = B;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushBigIntForJSFunction(JSFunction *Function, int64_t V)
@@ -609,8 +609,8 @@ V8_EXPORT void PushBigIntForJSFunction(JSFunction *Function, int64_t V)
     FValue Value;
     Value.Type = puerts::BigInt;
     Value.BigInt = V;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushArrayBufferForJSFunction(JSFunction *Function, unsigned char * Bytes, int Length)
@@ -623,8 +623,8 @@ V8_EXPORT void PushArrayBufferForJSFunction(JSFunction *Function, unsigned char 
     FValue Value;
     Value.Type = puerts::ArrayBuffer;
     Value.ArrayBuffer.Reset(Isolate, puerts::NewArrayBuffer(Isolate, Bytes, Length));
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushStringForJSFunction(JSFunction *Function, const char* S)
@@ -632,8 +632,8 @@ V8_EXPORT void PushStringForJSFunction(JSFunction *Function, const char* S)
     FValue Value;
     Value.Type = puerts::String;
     Value.Str = S;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushNumberForJSFunction(JSFunction *Function, double D)
@@ -641,8 +641,8 @@ V8_EXPORT void PushNumberForJSFunction(JSFunction *Function, double D)
     FValue Value;
     Value.Type = puerts::Number;
     Value.Number = D;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* Ptr)
@@ -651,8 +651,8 @@ V8_EXPORT void PushObjectForJSFunction(JSFunction *Function, int ClassID, void* 
     Value.Type = puerts::NativeObject;
     Value.ObjectInfo.ClassID = ClassID;
     Value.ObjectInfo.ObjectPtr = Ptr;
-    Function->PushArgument(std::move(Value));
-    // Function->Arguments.push_back(std::move(Value));
+    // Function->PushArgument(Value);
+    Function->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushJSFunctionForJSFunction(JSFunction *F, JSFunction *V)
@@ -660,8 +660,8 @@ V8_EXPORT void PushJSFunctionForJSFunction(JSFunction *F, JSFunction *V)
     FValue Value;
     Value.Type = puerts::Function;
     Value.FunctionPtr = V;
-    F->PushArgument(std::move(Value));
-//    F->Arguments.push_back(std::move(Value));
+    // F->PushArgument(Value);
+   F->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT void PushJSObjectForJSFunction(JSFunction *F, puerts::JSObject *V)
@@ -669,8 +669,8 @@ V8_EXPORT void PushJSObjectForJSFunction(JSFunction *F, puerts::JSObject *V)
     FValue Value;
     Value.Type = puerts::JsObject;
     Value.JSObjectPtr = V;
-    F->PushArgument(std::move(Value));
-    // F->Arguments.push_back(std::move(Value));
+    // F->PushArgument(Value);
+    F->Arguments.push_back(std::move(Value));
 }
 
 V8_EXPORT FResultInfo *InvokeJSFunction(JSFunction *Function, int argumentsLength, int HasResult)
