@@ -41,10 +41,9 @@ jobs:
           export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
-          ls ~/android-ndk-r21b
           cd unity/native_src
           chmod 777 make_android.sh
-          ./make_android.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
