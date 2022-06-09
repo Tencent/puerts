@@ -431,7 +431,8 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(FV8Utils::ToFString(Isolate, Value)));
 #else
-        TextProperty->SetPropertyValue(ValuePtr, *DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>()));
+        auto TextPtr = DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>());
+        TextProperty->SetPropertyValue(ValuePtr, TextPtr ? *TextPtr : FText());
 #endif
         return true;
     }

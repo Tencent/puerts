@@ -103,7 +103,7 @@ namespace puerts
             args[i] = ToV8(Isolate, Context, Arguments[i]);
         }
         auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(Arguments.size()), args);
-        delete args;
+        delete[] args;
         
         if (TryCatch.HasCaught())
         {
