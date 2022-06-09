@@ -96,7 +96,7 @@ if ( APPLE )
         endif ()
         
         set(CMAKE_SKIP_RPATH FALSE)    
-        set(CMAKE_INSTALL_RPATH "@loader_path/")
+        add_link_options(-rpath "@loader_path/")
         add_library(puerts SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
         )
