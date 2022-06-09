@@ -306,6 +306,18 @@ private:
         using type = typename std::decay<T>::type;
     };
 
+    template <typename T>
+    struct ArgumentTempTupleType<T,
+        typename std::enable_if<
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            (!std::is_constructible<typename std::decay<T>::type>::value ||
+                !std::is_copy_constructible<typename std::decay<T>::type>::value ||
+                !std::is_destructible<typename std::decay<T>::type>::value)>::type>
+    {
+        using type = typename std::decay<T>::type*;
+    };
+
     using ArgumentsTempTupleType = std::tuple<typename ArgumentTempTupleType<Args>::type...>;
 
     template <typename T, typename Enable = void>
@@ -318,24 +330,36 @@ private:
     };
 
     template <typename T>
-    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value &&
-                                                   !std::is_const<typename std::remove_reference<T>::type>::value>::type>
+    struct RefValueSync<T,
+        typename std::enable_if<
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            !is_objecttype<typename std::decay<T>::type>::value && !is_uetype<typename std::decay<T>::type>::value>::type>
     {
         static void Sync(
             ContextType context, ValueType holder, typename std::decay<T>::type value, typename std::decay<T>::type* temp)
         {
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value));
         }
+    };
 
-        static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value,
-            typename std::decay<T>::type* temp)
+    template <typename T>
+    struct RefValueSync<T,
+        typename std::enable_if<
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value)>::type>
+    {
+        static void Sync(
+            ContextType context, ValueType holder, typename ArgumentTupleType<T>::type value, typename std::decay<T>::type* temp)
         {
-            // if (temp != &(value.get()))
-            //{
-            //    return;
-            //}
-            // UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context,
-            // &(value.get())));
+            if (temp != &(value.get()))
+            {
+                return;
+            }
+            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value.get()));
+        }
+        static void Sync(
+            ContextType context, ValueType holder, typename ArgumentTupleType<T>::type value, typename std::decay<T>::type** temp)
+        {
         }
     };
 
@@ -408,6 +432,12 @@ private:
         {
             T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
             ret = ret ? ret : temp;
+            return *ret;
+        }
+
+        static std::reference_wrapper<T> Convert(ContextType context, ValueType val, T** temp)
+        {
+            T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
             return *ret;
         }
     };
@@ -883,9 +913,6 @@ class ClassDefineBuilder
 
     InitializeFuncType constructor_{};
 
-    typedef void (*FinalizeFuncType)(void* Ptr);
-    FinalizeFuncType finalize_{};
-
     std::vector<GeneralFunctionReflectionInfo> constructorInfos_{};
     std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
     std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
@@ -910,7 +937,6 @@ public:
         InitializeFuncType constructor = ConstructorWrapper<T, Args...>::call;
         constructor_ = constructor;
         constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", ConstructorWrapper<T, Args...>::info()});
-        finalize_ = [](void* Ptr) { delete static_cast<T*>(Ptr); };
         return *this;
     }
 
@@ -921,7 +947,6 @@ public:
             constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", infos[i]});
         }
         constructor_ = constructor;
-        finalize_ = [](void* Ptr) { delete static_cast<T*>(Ptr); };
         return *this;
     }
 
@@ -987,6 +1012,26 @@ public:
         return *this;
     }
 
+    typedef void (*FinalizeFuncType)(void* Ptr);
+
+    template <class FC, typename Enable = void>
+    struct FinalizeBuilder
+    {
+        static FinalizeFuncType Build()
+        {
+            return FinalizeFuncType{};
+        }
+    };
+
+    template <class FC>
+    struct FinalizeBuilder<FC, typename std::enable_if<std::is_destructible<FC>::value>::type>
+    {
+        static FinalizeFuncType Build()
+        {
+            return [](void* Ptr) { delete static_cast<FC*>(Ptr); };
+        }
+    };
+
 #if !BUILDING_PES_EXTENSION
     void Register()
     {
@@ -1016,10 +1061,7 @@ public:
         }
 
         ClassDef.Initialize = constructor_;
-        if (constructor_)
-        {
-            ClassDef.Finalize = finalize_;
-        }
+        ClassDef.Finalize = FinalizeBuilder<T>::Build();
 
         s_functions_ = std::move(functions_);
         s_functions_.push_back({nullptr, nullptr, nullptr});
@@ -1085,11 +1127,7 @@ public:
             pesapi_set_property_info(properties, pos++, prop.Name, true, prop.Getter, prop.Setter, nullptr, nullptr);
         }
 
-        pesapi_finalize finalize = nullptr;
-        if (constructor_)
-        {
-            finalize = finalize_;
-        }
+        pesapi_finalize finalize = FinalizeBuilder<T>::Build();
         pesapi_define_class(StaticTypeId<T>::get(), superTypeId_, className_, constructor_, finalize, properties_count, properties);
     }
 #endif
