@@ -1189,9 +1189,11 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
         auto PackageName = Package->GetName();
 
-        static FString PackageNamePrefix(TEXT("/Game/Blueprints/TypeScript/"));
-        ;
-        if (PackageName.StartsWith(PackageNamePrefix))
+        static FString PackageNamePrefix(TEXT(TS_BLUEPRINT_PATH));
+
+        auto PrefixPos = PackageName.Find(PackageNamePrefix);
+
+        if (PrefixPos != INDEX_NONE)
         {
             auto SuperClass = Cast<UTypeScriptGeneratedClass>(TypeScriptGeneratedClass->GetSuperClass());
             if (SuperClass && SuperClass->GetName().StartsWith(TEXT("REINST_")))
@@ -1203,7 +1205,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
             {
                 MakeSureInject(SuperClass, false, RebindObject);
             }
-            FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
+            FString ModuleName = PackageName.Mid(PrefixPos + PackageNamePrefix.Len());
             Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
 
             auto Isolate = MainIsolate;

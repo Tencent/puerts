@@ -79,7 +79,7 @@ static bool IsPlaying()
 bool UPEBlueprintAsset::LoadOrCreate(
     const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {
-    FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
+    FString PackageName = FString(TEXT("/Game" TS_BLUEPRINT_PATH)) / InPath / InName;
 
     // UE_LOG(LogTemp, Warning, TEXT("LoadOrCreate.PackageName: %s"), *PackageName);
 
