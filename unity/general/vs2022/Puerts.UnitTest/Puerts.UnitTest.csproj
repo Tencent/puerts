@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\Bin</OutputPath>
+    <WarningLevel>4</WarningLevel>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Src\TxtLoader.cs">
+      <Link>Src\TxtLoader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\WrapperGenTest.cs">
+      <Link>Src\UnitTest\WrapperGenTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TestClass.cs">
+      <Link>Src\UnitTest\TestClass.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TimerTest.cs">
+      <Link>Src\UnitTest\TimerTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\UnitTest.cs">
+      <Link>Src\UnitTest\UnitTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\OptionalParametersTest.cs">
+      <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\ArrayBufferTest.cs">
+      <Link>Src\UnitTest\ArrayBufferTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\EvalTest.cs">
+      <Link>Src\UnitTest\EvalTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\ExceptionTest.cs">
+      <Link>Src\UnitTest\ExceptionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\WrapperGenTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\WrapperGenTest_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
+      <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+  </ItemGroup>
+</Project>

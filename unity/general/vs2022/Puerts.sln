@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 25.0.1703.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Helloworld", "Puerts.Helloworld/Puerts.Helloworld.csproj", "{CA037F41-D935-466B-861E-8477EB041FDD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Helloworld", "Puerts.Helloworld\Puerts.Helloworld.csproj", "{CA037F41-D935-466B-861E-8477EB041FDD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Core", "Puerts.Core/Puerts.Core.csproj", "{02872E6B-FE50-4814-9D88-06B7884E5E74}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Core", "Puerts.Core\Puerts.Core.csproj", "{02872E6B-FE50-4814-9D88-06B7884E5E74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.UnitTest", "Puerts.UnitTest\Puerts.UnitTest.csproj", "{DBE93DBD-E42D-422E-9A7B-B9E8BCFEF7A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,10 @@ Global
 		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02872E6B-FE50-4814-9D88-06B7884E5E74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBE93DBD-E42D-422E-9A7B-B9E8BCFEF7A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBE93DBD-E42D-422E-9A7B-B9E8BCFEF7A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBE93DBD-E42D-422E-9A7B-B9E8BCFEF7A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBE93DBD-E42D-422E-9A7B-B9E8BCFEF7A0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
