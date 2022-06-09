@@ -97,13 +97,12 @@ namespace puerts
         }
         
         v8::TryCatch TryCatch(Isolate);
-        v8::Local<v8::Value> *args = new v8::Local<v8::Value>[Arguments.size()];
+        v8::Local<v8::Value> *args = (v8::Local<v8::Value> *)alloca(sizeof(v8::Local<v8::Value>) * Arguments.size());
         for (int i = 0; i < Arguments.size(); i++)
         {
             args[i] = ToV8(Isolate, Context, Arguments[i]);
         }
         auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(Arguments.size()), args);
-        delete[] args;
         
         if (TryCatch.HasCaught())
         {
