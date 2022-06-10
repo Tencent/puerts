@@ -110,6 +110,7 @@ struct AutoRegisterForUE
 
 #ifdef PUERTS_FTEXT_AS_OBJECT
         puerts::DefineClass<FText>()
+            .Constructor<>()    // make destructor available
             .Method("ToString", MakeFunction(&FText::ToString))
             .Function("FromStringTable", MakeFunction(&FText::FromStringTable))
             .Function("FromString", SelectFunction(FText(*)(const FString&), &FText::FromString))

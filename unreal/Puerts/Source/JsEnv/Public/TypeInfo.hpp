@@ -71,6 +71,12 @@ struct ScriptTypeName<std::string>
 };
 
 template <>
+struct ScriptTypeName<const char*>
+{
+    static constexpr const char* value = "string";
+};
+
+template <>
 struct ScriptTypeName<bool>
 {
     static constexpr const char* value = "boolean";
@@ -93,12 +99,22 @@ struct StaticTypeId
 };
 
 template <typename T>
-struct is_uetype : public std::false_type
+struct is_uetype : std::false_type
 {
 };
 
 template <typename T>
-struct is_objecttype : public std::false_type
+struct is_objecttype : std::false_type
+{
+};
+
+template <typename T, typename Enable = void>
+struct is_script_type : std::false_type
+{
+};
+
+template <typename T>
+struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value>::type> : std::true_type
 {
 };
 
@@ -140,7 +156,7 @@ public:
     };
     virtual bool IsConst() const override
     {
-        return std::is_const<T>::value;
+        return std::is_const<typename std::remove_pointer<typename std::decay<T>::type>::type>::value;
     };
     virtual bool IsUEType() const override
     {

@@ -465,7 +465,16 @@ namespace Puerts.Editor
                     foreach (var t in refTypes.Distinct())
                     {
                         var info = TsTypeGenInfo.FromType(t, genTypeSet);
-                        tsTypeGenInfos.Add(info.FullName, info);
+                        if (tsTypeGenInfos.ContainsKey(info.FullName)) 
+                        {
+#if UNITY_EDITOR
+                            UnityEngine.Debug.LogWarning("[Puer] Existed type: " + info.FullName + ". It may cause some unexpected behaviour.");
+#endif
+                        }
+                        else
+                        {
+                            tsTypeGenInfos.Add(info.FullName, info);
+                        }
                     }
                     foreach (var info in tsTypeGenInfos)
                     {

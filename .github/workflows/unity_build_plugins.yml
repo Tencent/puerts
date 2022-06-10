@@ -36,12 +36,10 @@ jobs:
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform android --backend v8_9.4
-
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -68,11 +66,12 @@ jobs:
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
+          ls ~/android-ndk-r21b
           cd unity/native_src
-          node make.js --platform android --backend quickjs
+          chmod 777 make_android.sh
+          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -124,7 +123,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend quickjs
+          sh ./make_ios.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -196,7 +195,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend quickjs
+          sh ./make_osx.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -246,7 +245,8 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend quickjs
+          .\make_win64.bat quickjs
+          .\make_win32.bat quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:

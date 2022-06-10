@@ -420,7 +420,8 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         return FV8Utils::ToV8String(Isolate, TextProperty->GetPropertyValue(ValuePtr));
 #else
-        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, puerts::StaticTypeId<FText>::get(), ValuePtr, true);
+        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, puerts::StaticTypeId<FText>::get(),
+            PassByPointer ? ValuePtr : new FText(TextProperty->GetPropertyValue(ValuePtr)), PassByPointer);
 #endif
     }
 
@@ -430,7 +431,8 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(FV8Utils::ToFString(Isolate, Value)));
 #else
-        TextProperty->SetPropertyValue(ValuePtr, *DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>()));
+        auto TextPtr = DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>());
+        TextProperty->SetPropertyValue(ValuePtr, TextPtr ? *TextPtr : FText());
 #endif
         return true;
     }

@@ -16,8 +16,19 @@
 #else
 #include "JSClassRegister.h"
 #endif
-#include "Converter.hpp"
 #include "TypeInfo.hpp"
+
+namespace puerts
+{
+template <typename T, typename = void>
+struct ArgumentHolderType
+{
+    using type = typename std::decay<T>::type;
+    static constexpr bool is_custom = false;
+};
+}    // namespace puerts
+
+#include "Converter.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
@@ -48,6 +59,26 @@
 
 namespace puerts
 {
+template <typename T>
+struct ArgumentHolderType<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    using type = typename std::decay<T>::type;
+    static constexpr bool is_custom = false;
+};
+
+template <typename T>
+struct ArgumentHolderType<T,
+    typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
+                                is_uetype<typename std::decay<T>::type>::value) &&
+                            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+                            (!std::is_constructible<typename std::decay<T>::type>::value ||
+                                !std::is_copy_constructible<typename std::decay<T>::type>::value ||
+                                !std::is_destructible<typename std::decay<T>::type>::value)>::type>
+{
+    using type = typename std::decay<T>::type*;
+    static constexpr bool is_custom = false;
+};
+
 namespace internal
 {
 template <typename T, typename = void>
@@ -294,40 +325,64 @@ private:
     static constexpr auto ArgsLength = sizeof...(Args);
     using ArgumentsTupleType = std::tuple<typename ArgumentTupleType<Args>::type...>;
 
+    using ArgumentsTempTupleType = std::tuple<typename ArgumentHolderType<Args>::type...>;
+
     template <typename T, typename Enable = void>
     struct RefValueSync
     {
-        static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value)
+        static void Sync(ContextType context, ValueType holder, typename ArgumentTupleType<T>::type& value,
+            typename ArgumentHolderType<T>::type* temp)
         {
         }
     };
 
     template <typename T>
-    struct RefValueSync<T, typename std::enable_if<std::is_lvalue_reference<T>::value &&
-                                                   !std::is_const<typename std::remove_reference<T>::type>::value>::type>
+    struct RefValueSync<T,
+        typename std::enable_if<
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            !is_objecttype<typename std::decay<T>::type>::value && !is_uetype<typename std::decay<T>::type>::value>::type>
     {
-        static void Sync(ContextType context, ValueType holder, typename std::decay<T>::type value)
+        static void Sync(
+            ContextType context, ValueType holder, typename std::decay<T>::type value, typename std::decay<T>::type* temp)
         {
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value));
         }
+    };
 
-        static void Sync(ContextType context, ValueType holder, std::reference_wrapper<typename std::decay<T>::type> value)
+    template <typename T>
+    struct RefValueSync<T,
+        typename std::enable_if<
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_constructible<typename std::decay<T>::type>::value &&
+            std::is_copy_constructible<typename std::decay<T>::type>::value &&
+            std::is_destructible<typename std::decay<T>::type>::value>::type>
+    {
+        static void Sync(
+            ContextType context, ValueType holder, typename ArgumentTupleType<T>::type value, typename std::decay<T>::type* temp)
         {
-#ifdef NOT_THREAD_SAFE
-            if (&(TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, GetUndefined(context)).get()) !=
-                &(value.get()))
+            if (temp != &(value.get()))
             {
                 return;
             }
-            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type*>::toScript(context, &(value.get())));
-#endif
+            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value.get()));
+        }
+    };
+
+    template <typename T>
+    struct RefValueSync<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+    {
+        static void Sync(
+            ContextType context, ValueType holder, typename std::decay<T>::type* value, typename std::decay<T>::type* temp)
+        {
+            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, *value));
         }
     };
 
     template <int, typename...>
     struct RefValuesSync
     {
-        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs)
+        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs, ArgumentsTempTupleType& temp)
         {
         }
     };
@@ -335,10 +390,10 @@ private:
     template <int Pos, typename T, typename... Rest>
     struct RefValuesSync<Pos, T, Rest...>
     {
-        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs)
+        static void Sync(ContextType context, CallbackInfoType info, ArgumentsTupleType& cppArgs, ArgumentsTempTupleType& temp)
         {
-            RefValueSync<T>::Sync(context, GetArg(info, Pos), std::get<Pos>(cppArgs));
-            RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgs);
+            RefValueSync<T>::Sync(context, GetArg(info, Pos), std::get<Pos>(cppArgs), &std::get<Pos>(temp));
+            RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgs, temp);
         }
     };
 
@@ -363,6 +418,81 @@ private:
         }
     };
 
+    template <typename T, typename Enable = void>
+    struct ArgumentConverter
+    {
+        using DecayType = typename std::decay<T>::type;
+
+        static DecayType Convert(ContextType context, ValueType val, typename ArgumentHolderType<T>::type* temp)
+        {
+            return TypeConverter<DecayType>::toCpp(context, val);
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T&,
+        typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
+                                    is_uetype<typename std::decay<T>::type>::value) &&
+                                !std::is_const<T>::value && std::is_constructible<typename std::decay<T>::type>::value &&
+                                std::is_copy_constructible<typename std::decay<T>::type>::value &&
+                                std::is_destructible<typename std::decay<T>::type>::value>::type>
+    {
+        static std::reference_wrapper<T> Convert(ContextType context, ValueType val, T* temp)
+        {
+            T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
+            ret = ret ? ret : temp;
+            return *ret;
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T,
+        typename std::enable_if<
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            (!std::is_constructible<typename std::decay<T>::type>::value ||
+                !std::is_copy_constructible<typename std::decay<T>::type>::value ||
+                !std::is_destructible<typename std::decay<T>::type>::value)>::type>
+    {
+        static typename ArgumentTupleType<T>::type Convert(
+            ContextType context, ValueType val, typename ArgumentHolderType<T>::type* temp)
+        {
+            return *TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, val);
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T&,
+        typename std::enable_if<!is_objecttype<typename std::decay<T>::type>::value &&
+                                !is_uetype<typename std::decay<T>::type>::value && !std::is_const<T>::value>::type>
+    {
+        static T Convert(ContextType context, ValueType val, T* temp)
+        {
+            return TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+    {
+        static T* Convert(ContextType context, ValueType val, T* temp)
+        {
+            *temp = TypeConverter<T*>::toCpp(context, val);
+            return temp;
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T, typename std::enable_if<ArgumentHolderType<T>::is_custom>::type>
+    {
+        static typename ArgumentTupleType<T>::type Convert(
+            ContextType context, ValueType val, typename ArgumentHolderType<T>::type* temp)
+        {
+            *temp = TypeConverter<T>::toCpp(context, val);
+            return temp->Data();
+        }
+    };
+
     template <typename Func, size_t... index>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
@@ -373,12 +503,14 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         func(std::forward<Args>(std::get<index>(cppArgs))...);
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -393,13 +525,15 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         SetReturn(
             info, ReturnConverter<Ret>::Convert(context, std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgs))...))));
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -422,12 +556,14 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         (self->*func)(std::forward<Args>(std::get<index>(cppArgs))...);
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -450,13 +586,15 @@ private:
         if (!ArgumentsChecker<CheckArguments, Args...>::Check(context, info))
             return false;
 
+        ArgumentsTempTupleType temp;
+
         ArgumentsTupleType cppArgs = std::make_tuple<typename ArgumentTupleType<Args>::type...>(
-            TypeConverter<typename ArgumentTupleType<Args>::type>::toCpp(context, GetArg(info, index))...);
+            ArgumentConverter<Args>::Convert(context, GetArg(info, index), &std::get<index>(temp))...);
 
         SetReturn(info, ReturnConverter<Ret>::Convert(
                             context, std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgs))...))));
 
-        RefValuesSync<0, Args...>::Sync(context, info, cppArgs);
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgs, temp);
 
         return true;
     }
@@ -805,9 +943,6 @@ class ClassDefineBuilder
 
     InitializeFuncType constructor_{};
 
-    typedef void (*FinalizeFuncType)(void* Ptr);
-    FinalizeFuncType finalize_{};
-
     std::vector<GeneralFunctionReflectionInfo> constructorInfos_{};
     std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
     std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
@@ -832,7 +967,6 @@ public:
         InitializeFuncType constructor = ConstructorWrapper<T, Args...>::call;
         constructor_ = constructor;
         constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", ConstructorWrapper<T, Args...>::info()});
-        finalize_ = [](void* Ptr) { delete static_cast<T*>(Ptr); };
         return *this;
     }
 
@@ -843,7 +977,6 @@ public:
             constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", infos[i]});
         }
         constructor_ = constructor;
-        finalize_ = [](void* Ptr) { delete static_cast<T*>(Ptr); };
         return *this;
     }
 
@@ -909,6 +1042,26 @@ public:
         return *this;
     }
 
+    typedef void (*FinalizeFuncType)(void* Ptr);
+
+    template <class FC, typename Enable = void>
+    struct FinalizeBuilder
+    {
+        static FinalizeFuncType Build()
+        {
+            return FinalizeFuncType{};
+        }
+    };
+
+    template <class FC>
+    struct FinalizeBuilder<FC, typename std::enable_if<std::is_destructible<FC>::value>::type>
+    {
+        static FinalizeFuncType Build()
+        {
+            return [](void* Ptr) { delete static_cast<FC*>(Ptr); };
+        }
+    };
+
 #if !BUILDING_PES_EXTENSION
     void Register()
     {
@@ -938,10 +1091,7 @@ public:
         }
 
         ClassDef.Initialize = constructor_;
-        if (constructor_)
-        {
-            ClassDef.Finalize = finalize_;
-        }
+        ClassDef.Finalize = FinalizeBuilder<T>::Build();
 
         s_functions_ = std::move(functions_);
         s_functions_.push_back({nullptr, nullptr, nullptr});
@@ -1007,11 +1157,7 @@ public:
             pesapi_set_property_info(properties, pos++, prop.Name, true, prop.Getter, prop.Setter, nullptr, nullptr);
         }
 
-        pesapi_finalize finalize = nullptr;
-        if (constructor_)
-        {
-            finalize = finalize_;
-        }
+        pesapi_finalize finalize = FinalizeBuilder<T>::Build();
         pesapi_define_class(StaticTypeId<T>::get(), superTypeId_, className_, constructor_, finalize, properties_count, properties);
     }
 #endif

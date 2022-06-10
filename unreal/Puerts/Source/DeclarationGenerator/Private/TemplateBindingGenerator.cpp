@@ -41,7 +41,8 @@ struct FGenImp
 
             Buff << FString::Printf(TEXT("p%d"), i) << ": ";
 
-            bool IsReference = argInfo->IsRef();
+            bool IsReference = argInfo->IsRef() ||
+                               (!argInfo->IsConst() && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer());
             bool IsNullable = !IsReference && argInfo->IsPointer();
             if (IsNullable)
             {
