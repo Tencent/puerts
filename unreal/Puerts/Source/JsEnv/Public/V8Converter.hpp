@@ -127,6 +127,71 @@ V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
 
 namespace puerts
 {
+class StringHolder
+{
+public:
+    StringHolder() : str_(nullptr)
+    {
+    }
+
+    StringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value)
+    {
+        if (value.IsEmpty())
+            return;
+        const auto isolate = context->GetIsolate();
+        v8::TryCatch try_catch(isolate);
+        v8::Local<v8::String> str;
+        if (!value->ToString(context).ToLocal(&str))
+            return;
+        const int length = str->Utf8Length(isolate);
+        str_ = new char[length + 1];
+        str->WriteUtf8(isolate, str_);
+    }
+
+    StringHolder(StringHolder&& other) noexcept
+    {
+        str_ = other.str_;
+        other.str_ = nullptr;
+    }
+
+    ~StringHolder()
+    {
+        if (str_)
+        {
+            delete[] str_;
+        }
+    }
+
+    StringHolder& operator=(StringHolder&& other) noexcept
+    {
+        if (str_ != other.str_)
+        {
+            if (str_)
+            {
+                delete[] str_;
+            }
+            str_ = other.str_;
+            other.str_ = nullptr;
+        }
+        return *this;
+    }
+
+    const char* Data() const
+    {
+        return str_;
+    }
+
+private:
+    char* str_;
+};
+
+template <>
+struct ArgumentHolderType<const char*>
+{
+    using type = StringHolder;
+    static constexpr bool is_custom = true;
+};
+
 namespace converter
 {
 template <typename T, typename Enable = void>
@@ -273,9 +338,9 @@ struct Converter<const char*>
         return v8::String::NewFromUtf8(context->GetIsolate(), value, v8::NewStringType::kNormal).ToLocalChecked();
     }
 
-    static const char* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    static StringHolder toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return nullptr;
+        return StringHolder(context, value);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
