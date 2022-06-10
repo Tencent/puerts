@@ -323,8 +323,8 @@ private:
     template <typename T, typename Enable = void>
     struct RefValueSync
     {
-        static void Sync(
-            ContextType context, ValueType holder, typename std::decay<T>::type value, typename std::decay<T>::type* temp)
+        static void Sync(ContextType context, ValueType holder, typename ArgumentTupleType<T>::type& value,
+            typename ArgumentTempTupleType<T>::type* temp)
         {
         }
     };
@@ -346,7 +346,10 @@ private:
     struct RefValueSync<T,
         typename std::enable_if<
             std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
-            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value)>::type>
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_constructible<typename std::decay<T>::type>::value &&
+            std::is_copy_constructible<typename std::decay<T>::type>::value &&
+            std::is_destructible<typename std::decay<T>::type>::value>::type>
     {
         static void Sync(
             ContextType context, ValueType holder, typename ArgumentTupleType<T>::type value, typename std::decay<T>::type* temp)
@@ -356,10 +359,6 @@ private:
                 return;
             }
             UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, value.get()));
-        }
-        static void Sync(
-            ContextType context, ValueType holder, typename ArgumentTupleType<T>::type value, typename std::decay<T>::type** temp)
-        {
         }
     };
 
@@ -417,16 +416,19 @@ private:
     {
         using DecayType = typename std::decay<T>::type;
 
-        static DecayType Convert(ContextType context, ValueType val, DecayType* temp)
+        static DecayType Convert(ContextType context, ValueType val, typename ArgumentTempTupleType<T>::type* temp)
         {
             return TypeConverter<DecayType>::toCpp(context, val);
         }
     };
 
     template <typename T>
-    struct ArgumentConverter<T&, typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
-                                                             is_uetype<typename std::decay<T>::type>::value) &&
-                                                         !std::is_const<T>::value>::type>
+    struct ArgumentConverter<T&,
+        typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
+                                    is_uetype<typename std::decay<T>::type>::value) &&
+                                !std::is_const<T>::value && std::is_constructible<typename std::decay<T>::type>::value &&
+                                std::is_copy_constructible<typename std::decay<T>::type>::value &&
+                                std::is_destructible<typename std::decay<T>::type>::value>::type>
     {
         static std::reference_wrapper<T> Convert(ContextType context, ValueType val, T* temp)
         {
@@ -434,11 +436,21 @@ private:
             ret = ret ? ret : temp;
             return *ret;
         }
+    };
 
-        static std::reference_wrapper<T> Convert(ContextType context, ValueType val, T** temp)
+    template <typename T>
+    struct ArgumentConverter<T,
+        typename std::enable_if<
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+            (!std::is_constructible<typename std::decay<T>::type>::value ||
+                !std::is_copy_constructible<typename std::decay<T>::type>::value ||
+                !std::is_destructible<typename std::decay<T>::type>::value)>::type>
+    {
+        static typename ArgumentTupleType<T>::type Convert(
+            ContextType context, ValueType val, typename ArgumentTempTupleType<T>::type* temp)
         {
-            T* ret = TypeConverter<std::reference_wrapper<T>>::toCpp(context, val);
-            return *ret;
+            return *TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, val);
         }
     };
 
