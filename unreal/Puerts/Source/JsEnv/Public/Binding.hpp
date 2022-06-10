@@ -16,8 +16,19 @@
 #else
 #include "JSClassRegister.h"
 #endif
-#include "Converter.hpp"
 #include "TypeInfo.hpp"
+
+namespace puerts
+{
+template <typename T, typename = void>
+struct ArgumentHolderType
+{
+    using type = typename std::decay<T>::type;
+    static constexpr bool is_custom = false;
+};
+}    // namespace puerts
+
+#include "Converter.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
@@ -48,6 +59,26 @@
 
 namespace puerts
 {
+template <typename T>
+struct ArgumentHolderType<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    using type = typename std::decay<T>::type;
+    static constexpr bool is_custom = false;
+};
+
+template <typename T>
+struct ArgumentHolderType<T,
+    typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
+                                is_uetype<typename std::decay<T>::type>::value) &&
+                            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
+                            (!std::is_constructible<typename std::decay<T>::type>::value ||
+                                !std::is_copy_constructible<typename std::decay<T>::type>::value ||
+                                !std::is_destructible<typename std::decay<T>::type>::value)>::type>
+{
+    using type = typename std::decay<T>::type*;
+    static constexpr bool is_custom = false;
+};
+
 namespace internal
 {
 template <typename T, typename = void>
@@ -294,37 +325,13 @@ private:
     static constexpr auto ArgsLength = sizeof...(Args);
     using ArgumentsTupleType = std::tuple<typename ArgumentTupleType<Args>::type...>;
 
-    template <typename T, typename = void>
-    struct ArgumentTempTupleType
-    {
-        using type = typename std::decay<T>::type;
-    };
-
-    template <typename T>
-    struct ArgumentTempTupleType<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
-    {
-        using type = typename std::decay<T>::type;
-    };
-
-    template <typename T>
-    struct ArgumentTempTupleType<T,
-        typename std::enable_if<
-            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
-            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value &&
-            (!std::is_constructible<typename std::decay<T>::type>::value ||
-                !std::is_copy_constructible<typename std::decay<T>::type>::value ||
-                !std::is_destructible<typename std::decay<T>::type>::value)>::type>
-    {
-        using type = typename std::decay<T>::type*;
-    };
-
-    using ArgumentsTempTupleType = std::tuple<typename ArgumentTempTupleType<Args>::type...>;
+    using ArgumentsTempTupleType = std::tuple<typename ArgumentHolderType<Args>::type...>;
 
     template <typename T, typename Enable = void>
     struct RefValueSync
     {
         static void Sync(ContextType context, ValueType holder, typename ArgumentTupleType<T>::type& value,
-            typename ArgumentTempTupleType<T>::type* temp)
+            typename ArgumentHolderType<T>::type* temp)
         {
         }
     };
@@ -416,7 +423,7 @@ private:
     {
         using DecayType = typename std::decay<T>::type;
 
-        static DecayType Convert(ContextType context, ValueType val, typename ArgumentTempTupleType<T>::type* temp)
+        static DecayType Convert(ContextType context, ValueType val, typename ArgumentHolderType<T>::type* temp)
         {
             return TypeConverter<DecayType>::toCpp(context, val);
         }
@@ -448,7 +455,7 @@ private:
                 !std::is_destructible<typename std::decay<T>::type>::value)>::type>
     {
         static typename ArgumentTupleType<T>::type Convert(
-            ContextType context, ValueType val, typename ArgumentTempTupleType<T>::type* temp)
+            ContextType context, ValueType val, typename ArgumentHolderType<T>::type* temp)
         {
             return *TypeConverter<typename ArgumentTupleType<T>::type>::toCpp(context, val);
         }
@@ -472,6 +479,17 @@ private:
         {
             *temp = TypeConverter<T*>::toCpp(context, val);
             return temp;
+        }
+    };
+
+    template <typename T>
+    struct ArgumentConverter<T, typename std::enable_if<ArgumentHolderType<T>::is_custom>::type>
+    {
+        static typename ArgumentTupleType<T>::type Convert(
+            ContextType context, ValueType val, typename ArgumentHolderType<T>::type* temp)
+        {
+            *temp = TypeConverter<T>::toCpp(context, val);
+            return temp->Data();
         }
     };
 
