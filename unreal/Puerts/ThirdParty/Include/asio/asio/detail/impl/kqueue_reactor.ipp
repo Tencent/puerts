@@ -2,7 +2,7 @@
 // detail/impl/kqueue_reactor.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 // Copyright (c) 2005 Stefan Arentz (stefan at soze dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -25,9 +25,13 @@
 #include "asio/detail/throw_error.hpp"
 #include "asio/error.hpp"
 
+#if defined(__NetBSD__)
+# include <sys/param.h>
+#endif
+
 #include "asio/detail/push_options.hpp"
 
-#if defined(__NetBSD__)
+#if defined(__NetBSD__) && __NetBSD_Version__ < 999001500
 # define ASIO_KQUEUE_EV_SET(ev, ident, filt, flags, fflags, data, udata) \
     EV_SET(ev, ident, filt, flags, fflags, data, \
       reinterpret_cast<intptr_t>(static_cast<void*>(udata)))
@@ -276,6 +280,35 @@ void kqueue_reactor::cancel_ops(socket_type,
       ops.push(op);
     }
   }
+
+  descriptor_lock.unlock();
+
+  scheduler_.post_deferred_completions(ops);
+}
+
+void kqueue_reactor::cancel_ops_by_key(socket_type,
+    kqueue_reactor::per_descriptor_data& descriptor_data,
+    int op_type, void* cancellation_key)
+{
+  if (!descriptor_data)
+    return;
+
+  mutex::scoped_lock descriptor_lock(descriptor_data->mutex_);
+
+  op_queue<operation> ops;
+  op_queue<reactor_op> other_ops;
+  while (reactor_op* op = descriptor_data->op_queue_[op_type].front())
+  {
+    descriptor_data->op_queue_[op_type].pop();
+    if (op->cancellation_key_ == cancellation_key)
+    {
+      op->ec_ = asio::error::operation_aborted;
+      ops.push(op);
+    }
+    else
+      other_ops.push(op);
+  }
+  descriptor_data->op_queue_[op_type].push(other_ops);
 
   descriptor_lock.unlock();
 
