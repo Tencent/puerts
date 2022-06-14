@@ -11,8 +11,9 @@
  * @param {GenClass.TypeGenInfo[]} types
  * @returns 
  */
-module.exports = function AutoRegTemplate(types) {
+module.exports = function AutoRegTemplate(types, wrapperInfos) {
     types = toJsArray(types);
+    wrapperInfos = toJsArray(wrapperInfos);
     return `
 
 namespace PuertsStaticWrap
@@ -22,10 +23,11 @@ namespace PuertsStaticWrap
         public static void Register(Puerts.JsEnv jsEnv)
         {
 ${          
-            types.map(type=> {
+            types.map((type, index)=> {
+                const wrapperInfo = wrapperInfos[index]
                 return '            ' + 
-                `jsEnv.AddLazyStaticWrapLoader(typeof(${type.Name}), ${type.WrapClassName}.GetRegisterInfo);
-                ${type.BlittableCopy ? `${type.WrapClassName}.InitBlittableCopy(jsEnv);`: ''}`;
+                `jsEnv.AddLazyStaticWrapLoader(typeof(${type.GetFriendlyName()}), ${wrapperInfo.WrapClassName}${wrapperInfo.IsGenericWrapper ? `<${GetNativeObjectGenericArgumentsList(type).map(type=> type.GetFriendlyName()).join(',')}>` : ''}.GetRegisterInfo);
+                ${wrapperInfo.BlittableCopy ? `${wrapperInfo.WrapClassName}.InitBlittableCopy(jsEnv);`: ''}`;
             }).join('\n')
 }
         }
@@ -41,4 +43,9 @@ function toJsArray(csArr) {
         arr.push(csArr.get_Item(i));
     }
     return arr;
+}
+const CS = require('csharp');
+function GetNativeObjectGenericArgumentsList(type) {
+    return toJsArray(type.GetGenericArguments())
+        .filter(t => !t.IsPrimitive && t != puerts.$typeof(CS.System.String) && t != puerts.$typeof(CS.System.DateTime));
 }
