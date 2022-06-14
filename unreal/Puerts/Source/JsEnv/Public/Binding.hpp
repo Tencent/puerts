@@ -312,10 +312,9 @@ private:
     };
 
     template <typename T>
-    struct ArgumentType<T,
-        typename std::enable_if<
-            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
-            std::is_lvalue_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value>::type>
+    struct ArgumentType<T, typename std::enable_if<(is_objecttype<typename std::decay<T>::type>::value ||
+                                                       is_uetype<typename std::decay<T>::type>::value) &&
+                                                   std::is_lvalue_reference<T>::value>::type>
     {
         using type = std::reference_wrapper<typename std::decay<T>::type>;
     };
@@ -424,6 +423,30 @@ private:
         // there may be nullptr ref
         ArgumentHolder(std::tuple<ContextType, ValueType> info)
             : Arg(*TypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
+        {
+        }
+
+        typename ArgumentType<T>::type& GetArgument()
+        {
+            return Arg;
+        }
+
+        void SetRef(ContextType context, ValueType holder)
+        {
+        }
+    };
+
+    template <typename T>
+    struct ArgumentHolder<T,
+        typename std::enable_if<
+            (is_objecttype<typename std::decay<T>::type>::value || is_uetype<typename std::decay<T>::type>::value) &&
+            std::is_lvalue_reference<T>::value && std::is_const<typename std::remove_reference<T>::type>::value>::type>
+    {
+        typename ArgumentType<T>::type Arg;
+
+        // there may be nullptr ref
+        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+            : Arg(*TypeConverter<typename std::decay<T>::type*>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
