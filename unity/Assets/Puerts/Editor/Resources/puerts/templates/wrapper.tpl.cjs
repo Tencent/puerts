@@ -155,10 +155,11 @@ module.exports = function TypingTemplate(data) {
         `
     });
 
-    tt`
+    tt`using Puerts;
+
 namespace PuertsStaticWrap
 {
-    public static class ${data.WrapClassName}
+    public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeTSR(data.GenericArgumentsCount)}>` : ''}
     {
 `
     data.BlittableCopy && tt`
@@ -233,7 +234,7 @@ namespace PuertsStaticWrap
         })
     }
     !data.Constructor || (data.Constructor.OverloadCount != 1) && tt`
-                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to ${data.Name} constructor");
+                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to " + typeof(${data.Name}).GetFriendlyName() + " constructor");
     `
     tt`
     
@@ -661,4 +662,13 @@ function setSelf(type) {
 function paramLenCheck(group) {
     let len = group.get_Item(0).ParameterInfos.Length;
     return group.get_Item(0).HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
+}
+
+function makeTSR(count) {
+    const arr = [];
+    const startCharCode = 'T'.charCodeAt(0);
+    for (var i = 0; i < count; i++) {
+        arr.push(String.fromCharCode(startCharCode - i));
+    }
+    return arr.join(',')
 }

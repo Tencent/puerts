@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace Puerts.Editor
 {
@@ -17,6 +18,28 @@ namespace Puerts.Editor
 
         namespace Wrapper
         {
+            internal class GenericTSRMananger
+            {
+                protected static Dictionary<int, Type> DynamicTypes = new Dictionary<int, Type>();
+
+                protected static ModuleBuilder MB;
+                protected static AssemblyBuilder AB;
+                public static Type GetDynamicGenericType(int index) {
+                    char startChar = 'T';
+                    if (DynamicTypes.ContainsKey(index)) 
+                    {
+                        return DynamicTypes[index];
+                    }
+                    if (AB == null) 
+                    {
+                        AB = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("PuertsEditor_Generic"), AssemblyBuilderAccess.Run);  
+                        MB = AB.DefineDynamicModule("MainModule"); 
+                    }
+                    var TB = MB.DefineType(new String((char)(startChar - index), 1));
+                    DynamicTypes[index] = TB.CreateType();
+                    return DynamicTypes[index];
+                }
+            }
 
             public class LazyMemberCollector
             {
@@ -90,10 +113,13 @@ namespace Puerts.Editor
                 }
             }
 
-            public class TypeGenInfo
+            public class StaticWrapperInfo
             {
                 public string Name;
                 public string WrapClassName;
+                public string CSharpTypeName;
+                public bool IsGenericWrapper;
+                public int GenericArgumentsCount;
                 public string[] Namespaces;
                 public MethodGenInfo[] Methods;
                 public bool IsValueType;
@@ -106,8 +132,35 @@ namespace Puerts.Editor
                 public LazyMemberRegisterInfo[] LazyMembers;
                 public bool BlittableCopy;
 
-                public static TypeGenInfo FromType(Type type, List<Type> genTypes)
+                public bool wroted;
+
+                public static StaticWrapperInfo FromType(Type type, List<Type> genTypes)
                 {
+                    bool IsGenericWrapper = false;
+                    int GenericArgumentsCount = 0;
+                    // 如果是泛型类，且泛型参数对于PuerTS来说是一个NativeObject类型，则Wrapper可以用泛型处理。
+                    // 这里要先识别出NativeObject的参数位置，并将其替换
+                    if (type.IsGenericType) {
+                        var genericArguments = type.GetGenericArguments();
+                        if (
+                            genericArguments
+                            .Where(t=> !t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime))
+                            .Count() > 0
+                        ) {
+                            IsGenericWrapper = true;
+                            type = type.GetGenericTypeDefinition().MakeGenericType(
+                                genericArguments.Select(t=> {
+                                    if (!t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime)) 
+                                    {
+                                        GenericArgumentsCount++;
+                                        return GenericTSRMananger.GetDynamicGenericType(GenericArgumentsCount - 1);
+                                    }
+                                    return t;
+                                }).ToArray()
+                            );
+                        }
+                    }
+                    
                     // 关于懒绑定的成员函数：先全部丢进lazy收集器中。尔后如果发现有同名方法是不lazy的，那么它也要变成不lazy
                     // 做这个事情的原因是目前还没法做到重载级别的lazy。
                     LazyMemberCollector lazyCollector = new LazyMemberCollector();
@@ -199,8 +252,8 @@ namespace Puerts.Editor
                         })
                         .Cast<MethodBase>()
                         .ToList();
-
-                    return new TypeGenInfo
+                    
+                    return new StaticWrapperInfo
                     {
                         WrapClassName = Utils.GetWrapTypeName(type),
                         Namespaces = (extensionMethodsList != null ? extensionMethodsList
@@ -211,6 +264,8 @@ namespace Puerts.Editor
                             .ToArray(),
                         Name = type.GetFriendlyName(),
                         IsValueType = type.IsValueType,
+                        IsGenericWrapper = IsGenericWrapper,
+                        GenericArgumentsCount = GenericArgumentsCount,
 
                         Methods = methodGroups
                             .Select(kv =>
