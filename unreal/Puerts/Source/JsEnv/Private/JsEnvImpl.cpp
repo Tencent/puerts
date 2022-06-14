@@ -3658,6 +3658,9 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->ClassFlags = To->ClassFlags;
         New->ClassCastFlags = To->ClassCastFlags;
         New->ClassConstructor = To->ClassConstructor;
+        New->ClassFlags = New->ClassFlags | EClassFlags::CLASS_Transient;
+        New->ClassFlags = New->ClassFlags ^ EClassFlags::CLASS_Intrinsic;
+        New->SetFlags(EObjectFlags::RF_Transient);
         New->SetSuperStruct(To);
     }
 
