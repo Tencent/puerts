@@ -72,7 +72,7 @@ private:
 };
 
 template <>
-struct ArgumentHolderType<const TCHAR*>
+struct ArgumentBufferType<const TCHAR*>
 {
     using type = TCharStringHolder;
     static constexpr bool is_custom = true;
