@@ -207,7 +207,7 @@ private:
 };
 
 template <>
-struct ArgumentHolderType<const char*>
+struct ArgumentBufferType<const char*>
 {
     using type = StringHolder;
     static constexpr bool is_custom = true;
