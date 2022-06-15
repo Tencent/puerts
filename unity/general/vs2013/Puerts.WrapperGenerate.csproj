@@ -41,6 +41,12 @@
     <Compile Include="..\Src\TxtLoader.cs">
       <Link>Src\TxtLoader.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperTestClass.cs">
+      <Link>Src\UnitTest\WrapperTestClass.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs</Link>
+    </Compile>
     <Compile Include="..\Src\WrapperGenerate.cs">
       <Link>Src\WrapperGenerate.cs</Link>
     </Compile>
@@ -52,12 +58,6 @@
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\WrapperGenTest.cs">
-      <Link>Src\UnitTest\WrapperGenTest.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
-      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup />

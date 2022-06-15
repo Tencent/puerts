@@ -14,7 +14,7 @@
 module.exports = function AutoRegTemplate(types, wrapperInfos) {
     types = toJsArray(types);
     wrapperInfos = toJsArray(wrapperInfos);
-    return `
+    return `using System;
 
 namespace PuertsStaticWrap
 {
@@ -26,7 +26,12 @@ ${
             types.map((type, index)=> {
                 const wrapperInfo = wrapperInfos[index]
                 return '            ' + 
-                `jsEnv.AddLazyStaticWrapLoader(typeof(${type.GetFriendlyName()}), ${wrapperInfo.WrapClassName}${wrapperInfo.IsGenericWrapper ? `<${GetNativeObjectGenericArgumentsList(type).map(type=> type.GetFriendlyName()).join(',')}>` : ''}.GetRegisterInfo);
+                `jsEnv.AddLazyStaticWrapLoader(typeof(${getFriendlyName(type)}), ${wrapperInfo.WrapClassName}${wrapperInfo.IsGenericWrapper ? `<${getNativeObjectGenericArgumentsList(type).map(type=> getFriendlyName(type)).join(',')}>` : ''}.GetRegisterInfo);
+                ${!wrapperInfo.IsGenericWrapper ? "" : `jsEnv.AddLazyStaticWrapLoaderGenericDefinition(
+                    typeof(${getFriendlyName(type)}).GetGenericTypeDefinition(),
+                    new Type[]{ ${toJsArray(type.GetGenericArguments()).map(type=> isNativeObjectType(type) ? 'null' : `typeof(${getFriendlyName(type)})`).join(', ')} },
+                    typeof(${wrapperInfo.WrapClassName}<${getNativeObjectGenericArgumentsList(type).map(type=> getFriendlyName(type)).join(',')}>).GetGenericTypeDefinition()
+                );`}
                 ${wrapperInfo.BlittableCopy ? `${wrapperInfo.WrapClassName}.InitBlittableCopy(jsEnv);`: ''}`;
             }).join('\n')
 }
@@ -45,7 +50,12 @@ function toJsArray(csArr) {
     return arr;
 }
 const CS = require('csharp');
-function GetNativeObjectGenericArgumentsList(type) {
-    return toJsArray(type.GetGenericArguments())
-        .filter(t => !t.IsPrimitive && t != puerts.$typeof(CS.System.String) && t != puerts.$typeof(CS.System.DateTime));
+function getNativeObjectGenericArgumentsList(type) {
+    return toJsArray(type.GetGenericArguments()).filter(isNativeObjectType);
+}
+function isNativeObjectType(t) {
+    return !t.IsPrimitive && t != puerts.$typeof(CS.System.String) && t != puerts.$typeof(CS.System.DateTime);
+}
+function getFriendlyName(type) {
+    return CS.Puerts.TypeExtensions.GetFriendlyName(type);
 }
