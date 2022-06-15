@@ -718,6 +718,21 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 .ToLocalChecked())
         .Check();
 
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFNameToArrayBuffer"),
+            v8::FunctionTemplate::New(Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
+                    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
+                    void* Buff = Ab->GetContents().Data();
+                    ::memcpy(Buff, &Name, sizeof(FName));
+                    Info.GetReturnValue().Set(Ab);
+                })
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
     PuertsObj
         ->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"),
             v8::FunctionTemplate::New(

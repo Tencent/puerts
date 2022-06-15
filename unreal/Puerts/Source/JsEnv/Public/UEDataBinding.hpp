@@ -110,6 +110,14 @@ struct Converter<FName>
 
     static FName toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+            if (Ab->GetContents().ByteLength() == sizeof(FName))
+            {
+                return *static_cast<FName*>(Ab->GetContents().Data());
+            }
+        }
         return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
     }
 

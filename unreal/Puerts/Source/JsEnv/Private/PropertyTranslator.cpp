@@ -402,7 +402,16 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        NameProperty->SetPropertyValue(ValuePtr, FName(*FV8Utils::ToFString(Isolate, Value)));
+        if (Value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
+            if (Ab->GetContents().ByteLength() == sizeof(FName))
+            {
+                NameProperty->SetPropertyValue(ValuePtr, *static_cast<FName*>(Ab->GetContents().Data()));
+                return true;
+            }
+        }
+        NameProperty->SetPropertyValue(ValuePtr, FV8Utils::ToFName(Isolate, Value));
         return true;
     }
 };
