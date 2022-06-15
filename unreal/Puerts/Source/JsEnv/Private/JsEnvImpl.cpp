@@ -1147,6 +1147,14 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     }
 }
 
+bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
+    return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
+}
+
 void FJsEnvImpl::LowMemoryNotification()
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -1158,13 +1166,23 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
-void FJsEnvImpl::MinorGarbageCollection()
+void FJsEnvImpl::RequestMinorGarbageCollectionForTesting()
 {
 #ifdef THREAD_SAFE
     v8::Locker Locker(MainIsolate);
 #endif
 #ifndef WITH_QUICKJS
     MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+#endif
+}
+
+void FJsEnvImpl::RequestFullGarbageCollectionForTesting()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
+#ifndef WITH_QUICKJS
+    MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
 #endif
 }
 
