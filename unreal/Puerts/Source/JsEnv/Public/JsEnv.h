@@ -31,11 +31,15 @@ class JSENV_API IJsEnv
 public:
     virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments) = 0;
 
+    virtual bool IdleNotificationDeadline(double DeadlineInSeconds) = 0;
+
     virtual void LowMemoryNotification() = 0;
 
-    virtual void MinorGarbageCollection() = 0;
+    virtual void RequestMinorGarbageCollectionForTesting() = 0;
 
-    virtual void WaitDebugger(double timeout) = 0;
+    virtual void RequestFullGarbageCollectionForTesting() = 0;
+
+    virtual void WaitDebugger(double Timeout) = 0;
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
     virtual void TryBindJs(const class UObjectBase* InObject) = 0;
@@ -64,13 +68,18 @@ public:
 
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments = TArray<TPair<FString, UObject*>>());
 
+    bool IdleNotificationDeadline(double DeadlineInSeconds);
+
     void LowMemoryNotification();
 
     // equivalent to Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection)
     // It is only valid to call this function if --expose_gc was specified
-    void MinorGarbageCollection();
+    void RequestMinorGarbageCollectionForTesting();
 
-    void WaitDebugger(double timeout = 0);
+    // equivalent to Isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection)
+    void RequestFullGarbageCollectionForTesting();
+
+    void WaitDebugger(double Timeout = 0);
 
     void TryBindJs(const class UObjectBase* InObject);
 
