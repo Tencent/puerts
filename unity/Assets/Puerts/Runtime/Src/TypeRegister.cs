@@ -14,6 +14,66 @@ namespace Puerts
 {
     internal class TypeRegister
     {
+        internal class GenericWrapperTree
+        {
+            private class NativeObjectType {}
+            private class Node
+            {
+                public Type WrapperTypeDefinition;
+                public Dictionary<Type, Node> Branchs = new Dictionary<Type, Node>();
+            }
+
+            private static Dictionary<Type, Node> definitionTypeNodes = new Dictionary<Type, Node>();
+
+
+            public static Type FindWrapperDefinition(Type genericType)
+            {
+                Type typeDefinition = genericType.GetGenericTypeDefinition();
+                if (!definitionTypeNodes.ContainsKey(typeDefinition)) 
+                {
+                    return null;
+                }
+
+                Type[] genericArgumentsType = genericType.GetGenericArguments();
+                Node node = definitionTypeNodes[typeDefinition];
+                foreach (Type type_ in genericArgumentsType)
+                {
+                    Type type = type_;
+                    if (type == null) type = typeof(NativeObjectType);
+                    if (!node.Branchs.ContainsKey(type)) 
+                    {
+                        return null;
+                    }
+                    node = node.Branchs[type];
+                }
+                return node.WrapperTypeDefinition;
+            }
+            public static void AddWrapperTypeDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperTypeDefinition)
+            {
+                Node node;
+                if (!definitionTypeNodes.ContainsKey(typeDefinition)) 
+                {
+                    node = new Node();
+                    definitionTypeNodes.Add(typeDefinition, node);
+                } 
+                else 
+                {
+                    node = definitionTypeNodes[typeDefinition];
+                }
+                foreach (Type type_ in genericArgumentsType)
+                {
+                    Type type = type_;
+                    if (type == null) type = typeof(NativeObjectType);
+                    if (!node.Branchs.ContainsKey(type)) 
+                    {
+                        node.Branchs.Add(type, new Node());
+                    }
+                    node = node.Branchs[type];
+                }
+                node.WrapperTypeDefinition = wrapperTypeDefinition;
+            }
+        }
+
         public TypeRegister(JsEnv jsEnv)
         {
             this.jsEnv = jsEnv;
@@ -424,16 +484,39 @@ namespace Puerts
             lazyStaticWrapLoaders.Add(type, lazyStaticWrapLoader);
         }
 
+        internal void AddLazyStaticWrapLoaderGenericDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperDefinition)
+        {
+            GenericWrapperTree.AddWrapperTypeDefinition(typeDefinition, genericArgumentsType, wrapperDefinition);
+        }
+
         // #lizard forgives
         private int RegisterType(IntPtr isolate, Type type, bool includeNoPublic)
         {
             TypeRegisterInfo registerInfo = null;
 
+            // find WrapperLoader, if the type is genericType, try to find the genericWrapperDefinition
             if (lazyStaticWrapLoaders.ContainsKey(type))
             {
-                registerInfo = lazyStaticWrapLoaders[type]();
-                lazyStaticWrapLoaders.Remove(type);
+                if (lazyStaticWrapLoaders[type] != null)
+                {
+                    registerInfo = lazyStaticWrapLoaders[type]();
+                    lazyStaticWrapLoaders.Remove(type);
+                }
             }
+            else if (type.IsGenericType)
+            {
+                Type WrapperDefinition = GenericWrapperTree.FindWrapperDefinition(type);
+                if (WrapperDefinition == null) 
+                {
+                    lazyStaticWrapLoaders.Add(type, null);
+                }
+                else
+                {
+                    Type WrapperType = WrapperDefinition.MakeGenericType(type.GetGenericArguments());
+                    registerInfo = WrapperType.GetMethod("GetRegisterInfo").Invoke(null, null) as TypeRegisterInfo;
+                }
+            }
+
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             if (includeNoPublic)

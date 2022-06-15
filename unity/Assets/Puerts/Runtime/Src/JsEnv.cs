@@ -337,6 +337,19 @@ namespace Puerts
 #endif
         }
 
+        public void AddLazyStaticWrapLoaderGenericDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperDefinition)
+        {
+            
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
+                TypeRegister.AddLazyStaticWrapLoaderGenericDefinition(typeDefinition, genericArgumentsType, wrapperDefinition);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
         private readonly List<JSFunctionCallback> callbacks = new List<JSFunctionCallback>();
 
         internal void InvokeCallback(IntPtr isolate, int callbackIdx, IntPtr info, IntPtr self, int paramLen)
