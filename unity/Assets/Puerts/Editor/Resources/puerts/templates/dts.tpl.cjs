@@ -87,7 +87,7 @@ declare module 'csharp' {
                     t`
                     { 
                         ${type.DelegateDef.replace('=>', ':')}; 
-                        Invoke?: ${type.DelegateDef}; 
+                        Invoke?: ${type.DelegateDef};
                     }
                     ${(!type.IsGenericTypeDefinition ? `var ${type.Name}: { new (func: ${type.DelegateDef}): ${type.Name}; }` : '')}
                     `;
@@ -146,7 +146,7 @@ declare module 'csharp' {
                 }
 
                 // extension methods start
-                if (type.ExtensionMethods.Length > 0) {
+                if (type.ExtensionMethods.Length > 0 && !type.IsEnum) {
                     t.indent = 12;
                     t`
                     ${type.Document}
