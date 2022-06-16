@@ -739,13 +739,15 @@ namespace Puerts
             lock (jsEnvs)
             {
                 if (disposed) return;
+#if UNITY_EDITOR
                 #region // 解决调试中打开预制体后, 下次无法调试
 
                 if (this.debugPort != -1) {
                     PuertsDLL.DestroyInspector(isolate);
                 }
-
+    
                 #endregion
+#endif                  
                 jsEnvs[Idx] = null;
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
