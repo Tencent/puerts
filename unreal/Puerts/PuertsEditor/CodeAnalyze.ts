@@ -1536,6 +1536,8 @@ function watch(configFilePath:string) {
     function getDefaultLibLocation(): string {
         return getDirectoryPath(normalizePath(customSystem.getExecutingFilePath()));
     }
+
+    const scriptSnapshotsCache = new Map<string, {version: string, scriptSnapshot:ts.IScriptSnapshot}>();
   
     // Create the language service host to allow the LS to communicate with the host
     const servicesHost: ts.LanguageServiceHost = {
@@ -1551,12 +1553,30 @@ function watch(configFilePath:string) {
       },
       getScriptSnapshot: fileName => {
         if (!customSystem.fileExists(fileName)) {
-            console.log("getScriptSnapshot: file not existed! path=" + fileName);
+            console.error("getScriptSnapshot: file not existed! path=" + fileName);
             return undefined;
+        }
+
+        if (!(fileName in fileVersions)) {
+            fileVersions[fileName] = {version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false};
+        }
+
+        if (!scriptSnapshotsCache.has(fileName)) {
+            scriptSnapshotsCache.set(fileName, {
+                version:fileVersions[fileName].version,
+                scriptSnapshot: ts.ScriptSnapshot.fromString(customSystem.readFile(fileName))
+            });
+        }
+
+        let scriptSnapshotsInfo = scriptSnapshotsCache.get(fileName);
+
+        if (scriptSnapshotsInfo.version != fileVersions[fileName].version) {
+            scriptSnapshotsInfo.version = fileVersions[fileName].version;
+            scriptSnapshotsInfo.scriptSnapshot = ts.ScriptSnapshot.fromString(customSystem.readFile(fileName));
         }
         //console.log("getScriptSnapshot:"+ fileName + ",in:" + new Error().stack)
   
-        return ts.ScriptSnapshot.fromString(customSystem.readFile(fileName));
+        return scriptSnapshotsInfo.scriptSnapshot;
       },
       getCurrentDirectory: customSystem.getCurrentDirectory,
       getCompilationSettings: () => options,
