@@ -166,6 +166,9 @@ void FJsEnvImpl::StartPolling()
 void FJsEnvImpl::UvRunOnce()
 {
     auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
@@ -178,6 +181,10 @@ void FJsEnvImpl::UvRunOnce()
     if (TryCatch.HasCaught())
     {
         Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+    }
+    else
+    {
+        static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform())->DrainTasks(Isolate);
     }
 
     LastJob = nullptr;
