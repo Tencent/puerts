@@ -947,7 +947,7 @@ function getCustomSystem() {
             return puerts_1.$unref(data);
         }
         else {
-            console.warn("readFile: read file fail! path=" + path);
+            console.warn("readFile: read file fail! path=" + path + ", stack:" + new Error().stack);
             return undefined;
         }
     }
@@ -1178,15 +1178,25 @@ function watch(configFilePath) {
                 fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false };
             }
             if (!scriptSnapshotsCache.has(fileName)) {
+                const sourceFile = customSystem.readFile(fileName);
+                if (!sourceFile) {
+                    console.error("getScriptSnapshot: read file failed! path=" + fileName);
+                    return undefined;
+                }
                 scriptSnapshotsCache.set(fileName, {
                     version: fileVersions[fileName].version,
-                    scriptSnapshot: ts.ScriptSnapshot.fromString(customSystem.readFile(fileName))
+                    scriptSnapshot: ts.ScriptSnapshot.fromString(sourceFile)
                 });
             }
             let scriptSnapshotsInfo = scriptSnapshotsCache.get(fileName);
             if (scriptSnapshotsInfo.version != fileVersions[fileName].version) {
+                const sourceFile = customSystem.readFile(fileName);
+                if (!sourceFile) {
+                    console.error("getScriptSnapshot: read file failed! path=" + fileName);
+                    return undefined;
+                }
                 scriptSnapshotsInfo.version = fileVersions[fileName].version;
-                scriptSnapshotsInfo.scriptSnapshot = ts.ScriptSnapshot.fromString(customSystem.readFile(fileName));
+                scriptSnapshotsInfo.scriptSnapshot = ts.ScriptSnapshot.fromString(sourceFile);
             }
             //console.log("getScriptSnapshot:"+ fileName + ",in:" + new Error().stack)
             return scriptSnapshotsInfo.scriptSnapshot;
