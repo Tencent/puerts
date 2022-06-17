@@ -81,7 +81,7 @@ global.PuertsWebGL = {
                 CreateJSEngineWithExternalEnv: function () { },
                 DestroyJSEngine: function () { },
                 GetLastExceptionInfo: function (isolate: IntPtr,/* out int */strlen: any) {
-                    return engine.lastExceptionInfo;
+                    return engine.JSStringToCSString(engine.lastExceptionInfo, strlen);
                 },
                 LowMemoryNotification: function (isolate: IntPtr) {
 
