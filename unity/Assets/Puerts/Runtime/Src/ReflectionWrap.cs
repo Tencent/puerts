@@ -70,6 +70,10 @@ namespace Puerts
 
         private GeneralSetter[] byRefValueSetFuncs = null;
 
+#if NET_2_0 || NET_2_0_SUBSET
+        public object[] defaultValueArray;
+#endif 
+
         public Parameters(ParameterInfo[] parameterInfos, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager)
         {
             this.generalGetterManager = generalGetterManager;
@@ -82,6 +86,9 @@ namespace Puerts
             byRef = new bool[parameterInfos.Length];
             isOut = new bool[parameterInfos.Length];
             beginOptional = this.length + 1;
+#if NET_2_0 || NET_2_0_SUBSET
+            List<object> defaultValueList = new List<object>();
+#endif 
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 var parameterInfo = parameterInfos[i];
@@ -104,7 +111,23 @@ namespace Puerts
                 {
                     beginOptional = i;
                 }
+#if NET_2_0 || NET_2_0_SUBSET
+                var defaultValue = parameterInfo.DefaultValue;
+                if (parameterInfo.IsOptional)
+                {
+                    if (defaultValue != null && defaultValue.GetType() != parameterInfo.ParameterType)
+                    {
+                        defaultValue = defaultValue.GetType() == typeof(Missing) ? 
+                            (parameterInfo.ParameterType.IsValueType() ? Activator.CreateInstance(parameterInfo.ParameterType) : Missing.Value) 
+                            : Convert.ChangeType(defaultValue, parameterInfo.ParameterType);
+                    }
+                }
+                defaultValueList.Add(parameterInfo.IsOptional ? defaultValue : null);
+#endif 
             }
+#if NET_2_0 || NET_2_0_SUBSET
+            defaultValueArray = defaultValueList.ToArray();
+#endif 
         }
 
         public bool IsMatch(CallInfo callInfo)
@@ -194,7 +217,11 @@ namespace Puerts
                 }
 				else if (i >= callInfo.Length && i >= beginOptional)
                 {
+#if NET_2_0 || NET_2_0_SUBSET
+                    args[i] = defaultValueArray[i];
+#else
                     args[i] = Type.Missing;
+#endif
                 }
                 else
                 {
@@ -243,7 +270,6 @@ namespace Puerts
         ConstructorInfo constructorInfo = null;
 
         Type type = null;
-
 
         GeneralGetterManager generalGetterManager = null;
 
