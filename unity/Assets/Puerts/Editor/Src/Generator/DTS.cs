@@ -165,6 +165,7 @@ namespace Puerts.Editor
                         result.AddRange(info.ExtensionMethods.Select(m => new TsMethodGenInfo()
                         {
                             Name = m.Name,
+                            TypeName = m.TypeName,
                             Document = m.Document,
                             ParameterInfos = m.ParameterInfos,
                             IsConstructor = m.IsConstructor,
