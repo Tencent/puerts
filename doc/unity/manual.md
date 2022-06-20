@@ -1,6 +1,6 @@
 # Puerts-Unity使用手册
 
-#### 1. [安装PuerTS](doc/unity/install.md)
+#### 1. [安装PuerTS](./install.md)
 
 
 #### 2.c#标签介绍
