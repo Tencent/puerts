@@ -487,23 +487,25 @@ private:
     };
 
     template <typename T>
-    struct ArgumentHolder<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+    struct ArgumentHolder<T,
+        typename std::enable_if<is_script_type<typename std::remove_pointer<T>::type>::value &&
+                                !std::is_const<typename std::remove_pointer<T>::type>::value && std::is_pointer<T>::value>::type>
     {
-        T Buf;
+        using BuffType = typename std::remove_pointer<T>::type;
+        BuffType Buf;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
-            : Buf(TypeConverter<T*>::toCpp(std::get<0>(info), std::get<1>(info)))
+        ArgumentHolder(std::tuple<ContextType, ValueType> info) : Buf(TypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
-        T* GetArgument()
+        T GetArgument()
         {
             return &Buf;
         }
 
         void SetRef(ContextType context, ValueType holder)
         {
-            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Buf));
+            UpdateRefValue(context, holder, converter::Converter<BuffType>::toScript(context, Buf));
         }
     };
 
