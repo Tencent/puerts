@@ -41,6 +41,10 @@ struct ArgumentBufferType
 #define MakeVariable(M) MakeProperty(M)
 #define MakeReadonlyVariable(M) MakeReadonlyProperty(M)
 #define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call), ::puerts::FuncCallWrapper<decltype(M), M>::info()
+#define MakeFunctionWithDefaultValues(M, ...)                                                   \
+    [](::puerts::CallbackInfoType info)                                                         \
+    { ::puerts::FuncCallWrapper<decltype(M), M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
+        ::puerts::FuncCallWrapper<decltype(M), M>::info()
 #define SelectFunction(SIGNATURE, M) \
     &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
 #define SelectFunction_PtrRet(SIGNATURE, M) \
@@ -512,15 +516,18 @@ private:
     template <typename T>
     struct ArgumentHolder<T, typename std::enable_if<ArgumentBufferType<T>::is_custom>::type>
     {
+        typename ArgumentType<T>::type Arg;
+
         typename ArgumentBufferType<T>::type Buf;
 
         ArgumentHolder(std::tuple<ContextType, ValueType> info) : Buf(std::get<0>(info), std::get<1>(info))
         {
+            Arg = Buf.Data();
         }
 
         typename ArgumentType<T>::type GetArgument()
         {
-            return Buf.Data();
+            return Arg;
         }
 
         void SetRef(ContextType context, ValueType holder)
@@ -548,10 +555,40 @@ private:
         }
     };
 
-    template <typename Func, size_t... index>
+    template <int Skip, int Pos, typename... FullArgs>
+    struct DefaultValueSetter;
+
+    template <int Skip, int Pos, typename T, typename... FullArgs>
+    struct DefaultValueSetter<Skip, Pos, T, FullArgs...> : DefaultValueSetter<Skip - 1, Pos + 1, FullArgs...>
+    {
+    };
+
+    template <int Pos, typename T, typename... FullArgs>
+    struct DefaultValueSetter<0, Pos, T, FullArgs...>
+    {
+        template <class T1, class... DefaultArguments>
+        static void Set(ArgumentsHolder& cppArgHolders, int argCount, T1 defaultValue, const DefaultArguments&... rest)
+        {
+            if (argCount <= Pos)
+            {
+                std::get<Pos>(cppArgHolders).Arg = defaultValue;
+            }
+            DefaultValueSetter<0, Pos + 1, FullArgs...>::Set(cppArgHolders, argCount, rest...);
+        }
+    };
+
+    template <int Pos>
+    struct DefaultValueSetter<0, Pos>
+    {
+        static void Set(ArgumentsHolder& cppArgHolders, int argCount)
+        {
+        }
+    };
+
+    template <typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        call(Func& func, CallbackInfoType info, std::index_sequence<index...>)
+        call(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
         auto context = GetContext(info);
 
@@ -559,6 +596,9 @@ private:
             return false;
 
         ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+
+        DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
+            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...);
 
@@ -567,10 +607,10 @@ private:
         return true;
     }
 
-    template <typename Func, size_t... index>
+    template <typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        call(Func& func, CallbackInfoType info, std::index_sequence<index...>)
+        call(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
         auto context = GetContext(info);
 
@@ -578,6 +618,9 @@ private:
             return false;
 
         ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+
+        DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
+            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         SetReturn(info, ReturnConverter<Ret>::Convert(
                             context, std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
@@ -587,10 +630,10 @@ private:
         return true;
     }
 
-    template <typename Ins, typename Func, size_t... index>
+    template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>)
+        callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
         auto context = GetContext(info);
 
@@ -606,6 +649,9 @@ private:
             return false;
 
         ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+
+        DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
+            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         (self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...);
 
@@ -614,10 +660,10 @@ private:
         return true;
     }
 
-    template <typename Ins, typename Func, size_t... index>
+    template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>)
+        callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
         auto context = GetContext(info);
 
@@ -633,6 +679,9 @@ private:
             return false;
 
         ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+
+        DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
+            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         SetReturn(info, ReturnConverter<Ret>::Convert(context,
                             std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
@@ -643,16 +692,19 @@ private:
     }
 
 public:
-    template <typename Func>
-    static bool call(Func&& func, CallbackInfoType info)
+    template <typename Func, class... DefaultArguments>
+    static bool call(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        return call(func, info, std::make_index_sequence<ArgsLength>());
+        static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+        return call(func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
 
-    template <typename Ins, typename Func>
-    static bool callMethod(Func&& func, CallbackInfoType info)
+    template <typename Ins, typename Func, class... DefaultArguments>
+    static bool callMethod(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        return callMethod<Ins>(func, info, std::make_index_sequence<ArgsLength>());
+        static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+        return callMethod<Ins>(
+            func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
 };
 
@@ -683,6 +735,12 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer>
             ThrowException(info, "invalid parameter!");
         }
     }
+    template <class... DefaultArguments>
+    static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    {
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        Helper::call(func, info, std::forward<DefaultArguments>(defaultValues)...);
+    }
     static const CFunctionInfo* info()
     {
         return CFunctionInfoImpl<Ret, Args...>::get();
@@ -710,6 +768,12 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer>
         {
             ThrowException(info, "invalid parameter!");
         }
+    }
+    template <class... DefaultArguments>
+    static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    {
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info()
     {
@@ -739,6 +803,12 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer>
         {
             ThrowException(info, "invalid parameter!");
         }
+    }
+    template <class... DefaultArguments>
+    static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    {
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info()
     {
