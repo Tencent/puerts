@@ -15,8 +15,13 @@ puerts.loadType = global.__tgjsLoadType;
 delete global.__tgjsLoadType;
 puerts.getNestedTypes = global.__tgjsGetNestedTypes;
 delete global.__tgjsGetNestedTypes;
+puerts.getGenericMethod = global.__tgjsGetGenericMethod;
+delete global.__tgjsGetGenericMethod;
 
 puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
     return eval(script);
 }
 delete global.__tgjsEvalScript;
+
+puerts.getLastException = global.__puertsGetLastException
+delete global.__puertsGetLastException;

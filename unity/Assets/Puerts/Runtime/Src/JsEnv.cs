@@ -477,7 +477,7 @@ namespace Puerts
         {
             try
             {
-                UnityEngine.Debug.Log(paramLen);
+                System.Console.WriteLine("GetGenericMethod");
                 if (paramLen < 3) {
                     throw new Exception("invalid arguments length");
                 }
@@ -504,7 +504,7 @@ namespace Puerts
                     genericArguments[i - 2] = TypeRegister.GetType(argTypeId);
                 }
 
-                PuertsDLL.SetGlobalFunction(isolate, "__tgjsLastGenericMethod", StaticCallbacks.JsEnvCallbackWrap, AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke));
+                PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke));
             }
             catch(Exception e)
             {

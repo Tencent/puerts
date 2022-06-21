@@ -61,6 +61,9 @@
     <Compile Include="..\Src\UnitTest\ExceptionTest.cs">
       <Link>Src\UnitTest\ExceptionTest.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\GenericTest.cs">
+      <Link>Src\UnitTest\GenericTest.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\GenTest.cs">
       <Link>Src\UnitTest\GenTest.cs</Link>
     </Compile>

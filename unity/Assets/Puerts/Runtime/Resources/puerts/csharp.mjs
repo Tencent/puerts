@@ -147,10 +147,8 @@ function makeGeneric(genericTypeInfo, ...genericArgs) {
 
 function makeGenericMethod(cls, methodName, ...genericArgs) {
     if (cls && typeof methodName == 'string' && genericArgs && genericArgs.length > 0) {
-        puerts.getGenericMethod(puerts.$typeof(cls), methodName, ...genericArgs);
-        var func = global.__tgjsLastGenericMethod
-        delete global.__tgjsLastGenericMethod;
-        return func;
+        return puerts.getGenericMethod(puerts.$typeof(cls), methodName, ...genericArgs);
+        
     } else {
         throw new Error("invalid arguments for makeGenericMethod");
     }
