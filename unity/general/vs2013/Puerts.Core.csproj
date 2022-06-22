@@ -75,9 +75,6 @@
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticTranslate.cs">
       <Link>Assets\Puerts\Runtime\Src\StaticTranslate.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticWrapRegister.cs">
-      <Link>Assets\Puerts\Runtime\Src\StaticWrapRegister.cs</Link>
-    </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
       <Link>Assets\Puerts\Runtime\Src\TypeExtensions.cs</Link>
     </Compile>
@@ -90,11 +87,17 @@
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypedValue.cs">
       <Link>Assets\Puerts\Runtime\Src\TypedValue.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\ReflectionWrap.cs">
-      <Link>Assets\Puerts\Runtime\Src\ReflectionWrap.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\ReflectionWrap.cs">
+      <Link>Assets\Puerts\Runtime\Src\Wrapper\ReflectionWrap.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\LazyWrap.cs">
-      <Link>Assets\Puerts\Runtime\Src\LazyWrap.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\LazyWrap.cs">
+      <Link>Assets\Puerts\Runtime\Src\Wrapper\LazyWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\GenericMethodWrap.cs">
+      <Link>Assets\Puerts\Runtime\Src\Wrapper\GenericMethodWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs">
+      <Link>Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Editor\Src\CJSImporter.cs">
       <Link>Assets\Puerts\Editor\Src\CJSImporter.cs</Link>

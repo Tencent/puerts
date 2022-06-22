@@ -456,26 +456,6 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void ListGenericTest()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            var res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                const PUERTS = require('puerts');
-                let obj = new CS.Puerts.UnitTest.DerivedClass();
-                let List = PUERTS.$generic(CS.System.Collections.Generic.List$1,CS.System.Int32);
-                let ls = new List();
-                ls.Add(1);
-                ls.Add(2);
-                ls.Add(3);
-                let res = obj.TestList(ls);
-                res;
-            ");
-            jsEnv.Dispose();
-            Assert.AreEqual(res, 6);
-        }
-
-        [Test]
         public void TryCatchFinallyTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
@@ -511,26 +491,7 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
             Assert.AreEqual(res, "try-try-finally-catch-finally");
         }
-
-        [Test]
-        public void ListRangeTest()
-        {
-            Assert.Catch(() =>
-            {
-                var jsEnv = new JsEnv(new TxtLoader());
-                jsEnv.Eval(@"
-                    const CS = require('csharp');
-                    const PUERTS = require('puerts');
-                    let obj = new CS.Puerts.UnitTest.DerivedClass();
-                    let List = PUERTS.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
-                    let ls = new List();
-                    ls.Add(1);
-                    ls.Add(2);
-                    let res = obj.testListRange(ls,2);"
-                );
-                jsEnv.Dispose();
-            });
-        }
+        
         [Test]
         public void DefaultParamTest()
         {

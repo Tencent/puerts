@@ -132,6 +132,7 @@ namespace Puerts
 
             // 把JSEnv的id和Callback的id拼成一个long存起来，并将StaticCallbacks.JsEnvCallbackWrap注册给V8。而后通过StaticCallbacks.JsEnvCallbackWrap从long中取出函数和envid并调用。
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsRegisterTickHandler", StaticCallbacks.JsEnvCallbackWrap, AddCallback(RegisterTickHandler));
+            PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetGenericMethod", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetGenericMethod));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsLoadType", StaticCallbacks.JsEnvCallbackWrap, AddCallback(LoadType));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
@@ -337,19 +338,6 @@ namespace Puerts
 #endif
         }
 
-        public void AddLazyStaticWrapLoaderGenericDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperDefinition)
-        {
-            
-#if THREAD_SAFE
-            lock (this)
-            {
-#endif
-                TypeRegister.AddLazyStaticWrapLoaderGenericDefinition(typeDefinition, genericArgumentsType, wrapperDefinition);
-#if THREAD_SAFE
-            }
-#endif
-        }
-
         private readonly List<JSFunctionCallback> callbacks = new List<JSFunctionCallback>();
 
         internal void InvokeCallback(IntPtr isolate, int callbackIdx, IntPtr info, IntPtr self, int paramLen)
@@ -483,6 +471,45 @@ namespace Puerts
             }
 
             return type;
+        }
+
+        void GetGenericMethod(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
+        {
+            try
+            {
+                System.Console.WriteLine("GetGenericMethod");
+                if (paramLen < 3) {
+                    throw new Exception("invalid arguments length");
+                }
+                var csTypeJSValue = PuertsDLL.GetArgumentValue(info, 0);
+                if (PuertsDLL.GetJsValueType(isolate, csTypeJSValue, false) != JsValueType.NativeObject) {
+                    throw new Exception("the class must be a constructor");
+                }
+                Type type = StaticTranslate<Type>.Get(Index, isolate, NativeValueApi.GetValueFromArgument, csTypeJSValue, false);
+                string methodName = PuertsDLL.GetStringFromValue(isolate, PuertsDLL.GetArgumentValue(info, 1), false);
+                
+                var genericArguments = new Type[paramLen - 2];
+                for (int i = 2; i < paramLen; i++)
+                {
+                    var value = PuertsDLL.GetArgumentValue(info, i);
+                    if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) 
+                    {
+                        throw new Exception("invalid Type for generic arguments " + (i - 2));
+                    };
+                    var argTypeId = PuertsDLL.GetTypeIdFromValue(isolate, value, false);
+                    if (argTypeId == -1) 
+                    {
+                        throw new Exception("invalid Type for generic arguments " + (i - 2));
+                    };
+                    genericArguments[i - 2] = TypeRegister.GetType(argTypeId);
+                }
+
+                PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke));
+            }
+            catch(Exception e)
+            {
+                PuertsDLL.ThrowException(isolate, "GetGenericMethod throw c# exception:" + e.Message + ",stack:" + e.StackTrace);
+            }
         }
 
         void LoadType(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)

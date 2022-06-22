@@ -11,7 +11,9 @@ declare module "puerts" {
 
     function $promise<T>(x: $Task<T>) : Promise<T>;
     
-    function $generic<T extends new (...args:any[]) => any> (genericType :T, ...genericArguments: (typeof __Puerts_CSharpEnum | (new (...args:any[]) => any))[]) : T;
+    function $generic<T extends new (...args:any[]) => any> (genericType: T, ...genericArguments: (typeof __Puerts_CSharpEnum | (new (...args:any[]) => any))[]) : T;
+
+    function $genericMethod(genericType: new (...args:any[]) => any, methodName: string, ...genericArguments: (typeof __Puerts_CSharpEnum | (new (...args:any[]) => any))[]) : (...args: any[]) => any;
     
     function $typeof(x : new (...args:any[]) => any) : System.Type;
     

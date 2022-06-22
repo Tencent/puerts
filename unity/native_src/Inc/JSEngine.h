@@ -223,7 +223,7 @@ private:
 
     V8Inspector* Inspector;
 
-private:
+public:
     v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
 };
 }
