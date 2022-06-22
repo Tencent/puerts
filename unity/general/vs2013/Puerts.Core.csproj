@@ -45,35 +45,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\ArgumentHelper.cs">
-      <Link>Assets\Puerts\Runtime\Src\ArgumentHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\DataTranslate.cs">
-      <Link>Assets\Puerts\Runtime\Src\DataTranslate.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\GenericDelegate.cs">
-      <Link>Assets\Puerts\Runtime\Src\GenericDelegate.cs</Link>
-    </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\JsEnv.cs">
       <Link>Assets\Puerts\Runtime\Src\JsEnv.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Loader.cs">
       <Link>Assets\Puerts\Runtime\Src\Loader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\NativeValueApiGeneric.cs">
-      <Link>Assets\Puerts\Runtime\Src\NativeValueApiGeneric.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\ObjectPool.cs">
-      <Link>Assets\Puerts\Runtime\Src\ObjectPool.cs</Link>
-    </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\PuertsDLL.cs">
       <Link>Assets\Puerts\Runtime\Src\PuertsDLL.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticCallbacks.cs">
       <Link>Assets\Puerts\Runtime\Src\StaticCallbacks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticTranslate.cs">
-      <Link>Assets\Puerts\Runtime\Src\StaticTranslate.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
       <Link>Assets\Puerts\Runtime\Src\TypeExtensions.cs</Link>
@@ -84,8 +66,32 @@
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Utils.cs">
       <Link>Assets\Puerts\Runtime\Src\Utils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypedValue.cs">
-      <Link>Assets\Puerts\Runtime\Src\TypedValue.cs</Link>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Translator\ArgumentHelper.cs">
+      <Link>Assets\Puerts\Runtime\Src\Translator\ArgumentHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Translator\ObjectPool.cs">
+      <Link>Assets\Puerts\Runtime\Src\Translator\ObjectPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Translator\DataTranslate.cs">
+      <Link>Assets\Puerts\Runtime\Src\Translator\DataTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Translator\NativeValueApiGeneric.cs">
+      <Link>Assets\Puerts\Runtime\Src\Translator\NativeValueApiGeneric.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Translator\StaticTranslate.cs">
+      <Link>Assets\Puerts\Runtime\Src\Translator\StaticTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\JSType\TypedValue.cs">
+      <Link>Assets\Puerts\Runtime\Src\JSType\TypedValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\JSType\GenericDelegate.cs">
+      <Link>Assets\Puerts\Runtime\Src\JSType\GenericDelegate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\JSType\JSObject.cs">
+      <Link>Assets\Puerts\Runtime\Src\JSType\JSObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\JSType\ArrayBuffer.cs">
+      <Link>Assets\Puerts\Runtime\Src\JSType\ArrayBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\ReflectionWrap.cs">
       <Link>Assets\Puerts\Runtime\Src\Wrapper\ReflectionWrap.cs</Link>
