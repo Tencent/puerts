@@ -157,7 +157,7 @@ namespace Puerts
                             // 可能的优化： 为TypedValue设计一个新的JSValueType，这样这里就不需要先取值
                             if (jsCallInfo.Values[i] == null)
                             {
-                                jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
+                                jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(generalGetterManager.jsEnv.Idx, jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
                             }
                             if (jsCallInfo.Values[i].GetType() == paramTypes[i])
                             {
@@ -173,7 +173,7 @@ namespace Puerts
                     {
                         if (jsCallInfo.Values[i] == null)
                         {
-                            jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
+                            jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(generalGetterManager.jsEnv.Idx, jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
                         }
                         if (!paramTypes[i].IsAssignableFrom(jsCallInfo.Values[i].GetType()))
                         {
@@ -199,7 +199,7 @@ namespace Puerts
                     for (int j = i; j < callInfo.Length; j++)
                     {
                         paramArray.SetValue(
-                            translateFunc(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[j],
+                            translateFunc(generalGetterManager.jsEnv.Idx, callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[j],
                                 false), j - i);
                     }
 
@@ -220,7 +220,7 @@ namespace Puerts
                         }
                         else
                         {
-                            args[i] = argsTranslateFuncs[i](callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], paramIsByRef[i]);
+                            args[i] = argsTranslateFuncs[i](generalGetterManager.jsEnv.Idx, callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], paramIsByRef[i]);
                         }
                     }
                 }
@@ -234,7 +234,7 @@ namespace Puerts
             {
                 if (paramIsByRef[i])
                 {
-                    byRefValueSetFuncs[i](callInfo.Isolate, NativeValueApi.SetValueToByRefArgument, callInfo.NativePtrs[i], args[i]);
+                    byRefValueSetFuncs[i](generalGetterManager.jsEnv.Idx, callInfo.Isolate, NativeValueApi.SetValueToByRefArgument, callInfo.NativePtrs[i], args[i]);
                 }
             }
         }
@@ -310,7 +310,7 @@ namespace Puerts
                 }
                 object ret = methodInfo.Invoke(target, args);
                 parameters.FillByRefParameters(jsCallInfo);
-                resultSetter(jsCallInfo.Isolate, NativeValueApi.SetValueToResult, jsCallInfo.Info, ret);
+                resultSetter(generalGetterManager.jsEnv.Idx, jsCallInfo.Isolate, NativeValueApi.SetValueToResult, jsCallInfo.Info, ret);
             }
             finally
             {
@@ -334,10 +334,13 @@ namespace Puerts
 
         private GeneralGetter translateFunc;
 
+        private int jsEnvIdx;
+
         public DelegateConstructWrap(Type delegateType, GeneralGetterManager generalGetterManager)
         {
             this.delegateType = delegateType;
             translateFunc = generalGetterManager.GetTranslateFunc(delegateType);
+            jsEnvIdx = generalGetterManager.jsEnv.Idx;
         }
 
         public object Construct(IntPtr isolate, IntPtr info, int argumentsLen)
@@ -350,7 +353,7 @@ namespace Puerts
                     var arg0type = NativeValueApi.GetValueFromArgument.GetJsValueType(isolate, arg0, false);
                     if (arg0type == JsValueType.Function || arg0type == JsValueType.NativeObject)
                     {
-                        object obj = translateFunc(isolate, NativeValueApi.GetValueFromArgument, arg0, false);
+                        object obj = translateFunc(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, arg0, false);
                         if (obj != null)
                         {
                             return obj;

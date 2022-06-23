@@ -390,13 +390,13 @@ namespace Puerts
 
         void GetLoader(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
         {
-            GeneralSetterManager.AnyTranslator(isolate, NativeValueApi.SetValueToResult, info, loader);
+            GeneralSetterManager.AnyTranslator(Idx, isolate, NativeValueApi.SetValueToResult, info, loader);
         }
 
         public void RegisterGeneralGetSet(Type type, GeneralGetter getter, GeneralSetter setter)
         {
-            GeneralGetterManager.RegisterGetter(type, getter);
-            GeneralSetterManager.RegisterSetter(type, setter);
+            if (getter != null) GeneralGetterManager.RegisterGetter(type, getter);
+            if (setter != null) GeneralSetterManager.RegisterSetter(type, setter);
         }
         
         //use by BlittableCopy
