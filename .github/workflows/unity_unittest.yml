@@ -28,7 +28,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_v8.yml
+          workflow: build_8.4.yml
           name: v8_bin
           repo: puerts/backend-v8
           path: unity/native_src/
