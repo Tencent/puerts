@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace Puerts
 {
-    public struct CallInfo
+    public struct JSCallInfo
     {
         public IntPtr Isolate;
         public IntPtr Info;
@@ -25,7 +25,7 @@ namespace Puerts
 
         public IntPtr[] NativePtrs;
 
-        public CallInfo(IntPtr isolate, IntPtr info, IntPtr self, int len)
+        public JSCallInfo(IntPtr isolate, IntPtr info, IntPtr self, int len)
         {
             Isolate = isolate;
             Info = info;
@@ -48,21 +48,21 @@ namespace Puerts
 
     public class Parameters
     {
-        private readonly int length;
+        private readonly int paramLength;
 
         private readonly GeneralGetterManager generalGetterManager;
 
-        private bool hasParamArray = false;
+        private bool hasParamsArray = false;
 
-        private JsValueType[] typeMasks = null;
+        private JsValueType[] paramJSTypeMasks = null;
 
-        private int beginOptional = 0;
+        private int optionalParamPos = 0;
         
-        private Type[] types = null;
+        private Type[] paramTypes = null;
 
         private object[] args = null;
 
-        private bool[] byRef = null;
+        private bool[] paramIsByRef = null;
 
         private bool[] isOut = null;
 
@@ -73,15 +73,15 @@ namespace Puerts
         public Parameters(ParameterInfo[] parameterInfos, GeneralGetterManager generalGetterManager, GeneralSetterManager generalSetterManager)
         {
             this.generalGetterManager = generalGetterManager;
-            length = parameterInfos.Length;
-            typeMasks = new JsValueType[parameterInfos.Length];
-            types = new Type[parameterInfos.Length];
+            paramLength = parameterInfos.Length;
+            paramJSTypeMasks = new JsValueType[parameterInfos.Length];
+            paramTypes = new Type[parameterInfos.Length];
             args = new object[parameterInfos.Length];
             argsTranslateFuncs = new GeneralGetter[parameterInfos.Length];
             byRefValueSetFuncs = new GeneralSetter[parameterInfos.Length];
-            byRef = new bool[parameterInfos.Length];
+            paramIsByRef = new bool[parameterInfos.Length];
             isOut = new bool[parameterInfos.Length];
-            beginOptional = this.length + 1;
+            optionalParamPos = this.paramLength + 1;
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 var parameterInfo = parameterInfos[i];
@@ -89,79 +89,93 @@ namespace Puerts
                 if (parameterInfo.IsDefined(typeof(ParamArrayAttribute), false))
                 {
                     parameterType = parameterType.GetElementType();
-                    hasParamArray = true;
+                    hasParamsArray = true;
                 }
-                types[i] = parameterType.IsByRef ? parameterType.GetElementType() : parameterType;
-                typeMasks[i] = GeneralGetterManager.GetJsTypeMask(parameterType);
+                paramTypes[i] = parameterType.IsByRef ? parameterType.GetElementType() : parameterType;
+                paramJSTypeMasks[i] = GeneralGetterManager.GetJsTypeMask(parameterType);
                 argsTranslateFuncs[i] = generalGetterManager.GetTranslateFunc(parameterType);
-                byRef[i] = parameterType.IsByRef;
+                paramIsByRef[i] = parameterType.IsByRef;
                 if (parameterType.IsByRef)
                 {
                     byRefValueSetFuncs[i] = generalSetterManager.GetTranslateFunc(parameterType.GetElementType());
                 }
                 isOut[i] = parameterType.IsByRef && parameterInfo.IsOut && !parameterInfo.IsIn;
-                if (i < beginOptional && parameterInfo.IsOptional)
+                if (i < optionalParamPos && parameterInfo.IsOptional)
                 {
-                    beginOptional = i;
+                    optionalParamPos = i;
                 }
             }
         }
 
-        public bool IsMatch(CallInfo callInfo)
+        public bool IsMatch(JSCallInfo jsCallInfo)
         {
-            if (hasParamArray && beginOptional > length)
+            if (hasParamsArray && optionalParamPos > paramLength)
             {
-                if (callInfo.Length < length - 1)
+                if (jsCallInfo.Length < paramLength - 1)
                 {
                     return false;
                 }
             }
-            else if (callInfo.Length > length)
+            else if (jsCallInfo.Length > paramLength)
             {
                 return false;
             }
-            else if (callInfo.Length < beginOptional - 1)
+            else if (jsCallInfo.Length < optionalParamPos - 1)
             {
                 return false;
             }
 
-            for (int i = 0; i < callInfo.Length; i++)
+            for (int i = 0; i < jsCallInfo.Length; i++)
             {
-                if (i < length)
+                if (i < paramLength)
                 {
-                    var argJsType = callInfo.JsTypes[i];
-                    if (byRef[i])
+                    var argJsType = jsCallInfo.JsTypes[i];
+                    if (paramIsByRef[i])
                     {
-                        if (argJsType != JsValueType.JsObject)
+                        if (argJsType != JsValueType.JsObject) // 如果是ref类型，js参数首先必须是个jsobject
                         {
                             return false;
                         }
-                        if (isOut[i])
+                        
+                        if (isOut[i]) // 是out直接过
                         {
                             continue;
                         }
-                        else
+                        else // 是ref则取里面的类型
                         {
-                            argJsType = PuertsDLL.GetJsValueType(callInfo.Isolate, callInfo.NativePtrs[i], true);
+                            argJsType = PuertsDLL.GetJsValueType(jsCallInfo.Isolate, jsCallInfo.NativePtrs[i], true);
                         }
                     }
-                    if (argJsType == JsValueType.NativeObject && types[i] == typeof(JSObject)) 
+                    if (argJsType == JsValueType.NativeObject) 
                     {
-                        // 非要把一个NativeObject赋值给JSObject是允许的。
-                        continue;
+                        if (paramTypes[i] == typeof(JSObject)) // 非要把一个NativeObject赋值给JSObject是允许的。
+                        {
+                            continue;
+                        }
+                        else if (paramTypes[i].IsPrimitive) // TypedValue赋值给基础类型
+                        {
+                            // 可能的优化： 为TypedValue设计一个新的JSValueType，这样这里就不需要先取值
+                            if (jsCallInfo.Values[i] == null)
+                            {
+                                jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
+                            }
+                            if (jsCallInfo.Values[i].GetType() == paramTypes[i])
+                            {
+                                continue;
+                            }
+                        }
                     }
-                    if ((typeMasks[i] & argJsType) != argJsType)
+                    if ((paramJSTypeMasks[i] & argJsType) != argJsType)
                     {
-                        //UnityEngine.Debug.Log("arg " + i + " not match, expected " + typeMasks[i] + ", but got " + argJsType);
                         return false;
                     }
                     if (argJsType == JsValueType.NativeObject)
                     {
-                        if (callInfo.Values[i] == null)
+                        if (jsCallInfo.Values[i] == null)
                         {
-                            callInfo.Values[i] = generalGetterManager.AnyTranslator(callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], byRef[i]);
+                            jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
                         }
-                        if (!types[i].IsAssignableFrom(callInfo.Values[i].GetType()))
+                        if (!paramTypes[i].IsAssignableFrom(jsCallInfo.Values[i].GetType()))
                         {
                             return false;
                         }
@@ -172,14 +186,14 @@ namespace Puerts
             return true;
         }
 
-        public object[] GetArguments(CallInfo callInfo)
+        public object[] GetArguments(JSCallInfo callInfo)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < paramLength; i++)
             {
-                if(hasParamArray && i == length - 1)
+                if(hasParamsArray && i == paramLength - 1)
                 {
-                    Array paramArray = Array.CreateInstance(types[length - 1],
-                        callInfo.Length  < length ? 0 : (callInfo.Length + 1 - length));
+                    Array paramArray = Array.CreateInstance(paramTypes[paramLength - 1],
+                        callInfo.Length  < paramLength ? 0 : (callInfo.Length + 1 - paramLength));
                     
                     var translateFunc = argsTranslateFuncs[i];
                     for (int j = i; j < callInfo.Length; j++)
@@ -192,7 +206,7 @@ namespace Puerts
                     args[i] = paramArray;
                     
                 }
-				else if (i >= callInfo.Length && i >= beginOptional)
+				else if (i >= callInfo.Length && i >= optionalParamPos)
                 {
                     args[i] = Type.Missing;
                 }
@@ -206,7 +220,7 @@ namespace Puerts
                         }
                         else
                         {
-                            args[i] = argsTranslateFuncs[i](callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], byRef[i]);
+                            args[i] = argsTranslateFuncs[i](callInfo.Isolate, NativeValueApi.GetValueFromArgument, callInfo.NativePtrs[i], paramIsByRef[i]);
                         }
                     }
                 }
@@ -214,11 +228,11 @@ namespace Puerts
             return args;
         }
 
-        public void FillByRefParameters(CallInfo callInfo)
+        public void FillByRefParameters(JSCallInfo callInfo)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < paramLength; i++)
             {
-                if (byRef[i])
+                if (paramIsByRef[i])
                 {
                     byRefValueSetFuncs[i](callInfo.Isolate, NativeValueApi.SetValueToByRefArgument, callInfo.NativePtrs[i], args[i]);
                 }
@@ -279,24 +293,24 @@ namespace Puerts
             this.type = type;
         }
 
-        public bool IsMatch(CallInfo callInfo)
+        public bool IsMatch(JSCallInfo jsCallInfo)
         {
-            return parameters.IsMatch(callInfo);
+            return parameters.IsMatch(jsCallInfo);
         }
 
-        public void Invoke(CallInfo callInfo)
+        public void Invoke(JSCallInfo jsCallInfo)
         {
             try
             {
-                object target = methodInfo.IsStatic ? null : generalGetterManager.GetSelf(callInfo.Self);
-                object[] args = parameters.GetArguments(callInfo);
+                object target = methodInfo.IsStatic ? null : generalGetterManager.GetSelf(jsCallInfo.Self);
+                object[] args = parameters.GetArguments(jsCallInfo);
                 if (this.extensionMethod)
                 {
-                    args = new object[] { generalGetterManager.GetSelf(callInfo.Self) }.Concat(args).ToArray();
+                    args = new object[] { generalGetterManager.GetSelf(jsCallInfo.Self) }.Concat(args).ToArray();
                 }
                 object ret = methodInfo.Invoke(target, args);
-                parameters.FillByRefParameters(callInfo);
-                resultSetter(callInfo.Isolate, NativeValueApi.SetValueToResult, callInfo.Info, ret);
+                parameters.FillByRefParameters(jsCallInfo);
+                resultSetter(jsCallInfo.Isolate, NativeValueApi.SetValueToResult, jsCallInfo.Info, ret);
             }
             finally
             {
@@ -304,7 +318,7 @@ namespace Puerts
             }
         }
 
-        public object Construct(CallInfo callInfo)
+        public object Construct(JSCallInfo callInfo)
         {
             if (constructorInfo == null && type != null) 
             {
@@ -370,7 +384,7 @@ namespace Puerts
         {
             try
             {
-                CallInfo callInfo = new CallInfo(isolate, info, self, argumentsLen);
+                JSCallInfo callInfo = new JSCallInfo(isolate, info, self, argumentsLen);
                 for (int i = 0; i < overloads.Count; ++i)
                 {
                     var overload = overloads[i];
@@ -394,16 +408,16 @@ namespace Puerts
 
         public object Construct(IntPtr isolate, IntPtr info, int argumentsLen)
         {
-            CallInfo callInfo = new CallInfo(isolate, info, IntPtr.Zero, argumentsLen);
+            JSCallInfo jsCallInfo = new JSCallInfo(isolate, info, IntPtr.Zero, argumentsLen);
 
             try
             {
                 for (int i = 0; i < overloads.Count; ++i)
                 {
                     var overload = overloads[i];
-                    if (overload.IsMatch(callInfo))
+                    if (overload.IsMatch(jsCallInfo))
                     {
-                        return overload.Construct(callInfo);
+                        return overload.Construct(jsCallInfo);
                     }
                 }
                 PuertsDLL.ThrowException(isolate, "invalid arguments to " + name);
