@@ -308,13 +308,13 @@ struct ArgumentsChecker<false, Args...>
     }
 };
 
-template <typename, bool CheckArguments, bool>
+template <typename, bool CheckArguments, bool, bool>
 struct FuncCallHelper
 {
 };
 
-template <typename Ret, typename... Args, bool CheckArguments, bool ReturnByPointer>
-struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments, ReturnByPointer>
+template <typename Ret, typename... Args, bool CheckArguments, bool ReturnByPointer, bool ScriptTypePtrAsRef>
+struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments, ReturnByPointer, ScriptTypePtrAsRef>
 {
 private:
     template <typename T, typename = void>
@@ -500,14 +500,15 @@ private:
 
     template <typename T>
     struct ArgumentHolder<T,
-        typename std::enable_if<is_script_type<typename std::remove_pointer<T>::type>::value &&
+        typename std::enable_if<ScriptTypePtrAsRef && is_script_type<typename std::remove_pointer<T>::type>::value &&
                                 !std::is_const<typename std::remove_pointer<T>::type>::value && std::is_pointer<T>::value>::type>
     {
         T Arg = nullptr;
         using BuffType = typename std::remove_pointer<T>::type;
         BuffType Buf;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info) : Buf(TypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
+        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+            : Buf(TypeConverter<std::reference_wrapper<BuffType>>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -519,6 +520,27 @@ private:
         void SetRef(ContextType context, ValueType holder)
         {
             UpdateRefValue(context, holder, converter::Converter<BuffType>::toScript(context, Buf));
+        }
+    };
+
+    template <typename T>
+    struct ArgumentHolder<T,
+        typename std::enable_if<!ScriptTypePtrAsRef && is_script_type<typename std::remove_pointer<T>::type>::value &&
+                                !std::is_const<typename std::remove_pointer<T>::type>::value && std::is_pointer<T>::value>::type>
+    {
+        T Arg = nullptr;
+
+        ArgumentHolder(std::tuple<ContextType, ValueType> info) : Arg(TypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
+        {
+        }
+
+        T GetArgument()
+        {
+            return Arg;
+        }
+
+        void SetRef(ContextType context, ValueType holder)
+        {
         }
     };
 
@@ -719,26 +741,26 @@ public:
 
 }    // namespace internal
 
-template <typename T, T, bool ReturnByPointer = false>
+template <typename T, T, bool ReturnByPointer = false, bool ScriptTypePtrAsRef = true>
 struct FuncCallWrapper;
 
-template <typename Ret, typename... Args, Ret (*func)(Args...), bool ReturnByPointer>
-struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer>
+template <typename Ret, typename... Args, Ret (*func)(Args...), bool ReturnByPointer, bool ScriptTypePtrAsRef>
+struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsRef>
 {
     static void call(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::call(func, info);
     }
 
     static bool overloadCall(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::call(func, info);
     }
     static void checkedCall(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         if (!Helper::call(func, info))
         {
             ThrowException(info, "invalid parameter!");
@@ -747,7 +769,7 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer>
     template <class... DefaultArguments>
     static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::call(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
@@ -756,23 +778,23 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer>
     }
 };
 
-template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ReturnByPointer>
-struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer>
+template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ReturnByPointer, bool ScriptTypePtrAsRef>
+struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer, ScriptTypePtrAsRef>
 {
     static void call(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info);
     }
 
     static bool overloadCall(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::template callMethod<Inc, decltype(func)>(func, info);
     }
     static void checkedCall(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         if (!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
             ThrowException(info, "invalid parameter!");
@@ -781,7 +803,7 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer>
     template <class... DefaultArguments>
     static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
@@ -791,23 +813,24 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer>
 };
 
 // TODO: Similar logic...
-template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ReturnByPointer>
-struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer>
+template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ReturnByPointer,
+    bool ScriptTypePtrAsRef>
+struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer, ScriptTypePtrAsRef>
 {
     static void call(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info);
     }
 
     static bool overloadCall(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::template callMethod<Inc, decltype(func)>(func, info);
     }
     static void checkedCall(CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         if (!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
             ThrowException(info, "invalid parameter!");
@@ -816,7 +839,7 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer>
     template <class... DefaultArguments>
     static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
+        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
