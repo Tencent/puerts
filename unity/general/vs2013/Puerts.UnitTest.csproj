@@ -85,6 +85,9 @@
     <Compile Include="..\Src\UnitTest\WrapperTestClass.cs">
       <Link>Src\UnitTest\WrapperTestClass.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
     </Compile>
