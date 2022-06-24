@@ -319,7 +319,7 @@ jobs:
           name: Unity_Plugins_V8
   publish:
     runs-on: ubuntu-latest
-    needs: [windows,osx,ios,android,windows_qjs,osx_qjs,ios_qjs,android_qjs,windows_node,osx_node,linux64]
+    needs: [windows,osx,ios,android,windows_qjs,osx_qjs,ios_qjs,android_v8_debug,android_qjs,windows_node,osx_node,linux64]
     steps:
       - uses: actions/checkout@v2
       
