@@ -378,27 +378,30 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 template <typename T>
 struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
 {
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
     {
-        auto result = v8::Object::New(context->GetIsolate());
-        auto _unused = result->Set(context, 0, Converter<T>::toScript(context, value));
-        return result;
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
     }
 
-    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        if (!value.IsEmpty() && value->IsObject())
+        if (value->IsArrayBufferView())
         {
-            auto outer = value->ToObject(context).ToLocalChecked();
-            auto realvalue = outer->Get(context, 0).ToLocalChecked();
-            return Converter<typename std::decay<T>::type>::toCpp(context, realvalue);
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto ABC = BuffView->Buffer()->GetContents();
+            return static_cast<T*>(ABC.Data()) + BuffView->ByteOffset();
         }
-        return {};
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+            return static_cast<T*>(Ab->GetContents().Data());
+        }
+        return nullptr;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return value->IsObject();    // do not checked inner
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
     }
 };
 

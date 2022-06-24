@@ -442,29 +442,6 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
     }
 };
 
-template <typename T>
-struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
-{
-    static pesapi_value toScript(pesapi_env env, const T& value)
-    {
-        return pesapi_create_ref(env, Converter<T>::toScript(env, value));
-    }
-
-    static T toCpp(pesapi_env env, pesapi_value value)
-    {
-        if (pesapi_is_object(env, value))
-        {
-            return Converter<T>::toCpp(env, pesapi_get_value_ref(env, value));
-        }
-        return {};
-    }
-
-    static bool accept(pesapi_env env, pesapi_value value)
-    {
-        return pesapi_is_ref(env, value);    // do not checked inner
-    }
-};
-
 template <class T>
 struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value &&
                                             is_objecttype<T>::value && !is_uetype<T>::value>::type>
