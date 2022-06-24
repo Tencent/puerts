@@ -44,7 +44,7 @@ struct ArgumentBufferType
 #define MakeFunctionWithDefaultValues(M, ...)                                                   \
     [](::puerts::CallbackInfoType info)                                                         \
     { ::puerts::FuncCallWrapper<decltype(M), M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
-        ::puerts::FuncCallWrapper<decltype(M), M>::info()
+        ::puerts::FuncCallWrapper<decltype(M), M>::info(puerts::Count(__VA_ARGS__))
 #define SelectFunction(SIGNATURE, M) \
     &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
 #define SelectFunction_PtrRet(SIGNATURE, M) \
@@ -59,10 +59,18 @@ struct ArgumentBufferType
     &::puerts::ConstructorsCombiner<__VA_ARGS__>::call, ::puerts::ConstructorsCombiner<__VA_ARGS__>::length, \
         ::puerts::ConstructorsCombiner<__VA_ARGS__>::infos()
 
-#define UsingCppType(CLS) __DefScriptTTypeName(CLS, CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS)
+#define UsingNamedCppType(CLS, NAME) __DefScriptTTypeName(NAME, CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS)
+
+#define UsingCppType(CLS) UsingNamedCppType(CLS, CLS)
 
 namespace puerts
 {
+template <class... Args>
+unsigned int Count(Args&&... args)
+{
+    return sizeof...(Args);
+}
+
 template <typename T>
 struct ArgumentBufferType<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
 {
@@ -495,6 +503,7 @@ private:
         typename std::enable_if<is_script_type<typename std::remove_pointer<T>::type>::value &&
                                 !std::is_const<typename std::remove_pointer<T>::type>::value && std::is_pointer<T>::value>::type>
     {
+        T Arg = nullptr;
         using BuffType = typename std::remove_pointer<T>::type;
         BuffType Buf;
 
@@ -504,7 +513,7 @@ private:
 
         T GetArgument()
         {
-            return &Buf;
+            return Arg ? Arg : &Buf;
         }
 
         void SetRef(ContextType context, ValueType holder)
@@ -741,9 +750,9 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer>
         using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
         Helper::call(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
-    static const CFunctionInfo* info()
+    static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<Ret, Args...>::get();
+        return CFunctionInfoImpl<Ret, Args...>::get(defaultCount);
     }
 };
 
@@ -775,9 +784,9 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer>
         using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
         Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
-    static const CFunctionInfo* info()
+    static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<Ret, Args...>::get();
+        return CFunctionInfoImpl<Ret, Args...>::get(defaultCount);
     }
 };
 
@@ -810,9 +819,9 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer>
         using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer>;
         Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
-    static const CFunctionInfo* info()
+    static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<Ret, Args...>::get();
+        return CFunctionInfoImpl<Ret, Args...>::get(defaultCount);
     }
 };
 
@@ -841,9 +850,9 @@ public:
     {
         return call(info, std::make_index_sequence<ArgsLength>());
     }
-    static const CFunctionInfo* info()
+    static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<T, Args...>::get();
+        return CFunctionInfoImpl<T, Args...>::get(defaultCount);
     }
 };
 

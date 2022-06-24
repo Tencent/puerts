@@ -39,7 +39,14 @@ struct FGenImp
                 Buff << ", ";
             auto argInfo = Type->Argument(i);
 
-            Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+            Buff << FString::Printf(TEXT("p%d"), i);
+
+            if (i >= Type->ArgumentCount() - Type->DefaultCount())
+            {
+                Buff << "?";
+            }
+
+            Buff << ": ";
 
             bool IsReference = argInfo->IsRef() ||
                                (!argInfo->IsConst() && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer());

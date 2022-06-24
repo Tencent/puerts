@@ -134,6 +134,7 @@ class CFunctionInfo
 public:
     virtual const CTypeInfo* Return() const = 0;
     virtual unsigned int ArgumentCount() const = 0;
+    virtual unsigned int DefaultCount() const = 0;
     virtual const CTypeInfo* Argument(unsigned int index) const = 0;
     virtual const char* CustomSignature() const = 0;
 };
@@ -181,8 +182,13 @@ class CFunctionInfoImpl : CFunctionInfo
     const CTypeInfo* return_;
     const unsigned int argCount_;
     const CTypeInfo* arguments_[sizeof...(Args) + 1];
+    unsigned int defaultCount_;
 
-    CFunctionInfoImpl() : return_(CTypeInfoImpl<Ret>::get()), argCount_(sizeof...(Args)), arguments_{CTypeInfoImpl<Args>::get()...}
+    CFunctionInfoImpl()
+        : return_(CTypeInfoImpl<Ret>::get())
+        , argCount_(sizeof...(Args))
+        , arguments_{CTypeInfoImpl<Args>::get()...}
+        , defaultCount_(0)
     {
     }
 
@@ -195,19 +201,23 @@ public:
     {
         return argCount_;
     }
+    virtual unsigned int DefaultCount() const override
+    {
+        return defaultCount_;
+    }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
         return arguments_[index];
     }
-
     virtual const char* CustomSignature() const override
     {
         return nullptr;
     }
 
-    static const CFunctionInfo* get()
+    static const CFunctionInfo* get(unsigned int defaultCount)
     {
         static CFunctionInfoImpl instance{};
+        instance.defaultCount_ = defaultCount;
         return &instance;
     }
 };
@@ -229,11 +239,14 @@ public:
     {
         return 0;
     }
+    virtual unsigned int DefaultCount() const override
+    {
+        return 0;
+    }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
         return nullptr;
     }
-
     virtual const char* CustomSignature() const override
     {
         return _signature;
