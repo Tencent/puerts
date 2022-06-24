@@ -368,7 +368,7 @@ namespace Puerts.Editor
                     {
                         result.TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType.GetElementType()).GetFriendlyName();
                     }
-                    result.ExpectCsType = ((ExpectJsType & JsValueType.NativeObject) == JsValueType.NativeObject) ? string.Format("typeof({0})", result.TypeName) : "null";
+                    result.ExpectCsType = string.Format("typeof({0})", result.TypeName);//((ExpectJsType & JsValueType.NativeObject) == JsValueType.NativeObject) ? string.Format("typeof({0})", result.TypeName) : "null";
                     Utils.FillEnumInfo(result, parameterInfo.ParameterType);
                     return result;
                 }

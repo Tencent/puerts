@@ -69,7 +69,18 @@ namespace Puerts
                     return false;
                 }
             } 
-            
+
+            if (jsType == JsValueType.NativeObject && expectCsType.IsPrimitive)
+            {
+                if (obj == null)
+                {
+                    obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.AnyTranslator(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
+                }
+                if (obj.GetType() == expectCsType) 
+                {
+                    return true;
+                }
+            }
             if ((expectJsType & jsType) != jsType)
             {
                 return false;
@@ -80,7 +91,7 @@ namespace Puerts
                 {
                     if (obj == null)
                     {
-                        obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.AnyTranslator(isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
+                        obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.AnyTranslator(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, value, isByRef);
                     }
 
                     return expectCsType != null && expectCsType.IsAssignableFrom(obj.GetType());
@@ -105,143 +116,142 @@ namespace Puerts
 
         public char GetChar(bool isByRef)
         {
-            return (char)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<char>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(char val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<char>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);        
         }
 
         public sbyte GetSByte(bool isByRef)
         {
-            return (sbyte)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<sbyte>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(sbyte val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<sbyte>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);        
         }
 
         public byte GetByte(bool isByRef)
         {
-            return (byte)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<byte>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(byte val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<byte>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);        
         }
 
         public short GetInt16(bool isByRef)
         {
-            return (short)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<short>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(short val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<short>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);        
         }
 
         public ushort GetUInt16(bool isByRef)
         {
-            return (ushort)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<ushort>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(ushort val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<ushort>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public int GetInt32(bool isByRef)
         {
-            return (int)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<int>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(int val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<int>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public uint GetUInt32(bool isByRef)
         {
-            return (uint)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<uint>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(uint val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<uint>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public long GetInt64(bool isByRef)
         {
-            return PuertsDLL.GetBigIntFromValueChecked(isolate, value, isByRef);
+            return StaticTranslate<long>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(long val)
         {
-            PuertsDLL.SetBigIntToOutValue(isolate, value, val);
+            StaticTranslate<long>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public ulong GetUInt64(bool isByRef)
         {
-            return (ulong)PuertsDLL.GetBigIntFromValueChecked(isolate, value, isByRef);
+            return StaticTranslate<ulong>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(ulong val)
         {
-            PuertsDLL.SetBigIntToOutValue(isolate, value, (long)val);
+            StaticTranslate<ulong>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public double GetDouble(bool isByRef)
         {
-            return PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<double>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(double val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<double>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public float GetFloat(bool isByRef)
         {
-            return (float)PuertsDLL.GetNumberFromValue(isolate, value, isByRef);
+            return StaticTranslate<float>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(float val)
         {
-            PuertsDLL.SetNumberToOutValue(isolate, value, val);
+            StaticTranslate<float>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public bool GetBoolean(bool isByRef)
         {
-            return PuertsDLL.GetBooleanFromValue(isolate, value, isByRef);
+            return StaticTranslate<bool>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(bool val)
         {
-            PuertsDLL.SetBooleanToOutValue(isolate, value, val);
+            StaticTranslate<bool>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public string GetString(bool isByRef)
         {
-            return PuertsDLL.GetStringFromValue(isolate, value, isByRef);
+            return StaticTranslate<string>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(string val)
         {
-            PuertsDLL.SetStringToOutValue(isolate, value, val);
+            StaticTranslate<string>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public DateTime GetDateTime(bool isByRef)
         {
-            var ticks = PuertsDLL.GetDateFromValue(isolate, value, isByRef);
-            return (new DateTime(1970, 1, 1)).AddMilliseconds(ticks);
+            return StaticTranslate<DateTime>.Get(jsEnvIdx, isolate, Puerts.NativeValueApi.GetValueFromArgument, value, isByRef);
         }
 
         public void SetByRefValue(DateTime val)
         {
-            PuertsDLL.SetDateToOutValue(isolate, value, (val - new DateTime(1970, 1, 1)).TotalMilliseconds);
+            StaticTranslate<DateTime>.Set(jsEnvIdx, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, value, val);
         }
 
         public T Get<T>(bool isByRef)

@@ -11,7 +11,7 @@ using System.Collections.Generic;
 namespace Puerts
 {
     //target参js对象静默转换到c#对象时有用
-    public delegate object GeneralGetter(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef);
+    public delegate object GeneralGetter(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef);
 
     public class GeneralGetterManager
     {
@@ -19,7 +19,7 @@ namespace Puerts
 
         private TypeRegister typeRegister;
 
-        private readonly JsEnv jsEnv;
+        internal readonly JsEnv jsEnv;
 
         private Dictionary<Type, GeneralGetter> generalGetterMap = new Dictionary<Type, GeneralGetter>();
 
@@ -59,82 +59,82 @@ namespace Puerts
         }
 
 
-        private static object CharTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object CharTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetChar(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetChar(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object SbyteTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object SbyteTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetSByte(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetSByte(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object ByteTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object ByteTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetByte(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetByte(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object ShortTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object ShortTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetInt16(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetInt16(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object UshortTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object UshortTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetUInt16(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetUInt16(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object IntTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object IntTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetInt32(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetInt32(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object UintTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object UintTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetUInt32(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetUInt32(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object LongTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object LongTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetInt64(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetInt64(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object UlongTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object UlongTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetUInt64(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetUInt64(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object DoubleTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object DoubleTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetDouble(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetDouble(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object FloatTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object FloatTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetFloat(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetFloat(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object BooleanTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object BooleanTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetBoolean(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetBoolean(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object StringTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object StringTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetString(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetString(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object DateTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object DateTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetDateTime(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetDateTime(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object ArrayBufferTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private static object ArrayBufferTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            return PrimitiveTypeTranslate.GetArrayBuffer(0, isolate, getValueApi, value, isByRef);
+            return PrimitiveTypeTranslate.GetArrayBuffer(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private object JSObjectTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private object JSObjectTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
             if (jsValueType == JsValueType.JsObject)
@@ -144,11 +144,11 @@ namespace Puerts
             }
             else
             {
-                return AnyTranslator(isolate, getValueApi, value, isByRef);
+                return AnyTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
             }
         }
 
-        private object GenericDelegateTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        private object GenericDelegateTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
             if (jsValueType == JsValueType.Function)
@@ -158,27 +158,27 @@ namespace Puerts
             }
             else
             {
-                return AnyTranslator(isolate, getValueApi, value, isByRef);
+                return AnyTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
             }
         }
 
-        internal object AnyTranslator(IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        internal object AnyTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var type = getValueApi.GetJsValueType(isolate, value, isByRef);
             switch (type)
             {
                 case JsValueType.BigInt:
-                    return LongTranslator(isolate, getValueApi, value, isByRef);
+                    return LongTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.Boolean:
-                    return BooleanTranslator(isolate, getValueApi, value, isByRef);
+                    return BooleanTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.Date:
-                    return DateTranslator(isolate, getValueApi, value, isByRef);
+                    return DateTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.ArrayBuffer:
-                    return ArrayBufferTranslator(isolate, getValueApi, value, isByRef);
+                    return ArrayBufferTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.Function:
                     return getValueApi.GetFunction(isolate, value, isByRef);
                 case JsValueType.JsObject:
-                    return JSObjectTranslator(isolate, getValueApi, value, isByRef);
+                    return JSObjectTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.NativeObject:
                     var typeId = getValueApi.GetTypeId(isolate, value, isByRef);
                     if (!typeRegister.IsArray(typeId))
@@ -186,7 +186,7 @@ namespace Puerts
                         var objType = typeRegister.GetType(typeId);
                         if (objType != typeof(object) && generalGetterMap.ContainsKey(objType))
                         {
-                            return generalGetterMap[objType](isolate, getValueApi, value, isByRef);
+                            return generalGetterMap[objType](jsEnvIdx, isolate, getValueApi, value, isByRef);
                         }
                     }
                     var objPtr = getValueApi.GetNativeObject(isolate, value, isByRef);
@@ -200,9 +200,9 @@ namespace Puerts
 
                     return result;
                 case JsValueType.Number:
-                    return IntTranslator(isolate, getValueApi, value, isByRef);
+                    return IntTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.String:
-                    return StringTranslator(isolate, getValueApi, value, isByRef);
+                    return StringTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 default:
                     return null;
             }
@@ -210,7 +210,7 @@ namespace Puerts
 
         GeneralGetter MakeNullableTranslateFunc(GeneralGetter jvt)
         {
-            return (IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
+            return (int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
                 if (getValueApi.GetJsValueType(isolate, value, isByRef) == JsValueType.NullOrUndefined)
                 {
@@ -218,14 +218,14 @@ namespace Puerts
                 }
                 else
                 {
-                    return jvt(isolate, getValueApi, value, isByRef);
+                    return jvt(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 }
             };
         }
 
         private GeneralGetter MakeTranslateFunc(Type type)
         {
-            GeneralGetter fixTypeGetter = (IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
+            GeneralGetter fixTypeGetter = (int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
                 if (getValueApi.GetJsValueType(isolate, value, isByRef) == JsValueType.NativeObject)
                 {
@@ -238,7 +238,7 @@ namespace Puerts
 
             if (typeof(Delegate).IsAssignableFrom(type))
             {
-                return (IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
+                return (int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
                 {
                     var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
                     if (jsValueType == JsValueType.Function)
@@ -253,7 +253,7 @@ namespace Puerts
                     }
                     else
                     {
-                        return fixTypeGetter(isolate, getValueApi, value, isByRef);
+                        return fixTypeGetter(jsEnvIdx, isolate, getValueApi, value, isByRef);
                     }
                 };
             }
@@ -394,7 +394,7 @@ namespace Puerts
         }
     }
 
-    public delegate void GeneralSetter(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj);
+    public delegate void GeneralSetter(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj);
 
     public class GeneralSetterManager
     {
@@ -402,12 +402,15 @@ namespace Puerts
 
         private TypeRegister typeRegister;
 
+        internal int jsEnvIdx;
+
         private Dictionary<Type, GeneralSetter> generalSetterMap = new Dictionary<Type, GeneralSetter>();
 
         public GeneralSetterManager(JsEnv jsEnv)
         {
             objectPool = jsEnv.objectPool;
             typeRegister = jsEnv.TypeRegister;
+            jsEnvIdx = jsEnv.Idx;
 
             generalSetterMap[typeof(char)] = CharTranslator;
             generalSetterMap[typeof(sbyte)] = SbyteTranslator;
@@ -431,96 +434,96 @@ namespace Puerts
             generalSetterMap[typeof(object)] = AnyTranslator;
         }
 
-        private static void VoidTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void VoidTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
         }
 
-        private static void CharTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void CharTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushChar(0, isolate, setValueApi, holder, (char)obj);
+            PrimitiveTypeTranslate.PushChar(jsEnvIdx, isolate, setValueApi, holder, (char)obj);
         }
 
-        private static void SbyteTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void SbyteTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushSByte(0, isolate, setValueApi, holder, (sbyte)obj);
+            PrimitiveTypeTranslate.PushSByte(jsEnvIdx, isolate, setValueApi, holder, (sbyte)obj);
         }
 
-        private static void ByteTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void ByteTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushByte(0, isolate, setValueApi, holder, (byte)obj);
+            PrimitiveTypeTranslate.PushByte(jsEnvIdx, isolate, setValueApi, holder, (byte)obj);
         }
 
-        private static void ShortTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void ShortTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushInt16(0, isolate, setValueApi, holder, (short)obj);
+            PrimitiveTypeTranslate.PushInt16(jsEnvIdx, isolate, setValueApi, holder, (short)obj);
         }
 
-        private static void UshortTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void UshortTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushUInt16(0, isolate, setValueApi, holder, (ushort)obj);
+            PrimitiveTypeTranslate.PushUInt16(jsEnvIdx, isolate, setValueApi, holder, (ushort)obj);
         }
 
-        private static void IntTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void IntTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushInt32(0, isolate, setValueApi, holder, (int)obj);
+            PrimitiveTypeTranslate.PushInt32(jsEnvIdx, isolate, setValueApi, holder, (int)obj);
         }
 
-        private static void UintTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void UintTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushUInt32(0, isolate, setValueApi, holder, (uint)obj);
+            PrimitiveTypeTranslate.PushUInt32(jsEnvIdx, isolate, setValueApi, holder, (uint)obj);
         }
 
-        private static void LongTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void LongTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushInt64(0, isolate, setValueApi, holder, (long)obj);
+            PrimitiveTypeTranslate.PushInt64(jsEnvIdx, isolate, setValueApi, holder, (long)obj);
         }
 
-        private static void UlongTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void UlongTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushUInt64(0, isolate, setValueApi, holder, (ulong)obj);
+            PrimitiveTypeTranslate.PushUInt64(jsEnvIdx, isolate, setValueApi, holder, (ulong)obj);
         }
 
-        private static void DoubleTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void DoubleTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushDouble(0, isolate, setValueApi, holder, (double)obj);
+            PrimitiveTypeTranslate.PushDouble(jsEnvIdx, isolate, setValueApi, holder, (double)obj);
         }
 
-        private static void FloatTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void FloatTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushFloat(0, isolate, setValueApi, holder, (float)obj);
+            PrimitiveTypeTranslate.PushFloat(jsEnvIdx, isolate, setValueApi, holder, (float)obj);
         }
 
-        private static void BooleanTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void BooleanTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushBoolean(0, isolate, setValueApi, holder, (bool)obj);
+            PrimitiveTypeTranslate.PushBoolean(jsEnvIdx, isolate, setValueApi, holder, (bool)obj);
         }
 
-        private static void StringTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void StringTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushString(0, isolate, setValueApi, holder, obj as string);
+            PrimitiveTypeTranslate.PushString(jsEnvIdx, isolate, setValueApi, holder, obj as string);
         }
 
-        private static void DateTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void DateTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushDateTime(0, isolate, setValueApi, holder, (DateTime)obj);
+            PrimitiveTypeTranslate.PushDateTime(jsEnvIdx, isolate, setValueApi, holder, (DateTime)obj);
         }
 
-        private static void ArrayBufferTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void ArrayBufferTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
-            PrimitiveTypeTranslate.PushArrayBuffer(0, isolate, setValueApi, holder, (ArrayBuffer)obj);
+            PrimitiveTypeTranslate.PushArrayBuffer(jsEnvIdx, isolate, setValueApi, holder, (ArrayBuffer)obj);
         }
 
-        private static void GenericDelegateTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void GenericDelegateTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
             setValueApi.SetFunction(isolate, holder, ((GenericDelegate)obj).getJsFuncPtr());
         }
 
-        private static void JSObjectTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        private static void JSObjectTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
             setValueApi.SetJSObject(isolate, holder, ((JSObject)obj).getJsObjPtr());
         }
 
-        internal void AnyTranslator(IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        internal void AnyTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {
             if (obj == null)
             {
@@ -537,7 +540,7 @@ namespace Puerts
                 }
                 else
                 {
-                    GetTranslateFunc(realType)(isolate, setValueApi, holder, obj);
+                    GetTranslateFunc(realType)(jsEnvIdx, isolate, setValueApi, holder, obj);
                 }
             }
         }
@@ -546,7 +549,7 @@ namespace Puerts
         {
             if (type.IsValueType)
             {
-                return (IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
+                return (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
                 {
                     if (obj == null)
                     {
@@ -562,7 +565,7 @@ namespace Puerts
             }
             else
             {
-                return (IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
+                return (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
                 {
                     if (obj == null)
                     {

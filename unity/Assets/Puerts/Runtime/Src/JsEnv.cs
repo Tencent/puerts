@@ -338,6 +338,19 @@ namespace Puerts
 #endif
         }
 
+        public void AddLazyStaticWrapLoaderGenericDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperDefinition)
+        {
+            
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
+                TypeRegister.AddLazyStaticWrapLoaderGenericDefinition(typeDefinition, genericArgumentsType, wrapperDefinition);
+#if THREAD_SAFE
+            }
+#endif
+        }
+
         private readonly List<JSFunctionCallback> callbacks = new List<JSFunctionCallback>();
 
         internal void InvokeCallback(IntPtr isolate, int callbackIdx, IntPtr info, IntPtr self, int paramLen)
@@ -377,13 +390,13 @@ namespace Puerts
 
         void GetLoader(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
         {
-            GeneralSetterManager.AnyTranslator(isolate, NativeValueApi.SetValueToResult, info, loader);
+            GeneralSetterManager.AnyTranslator(Idx, isolate, NativeValueApi.SetValueToResult, info, loader);
         }
 
         public void RegisterGeneralGetSet(Type type, GeneralGetter getter, GeneralSetter setter)
         {
-            GeneralGetterManager.RegisterGetter(type, getter);
-            GeneralSetterManager.RegisterSetter(type, setter);
+            if (getter != null) GeneralGetterManager.RegisterGetter(type, getter);
+            if (setter != null) GeneralSetterManager.RegisterSetter(type, setter);
         }
         
         //use by BlittableCopy
@@ -795,7 +808,7 @@ namespace Puerts
         }
 
         Dictionary<IntPtr, int> funcRefCount = new Dictionary<IntPtr, int>();
-        HashSet<IntPtr> pendingReleaseObjs = new HashSet<IntPtr>();
+        Dictionary<IntPtr, int> JSObjRefCount = new Dictionary<IntPtr, int>();
 
         internal void IncFuncRef(IntPtr nativeJsFuncPtr)
         {
@@ -825,13 +838,31 @@ namespace Puerts
             }
         }
 
-        internal void addPenddingReleaseObject(IntPtr nativeJsObjPtr)
+        internal void IncJSObjRef(IntPtr nativeJSObjectPtr)
         {
-            if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
-
-            lock (pendingReleaseObjs)
+            if (disposed || nativeJSObjectPtr == IntPtr.Zero) return;
+            lock (JSObjRefCount)
             {
-                pendingReleaseObjs.Add(nativeJsObjPtr);
+                int refCount;
+                if (JSObjRefCount.TryGetValue(nativeJSObjectPtr, out refCount))
+                {
+                    ++refCount;
+                }
+                else
+                {
+                    refCount = 1;
+                }
+                JSObjRefCount[nativeJSObjectPtr] = refCount;
+            }
+        }
+
+        internal void DecJSObjRef(IntPtr nativeJSObjectPtr)
+        {
+            if (disposed || nativeJSObjectPtr == IntPtr.Zero) return;
+
+            lock (JSObjRefCount)
+            {
+                JSObjRefCount[nativeJSObjectPtr] = JSObjRefCount[nativeJSObjectPtr] - 1;
             }
         }
 
@@ -859,27 +890,27 @@ namespace Puerts
             }
         }
 
-        internal void RemoveJSObjectFromPendingRelease(IntPtr nativeJsObjPtr)
-        {
-            if (disposed || nativeJsObjPtr == IntPtr.Zero) return;
-            lock (pendingReleaseObjs)
-            {
-                pendingReleaseObjs.Remove(nativeJsObjPtr);
-            }
-        }
+        List<IntPtr> pendingRemovedJsObjList = new List<IntPtr>();
 
         internal void ReleasePendingJSObjects()
         {
-            lock (pendingReleaseObjs)
+            lock (JSObjRefCount)
             {
-                foreach(var nativeJsObjPtr in pendingReleaseObjs)
+                pendingRemovedJsObjList.Clear();
+                foreach (var kv in JSObjRefCount)
                 {
+                    if (kv.Value <= 0) pendingRemovedJsObjList.Add(kv.Key);
+                }
+                for(int i = 0; i  < pendingRemovedJsObjList.Count; ++i)
+                {
+                    var nativeJsObjPtr = pendingRemovedJsObjList[i];
+                    JSObjRefCount.Remove(nativeJsObjPtr);
                     if (!jsObjectFactory.IsJsObjectAlive(nativeJsObjPtr))
                     {
                         PuertsDLL.ReleaseJSObject(isolate, nativeJsObjPtr);
                     }
                 }
-                pendingReleaseObjs.Clear();
+                pendingRemovedJsObjList.Clear();
             }
         }
     }

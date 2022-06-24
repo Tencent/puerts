@@ -23,7 +23,6 @@ namespace Puerts
             {
                return maybeOne.Target as JSObject;
             }
-            jsEnv.RemoveJSObjectFromPendingRelease(ptr);
             JSObject jsObject = new JSObject(ptr, jsEnv);
             nativePtrToJSObject[ptr] = new WeakReference(jsObject);
             return jsObject;
@@ -51,6 +50,7 @@ namespace Puerts
         {
             this.nativeJsObjectPtr = nativeJsObjectPtr;
             this.jsEnv = jsEnv;
+            jsEnv.IncJSObjRef(nativeJsObjectPtr);
         }
 
         // Func<JSObject, string, object> MemberGetter;
@@ -76,7 +76,7 @@ namespace Puerts
             lock(jsEnv) 
             {
 #endif
-            jsEnv.addPenddingReleaseObject(nativeJsObjectPtr);
+            jsEnv.DecJSObjRef(nativeJsObjectPtr);
 #if THREAD_SAFE
             }
 #endif
