@@ -774,7 +774,7 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsR
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<Ret, Args...>::get(defaultCount);
+        return CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>::get(defaultCount);
     }
 };
 
@@ -808,7 +808,7 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer, ScriptTypeP
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<Ret, Args...>::get(defaultCount);
+        return CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>::get(defaultCount);
     }
 };
 
@@ -844,7 +844,7 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer, Scrip
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<Ret, Args...>::get(defaultCount);
+        return CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>::get(defaultCount);
     }
 };
 
@@ -875,7 +875,7 @@ public:
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<T, Args...>::get(defaultCount);
+        return CFunctionInfoImpl<T, true, Args...>::get(defaultCount);
     }
 };
 
