@@ -139,7 +139,7 @@ public:
     virtual const char* CustomSignature() const = 0;
 };
 
-template <typename T>
+template <typename T, bool ScriptTypePtrAsRef>
 class CTypeInfoImpl : CTypeInfo
 {
 public:
@@ -149,11 +149,12 @@ public:
     }
     virtual bool IsPointer() const override
     {
-        return std::is_pointer<T>::value;
+        return std::is_pointer<T>::value && !ScriptTypePtrAsRef;
     };
     virtual bool IsRef() const override
     {
-        return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value;
+        return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value ||
+               std::is_pointer<T>::value && ScriptTypePtrAsRef && !IsConst() && !IsUEType() && !IsObjectType();
     };
     virtual bool IsConst() const override
     {
@@ -176,7 +177,7 @@ public:
     }
 };
 
-template <typename Ret, typename... Args>
+template <typename Ret, bool ScriptTypePtrAsRef, typename... Args>
 class CFunctionInfoImpl : CFunctionInfo
 {
     const CTypeInfo* return_;
@@ -185,9 +186,9 @@ class CFunctionInfoImpl : CFunctionInfo
     unsigned int defaultCount_;
 
     CFunctionInfoImpl()
-        : return_(CTypeInfoImpl<Ret>::get())
+        : return_(CTypeInfoImpl<Ret, ScriptTypePtrAsRef>::get())
         , argCount_(sizeof...(Args))
-        , arguments_{CTypeInfoImpl<Args>::get()...}
+        , arguments_{CTypeInfoImpl<Args, ScriptTypePtrAsRef>::get()...}
         , defaultCount_(0)
     {
     }
