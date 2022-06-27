@@ -3742,6 +3742,11 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             BPClass->UpdateCustomPropertyListForPostConstruction();
         }
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
+        // 拷贝创建的Class需要手动重新创建ReferenceTokenStream
+        New->AssembleReferenceTokenStream(true);//New->ReferenceTokenStream = To->ReferenceTokenStream;
+#endif
     }
     else
     {
