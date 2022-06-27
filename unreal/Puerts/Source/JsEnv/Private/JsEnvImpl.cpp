@@ -3745,7 +3745,6 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
         // 拷贝创建的Class需要手动重新创建ReferenceTokenStream
-        //New->ReferenceTokenStream = To->ReferenceTokenStream;
         New->AssembleReferenceTokenStream(true);
 #endif
     }
