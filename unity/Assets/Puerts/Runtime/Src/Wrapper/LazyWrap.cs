@@ -72,7 +72,7 @@ namespace Puerts
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    translateFunc(isolate, NativeValueApi.SetValueToResult, info, field.GetValue(null));
+                    translateFunc(env.GeneralSetterManager.jsEnvIdx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(null));
                 };
             }
             else
@@ -80,7 +80,7 @@ namespace Puerts
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
                     var me = env.GeneralGetterManager.GetSelf(self);
-                    translateFunc(isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
+                    translateFunc(env.GeneralSetterManager.jsEnvIdx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
                 };
             }
         }
@@ -101,7 +101,7 @@ namespace Puerts
                     }
                     else
                     {
-                        field.SetValue(null, translateFunc(isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                        field.SetValue(null, translateFunc(env.GeneralGetterManager.jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
                     }
                 };
             }
@@ -118,7 +118,7 @@ namespace Puerts
                     else
                     {
                         var me = env.GeneralGetterManager.GetSelf(self);
-                        field.SetValue(me, translateFunc(isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                        field.SetValue(me, translateFunc(env.GeneralGetterManager.jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
                     }
                 };
             }

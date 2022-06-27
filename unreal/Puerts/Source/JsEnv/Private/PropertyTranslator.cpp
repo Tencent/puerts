@@ -402,7 +402,16 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        NameProperty->SetPropertyValue(ValuePtr, FName(*FV8Utils::ToFString(Isolate, Value)));
+        if (Value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
+            if (Ab->GetContents().ByteLength() == sizeof(FName))
+            {
+                NameProperty->SetPropertyValue(ValuePtr, *static_cast<FName*>(Ab->GetContents().Data()));
+                return true;
+            }
+        }
+        NameProperty->SetPropertyValue(ValuePtr, FV8Utils::ToFName(Isolate, Value));
         return true;
     }
 };
@@ -420,7 +429,8 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         return FV8Utils::ToV8String(Isolate, TextProperty->GetPropertyValue(ValuePtr));
 #else
-        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, puerts::StaticTypeId<FText>::get(), ValuePtr, true);
+        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, puerts::StaticTypeId<FText>::get(),
+            PassByPointer ? ValuePtr : new FText(TextProperty->GetPropertyValue(ValuePtr)), PassByPointer);
 #endif
     }
 
@@ -430,7 +440,8 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         TextProperty->SetPropertyValue(ValuePtr, FText::FromString(FV8Utils::ToFString(Isolate, Value)));
 #else
-        TextProperty->SetPropertyValue(ValuePtr, *DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>()));
+        auto TextPtr = DataTransfer::GetPointerFast<FText>(Value.As<v8::Object>());
+        TextProperty->SetPropertyValue(ValuePtr, TextPtr ? *TextPtr : FText());
 #endif
         return true;
     }

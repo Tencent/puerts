@@ -166,6 +166,9 @@ void FJsEnvImpl::StartPolling()
 void FJsEnvImpl::UvRunOnce()
 {
     auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
@@ -178,6 +181,10 @@ void FJsEnvImpl::UvRunOnce()
     if (TryCatch.HasCaught())
     {
         Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+    }
+    else
+    {
+        static_cast<node::MultiIsolatePlatform*>(IJsEnvModule::Get().GetV8Platform())->DrainTasks(Isolate);
     }
 
     LastJob = nullptr;
@@ -718,6 +725,21 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 .ToLocalChecked())
         .Check();
 
+    Global
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFNameToArrayBuffer"),
+            v8::FunctionTemplate::New(Isolate,
+                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                {
+                    FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
+                    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
+                    void* Buff = Ab->GetContents().Data();
+                    ::memcpy(Buff, &Name, sizeof(FName));
+                    Info.GetReturnValue().Set(Ab);
+                })
+                ->GetFunction(Context)
+                .ToLocalChecked())
+        .Check();
+
     PuertsObj
         ->Set(Context, FV8Utils::ToV8String(Isolate, "releaseManualReleaseDelegate"),
             v8::FunctionTemplate::New(
@@ -1132,6 +1154,14 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     }
 }
 
+bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
+    return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
+}
+
 void FJsEnvImpl::LowMemoryNotification()
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -1143,13 +1173,23 @@ void FJsEnvImpl::LowMemoryNotification()
     MainIsolate->LowMemoryNotification();
 }
 
-void FJsEnvImpl::MinorGarbageCollection()
+void FJsEnvImpl::RequestMinorGarbageCollectionForTesting()
 {
 #ifdef THREAD_SAFE
     v8::Locker Locker(MainIsolate);
 #endif
 #ifndef WITH_QUICKJS
     MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+#endif
+}
+
+void FJsEnvImpl::RequestFullGarbageCollectionForTesting()
+{
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
+#ifndef WITH_QUICKJS
+    MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
 #endif
 }
 
@@ -1189,9 +1229,11 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
         auto PackageName = Package->GetName();
 
-        static FString PackageNamePrefix(TEXT("/Game/Blueprints/TypeScript/"));
-        ;
-        if (PackageName.StartsWith(PackageNamePrefix))
+        static FString PackageNamePrefix(TEXT(TS_BLUEPRINT_PATH));
+
+        auto PrefixPos = PackageName.Find(PackageNamePrefix);
+
+        if (PrefixPos != INDEX_NONE)
         {
             auto SuperClass = Cast<UTypeScriptGeneratedClass>(TypeScriptGeneratedClass->GetSuperClass());
             if (SuperClass && SuperClass->GetName().StartsWith(TEXT("REINST_")))
@@ -1203,7 +1245,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
             {
                 MakeSureInject(SuperClass, false, RebindObject);
             }
-            FString ModuleName = PackageName.Mid(PackageNamePrefix.Len());
+            FString ModuleName = PackageName.Mid(PrefixPos + PackageNamePrefix.Len());
             Logger->Info(FString::Printf(TEXT("Bind module [%s] "), *ModuleName));
 
             auto Isolate = MainIsolate;
@@ -2762,6 +2804,7 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
 #endif
             auto Value = Enum->GetValueByIndex(i);
             __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, Name), v8::Number::New(Isolate, Value)));
+            __USE(Result->Set(Context, v8::Number::New(Isolate, Value), FV8Utils::ToV8String(Isolate, Name)));
         }
         __USE(Result->Set(
             Context, FV8Utils::ToV8String(Isolate, "__puerts_ufield"), FindOrAdd(Isolate, Context, Enum->GetClass(), Enum)));
@@ -2781,6 +2824,7 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
                 if (ObjectType != EObjectTypeQuery::ObjectTypeQuery_MAX)
                 {
                     __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, ObjectType)));
+                    __USE(Result->Set(Context, v8::Number::New(Isolate, ObjectType), FV8Utils::ToV8String(Isolate, ChannelName)));
                 }
                 ContainerIndex++;
             }
@@ -2800,6 +2844,7 @@ v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local
                 if (TraceType != ETraceTypeQuery::TraceTypeQuery_MAX)
                 {
                     __USE(Result->Set(Context, FV8Utils::ToV8String(Isolate, ChannelName), v8::Number::New(Isolate, TraceType)));
+                    __USE(Result->Set(Context, v8::Number::New(Isolate, TraceType), FV8Utils::ToV8String(Isolate, ChannelName)));
                 }
                 ContainerIndex++;
             }

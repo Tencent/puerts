@@ -20,7 +20,8 @@ public class WrapperGenConfig
             return new List<Type>()
             {
                 typeof(Puerts.UnitTest.OptionalParametersClass),
-                typeof(Puerts.UnitTest.WrapperGenTest)
+                typeof(Puerts.UnitTest.WrapperTest),
+                typeof(Puerts.UnitTest.GenericGenTest<Type, JsEnv>)
             };
         }
     }

@@ -39,29 +39,43 @@ struct FGenImp
                 Buff << ", ";
             auto argInfo = Type->Argument(i);
 
-            Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+            Buff << FString::Printf(TEXT("p%d"), i);
 
-            bool IsReference = argInfo->IsRef();
-            bool IsNullable = !IsReference && argInfo->IsPointer();
-            if (IsNullable)
+            if (i >= Type->ArgumentCount() - Type->DefaultCount())
             {
-                Buff << "$Nullable<";
-            }
-            if (IsReference)
-            {
-                Buff << "$Ref<";
+                Buff << "?";
             }
 
-            const puerts::CTypeInfo* TypeInfo = Type->Argument(i);
-            Buff << GetNamePrefix(TypeInfo) << GetName(TypeInfo);
+            Buff << ": ";
 
-            if (IsNullable)
+            if (!argInfo->IsConst() && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
             {
-                Buff << ">";
+                Buff << "ArrayBuffer";
             }
-            if (IsReference)
+            else
             {
-                Buff << ">";
+                bool IsReference = argInfo->IsRef();
+                bool IsNullable = !IsReference && argInfo->IsPointer();
+                if (IsNullable)
+                {
+                    Buff << "$Nullable<";
+                }
+                if (IsReference)
+                {
+                    Buff << "$Ref<";
+                }
+
+                const puerts::CTypeInfo* TypeInfo = Type->Argument(i);
+                Buff << GetNamePrefix(TypeInfo) << GetName(TypeInfo);
+
+                if (IsNullable)
+                {
+                    Buff << ">";
+                }
+                if (IsReference)
+                {
+                    Buff << ">";
+                }
             }
         }
     }

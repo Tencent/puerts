@@ -14,6 +14,66 @@ namespace Puerts
 {
     internal class TypeRegister
     {
+        internal class GenericWrapperTree
+        {
+            private class NativeObjectType {}
+            private class Node
+            {
+                public Type WrapperTypeDefinition;
+                public Dictionary<Type, Node> Branchs = new Dictionary<Type, Node>();
+            }
+
+            private static Dictionary<Type, Node> definitionTypeNodes = new Dictionary<Type, Node>();
+
+
+            public static Type FindWrapperDefinition(Type genericType)
+            {
+                Type typeDefinition = genericType.GetGenericTypeDefinition();
+                if (!definitionTypeNodes.ContainsKey(typeDefinition)) 
+                {
+                    return null;
+                }
+
+                Type[] genericArgumentsType = genericType.GetGenericArguments();
+                Node node = definitionTypeNodes[typeDefinition];
+                foreach (Type type_ in genericArgumentsType)
+                {
+                    Type type = type_;
+                    if (type == null) type = typeof(NativeObjectType);
+                    if (!node.Branchs.ContainsKey(type)) 
+                    {
+                        return null;
+                    }
+                    node = node.Branchs[type];
+                }
+                return node.WrapperTypeDefinition;
+            }
+            public static void AddWrapperTypeDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperTypeDefinition)
+            {
+                Node node;
+                if (!definitionTypeNodes.ContainsKey(typeDefinition)) 
+                {
+                    node = new Node();
+                    definitionTypeNodes.Add(typeDefinition, node);
+                } 
+                else 
+                {
+                    node = definitionTypeNodes[typeDefinition];
+                }
+                foreach (Type type_ in genericArgumentsType)
+                {
+                    Type type = type_;
+                    if (type == null) type = typeof(NativeObjectType);
+                    if (!node.Branchs.ContainsKey(type)) 
+                    {
+                        node.Branchs.Add(type, new Node());
+                    }
+                    node = node.Branchs[type];
+                }
+                node.WrapperTypeDefinition = wrapperTypeDefinition;
+            }
+        }
+
         public TypeRegister(JsEnv jsEnv)
         {
             this.jsEnv = jsEnv;
@@ -223,7 +283,7 @@ namespace Puerts
                     uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
                     if (FastArrayGet(isolate1, info, self, array, index)) return;
                     var transalteFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(array.GetType().GetElementType());
-                    transalteFunc(isolate1, NativeValueApi.SetValueToResult, info, array.GetValue((int)index));
+                    transalteFunc(jsEnv.Idx, isolate1, NativeValueApi.SetValueToResult, info, array.GetValue((int)index));
                 }
                 catch (Exception e)
                 {
@@ -240,7 +300,7 @@ namespace Puerts
                     var val = PuertsDLL.GetArgumentValue(info, 1);
                     if (FastArraySet(isolate1, info, self, array, index, val)) return;
                     var transalteFunc = jsEnv.GeneralGetterManager.GetTranslateFunc(array.GetType().GetElementType());
-                    array.SetValue(transalteFunc(isolate1, NativeValueApi.GetValueFromArgument, val, false), index);
+                    array.SetValue(transalteFunc(jsEnv.Idx, isolate1, NativeValueApi.GetValueFromArgument, val, false), index);
                 }
                 catch (Exception e)
                 {
@@ -365,7 +425,7 @@ namespace Puerts
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    translateFunc(isolate, NativeValueApi.SetValueToResult, info, field.GetValue(null));
+                    translateFunc(jsEnv.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(null));
                 };
             }
             else
@@ -373,7 +433,7 @@ namespace Puerts
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
                     var me = jsEnv.GeneralGetterManager.GetSelf(self);
-                    translateFunc(isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
+                    translateFunc(jsEnv.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
                 };
             }
         }
@@ -394,7 +454,7 @@ namespace Puerts
                     }
                     else
                     {
-                        field.SetValue(null, translateFunc(isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                        field.SetValue(null, translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
                     }
                 };
             }
@@ -411,7 +471,7 @@ namespace Puerts
                     else
                     {
                         var me = jsEnv.GeneralGetterManager.GetSelf(self);
-                        field.SetValue(me, translateFunc(isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                        field.SetValue(me, translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
                     }
                 };
             }
@@ -424,16 +484,39 @@ namespace Puerts
             lazyStaticWrapLoaders.Add(type, lazyStaticWrapLoader);
         }
 
+        internal void AddLazyStaticWrapLoaderGenericDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperDefinition)
+        {
+            GenericWrapperTree.AddWrapperTypeDefinition(typeDefinition, genericArgumentsType, wrapperDefinition);
+        }
+
         // #lizard forgives
         private int RegisterType(IntPtr isolate, Type type, bool includeNoPublic)
         {
             TypeRegisterInfo registerInfo = null;
 
+            // find WrapperLoader, if the type is genericType, try to find the genericWrapperDefinition
             if (lazyStaticWrapLoaders.ContainsKey(type))
             {
-                registerInfo = lazyStaticWrapLoaders[type]();
-                lazyStaticWrapLoaders.Remove(type);
+                if (lazyStaticWrapLoaders[type] != null)
+                {
+                    registerInfo = lazyStaticWrapLoaders[type]();
+                    lazyStaticWrapLoaders.Remove(type);
+                }
             }
+            else if (type.IsGenericType)
+            {
+                Type WrapperDefinition = GenericWrapperTree.FindWrapperDefinition(type);
+                if (WrapperDefinition == null) 
+                {
+                    lazyStaticWrapLoaders.Add(type, null);
+                }
+                else
+                {
+                    Type WrapperType = WrapperDefinition.MakeGenericType(type.GetGenericArguments());
+                    registerInfo = WrapperType.GetMethod("GetRegisterInfo").Invoke(null, null) as TypeRegisterInfo;
+                }
+            }
+
 
             BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
             if (includeNoPublic)
@@ -752,7 +835,7 @@ namespace Puerts
             var translateFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(typeof(Type));
             PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, "__p_innerType", true, callbackWrap, jsEnv.AddCallback((IntPtr isolate1, IntPtr info, IntPtr self, int argumentsLen) =>
             {
-                translateFunc(isolate1, NativeValueApi.SetValueToResult, info, type);
+                translateFunc(jsEnv.Idx, isolate1, NativeValueApi.SetValueToResult, info, type);
             }), null, 0, true);
 
             if (type.IsEnum)

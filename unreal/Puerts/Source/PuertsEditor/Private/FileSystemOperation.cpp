@@ -17,11 +17,15 @@ bool UFileSystemOperation::ReadFile(FString Path, FString& Data)
         TArray<uint8> Content;
         Content.Reset(len + 2);
         Content.AddUninitialized(len);
-        FileHandle->Read(Content.GetData(), len);
+        const bool Success = FileHandle->Read(Content.GetData(), len);
         delete FileHandle;
-        FFileHelper::BufferToString(Data, Content.GetData(), Content.Num());
 
-        return true;
+        if (Success)
+        {
+            FFileHelper::BufferToString(Data, Content.GetData(), Content.Num());
+        }
+
+        return Success;
     }
     return false;
 }

@@ -78,9 +78,13 @@ public:
 
     virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments) override;
 
+    virtual bool IdleNotificationDeadline(double DeadlineInSeconds) override;
+
     virtual void LowMemoryNotification() override;
 
-    virtual void MinorGarbageCollection() override;
+    virtual void RequestMinorGarbageCollectionForTesting() override;
+
+    virtual void RequestFullGarbageCollectionForTesting() override;
 
     virtual void WaitDebugger(double timeout) override
     {

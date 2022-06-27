@@ -50,6 +50,34 @@
 
 namespace puerts
 {
+class TCharStringHolder
+{
+public:
+    TCharStringHolder()
+    {
+    }
+
+    TCharStringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value)
+    {
+        Str = UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
+    }
+
+    const TCHAR* Data() const
+    {
+        return *Str;
+    }
+
+private:
+    FString Str;
+};
+
+template <>
+struct ArgumentBufferType<const TCHAR*>
+{
+    using type = TCharStringHolder;
+    static constexpr bool is_custom = true;
+};
+
 namespace converter
 {
 template <>
@@ -82,7 +110,34 @@ struct Converter<FName>
 
     static FName toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+            if (Ab->GetContents().ByteLength() == sizeof(FName))
+            {
+                return *static_cast<FName*>(Ab->GetContents().Data());
+            }
+        }
         return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsString();
+    }
+};
+
+template <>
+struct Converter<const TCHAR*>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const TCHAR* value)
+    {
+        return v8::String::NewFromUtf8(context->GetIsolate(), TCHAR_TO_UTF8(value), v8::NewStringType::kNormal).ToLocalChecked();
+    }
+
+    static TCharStringHolder toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return TCharStringHolder(context, value);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)

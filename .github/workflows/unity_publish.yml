@@ -20,7 +20,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_v8.yml
+          workflow: build_8.4.yml
           name: v8_bin
           repo: puerts/backend-v8
           path: unity/native_src/
@@ -30,11 +30,12 @@ jobs:
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
+          ls ~/android-ndk-r21b
           cd unity/native_src
-          node make.js --platform android
+          chmod 777 make_android.sh
+          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -59,11 +60,12 @@ jobs:
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
+          ls ~/android-ndk-r21b
           cd unity/native_src
-          node make.js --platform android --backend quickjs
+          chmod 777 make_android.sh
+          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -78,7 +80,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_v8.yml
+          workflow: build_8.4.yml
           name: v8_bin
           repo: puerts/backend-v8
           path: unity/native_src/
@@ -87,7 +89,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios
+          sh ./make_ios.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -111,7 +113,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend quickjs
+          sh ./make_ios.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -126,7 +128,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_v8.yml
+          workflow: build_8.4.yml
           name: v8_bin
           repo: puerts/backend-v8
           path: unity/native_src/
@@ -135,7 +137,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx
+          sh ./make_osx.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -159,7 +161,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend nodejs
+          sh ./make_osx.sh nodejs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -183,7 +185,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend quickjs
+          sh ./make_osx.sh quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -198,14 +200,15 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_v8.yml
+          workflow: build_8.4.yml
           name: v8_bin
           repo: puerts/backend-v8
           path: unity/native_src/
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win
+          .\make_win64.bat
+          .\make_win32.bat
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -227,7 +230,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend nodejs --arch=x64
+          .\make_win64.bat nodejs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -249,7 +252,8 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend quickjs
+          .\make_win64.bat quickjs
+          .\make_win32.bat quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -269,14 +273,15 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_v8.yml
+          workflow: build_8.4.yml
           name: v8_bin
           repo: puerts/backend-v8
           path: unity/native_src/
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform linux --arch=x64
+          chmod 777 make_linux64.sh
+          ./make_linux64.sh
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -323,6 +328,8 @@ jobs:
         with:
           body: |
             中文版本请查看 [`doc/unity/changelog.md`](https://github.com/Tencent/puerts/blob/master/doc/unity/changelog.md)
+            
+            > difference between Node.js/Quickjs/V8: [wiki](https://github.com/Tencent/puerts/wiki/%5BUnity%5D-Release%E9%87%8C%E5%90%84%E4%B8%AAPlugin%E7%9A%84%E5%8C%BA%E5%88%AB)
           tag_name: Unity_v${{ github.event.inputs.tag_name }}
           release_name: Unity_v${{ github.event.inputs.tag_name }},ApiLevel:${{ env.API_LEVEL }}
           draft: false

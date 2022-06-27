@@ -19,7 +19,6 @@ using UnityEngine;
 namespace Puerts.Editor
 {
     namespace Generator {
-
         public class Menu {
 #if !PUERTS_GENERAL
             [MenuItem("Puerts/Generate Code", false, 1)]
@@ -157,40 +156,52 @@ namespace Puerts.Editor
                 }
                 using (var jsEnv = new JsEnv(loader))
                 {
-                    var wrapRender = jsEnv.Eval<Func<Wrapper.TypeGenInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+                    var wrapRender = jsEnv.Eval<Func<Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
 
-                    var typeGenInfos = new List<Wrapper.TypeGenInfo>();
 
                     Dictionary<string, bool> makeFileUniqueMap = new Dictionary<string, bool>();
+                    Dictionary<Type, Wrapper.StaticWrapperInfo> wrapperInfoMap = new Dictionary<Type, Wrapper.StaticWrapperInfo>();
                     foreach (var type in genTypes)
                     {
                         if (type.IsEnum || type.IsArray || (Generator.Utils.IsDelegate(type) && type != typeof(Delegate))) continue;
-                        Wrapper.TypeGenInfo typeGenInfo = Wrapper.TypeGenInfo.FromType(type, genTypes);
-                        typeGenInfo.BlittableCopy = blittableCopyTypes.Contains(type);
-                        typeGenInfos.Add(typeGenInfo);
-                        string filePath = saveTo + typeGenInfo.WrapClassName + ".cs";
+                        Wrapper.StaticWrapperInfo staticWrapperInfo = Wrapper.StaticWrapperInfo.FromType(type, genTypes);
+                        staticWrapperInfo.BlittableCopy = blittableCopyTypes.Contains(type);
+
+                        wrapperInfoMap[type] = staticWrapperInfo;
+                    }
+
+                    foreach (var item in wrapperInfoMap)
+                    {
+                        var staticWrapperInfo = item.Value;
+                        var wrapClassName = staticWrapperInfo.WrapClassName;
+                        
+                        string filePath = saveTo + staticWrapperInfo.WrapClassName + ".cs";
 
                         int uniqueId = 1;
+                        if (makeFileUniqueMap.ContainsKey(filePath.ToLower()) && staticWrapperInfo.IsGenericWrapper) {
+                            continue;
+                        }
                         while (makeFileUniqueMap.ContainsKey(filePath.ToLower()))
                         {
-                            filePath = saveTo + typeGenInfo.WrapClassName + "_" + uniqueId + ".cs";
+                            // 存在大小写重复的情况，用一个id去重
+                            filePath = saveTo + staticWrapperInfo.WrapClassName + "_" + uniqueId + ".cs";
                             uniqueId++;
                         }
                         makeFileUniqueMap.Add(filePath.ToLower(), true);
 
-                        string fileContext = wrapRender(typeGenInfo);
+                        string fileContent = wrapRender(staticWrapperInfo);
                         using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
                         {
-                            textWriter.Write(fileContext);
+                            textWriter.Write(fileContent);
                             textWriter.Flush();
                         }
                     }
 
-                    var autoRegisterRender = jsEnv.Eval<Func<Wrapper.TypeGenInfo[], string>>("require('puerts/templates/wrapper-reg.tpl.cjs')");
+                    var autoRegisterRender = jsEnv.Eval<Func<Type[], Wrapper.StaticWrapperInfo[], string>>("require('puerts/templates/wrapper-reg.tpl.cjs')");
                     using (StreamWriter textWriter = new StreamWriter(saveTo + "AutoStaticCodeRegister.cs", false, Encoding.UTF8))
                     {
-                        string fileContext = autoRegisterRender(typeGenInfos.ToArray());
-                        textWriter.Write(fileContext);
+                        string fileContent = autoRegisterRender(wrapperInfoMap.Keys.ToArray(), wrapperInfoMap.Values.ToArray());
+                        textWriter.Write(fileContent);
                         textWriter.Flush();
                     }
                 }

@@ -21,12 +21,12 @@ namespace Puerts
 
         private static void DefaultPush(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr function, T o)
         {
-            JsEnv.jsEnvs[jsEnvIdx].GeneralSetterManager.GetTranslateFunc(typeof(T))(isolate, setValueApi, function, o);
+            JsEnv.jsEnvs[jsEnvIdx].GeneralSetterManager.GetTranslateFunc(typeof(T))(jsEnvIdx, isolate, setValueApi, function, o);
         }
 
         private static T DefaultGetResult(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            object obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetTranslateFunc(typeof(T))(isolate, getValueApi, value, isByRef);
+            object obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetTranslateFunc(typeof(T))(jsEnvIdx, isolate, getValueApi, value, isByRef);
             if (obj == null)
             {
                 return default(T);
@@ -39,8 +39,8 @@ namespace Puerts
 
         public static void ReplaceDefault(PushFunc pushFunc, GetFunc getFunc)
         {
-            Set = pushFunc;
-            Get = getFunc;
+            if (pushFunc != null) Set = pushFunc;
+            if (getFunc != null) Get = getFunc;
         }
     }
 
@@ -123,7 +123,24 @@ namespace Puerts
 
         public static long GetInt64(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr holder, bool isByRef)
         {
-            return getValueApi.GetBigInt(isolate, holder, isByRef);
+            if (getValueApi.GetJsValueType(isolate, holder, isByRef) == JsValueType.NativeObject) 
+            {
+                IntPtr ptr = getValueApi.GetNativeObject(isolate, holder, isByRef);
+                object obj = JsEnv.jsEnvs[jsEnvIdx].objectPool.Get(ptr.ToInt32());
+                if (obj.GetType() == typeof(Int64Value)) 
+                {
+                    return (long)((Int64Value)obj).Target;
+                }
+                else 
+                {
+                    throw new Exception("not a int64 value");
+                }
+
+            }
+            else 
+            {
+                return getValueApi.GetBigInt(isolate, holder, isByRef);
+            }
         }
 
         public static void PushUInt64(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, ulong i)

@@ -127,6 +127,29 @@ V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
 
 namespace puerts
 {
+class StringHolder
+{
+public:
+    StringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value) : utfString(context->GetIsolate(), value)
+    {
+    }
+
+    const char* Data() const
+    {
+        return *utfString;
+    }
+
+private:
+    v8::String::Utf8Value utfString;
+};
+
+template <>
+struct ArgumentBufferType<const char*>
+{
+    using type = StringHolder;
+    static constexpr bool is_custom = true;
+};
+
 namespace converter
 {
 template <typename T, typename Enable = void>
@@ -273,11 +296,6 @@ struct Converter<const char*>
         return v8::String::NewFromUtf8(context->GetIsolate(), value, v8::NewStringType::kNormal).ToLocalChecked();
     }
 
-    static const char* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return nullptr;
-    }
-
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return value->IsString();
@@ -304,7 +322,34 @@ struct Converter<bool>
 };
 
 template <typename T>
-struct Converter<std::reference_wrapper<T>>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<!is_objecttype<T>::value && !is_uetype<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
+    {
+        auto result = v8::Object::New(context->GetIsolate());
+        auto _unused = result->Set(context, 0, Converter<T>::toScript(context, value));
+        return result;
+    }
+
+    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (value->IsObject())
+        {
+            auto outer = value->ToObject(context).ToLocalChecked();
+            auto realvalue = outer->Get(context, 0).ToLocalChecked();
+            return Converter<T>::toCpp(context, realvalue);
+        }
+        return {};
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsObject();    // do not checked inner
+    }
+};
+
+template <typename T>
+struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttype<T>::value || is_uetype<T>::value>::type>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
     {
@@ -330,6 +375,36 @@ struct Converter<std::reference_wrapper<T>>
     }
 };
 
+template <typename T>
+struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
+    {
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
+    }
+
+    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto ABC = BuffView->Buffer()->GetContents();
+            return static_cast<T*>(ABC.Data()) + BuffView->ByteOffset();
+        }
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+            return static_cast<T*>(Ab->GetContents().Data());
+        }
+        return nullptr;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
 template <class T>
 struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value && std::is_constructible<T>::value &&
                                             is_objecttype<T>::value && !is_uetype<T>::value>::type>
@@ -350,4 +425,10 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
 };
 
 }    // namespace converter
+
+template <>
+struct is_script_type<std::string> : std::true_type
+{
+};
+
 }    // namespace puerts

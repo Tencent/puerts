@@ -71,6 +71,12 @@ struct ScriptTypeName<std::string>
 };
 
 template <>
+struct ScriptTypeName<const char*>
+{
+    static constexpr const char* value = "string";
+};
+
+template <>
 struct ScriptTypeName<bool>
 {
     static constexpr const char* value = "boolean";
@@ -93,12 +99,22 @@ struct StaticTypeId
 };
 
 template <typename T>
-struct is_uetype : public std::false_type
+struct is_uetype : std::false_type
 {
 };
 
 template <typename T>
-struct is_objecttype : public std::false_type
+struct is_objecttype : std::false_type
+{
+};
+
+template <typename T, typename Enable = void>
+struct is_script_type : std::false_type
+{
+};
+
+template <typename T>
+struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value>::type> : std::true_type
 {
 };
 
@@ -118,11 +134,12 @@ class CFunctionInfo
 public:
     virtual const CTypeInfo* Return() const = 0;
     virtual unsigned int ArgumentCount() const = 0;
+    virtual unsigned int DefaultCount() const = 0;
     virtual const CTypeInfo* Argument(unsigned int index) const = 0;
     virtual const char* CustomSignature() const = 0;
 };
 
-template <typename T>
+template <typename T, bool ScriptTypePtrAsRef>
 class CTypeInfoImpl : CTypeInfo
 {
 public:
@@ -132,15 +149,16 @@ public:
     }
     virtual bool IsPointer() const override
     {
-        return std::is_pointer<T>::value;
+        return std::is_pointer<T>::value && !ScriptTypePtrAsRef;
     };
     virtual bool IsRef() const override
     {
-        return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value;
+        return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value ||
+               std::is_pointer<T>::value && ScriptTypePtrAsRef && !IsConst() && !IsUEType() && !IsObjectType();
     };
     virtual bool IsConst() const override
     {
-        return std::is_const<T>::value;
+        return std::is_const<typename std::remove_pointer<typename std::decay<T>::type>::type>::value;
     };
     virtual bool IsUEType() const override
     {
@@ -159,14 +177,19 @@ public:
     }
 };
 
-template <typename Ret, typename... Args>
+template <typename Ret, bool ScriptTypePtrAsRef, typename... Args>
 class CFunctionInfoImpl : CFunctionInfo
 {
     const CTypeInfo* return_;
     const unsigned int argCount_;
     const CTypeInfo* arguments_[sizeof...(Args) + 1];
+    unsigned int defaultCount_;
 
-    CFunctionInfoImpl() : return_(CTypeInfoImpl<Ret>::get()), argCount_(sizeof...(Args)), arguments_{CTypeInfoImpl<Args>::get()...}
+    CFunctionInfoImpl()
+        : return_(CTypeInfoImpl<Ret, ScriptTypePtrAsRef>::get())
+        , argCount_(sizeof...(Args))
+        , arguments_{CTypeInfoImpl<Args, ScriptTypePtrAsRef>::get()...}
+        , defaultCount_(0)
     {
     }
 
@@ -179,19 +202,23 @@ public:
     {
         return argCount_;
     }
+    virtual unsigned int DefaultCount() const override
+    {
+        return defaultCount_;
+    }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
         return arguments_[index];
     }
-
     virtual const char* CustomSignature() const override
     {
         return nullptr;
     }
 
-    static const CFunctionInfo* get()
+    static const CFunctionInfo* get(unsigned int defaultCount)
     {
         static CFunctionInfoImpl instance{};
+        instance.defaultCount_ = defaultCount;
         return &instance;
     }
 };
@@ -213,11 +240,14 @@ public:
     {
         return 0;
     }
+    virtual unsigned int DefaultCount() const override
+    {
+        return 0;
+    }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
         return nullptr;
     }
-
     virtual const char* CustomSignature() const override
     {
         return _signature;

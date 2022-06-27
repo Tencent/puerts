@@ -1,12 +1,6 @@
 # Puerts-Unity使用手册
 
-#### 1.准备操作
-
-- git clone [https://github.com/Tencent/puerts.git](https://github.com/Tencent/puerts.git)
-- 拷贝插件到您项目
-  - 拷贝puerts/unity/Assets下的所有内容到您项目的Assets目录下
-  - Plugins要单独下载 [release](https://github.com/Tencent/puerts/releases)，解压后替换本地Plugins目录 。
-
+#### 1. [安装PuerTS](./install.md)
 
 
 #### 2.c#标签介绍

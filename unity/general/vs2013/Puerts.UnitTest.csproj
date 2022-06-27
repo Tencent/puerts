@@ -61,6 +61,12 @@
     <Compile Include="..\Src\UnitTest\ExceptionTest.cs">
       <Link>Src\UnitTest\ExceptionTest.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\GenericTest.cs">
+      <Link>Src\UnitTest\GenericTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\GenTest.cs">
+      <Link>Src\UnitTest\GenTest.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\OptionalParametersTest.cs">
       <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
     </Compile>
@@ -73,17 +79,20 @@
     <Compile Include="..\Src\UnitTest\UnitTest.cs">
       <Link>Src\UnitTest\UnitTest.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperTest.cs">
+      <Link>Src\UnitTest\WrapperTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperTestClass.cs">
+      <Link>Src\UnitTest\WrapperTestClass.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\WrapperGenTest.cs">
-      <Link>Src\UnitTest\WrapperGenTest.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
-      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
