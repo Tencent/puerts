@@ -40,15 +40,17 @@ struct ArgumentBufferType
     &(::puerts::PropertyWrapper<decltype(M), M>::getter), nullptr, ::puerts::PropertyWrapper<decltype(M), M>::info()
 #define MakeVariable(M) MakeProperty(M)
 #define MakeReadonlyVariable(M) MakeReadonlyProperty(M)
-#define MakeFunction(M) &(::puerts::FuncCallWrapper<decltype(M), M>::call), ::puerts::FuncCallWrapper<decltype(M), M>::info()
-#define MakeFunctionWithDefaultValues(M, ...)                                                   \
+#define MakeFunction(M, ...)                                                                    \
     [](::puerts::CallbackInfoType info)                                                         \
     { ::puerts::FuncCallWrapper<decltype(M), M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
         ::puerts::FuncCallWrapper<decltype(M), M>::info(puerts::Count(__VA_ARGS__))
-#define SelectFunction(SIGNATURE, M) \
-    &(::puerts::FuncCallWrapper<SIGNATURE, M>::call), ::puerts::FuncCallWrapper<SIGNATURE, M>::info()
-#define SelectFunction_PtrRet(SIGNATURE, M) \
-    &(::puerts::FuncCallWrapper<SIGNATURE, M, true>::call), ::puerts::FuncCallWrapper<SIGNATURE, M, true>::info()
+#define SelectFunction(SIGNATURE, M, ...)                                                                                         \
+    [](::puerts::CallbackInfoType info) { ::puerts::FuncCallWrapper<SIGNATURE, M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
+        ::puerts::FuncCallWrapper<SIGNATURE, M>::info(puerts::Count(__VA_ARGS__))
+#define SelectFunction_PtrRet(SIGNATURE, M, ...)                                                    \
+    [](::puerts::CallbackInfoType info)                                                             \
+    { ::puerts::FuncCallWrapper<SIGNATURE, M, true>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
+        ::puerts::FuncCallWrapper<SIGNATURE, M, true>::info(puerts::Count(__VA_ARGS__))
 #define MakeCheckFunction(M) \
     &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall), ::puerts::FuncCallWrapper<decltype(M), M>::info()
 #define MakeOverload(SIGNATURE, M) puerts::FuncCallWrapper<SIGNATURE, M>
