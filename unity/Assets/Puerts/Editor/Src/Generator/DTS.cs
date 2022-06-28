@@ -32,14 +32,17 @@ namespace Puerts.Editor
                 public bool IsOptional;
                 public override bool Equals(object obj)
                 {
-                    if (obj != null && obj is TsParameterGenInfo)
+                    if (obj != null)
                     {
-                        TsParameterGenInfo info = (TsParameterGenInfo)obj;
-                        return this.Name == info.Name &&
-                            this.TypeName == info.TypeName &&
-                            this.IsByRef == info.IsByRef &&
-                            this.IsParams == info.IsParams &&
-                            this.IsOptional == info.IsOptional;
+                        TsParameterGenInfo info = (TsParameterGenInfo)obj as TsParameterGenInfo;
+                        if (info != null) 
+                        {
+                            return this.Name == info.Name &&
+                                this.TypeName == info.TypeName &&
+                                this.IsByRef == info.IsByRef &&
+                                this.IsParams == info.IsParams &&
+                                this.IsOptional == info.IsOptional;
+                        }
                     }
                     return base.Equals(obj);
                 }
@@ -84,24 +87,27 @@ namespace Puerts.Editor
                 public bool IsStatic;
                 public override bool Equals(object obj)
                 {
-                    if (obj != null && obj is TsMethodGenInfo)
+                    if (obj != null)
                     {
-                        TsMethodGenInfo info = (TsMethodGenInfo)obj;
-                        if (this.ParameterInfos.Length != info.ParameterInfos.Length ||
-                            this.Name != info.Name ||
-                            this.TypeName != info.TypeName ||
-                            this.IsConstructor != info.IsConstructor ||
-                            this.IsStatic != info.IsStatic)
+                        TsMethodGenInfo info = obj as TsMethodGenInfo;
+                        if (info != null) 
                         {
-                            return false;
-                        }
-
-                        for (int i = 0; i < this.ParameterInfos.Length; i++)
-                        {
-                            if (!this.ParameterInfos[i].Equals(info.ParameterInfos[i]))
+                            if (this.ParameterInfos.Length != info.ParameterInfos.Length ||
+                                this.Name != info.Name ||
+                                this.TypeName != info.TypeName ||
+                                this.IsConstructor != info.IsConstructor ||
+                                this.IsStatic != info.IsStatic)
+                            {
                                 return false;
+                            }
+
+                            for (int i = 0; i < this.ParameterInfos.Length; i++)
+                            {
+                                if (!this.ParameterInfos[i].Equals(info.ParameterInfos[i]))
+                                    return false;
+                            }
+                            return true;
                         }
-                        return true;
                     }
                     return base.Equals(obj);
                 }

@@ -45,6 +45,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\FileExporter.cs">
+      <Link>Assets\Puerts\Editor\Src\Generator\FileExporter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\JsEnv.cs">
       <Link>Assets\Puerts\Runtime\Src\JsEnv.cs</Link>
     </Compile>
@@ -125,9 +128,6 @@
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\Wrapper.cs">
       <Link>Assets\Puerts\Editor\Src\Generator\Wrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\Menu.cs">
-      <Link>Assets\Puerts\Editor\Src\Generator\Menu.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

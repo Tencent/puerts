@@ -12,6 +12,13 @@ namespace PuertsStaticWrap
             jsEnv.AddLazyStaticWrapLoader(typeof(Puerts.UnitTest.WrapperTest), Puerts_UnitTest_WrapperTest_Wrap.GetRegisterInfo);
                 
                 
+            jsEnv.AddLazyStaticWrapLoader(typeof(Puerts.UnitTest.GenericGenTest<System.Type, Puerts.JsEnv>), Puerts_UnitTest_GenericGenTest_2_T_S__Wrap<System.Type,Puerts.JsEnv>.GetRegisterInfo);
+                jsEnv.AddLazyStaticWrapLoaderGenericDefinition(
+                    typeof(Puerts.UnitTest.GenericGenTest<System.Type, Puerts.JsEnv>).GetGenericTypeDefinition(),
+                    new Type[]{ null, null },
+                    typeof(Puerts_UnitTest_GenericGenTest_2_T_S__Wrap<System.Type,Puerts.JsEnv>).GetGenericTypeDefinition()
+                );
+                
         }
     }
 }

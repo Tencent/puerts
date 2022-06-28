@@ -66,6 +66,8 @@ function csTypeToClass(csType) {
 }
 
 function Namespace() {}
+puerts.__$NamespaceType = Namespace;
+
 function createTypeProxy(namespace) {
     return new Proxy(new Namespace, {
         get: function(cache, name) {
