@@ -59,6 +59,8 @@ namespace Puerts
         public int debugPort;
 #endif
 
+        internal Action OnDispose;
+
         public JsEnv() 
             : this(new DefaultLoader(), -1, IntPtr.Zero, IntPtr.Zero)
         {
@@ -170,10 +172,17 @@ namespace Puerts
                 ExecuteModule("puerts/cjsload.mjs");
                 ExecuteModule("puerts/modular.mjs");
                 ExecuteModule("puerts/csharp.mjs");
-                ExecuteModule("puerts/timer.mjs");
-                
                 ExecuteModule("puerts/events.mjs");
-                ExecuteModule("puerts/promises.mjs");
+                
+                if (externalContext == IntPtr.Zero || externalRuntime == IntPtr.Zero) 
+                {
+                    ExecuteModule("puerts/timer.mjs");
+                    ExecuteModule("puerts/promises.mjs");
+                }
+                else 
+                {
+                    OnDispose += ExecuteModule<Action>("puerts/dispose.mjs", "default");
+                }
 #if !PUERTS_GENERAL
                 if (!isNode) 
                 {
@@ -191,6 +200,12 @@ namespace Puerts
                 if (OnJsEnvCreate != null) 
                 {
                     OnJsEnvCreate(this, loader, debugPort);
+                }
+                OnDispose += () => {
+                    if (OnJsEnvDispose != null) 
+                    {
+                        OnJsEnvDispose(this);
+                    }
                 }
                 this.debugPort = debugPort;
 #endif
@@ -695,7 +710,7 @@ namespace Puerts
                     this, fn, 0, false, 
                     (IntPtr isolate, int envIdx, IntPtr nativeJsFuncPtr) => {}
                 );
-                if (resultInfo==IntPtr.Zero)
+                if (resultInfo == IntPtr.Zero)
                 {
                     var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
                     throw new Exception(exceptionInfo);
@@ -782,16 +797,10 @@ namespace Puerts
 
         protected virtual void Dispose(bool dispose)
         {
-#if UNITY_EDITOR
-            if (OnJsEnvDispose != null) 
-            {
-                OnJsEnvDispose(this);
-            }
-#endif
-
             lock (jsEnvs)
             {
                 if (disposed) return;
+                if (OnDispose != null) OnDispose();
                 jsEnvs[Idx] = null;
                 PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;

@@ -87,7 +87,7 @@ jobs:
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           repo: puerts/backend-nodejs
-          workflow: build_nodejs.yml
+          workflow: build_14.yml
           name: nodejs_bin
           path: unity/native_src/
       - name: Build plugin
