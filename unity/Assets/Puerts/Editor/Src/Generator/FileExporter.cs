@@ -18,7 +18,7 @@ namespace Puerts.Editor
             public static Dictionary<string, List<KeyValuePair<object, int>>> configure;
             public static List<Type> genTypes;
 
-            public static void ExportDTS(string saveTo, bool esmMode = false, ILoader loader = null)
+            public static void ExportDTS(string saveTo, ILoader loader = null, bool esmMode = false)
             {
                 if (Utils.filters == null)
                 {
@@ -124,7 +124,7 @@ namespace Puerts.Editor
                         }
                         while (makeFileUniqueMap.ContainsKey(filePath.ToLower()))
                         {
-                            // 存在大小写重复的情况，用一个id去重
+                            // 锟斤拷锟节达拷小写锟截革拷锟斤拷锟斤拷锟斤拷锟斤拷锟揭伙拷锟絠d去锟斤拷
                             filePath = saveTo + staticWrapperInfo.WrapClassName + "_" + uniqueId + ".cs";
                             uniqueId++;
                         }
