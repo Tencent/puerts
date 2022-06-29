@@ -658,10 +658,12 @@ public:
             ::memcpy(Buff, ArrayBuffer->Data, ArrayBuffer->Length);
             return Ab;
         }
-        else
-        {
-            return v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
-        }
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(
+            Isolate, ArrayBuffer->Data, ArrayBuffer->Length, v8::BackingStore::EmptyDeleter, nullptr);
+#else
+        return v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+#endif
     }
 
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,

@@ -33,7 +33,11 @@ void SetFunctionArray(FuncPtr* FuncArray, uint32_t FuncArrayLength)
 
 static v8::Local<v8::Uint8Array> WrapPointer(v8::Isolate* Isolate, void* Ptr, size_t Length)
 {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    return v8::ArrayBuffer_New_Without_Stl(Isolate, Ptr, Length, v8::BackingStore::EmptyDeleter, nullptr);
+#else
     v8::Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(Isolate, Ptr, Length);
+#endif
     return v8::Uint8Array::New(ab, 0, Length);
 }
 

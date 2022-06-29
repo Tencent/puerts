@@ -380,7 +380,11 @@ struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::i
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
     {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0, v8::BackingStore::EmptyDeleter, nullptr);
+#else
         return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
+#endif
     }
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
