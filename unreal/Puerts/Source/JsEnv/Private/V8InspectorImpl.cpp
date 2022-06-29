@@ -327,6 +327,9 @@ void V8InspectorClientImpl::Close()
 {
     if (IsAlive)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         Server.stop_listening();
         V8InspectorChannel.reset();
 
@@ -344,6 +347,9 @@ bool V8InspectorClientImpl::Tick(float /* DeltaTime */)
     {
         if (IsAlive)
         {
+#ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+#endif
             Server.poll();
         }
     }
