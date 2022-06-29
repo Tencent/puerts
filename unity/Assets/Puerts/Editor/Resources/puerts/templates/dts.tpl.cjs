@@ -49,6 +49,9 @@ module.exports = function TypingTemplate(data, esmMode) {
 
     tt`
 declare module 'csharp' {
+    //keep type incompatibility / 此属性保持类型不兼容
+    const __keep_incompatibility: unique symbol;
+
     namespace CSharp {
         interface $Ref<T> {
             value: T
@@ -108,7 +111,7 @@ declare module 'csharp' {
                     //keep type incompatibility / 此属性保持类型不兼容
                     if (!type.IsInterface) {
                         t`
-                        protected __keep_incompatibility: never;
+                        protected [__keep_incompatibility]: never;
                         `
                     }
                     
