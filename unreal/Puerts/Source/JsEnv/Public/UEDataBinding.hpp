@@ -173,12 +173,7 @@ struct Converter<FArrayBuffer>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBuffer value)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(
-            context->GetIsolate(), value.Data, value.Length, v8::BackingStore::EmptyDeleter, nullptr);
-#else
         return v8::ArrayBuffer::New(context->GetIsolate(), value.Data, value.Length);
-#endif
     }
 
     static FArrayBuffer toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
