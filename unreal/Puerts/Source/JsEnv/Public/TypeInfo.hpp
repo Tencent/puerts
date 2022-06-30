@@ -114,7 +114,8 @@ struct is_script_type : std::false_type
 };
 
 template <typename T>
-struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value>::type> : std::true_type
+struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value && !std::is_same<T, void>::value>::type>
+    : std::true_type
 {
 };
 
@@ -154,7 +155,9 @@ public:
     virtual bool IsRef() const override
     {
         return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value ||
-               std::is_pointer<T>::value && ScriptTypePtrAsRef && !IsConst() && !IsUEType() && !IsObjectType();
+               std::is_pointer<T>::value &&
+                   !std::is_same<void, typename std::decay<typename std::remove_pointer<T>::type>::type>::value &&
+                   ScriptTypePtrAsRef && !IsConst() && !IsUEType() && !IsObjectType();
     };
     virtual bool IsConst() const override
     {

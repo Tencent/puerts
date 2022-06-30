@@ -978,11 +978,22 @@ struct ConstructorsCombiner
     }
 };
 
+template <class T>
+struct IsBoundedArray : std::false_type
+{
+};
+
+template <class T, std::size_t N>
+struct IsBoundedArray<T[N]> : std::true_type
+{
+};
+
 template <typename T, T, typename Enable = void>
 struct PropertyWrapper;
 
 template <class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value>::type>
+struct PropertyWrapper<Ret Ins::*, member,
+    typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && !IsBoundedArray<Ret>::value>::type>
 {
     static void getter(CallbackInfoType info)
     {
@@ -1006,6 +1017,52 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<!is_objecttyp
             return;
         }
         self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+    }
+
+    static const char* info()
+    {
+        return ScriptTypeName<Ret>::value;
+    }
+};
+
+template <class Ins, class Ret, Ret Ins::*member>
+struct PropertyWrapper<Ret Ins::*, member,
+    typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && IsBoundedArray<Ret>::value>::type>
+{
+    static void getter(CallbackInfoType info)
+    {
+        auto context = GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        if (!self)
+        {
+            ThrowException(info, "access a null object");
+            return;
+        }
+
+        SetReturn(info, converter::Converter<Ret>::toScript(context, self->*member));
+    }
+
+    static void setter(CallbackInfoType info)
+    {
+        auto context = GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        if (!self)
+        {
+            ThrowException(info, "access a null object");
+            return;
+        }
+
+        if (!converter::Converter<Ret>::accept(context, GetArg(info, 0)))
+        {
+            ThrowException(info, "invalid value for property");
+            return;
+        }
+        auto Src = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+        if (self->*member == Src)
+        {
+            return;
+        }
+        memcpy(self->*member, Src, sizeof(Ret));
     }
 
     static const char* info()
@@ -1209,8 +1266,13 @@ public:
         }
     };
 
-#if !BUILDING_PES_EXTENSION
     void Register()
+    {
+        Register(FinalizeBuilder<T>::Build());
+    }
+
+#if !BUILDING_PES_EXTENSION
+    void Register(FinalizeFuncType Finalize)
     {
         const bool isUEType = puerts::is_uetype<T>::value;
         static std::vector<JSFunctionInfo> s_functions_{};
@@ -1238,7 +1300,7 @@ public:
         }
 
         ClassDef.Initialize = constructor_;
-        ClassDef.Finalize = FinalizeBuilder<T>::Build();
+        ClassDef.Finalize = Finalize;
 
         s_functions_ = std::move(functions_);
         s_functions_.push_back({nullptr, nullptr, nullptr});
@@ -1279,7 +1341,7 @@ public:
         puerts::RegisterJSClass(ClassDef);
     }
 #else
-    void Register()
+    void Register(FinalizeFuncType Finalize)
     {
         size_t properties_count = functions_.size() + methods_.size() + properties_.size();
         auto properties = pesapi_alloc_property_descriptors(properties_count);
@@ -1304,7 +1366,7 @@ public:
             pesapi_set_property_info(properties, pos++, prop.Name, true, prop.Getter, prop.Setter, nullptr, nullptr);
         }
 
-        pesapi_finalize finalize = FinalizeBuilder<T>::Build();
+        pesapi_finalize finalize = Finalize;
         pesapi_define_class(StaticTypeId<T>::get(), superTypeId_, className_, constructor_, finalize, properties_count, properties);
     }
 #endif

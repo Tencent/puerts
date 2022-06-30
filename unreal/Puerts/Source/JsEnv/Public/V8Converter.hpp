@@ -303,6 +303,37 @@ struct Converter<const char*>
 };
 
 template <>
+struct Converter<void*>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, void* value)
+    {
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
+    }
+
+    static void* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto ABC = BuffView->Buffer()->GetContents();
+            return (char*) ABC.Data() + BuffView->ByteOffset();
+        }
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+            return Ab->GetContents().Data();
+        }
+
+        return nullptr;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
+template <>
 struct Converter<bool>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, bool value)
@@ -376,25 +407,27 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 };
 
 template <typename T>
-struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+struct Converter<T,
+    typename std::enable_if<is_script_type<typename std::remove_pointer<T>::type>::value && !std::is_array<T>::value &&
+                            !std::is_const<typename std::remove_pointer<T>::type>::value && std::is_pointer<T>::value>::type>
 {
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
         return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
     }
 
-    static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         if (value->IsArrayBufferView())
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto ABC = BuffView->Buffer()->GetContents();
-            return static_cast<T*>(ABC.Data()) + BuffView->ByteOffset();
+            return reinterpret_cast<T>(static_cast<char*>(ABC.Data()) + BuffView->ByteOffset());
         }
         if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-            return static_cast<T*>(Ab->GetContents().Data());
+            return static_cast<T>(Ab->GetContents().Data());
         }
         return nullptr;
     }
@@ -402,6 +435,30 @@ struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::i
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
+template <typename T, std::size_t Size>
+struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value[Size])
+    {
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, sizeof(T) * Size);
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> buffView = value.As<v8::ArrayBufferView>();
+            return buffView->ByteLength() >= sizeof(T) * Size;
+        }
+        if (value->IsArrayBuffer())
+        {
+            auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+            return ab->GetContents().ByteLength() >= sizeof(T) * Size;
+        }
+        return false;
     }
 };
 
@@ -424,11 +481,47 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
 };
 
+template <class T>
+struct Converter<const T*,
+    typename std::enable_if<(is_objecttype<T>::value || std::is_same<T, void>::value) && !is_uetype<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T* value)
+    {
+        return Converter<T*>::toScript(context, const_cast<T*>(value));
+    }
+    static const T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return Converter<T*>::toCpp(context, value);
+    }
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return Converter<T*>::accept(context, value);
+    }
+};
+
 }    // namespace converter
 
 template <>
 struct is_script_type<std::string> : std::true_type
 {
+};
+
+template <typename T, size_t Size>
+struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static constexpr const char* value = "ArrayBuffer";
+};
+
+template <>
+struct ScriptTypeName<void*>
+{
+    static constexpr const char* value = "ArrayBuffer";
+};
+
+template <>
+struct ScriptTypeName<const void*>
+{
+    static constexpr const char* value = "ArrayBuffer";
 };
 
 }    // namespace puerts
