@@ -732,7 +732,12 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
                 {
                     FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
                     v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+                    size_t ByteLength;
+                    void* Buff = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+#else
                     void* Buff = Ab->GetContents().Data();
+#endif
                     ::memcpy(Buff, &Name, sizeof(FName));
                     Info.GetReturnValue().Set(Ab);
                 })
@@ -978,7 +983,7 @@ FJsEnvImpl::~FJsEnvImpl()
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
     // quickjs will call UnBind in vm dispose, so cleanup move to here
-#if !WITH_BACKING_STORE_AUTO_FREE
+#if !WITH_BACKING_STORE_AUTO_FREE && !defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
     for (auto& KV : ScriptStructFinalizeInfoMap)
     {
         FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
@@ -2557,7 +2562,18 @@ void FJsEnvImpl::BindStruct(
 
     if (!PassByPointer)
     {
-#if WITH_BACKING_STORE_AUTO_FREE
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(
+            MainIsolate, Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
+            [](void* Data, size_t Length, void* DeleterData)
+            {
+                // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
+                FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
+                FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
+            },
+            ScriptStructWrapper);
+        __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
+#elif WITH_BACKING_STORE_AUTO_FREE
         auto Backing = v8::ArrayBuffer::NewBackingStore(
             Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
             [](void* Data, size_t Length, void* DeleterData)
@@ -2602,7 +2618,7 @@ void FJsEnvImpl::BindCppObject(
 
 void FJsEnvImpl::UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr)
 {
-#if !WITH_BACKING_STORE_AUTO_FREE
+#if !WITH_BACKING_STORE_AUTO_FREE && !defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
     ScriptStructFinalizeInfoMap.Remove(Ptr);
 #endif
     auto CacheNodePtr = StructCache.Find(Ptr);
@@ -3161,9 +3177,10 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
             const auto ModuleInfoIt = Self->FindModuleInfo(Module);
             check(ModuleInfoIt != Self->HashToModuleInfo.end());
 
-            Module->SetSyntheticModuleExport(
+            Module->SetSyntheticModuleExport(IsolateInner,
                 v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(),
                 ModuleInfoIt->second->CJSValue.Get(IsolateInner));
+
             return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
         });
 
