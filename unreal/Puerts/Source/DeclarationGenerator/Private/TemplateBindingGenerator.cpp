@@ -48,7 +48,7 @@ struct FGenImp
 
             Buff << ": ";
 
-            if (!argInfo->IsConst() && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
+            if (strcmp(argInfo->Name(), "string") != 0 && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
             {
                 Buff << "ArrayBuffer";
             }

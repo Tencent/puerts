@@ -521,7 +521,8 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
 
 template <class T>
 struct Converter<const T*,
-    typename std::enable_if<(is_objecttype<T>::value || std::is_same<T, void>::value) && !is_uetype<T>::value>::type>
+    typename std::enable_if<(is_objecttype<T>::value || std::is_same<T, void>::value || is_script_type<T>::value) &&
+                            !is_uetype<T>::value && !std::is_same<T, char>::value>::type>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T* value)
     {
