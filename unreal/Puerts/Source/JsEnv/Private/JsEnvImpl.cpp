@@ -111,6 +111,20 @@ FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
 {
 }
 
+static void FNameToArrayBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
+    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    size_t ByteLength;
+    void* Buff = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+#else
+    void* Buff = Ab->GetContents().Data();
+#endif
+    ::memcpy(Buff, &Name, sizeof(FName));
+    Info.GetReturnValue().Set(Ab);
+}
+
 #if defined(WITH_NODEJS)
 void FJsEnvImpl::StartPolling()
 {
@@ -431,19 +445,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MethodBindingHelper<&FJsEnvImpl::LoadUEType>::Bind(Isolate, Context, Global, "__tgjsLoadUEType", This);
 
-    Global
-        ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsLoadCDataType"),
-            v8::FunctionTemplate::New(
-                Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-                {
-                    auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-                    Self->CppObjectMapper.LoadCppType(Info);
-                },
-                This)
-                ->GetFunction(Context)
-                .ToLocalChecked())
-        .Check();
+    MethodBindingHelper<&FJsEnvImpl::LoadCppType>::Bind(Isolate, Context, Global, "__tgjsLoadCDataType", This);
 
     MethodBindingHelper<&FJsEnvImpl::UEClassToJSClass>::Bind(Isolate, Context, Global, "__tgjsUEClassToJSClass", This);
 
@@ -488,22 +490,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFNameToArrayBuffer"),
-            v8::FunctionTemplate::New(Isolate,
-                [](const v8::FunctionCallbackInfo<v8::Value>& Info)
-                {
-                    FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
-                    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-                    size_t ByteLength;
-                    void* Buff = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
-#else
-                    void* Buff = Ab->GetContents().Data();
-#endif
-                    ::memcpy(Buff, &Name, sizeof(FName));
-                    Info.GetReturnValue().Set(Ab);
-                })
-                ->GetFunction(Context)
-                .ToLocalChecked())
+            v8::FunctionTemplate::New(Isolate, FNameToArrayBuffer)->GetFunction(Context).ToLocalChecked())
         .Check();
 
     MethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(
@@ -2679,6 +2666,11 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         Info.GetReturnValue().Set(Result);
     }
+}
+
+void FJsEnvImpl::LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    CppObjectMapper.LoadCppType(Info);
 }
 
 void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info)

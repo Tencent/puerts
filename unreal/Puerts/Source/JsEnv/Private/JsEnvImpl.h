@@ -251,6 +251,8 @@ private:
 
     void LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     bool GetContainerTypeProperty(v8::Local<v8::Context> Context, v8::Local<v8::Value> Value, PropertyMacro** PropertyPtr);
