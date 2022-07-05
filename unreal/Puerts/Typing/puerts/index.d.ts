@@ -17,6 +17,12 @@ declare module "puerts" {
     }
     
     type $Nullable<T> = T | null;
+
+    type cstring = string | ArrayBuffer;
+
+    function toCString(str:string) : ArrayBuffer;
+
+    function toCPtrArray(...ab:ArrayBuffer[]) : ArrayBuffer;
     
     function $ref<T>(x? : T) : $Ref<T>;
     

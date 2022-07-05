@@ -125,6 +125,72 @@ static void FNameToArrayBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Info.GetReturnValue().Set(Ab);
 }
 
+static void ToCString(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    auto Isolate = Info.GetIsolate();
+    if (!Info[0]->IsString())
+    {
+        FV8Utils::ThrowException(Isolate, "expect a string");
+        return;
+    }
+
+    v8::Local<v8::String> Str = Info[0]->ToString(Isolate->GetCurrentContext()).ToLocalChecked();
+
+    const size_t Length = Str->Utf8Length(Isolate);
+    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), Length + 1);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    size_t ByteLength;
+    char* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength));
+#else
+    char* Buff = static_cast<char*>(Ab->GetContents().Data());
+#endif
+    Str->WriteUtf8(Isolate, Buff);
+    Buff[Length] = '\0';
+    Info.GetReturnValue().Set(Ab);
+}
+
+static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    const size_t Length = sizeof(void*) * Info.Length();
+
+    v8::Local<v8::ArrayBuffer> Ret = v8::ArrayBuffer::New(Info.GetIsolate(), Length);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    size_t ByteLength;
+    void** Buff = static_cast<void**>(v8::ArrayBuffer_Get_Data(Ret, ByteLength));
+#else
+    void** Buff = static_cast<void**>(Ret->GetContents().Data());
+#endif
+
+    for (int i = 0; i < Info.Length(); i++)
+    {
+        auto Val = Info[i];
+        void* Ptr = nullptr;
+        if (Val->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = Val.As<v8::ArrayBufferView>();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t byteLength;
+            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength)) + BuffView->ByteOffset();
+#else
+            Ptr = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
+        }
+        else if (Val->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Val);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t byteLength;
+            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength));
+#else
+            Ptr = static_cast<char*>(Ab->GetContents().Data());
+#endif
+        }
+        Buff[i] = Ptr;
+    }
+    Info.GetReturnValue().Set(Ret);
+}
+
 #if defined(WITH_NODEJS)
 void FJsEnvImpl::StartPolling()
 {
@@ -491,6 +557,16 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     Global
         ->Set(Context, FV8Utils::ToV8String(Isolate, "__tgjsFNameToArrayBuffer"),
             v8::FunctionTemplate::New(Isolate, FNameToArrayBuffer)->GetFunction(Context).ToLocalChecked())
+        .Check();
+
+    PuertsObj
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "toCString"),
+            v8::FunctionTemplate::New(Isolate, ToCString)->GetFunction(Context).ToLocalChecked())
+        .Check();
+
+    PuertsObj
+        ->Set(Context, FV8Utils::ToV8String(Isolate, "toCPtrArray"),
+            v8::FunctionTemplate::New(Isolate, ToCPtrArray)->GetFunction(Context).ToLocalChecked())
         .Check();
 
     MethodBindingHelper<&FJsEnvImpl::ReleaseManualReleaseDelegate>::Bind(

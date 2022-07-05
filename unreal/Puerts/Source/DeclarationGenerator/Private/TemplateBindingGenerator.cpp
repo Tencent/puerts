@@ -28,7 +28,7 @@ struct FGenImp
     {
         Output << "declare module \"cpp\" {\n";
         Output << "    import * as UE from \"ue\"\n";
-        Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
+        Output << "    import {$Ref, $Nullable, cstring} from \"puerts\"\n\n";
     }
 
     void GenArguments(const puerts::CFunctionInfo* Type, FStringBuffer& Buff)
@@ -48,7 +48,7 @@ struct FGenImp
 
             Buff << ": ";
 
-            if (strcmp(argInfo->Name(), "string") != 0 && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
+            if (strcmp(argInfo->Name(), "cstring") != 0 && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
             {
                 Buff << "ArrayBuffer";
             }

@@ -73,7 +73,7 @@ struct ScriptTypeName<std::string>
 template <>
 struct ScriptTypeName<const char*>
 {
-    static constexpr const char* value = "string";
+    static constexpr const char* value = "cstring";
 };
 
 template <>

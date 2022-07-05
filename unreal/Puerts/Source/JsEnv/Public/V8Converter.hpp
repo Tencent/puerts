@@ -130,17 +130,67 @@ namespace puerts
 class StringHolder
 {
 public:
-    StringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value) : utfString(context->GetIsolate(), value)
+    StringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value)
     {
+        needFree = false;
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t byteLength;
+            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength)) + BuffView->ByteOffset();
+#else
+            data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
+        }
+        else if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t byteLength;
+            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength));
+#else
+            data = static_cast<char*>(Ab->GetContents().Data());
+#endif
+        }
+        else
+        {
+            if (value.IsEmpty())
+                return;
+            const auto isolate = context->GetIsolate();
+            v8::TryCatch try_catch(isolate);
+            v8::Local<v8::String> str;
+            if (!value->ToString(context).ToLocal(&str))
+                return;
+            const int length = str->Utf8Length(isolate);
+            data = new char[length + 1];
+            str->WriteUtf8(isolate, data);
+            needFree = true;
+        }
+    }
+
+    ~StringHolder()
+    {
+        if (needFree && data)
+        {
+            delete[] data;
+        }
     }
 
     const char* Data() const
     {
-        return *utfString;
+        return data;
     }
 
+    // Disallow copying and assigning.
+    StringHolder(const StringHolder&) = delete;
+    void operator=(const StringHolder&) = delete;
+
 private:
-    v8::String::Utf8Value utfString;
+    char* data;
+
+    bool needFree;
 };
 
 template <>
