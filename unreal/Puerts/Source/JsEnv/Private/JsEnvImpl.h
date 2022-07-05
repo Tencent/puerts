@@ -647,6 +647,29 @@ private:
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;
 #endif
+
+    typedef void (FJsEnvImpl::*V8MethodCallback)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    template <V8MethodCallback callback>
+    struct MethodBindingHelper
+    {
+        static void Bind(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj, const char* Key,
+            v8::Local<v8::External> This)
+        {
+            Obj->Set(Context, FV8Utils::ToV8String(Isolate, Key),
+                   v8::FunctionTemplate::New(
+                       Isolate,
+                       [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                       {
+                           auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                           (Self->*callback)(Info);
+                       },
+                       This)
+                       ->GetFunction(Context)
+                       .ToLocalChecked())
+                .Check();
+        }
+    };
 };
 
 }    // namespace puerts
