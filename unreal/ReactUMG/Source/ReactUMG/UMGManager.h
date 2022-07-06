@@ -11,6 +11,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "ReactWidget.h"
+#include "Components/PanelSlot.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
