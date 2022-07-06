@@ -138,8 +138,7 @@ public:
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength)) + BuffView->ByteOffset();
+            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
 #else
             data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
 #endif
@@ -148,8 +147,7 @@ public:
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength));
+            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
 #else
             data = static_cast<char*>(Ab->GetContents().Data());
 #endif
@@ -371,8 +369,7 @@ struct Converter<void*>
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength)) + BuffView->ByteOffset();
+            return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
 #else
             return static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
 #endif
@@ -381,8 +378,7 @@ struct Converter<void*>
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            return v8::ArrayBuffer_Get_Data(Ab, byteLength);
+            return v8::ArrayBuffer_Get_Data(Ab);
 #else
             return Ab->GetContents().Data();
 #endif
@@ -491,8 +487,7 @@ struct Converter<T,
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            return reinterpret_cast<T>(static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength)) + BuffView->ByteOffset());
+            return reinterpret_cast<T>(static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset());
 #else
             return reinterpret_cast<T>(static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset());
 #endif
@@ -501,8 +496,7 @@ struct Converter<T,
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            return static_cast<T>(v8::ArrayBuffer_Get_Data(Ab, byteLength));
+            return static_cast<T>(v8::ArrayBuffer_Get_Data(Ab));
 #else
             return static_cast<T>(Ab->GetContents().Data());
 #endif

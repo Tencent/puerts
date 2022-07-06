@@ -665,8 +665,7 @@ public:
         {
             v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Length);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t ByteLength;
-            void* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength));
+            void* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
 #else
             void* Buff = Ab->GetContents().Data();
 #endif
@@ -692,8 +691,7 @@ public:
             v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t ByteLength;
-            ArrayBuffer.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength)) + BuffView->ByteOffset();
+            ArrayBuffer.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
 #else
             ArrayBuffer.Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
 #endif

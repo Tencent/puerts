@@ -116,8 +116,7 @@ static void FNameToArrayBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
     v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    size_t ByteLength;
-    void* Buff = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+    void* Buff = v8::ArrayBuffer_Get_Data(Ab);
 #else
     void* Buff = Ab->GetContents().Data();
 #endif
@@ -139,8 +138,7 @@ static void ToCString(const v8::FunctionCallbackInfo<v8::Value>& Info)
     const size_t Length = Str->Utf8Length(Isolate);
     v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), Length + 1);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    size_t ByteLength;
-    char* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength));
+    char* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
 #else
     char* Buff = static_cast<char*>(Ab->GetContents().Data());
 #endif
@@ -155,8 +153,7 @@ static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     v8::Local<v8::ArrayBuffer> Ret = v8::ArrayBuffer::New(Info.GetIsolate(), Length);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    size_t ByteLength;
-    void** Buff = static_cast<void**>(v8::ArrayBuffer_Get_Data(Ret, ByteLength));
+    void** Buff = static_cast<void**>(v8::ArrayBuffer_Get_Data(Ret));
 #else
     void** Buff = static_cast<void**>(Ret->GetContents().Data());
 #endif
@@ -170,8 +167,7 @@ static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
             v8::Local<v8::ArrayBufferView> BuffView = Val.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength)) + BuffView->ByteOffset();
+            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
 #else
             Ptr = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
 #endif
@@ -180,8 +176,7 @@ static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Val);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t byteLength;
-            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, byteLength));
+            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
 #else
             Ptr = static_cast<char*>(Ab->GetContents().Data());
 #endif

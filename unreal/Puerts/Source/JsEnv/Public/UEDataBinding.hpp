@@ -197,8 +197,7 @@ struct Converter<FArrayBuffer>
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            size_t ByteLength;
-            Ret.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength)) + BuffView->ByteOffset();
+            Ret.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
 #else
             Ret.Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
 #endif
