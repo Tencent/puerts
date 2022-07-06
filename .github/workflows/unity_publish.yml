@@ -16,14 +16,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8
       - name: Install NDK
         run: |
           cd ~
@@ -46,14 +43,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
       - name: Install NDK
         run: |
           cd ~
@@ -76,14 +70,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -100,14 +91,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -124,14 +112,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -148,14 +133,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          repo: puerts/backend-nodejs
-          workflow: build_14.yml
-          name: nodejs_bin
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: nodejs
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -172,14 +154,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -196,14 +175,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8
       - name: Build
         run: |
           cd unity\native_src
@@ -219,14 +195,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          repo: puerts/backend-nodejs
-          workflow: build_14.yml
-          name: nodejs_bin
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: nodejs
       - name: Build
         run: |
           cd unity\native_src
@@ -241,14 +214,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
       - name: Build
         run: |
           cd unity\native_src
@@ -269,14 +239,11 @@ jobs:
           sudo apt-get install libc++-dev
           sudo apt-get install libc++abi-dev
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8
       - name: Build
         run: |
           cd unity/native_src
