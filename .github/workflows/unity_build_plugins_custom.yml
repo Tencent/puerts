@@ -22,16 +22,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: ${{ github.event.inputs.backend }}
       - name: Install NDK
         run: |
           cd ~
@@ -54,16 +49,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: ${{ github.event.inputs.backend }}
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -80,16 +70,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: ${{ github.event.inputs.backend }}
       - name: Build
         run: |
           cd unity/native_src
@@ -104,16 +89,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: ${{ github.event.inputs.backend }}
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -130,17 +110,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-        shell: bash
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: ${{ github.event.inputs.backend }}
       - name: Build
         run: |
           cd unity\native_src
@@ -161,16 +135,11 @@ jobs:
           sudo apt-get install libc++-dev
           sudo apt-get install libc++abi-dev
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: ${{ github.event.inputs.backend }}
       - name: Build
         run: |
           cd unity/native_src
