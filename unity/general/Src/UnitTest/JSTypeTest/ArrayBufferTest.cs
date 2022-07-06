@@ -6,6 +6,7 @@
 */
 
 using NUnit.Framework;
+using System;
 
 namespace Puerts.UnitTest
 {
@@ -148,6 +149,50 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(2, ret.AB.Bytes[1]);
         }
+        
+        [Test]
+        public void Test7()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingFunc<Puerts.ArrayBuffer, string>();
 
+            Func<Puerts.ArrayBuffer, string> func = jsEnv.Eval<Func<Puerts.ArrayBuffer, string>>(@"
+                (function(ab) {
+                    return '' + new Uint8Array(ab)[0];
+                });
+            ");
+
+            var res = func(new ArrayBuffer(new byte[] { 1, 2, 3 }));
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual("1", res);
+        }
+
+        
+        [Test]
+        public void Test8()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingAction<int, Puerts.ArrayBuffer, bool>();
+            jsEnv.UsingFunc<int, Puerts.ArrayBuffer, bool, string>();
+
+            Action<int, Puerts.ArrayBuffer, bool> action = jsEnv.Eval<Action<int, Puerts.ArrayBuffer, bool>>(@"
+                (function(i, ab, b) {
+                });
+            ");
+            Func<int, Puerts.ArrayBuffer, bool, string> func = jsEnv.Eval<Func<int, Puerts.ArrayBuffer, bool, string>>(@"
+                (function(i, ab, b) {
+                    return '' + new Uint8Array(ab)[0];
+                });
+            ");
+
+            action(1, new ArrayBuffer(new byte[] { 1, 2, 3 }), false);
+            var res = func(1, new ArrayBuffer(new byte[] { 1, 2, 3 }), false);
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual("1", res);
+        }
     }
 }

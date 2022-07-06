@@ -71,33 +71,6 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void JSObject()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            var ret = jsEnv.Eval<string>(@"
-                const CS = require('csharp');
-                let jsObj = {'a': 1};
-                let obj = new CS.Puerts.UnitTest.JsObjectTest();
-                JSON.stringify(obj.passThroughJSObject(jsObj))
-            ");
-            Assert.AreEqual("{\"a\":1}", ret);
-            ret = jsEnv.Eval<string>(@"
-                [
-                    (obj.passThroughJSObject(jsObj) === obj.passThroughJSObject(jsObj)).toString(),
-                    (obj.passThroughJSObject(jsObj) === jsObj).toString()
-                ].join('')
-            ");
-            Assert.AreEqual("truetrue", ret);
-            ret = jsEnv.Eval<string>(@"
-                [
-                    (obj.passThroughJSObjectInAnyFunction(jsObj) === obj.passThroughJSObjectInAnyFunction(jsObj)).toString(),
-                    (obj.passThroughJSObjectInAnyFunction(jsObj) === jsObj).toString()
-                ].join('')
-            ");
-            Assert.AreEqual("truetrue", ret);
-        }
-
-        [Test]
         public void DoubleInheritStaticMethod()
         {
             var jsEnv = new JsEnv(new TxtLoader());
@@ -144,45 +117,6 @@ namespace Puerts.UnitTest
             ");
             Puerts.ArrayBuffer ab = callback(new Puerts.ArrayBuffer(new byte[] { 1, 2, 3 }), 3);
             Assert.True(ab.Count == 2);
-        }
-
-        [Test]
-        public void GenericDelegate()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-
-            var ret = jsEnv.Eval<double>(@"
-                const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.JsObjectTest();
-                let jsObj = {'c': 100};
-                obj.Setter = (path, value) => {
-                    let tmp = jsObj;
-                    let nodes = path.split('.');
-                    let lastNode = nodes.pop();
-                    nodes.forEach(n => {
-                        if (typeof tmp[n] === 'undefined') tmp[n] = {};
-                        tmp = tmp[n];
-                    });
-                    tmp[lastNode] = value;
-                }
-
-                obj.Getter = (path) => {
-                    let tmp = jsObj;
-                    let nodes = path.split('.');
-                    let lastNode = nodes.pop();
-                    nodes.forEach(n => {
-                        if (typeof tmp != 'undefined') tmp = tmp[n];
-                    });
-                    return tmp[lastNode];
-                }
-                obj.SetSomeData();
-                obj.GetSomeData();
-                jsObj.a + jsObj.c;
-            ");
-
-            jsEnv.Dispose();
-
-            Assert.AreEqual(101, ret);
         }
 
         [Test]
@@ -940,34 +874,6 @@ namespace Puerts.UnitTest
                 
             ");
             jsEnv.Dispose();
-        }
-        [Test]
-        public void Int64Value()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-
-            jsEnv.Eval(@"
-                const CS = require('csharp');
-                let value = new CS.Puerts.Int64Value(512n);
-                CS.Puerts.UnitTest.TypedValue.Callback(value);
-            ");
-
-            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
-            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
-        }
-        [Test]
-        public void FloatValue()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-
-            jsEnv.Eval(@"
-                const CS = require('csharp');
-                let value = new CS.Puerts.FloatValue(512.256);
-                CS.Puerts.UnitTest.TypedValue.Callback(value);
-            ");
-
-            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Single));
-            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
         [Test]
         public void DelegateGC()

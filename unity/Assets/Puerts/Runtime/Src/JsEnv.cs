@@ -206,7 +206,7 @@ namespace Puerts
                     {
                         OnJsEnvDispose(this);
                     }
-                }
+                };
                 this.debugPort = debugPort;
 #endif
             } 
