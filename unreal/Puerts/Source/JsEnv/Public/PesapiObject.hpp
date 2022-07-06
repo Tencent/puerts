@@ -12,6 +12,9 @@
 
 #include "Binding.hpp"
 
+#include <iostream>
+#define REPORT_EXCEPTION(MSG) std::cout << "call function throw: " << MSG << std::endl
+
 namespace puerts
 {
 namespace internal
@@ -89,12 +92,12 @@ protected:
 class Function : public Object
 {
 public:
-    Function(pesapi_env env, pesapi_value value) : Object(env, value), ExceptionMessage(""), HasCaught(false)
+    Function(pesapi_env env, pesapi_value value) : Object(env, value)
     {
     }
 
     template <typename... Args>
-    void Action(Args... cppArgs)
+    void Action(Args... cppArgs) const
     {
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_holder(env_holder);
@@ -102,16 +105,14 @@ public:
 
         auto _un_used = invokeHelper(env, object, cppArgs...);
 
-        ExceptionMessage = "";
-        HasCaught = pesapi_has_caught(ValueScope.scope);
-        if (HasCaught)
+        if (pesapi_has_caught(ValueScope.scope))
         {
-            ExceptionMessage = pesapi_get_exception_as_string(ValueScope.scope, true);
+            REPORT_EXCEPTION(pesapi_get_exception_as_string(ValueScope.scope, true));
         }
     }
 
     template <typename Ret, typename... Args>
-    Ret Func(Args... cppArgs)
+    Ret Func(Args... cppArgs) const
     {
         internal::AutoValueScope ValueScope(env_holder);
         auto env = pesapi_get_env_from_holder(env_holder);
@@ -119,11 +120,9 @@ public:
 
         auto ret = invokeHelper(env, object, cppArgs...);
 
-        ExceptionMessage = "";
-        HasCaught = pesapi_has_caught(ValueScope.scope);
-        if (HasCaught)
+        if (pesapi_has_caught(ValueScope.scope))
         {
-            ExceptionMessage = pesapi_get_exception_as_string(ValueScope.scope, true);
+            REPORT_EXCEPTION(pesapi_get_exception_as_string(ValueScope.scope, true));
             return {};
         }
         else
@@ -131,10 +130,6 @@ public:
             return converter::Converter<Ret>::toCpp(env, ret);
         }
     }
-
-    std::string ExceptionMessage;
-
-    bool HasCaught;
 
 private:
     template <typename... Args>

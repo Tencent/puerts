@@ -10,6 +10,17 @@
 
 #include "Binding.hpp"
 
+#ifdef USING_IN_UNREAL_ENGINE
+#include "JSLogger.h"
+#include "V8Utils.h"
+
+#define REPORT_EXCEPTION(TC) \
+    UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TC));
+#else
+#include <iostream>
+#define REPORT_EXCEPTION(TC) std::cout << "call function throw: " << *v8::String::Utf8Value(Isolate, TC.Exception()) << std::endl
+#endif
+
 namespace puerts
 {
 class Object
@@ -79,13 +90,12 @@ protected:
 class Function : public Object
 {
 public:
-    Function(v8::Local<v8::Context> context, v8::Local<v8::Object> object)
-        : Object(context, object), ExceptionMessage(""), HasCaught(false)
+    Function(v8::Local<v8::Context> context, v8::Local<v8::Object> object) : Object(context, object)
     {
     }
 
     template <typename... Args>
-    void Action(Args... cppArgs)
+    void Action(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -98,15 +108,14 @@ public:
 
         auto _UnUsed = InvokeHelper(Context, Object, cppArgs...);
 
-        HasCaught = TryCatch.HasCaught();
-        if (HasCaught)
+        if (TryCatch.HasCaught())
         {
-            ExceptionMessage = *v8::String::Utf8Value(Isolate, TryCatch.Exception());
+            REPORT_EXCEPTION(TryCatch);
         }
     }
 
     template <typename Ret, typename... Args>
-    Ret Func(Args... cppArgs)
+    Ret Func(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -119,10 +128,9 @@ public:
 
         auto MaybeRet = InvokeHelper(Context, Object, cppArgs...);
 
-        HasCaught = TryCatch.HasCaught();
-        if (HasCaught)
+        if (TryCatch.HasCaught())
         {
-            ExceptionMessage = *v8::String::Utf8Value(Isolate, TryCatch.Exception());
+            REPORT_EXCEPTION(TryCatch);
         }
 
         if (!MaybeRet.IsEmpty())
@@ -132,18 +140,13 @@ public:
         return {};
     }
 
-    std::string ExceptionMessage;
-
-    bool HasCaught;
-
 private:
     template <typename... Args>
     auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
     {
         v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
-        ;
-    };
+    }
 
     auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
     {
