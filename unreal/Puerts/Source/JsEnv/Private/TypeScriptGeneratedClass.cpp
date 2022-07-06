@@ -29,9 +29,6 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
 #endif
         }
 
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Class->Isolate);
-#endif
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -82,7 +79,6 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
 #endif
 
 #ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {

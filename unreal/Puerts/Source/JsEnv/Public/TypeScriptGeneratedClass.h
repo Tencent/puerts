@@ -14,13 +14,6 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "TypeScriptGeneratedClass.generated.h"
 
-#ifdef THREAD_SAFE
-namespace v8
-{
-class Isolate;
-}
-#endif
-
 /**
  *
  */
@@ -35,10 +28,6 @@ public:
     TSet<FName> FunctionToRedirect;
 
     FGraphEventRef PendingConstructJob = nullptr;
-
-#ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
-#endif
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 

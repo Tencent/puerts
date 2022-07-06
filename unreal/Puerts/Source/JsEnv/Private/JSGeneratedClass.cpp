@@ -106,9 +106,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     {
         if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super))    //这种情况只需简单替换下js函数
         {
-#ifdef THREAD_SAFE
-            MaybeJSFunction->Isolate = Isolate;
-#endif
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super, false);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
@@ -158,9 +155,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
 
-#ifdef THREAD_SAFE
-    Function->Isolate = Isolate;
-#endif
     Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
@@ -243,9 +237,6 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
         Function->SetSuperStruct(Super->GetSuperStruct());
     }
 
-#ifdef THREAD_SAFE
-    Function->Isolate = Isolate;
-#endif
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
     Function->TakeJsObjectRef = TakeJsObjectRef;
