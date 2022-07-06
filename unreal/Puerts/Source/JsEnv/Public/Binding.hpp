@@ -1382,7 +1382,7 @@ public:
 #else
     void Register(FinalizeFuncType Finalize)
     {
-        size_t properties_count = functions_.size() + methods_.size() + properties_.size();
+        size_t properties_count = functions_.size() + methods_.size() + properties_.size() + variables_.size();
         auto properties = pesapi_alloc_property_descriptors(properties_count);
         size_t pos = 0;
         for (const auto& func : functions_)
