@@ -59,7 +59,7 @@ namespace Puerts.Editor
                 Directory.CreateDirectory(saveTo);
                 Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
 
-                FileExporter.ExportDTS(saveTo, true);
+                FileExporter.ExportDTS(saveTo, null, true);
                 
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();

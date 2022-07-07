@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.3.5] - 2022-07-06
+1. fix: 生成代码时出现重复key的问题: #657
+1. fix: 不能生成带Enum泛型参数的generic类型 #856
+1. fix: 生成delegate时没有过滤掉带指针类型的: #857
+1. fix: 生成的dts里，interface的扩展函数返回值不对: #857
+1. fix: 不再生成enum的扩展函数 #857
+1. fix: C#调用JS时如果带有ArrayBuffer参数，某些顺序可能抛错. #853
+1. feature: 支持不带约束的泛型函数调用（有限度的）: #819
+1. feature: 泛型类的wrapper文件现在可以使用泛型，而不再是一种泛型参数一个文件. #816
+1. feature: TypedValue在调用时，现在可以直接传递给对应类型的参数. #833
+1. 优化: 新增了一个可重用的原子github action，用于下载backend文件
+
 ## [1.3.4] - 2022-05-18
 1. dts中的csharp模块现在和node.js一样使用`export = `导出 #750
 2. 修复生成扩展函数时，忽略了路径带Editor的Assembly的内容 #735
