@@ -1687,6 +1687,9 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
             JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
             GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
             UnBind(Class, Object);
+
+            // FindOrAdd may change BindInfoMap, cause a rehash
+            BindInfoPtr = BindInfoMap.Find(Class);
         }
         else
         {
