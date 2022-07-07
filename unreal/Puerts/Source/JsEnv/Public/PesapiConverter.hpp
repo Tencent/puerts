@@ -151,50 +151,31 @@ namespace puerts
 class StringHolder
 {
 public:
-    StringHolder() : str_(nullptr)
-    {
-    }
-
     StringHolder(pesapi_env env, pesapi_value value)
     {
         if (!value)
             return;
         size_t length = 0;
         str_ = (char*) pesapi_get_value_string_utf8(env, value, nullptr, &length);
-
+        needFree_ = false;
         if (!str_)
         {
             str_ = new char[length + 1];
             pesapi_get_value_string_utf8(env, value, str_, &length);
+            needFree_ = true;
         }
     }
 
-    StringHolder(StringHolder&& other) noexcept
-    {
-        str_ = other.str_;
-        other.str_ = nullptr;
-    }
+    // Disallow copying and assigning.
+    StringHolder(const StringHolder&) = delete;
+    void operator=(const StringHolder&) = delete;
 
     ~StringHolder()
     {
-        if (str_)
+        if (needFree_ && str_)
         {
             delete[] str_;
         }
-    }
-
-    StringHolder& operator=(StringHolder&& other) noexcept
-    {
-        if (str_ != other.str_)
-        {
-            if (str_)
-            {
-                delete[] str_;
-            }
-            str_ = other.str_;
-            other.str_ = nullptr;
-        }
-        return *this;
     }
 
     const char* Data() const
@@ -204,6 +185,8 @@ public:
 
 private:
     char* str_;
+
+    bool needFree_;
 };
 
 template <>
