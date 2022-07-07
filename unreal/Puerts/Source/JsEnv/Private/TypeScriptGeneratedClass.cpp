@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -20,13 +20,20 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     UTypeScriptGeneratedClass* Class = Cast<UTypeScriptGeneratedClass>(Func->GetOuter());
     if (Class)
     {
-        if (Class->PendingConstructJob)
+        if (Class->PendingConstructJobs.Num() > 0)
         {
+            FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
+            for (auto PendingConstructJob : Class->PendingConstructJobs)
+            {
+                if (!PendingConstructJob)
+                    continue;
 #if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
-            Class->PendingConstructJob->Wait();
+                PendingConstructJob->Wait();
 #else
-            FTaskGraphInterface::Get().WaitUntilTaskCompletes(Class->PendingConstructJob, ENamedThreads::AnyThread);
+                FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
 #endif
+            }
+            Class->PendingConstructJobs.Empty();
         }
 
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
@@ -90,23 +97,33 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     {
         if (IsInGameThread())
         {
-            if (PendingConstructJob)
+            FScopeLock ScopeLock(&PendingConstructJobMutex);
+            if (PendingConstructJobs.Num() > 0)
             {
+                for (auto PendingConstructJob : PendingConstructJobs)
+                {
+                    if (!PendingConstructJob)
+                        continue;
 #if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
-                PendingConstructJob->Wait();
+                    PendingConstructJob->Wait();
 #else
-                FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
+                    FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
 #endif
+                }
+                PendingConstructJobs.Empty();
             }
             PinedDynamicInvoker->TsConstruct(this, Object);
         }
-        else if (!PendingConstructJob)
+        else
         {
+            FScopeLock ScopeLock(&PendingConstructJobMutex);
+
             TWeakObjectPtr<UTypeScriptGeneratedClass> Class = this;
             TWeakObjectPtr<UObject> Self = Object;
-            PendingConstructJob = FFunctionGraphTask::CreateAndDispatchWhenReady(
-                [Class, Self]()
-                {
+            int Index = PendingConstructJobs.Num();
+
+            PendingConstructJobs.Add(FFunctionGraphTask::CreateAndDispatchWhenReady(
+                [Class, Self, Index]() {
                     if (Class.IsValid())
                     {
                         if (Self.IsValid())
@@ -126,18 +143,15 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
                         {
                             UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
                         }
-                        Class->PendingConstructJob = nullptr;
+                        FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
+                        Class->PendingConstructJobs[Index] = nullptr;
                     }
                     else
                     {
                         UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class invalid"));
                     }
                 },
-                TStatId{}, nullptr, ENamedThreads::GameThread);
-        }
-        else
-        {
-            UE_LOG(Puerts, Error, TEXT("not in gamethread and has exsited pending construct job"));
+                TStatId{}, nullptr, ENamedThreads::GameThread));
         }
     }
 #endif
