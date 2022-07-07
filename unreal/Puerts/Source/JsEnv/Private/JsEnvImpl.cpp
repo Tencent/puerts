@@ -3540,7 +3540,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->ClassCastFlags = To->ClassCastFlags;
         New->ClassConstructor = To->ClassConstructor;
         New->ClassFlags = New->ClassFlags | EClassFlags::CLASS_Transient;
-        New->ClassFlags = New->ClassFlags ^ EClassFlags::CLASS_Intrinsic;
+        New->ClassFlags = New->ClassFlags & (~EClassFlags::CLASS_Intrinsic);
         New->SetFlags(EObjectFlags::RF_Transient);
         New->SetSuperStruct(To);
     }
@@ -3580,6 +3580,11 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             BPClass->UpdateCustomPropertyListForPostConstruction();
         }
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
+        // 拷贝创建的Class需要手动重新创建ReferenceTokenStream
+        New->AssembleReferenceTokenStream(true);
+#endif
     }
     else
     {
