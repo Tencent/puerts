@@ -181,8 +181,9 @@ public:
 };
 
 template <typename Ret, bool ScriptTypePtrAsRef, typename... Args>
-class CFunctionInfoImpl : CFunctionInfo
+class CFunctionInfoImpl : public CFunctionInfo
 {
+protected:
     const CTypeInfo* return_;
     const unsigned int argCount_;
     const CTypeInfo* arguments_[sizeof...(Args) + 1];
@@ -193,6 +194,10 @@ class CFunctionInfoImpl : CFunctionInfo
         , argCount_(sizeof...(Args))
         , arguments_{CTypeInfoImpl<Args, ScriptTypePtrAsRef>::get()...}
         , defaultCount_(0)
+    {
+    }
+
+    virtual ~CFunctionInfoImpl()
     {
     }
 
@@ -226,12 +231,72 @@ public:
     }
 };
 
+template <typename T, T, bool>
+class CFunctionInfoByPtrImpl
+{
+};
+
+template <typename Ret, typename... Args, Ret (*func)(Args...), bool ScriptTypePtrAsRef>
+class CFunctionInfoByPtrImpl<Ret (*)(Args...), func, ScriptTypePtrAsRef>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>
+{
+public:
+    virtual ~CFunctionInfoByPtrImpl()
+    {
+    }
+
+    static const CFunctionInfo* get(unsigned int defaultCount)
+    {
+        static CFunctionInfoByPtrImpl instance{};
+        instance.defaultCount_ = defaultCount;
+        return &instance;
+    }
+};
+
+template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ScriptTypePtrAsRef>
+class CFunctionInfoByPtrImpl<Ret (Inc::*)(Args...), func, ScriptTypePtrAsRef>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>
+{
+public:
+    virtual ~CFunctionInfoByPtrImpl()
+    {
+    }
+
+    static const CFunctionInfo* get(unsigned int defaultCount)
+    {
+        static CFunctionInfoByPtrImpl instance{};
+        instance.defaultCount_ = defaultCount;
+        return &instance;
+    }
+};
+
+template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ScriptTypePtrAsRef>
+class CFunctionInfoByPtrImpl<Ret (Inc::*)(Args...) const, func, ScriptTypePtrAsRef>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>
+{
+public:
+    virtual ~CFunctionInfoByPtrImpl()
+    {
+    }
+
+    static const CFunctionInfo* get(unsigned int defaultCount)
+    {
+        static CFunctionInfoByPtrImpl instance{};
+        instance.defaultCount_ = defaultCount;
+        return &instance;
+    }
+};
+
 class CFunctionInfoWithCustomSignature : public CFunctionInfo
 {
     const char* _signature;
 
 public:
     CFunctionInfoWithCustomSignature(const char* signature) : _signature(signature)
+    {
+    }
+
+    virtual ~CFunctionInfoWithCustomSignature()
     {
     }
 
