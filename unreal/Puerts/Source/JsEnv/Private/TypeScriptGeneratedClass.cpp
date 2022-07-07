@@ -123,7 +123,8 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
             int Index = PendingConstructJobs.Num();
 
             PendingConstructJobs.Add(FFunctionGraphTask::CreateAndDispatchWhenReady(
-                [Class, Self, Index]() {
+                [Class, Self, Index]()
+                {
                     if (Class.IsValid())
                     {
                         if (Self.IsValid())
