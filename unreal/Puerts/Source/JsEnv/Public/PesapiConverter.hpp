@@ -353,11 +353,6 @@ struct Converter<const char*>
         return pesapi_create_string_utf8(env, value, strlen(value));
     }
 
-    static StringHolder toCpp(pesapi_env env, pesapi_value value)
-    {
-        return StringHolder(env, value);
-    }
-
     static bool accept(pesapi_env env, pesapi_value value)
     {
         return pesapi_is_string(env, value);
