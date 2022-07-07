@@ -1373,6 +1373,9 @@ function watch(configFilePath) {
                                     return;
                                 let structOfType = getUClassOfType(baseTypes[0]);
                                 let baseTypeUClass = undefined;
+                                if (!structOfType) {
+                                    return;
+                                }
                                 if (structOfType.GetClass().IsChildOf(UE.Class.StaticClass())) {
                                     baseTypeUClass = structOfType;
                                 }
