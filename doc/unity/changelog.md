@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.0-preview.0] - 2022-06-07
+## [1.4.0-preview.3] - 2022-07-08
+1. 合入1.3.5的改动
+2. 修复 #899
+
+## [1.4.0-preview.1] - 2022-06-07
 1. 支持apple silicon芯片 #591
 2. 升级默认v8到9.4版本，nodejs到16版本
 3. 所有属性改为configurable #667
