@@ -54,6 +54,7 @@ var exportDLL = {
     "ReturnFunction",
     "ReturnJSObject",
     "ReturnArrayBuffer",
+    "ReturnCSharpFunctionCallback",
     "GetArgumentType",
 //    "GetArgumentValue",
     "GetJsValueType",

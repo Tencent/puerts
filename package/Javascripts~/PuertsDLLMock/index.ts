@@ -31,16 +31,6 @@ global.PuertsWebGL = {
             UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
         });
 
-        global.__tgjsEvalScript = typeof eval == "undefined" ? () => { } : eval;
-        global.__tgjsSetPromiseRejectCallback = function (callback: (...args: any[]) => any) {
-            if (typeof wx != 'undefined') {
-                wx.onUnhandledRejection(callback);
-
-            } else {
-                window.addEventListener("unhandledrejection", callback);
-            }
-        }
-
         const executeModuleCache: { [filename: string]: any } = {};
 
         let jsEngineReturned = false;
@@ -63,10 +53,10 @@ global.PuertsWebGL = {
                     engine.callJSArgumentsGetter = callJSArgumentsGetter;
                 },
                 GetLibVersion: function () {
-                    return 16;
+                    return 17;
                 },
                 GetApiLevel: function () {
-                    return 16;
+                    return 17;
                 },
                 GetLibBackend: function () {
                     return 0;
@@ -81,7 +71,7 @@ global.PuertsWebGL = {
                 CreateJSEngineWithExternalEnv: function () { },
                 DestroyJSEngine: function () { },
                 GetLastExceptionInfo: function (isolate: IntPtr,/* out int */strlen: any) {
-                    return engine.JSStringToCSString(engine.lastExceptionInfo, strlen);
+                    return engine.JSStringToCSString(engine.lastException.message, strlen);
                 },
                 LowMemoryNotification: function (isolate: IntPtr) {
 
@@ -128,7 +118,7 @@ global.PuertsWebGL = {
                             return 1024
                         }
                     } catch(e) {
-                        engine.lastExceptionInfo = e.message;
+                        engine.lastException = e.message;
                     }
                 },
                 Eval: function (isolate: IntPtr, codeString: CSString, path: string) {
@@ -162,7 +152,7 @@ global.PuertsWebGL = {
 
                         } catch (err) {
                             console.error('InvokeJSFunction error', err);
-                            func.lastExceptionInfo = err.message
+                            func.lastException = err
                         }
 
                     } else {
@@ -172,7 +162,7 @@ global.PuertsWebGL = {
                 GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */length: number) {
                     const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
                     if (func instanceof JSFunction) {
-                        return engine.JSStringToCSString(func.lastExceptionInfo || '', length);
+                        return engine.JSStringToCSString(func.lastException.message || '', length);
                     } else {
                         throw new Error('ptr is not a jsfunc');
                     }

@@ -83,7 +83,7 @@ export class JSFunction {
 
     public args: any[] = [];
 
-    public lastExceptionInfo: string = '';
+    public lastException: Error = null;
 
     constructor(id: number, func: (...args: any[]) => any) {
         this._func = func;
@@ -369,7 +369,7 @@ export class PuertsJSEngine {
     public readonly unityApi: PuertsJSEngine.UnityAPI;
 
     public lastReturnCSResult: any = null;
-    public lastExceptionInfo: string = null;
+    public lastException: Error = null;
 
     // 这四个是Puerts.WebGL里用于wasm通信的的CSharp Callback函数指针。
     public callV8Function: MockIntPtr;
@@ -408,7 +408,20 @@ export class PuertsJSEngine {
             get: function() {
                 return unityInstance.HEAP8
             }
-        })
+        });
+
+        global.__tgjsEvalScript = typeof eval == "undefined" ? () => { } : eval;
+        global.__tgjsSetPromiseRejectCallback = function (callback: (...args: any[]) => any) {
+            if (typeof wx != 'undefined') {
+                wx.onUnhandledRejection(callback);
+
+            } else {
+                window.addEventListener("unhandledrejection", callback);
+            }
+        }
+        global.__puertsGetLastException = () => {
+            return this.lastException
+        }
     }
 
     JSStringToCSString(returnStr: string, /** out int */length: number) {
