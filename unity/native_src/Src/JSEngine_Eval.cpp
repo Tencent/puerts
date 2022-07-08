@@ -32,14 +32,15 @@ namespace puerts {
             return v8::Local<v8::Module>::New(Isolate, Iter->second);
         }
         v8::Local<v8::Module> Module;
-        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
+        char* pathForDebug;
+        const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx, pathForDebug);
         if (Code == nullptr) 
         {
             std::string ErrorMessage = std::string("module not found") + Specifier_std;
             Isolate->ThrowException(v8::Exception::Error(FV8Utils::V8String(Isolate, ErrorMessage.c_str())));
             return v8::MaybeLocal<v8::Module>();
         }
-        v8::ScriptOrigin Origin(Specifier,
+        v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, (const char*)pathForDebug),
                             v8::Integer::New(Isolate, 0),                      // line offset
                             v8::Integer::New(Isolate, 0),                    // column offset
                             v8::True(Isolate),                    // is cross origin
@@ -106,7 +107,8 @@ namespace puerts {
             return Iter->second;
         }
 
-        const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
+        unsigned char* pathForDebug;
+        const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx, pathForDebug);
         if (Code == nullptr) 
         {
             std::string ErrorMessage = std::string("module not found") + name_std;

@@ -217,15 +217,15 @@ namespace Puerts
             }
         }
 
-        internal string ResolveModuleContent(string identifer) 
+        internal string ResolveModuleContent(string identifer, out string pathForDebug) 
         {
+            pathForDebug = identifer;
             if (!loader.FileExists(identifer)) 
             {
                 return null;
             }
 
-            string debugPath;
-            return loader.ReadFile(identifer, out debugPath);
+            return loader.ReadFile(identifer, out pathForDebug);
         }
 
         /**
