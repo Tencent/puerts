@@ -35,7 +35,7 @@ namespace Puerts
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif
-    public delegate string ModuleResolveCallback(string identifer, int jsEnvIdx);
+    public delegate string ModuleResolveCallback(string identifer, int jsEnvIdx, out string pathForDebug);
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

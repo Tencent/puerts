@@ -12,9 +12,10 @@ namespace Puerts
     internal class StaticCallbacks
     {
         [MonoPInvokeCallback(typeof(ModuleResolveCallback))]
-        internal static string ModuleResolverCallback(string identifer, int jsEnvIdx)
+        internal static string ModuleResolverCallback(string identifer, int jsEnvIdx, out string pathForDebug)
         {
             JsEnv env = JsEnv.jsEnvs[jsEnvIdx];
+            pathForDebug = identifer;
             try
             {
                 if (identifer.Length < 4 || !identifer.EndsWith(".mjs")) 
@@ -23,7 +24,7 @@ namespace Puerts
                 } 
                 else 
                 {
-                    return env.ResolveModuleContent(identifer);
+                    return env.ResolveModuleContent(identifer, out pathForDebug);
                 }
             }
             catch (Exception e)

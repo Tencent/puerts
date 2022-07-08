@@ -65,7 +65,7 @@
 
 #endif
 
-typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx);
+typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx, char*& pathForDebug);
 
 typedef void (*CSharpPushJSFunctionArgumentsCallback)(v8::Isolate* Isolate, int32_t jsEnvIdx, puerts::JSFunction* NativeFuncPtr);
 
