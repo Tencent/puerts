@@ -107,7 +107,7 @@ namespace puerts {
             return Iter->second;
         }
 
-        unsigned char* pathForDebug;
+        char* pathForDebug;
         const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx, pathForDebug);
         if (Code == nullptr) 
         {
