@@ -110,6 +110,9 @@ var global = global || (function () { return this; }());
     puerts.merge = global.__tgjsMergeObject;
     global.__tgjsMergeObject = undefined;
     
+    cache.FNameLiteral = global.__tgjsFNameToArrayBuffer;
+    global.__tgjsFNameToArrayBuffer = undefined;
+    
     let rawmakeclass = global.__tgjsMakeUClass
     global.__tgjsMakeUClass = undefined;
     

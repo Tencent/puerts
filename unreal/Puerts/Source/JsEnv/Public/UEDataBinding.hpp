@@ -72,7 +72,7 @@ private:
 };
 
 template <>
-struct ArgumentHolderType<const TCHAR*>
+struct ArgumentBufferType<const TCHAR*>
 {
     using type = TCharStringHolder;
     static constexpr bool is_custom = true;
@@ -110,6 +110,23 @@ struct Converter<FName>
 
     static FName toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t ByteLength;
+            auto Data = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+            if (ByteLength == sizeof(FName))
+            {
+                return *static_cast<FName*>(Data);
+            }
+#else
+            if (Ab->GetContents().ByteLength() == sizeof(FName))
+            {
+                return *static_cast<FName*>(Ab->GetContents().Data());
+            }
+#endif
+        }
         return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
     }
 
@@ -165,7 +182,11 @@ struct Converter<FArrayBuffer>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBuffer value)
     {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value.Data, value.Length);
+#else
         return v8::ArrayBuffer::New(context->GetIsolate(), value.Data, value.Length);
+#endif
     }
 
     static FArrayBuffer toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -174,15 +195,25 @@ struct Converter<FArrayBuffer>
         if (value->IsArrayBufferView())
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
-            auto ABC = BuffView->Buffer()->GetContents();
-            Ret.Data = static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            Ret.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
+#else
+            Ret.Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
             Ret.Length = BuffView->ByteLength();
         }
         else if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t ByteLength;
+            Ret.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength));
+            Ret.Length = ByteLength;
+#else
             Ret.Data = Ab->GetContents().Data();
             Ret.Length = Ab->GetContents().ByteLength();
+#endif
         }
         return Ret;
     }

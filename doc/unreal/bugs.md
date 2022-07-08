@@ -1,3 +1,15 @@
+### v1.0.1
+
+#### BindInfoPtr可能指向无效数据进而导致崩溃
+
+##### 问题描述
+
+[std::map替换为TMap的优化](https://github.com/Tencent/puerts/commit/b823ab9255d93e805039da138cbbc97bd21d4faa)，没考虑到FindOrAdd会引发BindInfoMap的rehash，进而导致BindInfoPtr失效
+
+##### 修复
+
+https://github.com/Tencent/puerts/commit/d6e3dbf50d5e54c195d95d64aa09a6112ecc6b1a
+
 ### v1.0.0
 
 #### 结构体类型的字段访问的内存泄漏

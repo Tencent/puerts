@@ -151,50 +151,31 @@ namespace puerts
 class StringHolder
 {
 public:
-    StringHolder() : str_(nullptr)
-    {
-    }
-
     StringHolder(pesapi_env env, pesapi_value value)
     {
         if (!value)
             return;
         size_t length = 0;
         str_ = (char*) pesapi_get_value_string_utf8(env, value, nullptr, &length);
-
+        needFree_ = false;
         if (!str_)
         {
             str_ = new char[length + 1];
             pesapi_get_value_string_utf8(env, value, str_, &length);
+            needFree_ = true;
         }
     }
 
-    StringHolder(StringHolder&& other) noexcept
-    {
-        str_ = other.str_;
-        other.str_ = nullptr;
-    }
+    // Disallow copying and assigning.
+    StringHolder(const StringHolder&) = delete;
+    void operator=(const StringHolder&) = delete;
 
     ~StringHolder()
     {
-        if (str_)
+        if (needFree_ && str_)
         {
             delete[] str_;
         }
-    }
-
-    StringHolder& operator=(StringHolder&& other) noexcept
-    {
-        if (str_ != other.str_)
-        {
-            if (str_)
-            {
-                delete[] str_;
-            }
-            str_ = other.str_;
-            other.str_ = nullptr;
-        }
-        return *this;
     }
 
     const char* Data() const
@@ -204,10 +185,12 @@ public:
 
 private:
     char* str_;
+
+    bool needFree_;
 };
 
 template <>
-struct ArgumentHolderType<const char*>
+struct ArgumentBufferType<const char*>
 {
     using type = StringHolder;
     static constexpr bool is_custom = true;
@@ -370,11 +353,6 @@ struct Converter<const char*>
         return pesapi_create_string_utf8(env, value, strlen(value));
     }
 
-    static StringHolder toCpp(pesapi_env env, pesapi_value value)
-    {
-        return StringHolder(env, value);
-    }
-
     static bool accept(pesapi_env env, pesapi_value value)
     {
         return pesapi_is_string(env, value);
@@ -434,29 +412,6 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
             return Converter<T*>::toCpp(env, pesapi_get_value_ref(env, value));
         }
         return nullptr;
-    }
-
-    static bool accept(pesapi_env env, pesapi_value value)
-    {
-        return pesapi_is_ref(env, value);    // do not checked inner
-    }
-};
-
-template <typename T>
-struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
-{
-    static pesapi_value toScript(pesapi_env env, const T& value)
-    {
-        return pesapi_create_ref(env, Converter<T>::toScript(env, value));
-    }
-
-    static T toCpp(pesapi_env env, pesapi_value value)
-    {
-        if (pesapi_is_object(env, value))
-        {
-            return Converter<T>::toCpp(env, pesapi_get_value_ref(env, value));
-        }
-        return {};
     }
 
     static bool accept(pesapi_env env, pesapi_value value)

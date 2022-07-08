@@ -78,9 +78,13 @@ public:
 
     virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments) override;
 
+    virtual bool IdleNotificationDeadline(double DeadlineInSeconds) override;
+
     virtual void LowMemoryNotification() override;
 
-    virtual void MinorGarbageCollection() override;
+    virtual void RequestMinorGarbageCollectionForTesting() override;
+
+    virtual void RequestFullGarbageCollectionForTesting() override;
 
     virtual void WaitDebugger(double timeout) override
     {
@@ -246,6 +250,8 @@ private:
     v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
 
     void LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -495,7 +501,7 @@ private:
 
     FCppObjectMapper CppObjectMapper;
 
-#if !WITH_BACKING_STORE_AUTO_FREE
+#if !WITH_BACKING_STORE_AUTO_FREE && !defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
     struct ScriptStructFinalizeInfo
     {
         TWeakObjectPtr<UStruct> Struct;
@@ -643,6 +649,29 @@ private:
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;
 #endif
+
+    typedef void (FJsEnvImpl::*V8MethodCallback)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    template <V8MethodCallback callback>
+    struct MethodBindingHelper
+    {
+        static void Bind(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj, const char* Key,
+            v8::Local<v8::External> This)
+        {
+            Obj->Set(Context, FV8Utils::ToV8String(Isolate, Key),
+                   v8::FunctionTemplate::New(
+                       Isolate,
+                       [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                       {
+                           auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                           (Self->*callback)(Info);
+                       },
+                       This)
+                       ->GetFunction(Context)
+                       .ToLocalChecked())
+                .Check();
+        }
+    };
 };
 
 }    // namespace puerts

@@ -9,48 +9,6 @@ using System;
 
 namespace Puerts
 {
-    public class ArrayBuffer
-    {
-        public byte[] Bytes;
-        public int Count;
-
-        public ArrayBuffer(byte[] bytes)
-        {
-            Bytes = bytes;
-            if (Bytes != null)
-            {
-                Count = Bytes.Length;
-            }
-        }
-
-        public ArrayBuffer(byte[] bytes, int count)
-        {
-            Bytes = bytes;
-            if (Bytes != null)
-            {
-                if (count > 0 && count < Bytes.Length)
-                {
-                    Count = count;
-                }
-                else
-                {
-                    Count = Bytes.Length;
-                }
-            }
-        }
-
-
-        public ArrayBuffer(IntPtr ptr, int length)
-        {
-            if (ptr != IntPtr.Zero)
-            {
-                Bytes = new byte[length];
-                Count = length;
-                System.Runtime.InteropServices.Marshal.Copy(ptr, Bytes, 0, length);
-            }
-        }
-    }
-
     public static class NativeValueApi
     {
         public static IGetValueFromJs GetValueFromArgument = new GetValueFromArgumentImpl();
@@ -351,7 +309,6 @@ namespace Puerts
             PuertsDLL.SetStringToOutValue(isolate, holder, str);
         }
     }
-
 
     public class SetValueToArgumentImpl : ISetValueToJs
     {

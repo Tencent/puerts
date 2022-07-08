@@ -402,7 +402,26 @@ public:
     bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
         bool DeepCopy) const override
     {
-        NameProperty->SetPropertyValue(ValuePtr, FName(*FV8Utils::ToFString(Isolate, Value)));
+        if (Value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t ByteLength;
+            auto Data = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+            if (ByteLength == sizeof(FName))
+            {
+                NameProperty->SetPropertyValue(ValuePtr, *static_cast<FName*>(Data));
+                return true;
+            }
+#else
+            if (Ab->GetContents().ByteLength() == sizeof(FName))
+            {
+                NameProperty->SetPropertyValue(ValuePtr, *static_cast<FName*>(Ab->GetContents().Data()));
+                return true;
+            }
+#endif
+        }
+        NameProperty->SetPropertyValue(ValuePtr, FV8Utils::ToFName(Isolate, Value));
         return true;
     }
 };
@@ -645,13 +664,21 @@ public:
         if (ArrayBuffer->bCopy)
         {
             v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, ArrayBuffer->Length);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            void* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
+#else
             void* Buff = Ab->GetContents().Data();
+#endif
             ::memcpy(Buff, ArrayBuffer->Data, ArrayBuffer->Length);
             return Ab;
         }
         else
         {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            return v8::ArrayBuffer_New_Without_Stl(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+#else
             return v8::ArrayBuffer::New(Isolate, ArrayBuffer->Data, ArrayBuffer->Length);
+#endif
         }
     }
 
@@ -662,15 +689,25 @@ public:
         if (Value->IsArrayBufferView())
         {
             v8::Local<v8::ArrayBufferView> BuffView = Value.As<v8::ArrayBufferView>();
-            auto ABC = BuffView->Buffer()->GetContents();
-            ArrayBuffer.Data = static_cast<char*>(ABC.Data()) + BuffView->ByteOffset();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            ArrayBuffer.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
+#else
+            ArrayBuffer.Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
             ArrayBuffer.Length = BuffView->ByteLength();
         }
         else if (Value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t ByteLength;
+            ArrayBuffer.Data = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+            ArrayBuffer.Length = ByteLength;
+#else
             ArrayBuffer.Data = Ab->GetContents().Data();
             ArrayBuffer.Length = Ab->GetContents().ByteLength();
+#endif
         }
 
         StructProperty->CopySingleValue(ValuePtr, &ArrayBuffer);

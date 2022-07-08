@@ -525,19 +525,7 @@ namespace Puerts.UnitTest
             if (b && Callback != null) Callback();
             return true;
         }
-    }
     
-    public class TypedValue
-    {
-        static object lastCallbackValue = null;
-        public static void Callback(object o)
-        {
-            lastCallbackValue = o;
-        }
-        public static Type GetLastCallbackValueType() 
-        {
-            return lastCallbackValue == null ? null : lastCallbackValue.GetType();
-        }
     }
 
     public class ReadonlyStaticTest

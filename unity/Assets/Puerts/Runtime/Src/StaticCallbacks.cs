@@ -17,7 +17,7 @@ namespace Puerts
             JsEnv env = JsEnv.jsEnvs[jsEnvIdx];
             try
             {
-                if (identifer.Length > 4 && !identifer.EndsWith(".mjs")) 
+                if (identifer.Length < 4 || !identifer.EndsWith(".mjs")) 
                 {
                     return "export default require('" + identifer + "')";
                 } 

@@ -49,6 +49,9 @@ module.exports = function TypingTemplate(data, esmMode) {
 
     tt`
 declare module 'csharp' {
+    //keep type incompatibility / 此属性保持类型不兼容
+    const __keep_incompatibility: unique symbol;
+
     namespace CSharp {
         interface $Ref<T> {
             value: T
@@ -87,7 +90,7 @@ declare module 'csharp' {
                     t`
                     { 
                         ${type.DelegateDef.replace('=>', ':')}; 
-                        Invoke?: ${type.DelegateDef}; 
+                        Invoke?: ${type.DelegateDef};
                     }
                     ${(!type.IsGenericTypeDefinition ? `var ${type.Name}: { new (func: ${type.DelegateDef}): ${type.Name}; }` : '')}
                     `;
@@ -104,6 +107,13 @@ declare module 'csharp' {
                     t`{
                     `;
                     t.indent = 16;
+
+                    //keep type incompatibility / 此属性保持类型不兼容
+                    if (!type.IsInterface) {
+                        t`
+                        protected [__keep_incompatibility]: never;
+                        `
+                    }
                     
                     // properties start
                     distinctByName(type.Properties).forEach(property=> {
@@ -146,7 +156,7 @@ declare module 'csharp' {
                 }
 
                 // extension methods start
-                if (type.ExtensionMethods.Length > 0) {
+                if (type.ExtensionMethods.Length > 0 && !type.IsEnum) {
                     t.indent = 12;
                     t`
                     ${type.Document}

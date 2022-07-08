@@ -571,6 +571,17 @@ V8_EXPORT void ReturnFunction(v8::Isolate* Isolate, const v8::FunctionCallbackIn
    Info.GetReturnValue().Set(Function->GFunction.Get(Isolate));
 }
 
+V8_EXPORT void ReturnCSharpFunctionCallback(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, CSharpFunctionCallback Callback, int64_t Data)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = JsEngine->ResultInfo.Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    Info.GetReturnValue().Set(JsEngine->ToTemplate(Isolate, false, Callback, Data)->GetFunction(Context).ToLocalChecked());
+}
+
 V8_EXPORT void ReturnJSObject(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, puerts::JSObject *Object)
 {
    Info.GetReturnValue().Set(Object->GObject.Get(Isolate));

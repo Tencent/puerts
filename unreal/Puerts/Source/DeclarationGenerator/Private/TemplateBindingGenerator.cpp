@@ -28,7 +28,7 @@ struct FGenImp
     {
         Output << "declare module \"cpp\" {\n";
         Output << "    import * as UE from \"ue\"\n";
-        Output << "    import {$Ref, $Nullable} from \"puerts\"\n\n";
+        Output << "    import {$Ref, $Nullable, cstring} from \"puerts\"\n\n";
     }
 
     void GenArguments(const puerts::CFunctionInfo* Type, FStringBuffer& Buff)
@@ -39,30 +39,43 @@ struct FGenImp
                 Buff << ", ";
             auto argInfo = Type->Argument(i);
 
-            Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+            Buff << FString::Printf(TEXT("p%d"), i);
 
-            bool IsReference = argInfo->IsRef() ||
-                               (!argInfo->IsConst() && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer());
-            bool IsNullable = !IsReference && argInfo->IsPointer();
-            if (IsNullable)
+            if (i >= Type->ArgumentCount() - Type->DefaultCount())
             {
-                Buff << "$Nullable<";
-            }
-            if (IsReference)
-            {
-                Buff << "$Ref<";
+                Buff << "?";
             }
 
-            const puerts::CTypeInfo* TypeInfo = Type->Argument(i);
-            Buff << GetNamePrefix(TypeInfo) << GetName(TypeInfo);
+            Buff << ": ";
 
-            if (IsNullable)
+            if (strcmp(argInfo->Name(), "cstring") != 0 && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
             {
-                Buff << ">";
+                Buff << "ArrayBuffer";
             }
-            if (IsReference)
+            else
             {
-                Buff << ">";
+                bool IsReference = argInfo->IsRef();
+                bool IsNullable = !IsReference && argInfo->IsPointer();
+                if (IsNullable)
+                {
+                    Buff << "$Nullable<";
+                }
+                if (IsReference)
+                {
+                    Buff << "$Ref<";
+                }
+
+                const puerts::CTypeInfo* TypeInfo = Type->Argument(i);
+                Buff << GetNamePrefix(TypeInfo) << GetName(TypeInfo);
+
+                if (IsNullable)
+                {
+                    Buff << ">";
+                }
+                if (IsReference)
+                {
+                    Buff << ">";
+                }
             }
         }
     }
