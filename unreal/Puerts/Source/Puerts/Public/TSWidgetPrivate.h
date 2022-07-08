@@ -5,7 +5,7 @@
 #include "TSWidgetPrivate.generated.h"
 
 UCLASS()
-class MYPROJECT_API UTSWidgetPrivate : public UObject, public FTickableGameObject
+class PUERTS_API UTSWidgetPrivate : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 
