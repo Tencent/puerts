@@ -33,12 +33,10 @@ jobs:
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_android.sh
-          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -59,7 +57,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform ios --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -97,8 +95,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-          # .\make_win32.bat ${{ github.event.inputs.backend }}
+          node make.js --platform win --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -122,8 +119,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_linux64.sh
-          ./make_linux64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
+          node make.js --platform linux --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
       - name: Upload
         uses: actions/upload-artifact@v2
         with:

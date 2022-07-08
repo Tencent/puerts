@@ -58,10 +58,8 @@ jobs:
           unzip -q NDK
       - name: Build
         run: |
-          ls ~/android-ndk-r21b
           cd unity/native_src
-          chmod 777 make_android.sh
-          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh quickjs
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -103,7 +101,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh quickjs
+          node make.js --platform ios --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -166,7 +164,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh quickjs
+          node make.js --platform osx --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -204,8 +202,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat quickjs
-          .\make_win32.bat quickjs
+          node make.js --platform win --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
