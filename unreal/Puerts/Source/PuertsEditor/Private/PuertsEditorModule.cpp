@@ -9,10 +9,13 @@
 #include "PuertsEditorModule.h"
 #include "JsEnv.h"
 #include "Editor.h"
+#include "FileHelper.h"
 #include "PuertsModule.h"
-#include "FileHelpers.h"
 #include "TypeScriptCompilerContext.h"
 #include "TypeScriptBlueprint.h"
+#include "SourceFileWatcher.h"
+#include "JSLogger.h"
+#include "JSModuleLoader.h"
 
 class FPuertsEditorModule : public IPuertsEditorModule
 {
@@ -29,6 +32,8 @@ private:
     void OnPostEngineInit();
 
     TSharedPtr<puerts::FJsEnv> JsEnv;
+
+    TSharedPtr<puerts::FSourceFileWatcher> SourceFileWatcher;
 
     bool Enabled = false;
 };
@@ -56,9 +61,34 @@ void FPuertsEditorModule::OnPostEngineInit()
     {
         FKismetCompilerContext::RegisterCompilerForBP(UTypeScriptBlueprint::StaticClass(), &MakeCompiler);
 
-        JsEnv = MakeShared<puerts::FJsEnv>();
+        SourceFileWatcher = MakeShared<puerts::FSourceFileWatcher>(
+            [this](const FString& InPath)
+            {
+                if (JsEnv.IsValid())
+                {
+                    TArray<uint8> Source;
+                    if (FFileHelper::LoadFileToArray(Source, *InPath))
+                    {
+                        JsEnv->ReloadSource(InPath, std::string((const char*) Source.GetData(), Source.Num()));
+                    }
+                    else
+                    {
+                        UE_LOG(Puerts, Error, TEXT("read file fail for %s"), *InPath);
+                    }
+                }
+            });
+        JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
+            std::make_shared<puerts::FDefaultLogger>(), -1,
+            [this](const FString& InPath)
+            {
+                if (SourceFileWatcher.IsValid())
+                {
+                    SourceFileWatcher->OnSourceLoaded(InPath);
+                }
+            });
+
         TArray<TPair<FString, UObject*>> Arguments;
-        JsEnv->Start("PuertsEditor/CodeAnalyze", Arguments);
+        JsEnv->Start("require('PuertsEditor/CodeAnalyze')", Arguments, true);
     }
 }
 
@@ -67,6 +97,10 @@ void FPuertsEditorModule::ShutdownModule()
     if (JsEnv.IsValid())
     {
         JsEnv.Reset();
+    }
+    if (SourceFileWatcher.IsValid())
+    {
+        SourceFileWatcher.Reset();
     }
 }
 

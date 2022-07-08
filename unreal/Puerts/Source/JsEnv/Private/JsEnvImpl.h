@@ -72,11 +72,13 @@ public:
     explicit FJsEnvImpl(const FString& ScriptRoot);
 
     FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
-        void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+        std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime = nullptr,
+        void* InExternalContext = nullptr);
 
     virtual ~FJsEnvImpl() override;
 
-    virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments) override;
+    virtual void Start(
+        const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments, bool IsScript) override;
 
     virtual bool IdleNotificationDeadline(double DeadlineInSeconds) override;
 
@@ -118,6 +120,12 @@ public:
     void JsHotReload(FName ModuleName, const FString& JsSource);
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
+
+    virtual void ReloadSource(const FString& Path, const std::string& JsSource) override;
+
+    std::function<void(const FString&)> OnSourceLoadedCallback;
+
+    virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) override;
 
 public:
     virtual void Bind(UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject) override;

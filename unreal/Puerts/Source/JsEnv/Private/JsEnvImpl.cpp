@@ -107,7 +107,8 @@
 namespace puerts
 {
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
-    : FJsEnvImpl(std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, nullptr)
+    : FJsEnvImpl(
+          std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, nullptr, nullptr)
 {
 }
 
@@ -352,7 +353,7 @@ void FJsEnvImpl::StopPolling()
 #endif
 
 FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-    void* InExternalRuntime, void* InExternalContext)
+    std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime, void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -370,6 +371,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     ModuleLoader = std::move(InModuleLoader);
     Logger = InLogger;
+    OnSourceLoadedCallback = InOnSourceLoadedCallback;
 #if !defined(WITH_NODEJS)
 #if V8_MAJOR_VERSION < 8 && !defined(WITH_QUICKJS)
     std::unique_ptr<v8::StartupData> NativesBlob;
@@ -1296,6 +1298,36 @@ void FJsEnvImpl::ReloadModule(FName ModuleName, const FString& JsSource)
 #endif
     // Logger->Info(FString::Printf(TEXT("start reload js module [%s]"), *ModuleName.ToString()));
     JsHotReload(ModuleName, JsSource);
+}
+
+void FJsEnvImpl::ReloadSource(const FString& Path, const std::string& JsSource)
+{
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
+    auto Isolate = MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = DefaultContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    auto LocalReloadJs = ReloadJs.Get(Isolate);
+
+    Logger->Info(FString::Printf(TEXT("reload js [%s]"), *Path));
+    v8::TryCatch TryCatch(Isolate);
+    v8::Handle<v8::Value> Args[] = {
+        v8::Undefined(Isolate), FV8Utils::ToV8String(Isolate, Path), FV8Utils::ToV8String(Isolate, JsSource.c_str())};
+
+    auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args);
+
+    if (TryCatch.HasCaught())
+    {
+        Logger->Error(FString::Printf(TEXT("reload module exception %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+    }
+}
+
+void FJsEnvImpl::OnSourceLoaded(std::function<void(const FString&)> Callback)
+{
+    OnSourceLoadedCallback = Callback;
 }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -2852,7 +2884,7 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
-void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments)
+void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments, bool IsScript)
 {
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
@@ -2910,16 +2942,40 @@ void FJsEnvImpl::Start(const FString& ModuleName, const TArray<TPair<FString, UO
         auto Result = ArgvAdd->Call(Context, Argv, 2, Args);
     }
 
-    ExecuteModule(ModuleName,
-        [](const FString& Script, const FString& Path)
+    if (IsScript)
+    {
+        v8::ScriptOrigin Origin(FV8Utils::ToV8String(Isolate, "chunk"));
+        v8::Local<v8::String> Source = FV8Utils::ToV8String(Isolate, ModuleNameOrScript);
+        v8::TryCatch TryCatch(Isolate);
+
+        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
+        if (CompiledScript.IsEmpty())
         {
-            auto PathInJs = Path.Replace(TEXT("\\"), TEXT("\\\\"));
-            auto DirInJs = FPaths::GetPath(Path).Replace(TEXT("\\"), TEXT("\\\\"));
-            return FString::Printf(TEXT("(function() { var __filename = '%s', __dirname = '%s', exports ={}, module =  { exports : "
-                                        "exports, filename : __filename }; (function (exports, require, console, prompt) { "
-                                        "%s\n})(exports, puerts.genRequire('%s'), puerts.console);})()"),
-                *PathInJs, *DirInJs, *Script, *DirInJs);
-        });
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            return;
+        }
+        auto ReturnVal = CompiledScript.ToLocalChecked()->Run(Context);
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            return;
+        }
+        Logger->Info(TEXT("Start by Script"));
+    }
+    else
+    {
+        ExecuteModule(ModuleNameOrScript,
+            [](const FString& Script, const FString& Path)
+            {
+                auto PathInJs = Path.Replace(TEXT("\\"), TEXT("\\\\"));
+                auto DirInJs = FPaths::GetPath(Path).Replace(TEXT("\\"), TEXT("\\\\"));
+                return FString::Printf(
+                    TEXT("(function() { var __filename = '%s', __dirname = '%s', exports ={}, module =  { exports : "
+                         "exports, filename : __filename }; (function (exports, require, console, prompt) { "
+                         "%s\n})(exports, puerts.genRequire('%s'), puerts.console);})()"),
+                    *PathInJs, *DirInJs, *Script, *DirInJs);
+            });
+    }
     Started = true;
 }
 
@@ -3143,11 +3199,11 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         if (Preprocessor)
             Script = Preprocessor(Script, OutPath);
 
-#if PLATFORM_MAC
-        FString FormattedScriptUrl = DebugPath;
-#else
+#if PLATFORM_WINDOWS
         // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
         FString FormattedScriptUrl = DebugPath.Replace(TEXT("/"), TEXT("\\"));
+#else
+        FString FormattedScriptUrl = DebugPath;
 #endif
         v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
         v8::ScriptOrigin Origin(Name);
@@ -3183,11 +3239,11 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     v8::String::Utf8Value UrlArg(Isolate, Info[1]);
     FString ScriptUrl = UTF8_TO_TCHAR(*UrlArg);
-#if PLATFORM_MAC
-    FString FormattedScriptUrl = ScriptUrl;
-#else
+#if PLATFORM_WINDOWS
     // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
     FString FormattedScriptUrl = ScriptUrl.Replace(TEXT("/"), TEXT("\\"));
+#else
+    FString FormattedScriptUrl = ScriptUrl;
 #endif
     v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
     v8::ScriptOrigin Origin(Name);
@@ -3202,6 +3258,11 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
     Info.GetReturnValue().Set(Result.ToLocalChecked());
+
+    if (OnSourceLoadedCallback)
+    {
+        OnSourceLoadedCallback(FormattedScriptUrl);
+    }
 }
 
 void FJsEnvImpl::Log(const v8::FunctionCallbackInfo<v8::Value>& Info)

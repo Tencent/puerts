@@ -81,6 +81,7 @@ var global = global || (function () { return this; }());
                 let orgSourceInfo = await sendCommand("Debugger.getScriptSource", {scriptId:"" + scriptId});
                 source = ("(function (exports, require, module, __filename, __dirname) { " + source + "\n});");
                 if (orgSourceInfo.scriptSource == source) {
+                    console.log(`source not changed, skip ${url}`);
                     return;
                 }
                 let m = puerts.getModuleByUrl(url);
@@ -88,10 +89,12 @@ var global = global || (function () { return this; }());
                     await sendCommand("Runtime.compileScript", {expression:source, sourceURL:"", persistScript:false, executionContextId:contextInfo.id});
                 } 
                 puerts.emit('HMR.prepare', moduleName, m, url);
-                await sendCommand("Debugger.setScriptSource", {scriptId:"" + scriptId,scriptSource:source});
+                let res = await sendCommand("Debugger.setScriptSource", {scriptId:"" + scriptId,scriptSource:source});
                 puerts.emit('HMR.finish', moduleName, m, url);
                 //puerts.forceReload(url);
             }
+        } else {
+            console.warn(`can not find scriptId for ${url}`)
         }
     };
     
