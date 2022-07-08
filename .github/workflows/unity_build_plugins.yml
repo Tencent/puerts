@@ -20,28 +20,21 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'v8_9.4'
       - name: Install NDK
         run: |
           cd ~
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform android --backend v8_9.4
-
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -52,27 +45,21 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/quickjs/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'quickjs'
       - name: Install NDK
         run: |
           cd ~
           wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
           sudo apt install unzip -y
           unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform android --backend quickjs
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -83,16 +70,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'v8_9.4'
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -109,16 +91,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/quickjs/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'quickjs'
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
@@ -135,16 +112,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'v8_9.4'
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
@@ -159,16 +133,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs_16/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'nodejs_16'
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
@@ -183,16 +154,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/quickjs/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'quickjs'
+      - name: Use Xcode 12.0 for x86
+        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
@@ -207,17 +175,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
-        shell: bash
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'v8_9.4'
       - name: Build
         run: |
           cd unity\native_src
@@ -232,17 +194,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/quickjs/backend.rc)" >> $GITHUB_ENV
-        shell: bash
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'quickjs'
       - name: Build
         run: |
           cd unity\native_src
@@ -257,17 +213,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs_16/backend.rc)" >> $GITHUB_ENV
-        shell: bash
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'nodejs_16'
       - name: Build
         run: |
           cd unity\native_src
@@ -287,16 +237,11 @@ jobs:
           sudo apt-get install libc++-dev
           sudo apt-get install libc++abi-dev
       - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
+          backend: 'v8_9.4'
       - name: Build
         run: |
           cd unity/native_src
