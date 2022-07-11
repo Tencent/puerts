@@ -936,7 +936,6 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         }
         Class = Cast<UClass>(Object);
     }
-    Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
 
     if (Class)
     {
