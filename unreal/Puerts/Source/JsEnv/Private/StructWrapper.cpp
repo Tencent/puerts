@@ -253,7 +253,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
 
 #ifndef WITH_QUICKJS
     Result->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
-        [](v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info) {
+        [](v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
+        {
             auto InnerIsolate = Info.GetIsolate();
             auto Context = InnerIsolate->GetCurrentContext();
             auto This = Info.This();
@@ -278,7 +279,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                 }
             }
         },
-        [](v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<v8::Value>& Info) {
+        [](v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<v8::Value>& Info)
+        {
             auto InnerIsolate = Info.GetIsolate();
             auto Context = InnerIsolate->GetCurrentContext();
             auto This = Info.This();
@@ -540,7 +542,7 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             }
             if (Info.Length() > 2)
             {
-                ObjectFlags = (EObjectFlags)(Info[2]->Int32Value(Context).ToChecked());
+                ObjectFlags = (EObjectFlags) (Info[2]->Int32Value(Context).ToChecked());
             }
             Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
         }

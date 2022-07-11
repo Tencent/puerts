@@ -955,7 +955,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         }
         if (Info.Length() > 3)
         {
-            ObjectFlags = (EObjectFlags)(Info[3]->Int32Value(Context).ToChecked());
+            ObjectFlags = (EObjectFlags) (Info[3]->Int32Value(Context).ToChecked());
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
