@@ -3602,8 +3602,18 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     CHECK_V8_ARGS(EArgObject, EArgObject);
 
-    auto To = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
-    if (!To || FV8Utils::IsReleasedPtr(To))
+    UClass* To = nullptr;
+    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    {
+        if (FV8Utils::IsReleasedPtr(Object))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
+        To = Cast<UClass>(Object);
+    }
+
+    if (!To)
     {
         FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
         return;
