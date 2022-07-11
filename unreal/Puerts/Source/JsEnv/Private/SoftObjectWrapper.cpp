@@ -33,7 +33,19 @@ static void GenericObjectGet(const v8::FunctionCallbackInfo<v8::Value>& Info, FS
     {
         auto PropertyClass = Cast<UClass>(FV8Utils::GetUObject(Info.Holder(), 1));
 
+        if (FV8Utils::IsReleasedPtr(PropertyClass))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
+
         auto MetaClass = Cast<UClass>(FV8Utils::GetUObject(Info.Holder(), 2));
+
+        if (FV8Utils::IsReleasedPtr(MetaClass))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
 
         if (PropertyClass && !Obj->GetClass()->IsChildOf(PropertyClass))
         {

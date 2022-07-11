@@ -882,11 +882,19 @@ void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
     auto Src = Info[1]->ToObject(Context).ToLocalChecked();
     if (FV8Utils::GetPointerFast<void>(Des, 1))    // struct
     {
-        auto Struct = Cast<UScriptStruct>(FV8Utils::GetUObject(Des, 1));
-        if (Struct)
+        if (auto Object = FV8Utils::GetUObject(Des, 1))
         {
-            Merge(Isolate, Context, Src, Struct, FV8Utils::GetPointer(Des));
-            return;
+            if (FV8Utils::IsReleasedPtr(Object))
+            {
+                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                return;
+            }
+            auto Struct = Cast<UScriptStruct>(Object);
+            if (Struct)
+            {
+                Merge(Isolate, Context, Src, Struct, FV8Utils::GetPointer(Des));
+                return;
+            }
         }
     }
     else    // class
@@ -894,6 +902,11 @@ void FJsEnvImpl::MergeObject(const v8::FunctionCallbackInfo<v8::Value>& Info)
         auto Object = FV8Utils::GetUObject(Des);
         if (Object)
         {
+            if (FV8Utils::IsReleasedPtr(Object))
+            {
+                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                return;
+            }
             Merge(Isolate, Context, Src, Object->GetClass(), Object);
             return;
         }
@@ -913,13 +926,28 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
     FName Name = NAME_None;
     EObjectFlags ObjectFlags = RF_NoFlags;
 
-    UClass* Class = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
+    UClass* Class = nullptr;
+    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    {
+        if (FV8Utils::IsReleasedPtr(Object))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
+        Class = Cast<UClass>(Object);
+    }
+    Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
 
     if (Class)
     {
         if (Info.Length() > 1)
         {
             Outer = FV8Utils::GetUObject(Context, Info[1]);
+            if (FV8Utils::IsReleasedPtr(Outer))
+            {
+                FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                return;
+            }
         }
         if (Info.Length() > 2)
         {
@@ -927,7 +955,7 @@ void FJsEnvImpl::NewObjectByClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
         }
         if (Info.Length() > 3)
         {
-            ObjectFlags = (EObjectFlags) (Info[3]->Int32Value(Context).ToChecked());
+            ObjectFlags = (EObjectFlags)(Info[3]->Int32Value(Context).ToChecked());
         }
         UObject* Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
 
@@ -952,7 +980,16 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     FName Name = NAME_None;
     EObjectFlags ObjectFlags = RF_NoFlags;
 
-    UScriptStruct* ScriptStruct = Cast<UScriptStruct>(FV8Utils::GetUObject(Context, Info[0]));
+    UScriptStruct* ScriptStruct = nullptr;
+    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    {
+        if (FV8Utils::IsReleasedPtr(Object))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
+        ScriptStruct = Cast<UScriptStruct>(Object);
+    }
 
     if (ScriptStruct)
     {
@@ -2794,7 +2831,16 @@ void FJsEnvImpl::UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Inf
 
     CHECK_V8_ARGS(EArgObject);
 
-    UField* Type = Cast<UField>(FV8Utils::GetUObject(Context, Info[0]));
+    UField* Type = nullptr;
+    if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
+    {
+        if (FV8Utils::IsReleasedPtr(Object))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
+        Type = Cast<UField>(Object);
+    }
 
     if (Type)
     {
@@ -3474,7 +3520,17 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     auto Prototype = Info[1]->ToObject(Context).ToLocalChecked();
     auto ClassName = FV8Utils::ToFString(Isolate, Info[2]);
     auto Methods = Info[3]->ToObject(Context).ToLocalChecked();
-    auto ParentUClass = Cast<UClass>(FV8Utils::GetUObject(Context, Info[4]));
+
+    UClass* ParentUClass = nullptr;
+    if (UObject* Object = FV8Utils::GetUObject(Context, Info[4]))
+    {
+        if (FV8Utils::IsReleasedPtr(Object))
+        {
+            FV8Utils::ThrowException(Isolate, "passing a invalid object");
+            return;
+        }
+        ParentUClass = Cast<UClass>(Object);
+    }
 
     if (!ParentUClass)
     {
@@ -3548,7 +3604,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CHECK_V8_ARGS(EArgObject, EArgObject);
 
     auto To = Cast<UClass>(FV8Utils::GetUObject(Context, Info[0]));
-    if (!To)
+    if (!To || FV8Utils::IsReleasedPtr(To))
     {
         FV8Utils::ThrowException(Isolate, "#0 parameter expect a Blueprint UClass");
         return;
