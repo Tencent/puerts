@@ -1018,6 +1018,12 @@ public:
                 auto Obj = FV8Utils::GetUObject(Context, Array->Get(Context, 0).ToLocalChecked());
                 if (Obj)
                 {
+                    if (FV8Utils::IsReleasedPtr(Obj))
+                    {
+                        FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                        return false;
+                    }
+
                     auto FuncName = Array->Get(Context, 1).ToLocalChecked();
                     if (FuncName->IsString())
                     {

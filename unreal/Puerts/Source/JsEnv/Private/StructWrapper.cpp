@@ -530,6 +530,11 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             if (Info.Length() > 0)
             {
                 Outer = FV8Utils::GetUObject(Context, Info[0]);
+                if (FV8Utils::IsReleasedPtr(Outer))
+                {
+                    FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                    return;
+                }
             }
             if (Info.Length() > 1)
             {
