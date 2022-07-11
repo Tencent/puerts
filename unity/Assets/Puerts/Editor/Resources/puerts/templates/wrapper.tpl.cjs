@@ -591,7 +591,7 @@ namespace PuertsStaticWrap
             jsEnv.RegisterGeneralGetSet(typeof(${data.Name}), (int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
                 return StaticGetter(jsEnvIdx, isolate, getValueApi, value, isByRef);
-            }, ((int jsEnvIdx,IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, object obj) => 
+            },(int jsEnvIdx,IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, object obj) => 
             {
                 StaticSetter(jsEnvIdx, isolate, setValueApi, value, (${data.Name})obj);
             });
