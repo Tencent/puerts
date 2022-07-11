@@ -29,7 +29,7 @@ struct Converter<std::function<R(Args...)>>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<R(Args...)> value)
     {
-        return v8::Undefined(context->GetIsolate());
+        return GetUndefined(context);
     }
 
     static std::function<R(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -40,7 +40,7 @@ struct Converter<std::function<R(Args...)>>
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return value->IsFunction();
+        return Converter<Function>::accept(context, value);
     }
 };
 
@@ -49,7 +49,7 @@ struct Converter<std::function<void(Args...)>>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<void(Args...)> value)
     {
-        return v8::Undefined(context->GetIsolate());
+        return GetUndefined(context);
     }
 
     static std::function<void(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -60,7 +60,7 @@ struct Converter<std::function<void(Args...)>>
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return value->IsFunction();
+        return Converter<Function>::accept(context, value);
     }
 };
 }    // namespace converter
