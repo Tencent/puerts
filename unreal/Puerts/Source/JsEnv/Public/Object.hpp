@@ -92,7 +92,7 @@ struct Converter<std::function<R(Args...)>>
 
     static std::function<R(Args...)> toCpp(ContextType context, const ValueType value)
     {
-        Function PF(context, value.As<v8::Object>());
+        Function PF(context, value);
         return [=](Args... cppArgs) -> R { return PF.Func<R>(cppArgs...); };
     }
 
@@ -112,7 +112,7 @@ struct Converter<std::function<void(Args...)>>
 
     static std::function<void(Args...)> toCpp(ContextType context, const ValueType value)
     {
-        Function PF(context, value.As<v8::Object>());
+        Function PF(context, value);
         return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
     }
 
