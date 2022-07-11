@@ -435,7 +435,7 @@ export class PuertsJSEngine {
         return buffer;
     }
 
-    makeV8FunctionCallbackFunction(functionPtr: IntPtr, data: number) {
+    makeV8FunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, data: number) {
         // 不能用箭头函数！此处返回的函数会放到具体的class上，this有含义。
         const engine = this;
         return function (...args: any[]) {
@@ -443,7 +443,7 @@ export class PuertsJSEngine {
             engine.callV8FunctionCallback(
                 functionPtr,
                 // getIntPtrManager().GetPointerForJSValue(this),
-                engine.csharpObjectMap.getCSIdentifierFromObject(this),
+                isStatic ? 0:engine.csharpObjectMap.getCSIdentifierFromObject(this),
                 callbackInfoPtr,
                 args.length,
                 data

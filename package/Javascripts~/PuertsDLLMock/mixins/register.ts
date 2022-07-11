@@ -10,7 +10,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
     const returnee = {
         SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, dataLow: number, dataHigh: number) {
             const name = engine.unityApi.UTF8ToString(nameString);
-            global[name] = engine.makeV8FunctionCallbackFunction(v8FunctionCallback, dataLow);
+            global[name] = engine.makeV8FunctionCallbackFunction(true, v8FunctionCallback, dataLow);
         },
         _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, dataLow: number, dataHigh: number, size: number) {
             const fullName = engine.unityApi.UTF8ToString(fullNameString);
@@ -78,7 +78,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             }
             const name = engine.unityApi.UTF8ToString(nameString);
 
-            var fn = engine.makeV8FunctionCallbackFunction(callback, data)
+            var fn = engine.makeV8FunctionCallbackFunction(isStatic, callback, data)
             if (isStatic) {
                 cls[name] = fn
             } else {
@@ -108,9 +108,9 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 configurable: !dontDelete,
                 enumerable: false
             };
-            attr.get = engine.makeV8FunctionCallbackFunction(getter, getterDataLow);
+            attr.get = engine.makeV8FunctionCallbackFunction(isStatic, getter, getterDataLow);
             if (setter) {
-                attr.set = engine.makeV8FunctionCallbackFunction(setter, setterDataLow);
+                attr.set = engine.makeV8FunctionCallbackFunction(isStatic, setter, setterDataLow);
             }
 
             if (isStatic) {
