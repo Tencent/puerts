@@ -9,7 +9,7 @@
 #include "PuertsEditorModule.h"
 #include "JsEnv.h"
 #include "Editor.h"
-#include "FileHelper.h"
+#include "Misc/FileHelper.h"
 #include "PuertsModule.h"
 #include "TypeScriptCompilerContext.h"
 #include "TypeScriptBlueprint.h"
