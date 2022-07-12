@@ -22,15 +22,18 @@
     };                                            \
     }
 
-#define UsingTArrayWithName(CLS, CLSNAME)             \
-    namespace puerts                                  \
-    {                                                 \
-    template <>                                       \
-    struct ScriptTypeName<TArray<CLS>>                \
-    {                                                 \
-        static constexpr const char* value = CLSNAME; \
-    };                                                \
-    }                                                 \
+#define UsingTArrayWithName(CLS, CLSNAME) \
+    namespace puerts                      \
+    {                                     \
+    template <>                           \
+    struct ScriptTypeName<TArray<CLS>>    \
+    {                                     \
+        static constexpr auto value()     \
+        {                                 \
+            return Literal(CLSNAME);      \
+        }                                 \
+    };                                    \
+    }                                     \
     __DefObjectType(TArray<CLS>) __DefCDataPointerConverter(TArray<CLS>)
 
 #define RegisterTArray(CLS)                                                                              \
@@ -270,27 +273,39 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
 template <>
 struct ScriptTypeName<FString>
 {
-    static constexpr const char* value = "string";
+    static constexpr auto value()
+    {
+        return Literal("string");
+    }
 };
 
 template <>
 struct ScriptTypeName<FName>
 {
-    static constexpr const char* value = "string";
+    static constexpr auto value()
+    {
+        return Literal("string");
+    }
 };
 
 #ifndef PUERTS_FTEXT_AS_OBJECT
 template <>
 struct ScriptTypeName<FText>
 {
-    static constexpr const char* value = "string";
+    static constexpr auto value()
+    {
+        return Literal("string");
+    }
 };
 #endif
 
 template <>
 struct ScriptTypeName<FArrayBuffer>
 {
-    static constexpr const char* value = "ArrayBuffer";
+    static constexpr auto value()
+    {
+        return Literal("ArrayBuffer");
+    }
 };
 
 namespace internal

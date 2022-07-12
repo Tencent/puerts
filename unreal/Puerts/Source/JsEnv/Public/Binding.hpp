@@ -1060,7 +1060,8 @@ struct PropertyWrapper<Ret Ins::*, member,
 
     static const char* info()
     {
-        return ScriptTypeName<Ret>::value;
+        static auto NameLiteral = ScriptTypeName<Ret>::value();
+        return NameLiteral.Data();
     }
 };
 
@@ -1106,7 +1107,8 @@ struct PropertyWrapper<Ret Ins::*, member,
 
     static const char* info()
     {
-        return ScriptTypeName<Ret>::value;
+        static auto NameLiteral = ScriptTypeName<Ret>::value();
+        return NameLiteral.Data();
     }
 };
 
@@ -1141,7 +1143,8 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
 
     static const char* info()
     {
-        return ScriptTypeName<Ret>::value;
+        static auto NameLiteral = ScriptTypeName<Ret>::value();
+        return NameLiteral.Data();
     }
 };
 
@@ -1162,7 +1165,8 @@ struct PropertyWrapper<Ret*, Variable>
 
     static const char* info()
     {
-        return ScriptTypeName<Ret>::value;
+        static auto NameLiteral = ScriptTypeName<Ret>::value();
+        return NameLiteral.Data();
     }
 };
 
@@ -1414,7 +1418,8 @@ public:
 template <typename T>
 inline ClassDefineBuilder<T> DefineClass()
 {
-    return ClassDefineBuilder<T>(ScriptTypeName<T>::value);
+    static auto NameLiteral = ScriptTypeName<T>::value();
+    return ClassDefineBuilder<T>(NameLiteral.Data());
 }
 
 }    // namespace puerts
