@@ -46,8 +46,13 @@ public class JsEnv : ModuleRules
 
         PublicDependencyModuleNames.AddRange(new string[]
         {
-            "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas" ,"UMG"
+            "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas", "UMG"
         });
+
+        if (Target.bBuildEditor)
+        {
+            PublicDependencyModuleNames.AddRange(new string[] { "DirectoryWatcher", });
+        }
 
         bEnableExceptions = true;
         bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
