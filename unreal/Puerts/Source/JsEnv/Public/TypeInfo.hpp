@@ -10,69 +10,18 @@
 
 #include <string>
 
-#define __DefScriptTTypeName(CLSNAME, CLS)               \
-    namespace puerts                                     \
-    {                                                    \
-    template <>                                          \
-    struct ScriptTypeName<CLS>                           \
-    {                                                    \
-        static constexpr auto value = Literal(#CLSNAME); \
-    };                                                   \
+#define __DefScriptTTypeName(CLSNAME, CLS)             \
+    namespace puerts                                   \
+    {                                                  \
+    template <>                                        \
+    struct ScriptTypeName<CLS>                         \
+    {                                                  \
+        static constexpr const char* value = #CLSNAME; \
+    };                                                 \
     }
 
 namespace puerts
 {
-template <std::size_t N>
-class StringLiteral
-{
-public:
-    template <typename... Characters>
-    constexpr StringLiteral(Characters... characters) : m_value{characters..., '\0'}
-    {
-    }
-
-    template <std::size_t... Indexes>
-    constexpr StringLiteral(const char (&value)[N + 1], std::index_sequence<Indexes...> dummy) : StringLiteral(value[Indexes]...)
-    {
-    }
-
-    constexpr StringLiteral(const char (&value)[N + 1]) : StringLiteral(value, std::make_index_sequence<N>{})
-    {
-    }
-
-    constexpr char operator[](const std::size_t index) const
-    {
-        return m_value[index];
-    }
-
-    constexpr const char* Data() const
-    {
-        return m_value;
-    }
-
-private:
-    const char m_value[N + 1];
-};
-
-template <typename Left, typename Right, std::size_t... IndexesLeft, std::size_t... IndexesRight>
-constexpr StringLiteral<sizeof...(IndexesLeft) + sizeof...(IndexesRight)> ConcatStrings(
-    const Left& lhs, const Right& rhs, std::index_sequence<IndexesLeft...> dummy1, std::index_sequence<IndexesRight...> dummy2)
-{
-    return StringLiteral<sizeof...(IndexesLeft) + sizeof...(IndexesRight)>(lhs[IndexesLeft]..., rhs[IndexesRight]...);
-}
-
-template <std::size_t X, std::size_t Y>
-constexpr StringLiteral<X + Y> operator+(const StringLiteral<X>& lhs, const StringLiteral<Y>& rhs)
-{
-    return ConcatStrings(lhs, rhs, std::make_index_sequence<X>(), std::make_index_sequence<Y>());
-}
-
-template <std::size_t N>
-constexpr auto Literal(const char (&value)[N])
-{
-    return StringLiteral<N - 1>(value, typename std::make_index_sequence<N - 1>{});
-}
-
 template <typename T, typename Enable = void>
 struct ScriptTypeName
 {
@@ -81,62 +30,62 @@ struct ScriptTypeName
 template <typename T>
 struct ScriptTypeName<T*>
 {
-    static constexpr auto value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
+    static constexpr const char* value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template <typename T>
 struct ScriptTypeName<T&>
 {
-    static constexpr auto value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
+    static constexpr const char* value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template <typename T>
 struct ScriptTypeName<T&&>
 {
-    static constexpr auto value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
+    static constexpr const char* value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
 };
 
 template <typename T>
 struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type>
 {
-    static constexpr auto value = Literal("bigint");
+    static constexpr const char* value = "bigint";
 };
 
 template <typename T>
 struct ScriptTypeName<T, typename std::enable_if<std::is_enum<T>::value>::type>
 {
-    static constexpr auto value = Literal("number");
+    static constexpr const char* value = "number";
 };
 
 template <typename T>
 struct ScriptTypeName<T,
     typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type>
 {
-    static constexpr auto value = Literal("number");
+    static constexpr const char* value = "number";
 };
 
 template <>
 struct ScriptTypeName<std::string>
 {
-    static constexpr auto value = Literal("string");
+    static constexpr const char* value = "string";
 };
 
 template <>
 struct ScriptTypeName<const char*>
 {
-    static constexpr auto value = Literal("cstring");
+    static constexpr const char* value = "cstring";
 };
 
 template <>
 struct ScriptTypeName<bool>
 {
-    static constexpr auto value = Literal("boolean");
+    static constexpr const char* value = "boolean";
 };
 
 template <>
 struct ScriptTypeName<void>
 {
-    static constexpr auto value = Literal("void");
+    static constexpr const char* value = "void";
 };
 
 template <typename T>
@@ -197,7 +146,7 @@ class CTypeInfoImpl : CTypeInfo
 public:
     virtual const char* Name() const override
     {
-        return ScriptTypeName<T>::value.Data();
+        return ScriptTypeName<T>::value;
     }
     virtual bool IsPointer() const override
     {

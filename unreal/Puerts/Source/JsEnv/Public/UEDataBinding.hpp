@@ -22,15 +22,15 @@
     };                                            \
     }
 
-#define UsingTArrayWithName(CLS, CLSNAME)               \
-    namespace puerts                                    \
-    {                                                   \
-    template <>                                         \
-    struct ScriptTypeName<TArray<CLS>>                  \
-    {                                                   \
-        static constexpr auto value = Literal(CLSNAME); \
-    };                                                  \
-    }                                                   \
+#define UsingTArrayWithName(CLS, CLSNAME)             \
+    namespace puerts                                  \
+    {                                                 \
+    template <>                                       \
+    struct ScriptTypeName<TArray<CLS>>                \
+    {                                                 \
+        static constexpr const char* value = CLSNAME; \
+    };                                                \
+    }                                                 \
     __DefObjectType(TArray<CLS>) __DefCDataPointerConverter(TArray<CLS>)
 
 #define RegisterTArray(CLS)                                                                              \
@@ -270,27 +270,27 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
 template <>
 struct ScriptTypeName<FString>
 {
-    static constexpr auto value = Literal("string");
+    static constexpr const char* value = "string";
 };
 
 template <>
 struct ScriptTypeName<FName>
 {
-    static constexpr auto value = Literal("string");
+    static constexpr const char* value = "string";
 };
 
 #ifndef PUERTS_FTEXT_AS_OBJECT
 template <>
 struct ScriptTypeName<FText>
 {
-    static constexpr auto value = Literal("string");
+    static constexpr const char* value = "string";
 };
 #endif
 
 template <>
 struct ScriptTypeName<FArrayBuffer>
 {
-    static constexpr auto value = Literal("ArrayBuffer");
+    static constexpr const char* value = "ArrayBuffer";
 };
 
 namespace internal
