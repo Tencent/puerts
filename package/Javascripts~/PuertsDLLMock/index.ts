@@ -118,7 +118,7 @@ global.PuertsWebGL = {
                             return 1024
                         }
                     } catch(e) {
-                        engine.lastException = e.message;
+                        engine.lastException = e;
                     }
                 },
                 Eval: function (isolate: IntPtr, codeString: CSString, path: string) {

@@ -56,6 +56,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 tempExternalCSID = csID;
                 return new (ctor as any)();
             };
+            ctor.__puertsMetadata = new Map();
             Object.defineProperty(ctor, "name", { value: fullName + "Constructor" });
             Object.defineProperty(ctor, "$cid", { value: id });
             csharpObjectMap.classes.push(ctor);
