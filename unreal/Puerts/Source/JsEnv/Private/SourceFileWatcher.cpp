@@ -5,7 +5,7 @@
  * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
  * which is part of this source code package.
  */
-#if WITH_EDITOR
+
 #include "SourceFileWatcher.h"
 #include "DirectoryWatcherModule.h"
 #include "Modules/ModuleManager.h"
@@ -101,4 +101,3 @@ FSourceFileWatcher::~FSourceFileWatcher()
     }
 }
 }    // namespace puerts
-#endif

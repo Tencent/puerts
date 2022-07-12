@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#if WITH_EDITOR
+
 #include "CoreMinimal.h"
 #include "IDirectoryWatcher.h"
 #include "Misc/SecureHash.h"
@@ -36,4 +36,3 @@ private:
     std::function<void(const FString&)> OnWatchedFileChanged;
 };
 }    // namespace puerts
-#endif

@@ -46,7 +46,7 @@ public class JsEnv : ModuleRules
 
         PublicDependencyModuleNames.AddRange(new string[]
         {
-            "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas", "UMG", "DirectoryWatcher"
+            "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas" ,"UMG"
         });
 
         bEnableExceptions = true;
