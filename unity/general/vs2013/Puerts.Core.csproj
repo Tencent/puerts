@@ -48,17 +48,236 @@
     <Compile Include="..\..\Assets\Puerts\Editor\Src\Generator\FileExporter.cs">
       <Link>Assets\Puerts\Editor\Src\Generator\FileExporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\ByteOrder.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\ByteOrder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\CloseEventArgs.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\CloseEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\CloseStatusCode.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\CloseStatusCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\CompressionMethod.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\CompressionMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\ErrorEventArgs.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\ErrorEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Ext.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Ext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Fin.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Fin.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\HttpBase.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\HttpBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\HttpRequest.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\HttpRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\HttpResponse.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\HttpResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\LogData.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\LogData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Logger.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Logger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\LogLevel.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\LogLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Mask.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Mask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\MessageEventArgs.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\MessageEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationChallenge.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationChallenge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationResponse.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationSchemes.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationSchemes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\Chunk.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\Chunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ChunkedRequestStream.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ChunkedRequestStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ChunkStream.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ChunkStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ClientSslConfiguration.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ClientSslConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\Cookie.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\Cookie.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\CookieCollection.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\CookieCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\CookieException.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\CookieException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\EndPointListener.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\EndPointListener.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\EndPointManager.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\EndPointManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpBasicIdentity.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpBasicIdentity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpConnection.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpConnection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpDigestIdentity.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpDigestIdentity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpHeaderInfo.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpHeaderInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpHeaderType.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpHeaderType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListener.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListener.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerAsyncResult.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerContext.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerException.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerPrefix.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerPrefix.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerPrefixCollection.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerPrefixCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerRequest.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerResponse.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpListenerResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpRequestHeader.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpRequestHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpResponseHeader.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpResponseHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpStatusCode.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpStatusCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpStreamAsyncResult.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpStreamAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpUtility.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpVersion.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\HttpVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\InputChunkState.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\InputChunkState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\InputState.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\InputState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\LineState.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\LineState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\NetworkCredential.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\NetworkCredential.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\QueryStringCollection.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\QueryStringCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ReadBufferState.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ReadBufferState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\RequestStream.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\RequestStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ResponseStream.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ResponseStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ServerSslConfiguration.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\ServerSslConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebHeaderCollection.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebHeaderCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebSockets\HttpListenerWebSocketContext.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebSockets\HttpListenerWebSocketContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebSockets\TcpListenerWebSocketContext.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebSockets\TcpListenerWebSocketContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebSockets\WebSocketContext.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\WebSockets\WebSocketContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Opcode.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Opcode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\PayloadData.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\PayloadData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Rsv.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Rsv.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\HttpRequestEventArgs.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\HttpRequestEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\IWebSocketSession.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\IWebSocketSession.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\ServerState.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\ServerState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketBehavior.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketBehavior.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServer.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServiceHost.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServiceHost.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServiceHost`1.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServiceHost`1.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServiceManager.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketServiceManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketSessionManager.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\WebSocketSessionManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocket.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocket.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocketException.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocketException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocketFrame.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocketFrame.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocketState.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\WebSocketState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\JsEnv.cs">
       <Link>Assets\Puerts\Runtime\Src\JsEnv.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Loader.cs">
       <Link>Assets\Puerts\Runtime\Src\Loader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\PuertsDLL.cs">
-      <Link>Assets\Puerts\Runtime\Src\PuertsDLL.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticCallbacks.cs">
-      <Link>Assets\Puerts\Runtime\Src\StaticCallbacks.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
       <Link>Assets\Puerts\Runtime\Src\TypeExtensions.cs</Link>
@@ -107,6 +326,24 @@
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs">
       <Link>Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\DLL\PuertsDLL.cs">
+      <Link>Assets\Puerts\Runtime\Src\DLL\PuertsDLL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\DLL\StaticCallbacks.cs">
+      <Link>Assets\Puerts\Runtime\Src\DLL\StaticCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\Inspector.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\Inspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\AssemblyInfo.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationBase.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Net\AuthenticationBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\HttpServer.cs">
+      <Link>Assets\Puerts\Runtime\Src\Inspector\websocket-sharp\Server\HttpServer.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Editor\Src\CJSImporter.cs">
       <Link>Assets\Puerts\Editor\Src\CJSImporter.cs</Link>

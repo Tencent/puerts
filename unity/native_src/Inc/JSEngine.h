@@ -20,7 +20,7 @@
 #pragma warning(pop)
 
 #include "JSFunction.h"
-#include "V8InspectorImpl.h"
+#include "Inspector.h"
 
 #if PUERTS_UT
 # if PLATFORM_WINDOWS
@@ -69,11 +69,13 @@ typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEn
 
 typedef void (*CSharpPushJSFunctionArgumentsCallback)(v8::Isolate* Isolate, int32_t jsEnvIdx, puerts::JSFunction* NativeFuncPtr);
 
-typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
+typedef void (*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
 
 typedef void* (*CSharpConstructorCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, int ParamLen, int64_t UserData);
 
-typedef void(*CSharpDestructorCallback)(void* Self, int64_t UserData);
+typedef void (*CSharpDestructorCallback)(void* Self, int64_t UserData);
+
+typedef void (*CSharpInspectorSendMessageCallback)(int32_t jsEnvIdx, const char* id, const char* message);
 
 namespace puerts
 {
@@ -159,7 +161,7 @@ public:
 
     PUERTS_EXPORT_FOR_UT void ReleaseJSObject(JSObject* InObject);
 
-    PUERTS_EXPORT_FOR_UT void CreateInspector(int32_t Port);
+    PUERTS_EXPORT_FOR_UT void CreateInspector(CSharpInspectorSendMessageCallback SendMessageCallback);
 
     PUERTS_EXPORT_FOR_UT void DestroyInspector();
 
@@ -227,10 +229,9 @@ private:
     std::mutex JSFunctionsMutex;
 
     std::mutex JSObjectsMutex;
-
-    V8Inspector* Inspector;
-
 public:
+    InspectorAgent* Inspector;
+
     v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
 };
 }

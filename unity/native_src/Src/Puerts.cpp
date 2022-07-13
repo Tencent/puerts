@@ -889,14 +889,20 @@ V8_EXPORT const char* GetFunctionLastExceptionInfo(JSFunction *Function, int *Le
     return Function->LastExceptionInfo.c_str();
 }
 
+V8_EXPORT void LogicTick(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->LogicTick();
+}
+
 //-------------------------- end cs call js --------------------------
 
 //-------------------------- begin debug --------------------------
 
-V8_EXPORT void CreateInspector(v8::Isolate *Isolate, int32_t Port)
+V8_EXPORT void CreateInspector(v8::Isolate *Isolate, CSharpInspectorSendMessageCallback SendMessageCallback)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->CreateInspector(Port);
+    JsEngine->CreateInspector(SendMessageCallback);
 }
 
 V8_EXPORT void DestroyInspector(v8::Isolate *Isolate)
@@ -911,10 +917,27 @@ V8_EXPORT int InspectorTick(v8::Isolate *Isolate)
     return JsEngine->InspectorTick() ? 1 : 0;
 }
 
-V8_EXPORT void LogicTick(v8::Isolate *Isolate)
+V8_EXPORT void NoticeInspectorSessionOpen(v8::Isolate *Isolate, const char* id)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    return JsEngine->LogicTick();
+    JsEngine->Inspector->CreateInspectorChannel(id);
+}
+
+V8_EXPORT void NoticeInspectorSessionMessage(v8::Isolate *Isolate, const char* id, const char* message)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->Inspector->SendMessage(id, message);
+}
+
+V8_EXPORT void NoticeInspectorSessionClose(v8::Isolate *Isolate, const char* id)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->Inspector->Close(id);
+}
+
+V8_EXPORT void NoticeInspectorSessionError(v8::Isolate *Isolate, const char* id, const char* message)
+{
+    // JsEngine->Inspector->SendError(std::string(id), std::string(message));
 }
 
 //-------------------------- end debug --------------------------

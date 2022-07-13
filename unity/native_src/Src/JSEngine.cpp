@@ -9,6 +9,7 @@
 #include "Log.h"
 #include <memory>
 #include "PromiseRejectCallback.hpp"
+#include "Inspector.h"
 #include <stdarg.h>
 
 namespace puerts
@@ -693,7 +694,7 @@ namespace puerts
         MainIsolate->LowMemoryNotification();
     }
 
-    void JSEngine::CreateInspector(int32_t Port)
+    void JSEngine::CreateInspector(CSharpInspectorSendMessageCallback SendMessageCallback)
     {
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -703,7 +704,7 @@ namespace puerts
 
         if (Inspector == nullptr)
         {
-            Inspector = CreateV8Inspector(Port, &Context);
+            Inspector = CreatePuertsInspector(Idx, &Context, SendMessageCallback);
         }
     }
 
@@ -738,10 +739,10 @@ namespace puerts
 
     bool JSEngine::InspectorTick()
     {
-        if (Inspector != nullptr)
-        {
-            return Inspector->Tick();
-        }
+        //if (Inspector != nullptr)
+        //{
+//            return Inspector->Tick();
+        //}
         return true;
     }
 }

@@ -31,13 +31,13 @@ endif()
 set(ENGINE_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
 set(ENGINE_INC ${ENGINE_ROOT}/Inc)
 
-set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
+# set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INC}
-    ${ThirdParty}/Include/websocketpp
-    ${ThirdParty}/Include/asio
+    # ${ThirdParty}/Include/websocketpp
+    # ${ThirdParty}/Include/asio
     Inc
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
 )
@@ -47,7 +47,8 @@ set ( PUERTS_INC
     Inc/JSEngine.h
     Inc/V8Utils.h
     Inc/JSFunction.h
-    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+    Inc/Inspector.h
+    # ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
 )
 
@@ -57,7 +58,8 @@ set ( PUERTS_SRC
     Src/JSEngine.cpp
     Src/JSEngine_Eval.cpp
     Src/JSFunction.cpp
-    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
+    Src/Inspector.cpp
+    # ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
 macro(source_group_by_dir proj_dir source_files)

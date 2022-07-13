@@ -101,5 +101,11 @@ namespace Puerts
         {
             PuertsDLL.ReturnBoolean(isolate, info, true);
         }
+
+        [MonoPInvokeCallback(typeof(V8FunctionCallback))]
+        internal static void SendMessageToInspectorSession(int jsEnvIdx, string id, string message)
+        {
+            JsEnv.jsEnvs[jsEnvIdx].inspector.SendMessageTo(id, message);
+        }
     }
 }

@@ -42,6 +42,8 @@ namespace Puerts
 
         internal readonly JSObjectFactory jsObjectFactory;
 
+        internal Inspector inspector;
+
         internal IntPtr isolate;
 
         internal ObjectPool objectPool;
@@ -162,7 +164,7 @@ namespace Puerts
 
             if (debugPort != -1)
             {
-                PuertsDLL.CreateInspector(isolate, debugPort);
+                inspector = new Inspector(this, debugPort);
             }
             try 
             {
@@ -801,8 +803,13 @@ namespace Puerts
             {
                 if (disposed) return;
                 if (OnDispose != null) OnDispose();
+                if (inspector != null)
+                {
+                    inspector.Dispose();
+                    inspector = null;
+                }
+                // PuertsDLL.DestroyJSEngine(isolate);
                 jsEnvs[Idx] = null;
-                PuertsDLL.DestroyJSEngine(isolate);
                 isolate = IntPtr.Zero;
                 disposed = true;
             }

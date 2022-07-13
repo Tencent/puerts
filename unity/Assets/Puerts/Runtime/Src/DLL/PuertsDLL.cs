@@ -52,6 +52,11 @@ namespace Puerts
 #endif
     public delegate void LogCallback(string content);
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
+    public delegate void InspectorSendMessageCallback(int jsEnvIdx, string id, string message);
+
     [Flags]
     public enum JsValueType
     {
@@ -581,14 +586,6 @@ namespace Puerts
         public static extern void ResetResult(IntPtr resultInfo);
         //end cs call js
 
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void CreateInspector(IntPtr isolate, int port);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DestroyInspector(IntPtr isolate);
-
-        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool InspectorTick(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void LogicTick(IntPtr isolate);
@@ -620,6 +617,30 @@ namespace Puerts
         public static extern IntPtr GetArrayBufferFromValue(IntPtr isolate, IntPtr value, out int length, bool isOut);
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void CreateInspector(IntPtr isolate, IntPtr callback);
+        public static void CreateInspector(IntPtr isolate, InspectorSendMessageCallback callback)
+        {
+#if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+            GCHandle.Alloc(callback);
+#endif
+            IntPtr cb = callback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
+            CreateInspector(isolate, cb);
+        }
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void DestroyInspector(IntPtr isolate);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool InspectorTick(IntPtr isolate);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr NoticeInspectorSessionOpen(IntPtr isolate, string id);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr NoticeInspectorSessionMessage(IntPtr isolate, string id, string message);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr NoticeInspectorSessionClose(IntPtr isolate, string id);
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr NoticeInspectorSessionError(IntPtr isolate, string id, string message);
     }
 }
 

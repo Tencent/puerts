@@ -63,9 +63,6 @@ if (checkCMake.stderr && !checkCMake.stdout) {
     console.error("[Puer] CMake is not installed");
     process.exit();
 }
-if (options.platform == "win" && options.config != "Release") {
-    options.config = "RelWithDebInfo"
-}
 
 //// 脚本 scripts
 const platformCompileConfig = {
@@ -220,6 +217,10 @@ const platformCompileConfig = {
 })()
 
 async function runMake() {
+    if (options.platform == "win" && options.config != "Release") {
+        options.config = "RelWithDebInfo"
+    }
+    
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = pwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug": ""}`
     const OUTPUT_PATH = pwd + '/../Assets/Plugins/' + BuildConfig.outputPluginPath;
