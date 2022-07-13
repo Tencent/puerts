@@ -87,8 +87,7 @@ void FPuertsEditorModule::OnPostEngineInit()
                 }
             });
 
-        TArray<TPair<FString, UObject*>> Arguments;
-        JsEnv->Start("require('PuertsEditor/CodeAnalyze')", Arguments, true);
+        JsEnv->Start("PuertsEditor/CodeAnalyze");
     }
 }
 
