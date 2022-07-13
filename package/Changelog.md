@@ -6,5 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.0.0-preview.0] - 2022-04-19
+## [1.0.0-preview.4] - 2022-07-13
+1. optimize error message #25
+
+## [1.0.0-preview.3] - 2022-07-12
+1. bugfixes
+
+## [1.0.0-preview.2] - 2022-07-08
+1. update puerts to 1.4.0
+
+## [1.0.0-preview.1] - 2022-06-08
+1. bugfixes
+
+## [1.0.0-preview.0] - 2022-05-23
 1. first publish

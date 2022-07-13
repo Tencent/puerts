@@ -114,7 +114,13 @@ var exportDLL = {
     "SetLogCallback",
 ].forEach(function (methodName) {
 
-    exportDLL[methodName] = new Function("var global = typeof global != 'undefined' ? global : window; if (!global.PuertsWebGL.inited) { throw new Error('please use Puerts.WebGL.GetBrowserEnv() to create JsEnv'); }  global.PuertsWebGL.debug && console.log('WebGL DLL:" + methodName + "'); return global.PuertsWebGL['" + methodName + "'].apply(this, arguments)");
+    exportDLL[methodName] = new Function(
+        "var global = typeof global != 'undefined' ? global : window; " + 
+        "if (!global.PuertsWebGL) throw new Error('cannot found PuertsWebGL script. please find some way to load puerts-runtime.js');" +
+        "if (!global.PuertsWebGL.inited) throw new Error('please use Puerts.WebGL.GetBrowserEnv() to create JsEnv'); " + 
+        "if (global.PuertsWebGL.debug) console.log('WebGL DLL:" + methodName + "'); "+
+        "return global.PuertsWebGL['" + methodName + "'].apply(this, arguments)"
+    );
 })
 
 mergeInto(LibraryManager.library, exportDLL);
