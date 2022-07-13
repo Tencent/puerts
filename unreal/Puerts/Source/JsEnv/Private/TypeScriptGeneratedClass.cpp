@@ -20,22 +20,7 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     UTypeScriptGeneratedClass* Class = Cast<UTypeScriptGeneratedClass>(Func->GetOuter());
     if (Class)
     {
-        if (Class->PendingConstructJobs.Num() > 0)
-        {
-            FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
-            for (auto PendingConstructJob : Class->PendingConstructJobs)
-            {
-                if (!PendingConstructJob)
-                    continue;
-#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
-                PendingConstructJob->Wait();
-#else
-                FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
-#endif
-            }
-            Class->PendingConstructJobs.Empty();
-        }
-
+        Class->ProcessPendingConstructJob();
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -49,6 +34,26 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     else
     {
         UE_LOG(Puerts, Error, TEXT("calling a not ts class method %s::%s"), *Func->GetOuter()->GetName(), *Func->GetName());
+    }
+}
+
+void UTypeScriptGeneratedClass::ProcessPendingConstructJob()
+{
+    FScopeLock ScopeLock(&PendingConstructJobMutex);
+    if (!IsProcessingPendingConstructJob && PendingConstructInfos.Num() > 0)
+    {
+        IsProcessingPendingConstructJob = true;
+        for (int Index = 0; Index < PendingConstructInfos.Num(); Index++)
+        {
+            PendingConstructInfos[Index].Ref.Reset();
+            auto ExecFunction = PendingConstructInfos[Index].Func;
+            if (!ExecFunction)
+                continue;
+            PendingConstructInfos[Index].Func = nullptr;
+            ExecFunction();
+        }
+        PendingConstructInfos.Empty();
+        IsProcessingPendingConstructJob = false;
     }
 }
 
@@ -97,21 +102,7 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     {
         if (IsInGameThread())
         {
-            FScopeLock ScopeLock(&PendingConstructJobMutex);
-            if (PendingConstructJobs.Num() > 0)
-            {
-                for (auto PendingConstructJob : PendingConstructJobs)
-                {
-                    if (!PendingConstructJob)
-                        continue;
-#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
-                    PendingConstructJob->Wait();
-#else
-                    FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
-#endif
-                }
-                PendingConstructJobs.Empty();
-            }
+            ProcessPendingConstructJob();
             PinedDynamicInvoker->TsConstruct(this, Object);
         }
         else
@@ -120,39 +111,62 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
 
             TWeakObjectPtr<UTypeScriptGeneratedClass> Class = this;
             TWeakObjectPtr<UObject> Self = Object;
-            int Index = PendingConstructJobs.Num();
-
-            PendingConstructJobs.Add(FFunctionGraphTask::CreateAndDispatchWhenReady(
-                [Class, Self, Index]()
+            TSharedPtr<int> Ref(new int(0));
+            TWeakPtr<int> WeakRef(Ref);
+            int Index = PendingConstructInfos.Num();
+            PendingConstructInfos.AddDefaulted();
+            PendingConstructJobInfo& Info = PendingConstructInfos[Index];
+            Info.Ref = Ref;
+            Info.Func = [Class, Self, Index]()
+            {
+                if (Class.IsValid())
                 {
-                    if (Class.IsValid())
+                    FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
+                    if (Self.IsValid() && Class->PendingConstructInfos.Num() > Index)
                     {
-                        if (Self.IsValid())
+                        auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
+                        if (PinedDynamicInvoker)
                         {
-                            auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
-                            if (PinedDynamicInvoker)
-                            {
-                                PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
-                            }
-                            else
-                            {
-                                UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
-                                    *Self->GetName(), Self.Get());
-                            }
+                            PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
                         }
                         else
                         {
-                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
+                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
+                                *Self->GetName(), Self.Get());
                         }
+                    }
+                    else
+                    {
+                        UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
+                    }
+                }
+                else
+                {
+                    UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class invalid"));
+                }
+            };
+            FFunctionGraphTask::CreateAndDispatchWhenReady(
+                [Class, Self, Index, WeakRef]()
+                {
+                    if (Class.IsValid())
+                    {
+                        if (!WeakRef.IsValid())
+                            return;
                         FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
-                        Class->PendingConstructJobs[Index] = nullptr;
+                        if (Class->PendingConstructInfos.Num() > Index && Class->PendingConstructInfos[Index].Func)
+                        {
+                            auto ExecFunction = Class->PendingConstructInfos[Index].Func;
+                            Class->PendingConstructInfos[Index].Func = nullptr;
+                            Class->PendingConstructInfos[Index].Ref.Reset();
+                            ExecFunction();
+                        }
                     }
                     else
                     {
                         UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class invalid"));
                     }
                 },
-                TStatId{}, nullptr, ENamedThreads::GameThread));
+                TStatId{}, nullptr, ENamedThreads::GameThread);
         }
     }
 #endif
