@@ -38,7 +38,7 @@ public:
     FCriticalSection PendingConstructJobMutex;
 
     TArray<PendingConstructJobInfo> PendingConstructInfos;
-    
+
     bool IsProcessingPendingConstructJob = false;
 
     void ProcessPendingConstructJob();
