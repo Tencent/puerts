@@ -12,7 +12,15 @@
 
 #include "CoreMinimal.h"
 #include "Engine/BlueprintGeneratedClass.h"
+#include "Function.h"
+#include "SharedPointer.h"
 #include "TypeScriptGeneratedClass.generated.h"
+
+struct PendingConstructJobInfo
+{
+    TFunction<void()> Func = nullptr;
+    TSharedPtr<int> Ref = nullptr;
+};
 
 /**
  *
@@ -28,7 +36,12 @@ public:
     TSet<FName> FunctionToRedirect;
 
     FCriticalSection PendingConstructJobMutex;
-    TArray<FGraphEventRef> PendingConstructJobs;
+
+    TArray<PendingConstructJobInfo> PendingConstructInfos;
+
+    bool IsProcessingPendingConstructJob = false;
+
+    void ProcessPendingConstructJob();
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
