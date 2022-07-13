@@ -243,7 +243,7 @@ void UTypeScriptGeneratedClass::Bind()
         // ClassFlags |= CLASS_Native;
     }
 #if WITH_EDITOR
-    if (IsRunningGame())
+    if (DynamicInvoker.IsValid())
 #endif
     {
         ClassConstructor = &StaticConstructor;

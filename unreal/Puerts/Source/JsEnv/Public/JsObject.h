@@ -176,7 +176,10 @@ namespace puerts
 template <>
 struct ScriptTypeName<FJsObject>
 {
-    static constexpr const char* value = "object";
+    static constexpr auto value()
+    {
+        return Literal("object");
+    }
 };
 
 namespace converter

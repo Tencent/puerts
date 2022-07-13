@@ -26,11 +26,11 @@ namespace puerts
 class Object
 {
 public:
-    Object(v8::Local<v8::Context> context, v8::Local<v8::Object> object)
+    Object(v8::Local<v8::Context> context, v8::Local<v8::Value> object)
     {
         Isolate = context->GetIsolate();
         GContext.Reset(Isolate, context);
-        GObject.Reset(Isolate, object);
+        GObject.Reset(Isolate, object.As<v8::Object>());
     }
 
     Object(const Object& InOther)
@@ -90,7 +90,7 @@ protected:
 class Function : public Object
 {
 public:
-    Function(v8::Local<v8::Context> context, v8::Local<v8::Object> object) : Object(context, object)
+    Function(v8::Local<v8::Context> context, v8::Local<v8::Value> object) : Object(context, object)
     {
     }
 
@@ -159,13 +159,19 @@ private:
 template <>
 struct ScriptTypeName<::puerts::Object>
 {
-    static constexpr const char* value = "object";
+    static constexpr auto value()
+    {
+        return Literal("object");
+    }
 };
 
 template <>
 struct ScriptTypeName<::puerts::Function>
 {
-    static constexpr const char* value = "Function";
+    static constexpr auto value()
+    {
+        return Literal("Function");
+    }
 };
 
 namespace converter
