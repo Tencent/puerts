@@ -142,15 +142,24 @@ namespace Puerts.Editor
                     // 这里要先识别出NativeObject的参数位置，并将其替换
                     if (type.IsGenericType) {
                         var genericArguments = type.GetGenericArguments();
+                        var definitionType = type.GetGenericTypeDefinition();
+                        var definitionGenericArguments = definitionType.GetGenericArguments();
+
                         if (
                             genericArguments
-                            .Where(t=> !t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime))
+                            .Where((t, index)=> 
+                                !t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime)
+                                && (definitionGenericArguments[index].GetGenericParameterConstraints().Length == 0 || definitionGenericArguments[index].BaseType == null)
+                            )
                             .Count() > 0
                         ) {
                             IsGenericWrapper = true;
-                            type = type.GetGenericTypeDefinition().MakeGenericType(
-                                genericArguments.Select(t=> {
-                                    if (!t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime)) 
+                            type = definitionType.MakeGenericType(
+                                genericArguments.Select((t, index)=> {
+                                    if (
+                                        !t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime)
+                                        && (definitionGenericArguments[index].GetGenericParameterConstraints().Length == 0 || definitionGenericArguments[index].BaseType == null)
+                                    ) 
                                     {
                                         GenericArgumentsCount++;
                                         return GenericTSRMananger.GetDynamicGenericType(GenericArgumentsCount - 1);
