@@ -12,8 +12,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine/BlueprintGeneratedClass.h"
-#include "Function.h"
-#include "SharedPointer.h"
+#include "Templates/Function.h"
+#include "Templates/SharedPointer.h"
 #include "TypeScriptGeneratedClass.generated.h"
 
 struct PendingConstructJobInfo
