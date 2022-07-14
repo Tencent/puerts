@@ -3093,9 +3093,9 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
             const auto ModuleInfoIt = Self->FindModuleInfo(Module);
             check(ModuleInfoIt != Self->HashToModuleInfo.end());
 
-            Module->SetSyntheticModuleExport(IsolateInner,
+            __USE(Module->SetSyntheticModuleExport(IsolateInner,
                 v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(),
-                ModuleInfoIt->second->CJSValue.Get(IsolateInner));
+                ModuleInfoIt->second->CJSValue.Get(IsolateInner)));
 
             return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
         });
