@@ -81,7 +81,7 @@ namespace Puerts
             byRefValueSetFuncs = new GeneralSetter[parameterInfos.Length];
             paramIsByRef = new bool[parameterInfos.Length];
             isOut = new bool[parameterInfos.Length];
-            optionalParamPos = this.paramLength + 1;
+            optionalParamPos = this.paramLength;
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 var parameterInfo = parameterInfos[i];
@@ -109,7 +109,7 @@ namespace Puerts
 
         public bool IsMatch(JSCallInfo jsCallInfo)
         {
-            if (hasParamsArray && optionalParamPos > paramLength)
+            if (hasParamsArray && optionalParamPos >= paramLength)
             {
                 if (jsCallInfo.Length < paramLength - 1)
                 {
@@ -120,7 +120,7 @@ namespace Puerts
             {
                 return false;
             }
-            else if (jsCallInfo.Length < optionalParamPos - 1)
+            else if (jsCallInfo.Length < optionalParamPos)
             {
                 return false;
             }
