@@ -3003,23 +3003,17 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         if (TryCatch.HasCaught())
         {
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
-            return;
         }
-        Logger->Info(TEXT("Start by Script"));
     }
     else
     {
-        ExecuteModule(ModuleNameOrScript,
-            [](const FString& Script, const FString& Path)
-            {
-                auto PathInJs = Path.Replace(TEXT("\\"), TEXT("\\\\"));
-                auto DirInJs = FPaths::GetPath(Path).Replace(TEXT("\\"), TEXT("\\\\"));
-                return FString::Printf(
-                    TEXT("(function() { var __filename = '%s', __dirname = '%s', exports ={}, module =  { exports : "
-                         "exports, filename : __filename }; (function (exports, require, console, prompt) { "
-                         "%s\n})(exports, puerts.genRequire('%s'), puerts.console);})()"),
-                    *PathInJs, *DirInJs, *Script, *DirInJs);
-            });
+        v8::TryCatch TryCatch(Isolate);
+        v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleNameOrScript)};
+        __USE(Require.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args));
+        if (TryCatch.HasCaught())
+        {
+            Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
+        }
     }
     Started = true;
 }
@@ -3099,9 +3093,9 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
             const auto ModuleInfoIt = Self->FindModuleInfo(Module);
             check(ModuleInfoIt != Self->HashToModuleInfo.end());
 
-            Module->SetSyntheticModuleExport(IsolateInner,
+            __USE(Module->SetSyntheticModuleExport(IsolateInner,
                 v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(),
-                ModuleInfoIt->second->CJSValue.Get(IsolateInner));
+                ModuleInfoIt->second->CJSValue.Get(IsolateInner)));
 
             return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
         });

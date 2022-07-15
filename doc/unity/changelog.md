@@ -16,6 +16,10 @@ you can get the english version change log at [Github Release](https://github.co
 3. 所有属性改为configurable #667
 4. 添加`require('puerts').getLastException`接口 #629
 
+## [1.3.6] - 2022-07-13
+1. fix: UnityMenu.cs传参错误
+2. fix: 带约束的泛型类wrapper生成错误
+
 ## [1.3.5] - 2022-07-06
 1. fix: 生成代码时出现重复key的问题: #657
 1. fix: 不能生成带Enum泛型参数的generic类型 #856
