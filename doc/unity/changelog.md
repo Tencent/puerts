@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-preview.5] - 2022-07-08
+1. android、ios平台的v8降到8.4以规避 #908
+2. 修复 #907
+
 ## [1.4.0-preview.3] - 2022-07-08
 1. 合入1.3.5的改动
 2. 修复 #899
