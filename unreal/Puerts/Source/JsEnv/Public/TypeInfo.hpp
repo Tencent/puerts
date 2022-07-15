@@ -53,6 +53,18 @@ public:
         return m_value;
     }
 
+    template <std::size_t Start, std::size_t... Index>
+    constexpr StringLiteral<N - Start> Sub(std::index_sequence<Index...> dummy) const
+    {
+        return StringLiteral<N - Start>(m_value[Start + Index]...);
+    }
+
+    template <std::size_t Start>
+    constexpr StringLiteral<N - Start> Sub() const
+    {
+        return Sub<Start>(std::make_index_sequence<N - Start>());
+    }
+
 private:
     const char m_value[N + 1];
 };

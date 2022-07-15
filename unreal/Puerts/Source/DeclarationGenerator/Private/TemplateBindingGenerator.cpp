@@ -16,12 +16,7 @@ struct FGenImp
 
     FString GetName(const puerts::CTypeInfo* TypeInfo)
     {
-        FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
-        if (TypeInfo->IsUEType())
-        {
-            return Ret.Mid(1);
-        }
-        return Ret;
+        return UTF8_TO_TCHAR(TypeInfo->Name());
     }
 
     void Begin()

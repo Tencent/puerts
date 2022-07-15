@@ -13,7 +13,17 @@
 #include "ArrayBuffer.h"
 
 #define UsingUClass(CLS)                          \
-    __DefScriptTTypeName(CLS, CLS);               \
+    namespace puerts                              \
+    {                                             \
+    template <>                                   \
+    struct ScriptTypeName<CLS>                    \
+    {                                             \
+        static constexpr auto value()             \
+        {                                         \
+            return Literal(#CLS).Sub<1>();        \
+        }                                         \
+    };                                            \
+    }                                             \
     namespace puerts                              \
     {                                             \
     template <>                                   \

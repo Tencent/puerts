@@ -186,8 +186,7 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const std::string& Name
 #if USING_IN_UNREAL_ENGINE
 const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 {
-    FString Name = FString::Printf(TEXT("%s%s"), Type->GetPrefixCPP(), *Type->GetName());
-    auto Iter = StructNameToClassDefinition.find(Name);
+    auto Iter = StructNameToClassDefinition.find(Type->GetName());
     if (Iter == StructNameToClassDefinition.end())
     {
         return nullptr;
