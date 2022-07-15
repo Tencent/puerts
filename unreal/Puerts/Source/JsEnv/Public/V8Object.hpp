@@ -36,6 +36,8 @@ public:
     Object(const Object& InOther)
     {
         Isolate = InOther.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
     }
@@ -43,6 +45,8 @@ public:
     Object& operator=(const Object& InOther)
     {
         Isolate = InOther.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
         return *this;
@@ -77,6 +81,16 @@ public:
 
         auto _UnUsed = Object->Set(Context, puerts::converter::Converter<const char*>::toScript(Context, key),
             puerts::converter::Converter<T>::toScript(Context, val));
+    }
+
+    bool IsValid() const
+    {
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = GContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        auto Object = GObject.Get(Isolate);
+        return !Object.IsEmpty() && Object->IsObject();
     }
 
 protected:
@@ -140,6 +154,16 @@ public:
         return {};
     }
 
+    bool IsValid() const
+    {
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = GContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        auto Object = GObject.Get(Isolate);
+        return !Object.IsEmpty() && Object->IsFunction();
+    }
+
 private:
     template <typename... Args>
     auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
@@ -170,7 +194,7 @@ struct ScriptTypeName<::puerts::Function>
 {
     static constexpr auto value()
     {
-        return Literal("Function");
+        return Literal("()=>void");
     }
 };
 
