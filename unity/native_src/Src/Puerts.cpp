@@ -899,10 +899,10 @@ V8_EXPORT void LogicTick(v8::Isolate *Isolate)
 
 //-------------------------- begin debug --------------------------
 
-V8_EXPORT void CreateInspector(v8::Isolate *Isolate, CSharpInspectorSendMessageCallback SendMessageCallback)
+V8_EXPORT void CreateInspector(v8::Isolate *Isolate, CSharpInspectorSendMessageCallback SendMessageCallback, CSharpSetInspectorPausingCallback pauseCallback)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->CreateInspector(SendMessageCallback);
+    JsEngine->CreateInspector(SendMessageCallback, pauseCallback);
 }
 
 V8_EXPORT void DestroyInspector(v8::Isolate *Isolate)
@@ -911,28 +911,28 @@ V8_EXPORT void DestroyInspector(v8::Isolate *Isolate)
     JsEngine->DestroyInspector();
 }
 
-V8_EXPORT int InspectorTick(v8::Isolate *Isolate)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    return JsEngine->InspectorTick() ? 1 : 0;
-}
+// V8_EXPORT int InspectorTick(v8::Isolate *Isolate)
+// {
+//     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+//     return JsEngine->InspectorTick() ? 1 : 0;
+// }
 
 V8_EXPORT void NoticeInspectorSessionOpen(v8::Isolate *Isolate, const char* id)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->Inspector->CreateInspectorChannel(id);
+    JsEngine->Inspector->CreateInspectorChannel(std::string(id));
 }
 
 V8_EXPORT void NoticeInspectorSessionMessage(v8::Isolate *Isolate, const char* id, const char* message)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->Inspector->SendMessage(id, message);
+    JsEngine->Inspector->SendMessage(std::string(id), std::string(message).c_str());
 }
 
 V8_EXPORT void NoticeInspectorSessionClose(v8::Isolate *Isolate, const char* id)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->Inspector->Close(id);
+    JsEngine->Inspector->Close(std::string(id));
 }
 
 V8_EXPORT void NoticeInspectorSessionError(v8::Isolate *Isolate, const char* id, const char* message)

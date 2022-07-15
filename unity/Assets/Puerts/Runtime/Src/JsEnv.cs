@@ -7,9 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-#if CSHARP_7_3_OR_NEWER
-using System.Threading.Tasks;
-#endif
 
 namespace Puerts
 {
@@ -694,16 +691,9 @@ namespace Puerts
             CheckLiveness();
             ReleasePendingJSFunctions();
             ReleasePendingJSObjects();
-            if (PuertsDLL.InspectorTick(isolate))
+            if (inspector != null)
             {
-#if CSHARP_7_3_OR_NEWER
-                if (waitDebugerTaskSource != null)
-                {
-                    var tmp = waitDebugerTaskSource;
-                    waitDebugerTaskSource = null;
-                    tmp.SetResult(true);
-                }
-#endif
+                inspector.Tick();
             }
             PuertsDLL.LogicTick(isolate);
             foreach (var fn in tickHandler)
@@ -725,21 +715,27 @@ namespace Puerts
 
         public void WaitDebugger()
         {
+            if (inspector == null) 
+            {
+                return;
+            }
 #if THREAD_SAFE
             lock(this) {
 #endif
-            while (!PuertsDLL.InspectorTick(isolate)) { }
+            inspector.WaitDebugger();
 #if THREAD_SAFE
             }
 #endif
         }
 
 #if CSHARP_7_3_OR_NEWER
-        TaskCompletionSource<bool> waitDebugerTaskSource;
         public Task WaitDebuggerAsync()
         {
-            waitDebugerTaskSource = new TaskCompletionSource<bool>();
-            return waitDebugerTaskSource.Task;
+            if (inspector == null) 
+            {
+                return;
+            }
+            return inspector.WaitDebuggerAsync();
         }
 #endif
 

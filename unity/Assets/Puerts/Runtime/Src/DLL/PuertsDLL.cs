@@ -57,6 +57,11 @@ namespace Puerts
 #endif
     public delegate void InspectorSendMessageCallback(int jsEnvIdx, string id, string message);
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#endif
+    public delegate void SetInspectorPausingCallback(int jsEnvIdx, bool isPause);
+
     [Flags]
     public enum JsValueType
     {
@@ -619,14 +624,16 @@ namespace Puerts
         public static extern IntPtr GetArrayBufferFromResult(IntPtr function, out int length);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void CreateInspector(IntPtr isolate, IntPtr callback);
-        public static void CreateInspector(IntPtr isolate, InspectorSendMessageCallback callback)
+        private static extern void CreateInspector(IntPtr isolate, IntPtr callback, IntPtr pausingCallback);
+        public static void CreateInspector(IntPtr isolate, InspectorSendMessageCallback callback, SetInspectorPausingCallback pausingCallback)
         {
 #if PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
             GCHandle.Alloc(callback);
+            GCHandle.Alloc(pausingCallback);
 #endif
             IntPtr cb = callback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(callback);
-            CreateInspector(isolate, cb);
+            IntPtr cb2 = pausingCallback == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(pausingCallback);
+            CreateInspector(isolate, cb, cb2);
         }
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void DestroyInspector(IntPtr isolate);

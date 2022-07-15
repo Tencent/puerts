@@ -694,7 +694,7 @@ namespace puerts
         MainIsolate->LowMemoryNotification();
     }
 
-    void JSEngine::CreateInspector(CSharpInspectorSendMessageCallback SendMessageCallback)
+    void JSEngine::CreateInspector(CSharpInspectorSendMessageCallback SendMessageCallback, CSharpSetInspectorPausingCallback pauseCallback)
     {
         v8::Isolate* Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -704,7 +704,7 @@ namespace puerts
 
         if (Inspector == nullptr)
         {
-            Inspector = CreatePuertsInspector(Idx, &Context, SendMessageCallback);
+            Inspector = CreatePuertsInspector(Idx, &Context, SendMessageCallback, pauseCallback);
         }
     }
 

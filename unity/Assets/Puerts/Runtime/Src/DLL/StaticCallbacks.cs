@@ -102,10 +102,22 @@ namespace Puerts
             PuertsDLL.ReturnBoolean(isolate, info, true);
         }
 
-        [MonoPInvokeCallback(typeof(V8FunctionCallback))]
+        [MonoPInvokeCallback(typeof(InspectorSendMessageCallback))]
         internal static void SendMessageToInspectorSession(int jsEnvIdx, string id, string message)
         {
-            JsEnv.jsEnvs[jsEnvIdx].inspector.SendMessageTo(id, message);
+            JsEnv.jsEnvs[jsEnvIdx].inspector.SendMessageToSession(id, message);
+        }
+        [MonoPInvokeCallback(typeof(SetInspectorPausingCallback))]
+        internal static void SetInspectorPausing(int jsEnvIdx, bool isPause)
+        {
+            if (isPause) 
+            {
+                JsEnv.jsEnvs[jsEnvIdx].inspector.runMessageLoopOnPause();
+            }
+            else
+            {
+                JsEnv.jsEnvs[jsEnvIdx].inspector.quitMessageLoopOnPause();
+            }
         }
     }
 }

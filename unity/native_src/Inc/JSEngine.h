@@ -161,7 +161,7 @@ public:
 
     PUERTS_EXPORT_FOR_UT void ReleaseJSObject(JSObject* InObject);
 
-    PUERTS_EXPORT_FOR_UT void CreateInspector(CSharpInspectorSendMessageCallback SendMessageCallback);
+    PUERTS_EXPORT_FOR_UT void CreateInspector(CSharpInspectorSendMessageCallback SendMessageCallback, CSharpSetInspectorPausingCallback pauseCallback);
 
     PUERTS_EXPORT_FOR_UT void DestroyInspector();
 

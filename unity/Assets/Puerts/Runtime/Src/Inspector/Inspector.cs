@@ -1,27 +1,35 @@
 using System.Collections.Generic;
 using WebSocketSharp;
 using WebSocketSharp.Server;
+#if CSHARP_7_3_OR_NEWER
+using System.Threading.Tasks;
+#endif
 
 namespace Puerts
 {
-    public class Inspector 
+    public class Inspector
     {
         protected Dictionary<string, Handler> sessionDict = new Dictionary<string, Handler>();
-        
-        protected class Handler: WebSocketBehavior
+
+        protected class Handler : WebSocketBehavior
         {
             internal Inspector inspector;
 
-            protected override void OnMessage(MessageEventArgs e) 
+            public List<string> inspectorMessageNextTick = new List<string>();
+
+            protected override void OnMessage(MessageEventArgs e)
             {
-                PuertsDLL.NoticeInspectorSessionMessage(inspector.jsEnv.isolate, ID, e.Data);
+                lock (inspectorMessageNextTick)
+                {
+                    inspectorMessageNextTick.Add(e.Data);
+                }
             }
 
             protected override void OnOpen()
             {
                 PuertsDLL.NoticeInspectorSessionOpen(inspector.jsEnv.isolate, ID);
                 inspector.sessionDict.Add(ID, this);
-            }   
+            }
 
             protected override void OnClose(CloseEventArgs e)
             {
@@ -48,11 +56,16 @@ namespace Puerts
         {
             this.jsEnv = jsEnv;
             wsv = new WebSocketServer("ws://0.0.0.0:" + port);
-            wsv.AddWebSocketService<Handler>("/", (Handler handler) => { 
+            wsv.AddWebSocketService<Handler>("/", (Handler handler) =>
+            {
                 handler.inspector = this;
             });
             wsv.Start();
-            PuertsDLL.CreateInspector(jsEnv.isolate, StaticCallbacks.SendMessageToInspectorSession);
+            PuertsDLL.CreateInspector(
+                jsEnv.isolate, 
+                StaticCallbacks.SendMessageToInspectorSession,
+                StaticCallbacks.SetInspectorPausing
+            );
         }
 
         ~Inspector()
@@ -66,7 +79,7 @@ namespace Puerts
             PuertsDLL.DestroyInspector(jsEnv.isolate);
         }
 
-        public void SendMessageTo(string id, string message)
+        public void SendMessageToSession(string id, string message)
         {
             Handler handler;
             if (sessionDict.TryGetValue(id, out handler))
@@ -74,5 +87,68 @@ namespace Puerts
                 handler.Internal_Send(message);
             }
         }
+
+        Dictionary<string, string> MessageWillSentNextTick = new Dictionary<string, string>();
+        protected void AddMessageNextTick(string id, string message)
+        {
+            MessageWillSentNextTick.Add(message, id);
+        }
+
+        public void Tick()
+        {    
+#if CSHARP_7_3_OR_NEWER
+            if (waitDebugerTaskSource != null && sessionDict.Count != 0)
+            {
+                var tmp = waitDebugerTaskSource;
+                waitDebugerTaskSource = null;
+                tmp.SetResult(true);
+            }
+#endif
+
+            foreach (var session in sessionDict)
+            {
+                lock (session.Value.inspectorMessageNextTick)
+                {
+                    foreach (var message in session.Value.inspectorMessageNextTick)
+                    {
+                        PuertsDLL.NoticeInspectorSessionMessage(jsEnv.isolate, session.Key, message);
+                    }
+                    session.Value.inspectorMessageNextTick.Clear();
+                }
+            }
+            
+        }
+
+        private bool IsPause = false;
+
+        public void runMessageLoopOnPause()
+        {
+            if (IsPause)
+                return;
+            IsPause = true;
+
+            while (IsPause)
+            {
+                Tick();
+            }
+        }
+
+        public void quitMessageLoopOnPause()
+        {
+            IsPause = false;
+        }
+
+        public void WaitDebugger()
+        {
+            while (sessionDict.Count == 0) { }
+        }
+#if CSHARP_7_3_OR_NEWER
+        TaskCompletionSource<bool> waitDebugerTaskSource;
+        public Task WaitDebuggerAsync()
+        {
+            waitDebugerTaskSource = new TaskCompletionSource<bool>();
+            return waitDebugerTaskSource.Task;
+        }
+#endif
     }
 }
