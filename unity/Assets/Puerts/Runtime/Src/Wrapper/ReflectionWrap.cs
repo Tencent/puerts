@@ -81,7 +81,7 @@ namespace Puerts
             byRefValueSetFuncs = new GeneralSetter[parameterInfos.Length];
             paramIsByRef = new bool[parameterInfos.Length];
             isOut = new bool[parameterInfos.Length];
-            optionalParamPos = this.paramLength;
+            optionalParamPos = this.paramLength; 
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 var parameterInfo = parameterInfos[i];
