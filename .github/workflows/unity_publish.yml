@@ -20,7 +20,7 @@ jobs:
         uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8
       - name: Install NDK
         run: |
           cd ~
@@ -31,7 +31,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8_9.4
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -72,11 +72,11 @@ jobs:
         uses: ./.github/workflows/composites/unity-download-backend/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
+          backend: v8
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend v8_9.4
+          node make.js --platform ios --backend v8
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
