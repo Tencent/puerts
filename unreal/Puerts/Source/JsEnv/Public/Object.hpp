@@ -95,13 +95,15 @@ struct Converter<std::function<R(Args...)>>
 
     static std::function<R(Args...)> toCpp(ContextType context, const ValueType value)
     {
+        if (IsNullOrUndefined(context, value))
+            return nullptr;
         Function PF(context, value);
         return [=](Args... cppArgs) -> R { return PF.Func<R>(cppArgs...); };
     }
 
     static bool accept(ContextType context, const ValueType value)
     {
-        return Converter<Function>::accept(context, value);
+        return IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
     }
 };
 
@@ -115,13 +117,15 @@ struct Converter<std::function<void(Args...)>>
 
     static std::function<void(Args...)> toCpp(ContextType context, const ValueType value)
     {
+        if (IsNullOrUndefined(context, value))
+            return nullptr;
         Function PF(context, value);
         return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
     }
 
     static bool accept(ContextType context, const ValueType value)
     {
-        return Converter<Function>::accept(context, value);
+        return IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
     }
 };
 }    // namespace converter

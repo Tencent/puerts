@@ -144,6 +144,11 @@ inline pesapi_value GetUndefined(pesapi_env env)
     return pesapi_create_undefined(env);
 }
 
+inline bool IsNullOrUndefined(pesapi_env env, pesapi_value val)
+{
+    return pesapi_is_null(env, val) || pesapi_is_undefined(env, val);
+}
+
 }    // namespace puerts
 
 namespace puerts

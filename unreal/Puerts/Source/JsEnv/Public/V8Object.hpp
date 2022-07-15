@@ -26,6 +26,10 @@ namespace puerts
 class Object
 {
 public:
+    Object()
+    {
+    }
+
     Object(v8::Local<v8::Context> context, v8::Local<v8::Value> object)
     {
         Isolate = context->GetIsolate();
@@ -85,6 +89,8 @@ public:
 
     bool IsValid() const
     {
+        if (!Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+            return false;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -104,6 +110,10 @@ protected:
 class Function : public Object
 {
 public:
+    Function()
+    {
+    }
+
     Function(v8::Local<v8::Context> context, v8::Local<v8::Value> object) : Object(context, object)
     {
     }
@@ -156,6 +166,8 @@ public:
 
     bool IsValid() const
     {
+        if (!Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+            return false;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
