@@ -135,6 +135,7 @@ void V8InspectorChannelImpl::DispatchProtocolMessage(const char* Message)
     const auto MessageLen = (size_t) std::string(Message).length();
 
     v8_inspector::StringView StringView(MessagePtr, MessageLen);
+    printf("%s\n", Message);
     V8InspectorSession->dispatchProtocolMessage(StringView);
 }
 

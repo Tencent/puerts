@@ -1,6 +1,8 @@
+using System.Text;
 using System.Collections.Generic;
 using WebSocketSharp;
 using WebSocketSharp.Server;
+using WebSocketSharp.Net;
 #if CSHARP_7_3_OR_NEWER
 using System.Threading.Tasks;
 #endif
@@ -19,6 +21,11 @@ namespace Puerts
 
             protected override void OnMessage(MessageEventArgs e)
             {
+                // if (e.Data.Contains("setBreakpointByUrl")) 
+                // {
+                //     System.Console.WriteLine("-- " + e.Data);
+                //     return;
+                // }
                 lock (inspectorMessageNextTick)
                 {
                     inspectorMessageNextTick.Add(e.Data);
@@ -54,14 +61,53 @@ namespace Puerts
             }
         }
 
-        protected WebSocketServer wsv;
+        protected HttpServer wsv;
 
         protected JsEnv jsEnv;
 
         public Inspector(JsEnv jsEnv, int port)
         {
             this.jsEnv = jsEnv;
-            wsv = new WebSocketServer("ws://0.0.0.0:" + port);
+            wsv = new HttpServer(port);
+            wsv.OnGet += (sender, e) => {
+                var req = e.Request;
+                var res = e.Response;
+                System.Console.WriteLine(req.RawUrl);
+          
+                if (req.RawUrl == "/json" || req.RawUrl == "/json/list")
+                {
+                    res.ContentType = "application/javascript";
+                    res.ContentEncoding = Encoding.UTF8;
+                    
+                    var contents = Encoding.UTF8.GetBytes((@"[{
+                        'description': 'Puerts Inspector',
+                        'id': '0',
+                        'title': 'Puerts Inspector',
+                        'webSocketDebuggerUrl': 'ws://127.0.0.1:" + port + @"'
+                        'type': 'page',
+                    }]").Replace("'", "\""));
+                    res.ContentLength64 = contents.Length;
+                    res.Close(contents, true);
+                }
+                else if (req.RawUrl == "/json/version")
+                {
+                    res.ContentType = "application/javascript";
+                    res.ContentEncoding = Encoding.UTF8;
+                    
+                    var contents = Encoding.UTF8.GetBytes(@"{
+                        'Browser': 'Puerts/v1.0.0',
+                        'Protocol-Version': '1.1'
+                    }".Replace("'", "\""));
+                    res.ContentLength64 = contents.Length;
+                    res.Close(contents, true);
+                }
+                else
+                {
+                    res.StatusCode = (int) HttpStatusCode.NotFound;
+                    res.ContentLength64 = 0;
+                    res.Close (new byte[]{}, true);
+                }
+            };
             wsv.AddWebSocketService<Handler>("/", (Handler handler) =>
             {
                 handler.inspector = this;
