@@ -224,28 +224,42 @@ void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffe
             Buff << ", ";
         auto argInfo = Type->Argument(i);
 
-        Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+        Buff << FString::Printf(TEXT("p%d"), i);
 
-        bool IsReference = argInfo->IsRef();
-        bool IsNullable = !IsReference && argInfo->IsPointer();
-        if (IsNullable)
+        if (i >= Type->ArgumentCount() - Type->DefaultCount())
         {
-            Buff << "$Nullable<";
-        }
-        if (IsReference)
-        {
-            Buff << "$Ref<";
+            Buff << "?";
         }
 
-        Buff << GetNamePrefix(argInfo) << GetName(argInfo);
+        Buff << ": ";
 
-        if (IsNullable)
+        if (strcmp(argInfo->Name(), "cstring") != 0 && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
         {
-            Buff << ">";
+            Buff << "ArrayBuffer";
         }
-        if (IsReference)
+        else
         {
-            Buff << ">";
+            bool IsReference = argInfo->IsRef();
+            bool IsNullable = !IsReference && argInfo->IsPointer();
+            if (IsNullable)
+            {
+                Buff << "$Nullable<";
+            }
+            if (IsReference)
+            {
+                Buff << "$Ref<";
+            }
+
+            Buff << GetNamePrefix(argInfo) << GetName(argInfo);
+
+            if (IsNullable)
+            {
+                Buff << ">";
+            }
+            if (IsReference)
+            {
+                Buff << ">";
+            }
         }
     }
 }
