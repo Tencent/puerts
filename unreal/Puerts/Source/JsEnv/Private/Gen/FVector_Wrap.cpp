@@ -2968,7 +2968,7 @@ struct AutoRegisterForFVector
             {"Triple", FVectorS_Triple}, {"RadiansToDegrees", FVectorS_RadiansToDegrees},
             {"DegreesToRadians", FVectorS_DegreesToRadians}, {0, 0}};
 
-        Def.UETypeName = "FVector";
+        Def.UETypeName = "Vector";
 
         Def.Initialize = _FVectorNew_;
         Def.Finalize = _FVectorDelete_;
