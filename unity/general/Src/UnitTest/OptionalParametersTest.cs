@@ -206,7 +206,7 @@ namespace Puerts.UnitTest
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                 let ret = 0;                
-                try{temp.Test4('1');}catch(e){ret = 1;}
+                try{temp.Test4('1');}catch(e){ ret = 1; }
                 ret;
             ");
             Assert.AreEqual(1, ret);
@@ -381,7 +381,7 @@ namespace Puerts.UnitTest
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                 let ret = 0;                
-                try{temp.Test4('1');}catch(e){ret = 1;}
+                try{temp.Test4('1');}catch(e){ if (e.message.indexOf('invalid') != -1) ret = 1; }
                 ret;
             ");
             Assert.AreEqual(1, ret);
