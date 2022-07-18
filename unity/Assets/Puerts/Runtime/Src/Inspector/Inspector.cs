@@ -28,13 +28,19 @@ namespace Puerts
             protected override void OnOpen()
             {
                 PuertsDLL.NoticeInspectorSessionOpen(inspector.jsEnv.isolate, ID);
-                inspector.sessionDict.Add(ID, this);
+                lock (inspector.sessionDict)
+                {
+                    inspector.sessionDict.Add(ID, this);
+                }
             }
 
             protected override void OnClose(CloseEventArgs e)
             {
                 PuertsDLL.NoticeInspectorSessionClose(inspector.jsEnv.isolate, ID);
-                inspector.sessionDict.Remove(ID);
+                lock (inspector.sessionDict)
+                {
+                    inspector.sessionDict.Remove(ID);
+                }
             }
 
             protected override void OnError(ErrorEventArgs e)
@@ -95,7 +101,7 @@ namespace Puerts
         }
 
         public void Tick()
-        {    
+        {
 #if CSHARP_7_3_OR_NEWER
             if (waitDebugerTaskSource != null && sessionDict.Count != 0)
             {
@@ -104,19 +110,20 @@ namespace Puerts
                 tmp.SetResult(true);
             }
 #endif
-
-            foreach (var session in sessionDict)
+            lock (sessionDict)
             {
-                lock (session.Value.inspectorMessageNextTick)
+                foreach (var session in sessionDict)
                 {
-                    foreach (var message in session.Value.inspectorMessageNextTick)
+                    lock (session.Value.inspectorMessageNextTick)
                     {
-                        PuertsDLL.NoticeInspectorSessionMessage(jsEnv.isolate, session.Key, message);
+                        foreach (var message in session.Value.inspectorMessageNextTick)
+                        {
+                            PuertsDLL.NoticeInspectorSessionMessage(jsEnv.isolate, session.Key, message);
+                        }
+                        session.Value.inspectorMessageNextTick.Clear();
                     }
-                    session.Value.inspectorMessageNextTick.Clear();
                 }
             }
-            
         }
 
         private bool IsPause = false;

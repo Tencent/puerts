@@ -911,12 +911,6 @@ V8_EXPORT void DestroyInspector(v8::Isolate *Isolate)
     JsEngine->DestroyInspector();
 }
 
-// V8_EXPORT int InspectorTick(v8::Isolate *Isolate)
-// {
-//     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-//     return JsEngine->InspectorTick() ? 1 : 0;
-// }
-
 V8_EXPORT void NoticeInspectorSessionOpen(v8::Isolate *Isolate, const char* id)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
