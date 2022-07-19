@@ -1008,7 +1008,11 @@ bool FJsEnvImpl::IdleNotificationDeadline(double DeadlineInSeconds)
 #ifdef THREAD_SAFE
     v8::Locker Locker(MainIsolate);
 #endif
+#ifndef WITH_QUICKJS
     return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
+#else
+    return true;
+#endif
 }
 
 void FJsEnvImpl::LowMemoryNotification()
