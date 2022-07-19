@@ -90,7 +90,6 @@ public:
         return val && pesapi_is_object(env, val);
     }
 
-protected:
     pesapi_env_holder env_holder;
     pesapi_value_holder value_holder;
 

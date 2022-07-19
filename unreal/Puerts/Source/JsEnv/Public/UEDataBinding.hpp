@@ -298,6 +298,15 @@ struct ScriptTypeName<FName>
     }
 };
 
+template <>
+struct ScriptTypeName<const TCHAR*>
+{
+    static constexpr auto value()
+    {
+        return Literal("string");
+    }
+};
+
 #ifndef PUERTS_FTEXT_AS_OBJECT
 template <>
 struct ScriptTypeName<FText>

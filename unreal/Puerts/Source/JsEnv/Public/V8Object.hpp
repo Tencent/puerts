@@ -99,7 +99,6 @@ public:
         return !Object.IsEmpty() && Object->IsObject();
     }
 
-protected:
     v8::Isolate* Isolate;
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
