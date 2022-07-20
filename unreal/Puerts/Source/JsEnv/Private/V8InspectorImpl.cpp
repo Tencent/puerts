@@ -204,7 +204,7 @@ private:
     std::unique_ptr<v8_inspector::V8Inspector> V8Inspector;
 
     int32_t CtxGroupID;
-    
+
     std::map<void*, V8InspectorChannelImpl*> V8InspectorChannels;
 
     wspp_server Server;
