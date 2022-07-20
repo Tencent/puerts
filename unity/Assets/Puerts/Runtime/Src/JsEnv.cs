@@ -504,7 +504,6 @@ namespace Puerts
         {
             try
             {
-                System.Console.WriteLine("GetGenericMethod");
                 if (paramLen < 3) {
                     throw new Exception("invalid arguments length");
                 }

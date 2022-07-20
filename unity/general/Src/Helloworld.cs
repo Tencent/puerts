@@ -11,17 +11,11 @@ public class PuertsTest
 {
     public static void Main()
     {
-        var jsEnv = new JsEnv(new TxtLoader(), 8080);
+        var jsEnv = new JsEnv(new TxtLoader());
         jsEnv.Eval(@"
             const CS = require('csharp');
-            setInterval(()=> {
-                CS.System.Console.WriteLine('hello world' + Date.now());
-            }, 1000);
+            CS.System.Console.WriteLine('hello world');
         ");
-        while (true)
-        {
-            jsEnv.Tick();
-        }
         jsEnv.Dispose();
     }
 }

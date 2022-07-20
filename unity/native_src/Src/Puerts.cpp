@@ -920,7 +920,7 @@ V8_EXPORT void NoticeInspectorSessionOpen(v8::Isolate *Isolate, const char* id)
 V8_EXPORT void NoticeInspectorSessionMessage(v8::Isolate *Isolate, const char* id, const char* message)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->Inspector->SendMessage(std::string(id), std::string(message).c_str());
+    JsEngine->Inspector->SendMessageToSession(Isolate, std::string(id), std::string(message).c_str());
 }
 
 V8_EXPORT void NoticeInspectorSessionClose(v8::Isolate *Isolate, const char* id)

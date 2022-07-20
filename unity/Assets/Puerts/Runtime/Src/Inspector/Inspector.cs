@@ -21,11 +21,6 @@ namespace Puerts
 
             protected override void OnMessage(MessageEventArgs e)
             {
-                // if (e.Data.Contains("setBreakpointByUrl")) 
-                // {
-                //     System.Console.WriteLine("-- " + e.Data);
-                //     return;
-                // }
                 lock (inspectorMessageNextTick)
                 {
                     inspectorMessageNextTick.Add(e.Data);
@@ -83,8 +78,9 @@ namespace Puerts
                         'description': 'Puerts Inspector',
                         'id': '0',
                         'title': 'Puerts Inspector',
-                        'webSocketDebuggerUrl': 'ws://127.0.0.1:" + port + @"'
-                        'type': 'page',
+                        'webSocketDebuggerUrl': 'ws://127.0.0.1:" + port + @"',
+                        'v8only': true,
+                        'type': 'page'
                     }]").Replace("'", "\""));
                     res.ContentLength64 = contents.Length;
                     res.Close(contents, true);
@@ -96,7 +92,7 @@ namespace Puerts
                     
                     var contents = Encoding.UTF8.GetBytes(@"{
                         'Browser': 'Puerts/v1.0.0',
-                        'Protocol-Version': '1.1'
+                        'Protocol-Version': '1.3'
                     }".Replace("'", "\""));
                     res.ContentLength64 = contents.Length;
                     res.Close(contents, true);

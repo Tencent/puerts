@@ -23,7 +23,7 @@ protected:
 
     std::string id;
 public:
-    virtual void DispatchProtocolMessage(const char* Message) = 0;
+    virtual void DispatchProtocolMessage(v8::Isolate* isolate, const char* Message) = 0;
 
     InspectorSession(std::string inID, int32_t jsEnvIdx) : id(inID), jsEnvIdx(jsEnvIdx) {
     }
@@ -36,7 +36,7 @@ public:
 class InspectorAgent
 {
 protected:
-    CSharpInspectorSendMessageCallback SendMessageCallback;
+    CSharpInspectorSendMessageCallback SendMessageToClientCallback;
 
     CSharpSetInspectorPausingCallback PauseCallback;
 
@@ -46,12 +46,12 @@ protected:
 public:
     virtual void CreateInspectorChannel(std::string id) = 0;
 
-    virtual void SendMessage(std::string id, const char* message) = 0;
+    virtual void SendMessageToSession(v8::Isolate* isolate, std::string id, const char* message) = 0;
 
     virtual void Close(std::string id) = 0;
 
     InspectorAgent(int32_t _jsEnvIdx, CSharpInspectorSendMessageCallback Callback, CSharpSetInspectorPausingCallback PauseCallback)
-        : jsEnvIdx(_jsEnvIdx), SendMessageCallback(Callback), PauseCallback(PauseCallback)
+        : jsEnvIdx(_jsEnvIdx), SendMessageToClientCallback(Callback), PauseCallback(PauseCallback)
     {
     }
 

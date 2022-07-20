@@ -53,8 +53,8 @@ public:
     }
 
     void CreateInspectorChannel(std::string id) override;
-    void V8InspectorClientImpl::SendMessage(std::string id, const char* message) override;
-    void V8InspectorClientImpl::Close(std::string id) override;
+    void SendMessageToSession(v8::Isolate* isolate, std::string id, const char* message) override;
+    void Close(std::string id) override;
 };
 
 
@@ -66,7 +66,7 @@ public:
         const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector,
         std::string inID);
 
-    void DispatchProtocolMessage(const char* Message) override;
+    void DispatchProtocolMessage(v8::Isolate* isolate, const char* Message) override;
 
 
     void flushProtocolNotifications() override
@@ -93,14 +93,14 @@ private:
 
 void V8InspectorClientImpl::CreateInspectorChannel(std::string id)
 {
-    sessionMap[id] = new V8InspectorChannelImpl(jsEnvIdx, SendMessageCallback, V8Inspector, id);
+    sessionMap[id] = new V8InspectorChannelImpl(jsEnvIdx, SendMessageToClientCallback, V8Inspector, id);
 }
 
-void V8InspectorClientImpl::SendMessage(std::string id, const char* message)
+void V8InspectorClientImpl::SendMessageToSession(v8::Isolate* isolate, std::string id, const char* message)
 {
     if (sessionMap.find(id) != sessionMap.end())
     {
-        sessionMap[id]->DispatchProtocolMessage(message);
+        sessionMap[id]->DispatchProtocolMessage(isolate, message);
     }
 };
 
@@ -129,14 +129,17 @@ V8InspectorChannelImpl::V8InspectorChannelImpl(int32_t jsEnvIdx,
     V8InspectorSession = InV8Inspector->connect(CTX_GROUP_ID, this, DummyState);
 }
 
-void V8InspectorChannelImpl::DispatchProtocolMessage(const char* Message)
+void V8InspectorChannelImpl::DispatchProtocolMessage(v8::Isolate* isolate, const char* Message)
 {
     const auto MessagePtr = reinterpret_cast<const uint8_t*>(Message);
     const auto MessageLen = (size_t) std::string(Message).length();
 
     v8_inspector::StringView StringView(MessagePtr, MessageLen);
-    printf("%s\n", Message);
-    V8InspectorSession->dispatchProtocolMessage(StringView);
+    {
+        v8::Isolate::Scope IsolateScope(isolate);
+        v8::SealHandleScope seal_handle_scope(isolate);
+        V8InspectorSession->dispatchProtocolMessage(StringView);
+    }
 }
 
 void V8InspectorChannelImpl::sendResponseOrNotification(v8_inspector::StringBuffer& MessageBuffer)
