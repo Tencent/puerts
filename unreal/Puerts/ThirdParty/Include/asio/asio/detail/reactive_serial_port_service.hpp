@@ -30,7 +30,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Extend reactive_descriptor_service to provide serial port support.
@@ -78,13 +78,13 @@ public:
   }
 
   // Open the serial port using the specified device name.
-  ASIO_DECL asio::error_code open(implementation_type& impl,
-      const std::string& device, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code open(implementation_type& impl,
+      const std::string& device, puerts_asio::error_code& ec);
 
   // Assign a native descriptor to a serial port implementation.
-  asio::error_code assign(implementation_type& impl,
+  puerts_asio::error_code assign(implementation_type& impl,
       const native_handle_type& native_descriptor,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     return descriptor_service_.assign(impl, native_descriptor, ec);
   }
@@ -96,8 +96,8 @@ public:
   }
 
   // Destroy a serial port implementation.
-  asio::error_code close(implementation_type& impl,
-      asio::error_code& ec)
+  puerts_asio::error_code close(implementation_type& impl,
+      puerts_asio::error_code& ec)
   {
     return descriptor_service_.close(impl, ec);
   }
@@ -109,16 +109,16 @@ public:
   }
 
   // Cancel all operations associated with the serial port.
-  asio::error_code cancel(implementation_type& impl,
-      asio::error_code& ec)
+  puerts_asio::error_code cancel(implementation_type& impl,
+      puerts_asio::error_code& ec)
   {
     return descriptor_service_.cancel(impl, ec);
   }
 
   // Set an option on the serial port.
   template <typename SettableSerialPortOption>
-  asio::error_code set_option(implementation_type& impl,
-      const SettableSerialPortOption& option, asio::error_code& ec)
+  puerts_asio::error_code set_option(implementation_type& impl,
+      const SettableSerialPortOption& option, puerts_asio::error_code& ec)
   {
     return do_set_option(impl,
         &reactive_serial_port_service::store_option<SettableSerialPortOption>,
@@ -127,8 +127,8 @@ public:
 
   // Get an option from the serial port.
   template <typename GettableSerialPortOption>
-  asio::error_code get_option(const implementation_type& impl,
-      GettableSerialPortOption& option, asio::error_code& ec) const
+  puerts_asio::error_code get_option(const implementation_type& impl,
+      GettableSerialPortOption& option, puerts_asio::error_code& ec) const
   {
     return do_get_option(impl,
         &reactive_serial_port_service::load_option<GettableSerialPortOption>,
@@ -136,8 +136,8 @@ public:
   }
 
   // Send a break sequence to the serial port.
-  asio::error_code send_break(implementation_type& impl,
-      asio::error_code& ec)
+  puerts_asio::error_code send_break(implementation_type& impl,
+      puerts_asio::error_code& ec)
   {
     int result = ::tcsendbreak(descriptor_service_.native_handle(impl), 0);
     descriptor_ops::get_last_error(ec, result < 0);
@@ -147,7 +147,7 @@ public:
   // Write the given data. Returns the number of bytes sent.
   template <typename ConstBufferSequence>
   size_t write_some(implementation_type& impl,
-      const ConstBufferSequence& buffers, asio::error_code& ec)
+      const ConstBufferSequence& buffers, puerts_asio::error_code& ec)
   {
     return descriptor_service_.write_some(impl, buffers, ec);
   }
@@ -165,7 +165,7 @@ public:
   // Read some data. Returns the number of bytes received.
   template <typename MutableBufferSequence>
   size_t read_some(implementation_type& impl,
-      const MutableBufferSequence& buffers, asio::error_code& ec)
+      const MutableBufferSequence& buffers, puerts_asio::error_code& ec)
   {
     return descriptor_service_.read_some(impl, buffers, ec);
   }
@@ -183,47 +183,47 @@ public:
 
 private:
   // Function pointer type for storing a serial port option.
-  typedef asio::error_code (*store_function_type)(
-      const void*, termios&, asio::error_code&);
+  typedef puerts_asio::error_code (*store_function_type)(
+      const void*, termios&, puerts_asio::error_code&);
 
   // Helper function template to store a serial port option.
   template <typename SettableSerialPortOption>
-  static asio::error_code store_option(const void* option,
-      termios& storage, asio::error_code& ec)
+  static puerts_asio::error_code store_option(const void* option,
+      termios& storage, puerts_asio::error_code& ec)
   {
     static_cast<const SettableSerialPortOption*>(option)->store(storage, ec);
     return ec;
   }
 
   // Helper function to set a serial port option.
-  ASIO_DECL asio::error_code do_set_option(
+  ASIO_DECL puerts_asio::error_code do_set_option(
       implementation_type& impl, store_function_type store,
-      const void* option, asio::error_code& ec);
+      const void* option, puerts_asio::error_code& ec);
 
   // Function pointer type for loading a serial port option.
-  typedef asio::error_code (*load_function_type)(
-      void*, const termios&, asio::error_code&);
+  typedef puerts_asio::error_code (*load_function_type)(
+      void*, const termios&, puerts_asio::error_code&);
 
   // Helper function template to load a serial port option.
   template <typename GettableSerialPortOption>
-  static asio::error_code load_option(void* option,
-      const termios& storage, asio::error_code& ec)
+  static puerts_asio::error_code load_option(void* option,
+      const termios& storage, puerts_asio::error_code& ec)
   {
     static_cast<GettableSerialPortOption*>(option)->load(storage, ec);
     return ec;
   }
 
   // Helper function to get a serial port option.
-  ASIO_DECL asio::error_code do_get_option(
+  ASIO_DECL puerts_asio::error_code do_get_option(
       const implementation_type& impl, load_function_type load,
-      void* option, asio::error_code& ec) const;
+      void* option, puerts_asio::error_code& ec) const;
 
   // The implementation used for initiating asynchronous operations.
   reactive_descriptor_service descriptor_service_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

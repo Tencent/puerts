@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 namespace detail {
 
@@ -62,7 +62,7 @@ struct parallel_group_signature;
 template <std::size_t N, typename R0, typename... Args0>
 struct parallel_group_signature<N, R0(Args0...)>
 {
-  typedef asio::detail::array<std::size_t, N> order_type;
+  typedef puerts_asio::detail::array<std::size_t, N> order_type;
   typedef R0 raw_type(Args0...);
   typedef R0 type(order_type, Args0...);
 };
@@ -72,7 +72,7 @@ template <std::size_t N,
     typename R1, typename... Args1>
 struct parallel_group_signature<N, R0(Args0...), R1(Args1...)>
 {
-  typedef asio::detail::array<std::size_t, N> order_type;
+  typedef puerts_asio::detail::array<std::size_t, N> order_type;
   typedef R0 raw_type(Args0..., Args1...);
   typedef R0 type(order_type, Args0..., Args1...);
 };
@@ -81,7 +81,7 @@ template <std::size_t N, typename Sig0,
     typename Sig1, typename... SigN>
 struct parallel_group_signature<N, Sig0, Sig1, SigN...>
 {
-  typedef asio::detail::array<std::size_t, N> order_type;
+  typedef puerts_asio::detail::array<std::size_t, N> order_type;
   typedef typename parallel_group_signature<N,
     typename parallel_group_signature<N, Sig0, Sig1>::raw_type,
       SigN...>::raw_type raw_type;
@@ -99,7 +99,7 @@ void parallel_group_launch(Condition cancellation_condition, Handler handler,
 
 /// A group of asynchronous operations that may be launched in parallel.
 /**
- * See the documentation for asio::experimental::make_parallel_group for
+ * See the documentation for puerts_asio::experimental::make_parallel_group for
  * a usage example.
  */
 template <typename... Ops>
@@ -124,8 +124,8 @@ public:
    * an operation within the group, that is used to determine whether to cancel
    * the remaining operations. The function object is passed the arguments of
    * the completed operation's handler. To trigger cancellation of the remaining
-   * operations, it must return a asio::cancellation_type value other
-   * than <tt>asio::cancellation_type::none</tt>.
+   * operations, it must return a puerts_asio::cancellation_type value other
+   * than <tt>puerts_asio::cancellation_type::none</tt>.
    *
    * @param token A completion token whose signature is comprised of
    * a @c std::array<std::size_t, N> indicating the completion order of the
@@ -133,17 +133,17 @@ public:
    *
    * The library provides the following @c cancellation_condition types:
    *
-   * @li asio::experimental::wait_for_all
-   * @li asio::experimental::wait_for_one
-   * @li asio::experimental::wait_for_one_error
-   * @li asio::experimental::wait_for_one_success
+   * @li puerts_asio::experimental::wait_for_all
+   * @li puerts_asio::experimental::wait_for_one
+   * @li puerts_asio::experimental::wait_for_one_error
+   * @li puerts_asio::experimental::wait_for_one_success
    */
   template <typename CancellationCondition,
       ASIO_COMPLETION_TOKEN_FOR(signature) CompletionToken>
   auto async_wait(CancellationCondition cancellation_condition,
       CompletionToken&& token)
   {
-    return asio::async_initiate<CompletionToken, signature>(
+    return puerts_asio::async_initiate<CompletionToken, signature>(
         initiate_async_wait(), token,
         std::move(cancellation_condition), std::move(ops_));
   }
@@ -165,17 +165,17 @@ private:
 /// Create a group of operations that may be launched in parallel.
 /**
  * For example:
- * @code asio::experimental::make_parallel_group(
+ * @code puerts_asio::experimental::make_parallel_group(
  *    [&](auto token)
  *    {
- *      return in.async_read_some(asio::buffer(data), token);
+ *      return in.async_read_some(puerts_asio::buffer(data), token);
  *    },
  *    [&](auto token)
  *    {
  *      return timer.async_wait(token);
  *    }
  *  ).async_wait(
- *    asio::experimental::wait_for_all(),
+ *    puerts_asio::experimental::wait_for_all(),
  *    [](
  *        std::array<std::size_t, 2> completion_order,
  *        std::error_code ec1, std::size_t n1,
@@ -206,7 +206,7 @@ inline parallel_group<Ops...> make_parallel_group(Ops... ops)
 }
 
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

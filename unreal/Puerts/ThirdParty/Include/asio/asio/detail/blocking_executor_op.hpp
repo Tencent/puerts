@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Operation = scheduler_operation>
@@ -39,7 +39,7 @@ public:
 
   void wait()
   {
-    asio::detail::mutex::scoped_lock lock(mutex_);
+    puerts_asio::detail::mutex::scoped_lock lock(mutex_);
     while (!is_complete_)
       event_.wait(lock);
   }
@@ -49,7 +49,7 @@ protected:
   {
     ~do_complete_cleanup()
     {
-      asio::detail::mutex::scoped_lock lock(op_->mutex_);
+      puerts_asio::detail::mutex::scoped_lock lock(op_->mutex_);
       op_->is_complete_ = true;
       op_->event_.unlock_and_signal_one_for_destruction(lock);
     }
@@ -58,8 +58,8 @@ protected:
   };
 
 private:
-  asio::detail::mutex mutex_;
-  asio::detail::event event_;
+  puerts_asio::detail::mutex mutex_;
+  puerts_asio::detail::event event_;
   bool is_complete_;
 };
 
@@ -74,7 +74,7 @@ public:
   }
 
   static void do_complete(void* owner, Operation* base,
-      const asio::error_code& /*ec*/,
+      const puerts_asio::error_code& /*ec*/,
       std::size_t /*bytes_transferred*/)
   {
     blocking_executor_op* o(static_cast<blocking_executor_op*>(base));
@@ -100,7 +100,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

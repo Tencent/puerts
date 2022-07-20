@@ -34,7 +34,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -42,10 +42,10 @@ namespace detail
       typename ConstBufferIterator, typename CompletionCondition>
   std::size_t write_buffer_sequence(SyncWriteStream& s,
       const ConstBufferSequence& buffers, const ConstBufferIterator&,
-      CompletionCondition completion_condition, asio::error_code& ec)
+      CompletionCondition completion_condition, puerts_asio::error_code& ec)
   {
-    ec = asio::error_code();
-    asio::detail::consuming_buffers<const_buffer,
+    ec = puerts_asio::error_code();
+    puerts_asio::detail::consuming_buffers<const_buffer,
         ConstBufferSequence, ConstBufferIterator> tmp(buffers);
     while (!tmp.empty())
     {
@@ -62,13 +62,13 @@ namespace detail
 template <typename SyncWriteStream, typename ConstBufferSequence,
     typename CompletionCondition>
 inline std::size_t write(SyncWriteStream& s, const ConstBufferSequence& buffers,
-    CompletionCondition completion_condition, asio::error_code& ec,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_const_buffer_sequence<ConstBufferSequence>::value
     >::type)
 {
   return detail::write_buffer_sequence(s, buffers,
-      asio::buffer_sequence_begin(buffers),
+      puerts_asio::buffer_sequence_begin(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
 }
 
@@ -78,15 +78,15 @@ inline std::size_t write(SyncWriteStream& s, const ConstBufferSequence& buffers,
       is_const_buffer_sequence<ConstBufferSequence>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write(s, buffers, transfer_all(), ec);
-  asio::detail::throw_error(ec, "write");
+  puerts_asio::detail::throw_error(ec, "write");
   return bytes_transferred;
 }
 
 template <typename SyncWriteStream, typename ConstBufferSequence>
 inline std::size_t write(SyncWriteStream& s, const ConstBufferSequence& buffers,
-    asio::error_code& ec,
+    puerts_asio::error_code& ec,
     typename constraint<
       is_const_buffer_sequence<ConstBufferSequence>::value
     >::type)
@@ -102,10 +102,10 @@ inline std::size_t write(SyncWriteStream& s, const ConstBufferSequence& buffers,
       is_const_buffer_sequence<ConstBufferSequence>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write(s, buffers,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "write");
+  puerts_asio::detail::throw_error(ec, "write");
   return bytes_transferred;
 }
 
@@ -115,7 +115,7 @@ template <typename SyncWriteStream, typename DynamicBuffer_v1,
     typename CompletionCondition>
 std::size_t write(SyncWriteStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    CompletionCondition completion_condition, asio::error_code& ec,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type,
@@ -142,18 +142,18 @@ inline std::size_t write(SyncWriteStream& s,
       !is_dynamic_buffer_v2<typename decay<DynamicBuffer_v1>::type>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write(s,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
       transfer_all(), ec);
-  asio::detail::throw_error(ec, "write");
+  puerts_asio::detail::throw_error(ec, "write");
   return bytes_transferred;
 }
 
 template <typename SyncWriteStream, typename DynamicBuffer_v1>
 inline std::size_t write(SyncWriteStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    asio::error_code& ec,
+    puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type,
@@ -177,11 +177,11 @@ inline std::size_t write(SyncWriteStream& s,
       !is_dynamic_buffer_v2<typename decay<DynamicBuffer_v1>::type>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write(s,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "write");
+  puerts_asio::detail::throw_error(ec, "write");
   return bytes_transferred;
 }
 
@@ -191,8 +191,8 @@ inline std::size_t write(SyncWriteStream& s,
 template <typename SyncWriteStream, typename Allocator,
     typename CompletionCondition>
 inline std::size_t write(SyncWriteStream& s,
-    asio::basic_streambuf<Allocator>& b,
-    CompletionCondition completion_condition, asio::error_code& ec)
+    puerts_asio::basic_streambuf<Allocator>& b,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec)
 {
   return write(s, basic_streambuf_ref<Allocator>(b),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
@@ -200,15 +200,15 @@ inline std::size_t write(SyncWriteStream& s,
 
 template <typename SyncWriteStream, typename Allocator>
 inline std::size_t write(SyncWriteStream& s,
-    asio::basic_streambuf<Allocator>& b)
+    puerts_asio::basic_streambuf<Allocator>& b)
 {
   return write(s, basic_streambuf_ref<Allocator>(b));
 }
 
 template <typename SyncWriteStream, typename Allocator>
 inline std::size_t write(SyncWriteStream& s,
-    asio::basic_streambuf<Allocator>& b,
-    asio::error_code& ec)
+    puerts_asio::basic_streambuf<Allocator>& b,
+    puerts_asio::error_code& ec)
 {
   return write(s, basic_streambuf_ref<Allocator>(b), ec);
 }
@@ -216,7 +216,7 @@ inline std::size_t write(SyncWriteStream& s,
 template <typename SyncWriteStream, typename Allocator,
     typename CompletionCondition>
 inline std::size_t write(SyncWriteStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition)
 {
   return write(s, basic_streambuf_ref<Allocator>(b),
@@ -230,7 +230,7 @@ inline std::size_t write(SyncWriteStream& s,
 template <typename SyncWriteStream, typename DynamicBuffer_v2,
     typename CompletionCondition>
 std::size_t write(SyncWriteStream& s, DynamicBuffer_v2 buffers,
-    CompletionCondition completion_condition, asio::error_code& ec,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
@@ -247,17 +247,17 @@ inline std::size_t write(SyncWriteStream& s, DynamicBuffer_v2 buffers,
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write(s,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
       transfer_all(), ec);
-  asio::detail::throw_error(ec, "write");
+  puerts_asio::detail::throw_error(ec, "write");
   return bytes_transferred;
 }
 
 template <typename SyncWriteStream, typename DynamicBuffer_v2>
 inline std::size_t write(SyncWriteStream& s, DynamicBuffer_v2 buffers,
-    asio::error_code& ec,
+    puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
@@ -274,11 +274,11 @@ inline std::size_t write(SyncWriteStream& s, DynamicBuffer_v2 buffers,
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write(s,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "write");
+  puerts_asio::detail::throw_error(ec, "write");
   return bytes_transferred;
 }
 
@@ -330,7 +330,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       std::size_t max_size;
@@ -360,13 +360,13 @@ namespace detail
         }
 
         ASIO_MOVE_OR_LVALUE(WriteHandler)(handler_)(
-            static_cast<const asio::error_code&>(ec),
+            static_cast<const puerts_asio::error_code&>(ec),
             static_cast<const std::size_t&>(buffers_.total_consumed()));
       }
     }
 
   //private:
-    typedef asio::detail::consuming_buffers<const_buffer,
+    typedef puerts_asio::detail::consuming_buffers<const_buffer,
         ConstBufferSequence, ConstBufferIterator> buffers_type;
 
     AsyncWriteStream& stream_;
@@ -459,7 +459,7 @@ namespace detail
     detail::write_op<AsyncWriteStream, ConstBufferSequence,
       ConstBufferIterator, CompletionCondition, WriteHandler>(
         stream, buffers, completion_condition, handler)(
-          asio::error_code(), 0, 1);
+          puerts_asio::error_code(), 0, 1);
   }
 
   template <typename AsyncWriteStream>
@@ -491,7 +491,7 @@ namespace detail
       non_const_lvalue<WriteHandler> handler2(handler);
       non_const_lvalue<CompletionCondition> completion_cond2(completion_cond);
       start_write_buffer_sequence_op(stream_, buffers,
-          asio::buffer_sequence_begin(buffers),
+          puerts_asio::buffer_sequence_begin(buffers),
           completion_cond2.value, handler2.value);
     }
 
@@ -525,10 +525,10 @@ struct associator<Associator,
 
 template <typename AsyncWriteStream,
     typename ConstBufferSequence, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s, const ConstBufferSequence& buffers,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(WriteHandler) handler,
@@ -537,17 +537,17 @@ async_write(AsyncWriteStream& s, const ConstBufferSequence& buffers,
     >::type)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_buffer_sequence<AsyncWriteStream>(s),
       handler, buffers,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition));
 }
 
 template <typename AsyncWriteStream, typename ConstBufferSequence,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s, const ConstBufferSequence& buffers,
     ASIO_MOVE_ARG(WriteHandler) handler,
     typename constraint<
@@ -555,7 +555,7 @@ async_write(AsyncWriteStream& s, const ConstBufferSequence& buffers,
     >::type)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_buffer_sequence<AsyncWriteStream>(s),
       handler, buffers, transfer_all());
 }
@@ -601,7 +601,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(const asio::error_code& ec,
+    void operator()(const puerts_asio::error_code& ec,
         std::size_t bytes_transferred, int start = 0)
     {
       switch (start)
@@ -727,7 +727,7 @@ namespace detail
           CompletionCondition, typename decay<WriteHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
               completion_cond2.value, handler2.value)(
-                asio::error_code(), 0, 1);
+                puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -759,10 +759,10 @@ struct associator<Associator,
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncWriteStream, typename DynamicBuffer_v1,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     ASIO_MOVE_ARG(WriteHandler) handler,
@@ -780,10 +780,10 @@ async_write(AsyncWriteStream& s,
 
 template <typename AsyncWriteStream,
     typename DynamicBuffer_v1, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     CompletionCondition completion_condition,
@@ -796,7 +796,7 @@ async_write(AsyncWriteStream& s,
     >::type)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_dynbuf_v1<AsyncWriteStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition));
@@ -806,12 +806,12 @@ async_write(AsyncWriteStream& s,
 #if !defined(ASIO_NO_IOSTREAM)
 
 template <typename AsyncWriteStream, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     ASIO_MOVE_ARG(WriteHandler) handler)
 {
   return async_write(s, basic_streambuf_ref<Allocator>(b),
@@ -820,12 +820,12 @@ async_write(AsyncWriteStream& s,
 
 template <typename AsyncWriteStream,
     typename Allocator, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(WriteHandler) handler)
 {
@@ -877,7 +877,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(const asio::error_code& ec,
+    void operator()(const puerts_asio::error_code& ec,
         std::size_t bytes_transferred, int start = 0)
     {
       switch (start)
@@ -1003,7 +1003,7 @@ namespace detail
           CompletionCondition, typename decay<WriteHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
               completion_cond2.value, handler2.value)(
-                asio::error_code(), 0, 1);
+                puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -1058,10 +1058,10 @@ struct associated_cancellation_slot<
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncWriteStream, typename DynamicBuffer_v2,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s, DynamicBuffer_v2 buffers,
     ASIO_MOVE_ARG(WriteHandler) handler,
     typename constraint<
@@ -1075,10 +1075,10 @@ async_write(AsyncWriteStream& s, DynamicBuffer_v2 buffers,
 
 template <typename AsyncWriteStream,
     typename DynamicBuffer_v2, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write(AsyncWriteStream& s, DynamicBuffer_v2 buffers,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(WriteHandler) handler,
@@ -1087,13 +1087,13 @@ async_write(AsyncWriteStream& s, DynamicBuffer_v2 buffers,
     >::type)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_dynbuf_v2<AsyncWriteStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition));
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

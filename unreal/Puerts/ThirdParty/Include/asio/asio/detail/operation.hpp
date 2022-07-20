@@ -23,7 +23,7 @@
 # include "asio/detail/scheduler_operation.hpp"
 #endif
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_HAS_IOCP)
@@ -33,6 +33,6 @@ typedef scheduler_operation operation;
 #endif
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_OPERATION_HPP

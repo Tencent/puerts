@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -254,7 +254,7 @@ struct connect_member<
 #endif // !defined(ASIO_HAS_DEDUCED_CONNECT_MEMBER_TRAIT)
 
 } // namespace traits
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

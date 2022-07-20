@@ -34,12 +34,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// Implements IP version 4 style addresses.
 /**
- * The asio::ip::address_v4 class provides the ability to use and
+ * The puerts_asio::ip::address_v4 class provides the ability to use and
  * manipulate IP version 4 addresses.
  *
  * @par Thread Safety
@@ -60,7 +60,7 @@ public:
 #if defined(GENERATING_DOCUMENTATION)
   typedef array<unsigned char, 4> bytes_type;
 #else
-  typedef asio::detail::array<unsigned char, 4> bytes_type;
+  typedef puerts_asio::detail::array<unsigned char, 4> bytes_type;
 #endif
 
   /// Default constructor.
@@ -122,7 +122,7 @@ public:
 #if !defined(ASIO_NO_DEPRECATED)
   /// (Deprecated: Use other overload.) Get the address as a string in dotted
   /// decimal format.
-  ASIO_DECL std::string to_string(asio::error_code& ec) const;
+  ASIO_DECL std::string to_string(puerts_asio::error_code& ec) const;
 
   /// (Deprecated: Use make_address_v4().) Create an address from an IP address
   /// string in dotted decimal form.
@@ -131,7 +131,7 @@ public:
   /// (Deprecated: Use make_address_v4().) Create an address from an IP address
   /// string in dotted decimal form.
   static address_v4 from_string(
-      const char* str, asio::error_code& ec);
+      const char* str, puerts_asio::error_code& ec);
 
   /// (Deprecated: Use make_address_v4().) Create an address from an IP address
   /// string in dotted decimal form.
@@ -140,7 +140,7 @@ public:
   /// (Deprecated: Use make_address_v4().) Create an address from an IP address
   /// string in dotted decimal form.
   static address_v4 from_string(
-      const std::string& str, asio::error_code& ec);
+      const std::string& str, puerts_asio::error_code& ec);
 #endif // !defined(ASIO_NO_DEPRECATED)
 
   /// Determine whether the address is a loopback address.
@@ -240,7 +240,7 @@ public:
 
 private:
   // The underlying IPv4 address.
-  asio::detail::in4_addr_type addr_;
+  puerts_asio::detail::in4_addr_type addr_;
 };
 
 /// Create an IPv4 address from raw bytes in network order.
@@ -272,7 +272,7 @@ ASIO_DECL address_v4 make_address_v4(const char* str);
  * @relates address_v4
  */
 ASIO_DECL address_v4 make_address_v4(const char* str,
-    asio::error_code& ec) ASIO_NOEXCEPT;
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT;
 
 /// Create an IPv4 address from an IP address string in dotted decimal form.
 /**
@@ -285,7 +285,7 @@ ASIO_DECL address_v4 make_address_v4(const std::string& str);
  * @relates address_v4
  */
 ASIO_DECL address_v4 make_address_v4(const std::string& str,
-    asio::error_code& ec) ASIO_NOEXCEPT;
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT;
 
 #if defined(ASIO_HAS_STRING_VIEW) \
   || defined(GENERATING_DOCUMENTATION)
@@ -301,7 +301,7 @@ ASIO_DECL address_v4 make_address_v4(string_view str);
  * @relates address_v4
  */
 ASIO_DECL address_v4 make_address_v4(string_view str,
-    asio::error_code& ec) ASIO_NOEXCEPT;
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT;
 
 #endif // defined(ASIO_HAS_STRING_VIEW)
        //  || defined(GENERATING_DOCUMENTATION)
@@ -318,7 +318,7 @@ ASIO_DECL address_v4 make_address_v4(string_view str,
  *
  * @return The output stream.
  *
- * @relates asio::ip::address_v4
+ * @relates puerts_asio::ip::address_v4
  */
 template <typename Elem, typename Traits>
 std::basic_ostream<Elem, Traits>& operator<<(
@@ -327,15 +327,15 @@ std::basic_ostream<Elem, Traits>& operator<<(
 #endif // !defined(ASIO_NO_IOSTREAM)
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #if defined(ASIO_HAS_STD_HASH)
 namespace std {
 
 template <>
-struct hash<asio::ip::address_v4>
+struct hash<puerts_asio::ip::address_v4>
 {
-  std::size_t operator()(const asio::ip::address_v4& addr)
+  std::size_t operator()(const puerts_asio::ip::address_v4& addr)
     const ASIO_NOEXCEPT
   {
     return std::hash<unsigned int>()(addr.to_uint());

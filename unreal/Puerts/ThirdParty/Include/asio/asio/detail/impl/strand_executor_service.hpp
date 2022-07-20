@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename F, typename Allocator>
@@ -78,7 +78,7 @@ class strand_executor_service::invoker<Executor,
 public:
   invoker(const implementation_type& impl, Executor& ex)
     : impl_(impl),
-      executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+      executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
@@ -107,8 +107,8 @@ public:
         recycling_allocator<void> allocator;
         executor_type ex = this_->executor_;
         execution::execute(
-            asio::prefer(
-              asio::require(
+            puerts_asio::prefer(
+              puerts_asio::require(
                 ASIO_MOVE_CAST(executor_type)(ex),
                 execution::blocking.never),
             execution::allocator(allocator)),
@@ -207,7 +207,7 @@ inline void strand_executor_service::execute(const implementation_type& impl,
 {
   return strand_executor_service::do_execute(impl, ex,
       ASIO_MOVE_CAST(Function)(function),
-      asio::query(ex, execution::allocator));
+      puerts_asio::query(ex, execution::allocator));
 }
 
 template <typename Executor, typename Function>
@@ -230,7 +230,7 @@ void strand_executor_service::do_execute(const implementation_type& impl,
 
   // If the executor is not never-blocking, and we are already in the strand,
   // then the function can run immediately.
-  if (asio::query(ex, execution::blocking) != execution::blocking.never
+  if (puerts_asio::query(ex, execution::blocking) != execution::blocking.never
       && running_in_this_thread(impl))
   {
     // Make a local, non-const copy of the function.
@@ -288,7 +288,7 @@ void strand_executor_service::dispatch(const implementation_type& impl,
   p.v = p.p = 0;
   if (first)
   {
-    asio::dispatch(ex,
+    puerts_asio::dispatch(ex,
         allocator_binder<invoker<Executor>, Allocator>(
           invoker<Executor>(impl, ex), a));
   }
@@ -314,7 +314,7 @@ void strand_executor_service::post(const implementation_type& impl,
   p.v = p.p = 0;
   if (first)
   {
-    asio::post(ex,
+    puerts_asio::post(ex,
         allocator_binder<invoker<Executor>, Allocator>(
           invoker<Executor>(impl, ex), a));
   }
@@ -340,14 +340,14 @@ void strand_executor_service::defer(const implementation_type& impl,
   p.v = p.p = 0;
   if (first)
   {
-    asio::defer(ex,
+    puerts_asio::defer(ex,
         allocator_binder<invoker<Executor>, Allocator>(
           invoker<Executor>(impl, ex), a));
   }
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

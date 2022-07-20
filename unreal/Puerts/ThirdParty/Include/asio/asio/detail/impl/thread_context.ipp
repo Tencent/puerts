@@ -19,7 +19,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 thread_info_base* thread_context::top_of_thread_call_stack()
@@ -28,7 +28,7 @@ thread_info_base* thread_context::top_of_thread_call_stack()
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

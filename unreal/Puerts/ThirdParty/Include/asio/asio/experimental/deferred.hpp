@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 
 /// Trait for detecting objects that are usable as deferred operations.
@@ -190,7 +190,7 @@ private:
       ASIO_MOVE_ARG(CompletionToken) token,
       std::index_sequence<I...>)
   {
-    return asio::async_initiate<CompletionToken, void(Values...)>(
+    return puerts_asio::async_initiate<CompletionToken, void(Values...)>(
         initiate(), token,
         std::get<I>(ASIO_MOVE_CAST(std::tuple<Values...>)(values_))...);
   }
@@ -247,7 +247,7 @@ private:
       ASIO_MOVE_ARG(CompletionToken) token,
       std::index_sequence<I...>)
   {
-    return asio::async_initiate<CompletionToken, Signature>(
+    return puerts_asio::async_initiate<CompletionToken, Signature>(
         ASIO_MOVE_CAST(typename decay<Initiation>::type)(initiation_),
         token, std::get<I>(ASIO_MOVE_CAST(init_args_t)(init_args_))...);
   }
@@ -315,7 +315,7 @@ public:
   decltype(auto) operator()(
       ASIO_MOVE_ARG(CompletionToken) token) ASIO_RVALUE_REF_QUAL
   {
-    return asio::async_initiate<CompletionToken, signature>(
+    return puerts_asio::async_initiate<CompletionToken, signature>(
         initiate(), token, ASIO_MOVE_OR_LVALUE(Head)(head_),
         ASIO_MOVE_OR_LVALUE(Tail)(tail_));
   }
@@ -470,12 +470,12 @@ struct is_deferred<deferred_conditional<OnTrue, OnFalse> > : true_type
  * The deferred_t class is used to indicate that an asynchronous operation
  * should return a function object which is itself an initiation function. A
  * deferred_t object may be passed as a completion token to an asynchronous
- * operation, typically using the special value @c asio::deferred. For
+ * operation, typically using the special value @c puerts_asio::deferred. For
  * example:
  *
  * @code auto my_sender
  *   = my_socket.async_read_some(my_buffer,
- *       asio::experimental::deferred); @endcode
+ *       puerts_asio::experimental::deferred); @endcode
  *
  * The initiating function (async_read_some in the above example) returns a
  * function object that will lazily initiate the operation.
@@ -586,7 +586,7 @@ inline auto operator|(Head head, ASIO_MOVE_ARG(Tail) tail)
 
 /// A special value, similar to std::nothrow.
 /**
- * See the documentation for asio::experimental::deferred_t for a usage
+ * See the documentation for puerts_asio::experimental::deferred_t for a usage
  * example.
  */
 #if defined(ASIO_HAS_CONSTEXPR) || defined(GENERATING_DOCUMENTATION)
@@ -596,7 +596,7 @@ __declspec(selectany) deferred_t deferred;
 #endif
 
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

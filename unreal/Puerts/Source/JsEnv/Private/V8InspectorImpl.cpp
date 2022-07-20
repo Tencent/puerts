@@ -445,7 +445,8 @@ void V8InspectorClientImpl::OnReceiveMessage(wspp_connection_hdl Handle, wspp_me
     //#else
     //    PLog(Log, "<---: %s", Message->get_payload().c_str());
     //#endif
-
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::SealHandleScope scope(Isolate);
     V8InspectorChannel->DispatchProtocolMessage(Message->get_payload());
 }
 

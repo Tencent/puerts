@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_CONCEPTS) \
   && defined(ASIO_HAS_VARIADIC_TEMPLATES) \
@@ -159,7 +159,7 @@ ASIO_CONCEPT completion_signature =
   detail::is_completion_signature<T>::value;
 
 #define ASIO_COMPLETION_SIGNATURE \
-  ::asio::completion_signature
+  ::puerts_asio::completion_signature
 
 template <typename T, typename... Signatures>
 ASIO_CONCEPT completion_handler_for =
@@ -167,11 +167,11 @@ ASIO_CONCEPT completion_handler_for =
     && detail::is_completion_handler_for<T, Signatures...>::value;
 
 #define ASIO_COMPLETION_HANDLER_FOR(sig) \
-  ::asio::completion_handler_for<sig>
+  ::puerts_asio::completion_handler_for<sig>
 #define ASIO_COMPLETION_HANDLER_FOR2(sig0, sig1) \
-  ::asio::completion_handler_for<sig0, sig1>
+  ::puerts_asio::completion_handler_for<sig0, sig1>
 #define ASIO_COMPLETION_HANDLER_FOR3(sig0, sig1, sig2) \
-  ::asio::completion_handler_for<sig0, sig1, sig2>
+  ::puerts_asio::completion_handler_for<sig0, sig1, sig2>
 
 #else // defined(ASIO_HAS_CONCEPTS)
       //   && defined(ASIO_HAS_VARIADIC_TEMPLATES)
@@ -421,7 +421,7 @@ struct simple_completion_signature<R() && noexcept>
 # define ASIO_COMPLETION_SIGNATURES_TARGS Signatures...
 
 # define ASIO_COMPLETION_SIGNATURES_TSIMPLEARGS \
-    typename asio::detail::simple_completion_signature< \
+    typename puerts_asio::detail::simple_completion_signature< \
       Signatures>::type...
 
 #else // defined(ASIO_HAS_VARIADIC_TEMPLATES)
@@ -440,9 +440,9 @@ struct simple_completion_signature<R() && noexcept>
 # define ASIO_COMPLETION_SIGNATURES_TARGS Sig0, Sig1, Sig2
 
 # define ASIO_COMPLETION_SIGNATURES_TSIMPLEARGS \
-    typename ::asio::detail::simple_completion_signature<Sig0>::type, \
-    typename ::asio::detail::simple_completion_signature<Sig1>::type, \
-    typename ::asio::detail::simple_completion_signature<Sig2>::type
+    typename ::puerts_asio::detail::simple_completion_signature<Sig0>::type, \
+    typename ::puerts_asio::detail::simple_completion_signature<Sig1>::type, \
+    typename ::puerts_asio::detail::simple_completion_signature<Sig2>::type
 
 #endif // defined(ASIO_HAS_VARIADIC_TEMPLATES)
        //   || defined(GENERATING_DOCUMENTATION)
@@ -638,7 +638,7 @@ template <typename CompletionToken, ASIO_COMPLETION_SIGNATURES_TPARAMS>
 struct async_completion
 {
   /// The real handler type to be used for the asynchronous operation.
-  typedef typename asio::async_result<
+  typedef typename puerts_asio::async_result<
     typename decay<CompletionToken>::type,
       ASIO_COMPLETION_SIGNATURES_TARGS>::completion_handler_type
         completion_handler_type;
@@ -738,43 +738,43 @@ struct async_result_has_initiate_memfn
   void_or_deduced
 #elif defined(_MSC_VER) && (_MSC_VER < 1500)
 # define ASIO_INITFN_RESULT_TYPE(ct, sig) \
-  typename ::asio::detail::async_result_helper< \
+  typename ::puerts_asio::detail::async_result_helper< \
     ct, sig>::return_type
 # define ASIO_INITFN_RESULT_TYPE2(ct, sig0, sig1) \
-  typename ::asio::detail::async_result_helper< \
+  typename ::puerts_asio::detail::async_result_helper< \
     ct, sig0, sig1>::return_type
 # define ASIO_INITFN_RESULT_TYPE3(ct, sig0, sig1, sig2) \
-  typename ::asio::detail::async_result_helper< \
+  typename ::puerts_asio::detail::async_result_helper< \
     ct, sig0, sig1, sig2>::return_type
 #define ASIO_HANDLER_TYPE(ct, sig) \
-  typename ::asio::detail::async_result_helper< \
+  typename ::puerts_asio::detail::async_result_helper< \
     ct, sig>::completion_handler_type
 #define ASIO_HANDLER_TYPE2(ct, sig0, sig1) \
-  typename ::asio::detail::async_result_helper< \
+  typename ::puerts_asio::detail::async_result_helper< \
     ct, sig0, sig1>::completion_handler_type
 #define ASIO_HANDLER_TYPE3(ct, sig0, sig1, sig2) \
-  typename ::asio::detail::async_result_helper< \
+  typename ::puerts_asio::detail::async_result_helper< \
     ct, sig0, sig1, sig2>::completion_handler_type
 #else
 # define ASIO_INITFN_RESULT_TYPE(ct, sig) \
-  typename ::asio::async_result< \
-    typename ::asio::decay<ct>::type, sig>::return_type
+  typename ::puerts_asio::async_result< \
+    typename ::puerts_asio::decay<ct>::type, sig>::return_type
 # define ASIO_INITFN_RESULT_TYPE2(ct, sig0, sig1) \
-  typename ::asio::async_result< \
-    typename ::asio::decay<ct>::type, sig0, sig1>::return_type
+  typename ::puerts_asio::async_result< \
+    typename ::puerts_asio::decay<ct>::type, sig0, sig1>::return_type
 # define ASIO_INITFN_RESULT_TYPE3(ct, sig0, sig1, sig2) \
-  typename ::asio::async_result< \
-    typename ::asio::decay<ct>::type, sig0, sig1, sig2>::return_type
+  typename ::puerts_asio::async_result< \
+    typename ::puerts_asio::decay<ct>::type, sig0, sig1, sig2>::return_type
 #define ASIO_HANDLER_TYPE(ct, sig) \
-  typename ::asio::async_result< \
-    typename ::asio::decay<ct>::type, sig>::completion_handler_type
+  typename ::puerts_asio::async_result< \
+    typename ::puerts_asio::decay<ct>::type, sig>::completion_handler_type
 #define ASIO_HANDLER_TYPE2(ct, sig0, sig1) \
-  typename ::asio::async_result< \
-    typename ::asio::decay<ct>::type, \
+  typename ::puerts_asio::async_result< \
+    typename ::puerts_asio::decay<ct>::type, \
       sig0, sig1>::completion_handler_type
 #define ASIO_HANDLER_TYPE3(ct, sig0, sig1, sig2) \
-  typename ::asio::async_result< \
-    typename ::asio::decay<ct>::type, \
+  typename ::puerts_asio::async_result< \
+    typename ::puerts_asio::decay<ct>::type, \
       sig0, sig1, sig2>::completion_handler_type
 #endif
 
@@ -1175,11 +1175,11 @@ ASIO_CONCEPT completion_token_for =
   };
 
 #define ASIO_COMPLETION_TOKEN_FOR(sig) \
-  ::asio::completion_token_for<sig>
+  ::puerts_asio::completion_token_for<sig>
 #define ASIO_COMPLETION_TOKEN_FOR2(sig0, sig1) \
-  ::asio::completion_token_for<sig0, sig1>
+  ::puerts_asio::completion_token_for<sig0, sig1>
 #define ASIO_COMPLETION_TOKEN_FOR3(sig0, sig1, sig2) \
-  ::asio::completion_token_for<sig0, sig1, sig2>
+  ::puerts_asio::completion_token_for<sig0, sig1, sig2>
 
 #else // defined(ASIO_HAS_CONCEPTS)
       //   && defined(ASIO_HAS_VARIADIC_TEMPLATES)
@@ -1247,9 +1247,9 @@ using default_completion_token_t = typename default_completion_token<T>::type;
 #if defined(ASIO_HAS_DEFAULT_FUNCTION_TEMPLATE_ARGUMENTS)
 
 #define ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(e) \
-  = typename ::asio::default_completion_token<e>::type
+  = typename ::puerts_asio::default_completion_token<e>::type
 #define ASIO_DEFAULT_COMPLETION_TOKEN(e) \
-  = typename ::asio::default_completion_token<e>::type()
+  = typename ::puerts_asio::default_completion_token<e>::type()
 
 #else // defined(ASIO_HAS_DEFAULT_FUNCTION_TEMPLATE_ARGUMENTS)
 
@@ -1258,7 +1258,7 @@ using default_completion_token_t = typename default_completion_token<T>::type;
 
 #endif // defined(ASIO_HAS_DEFAULT_FUNCTION_TEMPLATE_ARGUMENTS)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

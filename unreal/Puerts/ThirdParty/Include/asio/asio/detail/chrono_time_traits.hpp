@@ -19,7 +19,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Helper template to compute the greatest common divisor.
@@ -183,7 +183,7 @@ struct chrono_time_traits
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

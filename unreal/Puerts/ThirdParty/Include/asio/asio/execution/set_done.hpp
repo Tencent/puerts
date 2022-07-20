@@ -24,7 +24,7 @@
 
 #if defined(GENERATING_DOCUMENTATION)
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 
 /// A customisation point that delivers a done notification to a receiver.
@@ -62,17 +62,17 @@ struct can_set_done :
 };
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #else // defined(GENERATING_DOCUMENTATION)
 
 namespace asio_execution_set_done_fn {
 
-using asio::decay;
-using asio::declval;
-using asio::enable_if;
-using asio::traits::set_done_free;
-using asio::traits::set_done_member;
+using puerts_asio::decay;
+using puerts_asio::declval;
+using puerts_asio::enable_if;
+using puerts_asio::traits::set_done_free;
+using puerts_asio::traits::set_done_member;
 
 void set_done();
 
@@ -201,7 +201,7 @@ template <typename T>
 const T static_instance<T>::instance = {};
 
 } // namespace asio_execution_set_done_fn
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace {
 
@@ -241,7 +241,7 @@ constexpr bool is_nothrow_set_done_v
 #endif // defined(ASIO_HAS_VARIABLE_TEMPLATES)
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(GENERATING_DOCUMENTATION)
 

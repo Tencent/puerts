@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if !defined(GENERATING_DOCUMENTATION)
 
@@ -93,11 +93,11 @@ std::size_t io_context::run_one_until(
     if (rel_time > chrono::seconds(1))
       rel_time = chrono::seconds(1);
 
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     std::size_t s = impl_.wait_one(
         static_cast<long>(chrono::duration_cast<
           chrono::microseconds>(rel_time).count()), ec);
-    asio::detail::throw_error(ec);
+    puerts_asio::detail::throw_error(ec);
 
     if (s || impl_.stopped())
       return s;
@@ -409,7 +409,7 @@ void io_context::basic_executor_type<Allocator, Bits>::defer(
 #endif // !defined(ASIO_NO_TS_EXECUTORS)
 
 #if !defined(ASIO_NO_DEPRECATED)
-inline io_context::work::work(asio::io_context& io_context)
+inline io_context::work::work(puerts_asio::io_context& io_context)
   : io_context_impl_(io_context.impl_)
 {
   io_context_impl_.work_started();
@@ -426,18 +426,18 @@ inline io_context::work::~work()
   io_context_impl_.work_finished();
 }
 
-inline asio::io_context& io_context::work::get_io_context()
+inline puerts_asio::io_context& io_context::work::get_io_context()
 {
-  return static_cast<asio::io_context&>(io_context_impl_.context());
+  return static_cast<puerts_asio::io_context&>(io_context_impl_.context());
 }
 #endif // !defined(ASIO_NO_DEPRECATED)
 
-inline asio::io_context& io_context::service::get_io_context()
+inline puerts_asio::io_context& io_context::service::get_io_context()
 {
-  return static_cast<asio::io_context&>(context());
+  return static_cast<puerts_asio::io_context&>(context());
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

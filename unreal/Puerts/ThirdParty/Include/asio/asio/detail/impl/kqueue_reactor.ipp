@@ -40,10 +40,10 @@
     EV_SET(ev, ident, filt, flags, fflags, data, udata)
 #endif
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
-kqueue_reactor::kqueue_reactor(asio::execution_context& ctx)
+kqueue_reactor::kqueue_reactor(puerts_asio::execution_context& ctx)
   : execution_context_service_base<kqueue_reactor>(ctx),
     scheduler_(use_service<scheduler>(ctx)),
     mutex_(ASIO_CONCURRENCY_HINT_IS_LOCKING(
@@ -58,9 +58,9 @@ kqueue_reactor::kqueue_reactor(asio::execution_context& ctx)
       EVFILT_READ, EV_ADD, 0, 0, &interrupter_);
   if (::kevent(kqueue_fd_, events, 1, 0, 0, 0) == -1)
   {
-    asio::error_code error(errno,
-        asio::error::get_system_category());
-    asio::detail::throw_error(error);
+    puerts_asio::error_code error(errno,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(error);
   }
 }
 
@@ -91,9 +91,9 @@ void kqueue_reactor::shutdown()
 }
 
 void kqueue_reactor::notify_fork(
-    asio::execution_context::fork_event fork_ev)
+    puerts_asio::execution_context::fork_event fork_ev)
 {
-  if (fork_ev == asio::execution_context::fork_child)
+  if (fork_ev == puerts_asio::execution_context::fork_child)
   {
     // The kqueue descriptor is automatically closed in the child.
     kqueue_fd_ = -1;
@@ -106,9 +106,9 @@ void kqueue_reactor::notify_fork(
         EVFILT_READ, EV_ADD, 0, 0, &interrupter_);
     if (::kevent(kqueue_fd_, events, 1, 0, 0, 0) == -1)
     {
-      asio::error_code ec(errno,
-          asio::error::get_system_category());
-      asio::detail::throw_error(ec, "kqueue interrupter registration");
+      puerts_asio::error_code ec(errno,
+          puerts_asio::error::get_system_category());
+      puerts_asio::detail::throw_error(ec, "kqueue interrupter registration");
     }
 
     // Re-register all descriptors with kqueue.
@@ -124,9 +124,9 @@ void kqueue_reactor::notify_fork(
             EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, state);
         if (::kevent(kqueue_fd_, events, state->num_kevents_, 0, 0, 0) == -1)
         {
-          asio::error_code ec(errno,
-              asio::error::get_system_category());
-          asio::detail::throw_error(ec, "kqueue re-registration");
+          puerts_asio::error_code ec(errno,
+              puerts_asio::error::get_system_category());
+          puerts_asio::detail::throw_error(ec, "kqueue re-registration");
         }
       }
     }
@@ -196,7 +196,7 @@ void kqueue_reactor::start_op(int op_type, socket_type descriptor,
 {
   if (!descriptor_data)
   {
-    op->ec_ = asio::error::bad_descriptor;
+    op->ec_ = puerts_asio::error::bad_descriptor;
     post_immediate_completion(op, is_continuation);
     return;
   }
@@ -237,8 +237,8 @@ void kqueue_reactor::start_op(int op_type, socket_type descriptor,
         }
         else
         {
-          op->ec_ = asio::error_code(errno,
-              asio::error::get_system_category());
+          op->ec_ = puerts_asio::error_code(errno,
+              puerts_asio::error::get_system_category());
           scheduler_.post_immediate_completion(op, is_continuation);
           return;
         }
@@ -275,7 +275,7 @@ void kqueue_reactor::cancel_ops(socket_type,
   {
     while (reactor_op* op = descriptor_data->op_queue_[i].front())
     {
-      op->ec_ = asio::error::operation_aborted;
+      op->ec_ = puerts_asio::error::operation_aborted;
       descriptor_data->op_queue_[i].pop();
       ops.push(op);
     }
@@ -302,7 +302,7 @@ void kqueue_reactor::cancel_ops_by_key(socket_type,
     descriptor_data->op_queue_[op_type].pop();
     if (op->cancellation_key_ == cancellation_key)
     {
-      op->ec_ = asio::error::operation_aborted;
+      op->ec_ = puerts_asio::error::operation_aborted;
       ops.push(op);
     }
     else
@@ -345,7 +345,7 @@ void kqueue_reactor::deregister_descriptor(socket_type descriptor,
     {
       while (reactor_op* op = descriptor_data->op_queue_[i].front())
       {
-        op->ec_ = asio::error::operation_aborted;
+        op->ec_ = puerts_asio::error::operation_aborted;
         descriptor_data->op_queue_[i].pop();
         ops.push(op);
       }
@@ -509,9 +509,9 @@ void kqueue_reactor::run(long usec, op_queue<operation>& ops)
             {
               if (events[i].flags & EV_ERROR)
               {
-                op->ec_ = asio::error_code(
+                op->ec_ = puerts_asio::error_code(
                     static_cast<int>(events[i].data),
-                    asio::error::get_system_category());
+                    puerts_asio::error::get_system_category());
                 descriptor_data->op_queue_[j].pop();
                 ops.push(op);
               }
@@ -543,9 +543,9 @@ int kqueue_reactor::do_kqueue_create()
   int fd = ::kqueue();
   if (fd == -1)
   {
-    asio::error_code ec(errno,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "kqueue");
+    puerts_asio::error_code ec(errno,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "kqueue");
   }
   return fd;
 }
@@ -588,7 +588,7 @@ timespec* kqueue_reactor::get_timeout(long usec, timespec& ts)
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #undef ASIO_KQUEUE_EV_SET
 

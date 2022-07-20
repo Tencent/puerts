@@ -30,7 +30,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// A completion token that represents the currently executing coroutine.
 /**
@@ -145,7 +145,7 @@ struct use_awaitable_t
 
 /// A completion token object that represents the currently executing coroutine.
 /**
- * See the documentation for asio::use_awaitable_t for a usage example.
+ * See the documentation for puerts_asio::use_awaitable_t for a usage example.
  */
 #if defined(GENERATING_DOCUMENTATION)
 constexpr use_awaitable_t<> use_awaitable;
@@ -155,7 +155,7 @@ constexpr use_awaitable_t<> use_awaitable(0, 0, 0);
 __declspec(selectany) use_awaitable_t<> use_awaitable(0, 0, 0);
 #endif
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

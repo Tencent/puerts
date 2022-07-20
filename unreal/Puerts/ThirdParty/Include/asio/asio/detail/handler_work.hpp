@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 class executor;
 class io_context;
@@ -63,14 +63,14 @@ class handler_work_base
 {
 public:
   explicit handler_work_base(int, int, const Executor& ex) ASIO_NOEXCEPT
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
   template <typename OtherExecutor>
   handler_work_base(bool /*base1_owns_work*/, const Executor& ex,
       const OtherExecutor& /*candidate*/) ASIO_NOEXCEPT
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
@@ -95,7 +95,7 @@ public:
   void dispatch(Function& function, Handler& handler)
   {
     execution::execute(
-        asio::prefer(executor_,
+        puerts_asio::prefer(executor_,
           execution::blocking.possibly,
           execution::allocator((get_associated_allocator)(handler))),
         ASIO_MOVE_CAST(Function)(function));
@@ -179,7 +179,7 @@ public:
   void dispatch(Function& function, Handler& handler)
   {
     executor_.dispatch(ASIO_MOVE_CAST(Function)(function),
-        asio::get_associated_allocator(handler));
+        puerts_asio::get_associated_allocator(handler));
   }
 
 private:
@@ -278,7 +278,7 @@ public:
   void dispatch(Function& function, Handler& handler)
   {
     executor_.dispatch(ASIO_MOVE_CAST(Function)(function),
-        asio::get_associated_allocator(handler));
+        puerts_asio::get_associated_allocator(handler));
   }
 
 private:
@@ -317,9 +317,9 @@ public:
     : executor_(
         ex.target_type() == typeid(typename IoContext::executor_type)
           ? executor_type()
-          : asio::prefer(ex, execution::outstanding_work.tracked))
+          : puerts_asio::prefer(ex, execution::outstanding_work.tracked))
 #else // !defined(ASIO_NO_TYPEID)
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
 #endif // !defined(ASIO_NO_TYPEID)
   {
   }
@@ -329,14 +329,14 @@ public:
     : executor_(
         !base1_owns_work && ex == candidate
           ? executor_type()
-          : asio::prefer(ex, execution::outstanding_work.tracked))
+          : puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
   template <typename OtherExecutor>
   handler_work_base(bool /*base1_owns_work*/, const executor_type& ex,
       const OtherExecutor& /*candidate*/) ASIO_NOEXCEPT
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
@@ -361,7 +361,7 @@ public:
   void dispatch(Function& function, Handler&)
   {
     execution::execute(
-        asio::prefer(executor_, execution::blocking.possibly),
+        puerts_asio::prefer(executor_, execution::blocking.possibly),
         ASIO_MOVE_CAST(Function)(function));
   }
 
@@ -392,9 +392,9 @@ public:
     : executor_(
         ex.target_type() == typeid(typename IoContext::executor_type)
           ? executor_type()
-          : asio::prefer(ex, execution::outstanding_work.tracked))
+          : puerts_asio::prefer(ex, execution::outstanding_work.tracked))
 #else // !defined(ASIO_NO_TYPEID)
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
 #endif // !defined(ASIO_NO_TYPEID)
   {
   }
@@ -404,14 +404,14 @@ public:
     : executor_(
         !base1_owns_work && ex == candidate
           ? executor_type()
-          : asio::prefer(ex, execution::outstanding_work.tracked))
+          : puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
   template <typename OtherExecutor>
   handler_work_base(bool /*base1_owns_work*/, const executor_type& ex,
       const OtherExecutor& /*candidate*/) ASIO_NOEXCEPT
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
@@ -436,7 +436,7 @@ public:
   void dispatch(Function& function, Handler&)
   {
     execution::execute(
-        asio::prefer(executor_, execution::blocking.possibly),
+        puerts_asio::prefer(executor_, execution::blocking.possibly),
         ASIO_MOVE_CAST(Function)(function));
   }
 
@@ -460,7 +460,7 @@ public:
   handler_work(Handler& handler, const IoExecutor& io_ex) ASIO_NOEXCEPT
     : base1_type(0, 0, io_ex),
       base2_type(base1_type::owns_work(),
-          asio::get_associated_executor(handler, io_ex), io_ex)
+          puerts_asio::get_associated_executor(handler, io_ex), io_ex)
   {
   }
 
@@ -518,7 +518,7 @@ public:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

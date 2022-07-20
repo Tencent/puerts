@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -35,7 +35,7 @@ struct as_operation
   typename remove_cvref<Executor>::type ex_;
   typename remove_cvref<Receiver>::type receiver_;
 #if !defined(ASIO_HAS_MOVE)
-  asio::detail::shared_ptr<asio::detail::atomic_count> ref_count_;
+  puerts_asio::detail::shared_ptr<puerts_asio::detail::atomic_count> ref_count_;
 #endif // !defined(ASIO_HAS_MOVE)
 
   template <typename E, typename R>
@@ -43,7 +43,7 @@ struct as_operation
     : ex_(ASIO_MOVE_CAST(E)(e)),
       receiver_(ASIO_MOVE_CAST(R)(r))
 #if !defined(ASIO_HAS_MOVE)
-      , ref_count_(new asio::detail::atomic_count(1))
+      , ref_count_(new puerts_asio::detail::atomic_count(1))
 #endif // !defined(ASIO_HAS_MOVE)
   {
   }
@@ -88,7 +88,7 @@ namespace traits {
 
 template <typename Executor, typename Receiver>
 struct start_member<
-    asio::execution::detail::as_operation<Executor, Receiver> >
+    puerts_asio::execution::detail::as_operation<Executor, Receiver> >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
@@ -98,7 +98,7 @@ struct start_member<
 #endif // !defined(ASIO_HAS_DEDUCED_START_MEMBER_TRAIT)
 
 } // namespace traits
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

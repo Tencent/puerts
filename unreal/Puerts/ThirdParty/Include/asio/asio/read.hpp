@@ -27,10 +27,10 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /**
- * @defgroup read asio::read
+ * @defgroup read puerts_asio::read
  *
  * @brief The @c read function is a composed operation that reads a certain
  * amount of data from a stream before returning.
@@ -59,19 +59,19 @@ namespace asio {
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  *
  * @par Example
  * To read into a single data buffer use the @ref buffer function as follows:
- * @code asio::read(s, asio::buffer(data, size)); @endcode
+ * @code puerts_asio::read(s, puerts_asio::buffer(data, size)); @endcode
  * See the @ref buffer documentation for information on reading into multiple
  * buffers in one go, and how to use it with arrays, boost::array or
  * std::vector.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, buffers,
- *     asio::transfer_all()); @endcode
+ *     puerts_asio::transfer_all()); @endcode
  */
 template <typename SyncReadStream, typename MutableBufferSequence>
 std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
@@ -105,19 +105,19 @@ std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
  *
  * @par Example
  * To read into a single data buffer use the @ref buffer function as follows:
- * @code asio::read(s, asio::buffer(data, size), ec); @endcode
+ * @code puerts_asio::read(s, puerts_asio::buffer(data, size), ec); @endcode
  * See the @ref buffer documentation for information on reading into multiple
  * buffers in one go, and how to use it with arrays, boost::array or
  * std::vector.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, buffers,
- *     asio::transfer_all(), ec); @endcode
+ *     puerts_asio::transfer_all(), ec); @endcode
  */
 template <typename SyncReadStream, typename MutableBufferSequence>
 std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
-    asio::error_code& ec,
+    puerts_asio::error_code& ec,
     typename constraint<
       is_mutable_buffer_sequence<MutableBufferSequence>::value
     >::type = 0);
@@ -147,7 +147,7 @@ std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -158,12 +158,12 @@ std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  *
  * @par Example
  * To read into a single data buffer use the @ref buffer function as follows:
- * @code asio::read(s, asio::buffer(data, size),
- *     asio::transfer_at_least(32)); @endcode
+ * @code puerts_asio::read(s, puerts_asio::buffer(data, size),
+ *     puerts_asio::transfer_at_least(32)); @endcode
  * See the @ref buffer documentation for information on reading into multiple
  * buffers in one go, and how to use it with arrays, boost::array or
  * std::vector.
@@ -201,7 +201,7 @@ std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -218,7 +218,7 @@ std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
 template <typename SyncReadStream, typename MutableBufferSequence,
     typename CompletionCondition>
 std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
-    CompletionCondition completion_condition, asio::error_code& ec,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_mutable_buffer_sequence<MutableBufferSequence>::value
     >::type = 0);
@@ -245,12 +245,12 @@ std::size_t read(SyncReadStream& s, const MutableBufferSequence& buffers,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, buffers,
- *     asio::transfer_all()); @endcode
+ *     puerts_asio::transfer_all()); @endcode
  */
 template <typename SyncReadStream, typename DynamicBuffer_v1>
 std::size_t read(SyncReadStream& s,
@@ -284,14 +284,14 @@ std::size_t read(SyncReadStream& s,
  * @returns The number of bytes transferred.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, buffers,
- *     asio::transfer_all(), ec); @endcode
+ *     puerts_asio::transfer_all(), ec); @endcode
  */
 template <typename SyncReadStream, typename DynamicBuffer_v1>
 std::size_t read(SyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    asio::error_code& ec,
+    puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type = 0,
@@ -322,7 +322,7 @@ std::size_t read(SyncReadStream& s,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -333,7 +333,7 @@ std::size_t read(SyncReadStream& s,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  */
 template <typename SyncReadStream, typename DynamicBuffer_v1,
     typename CompletionCondition>
@@ -370,7 +370,7 @@ std::size_t read(SyncReadStream& s,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -388,7 +388,7 @@ template <typename SyncReadStream, typename DynamicBuffer_v1,
     typename CompletionCondition>
 std::size_t read(SyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    CompletionCondition completion_condition, asio::error_code& ec,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type = 0,
@@ -418,12 +418,12 @@ std::size_t read(SyncReadStream& s,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, b,
- *     asio::transfer_all()); @endcode
+ *     puerts_asio::transfer_all()); @endcode
  */
 template <typename SyncReadStream, typename Allocator>
 std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b);
@@ -450,13 +450,13 @@ std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b);
  * @returns The number of bytes transferred.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, b,
- *     asio::transfer_all(), ec); @endcode
+ *     puerts_asio::transfer_all(), ec); @endcode
  */
 template <typename SyncReadStream, typename Allocator>
 std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
-    asio::error_code& ec);
+    puerts_asio::error_code& ec);
 
 /// Attempt to read a certain amount of data from a stream before returning.
 /**
@@ -480,7 +480,7 @@ std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -491,7 +491,7 @@ std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  */
 template <typename SyncReadStream, typename Allocator,
     typename CompletionCondition>
@@ -520,7 +520,7 @@ std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -537,7 +537,7 @@ std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
 template <typename SyncReadStream, typename Allocator,
     typename CompletionCondition>
 std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
-    CompletionCondition completion_condition, asio::error_code& ec);
+    CompletionCondition completion_condition, puerts_asio::error_code& ec);
 
 #endif // !defined(ASIO_NO_IOSTREAM)
 #endif // !defined(ASIO_NO_EXTENSIONS)
@@ -563,12 +563,12 @@ std::size_t read(SyncReadStream& s, basic_streambuf<Allocator>& b,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, buffers,
- *     asio::transfer_all()); @endcode
+ *     puerts_asio::transfer_all()); @endcode
  */
 template <typename SyncReadStream, typename DynamicBuffer_v2>
 std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
@@ -598,13 +598,13 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  * @returns The number of bytes transferred.
  *
  * @note This overload is equivalent to calling:
- * @code asio::read(
+ * @code puerts_asio::read(
  *     s, buffers,
- *     asio::transfer_all(), ec); @endcode
+ *     puerts_asio::transfer_all(), ec); @endcode
  */
 template <typename SyncReadStream, typename DynamicBuffer_v2>
 std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
-    asio::error_code& ec,
+    puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type = 0);
@@ -632,7 +632,7 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -643,7 +643,7 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  *
  * @returns The number of bytes transferred.
  *
- * @throws asio::system_error Thrown on failure.
+ * @throws puerts_asio::system_error Thrown on failure.
  */
 template <typename SyncReadStream, typename DynamicBuffer_v2,
     typename CompletionCondition>
@@ -676,7 +676,7 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -693,14 +693,14 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
 template <typename SyncReadStream, typename DynamicBuffer_v2,
     typename CompletionCondition>
 std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
-    CompletionCondition completion_condition, asio::error_code& ec,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type = 0);
 
 /*@}*/
 /**
- * @defgroup async_read asio::async_read
+ * @defgroup async_read puerts_asio::async_read
  *
  * @brief The @c async_read function is a composed asynchronous operation that
  * reads a certain amount of data from a stream before completion.
@@ -739,7 +739,7 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -750,26 +750,26 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Example
  * To read into a single data buffer use the @ref buffer function as follows:
  * @code
- * asio::async_read(s, asio::buffer(data, size), handler);
+ * puerts_asio::async_read(s, puerts_asio::buffer(data, size), handler);
  * @endcode
  * See the @ref buffer documentation for information on reading into multiple
  * buffers in one go, and how to use it with arrays, boost::array or
  * std::vector.
  *
  * @note This overload is equivalent to calling:
- * @code asio::async_read(
+ * @code puerts_asio::async_read(
  *     s, buffers,
- *     asio::transfer_all(),
+ *     puerts_asio::transfer_all(),
  *     handler); @endcode
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -779,12 +779,12 @@ std::size_t read(SyncReadStream& s, DynamicBuffer_v2 buffers,
  * @c async_read_some operation.
  */
 template <typename AsyncReadStream, typename MutableBufferSequence,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
     ASIO_MOVE_ARG(ReadHandler) handler
       ASIO_DEFAULT_COMPLETION_TOKEN(
@@ -820,7 +820,7 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest async_read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -833,7 +833,7 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -844,13 +844,13 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Example
  * To read into a single data buffer use the @ref buffer function as follows:
- * @code asio::async_read(s,
- *     asio::buffer(data, size),
- *     asio::transfer_at_least(32),
+ * @code puerts_asio::async_read(s,
+ *     puerts_asio::buffer(data, size),
+ *     puerts_asio::transfer_at_least(32),
  *     handler); @endcode
  * See the @ref buffer documentation for information on reading into multiple
  * buffers in one go, and how to use it with arrays, boost::array or
@@ -858,7 +858,7 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -869,12 +869,12 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  */
 template <typename AsyncReadStream,
     typename MutableBufferSequence, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(ReadHandler) handler
@@ -917,7 +917,7 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -928,17 +928,17 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @note This overload is equivalent to calling:
- * @code asio::async_read(
+ * @code puerts_asio::async_read(
  *     s, buffers,
- *     asio::transfer_all(),
+ *     puerts_asio::transfer_all(),
  *     handler); @endcode
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -948,12 +948,12 @@ async_read(AsyncReadStream& s, const MutableBufferSequence& buffers,
  * @c async_read_some operation.
  */
 template <typename AsyncReadStream, typename DynamicBuffer_v1,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     ASIO_MOVE_ARG(ReadHandler) handler
@@ -998,7 +998,7 @@ async_read(AsyncReadStream& s,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest async_read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -1011,7 +1011,7 @@ async_read(AsyncReadStream& s,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -1022,11 +1022,11 @@ async_read(AsyncReadStream& s,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -1037,12 +1037,12 @@ async_read(AsyncReadStream& s,
  */
 template <typename AsyncReadStream,
     typename DynamicBuffer_v1, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     CompletionCondition completion_condition,
@@ -1088,7 +1088,7 @@ async_read(AsyncReadStream& s,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -1099,17 +1099,17 @@ async_read(AsyncReadStream& s,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @note This overload is equivalent to calling:
- * @code asio::async_read(
+ * @code puerts_asio::async_read(
  *     s, b,
- *     asio::transfer_all(),
+ *     puerts_asio::transfer_all(),
  *     handler); @endcode
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -1119,12 +1119,12 @@ async_read(AsyncReadStream& s,
  * @c async_read_some operation.
  */
 template <typename AsyncReadStream, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
     ASIO_MOVE_ARG(ReadHandler) handler
       ASIO_DEFAULT_COMPLETION_TOKEN(
@@ -1160,7 +1160,7 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest async_read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -1173,7 +1173,7 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -1184,11 +1184,11 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -1199,12 +1199,12 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  */
 template <typename AsyncReadStream,
     typename Allocator, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(ReadHandler) handler
@@ -1246,7 +1246,7 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -1257,17 +1257,17 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @note This overload is equivalent to calling:
- * @code asio::async_read(
+ * @code puerts_asio::async_read(
  *     s, buffers,
- *     asio::transfer_all(),
+ *     puerts_asio::transfer_all(),
  *     handler); @endcode
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -1277,12 +1277,12 @@ async_read(AsyncReadStream& s, basic_streambuf<Allocator>& b,
  * @c async_read_some operation.
  */
 template <typename AsyncReadStream, typename DynamicBuffer_v2,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     ASIO_MOVE_ARG(ReadHandler) handler
       ASIO_DEFAULT_COMPLETION_TOKEN(
@@ -1323,7 +1323,7 @@ async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
  * must be:
  * @code std::size_t completion_condition(
  *   // Result of latest async_read_some operation.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // Number of bytes transferred so far.
  *   std::size_t bytes_transferred
@@ -1336,7 +1336,7 @@ async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
  * Copies will be made of the handler as required. The function signature of the
  * handler must be:
  * @code void handler(
- *   const asio::error_code& error, // Result of operation.
+ *   const puerts_asio::error_code& error, // Result of operation.
  *
  *   std::size_t bytes_transferred           // Number of bytes copied into the
  *                                           // buffers. If an error occurred,
@@ -1347,11 +1347,11 @@ async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
  * Regardless of whether the asynchronous operation completes immediately or
  * not, the handler will not be invoked from within this function. On
  * immediate completion, invocation of the handler will be performed in a
- * manner equivalent to using asio::post().
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Per-Operation Cancellation
  * This asynchronous operation supports cancellation for the following
- * asio::cancellation_type values:
+ * puerts_asio::cancellation_type values:
  *
  * @li @c cancellation_type::terminal
  *
@@ -1362,12 +1362,12 @@ async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
  */
 template <typename AsyncReadStream,
     typename DynamicBuffer_v2, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler
         ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(
           typename AsyncReadStream::executor_type)>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(ReadHandler) handler
@@ -1379,7 +1379,7 @@ async_read(AsyncReadStream& s, DynamicBuffer_v2 buffers,
 
 /*@}*/
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

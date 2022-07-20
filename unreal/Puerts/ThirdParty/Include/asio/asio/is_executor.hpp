@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// The is_executor trait detects whether a type T meets the Executor type
 /// requirements.
@@ -34,12 +34,12 @@ struct is_executor
 #if defined(GENERATING_DOCUMENTATION)
   : integral_constant<bool, automatically_determined>
 #else // defined(GENERATING_DOCUMENTATION)
-  : asio::detail::is_executor<T>
+  : puerts_asio::detail::is_executor<T>
 #endif // defined(GENERATING_DOCUMENTATION)
 {
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

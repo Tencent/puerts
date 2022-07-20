@@ -42,7 +42,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 #if !defined(ASIO_IP_BASIC_RESOLVER_FWD_DECL)
@@ -227,7 +227,7 @@ public:
   /**
    * This function forces the completion of any pending asynchronous
    * operations on the host resolver. The handler for each cancelled operation
-   * will be invoked with the asio::error::operation_aborted error code.
+   * will be invoked with the puerts_asio::error::operation_aborted error code.
    */
   void cancel()
   {
@@ -246,14 +246,14 @@ public:
    * successful call to this function is guaranteed to return a non-empty
    * range.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   results_type resolve(const query& q)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     results_type r = impl_.get_service().resolve(
         impl_.get_implementation(), q, ec);
-    asio::detail::throw_error(ec, "resolve");
+    puerts_asio::detail::throw_error(ec, "resolve");
     return r;
   }
 
@@ -270,7 +270,7 @@ public:
    * empty range is returned if an error occurs. A successful call to this
    * function is guaranteed to return a non-empty range.
    */
-  results_type resolve(const query& q, asio::error_code& ec)
+  results_type resolve(const query& q, puerts_asio::error_code& ec)
   {
     return impl_.get_service().resolve(impl_.get_implementation(), q, ec);
   }
@@ -296,7 +296,7 @@ public:
    * successful call to this function is guaranteed to return a non-empty
    * range.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note On POSIX systems, host names may be locally defined in the file
    * <tt>/etc/hosts</tt>. On Windows, host names may be defined in the file
@@ -349,7 +349,7 @@ public:
    * may use additional locations when resolving service names.
    */
   results_type resolve(ASIO_STRING_VIEW_PARAM host,
-      ASIO_STRING_VIEW_PARAM service, asio::error_code& ec)
+      ASIO_STRING_VIEW_PARAM service, puerts_asio::error_code& ec)
   {
     return resolve(host, service, resolver_base::flags(), ec);
   }
@@ -379,7 +379,7 @@ public:
    * successful call to this function is guaranteed to return a non-empty
    * range.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note On POSIX systems, host names may be locally defined in the file
    * <tt>/etc/hosts</tt>. On Windows, host names may be defined in the file
@@ -395,12 +395,12 @@ public:
   results_type resolve(ASIO_STRING_VIEW_PARAM host,
       ASIO_STRING_VIEW_PARAM service, resolver_base::flags resolve_flags)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     basic_resolver_query<protocol_type> q(static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
     results_type r = impl_.get_service().resolve(
         impl_.get_implementation(), q, ec);
-    asio::detail::throw_error(ec, "resolve");
+    puerts_asio::detail::throw_error(ec, "resolve");
     return r;
   }
 
@@ -444,7 +444,7 @@ public:
    */
   results_type resolve(ASIO_STRING_VIEW_PARAM host,
       ASIO_STRING_VIEW_PARAM service, resolver_base::flags resolve_flags,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     basic_resolver_query<protocol_type> q(static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
@@ -474,7 +474,7 @@ public:
    * successful call to this function is guaranteed to return a non-empty
    * range.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note On POSIX systems, host names may be locally defined in the file
    * <tt>/etc/hosts</tt>. On Windows, host names may be defined in the file
@@ -531,7 +531,7 @@ public:
    */
   results_type resolve(const protocol_type& protocol,
       ASIO_STRING_VIEW_PARAM host, ASIO_STRING_VIEW_PARAM service,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     return resolve(protocol, host, service, resolver_base::flags(), ec);
   }
@@ -564,7 +564,7 @@ public:
    * successful call to this function is guaranteed to return a non-empty
    * range.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note On POSIX systems, host names may be locally defined in the file
    * <tt>/etc/hosts</tt>. On Windows, host names may be defined in the file
@@ -581,13 +581,13 @@ public:
       ASIO_STRING_VIEW_PARAM host, ASIO_STRING_VIEW_PARAM service,
       resolver_base::flags resolve_flags)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     basic_resolver_query<protocol_type> q(
         protocol, static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
     results_type r = impl_.get_service().resolve(
         impl_.get_implementation(), q, ec);
-    asio::detail::throw_error(ec, "resolve");
+    puerts_asio::detail::throw_error(ec, "resolve");
     return r;
   }
 
@@ -634,7 +634,7 @@ public:
    */
   results_type resolve(const protocol_type& protocol,
       ASIO_STRING_VIEW_PARAM host, ASIO_STRING_VIEW_PARAM service,
-      resolver_base::flags resolve_flags, asio::error_code& ec)
+      resolver_base::flags resolve_flags, puerts_asio::error_code& ec)
   {
     basic_resolver_query<protocol_type> q(
         protocol, static_cast<std::string>(host),
@@ -655,29 +655,29 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         results_type)) ResolveHandler
           ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
-      void (asio::error_code, results_type))
+      void (puerts_asio::error_code, results_type))
   async_resolve(const query& q,
       ASIO_MOVE_ARG(ResolveHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    return asio::async_initiate<ResolveHandler,
-      void (asio::error_code, results_type)>(
+    return puerts_asio::async_initiate<ResolveHandler,
+      void (puerts_asio::error_code, results_type)>(
         initiate_async_resolve(this), handler, q);
   }
 #endif // !defined(ASIO_NO_DEPRECATED)
@@ -702,13 +702,13 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -725,11 +725,11 @@ public:
    * may use additional locations when resolving service names.
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         results_type)) ResolveHandler
           ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
-      void (asio::error_code, results_type))
+      void (puerts_asio::error_code, results_type))
   async_resolve(ASIO_STRING_VIEW_PARAM host,
       ASIO_STRING_VIEW_PARAM service,
       ASIO_MOVE_ARG(ResolveHandler) handler
@@ -764,13 +764,13 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -787,11 +787,11 @@ public:
    * may use additional locations when resolving service names.
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         results_type)) ResolveHandler
           ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
-      void (asio::error_code, results_type))
+      void (puerts_asio::error_code, results_type))
   async_resolve(ASIO_STRING_VIEW_PARAM host,
       ASIO_STRING_VIEW_PARAM service,
       resolver_base::flags resolve_flags,
@@ -801,8 +801,8 @@ public:
     basic_resolver_query<protocol_type> q(static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
 
-    return asio::async_initiate<ResolveHandler,
-      void (asio::error_code, results_type)>(
+    return puerts_asio::async_initiate<ResolveHandler,
+      void (puerts_asio::error_code, results_type)>(
         initiate_async_resolve(this), handler, q);
   }
 
@@ -829,13 +829,13 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -852,11 +852,11 @@ public:
    * may use additional locations when resolving service names.
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         results_type)) ResolveHandler
           ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
-      void (asio::error_code, results_type))
+      void (puerts_asio::error_code, results_type))
   async_resolve(const protocol_type& protocol,
       ASIO_STRING_VIEW_PARAM host, ASIO_STRING_VIEW_PARAM service,
       ASIO_MOVE_ARG(ResolveHandler) handler
@@ -894,13 +894,13 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -917,11 +917,11 @@ public:
    * may use additional locations when resolving service names.
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         results_type)) ResolveHandler
           ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
-      void (asio::error_code, results_type))
+      void (puerts_asio::error_code, results_type))
   async_resolve(const protocol_type& protocol,
       ASIO_STRING_VIEW_PARAM host, ASIO_STRING_VIEW_PARAM service,
       resolver_base::flags resolve_flags,
@@ -932,8 +932,8 @@ public:
         protocol, static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
 
-    return asio::async_initiate<ResolveHandler,
-      void (asio::error_code, results_type)>(
+    return puerts_asio::async_initiate<ResolveHandler,
+      void (puerts_asio::error_code, results_type)>(
         initiate_async_resolve(this), handler, q);
   }
 
@@ -949,14 +949,14 @@ public:
    * successful call to this function is guaranteed to return a non-empty
    * range.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   results_type resolve(const endpoint_type& e)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     results_type i = impl_.get_service().resolve(
         impl_.get_implementation(), e, ec);
-    asio::detail::throw_error(ec, "resolve");
+    puerts_asio::detail::throw_error(ec, "resolve");
     return i;
   }
 
@@ -974,7 +974,7 @@ public:
    * empty range is returned if an error occurs. A successful call to this
    * function is guaranteed to return a non-empty range.
    */
-  results_type resolve(const endpoint_type& e, asio::error_code& ec)
+  results_type resolve(const endpoint_type& e, puerts_asio::error_code& ec)
   {
     return impl_.get_service().resolve(impl_.get_implementation(), e, ec);
   }
@@ -992,29 +992,29 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         results_type)) ResolveHandler
           ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
-      void (asio::error_code, results_type))
+      void (puerts_asio::error_code, results_type))
   async_resolve(const endpoint_type& e,
       ASIO_MOVE_ARG(ResolveHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    return asio::async_initiate<ResolveHandler,
-      void (asio::error_code, results_type)>(
+    return puerts_asio::async_initiate<ResolveHandler,
+      void (puerts_asio::error_code, results_type)>(
         initiate_async_resolve(this), handler, e);
   }
 
@@ -1047,7 +1047,7 @@ private:
       ASIO_RESOLVE_HANDLER_CHECK(
           ResolveHandler, handler, results_type) type_check;
 
-      asio::detail::non_const_lvalue<ResolveHandler> handler2(handler);
+      puerts_asio::detail::non_const_lvalue<ResolveHandler> handler2(handler);
       self_->impl_.get_service().async_resolve(
           self_->impl_.get_implementation(), q,
           handler2.value, self_->impl_.get_executor());
@@ -1058,18 +1058,18 @@ private:
   };
 
 # if defined(ASIO_WINDOWS_RUNTIME)
-  asio::detail::io_object_impl<
-    asio::detail::winrt_resolver_service<InternetProtocol>,
+  puerts_asio::detail::io_object_impl<
+    puerts_asio::detail::winrt_resolver_service<InternetProtocol>,
     Executor> impl_;
 # else
-  asio::detail::io_object_impl<
-    asio::detail::resolver_service<InternetProtocol>,
+  puerts_asio::detail::io_object_impl<
+    puerts_asio::detail::resolver_service<InternetProtocol>,
     Executor> impl_;
 # endif
 };
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

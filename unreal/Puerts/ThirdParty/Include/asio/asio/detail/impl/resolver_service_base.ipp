@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class resolver_service_base::work_scheduler_runner
@@ -33,7 +33,7 @@ public:
 
   void operator()()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     work_scheduler_.run(ec);
   }
 
@@ -42,7 +42,7 @@ private:
 };
 
 resolver_service_base::resolver_service_base(execution_context& context)
-  : scheduler_(asio::use_service<scheduler_impl>(context)),
+  : scheduler_(puerts_asio::use_service<scheduler_impl>(context)),
     work_scheduler_(new scheduler_impl(context, -1, false)),
     work_thread_(0)
 {
@@ -135,23 +135,23 @@ void resolver_service_base::start_resolve_op(resolve_op* op)
   }
   else
   {
-    op->ec_ = asio::error::operation_not_supported;
+    op->ec_ = puerts_asio::error::operation_not_supported;
     scheduler_.post_immediate_completion(op, false);
   }
 }
 
 void resolver_service_base::start_work_thread()
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   if (!work_thread_.get())
   {
-    work_thread_.reset(new asio::detail::thread(
+    work_thread_.reset(new puerts_asio::detail::thread(
           work_scheduler_runner(*work_scheduler_)));
   }
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

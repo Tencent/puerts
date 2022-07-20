@@ -21,7 +21,7 @@
 # include <boost/throw_exception.hpp>
 #endif // defined(ASIO_BOOST_THROW_EXCEPTION)
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_HAS_BOOST_THROW_EXCEPTION)
@@ -46,6 +46,6 @@ void throw_exception(const Exception& e)
 #endif // defined(ASIO_HAS_BOOST_THROW_EXCEPTION)
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_THROW_EXCEPTION_HPP

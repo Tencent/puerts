@@ -27,7 +27,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Class to adapt a redirect_error_t as a completion handler.
@@ -45,7 +45,7 @@ public:
   }
 
   template <typename RedirectedHandler>
-  redirect_error_handler(asio::error_code& ec,
+  redirect_error_handler(puerts_asio::error_code& ec,
       ASIO_MOVE_ARG(RedirectedHandler) h)
     : ec_(ec),
       handler_(ASIO_MOVE_CAST(RedirectedHandler)(h))
@@ -61,7 +61,7 @@ public:
 
   template <typename Arg, typename... Args>
   typename enable_if<
-    !is_same<typename decay<Arg>::type, asio::error_code>::value
+    !is_same<typename decay<Arg>::type, puerts_asio::error_code>::value
   >::type
   operator()(ASIO_MOVE_ARG(Arg) arg, ASIO_MOVE_ARG(Args)... args)
   {
@@ -71,7 +71,7 @@ public:
   }
 
   template <typename... Args>
-  void operator()(const asio::error_code& ec,
+  void operator()(const puerts_asio::error_code& ec,
       ASIO_MOVE_ARG(Args)... args)
   {
     ec_ = ec;
@@ -83,7 +83,7 @@ public:
 
   template <typename Arg>
   typename enable_if<
-    !is_same<typename decay<Arg>::type, asio::error_code>::value
+    !is_same<typename decay<Arg>::type, puerts_asio::error_code>::value
   >::type
   operator()(ASIO_MOVE_ARG(Arg) arg)
   {
@@ -91,7 +91,7 @@ public:
         ASIO_MOVE_CAST(Arg)(arg));
   }
 
-  void operator()(const asio::error_code& ec)
+  void operator()(const puerts_asio::error_code& ec)
   {
     ec_ = ec;
     ASIO_MOVE_OR_LVALUE(Handler)(handler_)();
@@ -100,7 +100,7 @@ public:
 #define ASIO_PRIVATE_REDIRECT_ERROR_DEF(n) \
   template <typename Arg, ASIO_VARIADIC_TPARAMS(n)> \
   typename enable_if< \
-    !is_same<typename decay<Arg>::type, asio::error_code>::value \
+    !is_same<typename decay<Arg>::type, puerts_asio::error_code>::value \
   >::type \
   operator()(ASIO_MOVE_ARG(Arg) arg, ASIO_VARIADIC_MOVE_PARAMS(n)) \
   { \
@@ -110,7 +110,7 @@ public:
   } \
   \
   template <ASIO_VARIADIC_TPARAMS(n)> \
-  void operator()(const asio::error_code& ec, \
+  void operator()(const puerts_asio::error_code& ec, \
       ASIO_VARIADIC_MOVE_PARAMS(n)) \
   { \
     ec_ = ec; \
@@ -124,7 +124,7 @@ public:
 #endif // defined(ASIO_HAS_VARIADIC_TEMPLATES)
 
 //private:
-  asio::error_code& ec_;
+  puerts_asio::error_code& ec_;
   Handler handler_;
 };
 
@@ -195,13 +195,13 @@ struct redirect_error_signature
 #if defined(ASIO_HAS_VARIADIC_TEMPLATES)
 
 template <typename R, typename... Args>
-struct redirect_error_signature<R(asio::error_code, Args...)>
+struct redirect_error_signature<R(puerts_asio::error_code, Args...)>
 {
   typedef R type(Args...);
 };
 
 template <typename R, typename... Args>
-struct redirect_error_signature<R(const asio::error_code&, Args...)>
+struct redirect_error_signature<R(const puerts_asio::error_code&, Args...)>
 {
   typedef R type(Args...);
 };
@@ -209,25 +209,25 @@ struct redirect_error_signature<R(const asio::error_code&, Args...)>
 # if defined(ASIO_HAS_REF_QUALIFIED_FUNCTIONS)
 
 template <typename R, typename... Args>
-struct redirect_error_signature<R(asio::error_code, Args...) &>
+struct redirect_error_signature<R(puerts_asio::error_code, Args...) &>
 {
   typedef R type(Args...) &;
 };
 
 template <typename R, typename... Args>
-struct redirect_error_signature<R(const asio::error_code&, Args...) &>
+struct redirect_error_signature<R(const puerts_asio::error_code&, Args...) &>
 {
   typedef R type(Args...) &;
 };
 
 template <typename R, typename... Args>
-struct redirect_error_signature<R(asio::error_code, Args...) &&>
+struct redirect_error_signature<R(puerts_asio::error_code, Args...) &&>
 {
   typedef R type(Args...) &&;
 };
 
 template <typename R, typename... Args>
-struct redirect_error_signature<R(const asio::error_code&, Args...) &&>
+struct redirect_error_signature<R(const puerts_asio::error_code&, Args...) &&>
 {
   typedef R type(Args...) &&;
 };
@@ -236,42 +236,42 @@ struct redirect_error_signature<R(const asio::error_code&, Args...) &&>
 
 template <typename R, typename... Args>
 struct redirect_error_signature<
-  R(asio::error_code, Args...) noexcept>
+  R(puerts_asio::error_code, Args...) noexcept>
 {
   typedef R type(Args...) & noexcept;
 };
 
 template <typename R, typename... Args>
 struct redirect_error_signature<
-  R(const asio::error_code&, Args...) noexcept>
+  R(const puerts_asio::error_code&, Args...) noexcept>
 {
   typedef R type(Args...) & noexcept;
 };
 
 template <typename R, typename... Args>
 struct redirect_error_signature<
-  R(asio::error_code, Args...) & noexcept>
+  R(puerts_asio::error_code, Args...) & noexcept>
 {
   typedef R type(Args...) & noexcept;
 };
 
 template <typename R, typename... Args>
 struct redirect_error_signature<
-  R(const asio::error_code&, Args...) & noexcept>
+  R(const puerts_asio::error_code&, Args...) & noexcept>
 {
   typedef R type(Args...) & noexcept;
 };
 
 template <typename R, typename... Args>
 struct redirect_error_signature<
-  R(asio::error_code, Args...) && noexcept>
+  R(puerts_asio::error_code, Args...) && noexcept>
 {
   typedef R type(Args...) && noexcept;
 };
 
 template <typename R, typename... Args>
 struct redirect_error_signature<
-  R(const asio::error_code&, Args...) && noexcept>
+  R(const puerts_asio::error_code&, Args...) && noexcept>
 {
   typedef R type(Args...) && noexcept;
 };
@@ -281,13 +281,13 @@ struct redirect_error_signature<
 #else // defined(ASIO_HAS_VARIADIC_TEMPLATES)
 
 template <typename R>
-struct redirect_error_signature<R(asio::error_code)>
+struct redirect_error_signature<R(puerts_asio::error_code)>
 {
   typedef R type();
 };
 
 template <typename R>
-struct redirect_error_signature<R(const asio::error_code&)>
+struct redirect_error_signature<R(const puerts_asio::error_code&)>
 {
   typedef R type();
 };
@@ -295,14 +295,14 @@ struct redirect_error_signature<R(const asio::error_code&)>
 #define ASIO_PRIVATE_REDIRECT_ERROR_DEF(n) \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(asio::error_code, ASIO_VARIADIC_TARGS(n))> \
+      R(puerts_asio::error_code, ASIO_VARIADIC_TARGS(n))> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)); \
   }; \
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(const asio::error_code&, ASIO_VARIADIC_TARGS(n))> \
+      R(const puerts_asio::error_code&, ASIO_VARIADIC_TARGS(n))> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)); \
   }; \
@@ -313,25 +313,25 @@ struct redirect_error_signature<R(const asio::error_code&)>
 # if defined(ASIO_HAS_REF_QUALIFIED_FUNCTIONS)
 
 template <typename R>
-struct redirect_error_signature<R(asio::error_code) &>
+struct redirect_error_signature<R(puerts_asio::error_code) &>
 {
   typedef R type() &;
 };
 
 template <typename R>
-struct redirect_error_signature<R(const asio::error_code&) &>
+struct redirect_error_signature<R(const puerts_asio::error_code&) &>
 {
   typedef R type() &;
 };
 
 template <typename R>
-struct redirect_error_signature<R(asio::error_code) &&>
+struct redirect_error_signature<R(puerts_asio::error_code) &&>
 {
   typedef R type() &&;
 };
 
 template <typename R>
-struct redirect_error_signature<R(const asio::error_code&) &&>
+struct redirect_error_signature<R(const puerts_asio::error_code&) &&>
 {
   typedef R type() &&;
 };
@@ -339,28 +339,28 @@ struct redirect_error_signature<R(const asio::error_code&) &&>
 #define ASIO_PRIVATE_REDIRECT_ERROR_DEF(n) \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(asio::error_code, ASIO_VARIADIC_TARGS(n)) &> \
+      R(puerts_asio::error_code, ASIO_VARIADIC_TARGS(n)) &> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) &; \
   }; \
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(const asio::error_code&, ASIO_VARIADIC_TARGS(n)) &> \
+      R(const puerts_asio::error_code&, ASIO_VARIADIC_TARGS(n)) &> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) &; \
   }; \
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(asio::error_code, ASIO_VARIADIC_TARGS(n)) &&> \
+      R(puerts_asio::error_code, ASIO_VARIADIC_TARGS(n)) &&> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) &&; \
   }; \
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(const asio::error_code&, ASIO_VARIADIC_TARGS(n)) &&> \
+      R(const puerts_asio::error_code&, ASIO_VARIADIC_TARGS(n)) &&> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) &&; \
   }; \
@@ -372,42 +372,42 @@ struct redirect_error_signature<R(const asio::error_code&) &&>
 
 template <typename R>
 struct redirect_error_signature<
-  R(asio::error_code) noexcept>
+  R(puerts_asio::error_code) noexcept>
 {
   typedef R type() noexcept;
 };
 
 template <typename R>
 struct redirect_error_signature<
-  R(const asio::error_code&) noexcept>
+  R(const puerts_asio::error_code&) noexcept>
 {
   typedef R type() noexcept;
 };
 
 template <typename R>
 struct redirect_error_signature<
-  R(asio::error_code) & noexcept>
+  R(puerts_asio::error_code) & noexcept>
 {
   typedef R type() & noexcept;
 };
 
 template <typename R>
 struct redirect_error_signature<
-  R(const asio::error_code&) & noexcept>
+  R(const puerts_asio::error_code&) & noexcept>
 {
   typedef R type() & noexcept;
 };
 
 template <typename R>
 struct redirect_error_signature<
-  R(asio::error_code) && noexcept>
+  R(puerts_asio::error_code) && noexcept>
 {
   typedef R type() && noexcept;
 };
 
 template <typename R>
 struct redirect_error_signature<
-  R(const asio::error_code&) && noexcept>
+  R(const puerts_asio::error_code&) && noexcept>
 {
   typedef R type() && noexcept;
 };
@@ -415,14 +415,14 @@ struct redirect_error_signature<
 #define ASIO_PRIVATE_REDIRECT_ERROR_DEF(n) \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(asio::error_code, ASIO_VARIADIC_TARGS(n)) noexcept> \
+      R(puerts_asio::error_code, ASIO_VARIADIC_TARGS(n)) noexcept> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) noexcept; \
   }; \
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(const asio::error_code&, \
+      R(const puerts_asio::error_code&, \
         ASIO_VARIADIC_TARGS(n)) noexcept> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) noexcept; \
@@ -430,7 +430,7 @@ struct redirect_error_signature<
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(asio::error_code, \
+      R(puerts_asio::error_code, \
         ASIO_VARIADIC_TARGS(n)) & noexcept> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) & noexcept; \
@@ -438,7 +438,7 @@ struct redirect_error_signature<
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(const asio::error_code&, \
+      R(const puerts_asio::error_code&, \
         ASIO_VARIADIC_TARGS(n)) & noexcept> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) & noexcept; \
@@ -446,7 +446,7 @@ struct redirect_error_signature<
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(asio::error_code, \
+      R(puerts_asio::error_code, \
         ASIO_VARIADIC_TARGS(n)) && noexcept> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) && noexcept; \
@@ -454,7 +454,7 @@ struct redirect_error_signature<
   \
   template <typename R, ASIO_VARIADIC_TPARAMS(n)> \
   struct redirect_error_signature< \
-      R(const asio::error_code&, \
+      R(const puerts_asio::error_code&, \
         ASIO_VARIADIC_TARGS(n)) && noexcept> \
   { \
     typedef R type(ASIO_VARIADIC_TARGS(n)) && noexcept; \
@@ -482,7 +482,7 @@ struct async_result<redirect_error_t<CompletionToken>, Signature>
   struct init_wrapper
   {
     template <typename Init>
-    init_wrapper(asio::error_code& ec, ASIO_MOVE_ARG(Init) init)
+    init_wrapper(puerts_asio::error_code& ec, ASIO_MOVE_ARG(Init) init)
       : ec_(ec),
         initiation_(ASIO_MOVE_CAST(Init)(init))
     {
@@ -532,7 +532,7 @@ struct async_result<redirect_error_t<CompletionToken>, Signature>
 
 #endif // defined(ASIO_HAS_VARIADIC_TEMPLATES)
 
-    asio::error_code& ec_;
+    puerts_asio::error_code& ec_;
     Initiation initiation_;
   };
 
@@ -602,7 +602,7 @@ struct associator<Associator,
 
 #endif // !defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

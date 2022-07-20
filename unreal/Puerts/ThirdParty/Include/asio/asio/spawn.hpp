@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Context object the represents the currently executing coroutine.
 /**
@@ -130,7 +130,7 @@ public:
    *   ...
    * } @endcode
    */
-  basic_yield_context operator[](asio::error_code& ec) const
+  basic_yield_context operator[](puerts_asio::error_code& ec) const
   {
     basic_yield_context tmp(*this);
     tmp.ec_ = &ec;
@@ -143,7 +143,7 @@ private:
   detail::weak_ptr<callee_type> coro_;
   caller_type& ca_;
   Handler handler_;
-  asio::error_code* ec_;
+  puerts_asio::error_code* ec_;
 };
 
 #if defined(GENERATING_DOCUMENTATION)
@@ -155,7 +155,7 @@ typedef basic_yield_context<
 #endif // defined(GENERATING_DOCUMENTATION)
 
 /**
- * @defgroup spawn asio::spawn
+ * @defgroup spawn puerts_asio::spawn
  *
  * @brief Start a new stackful coroutine.
  *
@@ -163,11 +163,11 @@ typedef basic_yield_context<
  * library. This function enables programs to implement asynchronous logic in a
  * synchronous manner, as illustrated by the following example:
  *
- * @code asio::spawn(my_strand, do_echo);
+ * @code puerts_asio::spawn(my_strand, do_echo);
  *
  * // ...
  *
- * void do_echo(asio::yield_context yield)
+ * void do_echo(puerts_asio::yield_context yield)
  * {
  *   try
  *   {
@@ -176,10 +176,10 @@ typedef basic_yield_context<
  *     {
  *       std::size_t length =
  *         my_socket.async_read_some(
- *           asio::buffer(data), yield);
+ *           puerts_asio::buffer(data), yield);
  *
- *       asio::async_write(my_socket,
- *           asio::buffer(data, length), yield);
+ *       puerts_asio::async_write(my_socket,
+ *           puerts_asio::buffer(data, length), yield);
  *     }
  *   }
  *   catch (std::exception& e)
@@ -305,7 +305,7 @@ void spawn(const strand<Executor>& ex,
  * @param attributes Boost.Coroutine attributes used to customise the coroutine.
  */
 template <typename Function>
-void spawn(const asio::io_context::strand& s,
+void spawn(const puerts_asio::io_context::strand& s,
     ASIO_MOVE_ARG(Function) function,
     const boost::coroutines::attributes& attributes
       = boost::coroutines::attributes());
@@ -335,7 +335,7 @@ void spawn(ExecutionContext& ctx,
 
 /*@}*/
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

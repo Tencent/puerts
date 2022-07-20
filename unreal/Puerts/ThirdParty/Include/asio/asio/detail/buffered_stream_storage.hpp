@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class buffered_stream_storage
@@ -54,13 +54,13 @@ public:
   // Return a pointer to the beginning of the unread data.
   mutable_buffer data()
   {
-    return asio::buffer(buffer_) + begin_offset_;
+    return puerts_asio::buffer(buffer_) + begin_offset_;
   }
 
   // Return a pointer to the beginning of the unread data.
   const_buffer data() const
   {
-    return asio::buffer(buffer_) + begin_offset_;
+    return puerts_asio::buffer(buffer_) + begin_offset_;
   }
 
   // Is there no unread data in the buffer.
@@ -119,7 +119,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

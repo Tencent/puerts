@@ -23,14 +23,14 @@
 
 #include "asio/windows/basic_overlapped_handle.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace windows {
 
 /// Typedef for the typical usage of an overlapped handle.
 typedef basic_overlapped_handle<> overlapped_handle;
 
 } // namespace windows
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(ASIO_HAS_WINDOWS_RANDOM_ACCESS_HANDLE)
        //   || defined(ASIO_HAS_WINDOWS_STREAM_HANDLE)

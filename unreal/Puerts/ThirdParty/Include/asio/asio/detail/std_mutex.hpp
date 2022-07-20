@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class std_event;
@@ -34,7 +34,7 @@ class std_mutex
   : private noncopyable
 {
 public:
-  typedef asio::detail::scoped_lock<std_mutex> scoped_lock;
+  typedef puerts_asio::detail::scoped_lock<std_mutex> scoped_lock;
 
   // Constructor.
   std_mutex()
@@ -64,7 +64,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

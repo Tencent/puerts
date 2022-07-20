@@ -29,7 +29,7 @@
 # error Only Windows, POSIX and std::condition_variable are supported!
 #endif
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if !defined(ASIO_HAS_THREADS)
@@ -43,6 +43,6 @@ typedef std_event event;
 #endif
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_EVENT_HPP

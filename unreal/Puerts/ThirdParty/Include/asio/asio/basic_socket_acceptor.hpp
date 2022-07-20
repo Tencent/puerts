@@ -41,7 +41,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if !defined(ASIO_BASIC_SOCKET_ACCEPTOR_FWD_DECL)
 #define ASIO_BASIC_SOCKET_ACCEPTOR_FWD_DECL
@@ -70,10 +70,10 @@ class basic_socket_acceptor;
  * @par Example
  * Opening a socket acceptor with the SO_REUSEADDR option enabled:
  * @code
- * asio::ip::tcp::acceptor acceptor(my_context);
- * asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), port);
+ * puerts_asio::ip::tcp::acceptor acceptor(my_context);
+ * puerts_asio::ip::tcp::endpoint endpoint(puerts_asio::ip::tcp::v4(), port);
  * acceptor.open(endpoint.protocol());
- * acceptor.set_option(asio::ip::tcp::acceptor::reuse_address(true));
+ * acceptor.set_option(puerts_asio::ip::tcp::acceptor::reuse_address(true));
  * acceptor.bind(endpoint);
  * acceptor.listen();
  * @endcode
@@ -158,14 +158,14 @@ public:
    *
    * @param protocol An object specifying protocol parameters to be used.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   basic_socket_acceptor(const executor_type& ex, const protocol_type& protocol)
     : impl_(0, ex)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().open(impl_.get_implementation(), protocol, ec);
-    asio::detail::throw_error(ec, "open");
+    puerts_asio::detail::throw_error(ec, "open");
   }
 
   /// Construct an open acceptor.
@@ -178,7 +178,7 @@ public:
    *
    * @param protocol An object specifying protocol parameters to be used.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   template <typename ExecutionContext>
   basic_socket_acceptor(ExecutionContext& context,
@@ -189,9 +189,9 @@ public:
       >::type = defaulted_constraint())
     : impl_(0, 0, context)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().open(impl_.get_implementation(), protocol, ec);
-    asio::detail::throw_error(ec, "open");
+    puerts_asio::detail::throw_error(ec, "open");
   }
 
   /// Construct an acceptor opened on the given endpoint.
@@ -209,7 +209,7 @@ public:
    * @param reuse_addr Whether the constructor should set the socket option
    * socket_base::reuse_address.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note This constructor is equivalent to the following code:
    * @code
@@ -225,21 +225,21 @@ public:
       const endpoint_type& endpoint, bool reuse_addr = true)
     : impl_(0, ex)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     const protocol_type protocol = endpoint.protocol();
     impl_.get_service().open(impl_.get_implementation(), protocol, ec);
-    asio::detail::throw_error(ec, "open");
+    puerts_asio::detail::throw_error(ec, "open");
     if (reuse_addr)
     {
       impl_.get_service().set_option(impl_.get_implementation(),
           socket_base::reuse_address(true), ec);
-      asio::detail::throw_error(ec, "set_option");
+      puerts_asio::detail::throw_error(ec, "set_option");
     }
     impl_.get_service().bind(impl_.get_implementation(), endpoint, ec);
-    asio::detail::throw_error(ec, "bind");
+    puerts_asio::detail::throw_error(ec, "bind");
     impl_.get_service().listen(impl_.get_implementation(),
         socket_base::max_listen_connections, ec);
-    asio::detail::throw_error(ec, "listen");
+    puerts_asio::detail::throw_error(ec, "listen");
   }
 
   /// Construct an acceptor opened on the given endpoint.
@@ -257,7 +257,7 @@ public:
    * @param reuse_addr Whether the constructor should set the socket option
    * socket_base::reuse_address.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note This constructor is equivalent to the following code:
    * @code
@@ -277,21 +277,21 @@ public:
       >::type = 0)
     : impl_(0, 0, context)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     const protocol_type protocol = endpoint.protocol();
     impl_.get_service().open(impl_.get_implementation(), protocol, ec);
-    asio::detail::throw_error(ec, "open");
+    puerts_asio::detail::throw_error(ec, "open");
     if (reuse_addr)
     {
       impl_.get_service().set_option(impl_.get_implementation(),
           socket_base::reuse_address(true), ec);
-      asio::detail::throw_error(ec, "set_option");
+      puerts_asio::detail::throw_error(ec, "set_option");
     }
     impl_.get_service().bind(impl_.get_implementation(), endpoint, ec);
-    asio::detail::throw_error(ec, "bind");
+    puerts_asio::detail::throw_error(ec, "bind");
     impl_.get_service().listen(impl_.get_implementation(),
         socket_base::max_listen_connections, ec);
-    asio::detail::throw_error(ec, "listen");
+    puerts_asio::detail::throw_error(ec, "listen");
   }
 
   /// Construct a basic_socket_acceptor on an existing native acceptor.
@@ -307,16 +307,16 @@ public:
    *
    * @param native_acceptor A native acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   basic_socket_acceptor(const executor_type& ex,
       const protocol_type& protocol, const native_handle_type& native_acceptor)
     : impl_(0, ex)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().assign(impl_.get_implementation(),
         protocol, native_acceptor, ec);
-    asio::detail::throw_error(ec, "assign");
+    puerts_asio::detail::throw_error(ec, "assign");
   }
 
   /// Construct a basic_socket_acceptor on an existing native acceptor.
@@ -332,7 +332,7 @@ public:
    *
    * @param native_acceptor A native acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   template <typename ExecutionContext>
   basic_socket_acceptor(ExecutionContext& context,
@@ -342,10 +342,10 @@ public:
       >::type = 0)
     : impl_(0, 0, context)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().assign(impl_.get_implementation(),
         protocol, native_acceptor, ec);
-    asio::detail::throw_error(ec, "assign");
+    puerts_asio::detail::throw_error(ec, "assign");
   }
 
 #if defined(ASIO_HAS_MOVE) || defined(GENERATING_DOCUMENTATION)
@@ -456,19 +456,19 @@ public:
    *
    * @param protocol An object specifying which protocol is to be used.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
-   * acceptor.open(asio::ip::tcp::v4());
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
+   * acceptor.open(puerts_asio::ip::tcp::v4());
    * @endcode
    */
   void open(const protocol_type& protocol = protocol_type())
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().open(impl_.get_implementation(), protocol, ec);
-    asio::detail::throw_error(ec, "open");
+    puerts_asio::detail::throw_error(ec, "open");
   }
 
   /// Open the acceptor using the specified protocol.
@@ -482,9 +482,9 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
-   * asio::error_code ec;
-   * acceptor.open(asio::ip::tcp::v4(), ec);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::error_code ec;
+   * acceptor.open(puerts_asio::ip::tcp::v4(), ec);
    * if (ec)
    * {
    *   // An error occurred.
@@ -492,7 +492,7 @@ public:
    * @endcode
    */
   ASIO_SYNC_OP_VOID open(const protocol_type& protocol,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     impl_.get_service().open(impl_.get_implementation(), protocol, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -506,15 +506,15 @@ public:
    *
    * @param native_acceptor A native acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void assign(const protocol_type& protocol,
       const native_handle_type& native_acceptor)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().assign(impl_.get_implementation(),
         protocol, native_acceptor, ec);
-    asio::detail::throw_error(ec, "assign");
+    puerts_asio::detail::throw_error(ec, "assign");
   }
 
   /// Assigns an existing native acceptor to the acceptor.
@@ -528,7 +528,7 @@ public:
    * @param ec Set to indicate what error occurred, if any.
    */
   ASIO_SYNC_OP_VOID assign(const protocol_type& protocol,
-      const native_handle_type& native_acceptor, asio::error_code& ec)
+      const native_handle_type& native_acceptor, puerts_asio::error_code& ec)
   {
     impl_.get_service().assign(impl_.get_implementation(),
         protocol, native_acceptor, ec);
@@ -549,21 +549,21 @@ public:
    * @param endpoint An endpoint on the local machine to which the socket
    * acceptor will be bound.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
-   * asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), 12345);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::endpoint endpoint(puerts_asio::ip::tcp::v4(), 12345);
    * acceptor.open(endpoint.protocol());
    * acceptor.bind(endpoint);
    * @endcode
    */
   void bind(const endpoint_type& endpoint)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().bind(impl_.get_implementation(), endpoint, ec);
-    asio::detail::throw_error(ec, "bind");
+    puerts_asio::detail::throw_error(ec, "bind");
   }
 
   /// Bind the acceptor to the given local endpoint.
@@ -578,10 +578,10 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
-   * asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), 12345);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::endpoint endpoint(puerts_asio::ip::tcp::v4(), 12345);
    * acceptor.open(endpoint.protocol());
-   * asio::error_code ec;
+   * puerts_asio::error_code ec;
    * acceptor.bind(endpoint, ec);
    * if (ec)
    * {
@@ -590,7 +590,7 @@ public:
    * @endcode
    */
   ASIO_SYNC_OP_VOID bind(const endpoint_type& endpoint,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     impl_.get_service().bind(impl_.get_implementation(), endpoint, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -604,13 +604,13 @@ public:
    *
    * @param backlog The maximum length of the queue of pending connections.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void listen(int backlog = socket_base::max_listen_connections)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().listen(impl_.get_implementation(), backlog, ec);
-    asio::detail::throw_error(ec, "listen");
+    puerts_asio::detail::throw_error(ec, "listen");
   }
 
   /// Place the acceptor into the state where it will listen for new
@@ -625,17 +625,17 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::error_code ec;
-   * acceptor.listen(asio::socket_base::max_listen_connections, ec);
+   * puerts_asio::error_code ec;
+   * acceptor.listen(puerts_asio::socket_base::max_listen_connections, ec);
    * if (ec)
    * {
    *   // An error occurred.
    * }
    * @endcode
    */
-  ASIO_SYNC_OP_VOID listen(int backlog, asio::error_code& ec)
+  ASIO_SYNC_OP_VOID listen(int backlog, puerts_asio::error_code& ec)
   {
     impl_.get_service().listen(impl_.get_implementation(), backlog, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -649,13 +649,13 @@ public:
    * A subsequent call to open() is required before the acceptor can again be
    * used to again perform socket accept operations.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void close()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().close(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "close");
+    puerts_asio::detail::throw_error(ec, "close");
   }
 
   /// Close the acceptor.
@@ -670,9 +670,9 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::error_code ec;
+   * puerts_asio::error_code ec;
    * acceptor.close(ec);
    * if (ec)
    * {
@@ -680,7 +680,7 @@ public:
    * }
    * @endcode
    */
-  ASIO_SYNC_OP_VOID close(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID close(puerts_asio::error_code& ec)
   {
     impl_.get_service().close(impl_.get_implementation(), ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -690,13 +690,13 @@ public:
   /**
    * This function causes all outstanding asynchronous accept operations to
    * finish immediately, and the handlers for cancelled operations will be
-   * passed the asio::error::operation_aborted error. Ownership of the
+   * passed the puerts_asio::error::operation_aborted error. Ownership of the
    * native acceptor is then transferred to the caller.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note This function is unsupported on Windows versions prior to Windows
-   * 8.1, and will fail with asio::error::operation_not_supported on
+   * 8.1, and will fail with puerts_asio::error::operation_not_supported on
    * these platforms.
    */
 #if defined(ASIO_MSVC) && (ASIO_MSVC >= 1400) \
@@ -707,10 +707,10 @@ public:
 #endif
   native_handle_type release()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     native_handle_type s = impl_.get_service().release(
         impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "release");
+    puerts_asio::detail::throw_error(ec, "release");
     return s;
   }
 
@@ -718,13 +718,13 @@ public:
   /**
    * This function causes all outstanding asynchronous accept operations to
    * finish immediately, and the handlers for cancelled operations will be
-   * passed the asio::error::operation_aborted error. Ownership of the
+   * passed the puerts_asio::error::operation_aborted error. Ownership of the
    * native acceptor is then transferred to the caller.
    *
    * @param ec Set to indicate what error occurred, if any.
    *
    * @note This function is unsupported on Windows versions prior to Windows
-   * 8.1, and will fail with asio::error::operation_not_supported on
+   * 8.1, and will fail with puerts_asio::error::operation_not_supported on
    * these platforms.
    */
 #if defined(ASIO_MSVC) && (ASIO_MSVC >= 1400) \
@@ -733,7 +733,7 @@ public:
         "operation_not_supported when used on Windows versions "
         "prior to Windows 8.1."))
 #endif
-  native_handle_type release(asio::error_code& ec)
+  native_handle_type release(puerts_asio::error_code& ec)
   {
     return impl_.get_service().release(impl_.get_implementation(), ec);
   }
@@ -753,26 +753,26 @@ public:
   /**
    * This function causes all outstanding asynchronous connect, send and receive
    * operations to finish immediately, and the handlers for cancelled operations
-   * will be passed the asio::error::operation_aborted error.
+   * will be passed the puerts_asio::error::operation_aborted error.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void cancel()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().cancel(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "cancel");
+    puerts_asio::detail::throw_error(ec, "cancel");
   }
 
   /// Cancel all asynchronous operations associated with the acceptor.
   /**
    * This function causes all outstanding asynchronous connect, send and receive
    * operations to finish immediately, and the handlers for cancelled operations
-   * will be passed the asio::error::operation_aborted error.
+   * will be passed the puerts_asio::error::operation_aborted error.
    *
    * @param ec Set to indicate what error occurred, if any.
    */
-  ASIO_SYNC_OP_VOID cancel(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID cancel(puerts_asio::error_code& ec)
   {
     impl_.get_service().cancel(impl_.get_implementation(), ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -784,27 +784,27 @@ public:
    *
    * @param option The new option value to be set on the acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @sa SettableSocketOption @n
-   * asio::socket_base::reuse_address
-   * asio::socket_base::enable_connection_aborted
+   * puerts_asio::socket_base::reuse_address
+   * puerts_asio::socket_base::enable_connection_aborted
    *
    * @par Example
    * Setting the SOL_SOCKET/SO_REUSEADDR option:
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::acceptor::reuse_address option(true);
+   * puerts_asio::ip::tcp::acceptor::reuse_address option(true);
    * acceptor.set_option(option);
    * @endcode
    */
   template <typename SettableSocketOption>
   void set_option(const SettableSocketOption& option)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().set_option(impl_.get_implementation(), option, ec);
-    asio::detail::throw_error(ec, "set_option");
+    puerts_asio::detail::throw_error(ec, "set_option");
   }
 
   /// Set an option on the acceptor.
@@ -816,16 +816,16 @@ public:
    * @param ec Set to indicate what error occurred, if any.
    *
    * @sa SettableSocketOption @n
-   * asio::socket_base::reuse_address
-   * asio::socket_base::enable_connection_aborted
+   * puerts_asio::socket_base::reuse_address
+   * puerts_asio::socket_base::enable_connection_aborted
    *
    * @par Example
    * Setting the SOL_SOCKET/SO_REUSEADDR option:
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::acceptor::reuse_address option(true);
-   * asio::error_code ec;
+   * puerts_asio::ip::tcp::acceptor::reuse_address option(true);
+   * puerts_asio::error_code ec;
    * acceptor.set_option(option, ec);
    * if (ec)
    * {
@@ -835,7 +835,7 @@ public:
    */
   template <typename SettableSocketOption>
   ASIO_SYNC_OP_VOID set_option(const SettableSocketOption& option,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     impl_.get_service().set_option(impl_.get_implementation(), option, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -848,17 +848,17 @@ public:
    *
    * @param option The option value to be obtained from the acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @sa GettableSocketOption @n
-   * asio::socket_base::reuse_address
+   * puerts_asio::socket_base::reuse_address
    *
    * @par Example
    * Getting the value of the SOL_SOCKET/SO_REUSEADDR option:
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::acceptor::reuse_address option;
+   * puerts_asio::ip::tcp::acceptor::reuse_address option;
    * acceptor.get_option(option);
    * bool is_set = option.get();
    * @endcode
@@ -866,9 +866,9 @@ public:
   template <typename GettableSocketOption>
   void get_option(GettableSocketOption& option) const
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().get_option(impl_.get_implementation(), option, ec);
-    asio::detail::throw_error(ec, "get_option");
+    puerts_asio::detail::throw_error(ec, "get_option");
   }
 
   /// Get an option from the acceptor.
@@ -881,15 +881,15 @@ public:
    * @param ec Set to indicate what error occurred, if any.
    *
    * @sa GettableSocketOption @n
-   * asio::socket_base::reuse_address
+   * puerts_asio::socket_base::reuse_address
    *
    * @par Example
    * Getting the value of the SOL_SOCKET/SO_REUSEADDR option:
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::acceptor::reuse_address option;
-   * asio::error_code ec;
+   * puerts_asio::ip::tcp::acceptor::reuse_address option;
+   * puerts_asio::error_code ec;
    * acceptor.get_option(option, ec);
    * if (ec)
    * {
@@ -900,7 +900,7 @@ public:
    */
   template <typename GettableSocketOption>
   ASIO_SYNC_OP_VOID get_option(GettableSocketOption& option,
-      asio::error_code& ec) const
+      puerts_asio::error_code& ec) const
   {
     impl_.get_service().get_option(impl_.get_implementation(), option, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -912,26 +912,26 @@ public:
    *
    * @param command The IO control command to be performed on the acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @sa IoControlCommand @n
-   * asio::socket_base::non_blocking_io
+   * puerts_asio::socket_base::non_blocking_io
    *
    * @par Example
    * Getting the number of bytes ready to read:
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::acceptor::non_blocking_io command(true);
+   * puerts_asio::ip::tcp::acceptor::non_blocking_io command(true);
    * socket.io_control(command);
    * @endcode
    */
   template <typename IoControlCommand>
   void io_control(IoControlCommand& command)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().io_control(impl_.get_implementation(), command, ec);
-    asio::detail::throw_error(ec, "io_control");
+    puerts_asio::detail::throw_error(ec, "io_control");
   }
 
   /// Perform an IO control command on the acceptor.
@@ -943,15 +943,15 @@ public:
    * @param ec Set to indicate what error occurred, if any.
    *
    * @sa IoControlCommand @n
-   * asio::socket_base::non_blocking_io
+   * puerts_asio::socket_base::non_blocking_io
    *
    * @par Example
    * Getting the number of bytes ready to read:
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::acceptor::non_blocking_io command(true);
-   * asio::error_code ec;
+   * puerts_asio::ip::tcp::acceptor::non_blocking_io command(true);
+   * puerts_asio::error_code ec;
    * socket.io_control(command, ec);
    * if (ec)
    * {
@@ -961,7 +961,7 @@ public:
    */
   template <typename IoControlCommand>
   ASIO_SYNC_OP_VOID io_control(IoControlCommand& command,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     impl_.get_service().io_control(impl_.get_implementation(), command, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -970,13 +970,13 @@ public:
   /// Gets the non-blocking mode of the acceptor.
   /**
    * @returns @c true if the acceptor's synchronous operations will fail with
-   * asio::error::would_block if they are unable to perform the requested
+   * puerts_asio::error::would_block if they are unable to perform the requested
    * operation immediately. If @c false, synchronous operations will block
    * until complete.
    *
    * @note The non-blocking mode has no effect on the behaviour of asynchronous
    * operations. Asynchronous operations will never fail with the error
-   * asio::error::would_block.
+   * puerts_asio::error::would_block.
    */
   bool non_blocking() const
   {
@@ -986,27 +986,27 @@ public:
   /// Sets the non-blocking mode of the acceptor.
   /**
    * @param mode If @c true, the acceptor's synchronous operations will fail
-   * with asio::error::would_block if they are unable to perform the
+   * with puerts_asio::error::would_block if they are unable to perform the
    * requested operation immediately. If @c false, synchronous operations will
    * block until complete.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note The non-blocking mode has no effect on the behaviour of asynchronous
    * operations. Asynchronous operations will never fail with the error
-   * asio::error::would_block.
+   * puerts_asio::error::would_block.
    */
   void non_blocking(bool mode)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().non_blocking(impl_.get_implementation(), mode, ec);
-    asio::detail::throw_error(ec, "non_blocking");
+    puerts_asio::detail::throw_error(ec, "non_blocking");
   }
 
   /// Sets the non-blocking mode of the acceptor.
   /**
    * @param mode If @c true, the acceptor's synchronous operations will fail
-   * with asio::error::would_block if they are unable to perform the
+   * with puerts_asio::error::would_block if they are unable to perform the
    * requested operation immediately. If @c false, synchronous operations will
    * block until complete.
    *
@@ -1014,10 +1014,10 @@ public:
    *
    * @note The non-blocking mode has no effect on the behaviour of asynchronous
    * operations. Asynchronous operations will never fail with the error
-   * asio::error::would_block.
+   * puerts_asio::error::would_block.
    */
   ASIO_SYNC_OP_VOID non_blocking(
-      bool mode, asio::error_code& ec)
+      bool mode, puerts_asio::error_code& ec)
   {
     impl_.get_service().non_blocking(impl_.get_implementation(), mode, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -1030,7 +1030,7 @@ public:
    * object's synchronous operations.
    *
    * @returns @c true if the underlying acceptor is in non-blocking mode and
-   * direct system calls may fail with asio::error::would_block (or the
+   * direct system calls may fail with puerts_asio::error::would_block (or the
    * equivalent system error).
    *
    * @note The current non-blocking mode is cached by the acceptor object.
@@ -1049,20 +1049,20 @@ public:
    * synchronous operations.
    *
    * @param mode If @c true, the underlying acceptor is put into non-blocking
-   * mode and direct system calls may fail with asio::error::would_block
+   * mode and direct system calls may fail with puerts_asio::error::would_block
    * (or the equivalent system error).
    *
-   * @throws asio::system_error Thrown on failure. If the @c mode is
+   * @throws puerts_asio::system_error Thrown on failure. If the @c mode is
    * @c false, but the current value of @c non_blocking() is @c true, this
-   * function fails with asio::error::invalid_argument, as the
+   * function fails with puerts_asio::error::invalid_argument, as the
    * combination does not make sense.
    */
   void native_non_blocking(bool mode)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().native_non_blocking(
         impl_.get_implementation(), mode, ec);
-    asio::detail::throw_error(ec, "native_non_blocking");
+    puerts_asio::detail::throw_error(ec, "native_non_blocking");
   }
 
   /// Sets the non-blocking mode of the native acceptor implementation.
@@ -1072,16 +1072,16 @@ public:
    * synchronous operations.
    *
    * @param mode If @c true, the underlying acceptor is put into non-blocking
-   * mode and direct system calls may fail with asio::error::would_block
+   * mode and direct system calls may fail with puerts_asio::error::would_block
    * (or the equivalent system error).
    *
    * @param ec Set to indicate what error occurred, if any. If the @c mode is
    * @c false, but the current value of @c non_blocking() is @c true, this
-   * function fails with asio::error::invalid_argument, as the
+   * function fails with puerts_asio::error::invalid_argument, as the
    * combination does not make sense.
    */
   ASIO_SYNC_OP_VOID native_non_blocking(
-      bool mode, asio::error_code& ec)
+      bool mode, puerts_asio::error_code& ec)
   {
     impl_.get_service().native_non_blocking(
         impl_.get_implementation(), mode, ec);
@@ -1094,21 +1094,21 @@ public:
    *
    * @returns An object that represents the local endpoint of the acceptor.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint = acceptor.local_endpoint();
+   * puerts_asio::ip::tcp::endpoint endpoint = acceptor.local_endpoint();
    * @endcode
    */
   endpoint_type local_endpoint() const
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     endpoint_type ep = impl_.get_service().local_endpoint(
         impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "local_endpoint");
+    puerts_asio::detail::throw_error(ec, "local_endpoint");
     return ep;
   }
 
@@ -1124,17 +1124,17 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::error_code ec;
-   * asio::ip::tcp::endpoint endpoint = acceptor.local_endpoint(ec);
+   * puerts_asio::error_code ec;
+   * puerts_asio::ip::tcp::endpoint endpoint = acceptor.local_endpoint(ec);
    * if (ec)
    * {
    *   // An error occurred.
    * }
    * @endcode
    */
-  endpoint_type local_endpoint(asio::error_code& ec) const
+  endpoint_type local_endpoint(puerts_asio::error_code& ec) const
   {
     return impl_.get_service().local_endpoint(impl_.get_implementation(), ec);
   }
@@ -1150,16 +1150,16 @@ public:
    * @par Example
    * Waiting for an acceptor to become readable.
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * acceptor.wait(asio::ip::tcp::acceptor::wait_read);
+   * acceptor.wait(puerts_asio::ip::tcp::acceptor::wait_read);
    * @endcode
    */
   void wait(wait_type w)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().wait(impl_.get_implementation(), w, ec);
-    asio::detail::throw_error(ec, "wait");
+    puerts_asio::detail::throw_error(ec, "wait");
   }
 
   /// Wait for the acceptor to become ready to read, ready to write, or to have
@@ -1175,13 +1175,13 @@ public:
    * @par Example
    * Waiting for an acceptor to become readable.
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::error_code ec;
-   * acceptor.wait(asio::ip::tcp::acceptor::wait_read, ec);
+   * puerts_asio::error_code ec;
+   * acceptor.wait(puerts_asio::ip::tcp::acceptor::wait_read, ec);
    * @endcode
    */
-  ASIO_SYNC_OP_VOID wait(wait_type w, asio::error_code& ec)
+  ASIO_SYNC_OP_VOID wait(wait_type w, puerts_asio::error_code& ec)
   {
     impl_.get_service().wait(impl_.get_implementation(), w, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -1199,16 +1199,16 @@ public:
    * Copies will be made of the handler as required. The function signature of
    * the handler must be:
    * @code void handler(
-   *   const asio::error_code& error // Result of operation
+   *   const puerts_asio::error_code& error // Result of operation
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void wait_handler(const asio::error_code& error)
+   * void wait_handler(const puerts_asio::error_code& error)
    * {
    *   if (!error)
    *   {
@@ -1218,16 +1218,16 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
    * acceptor.async_wait(
-   *     asio::ip::tcp::acceptor::wait_read,
+   *     puerts_asio::ip::tcp::acceptor::wait_read,
    *     wait_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -1236,15 +1236,15 @@ public:
    * @li @c cancellation_type::total
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code))
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code))
         WaitHandler ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(WaitHandler,
-      void (asio::error_code))
+      void (puerts_asio::error_code))
   async_wait(wait_type w,
       ASIO_MOVE_ARG(WaitHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    return async_initiate<WaitHandler, void (asio::error_code)>(
+    return async_initiate<WaitHandler, void (puerts_asio::error_code)>(
         initiate_async_wait(this), handler, w);
   }
 
@@ -1257,13 +1257,13 @@ public:
    *
    * @param peer The socket into which the new connection will be accepted.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(my_context);
+   * puerts_asio::ip::tcp::socket socket(my_context);
    * acceptor.accept(socket);
    * @endcode
    */
@@ -1273,10 +1273,10 @@ public:
         is_convertible<Protocol, Protocol1>::value
       >::type = 0)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().accept(impl_.get_implementation(),
         peer, static_cast<endpoint_type*>(0), ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
   }
 
   /// Accept a new connection.
@@ -1291,10 +1291,10 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(my_context);
-   * asio::error_code ec;
+   * puerts_asio::ip::tcp::socket socket(my_context);
+   * puerts_asio::error_code ec;
    * acceptor.accept(socket, ec);
    * if (ec)
    * {
@@ -1304,7 +1304,7 @@ public:
    */
   template <typename Protocol1, typename Executor1>
   ASIO_SYNC_OP_VOID accept(
-      basic_socket<Protocol1, Executor1>& peer, asio::error_code& ec,
+      basic_socket<Protocol1, Executor1>& peer, puerts_asio::error_code& ec,
       typename constraint<
         is_convertible<Protocol, Protocol1>::value
       >::type = 0)
@@ -1327,16 +1327,16 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error // Result of operation.
+   *   const puerts_asio::error_code& error // Result of operation.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error)
+   * void accept_handler(const puerts_asio::error_code& error)
    * {
    *   if (!error)
    *   {
@@ -1346,15 +1346,15 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(my_context);
+   * puerts_asio::ip::tcp::socket socket(my_context);
    * acceptor.async_accept(socket, accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -1363,10 +1363,10 @@ public:
    * @li @c cancellation_type::total
    */
   template <typename Protocol1, typename Executor1,
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code))
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code))
         AcceptHandler ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(AcceptHandler,
-      void (asio::error_code))
+      void (puerts_asio::error_code))
   async_accept(basic_socket<Protocol1, Executor1>& peer,
       ASIO_MOVE_ARG(AcceptHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type),
@@ -1374,7 +1374,7 @@ public:
         is_convertible<Protocol, Protocol1>::value
       >::type = 0)
   {
-    return async_initiate<AcceptHandler, void (asio::error_code)>(
+    return async_initiate<AcceptHandler, void (puerts_asio::error_code)>(
         initiate_async_accept(this), handler,
         &peer, static_cast<endpoint_type*>(0));
   }
@@ -1391,14 +1391,14 @@ public:
    * @param peer_endpoint An endpoint object which will receive the endpoint of
    * the remote peer.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(my_context);
-   * asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(my_context);
+   * puerts_asio::ip::tcp::endpoint endpoint;
    * acceptor.accept(socket, endpoint);
    * @endcode
    */
@@ -1406,10 +1406,10 @@ public:
   void accept(basic_socket<protocol_type, Executor1>& peer,
       endpoint_type& peer_endpoint)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().accept(impl_.get_implementation(),
         peer, &peer_endpoint, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
   }
 
   /// Accept a new connection and obtain the endpoint of the peer
@@ -1428,11 +1428,11 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(my_context);
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::error_code ec;
+   * puerts_asio::ip::tcp::socket socket(my_context);
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::error_code ec;
    * acceptor.accept(socket, endpoint, ec);
    * if (ec)
    * {
@@ -1442,7 +1442,7 @@ public:
    */
   template <typename Executor1>
   ASIO_SYNC_OP_VOID accept(basic_socket<protocol_type, Executor1>& peer,
-      endpoint_type& peer_endpoint, asio::error_code& ec)
+      endpoint_type& peer_endpoint, puerts_asio::error_code& ec)
   {
     impl_.get_service().accept(
         impl_.get_implementation(), peer, &peer_endpoint, ec);
@@ -1468,16 +1468,16 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error // Result of operation.
+   *   const puerts_asio::error_code& error // Result of operation.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -1486,16 +1486,16 @@ public:
    * @li @c cancellation_type::total
    */
   template <typename Executor1,
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code))
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code))
         AcceptHandler ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(AcceptHandler,
-      void (asio::error_code))
+      void (puerts_asio::error_code))
   async_accept(basic_socket<protocol_type, Executor1>& peer,
       endpoint_type& peer_endpoint,
       ASIO_MOVE_ARG(AcceptHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    return async_initiate<AcceptHandler, void (asio::error_code)>(
+    return async_initiate<AcceptHandler, void (puerts_asio::error_code)>(
         initiate_async_accept(this), handler, &peer, &peer_endpoint);
   }
 #endif // !defined(ASIO_NO_EXTENSIONS)
@@ -1512,23 +1512,23 @@ public:
    *
    * @returns A socket object representing the newly accepted connection.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(acceptor.accept());
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept());
    * @endcode
    */
   typename Protocol::socket::template rebind_executor<executor_type>::other
   accept()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     typename Protocol::socket::template rebind_executor<
       executor_type>::other peer(impl_.get_executor());
     impl_.get_service().accept(impl_.get_implementation(), peer, 0, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
     return peer;
   }
 
@@ -1548,9 +1548,9 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(acceptor.accept(ec));
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept(ec));
    * if (ec)
    * {
    *   // An error occurred.
@@ -1558,7 +1558,7 @@ public:
    * @endcode
    */
   typename Protocol::socket::template rebind_executor<executor_type>::other
-  accept(asio::error_code& ec)
+  accept(puerts_asio::error_code& ec)
   {
     typename Protocol::socket::template rebind_executor<
       executor_type>::other peer(impl_.get_executor());
@@ -1579,7 +1579,7 @@ public:
    * signature of the handler must be:
    * @code void handler(
    *   // Result of operation.
-   *   const asio::error_code& error,
+   *   const puerts_asio::error_code& error,
    *   // On success, the newly accepted socket.
    *   typename Protocol::socket::template
    *     rebind_executor<executor_type>::other peer
@@ -1587,12 +1587,12 @@ public:
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error,
-   *     asio::ip::tcp::socket peer)
+   * void accept_handler(const puerts_asio::error_code& error,
+   *     puerts_asio::ip::tcp::socket peer)
    * {
    *   if (!error)
    *   {
@@ -1602,14 +1602,14 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
    * acceptor.async_accept(accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -1618,12 +1618,12 @@ public:
    * @li @c cancellation_type::total
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           executor_type>::other)) MoveAcceptHandler
             ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(MoveAcceptHandler,
-      void (asio::error_code,
+      void (puerts_asio::error_code,
         typename Protocol::socket::template
           rebind_executor<executor_type>::other))
   async_accept(
@@ -1631,7 +1631,7 @@ public:
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
     return async_initiate<MoveAcceptHandler,
-      void (asio::error_code, typename Protocol::socket::template
+      void (puerts_asio::error_code, typename Protocol::socket::template
         rebind_executor<executor_type>::other)>(
           initiate_async_move_accept(this), handler,
           impl_.get_executor(), static_cast<endpoint_type*>(0),
@@ -1653,13 +1653,13 @@ public:
    *
    * @returns A socket object representing the newly accepted connection.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(acceptor.accept());
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept());
    * @endcode
    */
   template <typename Executor1>
@@ -1670,11 +1670,11 @@ public:
           || execution::is_executor<Executor1>::value
       >::type = 0)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     typename Protocol::socket::template
       rebind_executor<Executor1>::other peer(ex);
     impl_.get_service().accept(impl_.get_implementation(), peer, 0, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
     return peer;
   }
 
@@ -1692,13 +1692,13 @@ public:
    *
    * @returns A socket object representing the newly accepted connection.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(acceptor.accept());
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept());
    * @endcode
    */
   template <typename ExecutionContext>
@@ -1709,11 +1709,11 @@ public:
         is_convertible<ExecutionContext&, execution_context&>::value
       >::type = 0)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     typename Protocol::socket::template rebind_executor<
         typename ExecutionContext::executor_type>::other peer(context);
     impl_.get_service().accept(impl_.get_implementation(), peer, 0, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
     return peer;
   }
 
@@ -1736,9 +1736,9 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(acceptor.accept(my_context2, ec));
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept(my_context2, ec));
    * if (ec)
    * {
    *   // An error occurred.
@@ -1747,7 +1747,7 @@ public:
    */
   template <typename Executor1>
   typename Protocol::socket::template rebind_executor<Executor1>::other
-  accept(const Executor1& ex, asio::error_code& ec,
+  accept(const Executor1& ex, puerts_asio::error_code& ec,
       typename constraint<
         is_executor<Executor1>::value
           || execution::is_executor<Executor1>::value
@@ -1778,9 +1778,9 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::socket socket(acceptor.accept(my_context2, ec));
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept(my_context2, ec));
    * if (ec)
    * {
    *   // An error occurred.
@@ -1790,7 +1790,7 @@ public:
   template <typename ExecutionContext>
   typename Protocol::socket::template rebind_executor<
       typename ExecutionContext::executor_type>::other
-  accept(ExecutionContext& context, asio::error_code& ec,
+  accept(ExecutionContext& context, puerts_asio::error_code& ec,
       typename constraint<
         is_convertible<ExecutionContext&, execution_context&>::value
       >::type = 0)
@@ -1816,19 +1816,19 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   typename Protocol::socket::template rebind_executor<
    *     Executor1>::other peer // On success, the newly accepted socket.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error,
-   *     asio::ip::tcp::socket peer)
+   * void accept_handler(const puerts_asio::error_code& error,
+   *     puerts_asio::ip::tcp::socket peer)
    * {
    *   if (!error)
    *   {
@@ -1838,14 +1838,14 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
    * acceptor.async_accept(my_context2, accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -1854,12 +1854,12 @@ public:
    * @li @c cancellation_type::total
    */
   template <typename Executor1,
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           Executor1>::other)) MoveAcceptHandler
             ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(MoveAcceptHandler,
-      void (asio::error_code,
+      void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           Executor1>::other))
   async_accept(const Executor1& ex,
@@ -1874,7 +1874,7 @@ public:
       Executor1>::other other_socket_type;
 
     return async_initiate<MoveAcceptHandler,
-      void (asio::error_code, other_socket_type)>(
+      void (puerts_asio::error_code, other_socket_type)>(
         initiate_async_move_accept(this), handler,
         ex, static_cast<endpoint_type*>(0),
         static_cast<other_socket_type*>(0));
@@ -1895,7 +1895,7 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   typename Protocol::socket::template rebind_executor<
    *     typename ExecutionContext::executor_type>::other peer
    *       // On success, the newly accepted socket.
@@ -1903,12 +1903,12 @@ public:
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error,
-   *     asio::ip::tcp::socket peer)
+   * void accept_handler(const puerts_asio::error_code& error,
+   *     puerts_asio::ip::tcp::socket peer)
    * {
    *   if (!error)
    *   {
@@ -1918,14 +1918,14 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
    * acceptor.async_accept(my_context2, accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -1934,12 +1934,12 @@ public:
    * @li @c cancellation_type::total
    */
   template <typename ExecutionContext,
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           typename ExecutionContext::executor_type>::other)) MoveAcceptHandler
             ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(MoveAcceptHandler,
-      void (asio::error_code,
+      void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           typename ExecutionContext::executor_type>::other))
   async_accept(ExecutionContext& context,
@@ -1953,7 +1953,7 @@ public:
       typename ExecutionContext::executor_type>::other other_socket_type;
 
     return async_initiate<MoveAcceptHandler,
-      void (asio::error_code, other_socket_type)>(
+      void (puerts_asio::error_code, other_socket_type)>(
         initiate_async_move_accept(this), handler,
         context.get_executor(), static_cast<endpoint_type*>(0),
         static_cast<other_socket_type*>(0));
@@ -1973,25 +1973,25 @@ public:
    *
    * @returns A socket object representing the newly accepted connection.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::ip::tcp::socket socket(acceptor.accept(endpoint));
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept(endpoint));
    * @endcode
    */
   typename Protocol::socket::template rebind_executor<executor_type>::other
   accept(endpoint_type& peer_endpoint)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     typename Protocol::socket::template rebind_executor<
       executor_type>::other peer(impl_.get_executor());
     impl_.get_service().accept(impl_.get_implementation(),
         peer, &peer_endpoint, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
     return peer;
   }
 
@@ -2014,10 +2014,10 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::ip::tcp::socket socket(acceptor.accept(endpoint, ec));
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(acceptor.accept(endpoint, ec));
    * if (ec)
    * {
    *   // An error occurred.
@@ -2025,7 +2025,7 @@ public:
    * @endcode
    */
   typename Protocol::socket::template rebind_executor<executor_type>::other
-  accept(endpoint_type& peer_endpoint, asio::error_code& ec)
+  accept(endpoint_type& peer_endpoint, puerts_asio::error_code& ec)
   {
     typename Protocol::socket::template rebind_executor<
       executor_type>::other peer(impl_.get_executor());
@@ -2052,7 +2052,7 @@ public:
    * signature of the handler must be:
    * @code void handler(
    *   // Result of operation.
-   *   const asio::error_code& error,
+   *   const puerts_asio::error_code& error,
    *   // On success, the newly accepted socket.
    *   typename Protocol::socket::template
    *     rebind_executor<executor_type>::other peer
@@ -2060,12 +2060,12 @@ public:
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error,
-   *     asio::ip::tcp::socket peer)
+   * void accept_handler(const puerts_asio::error_code& error,
+   *     puerts_asio::ip::tcp::socket peer)
    * {
    *   if (!error)
    *   {
@@ -2075,15 +2075,15 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::endpoint endpoint;
    * acceptor.async_accept(endpoint, accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -2092,12 +2092,12 @@ public:
    * @li @c cancellation_type::total
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           executor_type>::other)) MoveAcceptHandler
             ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(MoveAcceptHandler,
-      void (asio::error_code,
+      void (puerts_asio::error_code,
         typename Protocol::socket::template
           rebind_executor<executor_type>::other))
   async_accept(endpoint_type& peer_endpoint,
@@ -2105,7 +2105,7 @@ public:
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
     return async_initiate<MoveAcceptHandler,
-      void (asio::error_code, typename Protocol::socket::template
+      void (puerts_asio::error_code, typename Protocol::socket::template
         rebind_executor<executor_type>::other)>(
           initiate_async_move_accept(this), handler,
           impl_.get_executor(), &peer_endpoint,
@@ -2130,14 +2130,14 @@ public:
    *
    * @returns A socket object representing the newly accepted connection.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::ip::tcp::socket socket(
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(
    *     acceptor.accept(my_context2, endpoint));
    * @endcode
    */
@@ -2149,12 +2149,12 @@ public:
           || execution::is_executor<Executor1>::value
       >::type = 0)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     typename Protocol::socket::template
         rebind_executor<Executor1>::other peer(ex);
     impl_.get_service().accept(impl_.get_implementation(),
         peer, &peer_endpoint, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
     return peer;
   }
 
@@ -2175,14 +2175,14 @@ public:
    *
    * @returns A socket object representing the newly accepted connection.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::ip::tcp::socket socket(
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(
    *     acceptor.accept(my_context2, endpoint));
    * @endcode
    */
@@ -2194,12 +2194,12 @@ public:
         is_convertible<ExecutionContext&, execution_context&>::value
       >::type = 0)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     typename Protocol::socket::template rebind_executor<
         typename ExecutionContext::executor_type>::other peer(context);
     impl_.get_service().accept(impl_.get_implementation(),
         peer, &peer_endpoint, ec);
-    asio::detail::throw_error(ec, "accept");
+    puerts_asio::detail::throw_error(ec, "accept");
     return peer;
   }
 
@@ -2225,10 +2225,10 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::ip::tcp::socket socket(
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(
    *     acceptor.accept(my_context2, endpoint, ec));
    * if (ec)
    * {
@@ -2239,7 +2239,7 @@ public:
   template <typename Executor1>
   typename Protocol::socket::template rebind_executor<Executor1>::other
   accept(const executor_type& ex,
-      endpoint_type& peer_endpoint, asio::error_code& ec,
+      endpoint_type& peer_endpoint, puerts_asio::error_code& ec,
       typename constraint<
         is_executor<Executor1>::value
           || execution::is_executor<Executor1>::value
@@ -2274,10 +2274,10 @@ public:
    *
    * @par Example
    * @code
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
-   * asio::ip::tcp::socket socket(
+   * puerts_asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::socket socket(
    *     acceptor.accept(my_context2, endpoint, ec));
    * if (ec)
    * {
@@ -2289,7 +2289,7 @@ public:
   typename Protocol::socket::template rebind_executor<
       typename ExecutionContext::executor_type>::other
   accept(ExecutionContext& context,
-      endpoint_type& peer_endpoint, asio::error_code& ec,
+      endpoint_type& peer_endpoint, puerts_asio::error_code& ec,
       typename constraint<
         is_convertible<ExecutionContext&, execution_context&>::value
       >::type = 0)
@@ -2321,19 +2321,19 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   typename Protocol::socket::template rebind_executor<
    *     Executor1>::other peer // On success, the newly accepted socket.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error,
-   *     asio::ip::tcp::socket peer)
+   * void accept_handler(const puerts_asio::error_code& error,
+   *     puerts_asio::ip::tcp::socket peer)
    * {
    *   if (!error)
    *   {
@@ -2343,15 +2343,15 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::endpoint endpoint;
    * acceptor.async_accept(my_context2, endpoint, accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -2360,12 +2360,12 @@ public:
    * @li @c cancellation_type::total
    */
   template <typename Executor1,
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           Executor1>::other)) MoveAcceptHandler
             ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(MoveAcceptHandler,
-      void (asio::error_code,
+      void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           Executor1>::other))
   async_accept(const Executor1& ex, endpoint_type& peer_endpoint,
@@ -2380,7 +2380,7 @@ public:
       Executor1>::other other_socket_type;
 
     return async_initiate<MoveAcceptHandler,
-      void (asio::error_code, other_socket_type)>(
+      void (puerts_asio::error_code, other_socket_type)>(
         initiate_async_move_accept(this), handler,
         ex, &peer_endpoint,
         static_cast<other_socket_type*>(0));
@@ -2406,7 +2406,7 @@ public:
    * completes. Copies will be made of the handler as required. The function
    * signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   typename Protocol::socket::template rebind_executor<
    *     typename ExecutionContext::executor_type>::other peer
    *       // On success, the newly accepted socket.
@@ -2414,12 +2414,12 @@ public:
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Example
    * @code
-   * void accept_handler(const asio::error_code& error,
-   *     asio::ip::tcp::socket peer)
+   * void accept_handler(const puerts_asio::error_code& error,
+   *     puerts_asio::ip::tcp::socket peer)
    * {
    *   if (!error)
    *   {
@@ -2429,15 +2429,15 @@ public:
    *
    * ...
    *
-   * asio::ip::tcp::acceptor acceptor(my_context);
+   * puerts_asio::ip::tcp::acceptor acceptor(my_context);
    * ...
-   * asio::ip::tcp::endpoint endpoint;
+   * puerts_asio::ip::tcp::endpoint endpoint;
    * acceptor.async_accept(my_context2, endpoint, accept_handler);
    * @endcode
    *
    * @par Per-Operation Cancellation
    * On POSIX or Windows operating systems, this asynchronous operation supports
-   * cancellation for the following asio::cancellation_type values:
+   * cancellation for the following puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -2446,12 +2446,12 @@ public:
    * @li @c cancellation_type::total
    */
   template <typename ExecutionContext,
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           typename ExecutionContext::executor_type>::other)) MoveAcceptHandler
             ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(MoveAcceptHandler,
-      void (asio::error_code,
+      void (puerts_asio::error_code,
         typename Protocol::socket::template rebind_executor<
           typename ExecutionContext::executor_type>::other))
   async_accept(ExecutionContext& context,
@@ -2466,7 +2466,7 @@ public:
       typename ExecutionContext::executor_type>::other other_socket_type;
 
     return async_initiate<MoveAcceptHandler,
-      void (asio::error_code, other_socket_type)>(
+      void (puerts_asio::error_code, other_socket_type)>(
         initiate_async_move_accept(this), handler,
         context.get_executor(), &peer_endpoint,
         static_cast<other_socket_type*>(0));
@@ -2591,7 +2591,7 @@ private:
 #endif
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

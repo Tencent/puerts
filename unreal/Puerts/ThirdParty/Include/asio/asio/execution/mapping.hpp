@@ -30,7 +30,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(GENERATING_DOCUMENTATION)
 
@@ -405,7 +405,7 @@ struct mapping_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, thread_t());
+    return puerts_asio::query(ex, thread_t());
   }
 
   template <typename Executor>
@@ -427,7 +427,7 @@ struct mapping_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, new_thread_t());
+    return puerts_asio::query(ex, new_thread_t());
   }
 
   template <typename Executor>
@@ -452,7 +452,7 @@ struct mapping_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, other_t());
+    return puerts_asio::query(ex, other_t());
   }
 
   ASIO_STATIC_CONSTEXPR_DEFAULT_INIT(thread_t, thread);
@@ -1109,7 +1109,7 @@ struct static_require<T, execution::mapping_t::other_t,
 
 #endif // defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

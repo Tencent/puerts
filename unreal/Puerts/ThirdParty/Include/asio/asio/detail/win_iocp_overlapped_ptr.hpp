@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Wraps a handler to create an OVERLAPPED object for use with overlapped I/O.
@@ -80,7 +80,7 @@ public:
     win_iocp_io_context* iocp_service = this->get_iocp_service(ex);
 
     typedef win_iocp_overlapped_op<Handler, Executor> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
     p.p = new (p.v) op(handler, ex);
 
@@ -119,7 +119,7 @@ public:
   }
 
   // Post completion notification for overlapped operation. Releases ownership.
-  void complete(const asio::error_code& ec,
+  void complete(const puerts_asio::error_code& ec,
       std::size_t bytes_transferred)
   {
     if (ptr_)
@@ -139,7 +139,7 @@ private:
       >::type* = 0)
   {
     return &use_service<win_iocp_io_context>(
-        asio::query(ex, execution::context));
+        puerts_asio::query(ex, execution::context));
   }
 
   template <typename Executor>
@@ -154,7 +154,7 @@ private:
   static win_iocp_io_context* get_iocp_service(
       const io_context::executor_type& ex)
   {
-    return &asio::query(ex, execution::context).impl_;
+    return &puerts_asio::query(ex, execution::context).impl_;
   }
 
   win_iocp_operation* ptr_;
@@ -162,7 +162,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

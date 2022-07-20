@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 inline thread_pool::executor_type
 thread_pool::get_executor() ASIO_NOEXCEPT
@@ -347,7 +347,7 @@ void thread_pool::basic_executor_type<Allocator, Bits>::defer(
 }
 #endif // !defined(ASIO_NO_TS_EXECUTORS)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

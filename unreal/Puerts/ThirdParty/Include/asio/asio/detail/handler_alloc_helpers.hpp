@@ -34,19 +34,19 @@ namespace asio_handler_alloc_helpers {
 template <typename Handler>
 inline void error_if_hooks_are_defined(Handler& h)
 {
-  using asio::asio_handler_allocate;
+  using puerts_asio::asio_handler_allocate;
   // If you get an error here it is because some of your handlers still
   // overload asio_handler_allocate, but this hook is no longer used.
-  (void)static_cast<asio::asio_handler_allocate_is_no_longer_used>(
+  (void)static_cast<puerts_asio::asio_handler_allocate_is_no_longer_used>(
     asio_handler_allocate(static_cast<std::size_t>(0),
-      asio::detail::addressof(h)));
+      puerts_asio::detail::addressof(h)));
 
-  using asio::asio_handler_deallocate;
+  using puerts_asio::asio_handler_deallocate;
   // If you get an error here it is because some of your handlers still
   // overload asio_handler_deallocate, but this hook is no longer used.
-  (void)static_cast<asio::asio_handler_deallocate_is_no_longer_used>(
+  (void)static_cast<puerts_asio::asio_handler_deallocate_is_no_longer_used>(
     asio_handler_deallocate(static_cast<void*>(0),
-      static_cast<std::size_t>(0), asio::detail::addressof(h)));
+      static_cast<std::size_t>(0), puerts_asio::detail::addressof(h)));
 }
 #endif // defined(ASIO_NO_DEPRECATED)
 
@@ -61,16 +61,16 @@ inline void* allocate(std::size_t s, Handler& h,
   (void)&error_if_hooks_are_defined<Handler>;
   (void)h;
 # if !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
-  return asio::detail::thread_info_base::allocate(
-      asio::detail::thread_context::top_of_thread_call_stack(),
+  return puerts_asio::detail::thread_info_base::allocate(
+      puerts_asio::detail::thread_context::top_of_thread_call_stack(),
       s, align);
 # else // !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
   return aligned_new(align, s);
 # endif // !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
 #else
   (void)align;
-  using asio::asio_handler_allocate;
-  return asio_handler_allocate(s, asio::detail::addressof(h));
+  using puerts_asio::asio_handler_allocate;
+  return asio_handler_allocate(s, puerts_asio::detail::addressof(h));
 #endif
 }
 
@@ -84,21 +84,21 @@ inline void deallocate(void* p, std::size_t s, Handler& h)
   (void)&error_if_hooks_are_defined<Handler>;
   (void)h;
 #if !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
-  asio::detail::thread_info_base::deallocate(
-      asio::detail::thread_context::top_of_thread_call_stack(), p, s);
+  puerts_asio::detail::thread_info_base::deallocate(
+      puerts_asio::detail::thread_context::top_of_thread_call_stack(), p, s);
 #else // !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
   (void)s;
   aligned_delete(p);
 #endif // !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
 #else
-  using asio::asio_handler_deallocate;
-  asio_handler_deallocate(p, s, asio::detail::addressof(h));
+  using puerts_asio::asio_handler_deallocate;
+  asio_handler_deallocate(p, s, puerts_asio::detail::addressof(h));
 #endif
 }
 
 } // namespace asio_handler_alloc_helpers
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Handler, typename T>
@@ -190,7 +190,7 @@ struct get_hook_allocator<Handler, std::allocator<T> >
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #define ASIO_DEFINE_HANDLER_PTR(op) \
   struct ptr \
@@ -204,14 +204,14 @@ struct get_hook_allocator<Handler, std::allocator<T> >
     } \
     static op* allocate(Handler& handler) \
     { \
-      typedef typename ::asio::associated_allocator< \
+      typedef typename ::puerts_asio::associated_allocator< \
         Handler>::type associated_allocator_type; \
-      typedef typename ::asio::detail::get_hook_allocator< \
+      typedef typename ::puerts_asio::detail::get_hook_allocator< \
         Handler, associated_allocator_type>::type hook_allocator_type; \
       ASIO_REBIND_ALLOC(hook_allocator_type, op) a( \
-            ::asio::detail::get_hook_allocator< \
+            ::puerts_asio::detail::get_hook_allocator< \
               Handler, associated_allocator_type>::get( \
-                handler, ::asio::get_associated_allocator(handler))); \
+                handler, ::puerts_asio::get_associated_allocator(handler))); \
       return a.allocate(1); \
     } \
     void reset() \
@@ -223,14 +223,14 @@ struct get_hook_allocator<Handler, std::allocator<T> >
       } \
       if (v) \
       { \
-        typedef typename ::asio::associated_allocator< \
+        typedef typename ::puerts_asio::associated_allocator< \
           Handler>::type associated_allocator_type; \
-        typedef typename ::asio::detail::get_hook_allocator< \
+        typedef typename ::puerts_asio::detail::get_hook_allocator< \
           Handler, associated_allocator_type>::type hook_allocator_type; \
         ASIO_REBIND_ALLOC(hook_allocator_type, op) a( \
-              ::asio::detail::get_hook_allocator< \
+              ::puerts_asio::detail::get_hook_allocator< \
                 Handler, associated_allocator_type>::get( \
-                  *h, ::asio::get_associated_allocator(*h))); \
+                  *h, ::puerts_asio::get_associated_allocator(*h))); \
         a.deallocate(static_cast<op*>(v), 1); \
         v = 0; \
       } \
@@ -250,10 +250,10 @@ struct get_hook_allocator<Handler, std::allocator<T> >
     } \
     static op* allocate(const Alloc& a) \
     { \
-      typedef typename ::asio::detail::get_recycling_allocator< \
+      typedef typename ::puerts_asio::detail::get_recycling_allocator< \
         Alloc, purpose>::type recycling_allocator_type; \
       ASIO_REBIND_ALLOC(recycling_allocator_type, op) a1( \
-            ::asio::detail::get_recycling_allocator< \
+            ::puerts_asio::detail::get_recycling_allocator< \
               Alloc, purpose>::get(a)); \
       return a1.allocate(1); \
     } \
@@ -266,10 +266,10 @@ struct get_hook_allocator<Handler, std::allocator<T> >
       } \
       if (v) \
       { \
-        typedef typename ::asio::detail::get_recycling_allocator< \
+        typedef typename ::puerts_asio::detail::get_recycling_allocator< \
           Alloc, purpose>::type recycling_allocator_type; \
         ASIO_REBIND_ALLOC(recycling_allocator_type, op) a1( \
-              ::asio::detail::get_recycling_allocator< \
+              ::puerts_asio::detail::get_recycling_allocator< \
                 Alloc, purpose>::get(*a)); \
         a1.deallocate(static_cast<op*>(v), 1); \
         v = 0; \
@@ -280,7 +280,7 @@ struct get_hook_allocator<Handler, std::allocator<T> >
 
 #define ASIO_DEFINE_HANDLER_ALLOCATOR_PTR(op) \
   ASIO_DEFINE_TAGGED_HANDLER_ALLOCATOR_PTR( \
-      ::asio::detail::thread_info_base::default_tag, op ) \
+      ::puerts_asio::detail::thread_info_base::default_tag, op ) \
   /**/
 
 #include "asio/detail/pop_options.hpp"

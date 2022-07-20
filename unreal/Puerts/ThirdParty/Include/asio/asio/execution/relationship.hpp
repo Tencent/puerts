@@ -30,7 +30,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(GENERATING_DOCUMENTATION)
 
@@ -344,7 +344,7 @@ struct relationship_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, fork_t());
+    return puerts_asio::query(ex, fork_t());
   }
 
   template <typename Executor>
@@ -367,7 +367,7 @@ struct relationship_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, continuation_t());
+    return puerts_asio::query(ex, continuation_t());
   }
 
   ASIO_STATIC_CONSTEXPR_DEFAULT_INIT(fork_t, fork);
@@ -858,7 +858,7 @@ struct static_require<T, execution::relationship_t::continuation_t,
 
 #endif // defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

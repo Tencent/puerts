@@ -24,7 +24,7 @@
 
 #if defined(GENERATING_DOCUMENTATION)
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 
 /// A customisation point that notifies an operation state object to start
@@ -59,17 +59,17 @@ struct can_start :
 };
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #else // defined(GENERATING_DOCUMENTATION)
 
 namespace asio_execution_start_fn {
 
-using asio::decay;
-using asio::declval;
-using asio::enable_if;
-using asio::traits::start_free;
-using asio::traits::start_member;
+using puerts_asio::decay;
+using puerts_asio::declval;
+using puerts_asio::enable_if;
+using puerts_asio::traits::start_free;
+using puerts_asio::traits::start_member;
 
 void start();
 
@@ -198,7 +198,7 @@ template <typename T>
 const T static_instance<T>::instance = {};
 
 } // namespace asio_execution_start_fn
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace {
 
@@ -238,7 +238,7 @@ constexpr bool is_nothrow_start_v
 #endif // defined(ASIO_HAS_VARIABLE_TEMPLATES)
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(GENERATING_DOCUMENTATION)
 

@@ -38,7 +38,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class epoll_reactor
@@ -75,14 +75,14 @@ public:
     ASIO_DECL operation* perform_io(uint32_t events);
     ASIO_DECL static void do_complete(
         void* owner, operation* base,
-        const asio::error_code& ec, std::size_t bytes_transferred);
+        const puerts_asio::error_code& ec, std::size_t bytes_transferred);
   };
 
   // Per-descriptor data.
   typedef descriptor_state* per_descriptor_data;
 
   // Constructor.
-  ASIO_DECL epoll_reactor(asio::execution_context& ctx);
+  ASIO_DECL epoll_reactor(puerts_asio::execution_context& ctx);
 
   // Destructor.
   ASIO_DECL ~epoll_reactor();
@@ -92,7 +92,7 @@ public:
 
   // Recreate internal descriptors following a fork.
   ASIO_DECL void notify_fork(
-      asio::execution_context::fork_event fork_ev);
+      puerts_asio::execution_context::fork_event fork_ev);
 
   // Initialise the task.
   ASIO_DECL void init_task();
@@ -262,7 +262,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

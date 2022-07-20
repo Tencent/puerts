@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_MOVE)
 namespace detail
@@ -77,7 +77,7 @@ public:
    * @return A reference to the io_context object that the I/O object will use
    * to dispatch handlers. Ownership is not transferred to the caller.
    */
-  asio::io_context& get_io_context()
+  puerts_asio::io_context& get_io_context()
   {
     return service_.get_io_context();
   }
@@ -91,14 +91,14 @@ public:
    * @return A reference to the io_context object that the I/O object will use
    * to dispatch handlers. Ownership is not transferred to the caller.
    */
-  asio::io_context& get_io_service()
+  puerts_asio::io_context& get_io_service()
   {
     return service_.get_io_context();
   }
 #endif // !defined(ASIO_NO_DEPRECATED)
 
   /// The type of the executor associated with the object.
-  typedef asio::io_context::executor_type executor_type;
+  typedef puerts_asio::io_context::executor_type executor_type;
 
   /// Get the executor associated with the object.
   executor_type get_executor() ASIO_NOEXCEPT
@@ -112,8 +112,8 @@ protected:
    * Performs:
    * @code get_service().construct(get_implementation()); @endcode
    */
-  explicit basic_io_object(asio::io_context& io_context)
-    : service_(asio::use_service<IoObjectService>(io_context))
+  explicit basic_io_object(puerts_asio::io_context& io_context)
+    : service_(puerts_asio::use_service<IoObjectService>(io_context))
   {
     service_.construct(implementation_);
   }
@@ -200,18 +200,18 @@ public:
   typedef typename service_type::implementation_type implementation_type;
 
 #if !defined(ASIO_NO_DEPRECATED)
-  asio::io_context& get_io_context()
+  puerts_asio::io_context& get_io_context()
   {
     return service_->get_io_context();
   }
 
-  asio::io_context& get_io_service()
+  puerts_asio::io_context& get_io_service()
   {
     return service_->get_io_context();
   }
 #endif // !defined(ASIO_NO_DEPRECATED)
 
-  typedef asio::io_context::executor_type executor_type;
+  typedef puerts_asio::io_context::executor_type executor_type;
 
   executor_type get_executor() ASIO_NOEXCEPT
   {
@@ -219,8 +219,8 @@ public:
   }
 
 protected:
-  explicit basic_io_object(asio::io_context& io_context)
-    : service_(&asio::use_service<IoObjectService>(io_context))
+  explicit basic_io_object(puerts_asio::io_context& io_context)
+    : service_(&puerts_asio::use_service<IoObjectService>(io_context))
   {
     service_->construct(implementation_);
   }
@@ -234,7 +234,7 @@ protected:
   template <typename IoObjectService1>
   basic_io_object(IoObjectService1& other_service,
       typename IoObjectService1::implementation_type& other_implementation)
-    : service_(&asio::use_service<IoObjectService>(
+    : service_(&puerts_asio::use_service<IoObjectService>(
           other_service.get_io_context()))
   {
     service_->converting_move_construct(implementation_,
@@ -283,7 +283,7 @@ private:
 };
 #endif // defined(ASIO_HAS_MOVE)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

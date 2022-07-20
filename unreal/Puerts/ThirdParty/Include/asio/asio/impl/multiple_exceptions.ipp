@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_STD_EXCEPTION_PTR)
 
@@ -42,7 +42,7 @@ std::exception_ptr multiple_exceptions::first_exception() const
 
 #endif // defined(ASIO_HAS_STD_EXCEPTION_PTR)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

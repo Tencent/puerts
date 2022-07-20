@@ -31,7 +31,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -46,7 +46,7 @@ namespace detail
       >::type executor_type;
 
     composed_work_guard(const Executor& ex)
-      : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+      : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
     {
     }
 
@@ -680,7 +680,7 @@ async_compose(ASIO_MOVE_ARG(Implementation) implementation,
 #endif // defined(ASIO_HAS_VARIADIC_TEMPLATES)
 #endif // !defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

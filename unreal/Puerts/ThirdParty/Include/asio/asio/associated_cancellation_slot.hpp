@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 template <typename T, typename CancellationSlot>
 struct associated_cancellation_slot;
@@ -170,7 +170,7 @@ struct associated_cancellation_slot_forwarding_base<T, S,
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

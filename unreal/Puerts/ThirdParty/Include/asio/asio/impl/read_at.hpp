@@ -36,7 +36,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -45,10 +45,10 @@ namespace detail
   std::size_t read_at_buffer_sequence(SyncRandomAccessReadDevice& d,
       uint64_t offset, const MutableBufferSequence& buffers,
       const MutableBufferIterator&, CompletionCondition completion_condition,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
-    ec = asio::error_code();
-    asio::detail::consuming_buffers<mutable_buffer,
+    ec = puerts_asio::error_code();
+    puerts_asio::detail::consuming_buffers<mutable_buffer,
         MutableBufferSequence, MutableBufferIterator> tmp(buffers);
     while (!tmp.empty())
     {
@@ -69,10 +69,10 @@ template <typename SyncRandomAccessReadDevice, typename MutableBufferSequence,
     typename CompletionCondition>
 std::size_t read_at(SyncRandomAccessReadDevice& d,
     uint64_t offset, const MutableBufferSequence& buffers,
-    CompletionCondition completion_condition, asio::error_code& ec)
+    CompletionCondition completion_condition, puerts_asio::error_code& ec)
 {
   return detail::read_at_buffer_sequence(d, offset, buffers,
-      asio::buffer_sequence_begin(buffers),
+      puerts_asio::buffer_sequence_begin(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
 }
 
@@ -80,17 +80,17 @@ template <typename SyncRandomAccessReadDevice, typename MutableBufferSequence>
 inline std::size_t read_at(SyncRandomAccessReadDevice& d,
     uint64_t offset, const MutableBufferSequence& buffers)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_at(
       d, offset, buffers, transfer_all(), ec);
-  asio::detail::throw_error(ec, "read_at");
+  puerts_asio::detail::throw_error(ec, "read_at");
   return bytes_transferred;
 }
 
 template <typename SyncRandomAccessReadDevice, typename MutableBufferSequence>
 inline std::size_t read_at(SyncRandomAccessReadDevice& d,
     uint64_t offset, const MutableBufferSequence& buffers,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   return read_at(d, offset, buffers, transfer_all(), ec);
 }
@@ -101,10 +101,10 @@ inline std::size_t read_at(SyncRandomAccessReadDevice& d,
     uint64_t offset, const MutableBufferSequence& buffers,
     CompletionCondition completion_condition)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_at(d, offset, buffers,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "read_at");
+  puerts_asio::detail::throw_error(ec, "read_at");
   return bytes_transferred;
 }
 
@@ -114,10 +114,10 @@ inline std::size_t read_at(SyncRandomAccessReadDevice& d,
 template <typename SyncRandomAccessReadDevice, typename Allocator,
     typename CompletionCondition>
 std::size_t read_at(SyncRandomAccessReadDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
-    CompletionCondition completion_condition, asio::error_code& ec)
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec)
 {
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   std::size_t total_transferred = 0;
   std::size_t max_size = detail::adapt_completion_condition_result(
         completion_condition(ec, total_transferred));
@@ -137,19 +137,19 @@ std::size_t read_at(SyncRandomAccessReadDevice& d,
 
 template <typename SyncRandomAccessReadDevice, typename Allocator>
 inline std::size_t read_at(SyncRandomAccessReadDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b)
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_at(
       d, offset, b, transfer_all(), ec);
-  asio::detail::throw_error(ec, "read_at");
+  puerts_asio::detail::throw_error(ec, "read_at");
   return bytes_transferred;
 }
 
 template <typename SyncRandomAccessReadDevice, typename Allocator>
 inline std::size_t read_at(SyncRandomAccessReadDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
-    asio::error_code& ec)
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
+    puerts_asio::error_code& ec)
 {
   return read_at(d, offset, b, transfer_all(), ec);
 }
@@ -157,13 +157,13 @@ inline std::size_t read_at(SyncRandomAccessReadDevice& d,
 template <typename SyncRandomAccessReadDevice, typename Allocator,
     typename CompletionCondition>
 inline std::size_t read_at(SyncRandomAccessReadDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_at(d, offset, b,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "read_at");
+  puerts_asio::detail::throw_error(ec, "read_at");
   return bytes_transferred;
 }
 
@@ -222,7 +222,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       std::size_t max_size;
@@ -247,19 +247,19 @@ namespace detail
             break;
           if (this->cancelled() != cancellation_type::none)
           {
-            ec = asio::error::operation_aborted;
+            ec = puerts_asio::error::operation_aborted;
             break;
           }
         }
 
         ASIO_MOVE_OR_LVALUE(ReadHandler)(handler_)(
-            static_cast<const asio::error_code&>(ec),
+            static_cast<const puerts_asio::error_code&>(ec),
             static_cast<const std::size_t&>(buffers_.total_consumed()));
       }
     }
 
   //private:
-    typedef asio::detail::consuming_buffers<mutable_buffer,
+    typedef puerts_asio::detail::consuming_buffers<mutable_buffer,
         MutableBufferSequence, MutableBufferIterator> buffers_type;
 
     AsyncRandomAccessReadDevice& device_;
@@ -354,7 +354,7 @@ namespace detail
     detail::read_at_op<AsyncRandomAccessReadDevice, MutableBufferSequence,
       MutableBufferIterator, CompletionCondition, ReadHandler>(
         d, offset, buffers, completion_condition, handler)(
-          asio::error_code(), 0, 1);
+          puerts_asio::error_code(), 0, 1);
   }
 
   template <typename AsyncRandomAccessReadDevice>
@@ -387,7 +387,7 @@ namespace detail
       non_const_lvalue<ReadHandler> handler2(handler);
       non_const_lvalue<CompletionCondition> completion_cond2(completion_cond);
       start_read_at_buffer_sequence_op(device_, offset, buffers,
-          asio::buffer_sequence_begin(buffers),
+          puerts_asio::buffer_sequence_begin(buffers),
           completion_cond2.value, handler2.value);
     }
 
@@ -422,17 +422,17 @@ struct associator<Associator,
 
 template <typename AsyncRandomAccessReadDevice,
     typename MutableBufferSequence, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_at(AsyncRandomAccessReadDevice& d,
     uint64_t offset, const MutableBufferSequence& buffers,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(ReadHandler) handler)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_at_buffer_sequence<
         AsyncRandomAccessReadDevice>(d),
       handler, offset, buffers,
@@ -440,16 +440,16 @@ async_read_at(AsyncRandomAccessReadDevice& d,
 }
 
 template <typename AsyncRandomAccessReadDevice, typename MutableBufferSequence,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_at(AsyncRandomAccessReadDevice& d,
     uint64_t offset, const MutableBufferSequence& buffers,
     ASIO_MOVE_ARG(ReadHandler) handler)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_at_buffer_sequence<
         AsyncRandomAccessReadDevice>(d),
       handler, offset, buffers, transfer_all());
@@ -512,7 +512,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       std::size_t max_size, bytes_available;
@@ -538,13 +538,13 @@ namespace detail
             break;
           if (this->cancelled() != cancellation_type::none)
           {
-            ec = asio::error::operation_aborted;
+            ec = puerts_asio::error::operation_aborted;
             break;
           }
         }
 
         ASIO_MOVE_OR_LVALUE(ReadHandler)(handler_)(
-            static_cast<const asio::error_code&>(ec),
+            static_cast<const puerts_asio::error_code&>(ec),
             static_cast<const std::size_t&>(total_transferred_));
       }
     }
@@ -552,7 +552,7 @@ namespace detail
   //private:
     AsyncRandomAccessReadDevice& device_;
     uint64_t offset_;
-    asio::basic_streambuf<Allocator>& streambuf_;
+    puerts_asio::basic_streambuf<Allocator>& streambuf_;
     int start_;
     std::size_t total_transferred_;
     ReadHandler handler_;
@@ -659,7 +659,7 @@ namespace detail
       read_at_streambuf_op<AsyncRandomAccessReadDevice, Allocator,
         CompletionCondition, typename decay<ReadHandler>::type>(
           device_, offset, *b, completion_cond2.value, handler2.value)(
-            asio::error_code(), 0, 1);
+            puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -692,33 +692,33 @@ struct associator<Associator,
 
 template <typename AsyncRandomAccessReadDevice,
     typename Allocator, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_at(AsyncRandomAccessReadDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(ReadHandler) handler)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_at_streambuf<AsyncRandomAccessReadDevice>(d),
       handler, offset, &b,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition));
 }
 
 template <typename AsyncRandomAccessReadDevice, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_at(AsyncRandomAccessReadDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
     ASIO_MOVE_ARG(ReadHandler) handler)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_at_streambuf<AsyncRandomAccessReadDevice>(d),
       handler, offset, &b, transfer_all());
 }
@@ -726,7 +726,7 @@ async_read_at(AsyncRandomAccessReadDevice& d,
 #endif // !defined(ASIO_NO_IOSTREAM)
 #endif // !defined(ASIO_NO_EXTENSIONS)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

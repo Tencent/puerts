@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class win_iocp_io_context;
@@ -40,7 +40,7 @@ class win_iocp_operation
 public:
   typedef win_iocp_operation operation_type;
 
-  void complete(void* owner, const asio::error_code& ec,
+  void complete(void* owner, const puerts_asio::error_code& ec,
       std::size_t bytes_transferred)
   {
     func_(owner, this, ec, bytes_transferred);
@@ -48,7 +48,7 @@ public:
 
   void destroy()
   {
-    func_(0, this, asio::error_code(), 0);
+    func_(0, this, puerts_asio::error_code(), 0);
   }
 
   void reset()
@@ -64,7 +64,7 @@ public:
 protected:
   typedef void (*func_type)(
       void*, win_iocp_operation*,
-      const asio::error_code&, std::size_t);
+      const puerts_asio::error_code&, std::size_t);
 
   win_iocp_operation(func_type func)
     : next_(0),
@@ -87,7 +87,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

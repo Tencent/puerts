@@ -23,12 +23,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 struct win_static_mutex
 {
-  typedef asio::detail::scoped_lock<win_static_mutex> scoped_lock;
+  typedef puerts_asio::detail::scoped_lock<win_static_mutex> scoped_lock;
 
   // Initialise the mutex.
   ASIO_DECL void init();
@@ -61,7 +61,7 @@ struct win_static_mutex
 #endif // defined(UNDER_CE)
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

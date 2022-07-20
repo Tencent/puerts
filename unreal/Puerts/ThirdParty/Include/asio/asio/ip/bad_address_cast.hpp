@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// Thrown to indicate a failed address conversion.
@@ -46,7 +46,7 @@ public:
 };
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

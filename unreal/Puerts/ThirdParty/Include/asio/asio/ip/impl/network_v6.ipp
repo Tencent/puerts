@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 network_v6::network_v6(const address_v6& addr, unsigned short prefix_len)
@@ -38,7 +38,7 @@ network_v6::network_v6(const address_v6& addr, unsigned short prefix_len)
   if (prefix_len > 128)
   {
     std::out_of_range ex("prefix length too large");
-    asio::detail::throw_exception(ex);
+    puerts_asio::detail::throw_exception(ex);
   }
 }
 
@@ -87,16 +87,16 @@ bool network_v6::is_subnet_of(const network_v6& other) const
 
 std::string network_v6::to_string() const
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::string addr = to_string(ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return addr;
 }
 
-std::string network_v6::to_string(asio::error_code& ec) const
+std::string network_v6::to_string(puerts_asio::error_code& ec) const
 {
   using namespace std; // For sprintf.
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   char prefix_len[16];
 #if defined(ASIO_HAS_SECURE_RTL)
   sprintf_s(prefix_len, sizeof(prefix_len), "/%u", prefix_length_);
@@ -111,40 +111,40 @@ network_v6 make_network_v6(const char* str)
   return make_network_v6(std::string(str));
 }
 
-network_v6 make_network_v6(const char* str, asio::error_code& ec)
+network_v6 make_network_v6(const char* str, puerts_asio::error_code& ec)
 {
   return make_network_v6(std::string(str), ec);
 }
 
 network_v6 make_network_v6(const std::string& str)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   network_v6 net = make_network_v6(str, ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return net;
 }
 
 network_v6 make_network_v6(const std::string& str,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   std::string::size_type pos = str.find_first_of("/");
 
   if (pos == std::string::npos)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v6();
   }
 
   if (pos == str.size() - 1)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v6();
   }
 
   std::string::size_type end = str.find_first_not_of("0123456789", pos + 1);
   if (end != std::string::npos)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v6();
   }
 
@@ -155,7 +155,7 @@ network_v6 make_network_v6(const std::string& str,
   const int prefix_len = std::atoi(str.substr(pos + 1).c_str());
   if (prefix_len < 0 || prefix_len > 128)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v6();
   }
 
@@ -170,7 +170,7 @@ network_v6 make_network_v6(string_view str)
 }
 
 network_v6 make_network_v6(string_view str,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   return make_network_v6(static_cast<std::string>(str), ec);
 }
@@ -178,7 +178,7 @@ network_v6 make_network_v6(string_view str,
 #endif // defined(ASIO_HAS_STRING_VIEW)
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

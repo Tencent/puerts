@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Handler, typename = void>
@@ -44,14 +44,14 @@ public:
 protected:
   explicit base_from_cancellation_state(const Handler& handler)
     : cancellation_state_(
-        asio::get_associated_cancellation_slot(handler))
+        puerts_asio::get_associated_cancellation_slot(handler))
   {
   }
 
   template <typename Filter>
   base_from_cancellation_state(const Handler& handler, Filter filter)
     : cancellation_state_(
-        asio::get_associated_cancellation_slot(handler), filter, filter)
+        puerts_asio::get_associated_cancellation_slot(handler), filter, filter)
   {
   }
 
@@ -60,7 +60,7 @@ protected:
       ASIO_MOVE_ARG(InFilter) in_filter,
       ASIO_MOVE_ARG(OutFilter) out_filter)
     : cancellation_state_(
-        asio::get_associated_cancellation_slot(handler),
+        puerts_asio::get_associated_cancellation_slot(handler),
         ASIO_MOVE_CAST(InFilter)(in_filter),
         ASIO_MOVE_CAST(OutFilter)(out_filter))
   {
@@ -69,14 +69,14 @@ protected:
   void reset_cancellation_state(const Handler& handler)
   {
     cancellation_state_ = cancellation_state(
-        asio::get_associated_cancellation_slot(handler));
+        puerts_asio::get_associated_cancellation_slot(handler));
   }
 
   template <typename Filter>
   void reset_cancellation_state(const Handler& handler, Filter filter)
   {
     cancellation_state_ = cancellation_state(
-        asio::get_associated_cancellation_slot(handler), filter, filter);
+        puerts_asio::get_associated_cancellation_slot(handler), filter, filter);
   }
 
   template <typename InFilter, typename OutFilter>
@@ -85,7 +85,7 @@ protected:
       ASIO_MOVE_ARG(OutFilter) out_filter)
   {
     cancellation_state_ = cancellation_state(
-        asio::get_associated_cancellation_slot(handler),
+        puerts_asio::get_associated_cancellation_slot(handler),
         ASIO_MOVE_CAST(InFilter)(in_filter),
         ASIO_MOVE_CAST(OutFilter)(out_filter));
   }
@@ -156,7 +156,7 @@ protected:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

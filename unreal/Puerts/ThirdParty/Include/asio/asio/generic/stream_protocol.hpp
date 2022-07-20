@@ -26,19 +26,19 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace generic {
 
 /// Encapsulates the flags needed for a generic stream-oriented socket.
 /**
- * The asio::generic::stream_protocol class contains flags necessary for
+ * The puerts_asio::generic::stream_protocol class contains flags necessary for
  * stream-oriented sockets of any address family and protocol.
  *
  * @par Examples
  * Constructing using a native address family and socket protocol:
  * @code stream_protocol p(AF_INET, IPPROTO_TCP); @endcode
  * Constructing from a specific protocol type:
- * @code stream_protocol p(asio::ip::tcp::v4()); @endcode
+ * @code stream_protocol p(puerts_asio::ip::tcp::v4()); @endcode
  *
  * @par Thread Safety
  * @e Distinct @e objects: Safe.@n
@@ -69,7 +69,7 @@ public:
     if (source_protocol.type() != type())
     {
       std::bad_cast ex;
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 
@@ -120,7 +120,7 @@ private:
 };
 
 } // namespace generic
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -25,7 +25,7 @@
 # include <boost/detail/atomic_count.hpp>
 #endif // defined(ASIO_HAS_STD_ATOMIC)
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if !defined(ASIO_HAS_THREADS)
@@ -59,6 +59,6 @@ inline bool ref_count_down(atomic_count& a) { return --a == 0; }
 #endif // defined(ASIO_HAS_STD_ATOMIC)
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_ATOMIC_COUNT_HPP

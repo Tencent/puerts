@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Handler>
@@ -1064,7 +1064,7 @@ struct associator<Associator,
 
 #endif // defined(ASIO_HAS_MOVE)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

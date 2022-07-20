@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Submits a completion token or function object for execution.
 /**
@@ -117,7 +117,7 @@ ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void()) post(
     typename constraint<is_convertible<
       ExecutionContext&, execution_context&>::value>::type = 0);
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

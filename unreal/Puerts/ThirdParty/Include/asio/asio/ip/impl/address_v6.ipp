@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 address_v6::address_v6() ASIO_NOEXCEPT
@@ -47,7 +47,7 @@ address_v6::address_v6(const address_v6::bytes_type& bytes,
     if (bytes[i] > 0xFF)
     {
       std::out_of_range ex("address_v6 from bytes_type");
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 #endif // UCHAR_MAX > 0xFF
@@ -100,25 +100,25 @@ address_v6::bytes_type address_v6::to_bytes() const ASIO_NOEXCEPT
 
 std::string address_v6::to_string() const
 {
-  asio::error_code ec;
-  char addr_str[asio::detail::max_addr_v6_str_len];
+  puerts_asio::error_code ec;
+  char addr_str[puerts_asio::detail::max_addr_v6_str_len];
   const char* addr =
-    asio::detail::socket_ops::inet_ntop(
+    puerts_asio::detail::socket_ops::inet_ntop(
         ASIO_OS_DEF(AF_INET6), &addr_, addr_str,
-        asio::detail::max_addr_v6_str_len, scope_id_, ec);
+        puerts_asio::detail::max_addr_v6_str_len, scope_id_, ec);
   if (addr == 0)
-    asio::detail::throw_error(ec);
+    puerts_asio::detail::throw_error(ec);
   return addr;
 }
 
 #if !defined(ASIO_NO_DEPRECATED)
-std::string address_v6::to_string(asio::error_code& ec) const
+std::string address_v6::to_string(puerts_asio::error_code& ec) const
 {
-  char addr_str[asio::detail::max_addr_v6_str_len];
+  char addr_str[puerts_asio::detail::max_addr_v6_str_len];
   const char* addr =
-    asio::detail::socket_ops::inet_ntop(
+    puerts_asio::detail::socket_ops::inet_ntop(
         ASIO_OS_DEF(AF_INET6), &addr_, addr_str,
-        asio::detail::max_addr_v6_str_len, scope_id_, ec);
+        puerts_asio::detail::max_addr_v6_str_len, scope_id_, ec);
   if (addr == 0)
     return std::string();
   return addr;
@@ -129,7 +129,7 @@ address_v4 address_v6::to_v4() const
   if (!is_v4_mapped() && !is_v4_compatible())
   {
     bad_address_cast ex;
-    asio::detail::throw_exception(ex);
+    puerts_asio::detail::throw_exception(ex);
   }
 
   address_v4::bytes_type v4_bytes = { { addr_.s6_addr[12],
@@ -232,7 +232,7 @@ bool operator==(const address_v6& a1, const address_v6& a2) ASIO_NOEXCEPT
 {
   using namespace std; // For memcmp.
   return memcmp(&a1.addr_, &a2.addr_,
-      sizeof(asio::detail::in6_addr_type)) == 0
+      sizeof(puerts_asio::detail::in6_addr_type)) == 0
     && a1.scope_id_ == a2.scope_id_;
 }
 
@@ -240,7 +240,7 @@ bool operator<(const address_v6& a1, const address_v6& a2) ASIO_NOEXCEPT
 {
   using namespace std; // For memcmp.
   int memcmp_result = memcmp(&a1.addr_, &a2.addr_,
-      sizeof(asio::detail::in6_addr_type));
+      sizeof(puerts_asio::detail::in6_addr_type));
   if (memcmp_result < 0)
     return true;
   if (memcmp_result > 0)
@@ -275,18 +275,18 @@ address_v6 address_v6::v4_compatible(const address_v4& addr)
 
 address_v6 make_address_v6(const char* str)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   address_v6 addr = make_address_v6(str, ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return addr;
 }
 
 address_v6 make_address_v6(const char* str,
-    asio::error_code& ec) ASIO_NOEXCEPT
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT
 {
   address_v6::bytes_type bytes;
   unsigned long scope_id = 0;
-  if (asio::detail::socket_ops::inet_pton(
+  if (puerts_asio::detail::socket_ops::inet_pton(
         ASIO_OS_DEF(AF_INET6), str, &bytes[0], &scope_id, ec) <= 0)
     return address_v6();
   return address_v6(bytes, scope_id);
@@ -298,7 +298,7 @@ address_v6 make_address_v6(const std::string& str)
 }
 
 address_v6 make_address_v6(const std::string& str,
-    asio::error_code& ec) ASIO_NOEXCEPT
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT
 {
   return make_address_v6(str.c_str(), ec);
 }
@@ -311,7 +311,7 @@ address_v6 make_address_v6(string_view str)
 }
 
 address_v6 make_address_v6(string_view str,
-    asio::error_code& ec) ASIO_NOEXCEPT
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT
 {
   return make_address_v6(static_cast<std::string>(str), ec);
 }
@@ -324,7 +324,7 @@ address_v4 make_address_v4(
   if (!v6_addr.is_v4_mapped())
   {
     bad_address_cast ex;
-    asio::detail::throw_exception(ex);
+    puerts_asio::detail::throw_exception(ex);
   }
 
   address_v6::bytes_type v6_bytes = v6_addr.to_bytes();
@@ -343,7 +343,7 @@ address_v6 make_address_v6(
 }
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

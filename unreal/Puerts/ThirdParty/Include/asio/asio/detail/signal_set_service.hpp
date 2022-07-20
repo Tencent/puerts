@@ -40,7 +40,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(NSIG) && (NSIG > 0)
@@ -125,7 +125,7 @@ public:
 
   // Perform fork-related housekeeping.
   ASIO_DECL void notify_fork(
-      asio::execution_context::fork_event fork_ev);
+      puerts_asio::execution_context::fork_event fork_ev);
 
   // Construct a new signal_set implementation.
   ASIO_DECL void construct(implementation_type& impl);
@@ -134,20 +134,20 @@ public:
   ASIO_DECL void destroy(implementation_type& impl);
 
   // Add a signal to a signal_set.
-  ASIO_DECL asio::error_code add(implementation_type& impl,
-      int signal_number, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code add(implementation_type& impl,
+      int signal_number, puerts_asio::error_code& ec);
 
   // Remove a signal to a signal_set.
-  ASIO_DECL asio::error_code remove(implementation_type& impl,
-      int signal_number, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code remove(implementation_type& impl,
+      int signal_number, puerts_asio::error_code& ec);
 
   // Remove all signals from a signal_set.
-  ASIO_DECL asio::error_code clear(implementation_type& impl,
-      asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code clear(implementation_type& impl,
+      puerts_asio::error_code& ec);
 
   // Cancel all operations associated with the signal set.
-  ASIO_DECL asio::error_code cancel(implementation_type& impl,
-      asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code cancel(implementation_type& impl,
+      puerts_asio::error_code& ec);
 
   // Start an asynchronous operation to wait for a signal to be delivered.
   template <typename Handler, typename IoExecutor>
@@ -156,7 +156,7 @@ public:
   {
     // Allocate and construct an operation to wrap the handler.
     typedef signal_handler<Handler, IoExecutor> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
     p.p = new (p.v) op(handler, io_ex);
 
@@ -218,7 +218,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

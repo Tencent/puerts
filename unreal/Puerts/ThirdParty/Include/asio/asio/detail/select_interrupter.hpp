@@ -27,7 +27,7 @@
 # include "asio/detail/pipe_select_interrupter.hpp"
 #endif
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_WINDOWS) || defined(__CYGWIN__) || defined(__SYMBIAN32__)
@@ -39,7 +39,7 @@ typedef pipe_select_interrupter select_interrupter;
 #endif
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // !defined(ASIO_WINDOWS_RUNTIME)
 

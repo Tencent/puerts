@@ -35,7 +35,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace windows {
 
 /// Provides object-oriented handle functionality.
@@ -66,7 +66,7 @@ public:
 #if defined(GENERATING_DOCUMENTATION)
   typedef implementation_defined native_handle_type;
 #else
-  typedef asio::detail::win_object_handle_service::native_handle_type
+  typedef puerts_asio::detail::win_object_handle_service::native_handle_type
     native_handle_type;
 #endif
 
@@ -115,15 +115,15 @@ public:
    *
    * @param native_handle The new underlying handle implementation.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   basic_object_handle(const executor_type& ex,
       const native_handle_type& native_handle)
     : impl_(0, ex)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().assign(impl_.get_implementation(), native_handle, ec);
-    asio::detail::throw_error(ec, "assign");
+    puerts_asio::detail::throw_error(ec, "assign");
   }
 
   /// Construct an object handle on an existing native handle.
@@ -137,7 +137,7 @@ public:
    *
    * @param native_handle The new underlying handle implementation.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   template <typename ExecutionContext>
   basic_object_handle(ExecutionContext& context,
@@ -147,9 +147,9 @@ public:
       >::type = 0)
     : impl_(0, 0, context)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().assign(impl_.get_implementation(), native_handle, ec);
-    asio::detail::throw_error(ec, "assign");
+    puerts_asio::detail::throw_error(ec, "assign");
   }
 
 #if defined(ASIO_HAS_MOVE) || defined(GENERATING_DOCUMENTATION)
@@ -227,13 +227,13 @@ public:
    *
    * @param handle A native handle.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void assign(const native_handle_type& handle)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().assign(impl_.get_implementation(), handle, ec);
-    asio::detail::throw_error(ec, "assign");
+    puerts_asio::detail::throw_error(ec, "assign");
   }
 
   /// Assign an existing native handle to the handle.
@@ -245,7 +245,7 @@ public:
    * @param ec Set to indicate what error occurred, if any.
    */
   ASIO_SYNC_OP_VOID assign(const native_handle_type& handle,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     impl_.get_service().assign(impl_.get_implementation(), handle, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -261,26 +261,26 @@ public:
   /**
    * This function is used to close the handle. Any asynchronous read or write
    * operations will be cancelled immediately, and will complete with the
-   * asio::error::operation_aborted error.
+   * puerts_asio::error::operation_aborted error.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void close()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().close(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "close");
+    puerts_asio::detail::throw_error(ec, "close");
   }
 
   /// Close the handle.
   /**
    * This function is used to close the handle. Any asynchronous read or write
    * operations will be cancelled immediately, and will complete with the
-   * asio::error::operation_aborted error.
+   * puerts_asio::error::operation_aborted error.
    *
    * @param ec Set to indicate what error occurred, if any.
    */
-  ASIO_SYNC_OP_VOID close(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID close(puerts_asio::error_code& ec)
   {
     impl_.get_service().close(impl_.get_implementation(), ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -301,26 +301,26 @@ public:
   /**
    * This function causes all outstanding asynchronous read or write operations
    * to finish immediately, and the handlers for cancelled operations will be
-   * passed the asio::error::operation_aborted error.
+   * passed the puerts_asio::error::operation_aborted error.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void cancel()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().cancel(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "cancel");
+    puerts_asio::detail::throw_error(ec, "cancel");
   }
 
   /// Cancel all asynchronous operations associated with the handle.
   /**
    * This function causes all outstanding asynchronous read or write operations
    * to finish immediately, and the handlers for cancelled operations will be
-   * passed the asio::error::operation_aborted error.
+   * passed the puerts_asio::error::operation_aborted error.
    *
    * @param ec Set to indicate what error occurred, if any.
    */
-  ASIO_SYNC_OP_VOID cancel(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID cancel(puerts_asio::error_code& ec)
   {
     impl_.get_service().cancel(impl_.get_implementation(), ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -332,13 +332,13 @@ public:
    * signalled state. This function blocks and does not return until the object
    * handle has been set to the signalled state.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void wait()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().wait(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "wait");
+    puerts_asio::detail::throw_error(ec, "wait");
   }
 
   /// Perform a blocking wait on the object handle.
@@ -349,7 +349,7 @@ public:
    *
    * @param ec Set to indicate what error occurred, if any.
    */
-  void wait(asio::error_code& ec)
+  void wait(puerts_asio::error_code& ec)
   {
     impl_.get_service().wait(impl_.get_implementation(), ec);
   }
@@ -363,23 +363,23 @@ public:
    * the signalled state. Copies will be made of the handler as required. The
    * function signature of the handler must be:
    * @code void handler(
-   *   const asio::error_code& error // Result of operation.
+   *   const puerts_asio::error_code& error // Result of operation.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code))
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code))
         WaitHandler ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(WaitHandler,
-      void (asio::error_code))
+      void (puerts_asio::error_code))
   async_wait(
       ASIO_MOVE_ARG(WaitHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    return async_initiate<WaitHandler, void (asio::error_code)>(
+    return async_initiate<WaitHandler, void (puerts_asio::error_code)>(
         initiate_async_wait(this), handler);
   }
 
@@ -420,12 +420,12 @@ private:
     basic_object_handle* self_;
   };
 
-  asio::detail::io_object_impl<
-    asio::detail::win_object_handle_service, Executor> impl_;
+  puerts_asio::detail::io_object_impl<
+    puerts_asio::detail::win_object_handle_service, Executor> impl_;
 };
 
 } // namespace windows
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

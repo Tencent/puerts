@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Adapts the FD_SET type to meet the Descriptor_Set concept's requirements.
@@ -68,7 +68,7 @@ public:
       reactor_op_queue<socket_type>::iterator op_iter = i++;
       if (!set(op_iter->first))
       {
-        asio::error_code ec(error::fd_set_failure);
+        puerts_asio::error_code ec(error::fd_set_failure);
         operations.cancel_operations(op_iter, ops, ec);
       }
     }
@@ -107,7 +107,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

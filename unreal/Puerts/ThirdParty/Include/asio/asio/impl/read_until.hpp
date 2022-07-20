@@ -35,7 +35,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -84,17 +84,17 @@ inline std::size_t read_until(SyncReadStream& s,
       !is_dynamic_buffer_v2<typename decay<DynamicBuffer_v1>::type>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers), delim, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream, typename DynamicBuffer_v1>
 std::size_t read_until(SyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    char delim, asio::error_code& ec,
+    char delim, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type,
@@ -121,7 +121,7 @@ std::size_t read_until(SyncReadStream& s,
     if (iter != end)
     {
       // Found a match. We're done.
-      ec = asio::error_code();
+      ec = puerts_asio::error_code();
       return iter - begin + 1;
     }
     else
@@ -158,17 +158,17 @@ inline std::size_t read_until(SyncReadStream& s,
       !is_dynamic_buffer_v2<typename decay<DynamicBuffer_v1>::type>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers), delim, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream, typename DynamicBuffer_v1>
 std::size_t read_until(SyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    ASIO_STRING_VIEW_PARAM delim, asio::error_code& ec,
+    ASIO_STRING_VIEW_PARAM delim, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type,
@@ -198,7 +198,7 @@ std::size_t read_until(SyncReadStream& s,
       if (result.second)
       {
         // Full match. We're done.
-        ec = asio::error_code();
+        ec = puerts_asio::error_code();
         return result.first - begin + delim.length();
       }
       else
@@ -244,17 +244,17 @@ inline std::size_t read_until(SyncReadStream& s,
       !is_dynamic_buffer_v2<typename decay<DynamicBuffer_v1>::type>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers), expr, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream, typename DynamicBuffer_v1>
 std::size_t read_until(SyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    const boost::regex& expr, asio::error_code& ec,
+    const boost::regex& expr, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v1<typename decay<DynamicBuffer_v1>::type>::value
     >::type,
@@ -286,7 +286,7 @@ std::size_t read_until(SyncReadStream& s,
       if (match_results[0].matched)
       {
         // Full match. We're done.
-        ec = asio::error_code();
+        ec = puerts_asio::error_code();
         return match_results[0].second - begin;
       }
       else
@@ -335,11 +335,11 @@ inline std::size_t read_until(SyncReadStream& s,
       !is_dynamic_buffer_v2<typename decay<DynamicBuffer_v1>::type>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
       match_condition, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
@@ -347,7 +347,7 @@ template <typename SyncReadStream,
     typename DynamicBuffer_v1, typename MatchCondition>
 std::size_t read_until(SyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
-    MatchCondition match_condition, asio::error_code& ec,
+    MatchCondition match_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_match_condition<MatchCondition>::value
     >::type,
@@ -377,7 +377,7 @@ std::size_t read_until(SyncReadStream& s,
     if (result.second)
     {
       // Full match. We're done.
-      ec = asio::error_code();
+      ec = puerts_asio::error_code();
       return result.first - begin;
     }
     else if (result.first != end)
@@ -412,22 +412,22 @@ std::size_t read_until(SyncReadStream& s,
 
 template <typename SyncReadStream, typename Allocator>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b, char delim)
+    puerts_asio::basic_streambuf<Allocator>& b, char delim)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), delim);
 }
 
 template <typename SyncReadStream, typename Allocator>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b, char delim,
-    asio::error_code& ec)
+    puerts_asio::basic_streambuf<Allocator>& b, char delim,
+    puerts_asio::error_code& ec)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), delim, ec);
 }
 
 template <typename SyncReadStream, typename Allocator>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     ASIO_STRING_VIEW_PARAM delim)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), delim);
@@ -435,8 +435,8 @@ inline std::size_t read_until(SyncReadStream& s,
 
 template <typename SyncReadStream, typename Allocator>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b,
-    ASIO_STRING_VIEW_PARAM delim, asio::error_code& ec)
+    puerts_asio::basic_streambuf<Allocator>& b,
+    ASIO_STRING_VIEW_PARAM delim, puerts_asio::error_code& ec)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), delim, ec);
 }
@@ -445,15 +445,15 @@ inline std::size_t read_until(SyncReadStream& s,
 
 template <typename SyncReadStream, typename Allocator>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b, const boost::regex& expr)
+    puerts_asio::basic_streambuf<Allocator>& b, const boost::regex& expr)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), expr);
 }
 
 template <typename SyncReadStream, typename Allocator>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b, const boost::regex& expr,
-    asio::error_code& ec)
+    puerts_asio::basic_streambuf<Allocator>& b, const boost::regex& expr,
+    puerts_asio::error_code& ec)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), expr, ec);
 }
@@ -462,7 +462,7 @@ inline std::size_t read_until(SyncReadStream& s,
 
 template <typename SyncReadStream, typename Allocator, typename MatchCondition>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b, MatchCondition match_condition,
+    puerts_asio::basic_streambuf<Allocator>& b, MatchCondition match_condition,
     typename constraint<is_match_condition<MatchCondition>::value>::type)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), match_condition);
@@ -470,8 +470,8 @@ inline std::size_t read_until(SyncReadStream& s,
 
 template <typename SyncReadStream, typename Allocator, typename MatchCondition>
 inline std::size_t read_until(SyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b,
-    MatchCondition match_condition, asio::error_code& ec,
+    puerts_asio::basic_streambuf<Allocator>& b,
+    MatchCondition match_condition, puerts_asio::error_code& ec,
     typename constraint<is_match_condition<MatchCondition>::value>::type)
 {
   return read_until(s, basic_streambuf_ref<Allocator>(b), match_condition, ec);
@@ -488,16 +488,16 @@ inline std::size_t read_until(SyncReadStream& s,
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers), delim, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream, typename DynamicBuffer_v2>
 std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
-    char delim, asio::error_code& ec,
+    char delim, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
@@ -521,7 +521,7 @@ std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
     if (iter != end)
     {
       // Found a match. We're done.
-      ec = asio::error_code();
+      ec = puerts_asio::error_code();
       return iter - begin + 1;
     }
     else
@@ -557,16 +557,16 @@ inline std::size_t read_until(SyncReadStream& s,
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers), delim, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream, typename DynamicBuffer_v2>
 std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
-    ASIO_STRING_VIEW_PARAM delim, asio::error_code& ec,
+    ASIO_STRING_VIEW_PARAM delim, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
@@ -593,7 +593,7 @@ std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
       if (result.second)
       {
         // Full match. We're done.
-        ec = asio::error_code();
+        ec = puerts_asio::error_code();
         return result.first - begin + delim.length();
       }
       else
@@ -638,16 +638,16 @@ inline std::size_t read_until(SyncReadStream& s,
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers), expr, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream, typename DynamicBuffer_v2>
 std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
-    const boost::regex& expr, asio::error_code& ec,
+    const boost::regex& expr, puerts_asio::error_code& ec,
     typename constraint<
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
@@ -676,7 +676,7 @@ std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
       if (match_results[0].matched)
       {
         // Full match. We're done.
-        ec = asio::error_code();
+        ec = puerts_asio::error_code();
         return match_results[0].second - begin;
       }
       else
@@ -724,18 +724,18 @@ inline std::size_t read_until(SyncReadStream& s,
       is_dynamic_buffer_v2<DynamicBuffer_v2>::value
     >::type)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = read_until(s,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
       match_condition, ec);
-  asio::detail::throw_error(ec, "read_until");
+  puerts_asio::detail::throw_error(ec, "read_until");
   return bytes_transferred;
 }
 
 template <typename SyncReadStream,
     typename DynamicBuffer_v2, typename MatchCondition>
 std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
-    MatchCondition match_condition, asio::error_code& ec,
+    MatchCondition match_condition, puerts_asio::error_code& ec,
     typename constraint<
       is_match_condition<MatchCondition>::value
     >::type,
@@ -762,7 +762,7 @@ std::size_t read_until(SyncReadStream& s, DynamicBuffer_v2 buffers,
     if (result.second)
     {
       // Full match. We're done.
-      ec = asio::error_code();
+      ec = puerts_asio::error_code();
       return result.first - begin;
     }
     else if (result.first != end)
@@ -849,7 +849,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -920,7 +920,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -1040,7 +1040,7 @@ namespace detail
         typename decay<DynamicBuffer_v1>::type,
           typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
-            delim, handler2.value)(asio::error_code(), 0, 1);
+            delim, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -1071,10 +1071,10 @@ struct associator<Associator,
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncReadStream, typename DynamicBuffer_v1,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     char delim, ASIO_MOVE_ARG(ReadHandler) handler,
@@ -1086,7 +1086,7 @@ async_read_until(AsyncReadStream& s,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_delim_v1<AsyncReadStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers), delim);
 }
@@ -1140,7 +1140,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -1222,7 +1222,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -1342,7 +1342,7 @@ namespace detail
         typename decay<DynamicBuffer_v1>::type,
           typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
-            delim, handler2.value)(asio::error_code(), 0, 1);
+            delim, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -1373,10 +1373,10 @@ struct associator<Associator,
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncReadStream, typename DynamicBuffer_v1,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     ASIO_STRING_VIEW_PARAM delim,
@@ -1389,7 +1389,7 @@ async_read_until(AsyncReadStream& s,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_delim_string_v1<AsyncReadStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
       static_cast<std::string>(delim));
@@ -1447,7 +1447,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -1532,7 +1532,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -1651,7 +1651,7 @@ namespace detail
         typename decay<DynamicBuffer_v1>::type,
           RegEx, typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
-            expr, handler2.value)(asio::error_code(), 0, 1);
+            expr, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -1682,10 +1682,10 @@ struct associator<Associator,
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncReadStream, typename DynamicBuffer_v1,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     const boost::regex& expr,
@@ -1698,7 +1698,7 @@ async_read_until(AsyncReadStream& s,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_expr_v1<AsyncReadStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers), expr);
 }
@@ -1754,7 +1754,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -1835,7 +1835,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -1958,7 +1958,7 @@ namespace detail
         typename decay<DynamicBuffer_v1>::type,
           MatchCondition, typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers),
-            match_condition, handler2.value)(asio::error_code(), 0, 1);
+            match_condition, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -1990,10 +1990,10 @@ struct associator<Associator,
 
 template <typename AsyncReadStream,
     typename DynamicBuffer_v1, typename MatchCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
     ASIO_MOVE_ARG(DynamicBuffer_v1) buffers,
     MatchCondition match_condition, ASIO_MOVE_ARG(ReadHandler) handler,
@@ -2008,7 +2008,7 @@ async_read_until(AsyncReadStream& s,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_match_v1<AsyncReadStream>(s), handler,
       ASIO_MOVE_CAST(DynamicBuffer_v1)(buffers), match_condition);
 }
@@ -2016,12 +2016,12 @@ async_read_until(AsyncReadStream& s,
 #if !defined(ASIO_NO_IOSTREAM)
 
 template <typename AsyncReadStream, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     char delim, ASIO_MOVE_ARG(ReadHandler) handler)
 {
   return async_read_until(s, basic_streambuf_ref<Allocator>(b),
@@ -2029,12 +2029,12 @@ async_read_until(AsyncReadStream& s,
 }
 
 template <typename AsyncReadStream, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     ASIO_STRING_VIEW_PARAM delim,
     ASIO_MOVE_ARG(ReadHandler) handler)
 {
@@ -2045,12 +2045,12 @@ async_read_until(AsyncReadStream& s,
 #if defined(ASIO_HAS_BOOST_REGEX)
 
 template <typename AsyncReadStream, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b, const boost::regex& expr,
+    puerts_asio::basic_streambuf<Allocator>& b, const boost::regex& expr,
     ASIO_MOVE_ARG(ReadHandler) handler)
 {
   return async_read_until(s, basic_streambuf_ref<Allocator>(b),
@@ -2060,12 +2060,12 @@ async_read_until(AsyncReadStream& s,
 #endif // defined(ASIO_HAS_BOOST_REGEX)
 
 template <typename AsyncReadStream, typename Allocator, typename MatchCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
-    asio::basic_streambuf<Allocator>& b,
+    puerts_asio::basic_streambuf<Allocator>& b,
     MatchCondition match_condition, ASIO_MOVE_ARG(ReadHandler) handler,
     typename constraint<is_match_condition<MatchCondition>::value>::type)
 {
@@ -2129,7 +2129,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -2204,7 +2204,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -2324,7 +2324,7 @@ namespace detail
         typename decay<DynamicBuffer_v2>::type,
           typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
-            delim, handler2.value)(asio::error_code(), 0, 1);
+            delim, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -2355,10 +2355,10 @@ struct associator<Associator,
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncReadStream, typename DynamicBuffer_v2,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     char delim, ASIO_MOVE_ARG(ReadHandler) handler,
     typename constraint<
@@ -2366,7 +2366,7 @@ async_read_until(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_delim_v2<AsyncReadStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers), delim);
 }
@@ -2423,7 +2423,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -2509,7 +2509,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -2630,7 +2630,7 @@ namespace detail
         typename decay<DynamicBuffer_v2>::type,
           typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
-            delim, handler2.value)(asio::error_code(), 0, 1);
+            delim, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -2662,10 +2662,10 @@ struct associator<Associator,
 
 template <typename AsyncReadStream,
     typename DynamicBuffer_v2,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s,
     DynamicBuffer_v2 buffers, ASIO_STRING_VIEW_PARAM delim,
     ASIO_MOVE_ARG(ReadHandler) handler,
@@ -2674,7 +2674,7 @@ async_read_until(AsyncReadStream& s,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_delim_string_v2<AsyncReadStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
       static_cast<std::string>(delim));
@@ -2735,7 +2735,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -2824,7 +2824,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -2945,7 +2945,7 @@ namespace detail
         typename decay<DynamicBuffer_v2>::type,
           RegEx, typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
-            expr, handler2.value)(asio::error_code(), 0, 1);
+            expr, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -2976,10 +2976,10 @@ struct associator<Associator,
 #endif // !defined(GENERATING_DOCUMENTATION)
 
 template <typename AsyncReadStream, typename DynamicBuffer_v2,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     const boost::regex& expr, ASIO_MOVE_ARG(ReadHandler) handler,
     typename constraint<
@@ -2987,7 +2987,7 @@ async_read_until(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_expr_v2<AsyncReadStream>(s),
       handler, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers), expr);
 }
@@ -3046,7 +3046,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       const std::size_t not_found = (std::numeric_limits<std::size_t>::max)();
@@ -3131,7 +3131,7 @@ namespace detail
           }
         }
 
-        const asio::error_code result_ec =
+        const puerts_asio::error_code result_ec =
           (search_position_ == not_found)
           ? error::not_found : ec;
 
@@ -3255,7 +3255,7 @@ namespace detail
         typename decay<DynamicBuffer_v2>::type,
           MatchCondition, typename decay<ReadHandler>::type>(
             stream_, ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers),
-            match_condition, handler2.value)(asio::error_code(), 0, 1);
+            match_condition, handler2.value)(puerts_asio::error_code(), 0, 1);
     }
 
   private:
@@ -3287,10 +3287,10 @@ struct associator<Associator,
 
 template <typename AsyncReadStream,
     typename DynamicBuffer_v2, typename MatchCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) ReadHandler>
 ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_read_until(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     MatchCondition match_condition, ASIO_MOVE_ARG(ReadHandler) handler,
     typename constraint<
@@ -3301,14 +3301,14 @@ async_read_until(AsyncReadStream& s, DynamicBuffer_v2 buffers,
     >::type)
 {
   return async_initiate<ReadHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_read_until_match_v2<AsyncReadStream>(s), handler,
       ASIO_MOVE_CAST(DynamicBuffer_v2)(buffers), match_condition);
 }
 
 #endif // !defined(ASIO_NO_EXTENSIONS)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

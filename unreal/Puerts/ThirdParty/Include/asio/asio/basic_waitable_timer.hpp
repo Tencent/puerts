@@ -33,14 +33,14 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if !defined(ASIO_BASIC_WAITABLE_TIMER_FWD_DECL)
 #define ASIO_BASIC_WAITABLE_TIMER_FWD_DECL
 
 // Forward declaration with defaulted arguments.
 template <typename Clock,
-    typename WaitTraits = asio::wait_traits<Clock>,
+    typename WaitTraits = puerts_asio::wait_traits<Clock>,
     typename Executor = any_io_executor>
 class basic_waitable_timer;
 
@@ -55,8 +55,8 @@ class basic_waitable_timer;
  * If the wait() or async_wait() function is called on an expired timer, the
  * wait operation will complete immediately.
  *
- * Most applications will use one of the asio::steady_timer,
- * asio::system_timer or asio::high_resolution_timer typedefs.
+ * Most applications will use one of the puerts_asio::steady_timer,
+ * puerts_asio::system_timer or puerts_asio::high_resolution_timer typedefs.
  *
  * @note This waitable timer functionality is for use with the C++11 standard
  * library's @c &lt;chrono&gt; facility, or with the Boost.Chrono library.
@@ -69,7 +69,7 @@ class basic_waitable_timer;
  * Performing a blocking wait (C++11):
  * @code
  * // Construct a timer without setting an expiry time.
- * asio::steady_timer timer(my_context);
+ * puerts_asio::steady_timer timer(my_context);
  *
  * // Set an expiry time relative to now.
  * timer.expires_after(std::chrono::seconds(5));
@@ -81,7 +81,7 @@ class basic_waitable_timer;
  * @par 
  * Performing an asynchronous wait (C++11):
  * @code
- * void handler(const asio::error_code& error)
+ * void handler(const puerts_asio::error_code& error)
  * {
  *   if (!error)
  *   {
@@ -92,7 +92,7 @@ class basic_waitable_timer;
  * ...
  *
  * // Construct a timer with an absolute expiry time.
- * asio::steady_timer timer(my_context,
+ * puerts_asio::steady_timer timer(my_context,
  *     std::chrono::steady_clock::now() + std::chrono::seconds(60));
  *
  * // Start an asynchronous wait.
@@ -120,23 +120,23 @@ class basic_waitable_timer;
  *   }
  * }
  *
- * void on_timeout(const asio::error_code& e)
+ * void on_timeout(const puerts_asio::error_code& e)
  * {
- *   if (e != asio::error::operation_aborted)
+ *   if (e != puerts_asio::error::operation_aborted)
  *   {
  *     // Timer was not cancelled, take necessary action.
  *   }
  * }
  * @endcode
  *
- * @li The asio::basic_waitable_timer::expires_after() function
+ * @li The puerts_asio::basic_waitable_timer::expires_after() function
  * cancels any pending asynchronous waits, and returns the number of
  * asynchronous waits that were cancelled. If it returns 0 then you were too
  * late and the wait handler has already been executed, or will soon be
  * executed. If it returns 1 then the wait handler was successfully cancelled.
  *
- * @li If a wait handler is cancelled, the asio::error_code passed to
- * it contains the value asio::error::operation_aborted.
+ * @li If a wait handler is cancelled, the puerts_asio::error_code passed to
+ * it contains the value puerts_asio::error::operation_aborted.
  */
 template <typename Clock, typename WaitTraits, typename Executor>
 class basic_waitable_timer
@@ -211,9 +211,9 @@ public:
   basic_waitable_timer(const executor_type& ex, const time_point& expiry_time)
     : impl_(0, ex)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().expires_at(impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_at");
+    puerts_asio::detail::throw_error(ec, "expires_at");
   }
 
   /// Constructor to set a particular expiry time as an absolute time.
@@ -235,9 +235,9 @@ public:
       >::type = 0)
     : impl_(0, 0, context)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().expires_at(impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_at");
+    puerts_asio::detail::throw_error(ec, "expires_at");
   }
 
   /// Constructor to set a particular expiry time relative to now.
@@ -253,10 +253,10 @@ public:
   basic_waitable_timer(const executor_type& ex, const duration& expiry_time)
     : impl_(0, ex)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().expires_after(
         impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_after");
+    puerts_asio::detail::throw_error(ec, "expires_after");
   }
 
   /// Constructor to set a particular expiry time relative to now.
@@ -278,10 +278,10 @@ public:
       >::type = 0)
     : impl_(0, 0, context)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().expires_after(
         impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_after");
+    puerts_asio::detail::throw_error(ec, "expires_after");
   }
 
 #if defined(ASIO_HAS_MOVE) || defined(GENERATING_DOCUMENTATION)
@@ -387,13 +387,13 @@ public:
   /**
    * This function forces the completion of any pending asynchronous wait
    * operations against the timer. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * Cancelling the timer does not change the expiry time.
    *
    * @return The number of asynchronous operations that were cancelled.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note If the timer has already expired when cancel() is called, then the
    * handlers for asynchronous wait operations will:
@@ -407,9 +407,9 @@ public:
    */
   std::size_t cancel()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     std::size_t s = impl_.get_service().cancel(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "cancel");
+    puerts_asio::detail::throw_error(ec, "cancel");
     return s;
   }
 
@@ -419,7 +419,7 @@ public:
   /**
    * This function forces the completion of any pending asynchronous wait
    * operations against the timer. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * Cancelling the timer does not change the expiry time.
    *
@@ -437,7 +437,7 @@ public:
    * These handlers can no longer be cancelled, and therefore are passed an
    * error code that indicates the successful completion of the wait operation.
    */
-  std::size_t cancel(asio::error_code& ec)
+  std::size_t cancel(puerts_asio::error_code& ec)
   {
     return impl_.get_service().cancel(impl_.get_implementation(), ec);
   }
@@ -448,14 +448,14 @@ public:
    * This function forces the completion of one pending asynchronous wait
    * operation against the timer. Handlers are cancelled in FIFO order. The
    * handler for the cancelled operation will be invoked with the
-   * asio::error::operation_aborted error code.
+   * puerts_asio::error::operation_aborted error code.
    *
    * Cancelling the timer does not change the expiry time.
    *
    * @return The number of asynchronous operations that were cancelled. That is,
    * either 0 or 1.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note If the timer has already expired when cancel_one() is called, then
    * the handlers for asynchronous wait operations will:
@@ -469,10 +469,10 @@ public:
    */
   std::size_t cancel_one()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     std::size_t s = impl_.get_service().cancel_one(
         impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "cancel_one");
+    puerts_asio::detail::throw_error(ec, "cancel_one");
     return s;
   }
 
@@ -483,7 +483,7 @@ public:
    * This function forces the completion of one pending asynchronous wait
    * operation against the timer. Handlers are cancelled in FIFO order. The
    * handler for the cancelled operation will be invoked with the
-   * asio::error::operation_aborted error code.
+   * puerts_asio::error::operation_aborted error code.
    *
    * Cancelling the timer does not change the expiry time.
    *
@@ -502,7 +502,7 @@ public:
    * These handlers can no longer be cancelled, and therefore are passed an
    * error code that indicates the successful completion of the wait operation.
    */
-  std::size_t cancel_one(asio::error_code& ec)
+  std::size_t cancel_one(puerts_asio::error_code& ec)
   {
     return impl_.get_service().cancel_one(impl_.get_implementation(), ec);
   }
@@ -533,13 +533,13 @@ public:
   /**
    * This function sets the expiry time. Any pending asynchronous wait
    * operations will be cancelled. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * @param expiry_time The expiry time to be used for the timer.
    *
    * @return The number of asynchronous operations that were cancelled.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note If the timer has already expired when expires_at() is called, then
    * the handlers for asynchronous wait operations will:
@@ -553,10 +553,10 @@ public:
    */
   std::size_t expires_at(const time_point& expiry_time)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     std::size_t s = impl_.get_service().expires_at(
         impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_at");
+    puerts_asio::detail::throw_error(ec, "expires_at");
     return s;
   }
 
@@ -566,7 +566,7 @@ public:
   /**
    * This function sets the expiry time. Any pending asynchronous wait
    * operations will be cancelled. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * @param expiry_time The expiry time to be used for the timer.
    *
@@ -585,7 +585,7 @@ public:
    * error code that indicates the successful completion of the wait operation.
    */
   std::size_t expires_at(const time_point& expiry_time,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     return impl_.get_service().expires_at(
         impl_.get_implementation(), expiry_time, ec);
@@ -596,13 +596,13 @@ public:
   /**
    * This function sets the expiry time. Any pending asynchronous wait
    * operations will be cancelled. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * @param expiry_time The expiry time to be used for the timer.
    *
    * @return The number of asynchronous operations that were cancelled.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note If the timer has already expired when expires_after() is called,
    * then the handlers for asynchronous wait operations will:
@@ -616,10 +616,10 @@ public:
    */
   std::size_t expires_after(const duration& expiry_time)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     std::size_t s = impl_.get_service().expires_after(
         impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_after");
+    puerts_asio::detail::throw_error(ec, "expires_after");
     return s;
   }
 
@@ -639,13 +639,13 @@ public:
   /**
    * This function sets the expiry time. Any pending asynchronous wait
    * operations will be cancelled. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * @param expiry_time The expiry time to be used for the timer.
    *
    * @return The number of asynchronous operations that were cancelled.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note If the timer has already expired when expires_from_now() is called,
    * then the handlers for asynchronous wait operations will:
@@ -659,10 +659,10 @@ public:
    */
   std::size_t expires_from_now(const duration& expiry_time)
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     std::size_t s = impl_.get_service().expires_from_now(
         impl_.get_implementation(), expiry_time, ec);
-    asio::detail::throw_error(ec, "expires_from_now");
+    puerts_asio::detail::throw_error(ec, "expires_from_now");
     return s;
   }
 
@@ -671,7 +671,7 @@ public:
   /**
    * This function sets the expiry time. Any pending asynchronous wait
    * operations will be cancelled. The handler for each cancelled operation will
-   * be invoked with the asio::error::operation_aborted error code.
+   * be invoked with the puerts_asio::error::operation_aborted error code.
    *
    * @param expiry_time The expiry time to be used for the timer.
    *
@@ -690,7 +690,7 @@ public:
    * error code that indicates the successful completion of the wait operation.
    */
   std::size_t expires_from_now(const duration& expiry_time,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     return impl_.get_service().expires_from_now(
         impl_.get_implementation(), expiry_time, ec);
@@ -702,13 +702,13 @@ public:
    * This function is used to wait for the timer to expire. This function
    * blocks and does not return until the timer has expired.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void wait()
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     impl_.get_service().wait(impl_.get_implementation(), ec);
-    asio::detail::throw_error(ec, "wait");
+    puerts_asio::detail::throw_error(ec, "wait");
   }
 
   /// Perform a blocking wait on the timer.
@@ -718,7 +718,7 @@ public:
    *
    * @param ec Set to indicate what error occurred, if any.
    */
-  void wait(asio::error_code& ec)
+  void wait(puerts_asio::error_code& ec)
   {
     impl_.get_service().wait(impl_.get_implementation(), ec);
   }
@@ -734,22 +734,22 @@ public:
    * @li The timer has expired.
    *
    * @li The timer was cancelled, in which case the handler is passed the error
-   * code asio::error::operation_aborted.
+   * code puerts_asio::error::operation_aborted.
    *
    * @param handler The handler to be called when the timer expires. Copies
    * will be made of the handler as required. The function signature of the
    * handler must be:
    * @code void handler(
-   *   const asio::error_code& error // Result of operation.
+   *   const puerts_asio::error_code& error // Result of operation.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
    * not, the handler will not be invoked from within this function. On
    * immediate completion, invocation of the handler will be performed in a
-   * manner equivalent to using asio::post().
+   * manner equivalent to using puerts_asio::post().
    *
    * @par Per-Operation Cancellation
    * This asynchronous operation supports cancellation for the following
-   * asio::cancellation_type values:
+   * puerts_asio::cancellation_type values:
    *
    * @li @c cancellation_type::terminal
    *
@@ -758,15 +758,15 @@ public:
    * @li @c cancellation_type::total
    */
   template <
-      ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code))
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code))
         WaitHandler ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
   ASIO_INITFN_AUTO_RESULT_TYPE(WaitHandler,
-      void (asio::error_code))
+      void (puerts_asio::error_code))
   async_wait(
       ASIO_MOVE_ARG(WaitHandler) handler
         ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    return async_initiate<WaitHandler, void (asio::error_code)>(
+    return async_initiate<WaitHandler, void (puerts_asio::error_code)>(
         initiate_async_wait(this), handler);
   }
 
@@ -814,7 +814,7 @@ private:
     executor_type > impl_;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

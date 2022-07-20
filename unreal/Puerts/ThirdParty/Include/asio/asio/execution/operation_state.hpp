@@ -27,7 +27,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -78,7 +78,7 @@ template <typename T>
 ASIO_CONCEPT operation_state = is_operation_state<T>::value;
 
 #define ASIO_EXECUTION_OPERATION_STATE \
-  ::asio::execution::operation_state
+  ::puerts_asio::execution::operation_state
 
 #else // defined(ASIO_HAS_CONCEPTS)
 
@@ -87,7 +87,7 @@ ASIO_CONCEPT operation_state = is_operation_state<T>::value;
 #endif // defined(ASIO_HAS_CONCEPTS)
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Implement the resource acquisition is initialisation idiom for sockets.
@@ -46,7 +46,7 @@ public:
   {
     if (socket_ != invalid_socket)
     {
-      asio::error_code ec;
+      puerts_asio::error_code ec;
       socket_ops::state_type state = 0;
       socket_ops::close(socket_, state, true, ec);
     }
@@ -63,7 +63,7 @@ public:
   {
     if (socket_ != invalid_socket)
     {
-      asio::error_code ec;
+      puerts_asio::error_code ec;
       socket_ops::state_type state = 0;
       socket_ops::close(socket_, state, true, ec);
       socket_ = invalid_socket;
@@ -91,7 +91,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

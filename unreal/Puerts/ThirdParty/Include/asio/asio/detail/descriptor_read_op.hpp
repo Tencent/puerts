@@ -29,14 +29,14 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename MutableBufferSequence>
 class descriptor_read_op_base : public reactor_op
 {
 public:
-  descriptor_read_op_base(const asio::error_code& success_ec,
+  descriptor_read_op_base(const puerts_asio::error_code& success_ec,
       int descriptor, const MutableBufferSequence& buffers,
       func_type complete_func)
     : reactor_op(success_ec,
@@ -50,7 +50,7 @@ public:
   {
     descriptor_read_op_base* o(static_cast<descriptor_read_op_base*>(base));
 
-    typedef buffer_sequence_adapter<asio::mutable_buffer,
+    typedef buffer_sequence_adapter<puerts_asio::mutable_buffer,
         MutableBufferSequence> bufs_type;
 
     status result;
@@ -87,7 +87,7 @@ class descriptor_read_op
 public:
   ASIO_DEFINE_HANDLER_PTR(descriptor_read_op);
 
-  descriptor_read_op(const asio::error_code& success_ec,
+  descriptor_read_op(const puerts_asio::error_code& success_ec,
       int descriptor, const MutableBufferSequence& buffers,
       Handler& handler, const IoExecutor& io_ex)
     : descriptor_read_op_base<MutableBufferSequence>(success_ec,
@@ -98,12 +98,12 @@ public:
   }
 
   static void do_complete(void* owner, operation* base,
-      const asio::error_code& /*ec*/,
+      const puerts_asio::error_code& /*ec*/,
       std::size_t /*bytes_transferred*/)
   {
     // Take ownership of the handler object.
     descriptor_read_op* o(static_cast<descriptor_read_op*>(base));
-    ptr p = { asio::detail::addressof(o->handler_), o, o };
+    ptr p = { puerts_asio::detail::addressof(o->handler_), o, o };
 
     ASIO_HANDLER_COMPLETION((*o));
 
@@ -118,9 +118,9 @@ public:
     // with the handler. Consequently, a local copy of the handler is required
     // to ensure that any owning sub-object remains valid until after we have
     // deallocated the memory here.
-    detail::binder2<Handler, asio::error_code, std::size_t>
+    detail::binder2<Handler, puerts_asio::error_code, std::size_t>
       handler(o->handler_, o->ec_, o->bytes_transferred_);
-    p.h = asio::detail::addressof(handler.handler_);
+    p.h = puerts_asio::detail::addressof(handler.handler_);
     p.reset();
 
     // Make the upcall if required.
@@ -139,7 +139,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

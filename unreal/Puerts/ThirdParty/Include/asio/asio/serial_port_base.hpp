@@ -38,7 +38,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// The serial_port_base class is used as a base for the basic_serial_port class
 /// template so that we have a common place to define the serial port options.
@@ -56,10 +56,10 @@ public:
     unsigned int value() const;
     ASIO_DECL ASIO_SYNC_OP_VOID store(
         ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec) const;
+        puerts_asio::error_code& ec) const;
     ASIO_DECL ASIO_SYNC_OP_VOID load(
         const ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec);
+        puerts_asio::error_code& ec);
   private:
     unsigned int value_;
   };
@@ -76,10 +76,10 @@ public:
     type value() const;
     ASIO_DECL ASIO_SYNC_OP_VOID store(
         ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec) const;
+        puerts_asio::error_code& ec) const;
     ASIO_DECL ASIO_SYNC_OP_VOID load(
         const ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec);
+        puerts_asio::error_code& ec);
   private:
     type value_;
   };
@@ -96,10 +96,10 @@ public:
     type value() const;
     ASIO_DECL ASIO_SYNC_OP_VOID store(
         ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec) const;
+        puerts_asio::error_code& ec) const;
     ASIO_DECL ASIO_SYNC_OP_VOID load(
         const ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec);
+        puerts_asio::error_code& ec);
   private:
     type value_;
   };
@@ -116,10 +116,10 @@ public:
     type value() const;
     ASIO_DECL ASIO_SYNC_OP_VOID store(
         ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec) const;
+        puerts_asio::error_code& ec) const;
     ASIO_DECL ASIO_SYNC_OP_VOID load(
         const ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec);
+        puerts_asio::error_code& ec);
   private:
     type value_;
   };
@@ -135,10 +135,10 @@ public:
     unsigned int value() const;
     ASIO_DECL ASIO_SYNC_OP_VOID store(
         ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec) const;
+        puerts_asio::error_code& ec) const;
     ASIO_DECL ASIO_SYNC_OP_VOID load(
         const ASIO_OPTION_STORAGE& storage,
-        asio::error_code& ec);
+        puerts_asio::error_code& ec);
   private:
     unsigned int value_;
   };
@@ -150,7 +150,7 @@ protected:
   }
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

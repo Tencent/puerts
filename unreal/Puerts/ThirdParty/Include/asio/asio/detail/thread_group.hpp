@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class thread_group
@@ -83,7 +83,7 @@ private:
     {
     }
 
-    asio::detail::thread thread_;
+    puerts_asio::detail::thread thread_;
     item* next_;
   };
 
@@ -92,7 +92,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

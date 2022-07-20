@@ -20,12 +20,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace generic {
 
 /// Describes an endpoint for any socket type.
 /**
- * The asio::generic::basic_endpoint class template describes an endpoint
+ * The puerts_asio::generic::basic_endpoint class template describes an endpoint
  * that may be associated with any socket type.
  *
  * @note The socket types sockaddr type must be able to fit into a
@@ -50,7 +50,7 @@ public:
 #if defined(GENERATING_DOCUMENTATION)
   typedef implementation_defined data_type;
 #else
-  typedef asio::detail::socket_addr_type data_type;
+  typedef puerts_asio::detail::socket_addr_type data_type;
 #endif
 
   /// Default constructor.
@@ -182,11 +182,11 @@ public:
 
 private:
   // The underlying generic endpoint.
-  asio::generic::detail::endpoint impl_;
+  puerts_asio::generic::detail::endpoint impl_;
 };
 
 } // namespace generic
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

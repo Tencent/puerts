@@ -30,11 +30,11 @@ namespace asio_handler_invoke_helpers {
 template <typename Function, typename Context>
 inline void error_if_hook_is_defined(Function& function, Context& context)
 {
-  using asio::asio_handler_invoke;
+  using puerts_asio::asio_handler_invoke;
   // If you get an error here it is because some of your handlers still
   // overload asio_handler_invoke, but this hook is no longer used.
-  (void)static_cast<asio::asio_handler_invoke_is_no_longer_used>(
-    asio_handler_invoke(function, asio::detail::addressof(context)));
+  (void)static_cast<puerts_asio::asio_handler_invoke_is_no_longer_used>(
+    asio_handler_invoke(function, puerts_asio::detail::addressof(context)));
 }
 #endif // defined(ASIO_NO_DEPRECATED)
 
@@ -50,8 +50,8 @@ inline void invoke(Function& function, Context& context)
   (void)context;
   function();
 #else
-  using asio::asio_handler_invoke;
-  asio_handler_invoke(function, asio::detail::addressof(context));
+  using puerts_asio::asio_handler_invoke;
+  asio_handler_invoke(function, puerts_asio::detail::addressof(context));
 #endif
 }
 
@@ -68,8 +68,8 @@ inline void invoke(const Function& function, Context& context)
   Function tmp(function);
   tmp();
 #else
-  using asio::asio_handler_invoke;
-  asio_handler_invoke(function, asio::detail::addressof(context));
+  using puerts_asio::asio_handler_invoke;
+  asio_handler_invoke(function, puerts_asio::detail::addressof(context));
 #endif
 }
 

@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace traits {
 
 template <typename T, typename Vs, typename = void>
@@ -227,7 +227,7 @@ struct set_value_member :
 };
 
 } // namespace traits
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

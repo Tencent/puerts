@@ -23,7 +23,7 @@
 # include <boost/function.hpp>
 #endif // !defined(ASIO_HAS_STD_FUNCTION)
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_HAS_STD_FUNCTION)
@@ -39,6 +39,6 @@ using std::ref;
 using std::reference_wrapper;
 #endif // defined(ASIO_HAS_STD_REFERENCE_WRAPPER)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_FUNCTIONAL_HPP

@@ -30,7 +30,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 namespace awaitable_operators {
 namespace detail {
@@ -529,7 +529,7 @@ awaitable<std::variant<T..., U>, Executor> operator||(
 
 } // namespace awaitable_operators
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

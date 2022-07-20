@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_VARIADIC_TEMPLATES) \
   || defined(GENERATING_DOCUMENTATION)
@@ -48,12 +48,12 @@ namespace asio {
  * @code struct async_echo_implementation
  * {
  *   tcp::socket& socket_;
- *   asio::mutable_buffer buffer_;
+ *   puerts_asio::mutable_buffer buffer_;
  *   enum { starting, reading, writing } state_;
  *
  *   template <typename Self>
  *   void operator()(Self& self,
- *       asio::error_code error = {},
+ *       puerts_asio::error_code error = {},
  *       std::size_t n = 0)
  *   {
  *     switch (state_)
@@ -71,8 +71,8 @@ namespace asio {
  *       else
  *       {
  *         state_ = writing;
- *         asio::async_write(socket_, buffer_,
- *             asio::transfer_exactly(n),
+ *         puerts_asio::async_write(socket_, buffer_,
+ *             puerts_asio::transfer_exactly(n),
  *             std::move(self));
  *       }
  *       break;
@@ -85,14 +85,14 @@ namespace asio {
  *
  * template <typename CompletionToken>
  * auto async_echo(tcp::socket& socket,
- *     asio::mutable_buffer buffer,
+ *     puerts_asio::mutable_buffer buffer,
  *     CompletionToken&& token) ->
- *   typename asio::async_result<
+ *   typename puerts_asio::async_result<
  *     typename std::decay<CompletionToken>::type,
- *       void(asio::error_code, std::size_t)>::return_type
+ *       void(puerts_asio::error_code, std::size_t)>::return_type
  * {
- *   return asio::async_compose<CompletionToken,
- *     void(asio::error_code, std::size_t)>(
+ *   return puerts_asio::async_compose<CompletionToken,
+ *     void(puerts_asio::error_code, std::size_t)>(
  *       async_echo_implementation{socket, buffer,
  *         async_echo_implementation::starting},
  *       token, socket);
@@ -127,7 +127,7 @@ async_compose(ASIO_MOVE_ARG(Implementation) implementation,
 #endif // defined(ASIO_HAS_VARIADIC_TEMPLATES)
        //   || defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

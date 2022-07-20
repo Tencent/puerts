@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Provides serialised handler execution.
 /**
@@ -96,9 +96,9 @@ public:
    * @param io_context The io_context object that the strand will use to
    * dispatch handlers that are ready to be run.
    */
-  explicit strand(asio::io_context& io_context)
-    : service_(asio::use_service<
-        asio::detail::strand_service>(io_context))
+  explicit strand(puerts_asio::io_context& io_context)
+    : service_(puerts_asio::use_service<
+        puerts_asio::detail::strand_service>(io_context))
   {
     service_.construct(impl_);
   }
@@ -115,7 +115,7 @@ public:
   }
 
   /// Obtain the underlying execution context.
-  asio::io_context& context() const ASIO_NOEXCEPT
+  puerts_asio::io_context& context() const ASIO_NOEXCEPT
   {
     return service_.get_io_context();
   }
@@ -162,7 +162,7 @@ public:
   }
 
 #if !defined(ASIO_NO_DEPRECATED)
-  /// (Deprecated: Use asio::dispatch().) Request the strand to invoke
+  /// (Deprecated: Use puerts_asio::dispatch().) Request the strand to invoke
   /// the given handler.
   /**
    * This function is used to ask the strand to execute the given handler.
@@ -213,7 +213,7 @@ public:
   }
 
 #if !defined(ASIO_NO_DEPRECATED)
-  /// (Deprecated: Use asio::post().) Request the strand to invoke the
+  /// (Deprecated: Use puerts_asio::post().) Request the strand to invoke the
   /// given handler and return immediately.
   /**
    * This function is used to ask the strand to execute the given handler, but
@@ -260,7 +260,7 @@ public:
   }
 
 #if !defined(ASIO_NO_DEPRECATED)
-  /// (Deprecated: Use asio::bind_executor().) Create a new handler that
+  /// (Deprecated: Use puerts_asio::bind_executor().) Create a new handler that
   /// automatically dispatches the wrapped handler on the strand.
   /**
    * This function is used to create a new handler function object that, when
@@ -362,11 +362,11 @@ private:
   };
 #endif // !defined(ASIO_NO_DEPRECATED)
 
-  asio::detail::strand_service& service_;
-  mutable asio::detail::strand_service::implementation_type impl_;
+  puerts_asio::detail::strand_service& service_;
+  mutable puerts_asio::detail::strand_service::implementation_type impl_;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

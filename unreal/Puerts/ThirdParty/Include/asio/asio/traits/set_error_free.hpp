@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace traits {
 
 template <typename T, typename E, typename = void>
@@ -105,7 +105,7 @@ struct set_error_free :
 };
 
 } // namespace traits
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

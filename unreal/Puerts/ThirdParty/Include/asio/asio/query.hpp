@@ -26,18 +26,18 @@
 
 #if defined(GENERATING_DOCUMENTATION)
 
-namespace asio {
+namespace puerts_asio {
 
 /// A customisation point that queries the value of a property.
 /**
  * The name <tt>query</tt> denotes a customization point object. The
- * expression <tt>asio::query(E, P)</tt> for some
+ * expression <tt>puerts_asio::query(E, P)</tt> for some
  * subexpressions <tt>E</tt> and <tt>P</tt> (with types <tt>T =
  * decay_t<decltype(E)></tt> and <tt>Prop = decay_t<decltype(P)></tt>) is
  * expression-equivalent to:
  *
  * @li If <tt>is_applicable_property_v<T, Prop></tt> is not a well-formed
- *   constant expression with value <tt>true</tt>, <tt>asio::query(E,
+ *   constant expression with value <tt>true</tt>, <tt>puerts_asio::query(E,
  *   P)</tt> is ill-formed.
  *
  * @li Otherwise, <tt>Prop::template static_query_v<T></tt> if the expression
@@ -52,14 +52,14 @@ namespace asio {
  *   resolution performed in a context that does not include the declaration
  *   of the <tt>query</tt> customization point object.
  *
- * @li Otherwise, <tt>asio::query(E, P)</tt> is ill-formed.
+ * @li Otherwise, <tt>puerts_asio::query(E, P)</tt> is ill-formed.
  */
 inline constexpr unspecified query = unspecified;
 
 /// A type trait that determines whether a @c query expression is well-formed.
 /**
  * Class template @c can_query is a trait that is derived from
- * @c true_type if the expression <tt>asio::query(std::declval<T>(),
+ * @c true_type if the expression <tt>puerts_asio::query(std::declval<T>(),
  * std::declval<Property>())</tt> is well formed; otherwise @c false_type.
  */
 template <typename T, typename Property>
@@ -72,7 +72,7 @@ struct can_query :
 /// not throw.
 /**
  * Class template @c is_nothrow_query is a trait that is derived from
- * @c true_type if the expression <tt>asio::query(std::declval<T>(),
+ * @c true_type if the expression <tt>puerts_asio::query(std::declval<T>(),
  * std::declval<Property>())</tt> is @c noexcept; otherwise @c false_type.
  */
 template <typename T, typename Property>
@@ -84,7 +84,7 @@ struct is_nothrow_query :
 /// A type trait that determines the result type of a @c query expression.
 /**
  * Class template @c query_result is a trait that determines the result
- * type of the expression <tt>asio::query(std::declval<T>(),
+ * type of the expression <tt>puerts_asio::query(std::declval<T>(),
  * std::declval<Property>())</tt>.
  */
 template <typename T, typename Property>
@@ -94,20 +94,20 @@ struct query_result
   typedef automatically_determined type;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #else // defined(GENERATING_DOCUMENTATION)
 
 namespace asio_query_fn {
 
-using asio::conditional;
-using asio::decay;
-using asio::declval;
-using asio::enable_if;
-using asio::is_applicable_property;
-using asio::traits::query_free;
-using asio::traits::query_member;
-using asio::traits::static_query;
+using puerts_asio::conditional;
+using puerts_asio::decay;
+using puerts_asio::declval;
+using puerts_asio::enable_if;
+using puerts_asio::is_applicable_property;
+using puerts_asio::traits::query_free;
+using puerts_asio::traits::query_member;
+using puerts_asio::traits::static_query;
 
 void query();
 
@@ -267,7 +267,7 @@ template <typename T>
 const T static_instance<T>::instance = {};
 
 } // namespace asio_query_fn
-namespace asio {
+namespace puerts_asio {
 namespace {
 
 static ASIO_CONSTEXPR const asio_query_fn::impl&
@@ -315,7 +315,7 @@ struct query_result
       query_t, T, void(Property)>::result_type type;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(GENERATING_DOCUMENTATION)
 

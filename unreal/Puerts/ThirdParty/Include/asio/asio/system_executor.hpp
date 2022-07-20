@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 class system_context;
 
@@ -53,12 +53,12 @@ private:
   /// Obtain an executor with the @c blocking.possibly property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::blocking.possibly); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::blocking.possibly); @endcode
    */
   basic_system_executor<execution::blocking_t::possibly_t,
       Relationship, Allocator>
@@ -71,12 +71,12 @@ private:
   /// Obtain an executor with the @c blocking.always property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::blocking.always); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::blocking.always); @endcode
    */
   basic_system_executor<execution::blocking_t::always_t,
       Relationship, Allocator>
@@ -89,12 +89,12 @@ private:
   /// Obtain an executor with the @c blocking.never property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::blocking.never); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::blocking.never); @endcode
    */
   basic_system_executor<execution::blocking_t::never_t,
       Relationship, Allocator>
@@ -107,12 +107,12 @@ private:
   /// Obtain an executor with the @c relationship.continuation property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::relationship.continuation); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::relationship.continuation); @endcode
    */
   basic_system_executor<Blocking,
       execution::relationship_t::continuation_t, Allocator>
@@ -125,12 +125,12 @@ private:
   /// Obtain an executor with the @c relationship.fork property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::relationship.fork); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::relationship.fork); @endcode
    */
   basic_system_executor<Blocking,
       execution::relationship_t::fork_t, Allocator>
@@ -143,12 +143,12 @@ private:
   /// Obtain an executor with the specified @c allocator property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::allocator(my_allocator)); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::allocator(my_allocator)); @endcode
    */
   template <typename OtherAllocator>
   basic_system_executor<Blocking, Relationship, OtherAllocator>
@@ -161,12 +161,12 @@ private:
   /// Obtain an executor with the default @c allocator property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::system_executor ex1;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::allocator); @endcode
+   * @code puerts_asio::system_executor ex1;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::allocator); @endcode
    */
   basic_system_executor<Blocking, Relationship, std::allocator<void> >
   require(execution::allocator_t<void>) const
@@ -178,21 +178,21 @@ private:
 #if !defined(GENERATING_DOCUMENTATION)
 private:
   friend struct asio_query_fn::impl;
-  friend struct asio::execution::detail::blocking_t<0>;
-  friend struct asio::execution::detail::mapping_t<0>;
-  friend struct asio::execution::detail::outstanding_work_t<0>;
-  friend struct asio::execution::detail::relationship_t<0>;
+  friend struct puerts_asio::execution::detail::blocking_t<0>;
+  friend struct puerts_asio::execution::detail::mapping_t<0>;
+  friend struct puerts_asio::execution::detail::outstanding_work_t<0>;
+  friend struct puerts_asio::execution::detail::relationship_t<0>;
 #endif // !defined(GENERATING_DOCUMENTATION)
 
   /// Query the current value of the @c mapping property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * if (asio::query(ex, asio::execution::mapping)
-   *       == asio::execution::mapping.thread)
+   * @code puerts_asio::system_executor ex;
+   * if (puerts_asio::query(ex, puerts_asio::execution::mapping)
+   *       == puerts_asio::execution::mapping.thread)
    *   ... @endcode
    */
   static ASIO_CONSTEXPR execution::mapping_t query(
@@ -204,24 +204,24 @@ private:
   /// Query the current value of the @c context property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * asio::system_context& pool = asio::query(
-   *     ex, asio::execution::context); @endcode
+   * @code puerts_asio::system_executor ex;
+   * puerts_asio::system_context& pool = puerts_asio::query(
+   *     ex, puerts_asio::execution::context); @endcode
    */
   static system_context& query(execution::context_t) ASIO_NOEXCEPT;
 
   /// Query the current value of the @c blocking property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * if (asio::query(ex, asio::execution::blocking)
-   *       == asio::execution::blocking.always)
+   * @code puerts_asio::system_executor ex;
+   * if (puerts_asio::query(ex, puerts_asio::execution::blocking)
+   *       == puerts_asio::execution::blocking.always)
    *   ... @endcode
    */
   static ASIO_CONSTEXPR execution::blocking_t query(
@@ -233,12 +233,12 @@ private:
   /// Query the current value of the @c relationship property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * if (asio::query(ex, asio::execution::relationship)
-   *       == asio::execution::relationship.continuation)
+   * @code puerts_asio::system_executor ex;
+   * if (puerts_asio::query(ex, puerts_asio::execution::relationship)
+   *       == puerts_asio::execution::relationship.continuation)
    *   ... @endcode
    */
   static ASIO_CONSTEXPR execution::relationship_t query(
@@ -250,12 +250,12 @@ private:
   /// Query the current value of the @c allocator property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * auto alloc = asio::query(ex,
-   *     asio::execution::allocator); @endcode
+   * @code puerts_asio::system_executor ex;
+   * auto alloc = puerts_asio::query(ex,
+   *     puerts_asio::execution::allocator); @endcode
    */
   template <typename OtherAllocator>
   ASIO_CONSTEXPR Allocator query(
@@ -267,12 +267,12 @@ private:
   /// Query the current value of the @c allocator property.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * auto alloc = asio::query(ex,
-   *     asio::execution::allocator); @endcode
+   * @code puerts_asio::system_executor ex;
+   * auto alloc = puerts_asio::query(ex,
+   *     puerts_asio::execution::allocator); @endcode
    */
   ASIO_CONSTEXPR Allocator query(
       execution::allocator_t<void>) const ASIO_NOEXCEPT
@@ -284,12 +284,12 @@ private:
   /// context.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
-   * std::size_t occupancy = asio::query(
-   *     ex, asio::execution::occupancy); @endcode
+   * @code puerts_asio::system_executor ex;
+   * std::size_t occupancy = puerts_asio::query(
+   *     ex, puerts_asio::execution::occupancy); @endcode
    */
   std::size_t query(execution::occupancy_t) const ASIO_NOEXCEPT;
 
@@ -325,7 +325,7 @@ private:
    * execution::execute customisation point.
    *
    * For example:
-   * @code asio::system_executor ex;
+   * @code puerts_asio::system_executor ex;
    * execution::execute(ex, my_function_object); @endcode
    */
   template <typename Function>
@@ -452,7 +452,7 @@ namespace traits {
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct equality_comparable<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
@@ -466,7 +466,7 @@ struct equality_comparable<
 template <typename Blocking, typename Relationship,
     typename Allocator, typename Function>
 struct execute_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
     Function
   >
 {
@@ -481,91 +481,91 @@ struct execute_member<
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::blocking_t::possibly_t
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::blocking_t::possibly_t
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<
-      asio::execution::blocking_t::possibly_t,
+  typedef puerts_asio::basic_system_executor<
+      puerts_asio::execution::blocking_t::possibly_t,
       Relationship, Allocator> result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::blocking_t::always_t
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::blocking_t::always_t
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<
-      asio::execution::blocking_t::always_t,
+  typedef puerts_asio::basic_system_executor<
+      puerts_asio::execution::blocking_t::always_t,
       Relationship, Allocator> result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::blocking_t::never_t
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::blocking_t::never_t
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<
-      asio::execution::blocking_t::never_t,
+  typedef puerts_asio::basic_system_executor<
+      puerts_asio::execution::blocking_t::never_t,
       Relationship, Allocator> result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::relationship_t::fork_t
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::relationship_t::fork_t
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<Blocking,
-      asio::execution::relationship_t::fork_t,
+  typedef puerts_asio::basic_system_executor<Blocking,
+      puerts_asio::execution::relationship_t::fork_t,
       Allocator> result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::relationship_t::continuation_t
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::relationship_t::continuation_t
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<Blocking,
-      asio::execution::relationship_t::continuation_t,
+  typedef puerts_asio::basic_system_executor<Blocking,
+      puerts_asio::execution::relationship_t::continuation_t,
       Allocator> result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::allocator_t<void>
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::allocator_t<void>
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<Blocking,
+  typedef puerts_asio::basic_system_executor<Blocking,
       Relationship, std::allocator<void> > result_type;
 };
 
 template <typename Blocking, typename Relationship,
     typename Allocator, typename OtherAllocator>
 struct require_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::allocator_t<OtherAllocator>
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::allocator_t<OtherAllocator>
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = false);
-  typedef asio::basic_system_executor<Blocking,
+  typedef puerts_asio::basic_system_executor<Blocking,
       Relationship, OtherAllocator> result_type;
 };
 
@@ -576,19 +576,19 @@ struct require_member<
 template <typename Blocking, typename Relationship,
     typename Allocator, typename Property>
 struct query_static_constexpr_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
     Property,
-    typename asio::enable_if<
-      asio::is_convertible<
+    typename puerts_asio::enable_if<
+      puerts_asio::is_convertible<
         Property,
-        asio::execution::mapping_t
+        puerts_asio::execution::mapping_t
       >::value
     >::type
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
-  typedef asio::execution::mapping_t::thread_t result_type;
+  typedef puerts_asio::execution::mapping_t::thread_t result_type;
 
   static ASIO_CONSTEXPR result_type value() ASIO_NOEXCEPT
   {
@@ -603,54 +603,54 @@ struct query_static_constexpr_member<
 template <typename Blocking, typename Relationship,
     typename Allocator, typename Property>
 struct query_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
     Property,
-    typename asio::enable_if<
-      asio::is_convertible<
+    typename puerts_asio::enable_if<
+      puerts_asio::is_convertible<
         Property,
-        asio::execution::blocking_t
+        puerts_asio::execution::blocking_t
       >::value
     >::type
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
-  typedef asio::execution::blocking_t result_type;
+  typedef puerts_asio::execution::blocking_t result_type;
 };
 
 template <typename Blocking, typename Relationship,
     typename Allocator, typename Property>
 struct query_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
     Property,
-    typename asio::enable_if<
-      asio::is_convertible<
+    typename puerts_asio::enable_if<
+      puerts_asio::is_convertible<
         Property,
-        asio::execution::relationship_t
+        puerts_asio::execution::relationship_t
       >::value
     >::type
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
-  typedef asio::execution::relationship_t result_type;
+  typedef puerts_asio::execution::relationship_t result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct query_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::context_t
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::context_t
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
-  typedef asio::system_context& result_type;
+  typedef puerts_asio::system_context& result_type;
 };
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct query_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::allocator_t<void>
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::allocator_t<void>
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
@@ -660,8 +660,8 @@ struct query_member<
 
 template <typename Blocking, typename Relationship, typename Allocator>
 struct query_member<
-    asio::basic_system_executor<Blocking, Relationship, Allocator>,
-    asio::execution::allocator_t<Allocator>
+    puerts_asio::basic_system_executor<Blocking, Relationship, Allocator>,
+    puerts_asio::execution::allocator_t<Allocator>
   >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
@@ -675,7 +675,7 @@ struct query_member<
 
 #endif // !defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

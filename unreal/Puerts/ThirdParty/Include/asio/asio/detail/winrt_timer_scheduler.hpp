@@ -42,7 +42,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class winrt_timer_scheduler
@@ -114,16 +114,16 @@ private:
   scheduler_impl& scheduler_;
 
   // Mutex used to protect internal variables.
-  asio::detail::mutex mutex_;
+  puerts_asio::detail::mutex mutex_;
 
   // Event used to wake up background thread.
-  asio::detail::event event_;
+  puerts_asio::detail::event event_;
 
   // The timer queues.
   timer_queue_set timer_queues_;
 
   // The background thread that is waiting for timers to expire.
-  asio::detail::thread* thread_;
+  puerts_asio::detail::thread* thread_;
 
   // Does the background thread need to stop.
   bool stop_thread_;
@@ -133,7 +133,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

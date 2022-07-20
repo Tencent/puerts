@@ -21,7 +21,7 @@
 
 #include <memory>
 
-namespace asio {
+namespace puerts_asio {
 
 template <typename Allocator = std::allocator<char> >
 class basic_streambuf;
@@ -29,7 +29,7 @@ class basic_streambuf;
 template <typename Allocator = std::allocator<char> >
 class basic_streambuf_ref;
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // !defined(ASIO_NO_IOSTREAM)
 

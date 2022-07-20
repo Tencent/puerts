@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Mutex adapter used to conditionally enable or disable locking.
@@ -92,7 +92,7 @@ public:
     }
 
     // Get the underlying mutex.
-    asio::detail::mutex& mutex()
+    puerts_asio::detail::mutex& mutex()
     {
       return mutex_.mutex_;
     }
@@ -137,12 +137,12 @@ public:
 private:
   friend class scoped_lock;
   friend class conditionally_enabled_event;
-  asio::detail::mutex mutex_;
+  puerts_asio::detail::mutex mutex_;
   const bool enabled_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -30,7 +30,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(GENERATING_DOCUMENTATION)
 
@@ -346,7 +346,7 @@ struct outstanding_work_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, untracked_t());
+    return puerts_asio::query(ex, untracked_t());
   }
 
   template <typename Executor>
@@ -369,7 +369,7 @@ struct outstanding_work_t
 #endif // defined(ASIO_MSVC)
 #endif // !defined(__clang__)
   {
-    return asio::query(ex, tracked_t());
+    return puerts_asio::query(ex, tracked_t());
   }
 
   ASIO_STATIC_CONSTEXPR_DEFAULT_INIT(untracked_t, untracked);
@@ -860,7 +860,7 @@ struct static_require<T, execution::outstanding_work_t::tracked_t,
 
 #endif // defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

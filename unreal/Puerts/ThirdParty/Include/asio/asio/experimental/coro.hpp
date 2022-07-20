@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 
 template <typename Yield, typename Return, typename Executor>
@@ -57,24 +57,24 @@ template <typename T>
 struct coro_error;
 
 template <>
-struct coro_error<asio::error_code>
+struct coro_error<puerts_asio::error_code>
 {
-  static asio::error_code invalid()
+  static puerts_asio::error_code invalid()
   {
     return error::fault;
   }
 
-  static asio::error_code cancelled()
+  static puerts_asio::error_code cancelled()
   {
     return error::operation_aborted;
   }
 
-  static asio::error_code interrupted()
+  static puerts_asio::error_code interrupted()
   {
     return error::interrupted;
   }
 
-  static asio::error_code done()
+  static puerts_asio::error_code done()
   {
     return error::broken_pipe;
   }
@@ -86,29 +86,29 @@ struct coro_error<std::exception_ptr>
   static std::exception_ptr invalid()
   {
     return std::make_exception_ptr(
-        asio::system_error(
-          coro_error<asio::error_code>::invalid()));
+        puerts_asio::system_error(
+          coro_error<puerts_asio::error_code>::invalid()));
   }
 
   static std::exception_ptr cancelled()
   {
     return std::make_exception_ptr(
-        asio::system_error(
-          coro_error<asio::error_code>::cancelled()));
+        puerts_asio::system_error(
+          coro_error<puerts_asio::error_code>::cancelled()));
   }
 
   static std::exception_ptr interrupted()
   {
     return std::make_exception_ptr(
-        asio::system_error(
-          coro_error<asio::error_code>::interrupted()));
+        puerts_asio::system_error(
+          coro_error<puerts_asio::error_code>::interrupted()));
   }
 
   static std::exception_ptr done()
   {
     return std::make_exception_ptr(
-        asio::system_error(
-          coro_error<asio::error_code>::done()));
+        puerts_asio::system_error(
+          coro_error<puerts_asio::error_code>::done()));
   }
 };
 
@@ -167,7 +167,7 @@ struct coro_with_arg
 
           void operator()(cancellation_type ct)
           {
-            asio::dispatch(e,
+            puerts_asio::dispatch(e,
                 [ct, p = coro]() mutable
                 {
                   p->cancel.signal.emit(ct);
@@ -282,7 +282,7 @@ struct coro
       auto handle =
         detail::coroutine_handle<promise_type>::from_promise(*coro_);
       if (handle)
-        asio::dispatch(coro_->get_executor(), destroyer{handle});
+        puerts_asio::dispatch(coro_->get_executor(), destroyer{handle});
     }
   }
 
@@ -344,7 +344,7 @@ struct coro
   void cancel(cancellation_type ct = cancellation_type::all)
   {
     if (is_open() && !coro_->cancel.state.cancelled())
-      asio::dispatch(get_executor(),
+      puerts_asio::dispatch(get_executor(),
           [ct, coro = coro_] { coro->cancel.signal.emit(ct); });
   }
 
@@ -396,7 +396,7 @@ private:
 
           void operator()(cancellation_type ct)
           {
-            asio::dispatch(e,
+            puerts_asio::dispatch(e,
                 [ct, p = coro_]() mutable
                 {
                   p->cancel.signal.emit(ct);
@@ -497,7 +497,7 @@ private:
       {
         if (!self)
         {
-          asio::post(exec,
+          puerts_asio::post(exec,
               [h = std::move(h)]() mutable
               {
                 h(detail::coro_error<error_type>::invalid());
@@ -509,7 +509,7 @@ private:
           detail::coroutine_handle<promise_type>::from_promise(*self->coro_);
         if (!ch)
         {
-          asio::post(exec,
+          puerts_asio::post(exec,
               [h = std::move(h)]() mutable
               {
                 h(detail::coro_error<error_type>::invalid());
@@ -517,7 +517,7 @@ private:
         }
         else if (ch.done())
         {
-          asio::post(exec,
+          puerts_asio::post(exec,
               [h = std::move(h)]() mutable
               {
                 h(detail::coro_error<error_type>::done());
@@ -548,7 +548,7 @@ private:
       {
         if (!self)
         {
-          asio::post(exec,
+          puerts_asio::post(exec,
               [h = std::move(h)]() mutable
               {
                 h(detail::coro_error<error_type>::invalid(), result_type{});
@@ -560,7 +560,7 @@ private:
           detail::coroutine_handle<promise_type>::from_promise(*self->coro_);
         if (!ch)
         {
-          asio::post(exec,
+          puerts_asio::post(exec,
               [h = std::move(h)]() mutable
               {
                 h(detail::coro_error<error_type>::invalid(), result_type{});
@@ -568,7 +568,7 @@ private:
         }
         else if (ch.done())
         {
-          asio::post(exec,
+          puerts_asio::post(exec,
               [h = std::move(h)]() mutable
               {
                 h(detail::coro_error<error_type>::done(), result_type{});
@@ -598,7 +598,7 @@ private:
 
       void operator()(cancellation_type ct)
       {
-        asio::dispatch(coro->get_executor(),
+        puerts_asio::dispatch(coro->get_executor(),
             [ct, k = coro] { k->cancel.signal.emit(ct); });
       }
     };
@@ -607,7 +607,7 @@ private:
     void operator()(WaitHandler&& handler) const
     {
       const auto exec =
-        asio::prefer(
+        puerts_asio::prefer(
             get_associated_executor(handler, get_executor()),
             execution::outstanding_work.tracked);
 
@@ -619,7 +619,7 @@ private:
       if (cancel.is_connected())
         cancel.template emplace<cancel_handler>(self_->coro_);
 
-      asio::dispatch(get_executor(),
+      puerts_asio::dispatch(get_executor(),
            handle(exec, std::forward<WaitHandler>(handler),
              std::integral_constant<bool, is_noexcept>{},
             std::is_void<result_type>{}));
@@ -629,7 +629,7 @@ private:
     void operator()(WaitHandler&& handler, Input&& input) const
     {
       const auto exec =
-        asio::prefer(
+        puerts_asio::prefer(
             get_associated_executor(handler, get_executor()),
             execution::outstanding_work.tracked);
       auto cancel = get_associated_cancellation_slot(handler);
@@ -641,7 +641,7 @@ private:
       if (cancel.is_connected())
         cancel.template emplace<cancel_handler>(self_->coro_);
 
-      asio::dispatch(get_executor(),
+      puerts_asio::dispatch(get_executor(),
           [h = handle(exec, std::forward<WaitHandler>(handler),
             std::integral_constant<bool, is_noexcept>{},
             std::is_void<result_type>{}),
@@ -925,7 +925,7 @@ struct coro_promise final :
   struct cancel_pair
   {
     cancellation_signal signal;
-    asio::cancellation_state state{signal.slot()};
+    puerts_asio::cancellation_state state{signal.slot()};
 
   };
   cancel_pair cancel;
@@ -996,13 +996,13 @@ struct coro_promise final :
   {
     struct exec_helper
     {
-      const asio::cancellation_state& value;
+      const puerts_asio::cancellation_state& value;
 
       constexpr static bool await_ready() noexcept { return true; }
 
       constexpr static void await_suspend(coroutine_handle<>) noexcept {}
 
-      const asio::cancellation_state& await_resume() const noexcept
+      const puerts_asio::cancellation_state& await_resume() const noexcept
       {
         return value;
       }
@@ -1048,7 +1048,7 @@ struct coro_promise final :
 
 } // namespace detail
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

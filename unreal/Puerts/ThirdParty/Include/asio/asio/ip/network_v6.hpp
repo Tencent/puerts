@@ -24,12 +24,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// Represents an IPv6 network.
 /**
- * The asio::ip::network_v6 class provides the ability to use and
+ * The puerts_asio::ip::network_v6 class provides the ability to use and
  * manipulate IP version 6 networks.
  *
  * @par Thread Safety
@@ -122,7 +122,7 @@ public:
   ASIO_DECL std::string to_string() const;
 
   /// Get the network as an address in dotted decimal format.
-  ASIO_DECL std::string to_string(asio::error_code& ec) const;
+  ASIO_DECL std::string to_string(puerts_asio::error_code& ec) const;
 
   /// Compare two networks for equality.
   friend bool operator==(const network_v6& a, const network_v6& b)
@@ -164,7 +164,7 @@ ASIO_DECL network_v6 make_network_v6(const char* str);
  * @relates network_v6
  */
 ASIO_DECL network_v6 make_network_v6(
-    const char* str, asio::error_code& ec);
+    const char* str, puerts_asio::error_code& ec);
 
 /// Create an IPv6 network from a string containing IP address and prefix
 /// length.
@@ -179,7 +179,7 @@ ASIO_DECL network_v6 make_network_v6(const std::string& str);
  * @relates network_v6
  */
 ASIO_DECL network_v6 make_network_v6(
-    const std::string& str, asio::error_code& ec);
+    const std::string& str, puerts_asio::error_code& ec);
 
 #if defined(ASIO_HAS_STRING_VIEW) \
   || defined(GENERATING_DOCUMENTATION)
@@ -197,7 +197,7 @@ ASIO_DECL network_v6 make_network_v6(string_view str);
  * @relates network_v6
  */
 ASIO_DECL network_v6 make_network_v6(
-    string_view str, asio::error_code& ec);
+    string_view str, puerts_asio::error_code& ec);
 
 #endif // defined(ASIO_HAS_STRING_VIEW)
        //  || defined(GENERATING_DOCUMENTATION)
@@ -214,7 +214,7 @@ ASIO_DECL network_v6 make_network_v6(
  *
  * @return The output stream.
  *
- * @relates asio::ip::address_v6
+ * @relates puerts_asio::ip::address_v6
  */
 template <typename Elem, typename Traits>
 std::basic_ostream<Elem, Traits>& operator<<(
@@ -223,7 +223,7 @@ std::basic_ostream<Elem, Traits>& operator<<(
 #endif // !defined(ASIO_NO_IOSTREAM)
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

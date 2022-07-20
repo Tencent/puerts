@@ -17,7 +17,7 @@
 #include <variant>
 #include "asio/any_io_executor.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 namespace detail {
 
@@ -178,6 +178,6 @@ struct coro_traits<void() noexcept, void, Executor>
 
 } // namespace detail
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_EXPERIMENTAL_DETAIL_CORO_TRAITS_HPP

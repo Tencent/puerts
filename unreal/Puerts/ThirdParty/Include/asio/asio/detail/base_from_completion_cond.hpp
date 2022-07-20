@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename CompletionCondition>
@@ -34,7 +34,7 @@ protected:
   }
 
   std::size_t check_for_completion(
-      const asio::error_code& ec,
+      const puerts_asio::error_code& ec,
       std::size_t total_transferred)
   {
     return detail::adapt_completion_condition_result(
@@ -54,7 +54,7 @@ protected:
   }
 
   static std::size_t check_for_completion(
-      const asio::error_code& ec,
+      const puerts_asio::error_code& ec,
       std::size_t total_transferred)
   {
     return transfer_all_t()(ec, total_transferred);
@@ -62,7 +62,7 @@ protected:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

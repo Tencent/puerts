@@ -34,7 +34,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -43,10 +43,10 @@ namespace detail
   std::size_t write_at_buffer_sequence(SyncRandomAccessWriteDevice& d,
       uint64_t offset, const ConstBufferSequence& buffers,
       const ConstBufferIterator&, CompletionCondition completion_condition,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
-    ec = asio::error_code();
-    asio::detail::consuming_buffers<const_buffer,
+    ec = puerts_asio::error_code();
+    puerts_asio::detail::consuming_buffers<const_buffer,
         ConstBufferSequence, ConstBufferIterator> tmp(buffers);
     while (!tmp.empty())
     {
@@ -67,10 +67,10 @@ template <typename SyncRandomAccessWriteDevice, typename ConstBufferSequence,
     typename CompletionCondition>
 std::size_t write_at(SyncRandomAccessWriteDevice& d,
     uint64_t offset, const ConstBufferSequence& buffers,
-    CompletionCondition completion_condition, asio::error_code& ec)
+    CompletionCondition completion_condition, puerts_asio::error_code& ec)
 {
   return detail::write_at_buffer_sequence(d, offset, buffers,
-      asio::buffer_sequence_begin(buffers),
+      puerts_asio::buffer_sequence_begin(buffers),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
 }
 
@@ -78,17 +78,17 @@ template <typename SyncRandomAccessWriteDevice, typename ConstBufferSequence>
 inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
     uint64_t offset, const ConstBufferSequence& buffers)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write_at(
       d, offset, buffers, transfer_all(), ec);
-  asio::detail::throw_error(ec, "write_at");
+  puerts_asio::detail::throw_error(ec, "write_at");
   return bytes_transferred;
 }
 
 template <typename SyncRandomAccessWriteDevice, typename ConstBufferSequence>
 inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
     uint64_t offset, const ConstBufferSequence& buffers,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   return write_at(d, offset, buffers, transfer_all(), ec);
 }
@@ -99,10 +99,10 @@ inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
     uint64_t offset, const ConstBufferSequence& buffers,
     CompletionCondition completion_condition)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write_at(d, offset, buffers,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "write_at");
+  puerts_asio::detail::throw_error(ec, "write_at");
   return bytes_transferred;
 }
 
@@ -112,8 +112,8 @@ inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
 template <typename SyncRandomAccessWriteDevice, typename Allocator,
     typename CompletionCondition>
 std::size_t write_at(SyncRandomAccessWriteDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
-    CompletionCondition completion_condition, asio::error_code& ec)
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
+    CompletionCondition completion_condition, puerts_asio::error_code& ec)
 {
   std::size_t bytes_transferred = write_at(d, offset, b.data(),
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
@@ -123,18 +123,18 @@ std::size_t write_at(SyncRandomAccessWriteDevice& d,
 
 template <typename SyncRandomAccessWriteDevice, typename Allocator>
 inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b)
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write_at(d, offset, b, transfer_all(), ec);
-  asio::detail::throw_error(ec, "write_at");
+  puerts_asio::detail::throw_error(ec, "write_at");
   return bytes_transferred;
 }
 
 template <typename SyncRandomAccessWriteDevice, typename Allocator>
 inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
-    asio::error_code& ec)
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
+    puerts_asio::error_code& ec)
 {
   return write_at(d, offset, b, transfer_all(), ec);
 }
@@ -142,13 +142,13 @@ inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
 template <typename SyncRandomAccessWriteDevice, typename Allocator,
     typename CompletionCondition>
 inline std::size_t write_at(SyncRandomAccessWriteDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::size_t bytes_transferred = write_at(d, offset, b,
       ASIO_MOVE_CAST(CompletionCondition)(completion_condition), ec);
-  asio::detail::throw_error(ec, "write_at");
+  puerts_asio::detail::throw_error(ec, "write_at");
   return bytes_transferred;
 }
 
@@ -207,7 +207,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(asio::error_code ec,
+    void operator()(puerts_asio::error_code ec,
         std::size_t bytes_transferred, int start = 0)
     {
       std::size_t max_size;
@@ -232,19 +232,19 @@ namespace detail
             break;
           if (this->cancelled() != cancellation_type::none)
           {
-            ec = asio::error::operation_aborted;
+            ec = puerts_asio::error::operation_aborted;
             break;
           }
         }
 
         ASIO_MOVE_OR_LVALUE(WriteHandler)(handler_)(
-            static_cast<const asio::error_code&>(ec),
+            static_cast<const puerts_asio::error_code&>(ec),
             static_cast<const std::size_t&>(buffers_.total_consumed()));
       }
     }
 
   //private:
-    typedef asio::detail::consuming_buffers<const_buffer,
+    typedef puerts_asio::detail::consuming_buffers<const_buffer,
         ConstBufferSequence, ConstBufferIterator> buffers_type;
 
     AsyncRandomAccessWriteDevice& device_;
@@ -339,7 +339,7 @@ namespace detail
     detail::write_at_op<AsyncRandomAccessWriteDevice, ConstBufferSequence,
       ConstBufferIterator, CompletionCondition, WriteHandler>(
         d, offset, buffers, completion_condition, handler)(
-          asio::error_code(), 0, 1);
+          puerts_asio::error_code(), 0, 1);
   }
 
   template <typename AsyncRandomAccessWriteDevice>
@@ -372,7 +372,7 @@ namespace detail
       non_const_lvalue<WriteHandler> handler2(handler);
       non_const_lvalue<CompletionCondition> completion_cond2(completion_cond);
       start_write_at_buffer_sequence_op(device_, offset, buffers,
-          asio::buffer_sequence_begin(buffers),
+          puerts_asio::buffer_sequence_begin(buffers),
           completion_cond2.value, handler2.value);
     }
 
@@ -407,17 +407,17 @@ struct associator<Associator,
 
 template <typename AsyncRandomAccessWriteDevice,
     typename ConstBufferSequence, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write_at(AsyncRandomAccessWriteDevice& d,
     uint64_t offset, const ConstBufferSequence& buffers,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(WriteHandler) handler)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_at_buffer_sequence<
         AsyncRandomAccessWriteDevice>(d),
       handler, offset, buffers,
@@ -425,16 +425,16 @@ async_write_at(AsyncRandomAccessWriteDevice& d,
 }
 
 template <typename AsyncRandomAccessWriteDevice, typename ConstBufferSequence,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write_at(AsyncRandomAccessWriteDevice& d,
     uint64_t offset, const ConstBufferSequence& buffers,
     ASIO_MOVE_ARG(WriteHandler) handler)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_at_buffer_sequence<
         AsyncRandomAccessWriteDevice>(d),
       handler, offset, buffers, transfer_all());
@@ -450,7 +450,7 @@ namespace detail
   {
   public:
     write_at_streambuf_op(
-        asio::basic_streambuf<Allocator>& streambuf,
+        puerts_asio::basic_streambuf<Allocator>& streambuf,
         WriteHandler& handler)
       : streambuf_(streambuf),
         handler_(ASIO_MOVE_CAST(WriteHandler)(handler))
@@ -471,7 +471,7 @@ namespace detail
     }
 #endif // defined(ASIO_HAS_MOVE)
 
-    void operator()(const asio::error_code& ec,
+    void operator()(const puerts_asio::error_code& ec,
         const std::size_t bytes_transferred)
     {
       streambuf_.consume(bytes_transferred);
@@ -479,7 +479,7 @@ namespace detail
     }
 
   //private:
-    asio::basic_streambuf<Allocator>& streambuf_;
+    puerts_asio::basic_streambuf<Allocator>& streambuf_;
     WriteHandler handler_;
   };
 
@@ -601,17 +601,17 @@ struct associator<Associator,
 
 template <typename AsyncRandomAccessWriteDevice,
     typename Allocator, typename CompletionCondition,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write_at(AsyncRandomAccessWriteDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
     CompletionCondition completion_condition,
     ASIO_MOVE_ARG(WriteHandler) handler)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_at_streambuf<
         AsyncRandomAccessWriteDevice>(d),
       handler, offset, &b,
@@ -619,16 +619,16 @@ async_write_at(AsyncRandomAccessWriteDevice& d,
 }
 
 template <typename AsyncRandomAccessWriteDevice, typename Allocator,
-    ASIO_COMPLETION_TOKEN_FOR(void (asio::error_code,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
       std::size_t)) WriteHandler>
 inline ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
-    void (asio::error_code, std::size_t))
+    void (puerts_asio::error_code, std::size_t))
 async_write_at(AsyncRandomAccessWriteDevice& d,
-    uint64_t offset, asio::basic_streambuf<Allocator>& b,
+    uint64_t offset, puerts_asio::basic_streambuf<Allocator>& b,
     ASIO_MOVE_ARG(WriteHandler) handler)
 {
   return async_initiate<WriteHandler,
-    void (asio::error_code, std::size_t)>(
+    void (puerts_asio::error_code, std::size_t)>(
       detail::initiate_async_write_at_streambuf<
         AsyncRandomAccessWriteDevice>(d),
       handler, offset, &b, transfer_all());
@@ -637,7 +637,7 @@ async_write_at(AsyncRandomAccessWriteDevice& d,
 #endif // !defined(ASIO_NO_IOSTREAM)
 #endif // !defined(ASIO_NO_EXTENSIONS)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

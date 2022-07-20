@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 void winsock_init_base::startup(data& d,
@@ -66,14 +66,14 @@ void winsock_init_base::throw_on_error(data& d)
   long result = ::InterlockedExchangeAdd(&d.result_, 0);
   if (result != 0)
   {
-    asio::error_code ec(result,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "winsock");
+    puerts_asio::error_code ec(result,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "winsock");
   }
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
