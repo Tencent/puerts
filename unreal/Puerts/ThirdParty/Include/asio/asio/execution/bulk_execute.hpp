@@ -28,7 +28,7 @@
 
 #if defined(GENERATING_DOCUMENTATION)
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 
 /// A customisation point that creates a bulk sender.
@@ -41,7 +41,7 @@ namespace execution {
  * @li <tt>S.bulk_execute(F, N)</tt>, if that expression is valid. If the
  *   function selected does not execute <tt>N</tt> invocations of the function
  *   object <tt>F</tt> on the executor <tt>S</tt> in bulk with forward progress
- *   guarantee <tt>asio::query(S, execution::bulk_guarantee)</tt>, and
+ *   guarantee <tt>puerts_asio::query(S, execution::bulk_guarantee)</tt>, and
  *   the result of that function does not model <tt>sender<void></tt>, the
  *   program is ill-formed with no diagnostic required.
  *
@@ -51,14 +51,14 @@ namespace execution {
  *   declaration of <tt>execution::bulk_execute</tt>. If the function selected
  *   by overload resolution does not execute <tt>N</tt> invocations of the
  *   function object <tt>F</tt> on the executor <tt>S</tt> in bulk with forward
- *   progress guarantee <tt>asio::query(E,
+ *   progress guarantee <tt>puerts_asio::query(E,
  *   execution::bulk_guarantee)</tt>, and the result of that function does not
  *   model <tt>sender<void></tt>, the program is ill-formed with no diagnostic
  *   required.
  *
  * @li Otherwise, if the types <tt>F</tt> and
  *   <tt>executor_index_t<remove_cvref_t<S>></tt> model <tt>invocable</tt> and
- *   if <tt>asio::query(S, execution::bulk_guarantee)</tt> equals
+ *   if <tt>puerts_asio::query(S, execution::bulk_guarantee)</tt> equals
  *   <tt>execution::bulk_guarantee.unsequenced</tt>, then
  *
  *    - Evaluates <tt>DECAY_COPY(std::forward<decltype(F)>(F))</tt> on the
@@ -94,25 +94,25 @@ struct can_bulk_execute :
 };
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #else // defined(GENERATING_DOCUMENTATION)
 
 namespace asio_execution_bulk_execute_fn {
 
-using asio::declval;
-using asio::enable_if;
-using asio::execution::bulk_guarantee_t;
-using asio::execution::detail::bulk_sender;
-using asio::execution::executor_index;
-using asio::execution::is_sender;
-using asio::is_convertible;
-using asio::is_same;
-using asio::remove_cvref;
-using asio::result_of;
-using asio::traits::bulk_execute_free;
-using asio::traits::bulk_execute_member;
-using asio::traits::static_require;
+using puerts_asio::declval;
+using puerts_asio::enable_if;
+using puerts_asio::execution::bulk_guarantee_t;
+using puerts_asio::execution::detail::bulk_sender;
+using puerts_asio::execution::executor_index;
+using puerts_asio::execution::is_sender;
+using puerts_asio::is_convertible;
+using puerts_asio::is_same;
+using puerts_asio::remove_cvref;
+using puerts_asio::result_of;
+using puerts_asio::traits::bulk_execute_free;
+using puerts_asio::traits::bulk_execute_member;
+using puerts_asio::traits::static_require;
 
 void bulk_execute();
 
@@ -338,7 +338,7 @@ template <typename T>
 const T static_instance<T>::instance = {};
 
 } // namespace asio_execution_bulk_execute_fn
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace {
 
@@ -388,7 +388,7 @@ struct bulk_execute_result
 };
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(GENERATING_DOCUMENTATION)
 

@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 
 /// Bitmask type for peer verification.
@@ -56,7 +56,7 @@ const int verify_client_once = SSL_VERIFY_CLIENT_ONCE;
 #endif
 
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

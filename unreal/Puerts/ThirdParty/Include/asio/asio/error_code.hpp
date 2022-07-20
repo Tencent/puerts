@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
@@ -191,7 +191,7 @@ std::basic_ostream<Elem, Traits>& operator<<(
 
 #endif // defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 template <typename T, typename Allocator>
 struct associated_allocator;
@@ -170,7 +170,7 @@ struct associated_allocator<reference_wrapper<T>, Allocator>
 #endif // defined(ASIO_HAS_STD_REFERENCE_WRAPPER)
        //   || defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

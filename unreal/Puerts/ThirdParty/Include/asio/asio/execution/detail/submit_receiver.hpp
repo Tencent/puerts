@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -151,13 +151,13 @@ namespace traits {
 
 template <typename Sender, typename Receiver, typename... Args>
 struct set_value_member<
-    asio::execution::detail::submit_receiver_wrapper<
+    puerts_asio::execution::detail::submit_receiver_wrapper<
       Sender, Receiver>,
     void(Args...)>
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept =
-    (asio::execution::is_nothrow_receiver_of<Receiver, Args...>::value));
+    (puerts_asio::execution::is_nothrow_receiver_of<Receiver, Args...>::value));
   typedef void result_type;
 };
 
@@ -165,13 +165,13 @@ struct set_value_member<
 
 template <typename Sender, typename Receiver>
 struct set_value_member<
-    asio::execution::detail::submit_receiver_wrapper<
+    puerts_asio::execution::detail::submit_receiver_wrapper<
       Sender, Receiver>,
     void()>
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept =
-    asio::execution::is_nothrow_receiver_of<Receiver>::value);
+    puerts_asio::execution::is_nothrow_receiver_of<Receiver>::value);
   typedef void result_type;
 };
 
@@ -179,13 +179,13 @@ struct set_value_member<
   template <typename Sender, typename Receiver, \
       ASIO_VARIADIC_TPARAMS(n)> \
   struct set_value_member< \
-      asio::execution::detail::submit_receiver_wrapper< \
+      puerts_asio::execution::detail::submit_receiver_wrapper< \
         Sender, Receiver>, \
       void(ASIO_VARIADIC_TARGS(n))> \
   { \
     ASIO_STATIC_CONSTEXPR(bool, is_valid = true); \
     ASIO_STATIC_CONSTEXPR(bool, is_noexcept = \
-      (asio::execution::is_nothrow_receiver_of<Receiver, \
+      (puerts_asio::execution::is_nothrow_receiver_of<Receiver, \
         ASIO_VARIADIC_TARGS(n)>::value)); \
     typedef void result_type; \
   }; \
@@ -201,7 +201,7 @@ ASIO_VARIADIC_GENERATE(ASIO_PRIVATE_SUBMIT_RECEIVER_TRAIT_DEF)
 
 template <typename Sender, typename Receiver, typename E>
 struct set_error_member<
-    asio::execution::detail::submit_receiver_wrapper<
+    puerts_asio::execution::detail::submit_receiver_wrapper<
       Sender, Receiver>, E>
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
@@ -215,7 +215,7 @@ struct set_error_member<
 
 template <typename Sender, typename Receiver>
 struct set_done_member<
-    asio::execution::detail::submit_receiver_wrapper<
+    puerts_asio::execution::detail::submit_receiver_wrapper<
       Sender, Receiver> >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
@@ -226,7 +226,7 @@ struct set_done_member<
 #endif // !defined(ASIO_HAS_DEDUCED_SET_DONE_MEMBER_TRAIT)
 
 } // namespace traits
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

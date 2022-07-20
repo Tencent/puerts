@@ -53,14 +53,14 @@
 
 namespace websocketpp {
 namespace transport {
-namespace asio {
+namespace puerts_asio {
 
 typedef lib::function<void(connection_hdl)> tcp_init_handler;
 
 /// Asio based connection transport component
 /**
- * transport::asio::connection implements a connection transport component using
- * Asio that works with the transport::asio::endpoint endpoint transport
+ * transport::puerts_asio::connection implements a connection transport component using
+ * Asio that works with the transport::puerts_asio::endpoint endpoint transport
  * component.
  */
 template <typename config>
@@ -86,11 +86,11 @@ public:
     typedef typename response_type::ptr response_ptr;
 
     /// Type of a pointer to the Asio io_service being used
-    typedef lib::asio::io_service * io_service_ptr;
+    typedef lib::puerts_asio::io_service * io_service_ptr;
     /// Type of a pointer to the Asio io_service::strand being used
-    typedef lib::shared_ptr<lib::asio::io_service::strand> strand_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::io_service::strand> strand_ptr;
     /// Type of a pointer to the Asio timer class
-    typedef lib::shared_ptr<lib::asio::steady_timer> timer_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::steady_timer> timer_ptr;
 
     // connection is friends with its associated endpoint to allow the endpoint
     // to call private/protected utility methods that we don't want to expose
@@ -312,9 +312,9 @@ public:
      */
     timer_ptr set_timer(long duration, timer_handler callback) {
         timer_ptr new_timer(
-            new lib::asio::steady_timer(
+            new lib::puerts_asio::steady_timer(
                 *m_io_service,
-                lib::asio::milliseconds(duration))
+                lib::puerts_asio::milliseconds(duration))
         );
 
         if (config::enable_multithreading) {
@@ -348,10 +348,10 @@ public:
      * @param ec The status code
      */
     void handle_timer(timer_ptr, timer_handler callback,
-        lib::asio::error_code const & ec)
+        lib::puerts_asio::error_code const & ec)
     {
         if (ec) {
-            if (ec == lib::asio::error::operation_aborted) {
+            if (ec == lib::puerts_asio::error::operation_aborted) {
                 callback(make_error_code(transport::error::operation_aborted));
             } else {
                 log_err(log::elevel::info,"asio handle_timer",ec);
@@ -374,7 +374,7 @@ public:
      * fail handler is called.
      *
      * Primarily used if you are using mismatched asio / system_error
-     * implementations such as `boost::asio` with `std::system_error`. In these
+     * implementations such as `boost::puerts_asio` with `std::system_error`. In these
      * cases the transport error type is different than the library error type
      * and some WebSocket++ functions that return transport errors via the 
      * library error code type will be coerced into a catch all `pass_through`
@@ -386,7 +386,7 @@ public:
      * @return Error code indicating the reason the connection was closed or 
      * failed
      */
-    lib::asio::error_code get_transport_ec() const {
+    lib::puerts_asio::error_code get_transport_ec() const {
         return m_tec;
     }
 
@@ -462,7 +462,7 @@ protected:
         m_io_service = io_service;
 
         if (config::enable_multithreading) {
-            m_strand.reset(new lib::asio::io_service::strand(*io_service));
+            m_strand.reset(new lib::puerts_asio::io_service::strand(*io_service));
         }
 
         lib::error_code ec = socket_con_type::init_asio(io_service, m_strand,
@@ -573,7 +573,7 @@ protected:
         lib::error_code const & ec)
     {
         if (ec == transport::error::operation_aborted ||
-            (post_timer && lib::asio::is_neg(post_timer->expires_from_now())))
+            (post_timer && lib::puerts_asio::is_neg(post_timer->expires_from_now())))
         {
             m_alog->write(log::alevel::devel,"post_init cancelled");
             return;
@@ -601,14 +601,14 @@ protected:
 
         if (!m_proxy_data) {
             m_elog->write(log::elevel::library,
-                "assertion failed: !m_proxy_data in asio::connection::proxy_write");
+                "assertion failed: !m_proxy_data in puerts_asio::connection::proxy_write");
             callback(make_error_code(error::general));
             return;
         }
 
         m_proxy_data->write_buf = m_proxy_data->req.raw();
 
-        m_bufs.push_back(lib::asio::buffer(m_proxy_data->write_buf.data(),
+        m_bufs.push_back(lib::puerts_asio::buffer(m_proxy_data->write_buf.data(),
                                            m_proxy_data->write_buf.size()));
 
         m_alog->write(log::alevel::devel,m_proxy_data->write_buf);
@@ -626,7 +626,7 @@ protected:
 
         // Send proxy request
         if (config::enable_multithreading) {
-            lib::asio::async_write(
+            lib::puerts_asio::async_write(
                 socket_con_type::get_next_layer(),
                 m_bufs,
                 m_strand->wrap(lib::bind(
@@ -636,7 +636,7 @@ protected:
                 ))
             );
         } else {
-            lib::asio::async_write(
+            lib::puerts_asio::async_write(
                 socket_con_type::get_next_layer(),
                 m_bufs,
                 lib::bind(
@@ -666,7 +666,7 @@ protected:
     }
 
     void handle_proxy_write(init_handler callback,
-        lib::asio::error_code const & ec)
+        lib::puerts_asio::error_code const & ec)
     {
         if (m_alog->static_test(log::alevel::devel)) {
             m_alog->write(log::alevel::devel,
@@ -678,8 +678,8 @@ protected:
         // Timer expired or the operation was aborted for some reason.
         // Whatever aborted it will be issuing the callback so we are safe to
         // return
-        if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(m_proxy_data->timer->expires_from_now()))
+        if (ec == lib::puerts_asio::error::operation_aborted ||
+            lib::puerts_asio::is_neg(m_proxy_data->timer->expires_from_now()))
         {
             m_elog->write(log::elevel::devel,"write operation aborted");
             return;
@@ -702,14 +702,14 @@ protected:
 
         if (!m_proxy_data) {
             m_elog->write(log::elevel::library,
-                "assertion failed: !m_proxy_data in asio::connection::proxy_read");
+                "assertion failed: !m_proxy_data in puerts_asio::connection::proxy_read");
             m_proxy_data->timer->cancel();
             callback(make_error_code(error::general));
             return;
         }
 
         if (config::enable_multithreading) {
-            lib::asio::async_read_until(
+            lib::puerts_asio::async_read_until(
                 socket_con_type::get_next_layer(),
                 m_proxy_data->read_buf,
                 "\r\n\r\n",
@@ -720,7 +720,7 @@ protected:
                 ))
             );
         } else {
-            lib::asio::async_read_until(
+            lib::puerts_asio::async_read_until(
                 socket_con_type::get_next_layer(),
                 m_proxy_data->read_buf,
                 "\r\n\r\n",
@@ -740,7 +740,7 @@ protected:
      * @param bytes_transferred The number of bytes read
      */
     void handle_proxy_read(init_handler callback,
-        lib::asio::error_code const & ec, size_t)
+        lib::puerts_asio::error_code const & ec, size_t)
     {
         if (m_alog->static_test(log::alevel::devel)) {
             m_alog->write(log::alevel::devel,
@@ -750,8 +750,8 @@ protected:
         // Timer expired or the operation was aborted for some reason.
         // Whatever aborted it will be issuing the callback so we are safe to
         // return
-        if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(m_proxy_data->timer->expires_from_now()))
+        if (ec == lib::puerts_asio::error::operation_aborted ||
+            lib::puerts_asio::is_neg(m_proxy_data->timer->expires_from_now()))
         {
             m_elog->write(log::elevel::devel,"read operation aborted");
             return;
@@ -767,7 +767,7 @@ protected:
         } else {
             if (!m_proxy_data) {
                 m_elog->write(log::elevel::library,
-                    "assertion failed: !m_proxy_data in asio::connection::handle_proxy_read");
+                    "assertion failed: !m_proxy_data in puerts_asio::connection::handle_proxy_read");
                 callback(make_error_code(error::general));
                 return;
             }
@@ -837,10 +837,10 @@ protected:
         }*/
 
         if (config::enable_multithreading) {
-            lib::asio::async_read(
+            lib::puerts_asio::async_read(
                 socket_con_type::get_socket(),
-                lib::asio::buffer(buf,len),
-                lib::asio::transfer_at_least(num_bytes),
+                lib::puerts_asio::buffer(buf,len),
+                lib::puerts_asio::transfer_at_least(num_bytes),
                 m_strand->wrap(make_custom_alloc_handler(
                     m_read_handler_allocator,
                     lib::bind(
@@ -851,10 +851,10 @@ protected:
                 ))
             );
         } else {
-            lib::asio::async_read(
+            lib::puerts_asio::async_read(
                 socket_con_type::get_socket(),
-                lib::asio::buffer(buf,len),
-                lib::asio::transfer_at_least(num_bytes),
+                lib::puerts_asio::buffer(buf,len),
+                lib::puerts_asio::transfer_at_least(num_bytes),
                 make_custom_alloc_handler(
                     m_read_handler_allocator,
                     lib::bind(
@@ -868,14 +868,14 @@ protected:
         
     }
 
-    void handle_async_read(read_handler handler, lib::asio::error_code const & ec,
+    void handle_async_read(read_handler handler, lib::puerts_asio::error_code const & ec,
         size_t bytes_transferred)
     {
         m_alog->write(log::alevel::devel, "asio con handle_async_read");
 
         // translate asio error codes into more lib::error_codes
         lib::error_code tec;
-        if (ec == lib::asio::error::eof) {
+        if (ec == lib::puerts_asio::error::eof) {
             tec = make_error_code(transport::error::eof);
         } else if (ec) {
             // We don't know much more about the error at this point. As our
@@ -904,10 +904,10 @@ protected:
 
     /// Initiate a potentially asyncronous write of the given buffer
     void async_write(const char* buf, size_t len, write_handler handler) {
-        m_bufs.push_back(lib::asio::buffer(buf,len));
+        m_bufs.push_back(lib::puerts_asio::buffer(buf,len));
 
         if (config::enable_multithreading) {
-            lib::asio::async_write(
+            lib::puerts_asio::async_write(
                 socket_con_type::get_socket(),
                 m_bufs,
                 m_strand->wrap(make_custom_alloc_handler(
@@ -920,7 +920,7 @@ protected:
                 ))
             );
         } else {
-            lib::asio::async_write(
+            lib::puerts_asio::async_write(
                 socket_con_type::get_socket(),
                 m_bufs,
                 make_custom_alloc_handler(
@@ -940,11 +940,11 @@ protected:
         std::vector<buffer>::const_iterator it;
 
         for (it = bufs.begin(); it != bufs.end(); ++it) {
-            m_bufs.push_back(lib::asio::buffer((*it).buf,(*it).len));
+            m_bufs.push_back(lib::puerts_asio::buffer((*it).buf,(*it).len));
         }
 
         if (config::enable_multithreading) {
-            lib::asio::async_write(
+            lib::puerts_asio::async_write(
                 socket_con_type::get_socket(),
                 m_bufs,
                 m_strand->wrap(make_custom_alloc_handler(
@@ -957,7 +957,7 @@ protected:
                 ))
             );
         } else {
-            lib::asio::async_write(
+            lib::puerts_asio::async_write(
                 socket_con_type::get_socket(),
                 m_bufs,
                 make_custom_alloc_handler(
@@ -977,7 +977,7 @@ protected:
      * @param ec The status code
      * @param bytes_transferred The number of bytes read
      */
-    void handle_async_write(write_handler handler, lib::asio::error_code const & ec, size_t) {
+    void handle_async_write(write_handler handler, lib::puerts_asio::error_code const & ec, size_t) {
         m_bufs.clear();
         lib::error_code tec;
         if (ec) {
@@ -1092,10 +1092,10 @@ protected:
     }
 
     void handle_async_shutdown(timer_ptr shutdown_timer, shutdown_handler
-        callback, lib::asio::error_code const & ec)
+        callback, lib::puerts_asio::error_code const & ec)
     {
-        if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(shutdown_timer->expires_from_now()))
+        if (ec == lib::puerts_asio::error::operation_aborted ||
+            lib::puerts_asio::is_neg(shutdown_timer->expires_from_now()))
         {
             m_alog->write(log::alevel::devel,"async_shutdown cancelled");
             return;
@@ -1105,7 +1105,7 @@ protected:
 
         lib::error_code tec;
         if (ec) {
-            if (ec == lib::asio::error::not_connected) {
+            if (ec == lib::puerts_asio::error::not_connected) {
                 // The socket was already closed when we tried to close it. This
                 // happens periodically (usually if a read or write fails
                 // earlier and if it is a real error will be caught at another
@@ -1132,9 +1132,9 @@ protected:
 
     /// Cancel the underlying socket and log any errors
     void cancel_socket_checked() {
-        lib::asio::error_code cec = socket_con_type::cancel_socket();
+        lib::puerts_asio::error_code cec = socket_con_type::cancel_socket();
         if (cec) {
-            if (cec == lib::asio::error::operation_not_supported) {
+            if (cec == lib::puerts_asio::error::operation_not_supported) {
                 // cancel not supported on this OS, ignore and log at dev level
                 m_alog->write(log::alevel::devel, "socket cancel not supported");
             } else {
@@ -1163,7 +1163,7 @@ private:
         request_type req;
         response_type res;
         std::string write_buf;
-        lib::asio::streambuf read_buf;
+        lib::puerts_asio::streambuf read_buf;
         long timeout_proxy;
         timer_ptr timer;
     };
@@ -1176,10 +1176,10 @@ private:
     strand_ptr      m_strand;
     connection_hdl  m_connection_hdl;
 
-    std::vector<lib::asio::const_buffer> m_bufs;
+    std::vector<lib::puerts_asio::const_buffer> m_bufs;
 
     /// Detailed internal error code
-    lib::asio::error_code m_tec;
+    lib::puerts_asio::error_code m_tec;
 
     // Handlers
     tcp_init_handler    m_tcp_pre_init_handler;
@@ -1190,7 +1190,7 @@ private:
 };
 
 
-} // namespace asio
+} // namespace puerts_asio
 } // namespace transport
 } // namespace websocketpp
 

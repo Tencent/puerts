@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
@@ -119,12 +119,12 @@ private:
   std::string context_;
 
   // The string representation of the error.
-  mutable asio::detail::scoped_ptr<std::string> what_;
+  mutable puerts_asio::detail::scoped_ptr<std::string> what_;
 };
 
 #endif // defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

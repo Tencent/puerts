@@ -29,7 +29,7 @@
 
 #if defined(GENERATING_DOCUMENTATION)
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 
 /// A customisation point that submits a sender to a receiver.
@@ -103,17 +103,17 @@ struct can_submit :
 };
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #else // defined(GENERATING_DOCUMENTATION)
 
 namespace asio_execution_submit_fn {
 
-using asio::declval;
-using asio::enable_if;
-using asio::execution::is_sender_to;
-using asio::traits::submit_free;
-using asio::traits::submit_member;
+using puerts_asio::declval;
+using puerts_asio::enable_if;
+using puerts_asio::execution::is_sender_to;
+using puerts_asio::traits::submit_free;
+using puerts_asio::traits::submit_member;
 
 void submit();
 
@@ -216,8 +216,8 @@ struct impl
     ASIO_NOEXCEPT_IF((
       call_traits<S, void(R)>::is_noexcept))
   {
-    return asio::execution::start(
-        (new asio::execution::detail::submit_receiver<S, R>(
+    return puerts_asio::execution::start(
+        (new puerts_asio::execution::detail::submit_receiver<S, R>(
           ASIO_MOVE_CAST(S)(s), ASIO_MOVE_CAST(R)(r)))->state_);
   }
 #else // defined(ASIO_HAS_MOVE)
@@ -278,8 +278,8 @@ struct impl
     ASIO_NOEXCEPT_IF((
       call_traits<S&, void(R&)>::is_noexcept))
   {
-    return asio::execution::start(
-        (new asio::execution::detail::submit_receiver<
+    return puerts_asio::execution::start(
+        (new puerts_asio::execution::detail::submit_receiver<
           S&, R&>(s, r))->state_);
   }
 
@@ -292,8 +292,8 @@ struct impl
     ASIO_NOEXCEPT_IF((
       call_traits<const S&, void(R&)>::is_noexcept))
   {
-    asio::execution::start(
-        (new asio::execution::detail::submit_receiver<
+    puerts_asio::execution::start(
+        (new puerts_asio::execution::detail::submit_receiver<
           const S&, R&>(s, r))->state_);
   }
 
@@ -354,8 +354,8 @@ struct impl
     ASIO_NOEXCEPT_IF((
       call_traits<S&, void(const R&)>::is_noexcept))
   {
-    asio::execution::start(
-        (new asio::execution::detail::submit_receiver<
+    puerts_asio::execution::start(
+        (new puerts_asio::execution::detail::submit_receiver<
           S&, const R&>(s, r))->state_);
   }
 
@@ -368,8 +368,8 @@ struct impl
     ASIO_NOEXCEPT_IF((
       call_traits<const S&, void(const R&)>::is_noexcept))
   {
-    asio::execution::start(
-        (new asio::execution::detail::submit_receiver<
+    puerts_asio::execution::start(
+        (new puerts_asio::execution::detail::submit_receiver<
           const S&, const R&>(s, r))->state_);
   }
 #endif // defined(ASIO_HAS_MOVE)
@@ -385,7 +385,7 @@ template <typename T>
 const T static_instance<T>::instance = {};
 
 } // namespace asio_execution_submit_fn
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace {
 
@@ -441,7 +441,7 @@ void submit_helper(ASIO_MOVE_ARG(S) s, ASIO_MOVE_ARG(R) r)
 
 } // namespace detail
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(GENERATING_DOCUMENTATION)
 

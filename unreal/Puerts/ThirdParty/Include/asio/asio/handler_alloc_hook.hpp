@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_NO_DEPRECATED)
 
@@ -93,7 +93,7 @@ asio_handler_allocate(std::size_t size, ...);
 ASIO_DECL asio_handler_deallocate_is_deprecated
 asio_handler_deallocate(void* pointer, std::size_t size, ...);
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_HAS_STD_COROUTINE)
@@ -122,7 +122,7 @@ private:
   detail::awaitable_frame<T, Executor>* frame_;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

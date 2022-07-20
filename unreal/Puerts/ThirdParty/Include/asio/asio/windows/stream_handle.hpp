@@ -22,14 +22,14 @@
 
 #include "asio/windows/basic_stream_handle.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace windows {
 
 /// Typedef for the typical usage of a stream-oriented handle.
 typedef basic_stream_handle<> stream_handle;
 
 } // namespace windows
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(ASIO_HAS_WINDOWS_STREAM_HANDLE)
        //   || defined(GENERATING_DOCUMENTATION)

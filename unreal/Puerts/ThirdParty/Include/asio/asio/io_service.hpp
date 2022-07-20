@@ -19,14 +19,14 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if !defined(ASIO_NO_DEPRECATED)
 /// Typedef for backwards compatibility.
 typedef io_context io_service;
 #endif // !defined(ASIO_NO_DEPRECATED)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

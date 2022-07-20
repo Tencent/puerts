@@ -22,7 +22,7 @@
 #include "asio/basic_waitable_timer.hpp"
 #include "asio/detail/chrono.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Typedef for a timer based on the high resolution clock.
 /**
@@ -37,7 +37,7 @@ typedef basic_waitable_timer<
     chrono::high_resolution_clock>
   high_resolution_timer;
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(ASIO_HAS_CHRONO) || defined(GENERATING_DOCUMENTATION)
 

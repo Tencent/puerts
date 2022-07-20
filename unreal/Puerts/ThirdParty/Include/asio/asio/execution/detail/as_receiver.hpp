@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -80,7 +80,7 @@ namespace traits {
 
 template <typename Function, typename T>
 struct set_value_member<
-    asio::execution::detail::as_receiver<Function, T>, void()>
+    puerts_asio::execution::detail::as_receiver<Function, T>, void()>
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
 #if defined(ASIO_HAS_NOEXCEPT)
@@ -98,7 +98,7 @@ struct set_value_member<
 
 template <typename Function, typename T, typename E>
 struct set_error_member<
-    asio::execution::detail::as_receiver<Function, T>, E>
+    puerts_asio::execution::detail::as_receiver<Function, T>, E>
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
@@ -111,7 +111,7 @@ struct set_error_member<
 
 template <typename Function, typename T>
 struct set_done_member<
-    asio::execution::detail::as_receiver<Function, T> >
+    puerts_asio::execution::detail::as_receiver<Function, T> >
 {
   ASIO_STATIC_CONSTEXPR(bool, is_valid = true);
   ASIO_STATIC_CONSTEXPR(bool, is_noexcept = true);
@@ -121,7 +121,7 @@ struct set_done_member<
 #endif // !defined(ASIO_HAS_DEDUCED_SET_DONE_MEMBER_TRAIT)
 
 } // namespace traits
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

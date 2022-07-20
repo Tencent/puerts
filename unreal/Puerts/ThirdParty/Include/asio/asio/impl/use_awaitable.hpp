@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Executor, typename T>
@@ -74,13 +74,13 @@ public:
 };
 
 template <typename Executor>
-class awaitable_handler<Executor, asio::error_code>
+class awaitable_handler<Executor, puerts_asio::error_code>
   : public awaitable_handler_base<Executor, void>
 {
 public:
   using awaitable_handler_base<Executor, void>::awaitable_handler_base;
 
-  void operator()(const asio::error_code& ec)
+  void operator()(const puerts_asio::error_code& ec)
   {
     this->frame()->attach_thread(this);
     if (ec)
@@ -132,14 +132,14 @@ public:
 };
 
 template <typename Executor, typename T>
-class awaitable_handler<Executor, asio::error_code, T>
+class awaitable_handler<Executor, puerts_asio::error_code, T>
   : public awaitable_handler_base<Executor, T>
 {
 public:
   using awaitable_handler_base<Executor, T>::awaitable_handler_base;
 
   template <typename Arg>
-  void operator()(const asio::error_code& ec, Arg&& arg)
+  void operator()(const puerts_asio::error_code& ec, Arg&& arg)
   {
     this->frame()->attach_thread(this);
     if (ec)
@@ -193,7 +193,7 @@ public:
 };
 
 template <typename Executor, typename... Ts>
-class awaitable_handler<Executor, asio::error_code, Ts...>
+class awaitable_handler<Executor, puerts_asio::error_code, Ts...>
   : public awaitable_handler_base<Executor, std::tuple<Ts...>>
 {
 public:
@@ -201,7 +201,7 @@ public:
     std::tuple<Ts...>>::awaitable_handler_base;
 
   template <typename... Args>
-  void operator()(const asio::error_code& ec, Args&&... args)
+  void operator()(const puerts_asio::error_code& ec, Args&&... args)
   {
     this->frame()->attach_thread(this);
     if (ec)
@@ -284,7 +284,7 @@ public:
 
 #endif // !defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

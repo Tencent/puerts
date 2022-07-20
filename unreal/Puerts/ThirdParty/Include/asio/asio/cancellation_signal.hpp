@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class cancellation_handler_base
@@ -163,7 +163,7 @@ public:
    *
    * The handler is a function object to be called when the signal is emitted.
    * The signature of the handler must be
-   * @code void handler(asio::cancellation_type_t); @endcode
+   * @code void handler(puerts_asio::cancellation_type_t); @endcode
    *
    * @param args Arguments to be passed to the @c CancellationHandler object's
    * constructor.
@@ -233,7 +233,7 @@ public:
    *
    * The handler is a function object to be called when the signal is emitted.
    * The signature of the handler must be
-   * @code void handler(asio::cancellation_type_t); @endcode
+   * @code void handler(puerts_asio::cancellation_type_t); @endcode
    *
    * @param handler The handler to be installed.
    *
@@ -352,7 +352,7 @@ inline cancellation_slot cancellation_signal::slot() ASIO_NOEXCEPT
   return cancellation_slot(0, &handler_);
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

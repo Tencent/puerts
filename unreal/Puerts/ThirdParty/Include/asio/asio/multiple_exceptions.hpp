@@ -19,7 +19,7 @@
 #include <exception>
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_STD_EXCEPTION_PTR) \
   || defined(GENERATING_DOCUMENTATION)
@@ -47,7 +47,7 @@ private:
 #endif // defined(ASIO_HAS_STD_EXCEPTION_PTR)
        //   || defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

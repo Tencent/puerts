@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename T, typename Purpose = thread_info_base::default_tag>
@@ -98,7 +98,7 @@ struct get_recycling_allocator<std::allocator<T>, Purpose>
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

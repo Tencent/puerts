@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 
 /// Wait for all operations to complete.
@@ -81,7 +81,7 @@ public:
 
   template <typename E, typename... Args>
   ASIO_CONSTEXPR typename constraint<
-    !is_same<typename decay<E>::type, asio::error_code>::value
+    !is_same<typename decay<E>::type, puerts_asio::error_code>::value
       && !is_same<typename decay<E>::type, std::exception_ptr>::value,
     cancellation_type_t
   >::type operator()(const E&, Args&&...) const ASIO_NOEXCEPT
@@ -91,7 +91,7 @@ public:
 
   template <typename E, typename... Args>
   ASIO_CONSTEXPR typename constraint<
-      is_same<typename decay<E>::type, asio::error_code>::value
+      is_same<typename decay<E>::type, puerts_asio::error_code>::value
         || is_same<typename decay<E>::type, std::exception_ptr>::value,
       cancellation_type_t
   >::type operator()(const E& e, Args&&...) const ASIO_NOEXCEPT
@@ -125,7 +125,7 @@ public:
 
   template <typename E, typename... Args>
   ASIO_CONSTEXPR typename constraint<
-    !is_same<typename decay<E>::type, asio::error_code>::value
+    !is_same<typename decay<E>::type, puerts_asio::error_code>::value
       && !is_same<typename decay<E>::type, std::exception_ptr>::value,
     cancellation_type_t
   >::type operator()(const E&, Args&&...) const ASIO_NOEXCEPT
@@ -135,7 +135,7 @@ public:
 
   template <typename E, typename... Args>
   ASIO_CONSTEXPR typename constraint<
-      is_same<typename decay<E>::type, asio::error_code>::value
+      is_same<typename decay<E>::type, puerts_asio::error_code>::value
         || is_same<typename decay<E>::type, std::exception_ptr>::value,
       cancellation_type_t
   >::type operator()(const E& e, Args&&...) const ASIO_NOEXCEPT
@@ -148,7 +148,7 @@ private:
 };
 
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

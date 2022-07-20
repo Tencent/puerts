@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename IoObjectService,
@@ -44,7 +44,7 @@ public:
 
   // Construct an I/O object using an executor.
   explicit io_object_impl(int, const executor_type& ex)
-    : service_(&asio::use_service<IoObjectService>(
+    : service_(&puerts_asio::use_service<IoObjectService>(
           io_object_impl::get_context(ex))),
       executor_(ex)
   {
@@ -54,7 +54,7 @@ public:
   // Construct an I/O object using an execution context.
   template <typename ExecutionContext>
   explicit io_object_impl(int, int, ExecutionContext& context)
-    : service_(&asio::use_service<IoObjectService>(context)),
+    : service_(&puerts_asio::use_service<IoObjectService>(context)),
       executor_(context.get_executor())
   {
     service_->construct(implementation_);
@@ -72,7 +72,7 @@ public:
   // Perform a converting move-construction of an I/O object.
   template <typename IoObjectService1, typename Executor1>
   io_object_impl(io_object_impl<IoObjectService1, Executor1>&& other)
-    : service_(&asio::use_service<IoObjectService>(
+    : service_(&puerts_asio::use_service<IoObjectService>(
             io_object_impl::get_context(other.get_executor()))),
       executor_(other.get_executor())
   {
@@ -139,7 +139,7 @@ private:
   static execution_context& get_context(const T& t,
       typename enable_if<execution::is_executor<T>::value>::type* = 0)
   {
-    return asio::query(t, execution::context);
+    return puerts_asio::query(t, execution::context);
   }
 
   // Helper function to get an executor's context.
@@ -165,7 +165,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

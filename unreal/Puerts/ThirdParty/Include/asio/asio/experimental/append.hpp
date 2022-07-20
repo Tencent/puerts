@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 
 /// Completion token type used to specify that the completion handler
@@ -62,7 +62,7 @@ append(ASIO_MOVE_ARG(CompletionToken) completion_token,
 }
 
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

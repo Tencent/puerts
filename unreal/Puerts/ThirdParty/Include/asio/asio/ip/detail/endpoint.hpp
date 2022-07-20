@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 namespace detail {
 
@@ -40,7 +40,7 @@ public:
       unsigned short port_num) ASIO_NOEXCEPT;
 
   // Construct an endpoint using an address and port number.
-  ASIO_DECL endpoint(const asio::ip::address& addr,
+  ASIO_DECL endpoint(const puerts_asio::ip::address& addr,
       unsigned short port_num) ASIO_NOEXCEPT;
 
   // Copy constructor.
@@ -57,13 +57,13 @@ public:
   }
 
   // Get the underlying endpoint in the native type.
-  asio::detail::socket_addr_type* data() ASIO_NOEXCEPT
+  puerts_asio::detail::socket_addr_type* data() ASIO_NOEXCEPT
   {
     return &data_.base;
   }
 
   // Get the underlying endpoint in the native type.
-  const asio::detail::socket_addr_type* data() const ASIO_NOEXCEPT
+  const puerts_asio::detail::socket_addr_type* data() const ASIO_NOEXCEPT
   {
     return &data_.base;
   }
@@ -72,9 +72,9 @@ public:
   std::size_t size() const ASIO_NOEXCEPT
   {
     if (is_v4())
-      return sizeof(asio::detail::sockaddr_in4_type);
+      return sizeof(puerts_asio::detail::sockaddr_in4_type);
     else
-      return sizeof(asio::detail::sockaddr_in6_type);
+      return sizeof(puerts_asio::detail::sockaddr_in6_type);
   }
 
   // Set the underlying size of the endpoint in the native type.
@@ -93,11 +93,11 @@ public:
   ASIO_DECL void port(unsigned short port_num) ASIO_NOEXCEPT;
 
   // Get the IP address associated with the endpoint.
-  ASIO_DECL asio::ip::address address() const ASIO_NOEXCEPT;
+  ASIO_DECL puerts_asio::ip::address address() const ASIO_NOEXCEPT;
 
   // Set the IP address associated with the endpoint.
   ASIO_DECL void address(
-      const asio::ip::address& addr) ASIO_NOEXCEPT;
+      const puerts_asio::ip::address& addr) ASIO_NOEXCEPT;
 
   // Compare two endpoints for equality.
   ASIO_DECL friend bool operator==(const endpoint& e1,
@@ -122,15 +122,15 @@ private:
   // The underlying IP socket address.
   union data_union
   {
-    asio::detail::socket_addr_type base;
-    asio::detail::sockaddr_in4_type v4;
-    asio::detail::sockaddr_in6_type v6;
+    puerts_asio::detail::socket_addr_type base;
+    puerts_asio::detail::sockaddr_in4_type v4;
+    puerts_asio::detail::sockaddr_in6_type v6;
   } data_;
 };
 
 } // namespace detail
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

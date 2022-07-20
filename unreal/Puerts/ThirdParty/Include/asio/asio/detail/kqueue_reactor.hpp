@@ -44,7 +44,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class scheduler;
@@ -82,7 +82,7 @@ public:
   typedef descriptor_state* per_descriptor_data;
 
   // Constructor.
-  ASIO_DECL kqueue_reactor(asio::execution_context& ctx);
+  ASIO_DECL kqueue_reactor(puerts_asio::execution_context& ctx);
 
   // Destructor.
   ASIO_DECL ~kqueue_reactor();
@@ -92,7 +92,7 @@ public:
 
   // Recreate internal descriptors following a fork.
   ASIO_DECL void notify_fork(
-      asio::execution_context::fork_event fork_ev);
+      puerts_asio::execution_context::fork_event fork_ev);
 
   // Initialise the task.
   ASIO_DECL void init_task();
@@ -238,7 +238,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 template <typename> class basic_address_range;
@@ -127,7 +127,7 @@ private:
 typedef basic_address_range<address_v4> address_v4_range;
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

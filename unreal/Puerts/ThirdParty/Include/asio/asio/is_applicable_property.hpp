@@ -18,7 +18,7 @@
 #include "asio/detail/config.hpp"
 #include "asio/detail/type_traits.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename T, typename Property, typename = void>
@@ -56,6 +56,6 @@ ASIO_CONSTEXPR const bool is_applicable_property_v
 
 #endif // defined(ASIO_HAS_VARIABLE_TEMPLATES)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_IS_APPLICABLE_PROPERTY_HPP

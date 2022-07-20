@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Provides serialised function invocation for any executor type.
 template <typename Executor>
@@ -158,12 +158,12 @@ public:
   /// Forward a query to the underlying executor.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::query customisation point.
+   * puerts_asio::query customisation point.
    *
    * For example:
-   * @code asio::strand<my_executor_type> ex = ...;
-   * if (asio::query(ex, asio::execution::blocking)
-   *       == asio::execution::blocking.never)
+   * @code puerts_asio::strand<my_executor_type> ex = ...;
+   * if (puerts_asio::query(ex, puerts_asio::execution::blocking)
+   *       == puerts_asio::execution::blocking.never)
    *   ... @endcode
    */
   template <typename Property>
@@ -185,12 +185,12 @@ public:
   /// Forward a requirement to the underlying executor.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::require customisation point.
+   * puerts_asio::require customisation point.
    *
    * For example:
-   * @code asio::strand<my_executor_type> ex1 = ...;
-   * auto ex2 = asio::require(ex1,
-   *     asio::execution::blocking.never); @endcode
+   * @code puerts_asio::strand<my_executor_type> ex1 = ...;
+   * auto ex2 = puerts_asio::require(ex1,
+   *     puerts_asio::execution::blocking.never); @endcode
    */
   template <typename Property>
   typename constraint<
@@ -205,18 +205,18 @@ public:
   {
     return strand<typename decay<
       typename require_result<const Executor&, Property>::type
-        >::type>(asio::require(executor_, p), impl_);
+        >::type>(puerts_asio::require(executor_, p), impl_);
   }
 
   /// Forward a preference to the underlying executor.
   /**
    * Do not call this function directly. It is intended for use with the
-   * asio::prefer customisation point.
+   * puerts_asio::prefer customisation point.
    *
    * For example:
-   * @code asio::strand<my_executor_type> ex1 = ...;
-   * auto ex2 = asio::prefer(ex1,
-   *     asio::execution::blocking.never); @endcode
+   * @code puerts_asio::strand<my_executor_type> ex1 = ...;
+   * auto ex2 = puerts_asio::prefer(ex1,
+   *     puerts_asio::execution::blocking.never); @endcode
    */
   template <typename Property>
   typename constraint<
@@ -231,7 +231,7 @@ public:
   {
     return strand<typename decay<
       typename prefer_result<const Executor&, Property>::type
-        >::type>(asio::prefer(executor_, p), impl_);
+        >::type>(puerts_asio::prefer(executor_, p), impl_);
   }
 
 #if !defined(ASIO_NO_TS_EXECUTORS)
@@ -266,7 +266,7 @@ public:
    * execution::execute customisation point.
    *
    * For example:
-   * @code asio::strand<my_executor_type> ex = ...;
+   * @code puerts_asio::strand<my_executor_type> ex = ...;
    * execution::execute(ex, my_function_object); @endcode
    *
    * This function is used to ask the strand to execute the given function
@@ -395,7 +395,7 @@ private:
       >::type = 0)
   {
     return use_service<detail::strand_executor_service>(
-        asio::query(ex, execution::context)).create_implementation();
+        puerts_asio::query(ex, execution::context)).create_implementation();
   }
 
   template <typename InnerExecutor>
@@ -418,13 +418,13 @@ private:
   typename query_result<const Executor&, Property>::type query_helper(
       false_type, const Property& property) const
   {
-    return asio::query(executor_, property);
+    return puerts_asio::query(executor_, property);
   }
 
   template <typename Property>
   execution::blocking_t query_helper(true_type, const Property& property) const
   {
-    execution::blocking_t result = asio::query(executor_, property);
+    execution::blocking_t result = puerts_asio::query(executor_, property);
     return result == execution::blocking.always
       ? execution::blocking.possibly : result;
   }
@@ -433,9 +433,9 @@ private:
   implementation_type impl_;
 };
 
-/** @defgroup make_strand asio::make_strand
+/** @defgroup make_strand puerts_asio::make_strand
  *
- * @brief The asio::make_strand function creates a @ref strand object for
+ * @brief The puerts_asio::make_strand function creates a @ref strand object for
  * an executor or execution context.
  */
 /*@{*/
@@ -554,7 +554,7 @@ struct prefer_member<strand<Executor>, Property,
 
 #endif // !defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

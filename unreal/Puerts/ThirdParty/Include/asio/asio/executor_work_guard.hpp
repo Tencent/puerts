@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if !defined(ASIO_EXECUTOR_WORK_GUARD_DECL)
 #define ASIO_EXECUTOR_WORK_GUARD_DECL
@@ -142,7 +142,7 @@ public:
     : executor_(e),
       owns_(true)
   {
-    new (&work_) work_type(asio::prefer(executor_,
+    new (&work_) work_type(puerts_asio::prefer(executor_,
           execution::outstanding_work.tracked));
   }
 
@@ -152,7 +152,7 @@ public:
   {
     if (owns_)
     {
-      new (&work_) work_type(asio::prefer(executor_,
+      new (&work_) work_type(puerts_asio::prefer(executor_,
             execution::outstanding_work.tracked));
     }
   }
@@ -293,7 +293,7 @@ make_work_guard(const T& t, ExecutionContext& ctx,
         t, ctx.get_executor()));
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

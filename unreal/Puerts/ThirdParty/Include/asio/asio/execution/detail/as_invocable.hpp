@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -38,7 +38,7 @@ struct as_invocable
   Receiver* receiver_;
 
   explicit as_invocable(Receiver& r) ASIO_NOEXCEPT
-    : receiver_(asio::detail::addressof(r))
+    : receiver_(puerts_asio::detail::addressof(r))
   {
   }
 
@@ -84,12 +84,12 @@ template <typename Receiver, typename>
 struct as_invocable
 {
   Receiver* receiver_;
-  asio::detail::shared_ptr<asio::detail::atomic_count> ref_count_;
+  puerts_asio::detail::shared_ptr<puerts_asio::detail::atomic_count> ref_count_;
 
   explicit as_invocable(Receiver& r,
-      const asio::detail::shared_ptr<
-        asio::detail::atomic_count>& c) ASIO_NOEXCEPT
-    : receiver_(asio::detail::addressof(r)),
+      const puerts_asio::detail::shared_ptr<
+        puerts_asio::detail::atomic_count>& c) ASIO_NOEXCEPT
+    : receiver_(puerts_asio::detail::addressof(r)),
       ref_count_(c)
   {
   }
@@ -145,7 +145,7 @@ struct is_as_invocable<as_invocable<Function, T> > : true_type
 
 } // namespace detail
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

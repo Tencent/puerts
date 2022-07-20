@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Descriptor>
@@ -71,8 +71,8 @@ public:
   // the reactor's event demultiplexing function may need to be interrupted and
   // restarted.
   bool cancel_operations(iterator i, op_queue<operation>& ops,
-      const asio::error_code& ec =
-        asio::error::operation_aborted)
+      const puerts_asio::error_code& ec =
+        puerts_asio::error::operation_aborted)
   {
     if (i != operations_.end())
     {
@@ -94,8 +94,8 @@ public:
   // operations were cancelled, in which case the reactor's event
   // demultiplexing function may need to be interrupted and restarted.
   bool cancel_operations(Descriptor descriptor, op_queue<operation>& ops,
-      const asio::error_code& ec =
-        asio::error::operation_aborted)
+      const puerts_asio::error_code& ec =
+        puerts_asio::error::operation_aborted)
   {
     return this->cancel_operations(operations_.find(descriptor), ops, ec);
   }
@@ -106,8 +106,8 @@ public:
   // any operations were cancelled, in which case the reactor's event
   // demultiplexing function may need to be interrupted and restarted.
   bool cancel_operations_by_key(iterator i, op_queue<operation>& ops,
-      void* cancellation_key, const asio::error_code& ec =
-        asio::error::operation_aborted)
+      void* cancellation_key, const puerts_asio::error_code& ec =
+        puerts_asio::error::operation_aborted)
   {
     bool result = false;
     if (i != operations_.end())
@@ -137,8 +137,8 @@ public:
   // operations were cancelled, in which case the reactor's event
   // demultiplexing function may need to be interrupted and restarted.
   bool cancel_operations_by_key(Descriptor descriptor, op_queue<operation>& ops,
-      void* cancellation_key, const asio::error_code& ec =
-        asio::error::operation_aborted)
+      void* cancellation_key, const puerts_asio::error_code& ec =
+        puerts_asio::error::operation_aborted)
   {
     return this->cancel_operations_by_key(
         operations_.find(descriptor), ops, cancellation_key, ec);
@@ -205,7 +205,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -34,7 +34,7 @@
        //   && defined(ASIO_HAS_DECLTYPE)
        //   && !defined(ASIO_MSVC) || (_MSC_VER >= 1910)
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace detail {
 
@@ -161,7 +161,7 @@ template <typename S>
 struct has_sender_traits<S,
     typename enable_if<
       is_same<
-        typename asio::execution::sender_traits<
+        typename puerts_asio::execution::sender_traits<
           S>::asio_execution_sender_traits_base_is_unspecialised,
         void
       >::value
@@ -205,7 +205,7 @@ ASIO_CONSTEXPR const bool is_sender_v = is_sender<T>::value;
 template <typename T>
 ASIO_CONCEPT sender = is_sender<T>::value;
 
-#define ASIO_EXECUTION_SENDER ::asio::execution::sender
+#define ASIO_EXECUTION_SENDER ::puerts_asio::execution::sender
 
 #else // defined(ASIO_HAS_CONCEPTS)
 
@@ -251,7 +251,7 @@ template <typename T, typename R>
 ASIO_CONCEPT sender_to = is_sender_to<T, R>::value;
 
 #define ASIO_EXECUTION_SENDER_TO(r) \
-  ::asio::execution::sender_to<r>
+  ::puerts_asio::execution::sender_to<r>
 
 #else // defined(ASIO_HAS_CONCEPTS)
 
@@ -293,7 +293,7 @@ template <typename T>
 ASIO_CONCEPT typed_sender = is_typed_sender<T>::value;
 
 #define ASIO_EXECUTION_TYPED_SENDER \
-  ::asio::execution::typed_sender
+  ::puerts_asio::execution::typed_sender
 
 #else // defined(ASIO_HAS_CONCEPTS)
 
@@ -302,7 +302,7 @@ ASIO_CONCEPT typed_sender = is_typed_sender<T>::value;
 #endif // defined(ASIO_HAS_CONCEPTS)
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

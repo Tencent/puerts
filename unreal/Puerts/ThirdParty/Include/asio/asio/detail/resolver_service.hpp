@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Protocol>
@@ -46,10 +46,10 @@ public:
   typedef typename Protocol::endpoint endpoint_type;
 
   // The query type.
-  typedef asio::ip::basic_resolver_query<Protocol> query_type;
+  typedef puerts_asio::ip::basic_resolver_query<Protocol> query_type;
 
   // The results type.
-  typedef asio::ip::basic_resolver_results<Protocol> results_type;
+  typedef puerts_asio::ip::basic_resolver_results<Protocol> results_type;
 
   // Constructor.
   resolver_service(execution_context& context)
@@ -72,9 +72,9 @@ public:
 
   // Resolve a query to a list of entries.
   results_type resolve(implementation_type&, const query_type& qry,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
-    asio::detail::addrinfo_type* address_info = 0;
+    puerts_asio::detail::addrinfo_type* address_info = 0;
 
     socket_ops::getaddrinfo(qry.host_name().c_str(),
         qry.service_name().c_str(), qry.hints(), &address_info, ec);
@@ -91,7 +91,7 @@ public:
   {
     // Allocate and construct an operation to wrap the handler.
     typedef resolve_query_op<Protocol, Handler, IoExecutor> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
     p.p = new (p.v) op(impl, qry, scheduler_, handler, io_ex);
 
@@ -104,7 +104,7 @@ public:
 
   // Resolve an endpoint to a list of entries.
   results_type resolve(implementation_type&,
-      const endpoint_type& endpoint, asio::error_code& ec)
+      const endpoint_type& endpoint, puerts_asio::error_code& ec)
   {
     char host_name[NI_MAXHOST];
     char service_name[NI_MAXSERV];
@@ -123,7 +123,7 @@ public:
   {
     // Allocate and construct an operation to wrap the handler.
     typedef resolve_endpoint_op<Protocol, Handler, IoExecutor> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
     p.p = new (p.v) op(impl, endpoint, scheduler_, handler, io_ex);
 
@@ -136,7 +136,7 @@ public:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -24,12 +24,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 // Default service implementation for a strand.
 class strand_service
-  : public asio::detail::service_base<strand_service>
+  : public puerts_asio::detail::service_base<strand_service>
 {
 private:
   // Helper class to re-post the strand on exit.
@@ -54,7 +54,7 @@ public:
     friend struct on_dispatch_exit;
 
     // Mutex to protect access to internal data.
-    asio::detail::mutex mutex_;
+    puerts_asio::detail::mutex mutex_;
 
     // Indicates whether the strand is currently "locked" by a handler. This
     // means that there is a handler upcall in progress, or that the strand
@@ -75,7 +75,7 @@ public:
   typedef strand_impl* implementation_type;
 
   // Construct a new strand service for the specified io_context.
-  ASIO_DECL explicit strand_service(asio::io_context& io_context);
+  ASIO_DECL explicit strand_service(puerts_asio::io_context& io_context);
 
   // Destroy all user-defined handler objects owned by the service.
   ASIO_DECL void shutdown();
@@ -104,7 +104,7 @@ private:
       operation* op, bool is_continuation);
 
   ASIO_DECL static void do_complete(void* owner,
-      operation* base, const asio::error_code& ec,
+      operation* base, const puerts_asio::error_code& ec,
       std::size_t bytes_transferred);
 
   // The io_context used to obtain an I/O executor.
@@ -114,7 +114,7 @@ private:
   io_context_impl& io_context_impl_;
 
   // Mutex to protect access to the array of implementations.
-  asio::detail::mutex mutex_;
+  puerts_asio::detail::mutex mutex_;
 
   // Number of implementations shared between all strand objects.
 #if defined(ASIO_STRAND_IMPLEMENTATIONS)
@@ -132,7 +132,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

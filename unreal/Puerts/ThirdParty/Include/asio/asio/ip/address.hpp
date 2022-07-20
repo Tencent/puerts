@@ -35,12 +35,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// Implements version-independent IP addresses.
 /**
- * The asio::ip::address class provides the ability to use either IP
+ * The puerts_asio::ip::address class provides the ability to use either IP
  * version 4 or version 6 addresses.
  *
  * @par Thread Safety
@@ -55,11 +55,11 @@ public:
 
   /// Construct an address from an IPv4 address.
   ASIO_DECL address(
-      const asio::ip::address_v4& ipv4_address) ASIO_NOEXCEPT;
+      const puerts_asio::ip::address_v4& ipv4_address) ASIO_NOEXCEPT;
 
   /// Construct an address from an IPv6 address.
   ASIO_DECL address(
-      const asio::ip::address_v6& ipv6_address) ASIO_NOEXCEPT;
+      const puerts_asio::ip::address_v6& ipv6_address) ASIO_NOEXCEPT;
 
   /// Copy constructor.
   ASIO_DECL address(const address& other) ASIO_NOEXCEPT;
@@ -79,11 +79,11 @@ public:
 
   /// Assign from an IPv4 address.
   ASIO_DECL address& operator=(
-      const asio::ip::address_v4& ipv4_address) ASIO_NOEXCEPT;
+      const puerts_asio::ip::address_v4& ipv4_address) ASIO_NOEXCEPT;
 
   /// Assign from an IPv6 address.
   ASIO_DECL address& operator=(
-      const asio::ip::address_v6& ipv6_address) ASIO_NOEXCEPT;
+      const puerts_asio::ip::address_v6& ipv6_address) ASIO_NOEXCEPT;
 
   /// Get whether the address is an IP version 4 address.
   bool is_v4() const ASIO_NOEXCEPT
@@ -98,17 +98,17 @@ public:
   }
 
   /// Get the address as an IP version 4 address.
-  ASIO_DECL asio::ip::address_v4 to_v4() const;
+  ASIO_DECL puerts_asio::ip::address_v4 to_v4() const;
 
   /// Get the address as an IP version 6 address.
-  ASIO_DECL asio::ip::address_v6 to_v6() const;
+  ASIO_DECL puerts_asio::ip::address_v6 to_v6() const;
 
   /// Get the address as a string.
   ASIO_DECL std::string to_string() const;
 
 #if !defined(ASIO_NO_DEPRECATED)
   /// (Deprecated: Use other overload.) Get the address as a string.
-  ASIO_DECL std::string to_string(asio::error_code& ec) const;
+  ASIO_DECL std::string to_string(puerts_asio::error_code& ec) const;
 
   /// (Deprecated: Use make_address().) Create an address from an IPv4 address
   /// string in dotted decimal form, or from an IPv6 address in hexadecimal
@@ -118,7 +118,7 @@ public:
   /// (Deprecated: Use make_address().) Create an address from an IPv4 address
   /// string in dotted decimal form, or from an IPv6 address in hexadecimal
   /// notation.
-  static address from_string(const char* str, asio::error_code& ec);
+  static address from_string(const char* str, puerts_asio::error_code& ec);
 
   /// (Deprecated: Use make_address().) Create an address from an IPv4 address
   /// string in dotted decimal form, or from an IPv6 address in hexadecimal
@@ -129,7 +129,7 @@ public:
   /// string in dotted decimal form, or from an IPv6 address in hexadecimal
   /// notation.
   static address from_string(
-      const std::string& str, asio::error_code& ec);
+      const std::string& str, puerts_asio::error_code& ec);
 #endif // !defined(ASIO_NO_DEPRECATED)
 
   /// Determine whether the address is a loopback address.
@@ -182,10 +182,10 @@ private:
   enum { ipv4, ipv6 } type_;
 
   // The underlying IPv4 address.
-  asio::ip::address_v4 ipv4_address_;
+  puerts_asio::ip::address_v4 ipv4_address_;
 
   // The underlying IPv6 address.
-  asio::ip::address_v6 ipv6_address_;
+  puerts_asio::ip::address_v6 ipv6_address_;
 };
 
 /// Create an address from an IPv4 address string in dotted decimal form,
@@ -201,7 +201,7 @@ ASIO_DECL address make_address(const char* str);
  * @relates address
  */
 ASIO_DECL address make_address(const char* str,
-    asio::error_code& ec) ASIO_NOEXCEPT;
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT;
 
 /// Create an address from an IPv4 address string in dotted decimal form,
 /// or from an IPv6 address in hexadecimal notation.
@@ -216,7 +216,7 @@ ASIO_DECL address make_address(const std::string& str);
  * @relates address
  */
 ASIO_DECL address make_address(const std::string& str,
-    asio::error_code& ec) ASIO_NOEXCEPT;
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT;
 
 #if defined(ASIO_HAS_STRING_VIEW) \
   || defined(GENERATING_DOCUMENTATION)
@@ -234,7 +234,7 @@ ASIO_DECL address make_address(string_view str);
  * @relates address
  */
 ASIO_DECL address make_address(string_view str,
-    asio::error_code& ec) ASIO_NOEXCEPT;
+    puerts_asio::error_code& ec) ASIO_NOEXCEPT;
 
 #endif // defined(ASIO_HAS_STRING_VIEW)
        //  || defined(GENERATING_DOCUMENTATION)
@@ -251,7 +251,7 @@ ASIO_DECL address make_address(string_view str,
  *
  * @return The output stream.
  *
- * @relates asio::ip::address
+ * @relates puerts_asio::ip::address
  */
 template <typename Elem, typename Traits>
 std::basic_ostream<Elem, Traits>& operator<<(
@@ -260,20 +260,20 @@ std::basic_ostream<Elem, Traits>& operator<<(
 #endif // !defined(ASIO_NO_IOSTREAM)
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #if defined(ASIO_HAS_STD_HASH)
 namespace std {
 
 template <>
-struct hash<asio::ip::address>
+struct hash<puerts_asio::ip::address>
 {
-  std::size_t operator()(const asio::ip::address& addr)
+  std::size_t operator()(const puerts_asio::ip::address& addr)
     const ASIO_NOEXCEPT
   {
     return addr.is_v4()
-      ? std::hash<asio::ip::address_v4>()(addr.to_v4())
-      : std::hash<asio::ip::address_v6>()(addr.to_v6());
+      ? std::hash<puerts_asio::ip::address_v4>()(addr.to_v4())
+      : std::hash<puerts_asio::ip::address_v6>()(addr.to_v6());
   }
 };
 

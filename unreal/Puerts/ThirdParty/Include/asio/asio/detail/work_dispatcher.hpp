@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Handler, typename Executor, typename = void>
@@ -57,7 +57,7 @@ public:
   work_dispatcher(ASIO_MOVE_ARG(CompletionHandler) handler,
       const Executor& handler_ex)
     : handler_(ASIO_MOVE_CAST(CompletionHandler)(handler)),
-      executor_(asio::prefer(handler_ex,
+      executor_(puerts_asio::prefer(handler_ex,
           execution::outstanding_work.tracked))
   {
   }
@@ -79,10 +79,10 @@ public:
   void operator()()
   {
     execution::execute(
-        asio::prefer(executor_,
+        puerts_asio::prefer(executor_,
           execution::blocking.possibly,
           execution::allocator((get_associated_allocator)(handler_))),
-        asio::detail::bind_handler(
+        puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(Handler)(handler_)));
   }
 
@@ -131,7 +131,7 @@ public:
     typename associated_allocator<Handler>::type alloc(
         (get_associated_allocator)(handler_));
     work_.get_executor().dispatch(
-        asio::detail::bind_handler(
+        puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(Handler)(handler_)), alloc);
     work_.reset();
   }
@@ -144,7 +144,7 @@ private:
 #endif // !defined(ASIO_NO_TS_EXECUTORS)
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace generic {
 namespace detail {
 
@@ -67,13 +67,13 @@ public:
   }
 
   // Get the underlying endpoint in the native type.
-  asio::detail::socket_addr_type* data()
+  puerts_asio::detail::socket_addr_type* data()
   {
     return &data_.base;
   }
 
   // Get the underlying endpoint in the native type.
-  const asio::detail::socket_addr_type* data() const
+  const puerts_asio::detail::socket_addr_type* data() const
   {
     return &data_.base;
   }
@@ -90,7 +90,7 @@ public:
   // Get the capacity of the endpoint in the native type.
   std::size_t capacity() const
   {
-    return sizeof(asio::detail::sockaddr_storage_type);
+    return sizeof(puerts_asio::detail::sockaddr_storage_type);
   }
 
   // Compare two endpoints for equality.
@@ -105,8 +105,8 @@ private:
   // The underlying socket address.
   union data_union
   {
-    asio::detail::socket_addr_type base;
-    asio::detail::sockaddr_storage_type generic;
+    puerts_asio::detail::socket_addr_type base;
+    puerts_asio::detail::sockaddr_storage_type generic;
   } data_;
 
   // The length of the socket address stored in the endpoint.
@@ -122,7 +122,7 @@ private:
 
 } // namespace detail
 } // namespace generic
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

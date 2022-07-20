@@ -36,7 +36,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Protocol, typename Handler, typename IoExecutor>
@@ -45,8 +45,8 @@ class resolve_query_op : public resolve_op
 public:
   ASIO_DEFINE_HANDLER_PTR(resolve_query_op);
 
-  typedef asio::ip::basic_resolver_query<Protocol> query_type;
-  typedef asio::ip::basic_resolver_results<Protocol> results_type;
+  typedef puerts_asio::ip::basic_resolver_query<Protocol> query_type;
+  typedef puerts_asio::ip::basic_resolver_results<Protocol> results_type;
 
 #if defined(ASIO_HAS_IOCP)
   typedef class win_iocp_io_context scheduler_impl;
@@ -74,12 +74,12 @@ public:
   }
 
   static void do_complete(void* owner, operation* base,
-      const asio::error_code& /*ec*/,
+      const puerts_asio::error_code& /*ec*/,
       std::size_t /*bytes_transferred*/)
   {
     // Take ownership of the operation object.
     resolve_query_op* o(static_cast<resolve_query_op*>(base));
-    ptr p = { asio::detail::addressof(o->handler_), o, o };
+    ptr p = { puerts_asio::detail::addressof(o->handler_), o, o };
 
     if (owner && owner != &o->scheduler_)
     {
@@ -113,9 +113,9 @@ public:
       // associated with the handler. Consequently, a local copy of the handler
       // is required to ensure that any owning sub-object remains valid until
       // after we have deallocated the memory here.
-      detail::binder2<Handler, asio::error_code, results_type>
+      detail::binder2<Handler, puerts_asio::error_code, results_type>
         handler(o->handler_, o->ec_, results_type());
-      p.h = asio::detail::addressof(handler.handler_);
+      p.h = puerts_asio::detail::addressof(handler.handler_);
       if (o->addrinfo_)
       {
         handler.arg2_ = results_type::create(o->addrinfo_,
@@ -139,11 +139,11 @@ private:
   scheduler_impl& scheduler_;
   Handler handler_;
   handler_work<Handler, IoExecutor> work_;
-  asio::detail::addrinfo_type* addrinfo_;
+  puerts_asio::detail::addrinfo_type* addrinfo_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

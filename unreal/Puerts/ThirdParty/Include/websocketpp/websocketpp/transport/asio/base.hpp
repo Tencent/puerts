@@ -43,7 +43,7 @@ namespace transport {
  * This policy uses a single asio io_service to provide transport
  * services to a WebSocket++ endpoint.
  */
-namespace asio {
+namespace puerts_asio {
 
 // Class to manage the memory to be used for handler-based custom allocation.
 // It contains a single block of memory which may be returned for allocation
@@ -142,10 +142,10 @@ inline custom_alloc_handler<Handler> make_custom_alloc_handler(
 template <typename config>
 class endpoint;
 
-typedef lib::function<void (lib::asio::error_code const & ec,
+typedef lib::function<void (lib::puerts_asio::error_code const & ec,
     size_t bytes_transferred)> async_read_handler;
 
-typedef lib::function<void (lib::asio::error_code const & ec,
+typedef lib::function<void (lib::puerts_asio::error_code const & ec,
     size_t bytes_transferred)> async_write_handler;
 
 typedef lib::function<void (lib::error_code const & ec)> pre_init_handler;
@@ -219,12 +219,12 @@ inline lib::error_code make_error_code(error::value e) {
 }
 
 } // namespace error
-} // namespace asio
+} // namespace puerts_asio
 } // namespace transport
 } // namespace websocketpp
 
 _WEBSOCKETPP_ERROR_CODE_ENUM_NS_START_
-template<> struct is_error_code_enum<websocketpp::transport::asio::error::value>
+template<> struct is_error_code_enum<websocketpp::transport::puerts_asio::error::value>
 {
     static bool const value = true;
 };

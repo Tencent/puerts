@@ -60,7 +60,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace error {
 
 enum basic_errors
@@ -223,27 +223,27 @@ enum misc_errors
   fd_set_failure
 };
 
-inline const asio::error_category& get_system_category()
+inline const puerts_asio::error_category& get_system_category()
 {
-  return asio::system_category();
+  return puerts_asio::system_category();
 }
 
 #if !defined(ASIO_WINDOWS) && !defined(__CYGWIN__)
 
 extern ASIO_DECL
-const asio::error_category& get_netdb_category();
+const puerts_asio::error_category& get_netdb_category();
 
 extern ASIO_DECL
-const asio::error_category& get_addrinfo_category();
+const puerts_asio::error_category& get_addrinfo_category();
 
 #else // !defined(ASIO_WINDOWS) && !defined(__CYGWIN__)
 
-inline const asio::error_category& get_netdb_category()
+inline const puerts_asio::error_category& get_netdb_category()
 {
   return get_system_category();
 }
 
-inline const asio::error_category& get_addrinfo_category()
+inline const puerts_asio::error_category& get_addrinfo_category()
 {
   return get_system_category();
 }
@@ -251,43 +251,43 @@ inline const asio::error_category& get_addrinfo_category()
 #endif // !defined(ASIO_WINDOWS) && !defined(__CYGWIN__)
 
 extern ASIO_DECL
-const asio::error_category& get_misc_category();
+const puerts_asio::error_category& get_misc_category();
 
-static const asio::error_category&
+static const puerts_asio::error_category&
   system_category ASIO_UNUSED_VARIABLE
-  = asio::error::get_system_category();
-static const asio::error_category&
+  = puerts_asio::error::get_system_category();
+static const puerts_asio::error_category&
   netdb_category ASIO_UNUSED_VARIABLE
-  = asio::error::get_netdb_category();
-static const asio::error_category&
+  = puerts_asio::error::get_netdb_category();
+static const puerts_asio::error_category&
   addrinfo_category ASIO_UNUSED_VARIABLE
-  = asio::error::get_addrinfo_category();
-static const asio::error_category&
+  = puerts_asio::error::get_addrinfo_category();
+static const puerts_asio::error_category&
   misc_category ASIO_UNUSED_VARIABLE
-  = asio::error::get_misc_category();
+  = puerts_asio::error::get_misc_category();
 
 } // namespace error
-} // namespace asio
+} // namespace puerts_asio
 
 #if defined(ASIO_HAS_STD_SYSTEM_ERROR)
 namespace std {
 
-template<> struct is_error_code_enum<asio::error::basic_errors>
+template<> struct is_error_code_enum<puerts_asio::error::basic_errors>
 {
   static const bool value = true;
 };
 
-template<> struct is_error_code_enum<asio::error::netdb_errors>
+template<> struct is_error_code_enum<puerts_asio::error::netdb_errors>
 {
   static const bool value = true;
 };
 
-template<> struct is_error_code_enum<asio::error::addrinfo_errors>
+template<> struct is_error_code_enum<puerts_asio::error::addrinfo_errors>
 {
   static const bool value = true;
 };
 
-template<> struct is_error_code_enum<asio::error::misc_errors>
+template<> struct is_error_code_enum<puerts_asio::error::misc_errors>
 {
   static const bool value = true;
 };
@@ -295,30 +295,30 @@ template<> struct is_error_code_enum<asio::error::misc_errors>
 } // namespace std
 #endif // defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
-namespace asio {
+namespace puerts_asio {
 namespace error {
 
-inline asio::error_code make_error_code(basic_errors e)
+inline puerts_asio::error_code make_error_code(basic_errors e)
 {
-  return asio::error_code(
+  return puerts_asio::error_code(
       static_cast<int>(e), get_system_category());
 }
 
-inline asio::error_code make_error_code(netdb_errors e)
+inline puerts_asio::error_code make_error_code(netdb_errors e)
 {
-  return asio::error_code(
+  return puerts_asio::error_code(
       static_cast<int>(e), get_netdb_category());
 }
 
-inline asio::error_code make_error_code(addrinfo_errors e)
+inline puerts_asio::error_code make_error_code(addrinfo_errors e)
 {
-  return asio::error_code(
+  return puerts_asio::error_code(
       static_cast<int>(e), get_addrinfo_category());
 }
 
-inline asio::error_code make_error_code(misc_errors e)
+inline puerts_asio::error_code make_error_code(misc_errors e)
 {
-  return asio::error_code(
+  return puerts_asio::error_code(
       static_cast<int>(e), get_misc_category());
 }
 
@@ -339,7 +339,7 @@ namespace resolver_errc {
   const error::netdb_errors try_again = error::host_not_found_try_again;
   using error::service_not_found;
 } // namespace resolver_errc
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class initiate_dispatch
@@ -50,10 +50,10 @@ public:
         (get_associated_allocator)(handler));
 
     execution::execute(
-        asio::prefer(ex,
+        puerts_asio::prefer(ex,
           execution::blocking.possibly,
           execution::allocator(alloc)),
-        asio::detail::bind_handler(
+        puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)));
   }
 
@@ -75,7 +75,7 @@ public:
     typename associated_allocator<handler_t>::type alloc(
         (get_associated_allocator)(handler));
 
-    ex.dispatch(asio::detail::bind_handler(
+    ex.dispatch(puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)), alloc);
   }
 };
@@ -116,10 +116,10 @@ public:
         (get_associated_allocator)(handler));
 
     execution::execute(
-        asio::prefer(ex_,
+        puerts_asio::prefer(ex_,
           execution::blocking.possibly,
           execution::allocator(alloc)),
-        asio::detail::bind_handler(
+        puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)));
   }
 
@@ -147,7 +147,7 @@ public:
         (get_associated_allocator)(handler));
 
     execution::execute(
-        asio::prefer(ex_,
+        puerts_asio::prefer(ex_,
           execution::blocking.possibly,
           execution::allocator(alloc)),
         detail::work_dispatcher<handler_t, handler_ex_t>(
@@ -173,7 +173,7 @@ public:
     typename associated_allocator<handler_t>::type alloc(
         (get_associated_allocator)(handler));
 
-    ex_.dispatch(asio::detail::bind_handler(
+    ex_.dispatch(puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)), alloc);
   }
 
@@ -244,7 +244,7 @@ inline ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void()) dispatch(
           ctx.get_executor()), token);
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -19,7 +19,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Used to generically specialise associators for a type.
 template <template <typename, typename> class Associator,
@@ -28,7 +28,7 @@ struct associator
 {
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

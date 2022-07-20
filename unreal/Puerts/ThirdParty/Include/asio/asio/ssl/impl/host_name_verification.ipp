@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 
 bool host_name_verification::operator()(
@@ -44,7 +44,7 @@ bool host_name_verification::operator()(
 
   // Try converting the host name to an address. If it is an address then we
   // need to look for an IP address in the certificate rather than a host name.
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   ip::address address = ip::make_address(host_, ec);
   const bool is_address = !ec;
   (void)address;
@@ -66,7 +66,7 @@ bool host_name_verification::operator()(
 }
 
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

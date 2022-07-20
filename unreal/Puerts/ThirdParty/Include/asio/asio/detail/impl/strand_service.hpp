@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 inline strand_service::strand_impl::strand_impl()
@@ -46,7 +46,7 @@ void strand_service::dispatch(strand_service::implementation_type& impl,
 
   // Allocate and construct an operation to wrap the handler.
   typedef completion_handler<Handler, io_context::executor_type> op;
-  typename op::ptr p = { asio::detail::addressof(handler),
+  typename op::ptr p = { puerts_asio::detail::addressof(handler),
     op::ptr::allocate(handler), 0 };
   p.p = new (p.v) op(handler, io_context_.get_executor());
 
@@ -68,7 +68,7 @@ void strand_service::post(strand_service::implementation_type& impl,
 
   // Allocate and construct an operation to wrap the handler.
   typedef completion_handler<Handler, io_context::executor_type> op;
-  typename op::ptr p = { asio::detail::addressof(handler),
+  typename op::ptr p = { puerts_asio::detail::addressof(handler),
     op::ptr::allocate(handler), 0 };
   p.p = new (p.v) op(handler, io_context_.get_executor());
 
@@ -80,7 +80,7 @@ void strand_service::post(strand_service::implementation_type& impl,
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

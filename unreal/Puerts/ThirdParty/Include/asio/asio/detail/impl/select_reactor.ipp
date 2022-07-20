@@ -36,7 +36,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_HAS_IOCP)
@@ -58,7 +58,7 @@ private:
 };
 #endif // defined(ASIO_HAS_IOCP)
 
-select_reactor::select_reactor(asio::execution_context& ctx)
+select_reactor::select_reactor(puerts_asio::execution_context& ctx)
   : execution_context_service_base<select_reactor>(ctx),
     scheduler_(use_service<scheduler_type>(ctx)),
     mutex_(),
@@ -70,8 +70,8 @@ select_reactor::select_reactor(asio::execution_context& ctx)
     shutdown_(false)
 {
 #if defined(ASIO_HAS_IOCP)
-  asio::detail::signal_blocker sb;
-  thread_ = new asio::detail::thread(thread_function(this));
+  puerts_asio::detail::signal_blocker sb;
+  thread_ = new puerts_asio::detail::thread(thread_function(this));
 #endif // defined(ASIO_HAS_IOCP)
 }
 
@@ -82,7 +82,7 @@ select_reactor::~select_reactor()
 
 void select_reactor::shutdown()
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   shutdown_ = true;
 #if defined(ASIO_HAS_IOCP)
   stop_thread_ = true;
@@ -111,9 +111,9 @@ void select_reactor::shutdown()
 }
 
 void select_reactor::notify_fork(
-    asio::execution_context::fork_event fork_ev)
+    puerts_asio::execution_context::fork_event fork_ev)
 {
-  if (fork_ev == asio::execution_context::fork_child)
+  if (fork_ev == puerts_asio::execution_context::fork_child)
     interrupter_.recreate();
 }
 
@@ -132,7 +132,7 @@ int select_reactor::register_internal_descriptor(
     int op_type, socket_type descriptor,
     select_reactor::per_descriptor_data&, reactor_op* op)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   op_queue_[op_type].enqueue_operation(descriptor, op);
   interrupter_.interrupt();
@@ -150,7 +150,7 @@ void select_reactor::start_op(int op_type, socket_type descriptor,
     select_reactor::per_descriptor_data&, reactor_op* op,
     bool is_continuation, bool)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   if (shutdown_)
   {
@@ -167,18 +167,18 @@ void select_reactor::start_op(int op_type, socket_type descriptor,
 void select_reactor::cancel_ops(socket_type descriptor,
     select_reactor::per_descriptor_data&)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
-  cancel_ops_unlocked(descriptor, asio::error::operation_aborted);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
+  cancel_ops_unlocked(descriptor, puerts_asio::error::operation_aborted);
 }
 
 void select_reactor::cancel_ops_by_key(socket_type descriptor,
     select_reactor::per_descriptor_data&,
     int op_type, void* cancellation_key)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   op_queue<operation> ops;
   bool need_interrupt = op_queue_[op_type].cancel_operations_by_key(
-      descriptor, ops, cancellation_key, asio::error::operation_aborted);
+      descriptor, ops, cancellation_key, puerts_asio::error::operation_aborted);
   scheduler_.post_deferred_completions(ops);
   if (need_interrupt)
     interrupter_.interrupt();
@@ -187,14 +187,14 @@ void select_reactor::cancel_ops_by_key(socket_type descriptor,
 void select_reactor::deregister_descriptor(socket_type descriptor,
     select_reactor::per_descriptor_data&, bool)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
-  cancel_ops_unlocked(descriptor, asio::error::operation_aborted);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
+  cancel_ops_unlocked(descriptor, puerts_asio::error::operation_aborted);
 }
 
 void select_reactor::deregister_internal_descriptor(
     socket_type descriptor, select_reactor::per_descriptor_data&)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   op_queue<operation> ops;
   for (int i = 0; i < max_ops; ++i)
     op_queue_[i].cancel_operations(descriptor, ops);
@@ -207,7 +207,7 @@ void select_reactor::cleanup_descriptor_data(
 
 void select_reactor::run(long usec, op_queue<operation>& ops)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
 #if defined(ASIO_HAS_IOCP)
   // Check if the thread is supposed to stop.
@@ -252,7 +252,7 @@ void select_reactor::run(long usec, op_queue<operation>& ops)
   lock.unlock();
 
   // Block on the select call until descriptors become ready.
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   int retval = socket_ops::select(static_cast<int>(max_fd + 1),
       fd_sets_[read_op], fd_sets_[write_op], fd_sets_[except_op], tv, ec);
 
@@ -294,7 +294,7 @@ void select_reactor::interrupt()
 #if defined(ASIO_HAS_IOCP)
 void select_reactor::run_thread()
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   while (!stop_thread_)
   {
     lock.unlock();
@@ -331,7 +331,7 @@ timeval* select_reactor::get_timeout(long usec, timeval& tv)
 }
 
 void select_reactor::cancel_ops_unlocked(socket_type descriptor,
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   bool need_interrupt = false;
   op_queue<operation> ops;
@@ -344,7 +344,7 @@ void select_reactor::cancel_ops_unlocked(socket_type descriptor,
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

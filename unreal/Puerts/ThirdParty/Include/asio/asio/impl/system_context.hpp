@@ -19,7 +19,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 inline system_context::executor_type
 system_context::get_executor() ASIO_NOEXCEPT
@@ -27,7 +27,7 @@ system_context::get_executor() ASIO_NOEXCEPT
   return system_executor();
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

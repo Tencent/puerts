@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -41,23 +41,23 @@ public:
   }
 
   engine::want operator()(engine& eng,
-      asio::error_code& ec,
+      puerts_asio::error_code& ec,
       std::size_t& bytes_transferred) const
   {
     unsigned char storage[
-      asio::detail::buffer_sequence_adapter<asio::const_buffer,
+      puerts_asio::detail::buffer_sequence_adapter<puerts_asio::const_buffer,
         ConstBufferSequence>::linearisation_storage_size];
 
-    asio::const_buffer buffer =
-      asio::detail::buffer_sequence_adapter<asio::const_buffer,
-        ConstBufferSequence>::linearise(buffers_, asio::buffer(storage));
+    puerts_asio::const_buffer buffer =
+      puerts_asio::detail::buffer_sequence_adapter<puerts_asio::const_buffer,
+        ConstBufferSequence>::linearise(buffers_, puerts_asio::buffer(storage));
 
     return eng.write(buffer, ec, bytes_transferred);
   }
 
   template <typename Handler>
   void call_handler(Handler& handler,
-      const asio::error_code& ec,
+      const puerts_asio::error_code& ec,
       const std::size_t& bytes_transferred) const
   {
     ASIO_MOVE_OR_LVALUE(Handler)(handler)(ec, bytes_transferred);
@@ -69,7 +69,7 @@ private:
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

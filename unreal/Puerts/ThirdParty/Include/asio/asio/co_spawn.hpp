@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename T>
@@ -51,7 +51,7 @@ struct awaitable_signature<awaitable<void, Executor>>
  * @param ex The executor that will be used to schedule the new thread of
  * execution.
  *
- * @param a The asio::awaitable object that is the result of calling the
+ * @param a The puerts_asio::awaitable object that is the result of calling the
  * coroutine's entry point function.
  *
  * @param token The completion token that will handle the notification that
@@ -61,7 +61,7 @@ struct awaitable_signature<awaitable<void, Executor>>
  *
  * @par Example
  * @code
- * asio::awaitable<std::size_t> echo(tcp::socket socket)
+ * puerts_asio::awaitable<std::size_t> echo(tcp::socket socket)
  * {
  *   std::size_t bytes_transferred = 0;
  *
@@ -71,10 +71,10 @@ struct awaitable_signature<awaitable<void, Executor>>
  *     for (;;)
  *     {
  *       std::size_t n = co_await socket.async_read_some(
- *           asio::buffer(data), asio::use_awaitable);
+ *           puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *       co_await asio::async_write(socket,
- *           asio::buffer(data, n), asio::use_awaitable);
+ *       co_await puerts_asio::async_write(socket,
+ *           puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *
  *       bytes_transferred += n;
  *     }
@@ -88,7 +88,7 @@ struct awaitable_signature<awaitable<void, Executor>>
  *
  * // ...
  *
- * asio::co_spawn(my_executor,
+ * puerts_asio::co_spawn(my_executor,
  *   echo(std::move(my_tcp_socket)),
  *   [](std::exception_ptr e, std::size_t n)
  *   {
@@ -99,7 +99,7 @@ struct awaitable_signature<awaitable<void, Executor>>
  * @par Per-Operation Cancellation
  * The new thread of execution is created with a cancellation state that
  * supports @c cancellation_type::terminal values only. To change the
- * cancellation state, call asio::this_coro::reset_cancellation_state.
+ * cancellation state, call puerts_asio::this_coro::reset_cancellation_state.
  */
 template <typename Executor, typename T, typename AwaitableExecutor,
     ASIO_COMPLETION_TOKEN_FOR(
@@ -120,7 +120,7 @@ co_spawn(const Executor& ex, awaitable<T, AwaitableExecutor> a,
  * @param ex The executor that will be used to schedule the new thread of
  * execution.
  *
- * @param a The asio::awaitable object that is the result of calling the
+ * @param a The puerts_asio::awaitable object that is the result of calling the
  * coroutine's entry point function.
  *
  * @param token The completion token that will handle the notification that
@@ -130,7 +130,7 @@ co_spawn(const Executor& ex, awaitable<T, AwaitableExecutor> a,
  *
  * @par Example
  * @code
- * asio::awaitable<void> echo(tcp::socket socket)
+ * puerts_asio::awaitable<void> echo(tcp::socket socket)
  * {
  *   try
  *   {
@@ -138,10 +138,10 @@ co_spawn(const Executor& ex, awaitable<T, AwaitableExecutor> a,
  *     for (;;)
  *     {
  *       std::size_t n = co_await socket.async_read_some(
- *           asio::buffer(data), asio::use_awaitable);
+ *           puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *       co_await asio::async_write(socket,
- *           asio::buffer(data, n), asio::use_awaitable);
+ *       co_await puerts_asio::async_write(socket,
+ *           puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *     }
  *   }
  *   catch (const std::exception& e)
@@ -152,15 +152,15 @@ co_spawn(const Executor& ex, awaitable<T, AwaitableExecutor> a,
  *
  * // ...
  *
- * asio::co_spawn(my_executor,
+ * puerts_asio::co_spawn(my_executor,
  *   echo(std::move(my_tcp_socket)),
- *   asio::detached);
+ *   puerts_asio::detached);
  * @endcode
  *
  * @par Per-Operation Cancellation
  * The new thread of execution is created with a cancellation state that
  * supports @c cancellation_type::terminal values only. To change the
- * cancellation state, call asio::this_coro::reset_cancellation_state.
+ * cancellation state, call puerts_asio::this_coro::reset_cancellation_state.
  */
 template <typename Executor, typename AwaitableExecutor,
     ASIO_COMPLETION_TOKEN_FOR(
@@ -181,7 +181,7 @@ co_spawn(const Executor& ex, awaitable<void, AwaitableExecutor> a,
  * @param ctx An execution context that will provide the executor to be used to
  * schedule the new thread of execution.
  *
- * @param a The asio::awaitable object that is the result of calling the
+ * @param a The puerts_asio::awaitable object that is the result of calling the
  * coroutine's entry point function.
  *
  * @param token The completion token that will handle the notification that
@@ -191,7 +191,7 @@ co_spawn(const Executor& ex, awaitable<void, AwaitableExecutor> a,
  *
  * @par Example
  * @code
- * asio::awaitable<std::size_t> echo(tcp::socket socket)
+ * puerts_asio::awaitable<std::size_t> echo(tcp::socket socket)
  * {
  *   std::size_t bytes_transferred = 0;
  *
@@ -201,10 +201,10 @@ co_spawn(const Executor& ex, awaitable<void, AwaitableExecutor> a,
  *     for (;;)
  *     {
  *       std::size_t n = co_await socket.async_read_some(
- *           asio::buffer(data), asio::use_awaitable);
+ *           puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *       co_await asio::async_write(socket,
- *           asio::buffer(data, n), asio::use_awaitable);
+ *       co_await puerts_asio::async_write(socket,
+ *           puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *
  *       bytes_transferred += n;
  *     }
@@ -218,7 +218,7 @@ co_spawn(const Executor& ex, awaitable<void, AwaitableExecutor> a,
  *
  * // ...
  *
- * asio::co_spawn(my_io_context,
+ * puerts_asio::co_spawn(my_io_context,
  *   echo(std::move(my_tcp_socket)),
  *   [](std::exception_ptr e, std::size_t n)
  *   {
@@ -229,7 +229,7 @@ co_spawn(const Executor& ex, awaitable<void, AwaitableExecutor> a,
  * @par Per-Operation Cancellation
  * The new thread of execution is created with a cancellation state that
  * supports @c cancellation_type::terminal values only. To change the
- * cancellation state, call asio::this_coro::reset_cancellation_state.
+ * cancellation state, call puerts_asio::this_coro::reset_cancellation_state.
  */
 template <typename ExecutionContext, typename T, typename AwaitableExecutor,
     ASIO_COMPLETION_TOKEN_FOR(
@@ -253,7 +253,7 @@ co_spawn(ExecutionContext& ctx, awaitable<T, AwaitableExecutor> a,
  * @param ctx An execution context that will provide the executor to be used to
  * schedule the new thread of execution.
  *
- * @param a The asio::awaitable object that is the result of calling the
+ * @param a The puerts_asio::awaitable object that is the result of calling the
  * coroutine's entry point function.
  *
  * @param token The completion token that will handle the notification that
@@ -263,7 +263,7 @@ co_spawn(ExecutionContext& ctx, awaitable<T, AwaitableExecutor> a,
  *
  * @par Example
  * @code
- * asio::awaitable<void> echo(tcp::socket socket)
+ * puerts_asio::awaitable<void> echo(tcp::socket socket)
  * {
  *   try
  *   {
@@ -271,10 +271,10 @@ co_spawn(ExecutionContext& ctx, awaitable<T, AwaitableExecutor> a,
  *     for (;;)
  *     {
  *       std::size_t n = co_await socket.async_read_some(
- *           asio::buffer(data), asio::use_awaitable);
+ *           puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *       co_await asio::async_write(socket,
- *           asio::buffer(data, n), asio::use_awaitable);
+ *       co_await puerts_asio::async_write(socket,
+ *           puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *     }
  *   }
  *   catch (const std::exception& e)
@@ -285,15 +285,15 @@ co_spawn(ExecutionContext& ctx, awaitable<T, AwaitableExecutor> a,
  *
  * // ...
  *
- * asio::co_spawn(my_io_context,
+ * puerts_asio::co_spawn(my_io_context,
  *   echo(std::move(my_tcp_socket)),
- *   asio::detached);
+ *   puerts_asio::detached);
  * @endcode
  *
  * @par Per-Operation Cancellation
  * The new thread of execution is created with a cancellation state that
  * supports @c cancellation_type::terminal values only. To change the
- * cancellation state, call asio::this_coro::reset_cancellation_state.
+ * cancellation state, call puerts_asio::this_coro::reset_cancellation_state.
  */
 template <typename ExecutionContext, typename AwaitableExecutor,
     ASIO_COMPLETION_TOKEN_FOR(
@@ -318,7 +318,7 @@ co_spawn(ExecutionContext& ctx, awaitable<void, AwaitableExecutor> a,
  * execution.
  *
  * @param f A nullary function object with a return type of the form
- * @c asio::awaitable<R,E> that will be used as the coroutine's entry
+ * @c puerts_asio::awaitable<R,E> that will be used as the coroutine's entry
  * point.
  *
  * @param token The completion token that will handle the notification that the
@@ -331,7 +331,7 @@ co_spawn(ExecutionContext& ctx, awaitable<void, AwaitableExecutor> a,
  *
  * @par Example
  * @code
- * asio::awaitable<std::size_t> echo(tcp::socket socket)
+ * puerts_asio::awaitable<std::size_t> echo(tcp::socket socket)
  * {
  *   std::size_t bytes_transferred = 0;
  *
@@ -341,10 +341,10 @@ co_spawn(ExecutionContext& ctx, awaitable<void, AwaitableExecutor> a,
  *     for (;;)
  *     {
  *       std::size_t n = co_await socket.async_read_some(
- *           asio::buffer(data), asio::use_awaitable);
+ *           puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *       co_await asio::async_write(socket,
- *           asio::buffer(data, n), asio::use_awaitable);
+ *       co_await puerts_asio::async_write(socket,
+ *           puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *
  *       bytes_transferred += n;
  *     }
@@ -358,9 +358,9 @@ co_spawn(ExecutionContext& ctx, awaitable<void, AwaitableExecutor> a,
  *
  * // ...
  *
- * asio::co_spawn(my_executor,
+ * puerts_asio::co_spawn(my_executor,
  *   [socket = std::move(my_tcp_socket)]() mutable
- *     -> asio::awaitable<void>
+ *     -> puerts_asio::awaitable<void>
  *   {
  *     try
  *     {
@@ -368,23 +368,23 @@ co_spawn(ExecutionContext& ctx, awaitable<void, AwaitableExecutor> a,
  *       for (;;)
  *       {
  *         std::size_t n = co_await socket.async_read_some(
- *             asio::buffer(data), asio::use_awaitable);
+ *             puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *         co_await asio::async_write(socket,
- *             asio::buffer(data, n), asio::use_awaitable);
+ *         co_await puerts_asio::async_write(socket,
+ *             puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *       }
  *     }
  *     catch (const std::exception& e)
  *     {
  *       std::cerr << "Exception: " << e.what() << "\n";
  *     }
- *   }, asio::detached);
+ *   }, puerts_asio::detached);
  * @endcode
  *
  * @par Per-Operation Cancellation
  * The new thread of execution is created with a cancellation state that
  * supports @c cancellation_type::terminal values only. To change the
- * cancellation state, call asio::this_coro::reset_cancellation_state.
+ * cancellation state, call puerts_asio::this_coro::reset_cancellation_state.
  */
 template <typename Executor, typename F,
     ASIO_COMPLETION_TOKEN_FOR(typename detail::awaitable_signature<
@@ -405,7 +405,7 @@ co_spawn(const Executor& ex, F&& f,
  * schedule the new thread of execution.
  *
  * @param f A nullary function object with a return type of the form
- * @c asio::awaitable<R,E> that will be used as the coroutine's entry
+ * @c puerts_asio::awaitable<R,E> that will be used as the coroutine's entry
  * point.
  *
  * @param token The completion token that will handle the notification that the
@@ -418,7 +418,7 @@ co_spawn(const Executor& ex, F&& f,
  *
  * @par Example
  * @code
- * asio::awaitable<std::size_t> echo(tcp::socket socket)
+ * puerts_asio::awaitable<std::size_t> echo(tcp::socket socket)
  * {
  *   std::size_t bytes_transferred = 0;
  *
@@ -428,10 +428,10 @@ co_spawn(const Executor& ex, F&& f,
  *     for (;;)
  *     {
  *       std::size_t n = co_await socket.async_read_some(
- *           asio::buffer(data), asio::use_awaitable);
+ *           puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *       co_await asio::async_write(socket,
- *           asio::buffer(data, n), asio::use_awaitable);
+ *       co_await puerts_asio::async_write(socket,
+ *           puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *
  *       bytes_transferred += n;
  *     }
@@ -445,9 +445,9 @@ co_spawn(const Executor& ex, F&& f,
  *
  * // ...
  *
- * asio::co_spawn(my_io_context,
+ * puerts_asio::co_spawn(my_io_context,
  *   [socket = std::move(my_tcp_socket)]() mutable
- *     -> asio::awaitable<void>
+ *     -> puerts_asio::awaitable<void>
  *   {
  *     try
  *     {
@@ -455,23 +455,23 @@ co_spawn(const Executor& ex, F&& f,
  *       for (;;)
  *       {
  *         std::size_t n = co_await socket.async_read_some(
- *             asio::buffer(data), asio::use_awaitable);
+ *             puerts_asio::buffer(data), puerts_asio::use_awaitable);
  *
- *         co_await asio::async_write(socket,
- *             asio::buffer(data, n), asio::use_awaitable);
+ *         co_await puerts_asio::async_write(socket,
+ *             puerts_asio::buffer(data, n), puerts_asio::use_awaitable);
  *       }
  *     }
  *     catch (const std::exception& e)
  *     {
  *       std::cerr << "Exception: " << e.what() << "\n";
  *     }
- *   }, asio::detached);
+ *   }, puerts_asio::detached);
  * @endcode
  *
  * @par Per-Operation Cancellation
  * The new thread of execution is created with a cancellation state that
  * supports @c cancellation_type::terminal values only. To change the
- * cancellation state, call asio::this_coro::reset_cancellation_state.
+ * cancellation state, call puerts_asio::this_coro::reset_cancellation_state.
  */
 template <typename ExecutionContext, typename F,
     ASIO_COMPLETION_TOKEN_FOR(typename detail::awaitable_signature<
@@ -488,7 +488,7 @@ co_spawn(ExecutionContext& ctx, F&& f,
       is_convertible<ExecutionContext&, execution_context&>::value
     >::type = 0);
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

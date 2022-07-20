@@ -31,7 +31,7 @@
 
 #if defined(GENERATING_DOCUMENTATION)
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 
 /// A customisation point that connects a sender to a receiver.
@@ -126,26 +126,26 @@ template <typename S, typename R>
 using connect_result_t = typename connect_result<S, R>::type;
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #else // defined(GENERATING_DOCUMENTATION)
 
 namespace asio_execution_connect_fn {
 
-using asio::conditional;
-using asio::declval;
-using asio::enable_if;
-using asio::execution::detail::as_invocable;
-using asio::execution::detail::as_operation;
-using asio::execution::detail::is_as_receiver;
-using asio::execution::is_executor_of;
-using asio::execution::is_operation_state;
-using asio::execution::is_receiver;
-using asio::execution::is_sender;
-using asio::false_type;
-using asio::remove_cvref;
-using asio::traits::connect_free;
-using asio::traits::connect_member;
+using puerts_asio::conditional;
+using puerts_asio::declval;
+using puerts_asio::enable_if;
+using puerts_asio::execution::detail::as_invocable;
+using puerts_asio::execution::detail::as_operation;
+using puerts_asio::execution::detail::is_as_receiver;
+using puerts_asio::execution::is_executor_of;
+using puerts_asio::execution::is_operation_state;
+using puerts_asio::execution::is_receiver;
+using puerts_asio::execution::is_sender;
+using puerts_asio::false_type;
+using puerts_asio::remove_cvref;
+using puerts_asio::traits::connect_free;
+using puerts_asio::traits::connect_member;
 
 void connect();
 
@@ -426,7 +426,7 @@ template <typename T>
 const T static_instance<T>::instance = {};
 
 } // namespace asio_execution_connect_fn
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 namespace {
 
@@ -480,7 +480,7 @@ using connect_result_t = typename connect_result<S, R>::type;
 #endif // defined(ASIO_HAS_ALIAS_TEMPLATES)
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(GENERATING_DOCUMENTATION)
 

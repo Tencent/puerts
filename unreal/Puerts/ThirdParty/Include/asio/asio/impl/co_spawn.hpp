@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Executor, typename = void>
@@ -40,7 +40,7 @@ public:
     >::type executor_type;
 
   co_spawn_work_guard(const Executor& ex)
-    : executor_(asio::prefer(ex, execution::outstanding_work.tracked))
+    : executor_(puerts_asio::prefer(ex, execution::outstanding_work.tracked))
   {
   }
 
@@ -82,7 +82,7 @@ awaitable<awaitable_thread_entry_point, Executor> co_spawn_entry_point(
 {
   auto spawn_work = make_co_spawn_work_guard(ex);
   auto handler_work = make_co_spawn_work_guard(
-      asio::get_associated_executor(handler, ex));
+      puerts_asio::get_associated_executor(handler, ex));
 
   (void) co_await (dispatch)(
       use_awaitable_t<Executor>{__FILE__, __LINE__, "co_spawn_entry_point"});
@@ -147,7 +147,7 @@ awaitable<awaitable_thread_entry_point, Executor> co_spawn_entry_point(
 {
   auto spawn_work = make_co_spawn_work_guard(ex);
   auto handler_work = make_co_spawn_work_guard(
-      asio::get_associated_executor(handler, ex));
+      puerts_asio::get_associated_executor(handler, ex));
 
   (void) co_await (dispatch)(
       use_awaitable_t<Executor>{__FILE__, __LINE__, "co_spawn_entry_point"});
@@ -222,7 +222,7 @@ public:
     typedef typename result_of<F()>::type awaitable_type;
 
     cancellation_state proxy_cancel_state(
-        asio::get_associated_cancellation_slot(handler),
+        puerts_asio::get_associated_cancellation_slot(handler),
         enable_total_cancellation());
 
     cancellation_state cancel_state(proxy_cancel_state.slot());
@@ -339,7 +339,7 @@ co_spawn(ExecutionContext& ctx, F&& f, CompletionToken&& token,
       std::forward<CompletionToken>(token));
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

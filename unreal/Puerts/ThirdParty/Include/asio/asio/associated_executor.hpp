@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 template <typename T, typename Executor>
 struct associated_executor;
@@ -215,7 +215,7 @@ struct associated_executor<reference_wrapper<T>, Executor>
 #endif // defined(ASIO_HAS_STD_REFERENCE_WRAPPER)
        //   || defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

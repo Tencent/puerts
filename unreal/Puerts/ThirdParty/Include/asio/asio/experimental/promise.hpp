@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 
 template <typename Executor = any_io_executor>
@@ -91,7 +91,7 @@ struct promise<void(Ts...), Executor>
   {
     if (impl_ && !impl_->done)
     {
-      asio::dispatch(impl_->executor,
+      puerts_asio::dispatch(impl_->executor,
           [level, impl = impl_]{impl->cancel.emit(level);});
     }
   }
@@ -321,7 +321,7 @@ struct promise<void(Ts...), Executor>
         {
         }
 
-        void operator()(asio::cancellation_type ct)
+        void operator()(puerts_asio::cancellation_type ct)
         {
           for (auto& r : self->range)
             r.cancel(ct);
@@ -347,7 +347,7 @@ struct promise<void(Ts...), Executor>
       impl->done = true;
       if (auto f = std::exchange(impl->completion, nullptr); !!f)
       {
-        asio::post(exec,
+        puerts_asio::post(exec,
             [impl, f = std::move(f)]() mutable
             {
               std::apply(std::move(f), std::move(*impl->result));
@@ -448,7 +448,7 @@ struct promise<void(Ts...), Executor>
       impl->result.emplace();
       impl->done = true;
       if (auto f = std::exchange(impl->completion, nullptr); !!f)
-        asio::post(exec, [impl, f = std::move(f)]() mutable
+        puerts_asio::post(exec, [impl, f = std::move(f)]() mutable
             {
               std::apply(std::move(f), std::move(*impl->result));
             });
@@ -538,7 +538,7 @@ private:
       auto cancel = get_associated_cancellation_slot(handler);
       if (self_->done)
       {
-        asio::post(exec,
+        puerts_asio::post(exec,
             [self = self_, h = std::forward<WaitHandler>(handler)]() mutable
             {
               std::apply(std::forward<WaitHandler>(h),
@@ -599,7 +599,7 @@ struct async_result<experimental::use_promise_t<Executor>, R(Args...)>
 
 #endif // !defined(GENERATING_DOCUMENTATION)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -18,7 +18,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace experimental {
 
 template<typename Signature = void(), typename Executor = any_io_executor>
@@ -91,7 +91,7 @@ struct promise_handler<void(Ts...), Executor>
 
 } // namespace detail
 } // namespace experimental
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -23,12 +23,12 @@
 
 #include "asio/basic_serial_port.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Typedef for the typical usage of a serial port.
 typedef basic_serial_port<> serial_port;
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // defined(ASIO_HAS_SERIAL_PORT)
        //   || defined(GENERATING_DOCUMENTATION)

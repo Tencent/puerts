@@ -31,7 +31,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Protocol, typename Handler, typename IoExecutor>
@@ -44,8 +44,8 @@ public:
   ASIO_DEFINE_HANDLER_PTR(winrt_resolve_op);
 
   typedef typename Protocol::endpoint endpoint_type;
-  typedef asio::ip::basic_resolver_query<Protocol> query_type;
-  typedef asio::ip::basic_resolver_results<Protocol> results_type;
+  typedef puerts_asio::ip::basic_resolver_query<Protocol> query_type;
+  typedef puerts_asio::ip::basic_resolver_results<Protocol> results_type;
 
   winrt_resolve_op(const query_type& query,
       Handler& handler, const IoExecutor& io_ex)
@@ -60,11 +60,11 @@ public:
   }
 
   static void do_complete(void* owner, operation* base,
-      const asio::error_code&, std::size_t)
+      const puerts_asio::error_code&, std::size_t)
   {
     // Take ownership of the operation object.
     winrt_resolve_op* o(static_cast<winrt_resolve_op*>(base));
-    ptr p = { asio::detail::addressof(o->handler_), o, o };
+    ptr p = { puerts_asio::detail::addressof(o->handler_), o, o };
 
     ASIO_HANDLER_COMPLETION((*o));
 
@@ -83,8 +83,8 @@ public:
       }
       catch (Platform::Exception^ e)
       {
-        o->ec_ = asio::error_code(e->HResult,
-            asio::system_category());
+        o->ec_ = puerts_asio::error_code(e->HResult,
+            puerts_asio::system_category());
       }
     }
 
@@ -94,9 +94,9 @@ public:
     // with the handler. Consequently, a local copy of the handler is required
     // to ensure that any owning sub-object remains valid until after we have
     // deallocated the memory here.
-    detail::binder2<Handler, asio::error_code, results_type>
+    detail::binder2<Handler, puerts_asio::error_code, results_type>
       handler(o->handler_, o->ec_, results);
-    p.h = asio::detail::addressof(handler.handler_);
+    p.h = puerts_asio::detail::addressof(handler.handler_);
     p.reset();
 
     // Make the upcall if required.
@@ -116,7 +116,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

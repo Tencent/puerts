@@ -19,7 +19,7 @@
 #include <exception>
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace execution {
 
 /// Exception thrown when trying to access an empty polymorphic executor.
@@ -36,7 +36,7 @@ public:
 };
 
 } // namespace execution
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

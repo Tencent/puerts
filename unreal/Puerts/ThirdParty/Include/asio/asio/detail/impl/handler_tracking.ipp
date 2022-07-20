@@ -43,7 +43,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 struct handler_tracking_timestamp
@@ -59,7 +59,7 @@ struct handler_tracking_timestamp
       boost::posix_time::microsec_clock::universal_time() - epoch;
 #elif defined(ASIO_HAS_CHRONO)
     typedef chrono_time_traits<chrono::system_clock,
-        asio::wait_traits<chrono::system_clock> > traits_helper;
+        puerts_asio::wait_traits<chrono::system_clock> > traits_helper;
     traits_helper::posix_time_duration now(
         chrono::system_clock::now().time_since_epoch());
 #endif
@@ -201,7 +201,7 @@ void handler_tracking::completion::invocation_begin()
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   handler_tracking_timestamp timestamp;
 
@@ -218,7 +218,7 @@ void handler_tracking::completion::invocation_begin(
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec, std::size_t bytes_transferred)
+    const puerts_asio::error_code& ec, std::size_t bytes_transferred)
 {
   handler_tracking_timestamp timestamp;
 
@@ -236,7 +236,7 @@ void handler_tracking::completion::invocation_begin(
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec, int signal_number)
+    const puerts_asio::error_code& ec, int signal_number)
 {
   handler_tracking_timestamp timestamp;
 
@@ -253,7 +253,7 @@ void handler_tracking::completion::invocation_begin(
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec, const char* arg)
+    const puerts_asio::error_code& ec, const char* arg)
 {
   handler_tracking_timestamp timestamp;
 
@@ -326,7 +326,7 @@ void handler_tracking::reactor_events(execution_context& /*context*/,
 
 void handler_tracking::reactor_operation(
     const tracked_handler& h, const char* op_name,
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   handler_tracking_timestamp timestamp;
 
@@ -342,7 +342,7 @@ void handler_tracking::reactor_operation(
 
 void handler_tracking::reactor_operation(
     const tracked_handler& h, const char* op_name,
-    const asio::error_code& ec, std::size_t bytes_transferred)
+    const puerts_asio::error_code& ec, std::size_t bytes_transferred)
 {
   handler_tracking_timestamp timestamp;
 
@@ -387,7 +387,7 @@ void handler_tracking::write_line(const char* format, ...)
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -29,7 +29,7 @@
 # error Only Windows and POSIX are supported!
 #endif
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if !defined(ASIO_HAS_THREADS)
@@ -47,6 +47,6 @@ typedef std_static_mutex static_mutex;
 #endif
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_STATIC_MUTEX_HPP

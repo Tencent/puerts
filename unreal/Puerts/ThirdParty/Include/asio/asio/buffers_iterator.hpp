@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -170,9 +170,9 @@ public:
 #endif // defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 3)
   {
     buffers_iterator new_iter;
-    new_iter.begin_ = asio::buffer_sequence_begin(buffers);
-    new_iter.current_ = asio::buffer_sequence_begin(buffers);
-    new_iter.end_ = asio::buffer_sequence_end(buffers);
+    new_iter.begin_ = puerts_asio::buffer_sequence_begin(buffers);
+    new_iter.current_ = puerts_asio::buffer_sequence_begin(buffers);
+    new_iter.end_ = puerts_asio::buffer_sequence_end(buffers);
     while (new_iter.current_ != new_iter.end_)
     {
       new_iter.current_buffer_ = *new_iter.current_;
@@ -190,9 +190,9 @@ public:
 #endif // defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 3)
   {
     buffers_iterator new_iter;
-    new_iter.begin_ = asio::buffer_sequence_begin(buffers);
-    new_iter.current_ = asio::buffer_sequence_begin(buffers);
-    new_iter.end_ = asio::buffer_sequence_end(buffers);
+    new_iter.begin_ = puerts_asio::buffer_sequence_begin(buffers);
+    new_iter.current_ = puerts_asio::buffer_sequence_begin(buffers);
+    new_iter.end_ = puerts_asio::buffer_sequence_end(buffers);
     while (new_iter.current_ != new_iter.end_)
     {
       buffer_type buffer = *new_iter.current_;
@@ -514,7 +514,7 @@ inline buffers_iterator<BufferSequence> buffers_end(
   return buffers_iterator<BufferSequence>::end(buffers);
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 template <typename Blocking, typename Relationship, typename Allocator>
 inline system_context&
@@ -178,7 +178,7 @@ void basic_system_executor<Blocking, Relationship, Allocator>::defer(
 }
 #endif // !defined(ASIO_NO_TS_EXECUTORS)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

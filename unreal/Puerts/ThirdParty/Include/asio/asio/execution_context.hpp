@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 class execution_context;
 class io_context;
@@ -166,7 +166,7 @@ public:
    *
    * @param event A fork-related event.
    *
-   * @throws asio::system_error Thrown on failure. If the notification
+   * @throws puerts_asio::system_error Thrown on failure. If the notification
    * fails the execution_context object should no longer be used and should be
    * destroyed.
    *
@@ -235,7 +235,7 @@ public:
    * @param args Zero or more arguments to be passed to the service
    * constructor.
    *
-   * @throws asio::service_already_exists Thrown if a service of the
+   * @throws puerts_asio::service_already_exists Thrown if a service of the
    * given type is already present in the execution_context.
    */
   template <typename Service, typename... Args>
@@ -274,10 +274,10 @@ public:
    * is destroyed, it will destroy the service object by performing: @code
    * delete static_cast<execution_context::service*>(svc) @endcode
    *
-   * @throws asio::service_already_exists Thrown if a service of the
+   * @throws puerts_asio::service_already_exists Thrown if a service of the
    * given type is already present in the execution_context.
    *
-   * @throws asio::invalid_service_owner Thrown if the service's owning
+   * @throws puerts_asio::invalid_service_owner Thrown if the service's owning
    * execution_context is not the execution_context object specified by the
    * @c e parameter.
    */
@@ -299,7 +299,7 @@ public:
 
 private:
   // The service registry.
-  asio::detail::service_registry* service_registry_;
+  puerts_asio::detail::service_registry* service_registry_;
 };
 
 /// Class used to uniquely identify a service.
@@ -342,7 +342,7 @@ private:
   ASIO_DECL virtual void notify_fork(
       execution_context::fork_event event);
 
-  friend class asio::detail::service_registry;
+  friend class puerts_asio::detail::service_registry;
   struct key
   {
     key() : type_info_(0), id_(0) {}
@@ -400,7 +400,7 @@ template <typename Type>
 service_id<Type> execution_context_service_base<Type>::id;
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

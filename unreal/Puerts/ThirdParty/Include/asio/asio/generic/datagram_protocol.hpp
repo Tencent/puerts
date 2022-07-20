@@ -25,19 +25,19 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace generic {
 
 /// Encapsulates the flags needed for a generic datagram-oriented socket.
 /**
- * The asio::generic::datagram_protocol class contains flags necessary
+ * The puerts_asio::generic::datagram_protocol class contains flags necessary
  * for datagram-oriented sockets of any address family and protocol.
  *
  * @par Examples
  * Constructing using a native address family and socket protocol:
  * @code datagram_protocol p(AF_INET, IPPROTO_UDP); @endcode
  * Constructing from a specific protocol type:
- * @code datagram_protocol p(asio::ip::udp::v4()); @endcode
+ * @code datagram_protocol p(puerts_asio::ip::udp::v4()); @endcode
  *
  * @par Thread Safety
  * @e Distinct @e objects: Safe.@n
@@ -68,7 +68,7 @@ public:
     if (source_protocol.type() != type())
     {
       std::bad_cast ex;
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 
@@ -116,7 +116,7 @@ private:
 };
 
 } // namespace generic
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -21,12 +21,12 @@
 
 #include "asio/basic_streambuf.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Typedef for the typical usage of basic_streambuf.
 typedef basic_streambuf<> streambuf;
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // !defined(ASIO_NO_IOSTREAM)
 

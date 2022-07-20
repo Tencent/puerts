@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 timer_queue_set::timer_queue_set()
@@ -94,7 +94,7 @@ void timer_queue_set::get_all_timers(op_queue<operation>& ops)
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

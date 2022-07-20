@@ -18,7 +18,7 @@
 #include "asio/detail/config.hpp"
 #include <cstddef>
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_NULLPTR)
 using std::nullptr_t;
@@ -26,6 +26,6 @@ using std::nullptr_t;
 struct nullptr_t {};
 #endif // defined(ASIO_HAS_NULLPTR)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_CSTDDEF_HPP

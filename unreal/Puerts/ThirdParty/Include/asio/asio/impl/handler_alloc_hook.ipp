@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 asio_handler_allocate_is_deprecated
 asio_handler_allocate(std::size_t size, ...)
@@ -55,7 +55,7 @@ asio_handler_deallocate(void* pointer, std::size_t size, ...)
 #endif // !defined(ASIO_DISABLE_SMALL_BLOCK_RECYCLING)
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

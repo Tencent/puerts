@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 template <typename> class basic_address_iterator;
@@ -176,7 +176,7 @@ private:
 typedef basic_address_iterator<address_v6> address_v6_iterator;
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

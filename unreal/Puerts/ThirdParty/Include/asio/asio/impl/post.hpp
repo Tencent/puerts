@@ -27,7 +27,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class initiate_post
@@ -52,11 +52,11 @@ public:
         (get_associated_allocator)(handler));
 
     execution::execute(
-        asio::prefer(
-          asio::require(ex, execution::blocking.never),
+        puerts_asio::prefer(
+          puerts_asio::require(ex, execution::blocking.never),
           execution::relationship.fork,
           execution::allocator(alloc)),
-        asio::detail::bind_handler(
+        puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)));
   }
 
@@ -78,7 +78,7 @@ public:
     typename associated_allocator<handler_t>::type alloc(
         (get_associated_allocator)(handler));
 
-    ex.post(asio::detail::bind_handler(
+    ex.post(puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)), alloc);
   }
 };
@@ -119,11 +119,11 @@ public:
         (get_associated_allocator)(handler));
 
     execution::execute(
-        asio::prefer(
-          asio::require(ex_, execution::blocking.never),
+        puerts_asio::prefer(
+          puerts_asio::require(ex_, execution::blocking.never),
           execution::relationship.fork,
           execution::allocator(alloc)),
-        asio::detail::bind_handler(
+        puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)));
   }
 
@@ -151,8 +151,8 @@ public:
         (get_associated_allocator)(handler));
 
     execution::execute(
-        asio::prefer(
-          asio::require(ex_, execution::blocking.never),
+        puerts_asio::prefer(
+          puerts_asio::require(ex_, execution::blocking.never),
           execution::relationship.fork,
           execution::allocator(alloc)),
         detail::work_dispatcher<handler_t, handler_ex_t>(
@@ -178,7 +178,7 @@ public:
     typename associated_allocator<handler_t>::type alloc(
         (get_associated_allocator)(handler));
 
-    ex_.post(asio::detail::bind_handler(
+    ex_.post(puerts_asio::detail::bind_handler(
           ASIO_MOVE_CAST(CompletionHandler)(handler)), alloc);
   }
 
@@ -249,7 +249,7 @@ inline ASIO_INITFN_AUTO_RESULT_TYPE(CompletionToken, void()) post(
           ctx.get_executor()), token);
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

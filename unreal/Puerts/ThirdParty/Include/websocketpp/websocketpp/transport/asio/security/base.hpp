@@ -61,13 +61,13 @@
 
 namespace websocketpp {
 namespace transport {
-namespace asio {
+namespace puerts_asio {
 namespace socket {
 
-typedef lib::function<void(lib::asio::error_code const &)> shutdown_handler;
+typedef lib::function<void(lib::puerts_asio::error_code const &)> shutdown_handler;
 
 /**
- * The transport::asio::socket::* classes are a set of security/socket related
+ * The transport::puerts_asio::socket::* classes are a set of security/socket related
  * policies and support code for the ASIO transport types.
  */
 
@@ -152,7 +152,7 @@ inline lib::error_code make_error_code(error::value e) {
 typedef lib::function<void(const lib::error_code&)> init_handler;
 
 } // namespace socket
-} // namespace asio
+} // namespace puerts_asio
 } // namespace transport
 } // namespace websocketpp
 

@@ -24,7 +24,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class null_reactor
@@ -32,7 +32,7 @@ class null_reactor
 {
 public:
   // Constructor.
-  null_reactor(asio::execution_context& ctx)
+  null_reactor(puerts_asio::execution_context& ctx)
     : execution_context_service_base<null_reactor>(ctx)
   {
   }
@@ -59,7 +59,7 @@ public:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

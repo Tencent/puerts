@@ -19,9 +19,9 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
-/** @defgroup asio_handler_invoke asio::asio_handler_invoke
+/** @defgroup asio_handler_invoke puerts_asio::asio_handler_invoke
  *
  * @brief (Deprecated: Use the associated_executor trait.) Default invoke
  * function for handlers.
@@ -104,7 +104,7 @@ asio_handler_invoke(const Function& function, ...)
 
 /*@}*/
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

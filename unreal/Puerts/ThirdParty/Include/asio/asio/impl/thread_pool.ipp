@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 struct thread_pool::thread_function
 {
@@ -34,7 +34,7 @@ struct thread_pool::thread_function
     try
     {
 #endif// !defined(ASIO_NO_EXCEPTIONS)
-      asio::error_code ec;
+      puerts_asio::error_code ec;
       scheduler_->run(ec);
 #if !defined(ASIO_NO_EXCEPTIONS)
     }
@@ -76,7 +76,7 @@ inline long clamp_thread_pool_size(std::size_t n)
   if (n > 0x7FFFFFFF)
   {
     std::out_of_range ex("thread pool size");
-    asio::detail::throw_exception(ex);
+    puerts_asio::detail::throw_exception(ex);
   }
   return static_cast<long>(n & 0x7FFFFFFF);
 }
@@ -124,7 +124,7 @@ void thread_pool::join()
 detail::scheduler& thread_pool::add_scheduler(detail::scheduler* s)
 {
   detail::scoped_ptr<detail::scheduler> scoped_impl(s);
-  asio::add_service<detail::scheduler>(*this, scoped_impl.get());
+  puerts_asio::add_service<detail::scheduler>(*this, scoped_impl.get());
   return *scoped_impl.release();
 }
 
@@ -134,7 +134,7 @@ void thread_pool::wait()
   threads_.join();
 }
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
