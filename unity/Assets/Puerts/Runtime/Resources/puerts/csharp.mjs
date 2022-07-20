@@ -58,7 +58,14 @@ function csTypeToClass(csType) {
         if (nestedTypes) {
             for(var i = 0; i < nestedTypes.Length; i++) {
                 let ntype = nestedTypes.get_Item(i);
-                cls[ntype.Name] = csTypeToClass(ntype);
+                if (ntype.IsGenericType) {
+                    let name = ntype.Name.split('`')[0] + '$' + ntype.GetGenericArguments().Length;
+                    let fullName = ntype.FullName.split('`')[0]/**.replace(/\+/g, '.') */ + '$' + ntype.GetGenericArguments().Length;
+                    let genericTypeInfo = cls[name] = new Map();
+                    genericTypeInfo.set('$name', fullName.replace('$', '`'));
+                } else {
+                    cls[ntype.Name] = csTypeToClass(ntype);
+                }
             }
         }
     }
