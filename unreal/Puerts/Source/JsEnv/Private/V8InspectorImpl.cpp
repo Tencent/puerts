@@ -195,8 +195,8 @@ private:
     std::unique_ptr<v8_inspector::V8Inspector> V8Inspector;
 
     int32_t CtxGroupID;
-
-    std::unique_ptr<V8InspectorChannelImpl> V8InspectorChannel;
+    
+    std::map<void*, V8InspectorChannelImpl*> V8InspectorChannels;
 
     wspp_server Server;
 
@@ -331,7 +331,11 @@ void V8InspectorClientImpl::Close()
         v8::Locker Locker(Isolate);
 #endif
         Server.stop_listening();
-        V8InspectorChannel.reset();
+        for (auto Iter = V8InspectorChannels.begin(); Iter != V8InspectorChannels.end(); ++Iter)
+        {
+            delete Iter->second;
+        }
+        V8InspectorChannels.clear();
 
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -420,8 +424,9 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 
 void V8InspectorClientImpl::OnOpen(wspp_connection_hdl Handle)
 {
-    V8InspectorChannel.reset(new V8InspectorChannelImpl(V8Inspector, CtxGroupID));
-    V8InspectorChannel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
+    V8InspectorChannelImpl* channel = new V8InspectorChannelImpl(V8Inspector, CtxGroupID);
+    V8InspectorChannels[Handle.lock().get()] = channel;
+    channel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Connect"));
 #else
@@ -436,9 +441,11 @@ void V8InspectorClientImpl::OnReceiveMessage(wspp_connection_hdl Handle, wspp_me
     //#else
     //    PLog(Log, "<---: %s", Message->get_payload().c_str());
     //#endif
+    auto channel = V8InspectorChannels[Handle.lock().get()];
+
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::SealHandleScope scope(Isolate);
-    V8InspectorChannel->DispatchProtocolMessage(Message->get_payload());
+    channel->DispatchProtocolMessage(Message->get_payload());
 }
 
 void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std::string& Message)
@@ -465,7 +472,9 @@ void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std:
 
 void V8InspectorClientImpl::OnClose(wspp_connection_hdl Handle)
 {
-    V8InspectorChannel.reset();
+    void* HandlePtr = Handle.lock().get();
+    delete V8InspectorChannels[HandlePtr];
+    V8InspectorChannels.erase(HandlePtr);
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Disconnect"));
 #endif
