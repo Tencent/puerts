@@ -11,7 +11,7 @@ struct FGenImp
 
     FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
     {
-        return TypeInfo->IsUEType() ? "UE." : "";
+        return TypeInfo->IsUEType() && !HadNamespace(TypeInfo->Name()) ? "UE." : "";
     }
 
     FString GetName(const puerts::CTypeInfo* TypeInfo)
@@ -77,7 +77,7 @@ struct FGenImp
 
     void GenClass(const puerts::JSClassDefinition* ClassDefinition)
     {
-        if (IsUEContainer(ClassDefinition->ScriptName))
+        if (HasUENamespace(ClassDefinition->ScriptName))
             return;
         Output << "    class " << ClassDefinition->ScriptName;
         if (ClassDefinition->SuperTypeId)

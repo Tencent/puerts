@@ -73,6 +73,9 @@ declare module "ue" {
         Empty(): void;
     }
 
+    interface TSharedPtr<T> {
+        __tid_SharedPtr: T
+    }
         
     type BuiltinBool = 0;
     type BuiltinByte = 1;
