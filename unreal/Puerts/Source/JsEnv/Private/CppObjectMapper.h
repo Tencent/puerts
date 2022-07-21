@@ -12,7 +12,7 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include <unordered_map>
+#include <map>
 #include "JSClassRegister.h"
 #include "ObjectCacheNode.h"
 #include "ObjectMapper.h"
@@ -41,13 +41,13 @@ public:
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(v8::Isolate* Isolate, const JSClassDefinition* ClassDefinition);
 
 private:
-    std::unordered_map<void*, FObjectCacheNode> CDataCache;
+    std::map<void*, FObjectCacheNode> CDataCache;
 
-    std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;
+    std::map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> CDataNameToTemplateMap;
 
     v8::UniquePersistent<v8::Function> PointerConstructor;
 
-    std::unordered_map<void*, FinalizeFunc> CDataFinalizeMap;
+    std::map<void*, FinalizeFunc> CDataFinalizeMap;
 };
 
 }    // namespace puerts
