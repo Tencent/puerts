@@ -143,14 +143,7 @@ public:
         const uint8* Buffer = FileContent.GetData();
         auto Size = FileContent.Num();
 
-        bool bIsUnicode = false;
-        if (Size >= 2 && !(Size & 1) && Buffer[0] == 0xff && Buffer[1] == 0xfe)
-        {
-            FString Content;
-            FFileHelper::BufferToString(Content, Buffer, Size);
-            return ToV8String(Isolate, Content);
-        }
-        else if (Size >= 2 && !(Size & 1) && Buffer[0] == 0xfe && Buffer[1] == 0xff)
+        if (Size >= 2 && !(Size & 1) && ((Buffer[0] == 0xff && Buffer[1] == 0xfe) || (Buffer[0] == 0xfe && Buffer[1] == 0xff)))
         {
             FString Content;
             FFileHelper::BufferToString(Content, Buffer, Size);
