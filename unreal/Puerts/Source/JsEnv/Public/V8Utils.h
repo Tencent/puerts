@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -137,6 +137,36 @@ public:
     {
         return v8::String::NewFromUtf8(Isolate, String, v8::NewStringType::kNormal).ToLocalChecked();
     }
+
+	static v8::Local<v8::String> ToV8StringFromFileContent(v8::Isolate* Isolate, const TArray<uint8>& FileContent)
+	{
+		const uint8* Buffer = FileContent.GetData();
+		auto Size = FileContent.Num();
+
+		bool bIsUnicode = false;
+		if (Size >= 2 && !(Size & 1) && Buffer[0] == 0xff && Buffer[1] == 0xfe)
+		{
+			FString Content;
+			FFileHelper::BufferToString(Content, Buffer, Size);
+			return ToV8String(Isolate, Content);
+		}
+		else if (Size >= 2 && !(Size & 1) && Buffer[0] == 0xfe && Buffer[1] == 0xff)
+		{
+			FString Content;
+			FFileHelper::BufferToString(Content, Buffer, Size);
+			return ToV8String(Isolate, Content);
+		}
+		else
+		{
+			if (Size >= 3 && Buffer[0] == 0xef && Buffer[1] == 0xbb && Buffer[2] == 0xbf)
+			{
+				// Skip over UTF-8 BOM if there is one
+				Buffer += 3;
+				Size -= 3;
+			}
+			return v8::String::NewFromUtf8(Isolate, (const char*)Buffer, v8::NewStringType::kNormal, Size).ToLocalChecked();
+		}
+	}
 
     template <typename T>
     FORCEINLINE static T* IsolateData(v8::Isolate* Isolate)
