@@ -3236,20 +3236,20 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     else
 #endif
     {
-		v8::Local<v8::String> Source;
-		if(Preprocessor)
-		{ 
-			FString Script;
-			FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+        v8::Local<v8::String> Source;
+        if (Preprocessor)
+        {
+            FString Script;
+            FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
 
-			if (Preprocessor)
-				Script = Preprocessor(Script, OutPath);
-			Source = FV8Utils::ToV8String(Isolate, Script);
-		}
-		else
-		{
-			Source = FV8Utils::ToV8StringFromFileContent(Isolate, Data);
-		}
+            if (Preprocessor)
+                Script = Preprocessor(Script, OutPath);
+            Source = FV8Utils::ToV8String(Isolate, Script);
+        }
+        else
+        {
+            Source = FV8Utils::ToV8StringFromFileContent(Isolate, Data);
+        }
 
 #if PLATFORM_WINDOWS
         // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
