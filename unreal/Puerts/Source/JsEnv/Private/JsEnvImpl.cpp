@@ -3236,11 +3236,20 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
     else
 #endif
     {
-        FString Script;
-        FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
-
+        v8::Local<v8::String> Source;
         if (Preprocessor)
-            Script = Preprocessor(Script, OutPath);
+        {
+            FString Script;
+            FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
+
+            if (Preprocessor)
+                Script = Preprocessor(Script, OutPath);
+            Source = FV8Utils::ToV8String(Isolate, Script);
+        }
+        else
+        {
+            Source = FV8Utils::ToV8StringFromFileContent(Isolate, Data);
+        }
 
 #if PLATFORM_WINDOWS
         // 修改URL分隔符格式，否则无法匹配Inspector协议在打断点时发送的正则表达式，导致断点失败
@@ -3250,7 +3259,6 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
 #endif
         v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
         v8::ScriptOrigin Origin(Name);
-        v8::Local<v8::String> Source = FV8Utils::ToV8String(Isolate, Script);
         v8::TryCatch TryCatch(Isolate);
 
         auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
@@ -3376,10 +3384,8 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
         FV8Utils::ThrowException(Isolate, "can not load module");
         return;
     }
-    FString Script;
-    FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
 
-    Info.GetReturnValue().Set(FV8Utils::ToV8String(Isolate, Script));
+    Info.GetReturnValue().Set(FV8Utils::ToV8StringFromFileContent(Isolate, Data));
 }
 
 void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
