@@ -65,7 +65,17 @@
 
 #define UsingTSharedPtr(ITEMCLS) __DefObjectType(TSharedPtr<ITEMCLS>) __DefCDataPointerConverter(TSharedPtr<ITEMCLS>)
 
-#define RegisterTSharedPtr(ITEMCLS) puerts::DefineClass<TSharedPtr<ITEMCLS>>().Register();
+template <class T>
+struct TSharedPtrExtension
+{
+    static bool Equals(const TSharedPtr<T> Lhs, const TSharedPtr<T> Rhs)
+    {
+        return Lhs == Rhs;
+    }
+};
+
+#define RegisterTSharedPtr(ITEMCLS) \
+    puerts::DefineClass<TSharedPtr<ITEMCLS>>().Method("Equals", MakeExtension(&TSharedPtrExtension<ITEMCLS>::Equals)).Register();
 
 namespace puerts
 {
