@@ -51,7 +51,7 @@ class V8InspectorChannelImpl : public v8_inspector::V8Inspector::Channel, public
 {
 public:
     V8InspectorChannelImpl(
-        v8::Isolate* InIsolate, const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
+        const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
 
     void DispatchProtocolMessage(const std::string& Message) override;
 
@@ -76,15 +76,12 @@ private:
     std::unique_ptr<v8_inspector::V8InspectorSession> V8InspectorSession;
 
     std::function<void(const std::string&)> OnSendMessage;
-
-    v8::Isolate* Isolate;
 };
 
 V8InspectorChannelImpl::V8InspectorChannelImpl(
-    v8::Isolate* InIsolate, const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID)
+    const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID)
 {
     v8_inspector::StringView DummyState;
-    Isolate = InIsolate;
     V8InspectorSession = InV8Inspector->connect(InCxtGroupID, this, DummyState);
 }
 
@@ -94,11 +91,7 @@ void V8InspectorChannelImpl::DispatchProtocolMessage(const std::string& Message)
     const auto MessageLen = (size_t) Message.length();
 
     v8_inspector::StringView StringView(MessagePtr, MessageLen);
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::SealHandleScope HandleScope(Isolate);
+
     V8InspectorSession->dispatchProtocolMessage(StringView);
 }
 
