@@ -50,8 +50,7 @@ namespace puerts
 class V8InspectorChannelImpl : public v8_inspector::V8Inspector::Channel, public V8InspectorChannel
 {
 public:
-    V8InspectorChannelImpl(
-        const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
+    V8InspectorChannelImpl(const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
 
     void DispatchProtocolMessage(const std::string& Message) override;
 
@@ -249,7 +248,8 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
 {
     Isolate = InContext->GetIsolate();
     Context.Reset(Isolate, InContext);
-    MicroTasksRunner.Reset(Isolate, v8::FunctionTemplate::New(Isolate, MicroTasksRunnerFunction)->GetFunction(InContext).ToLocalChecked());
+    MicroTasksRunner.Reset(
+        Isolate, v8::FunctionTemplate::New(Isolate, MicroTasksRunnerFunction)->GetFunction(InContext).ToLocalChecked());
     Port = InPort;
     IsAlive = false;
     Connected = false;
