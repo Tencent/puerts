@@ -1363,7 +1363,7 @@ struct AutoRegisterForFVector2D
         static puerts::JSFunctionInfo Functions[] = {{"DotProduct", FVector2DS_DotProduct}, {"DistSquared", FVector2DS_DistSquared},
             {"Distance", FVector2DS_Distance}, {"CrossProduct", FVector2DS_CrossProduct}, {0, 0}};
 
-        Def.UETypeName = "FVector2D";
+        Def.UETypeName = "Vector2D";
 
         Def.Initialize = _FVector2DNew_;
         Def.Finalize = _FVector2DDelete_;

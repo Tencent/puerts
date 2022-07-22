@@ -105,4 +105,6 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     }
 };
 
-bool IsUEContainer(const char* name);
+bool HasUENamespace(const char* name);
+
+bool HadNamespace(const char* name);

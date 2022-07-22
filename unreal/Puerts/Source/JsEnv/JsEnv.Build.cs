@@ -378,6 +378,7 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.lib"));
 
             RuntimeDependencies.Add("$(TargetOutputDir)/libnode.dll", Path.Combine(V8LibraryPath, "libnode.dll"));
+            AddRuntimeDependencies(new string[] { "libnode.dll" }, V8LibraryPath, false);
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {

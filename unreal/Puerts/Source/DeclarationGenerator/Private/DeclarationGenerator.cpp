@@ -201,24 +201,24 @@ bool IsChildOf(UClass* Class, const FString& Name)
     return IsChildOf(Class->GetSuperClass(), Name);
 }
 
-bool IsUEContainer(const char* name)
+bool HadNamespace(const char* name)
 {
-    return !(strncmp(name, "TArray", 6) && strncmp(name, "TSet", 4) && strncmp(name, "TMap", 4));
+    return strncmp(name, "UE.", 3) == 0 || strncmp(name, "cpp.", 4) == 0;
+}
+
+bool HasUENamespace(const char* name)
+{
+    return strncmp(name, "UE.", 3) == 0;
 }
 
 FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
 {
-    return TypeInfo->IsObjectType() && !(IsUEContainer(TypeInfo->Name())) ? "cpp." : "";
+    return TypeInfo->IsObjectType() && !HadNamespace(TypeInfo->Name()) ? "cpp." : "";
 }
 
 FString GetName(const puerts::CTypeInfo* TypeInfo)
 {
-    FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
-    if (TypeInfo->IsUEType())
-    {
-        return Ret.Mid(1);
-    }
-    return Ret;
+    return UTF8_TO_TCHAR(TypeInfo->Name());
 }
 
 void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer& Buff)
@@ -229,28 +229,42 @@ void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffe
             Buff << ", ";
         auto argInfo = Type->Argument(i);
 
-        Buff << FString::Printf(TEXT("p%d"), i) << ": ";
+        Buff << FString::Printf(TEXT("p%d"), i);
 
-        bool IsReference = argInfo->IsRef();
-        bool IsNullable = !IsReference && argInfo->IsPointer();
-        if (IsNullable)
+        if (i >= Type->ArgumentCount() - Type->DefaultCount())
         {
-            Buff << "$Nullable<";
-        }
-        if (IsReference)
-        {
-            Buff << "$Ref<";
+            Buff << "?";
         }
 
-        Buff << GetNamePrefix(argInfo) << GetName(argInfo);
+        Buff << ": ";
 
-        if (IsNullable)
+        if (strcmp(argInfo->Name(), "cstring") != 0 && !argInfo->IsUEType() && !argInfo->IsObjectType() && argInfo->IsPointer())
         {
-            Buff << ">";
+            Buff << "ArrayBuffer";
         }
-        if (IsReference)
+        else
         {
-            Buff << ">";
+            bool IsReference = argInfo->IsRef();
+            bool IsNullable = !IsReference && argInfo->IsPointer();
+            if (IsNullable)
+            {
+                Buff << "$Nullable<";
+            }
+            if (IsReference)
+            {
+                Buff << "$Ref<";
+            }
+
+            Buff << GetNamePrefix(argInfo) << GetName(argInfo);
+
+            if (IsNullable)
+            {
+                Buff << ">";
+            }
+            if (IsReference)
+            {
+                Buff << ">";
+            }
         }
     }
 }
@@ -778,6 +792,24 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
             GenTemplateBindingFunction(Tmp, MethodInfo, false);
             TryToAddOverload(Outputs, MethodInfo->Name, false, Tmp.Buffer);
             ++MethodInfo;
+        }
+
+        puerts::NamedPropertyInfo* PropertyInfo = ClassDefinition->PropertyInfos;
+        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Type)
+        {
+            if (Struct->FindPropertyByName(UTF8_TO_TCHAR(PropertyInfo->Name)))
+                continue;
+            Buff << "    " << PropertyInfo->Name << ": " << PropertyInfo->Type << ";\n";
+            ++PropertyInfo;
+        }
+
+        puerts::NamedPropertyInfo* VariableInfo = ClassDefinition->VariableInfos;
+        while (VariableInfo && VariableInfo->Name && VariableInfo->Type)
+        {
+            int Pos = VariableInfo - ClassDefinition->VariableInfos;
+            Buff << "    static " << (ClassDefinition->Variables[Pos].Setter ? "" : "readonly ") << VariableInfo->Name << ": "
+                 << VariableInfo->Type << ";\n";
+            ++VariableInfo;
         }
     }
 

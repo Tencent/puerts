@@ -123,6 +123,11 @@ V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
     return v8::Undefined(context->GetIsolate());
 }
 
+V8_INLINE bool IsNullOrUndefined(v8::Local<v8::Context> context, v8::Local<v8::Value> val)
+{
+    return val->IsNullOrUndefined();
+}
+
 }    // namespace puerts
 
 namespace puerts

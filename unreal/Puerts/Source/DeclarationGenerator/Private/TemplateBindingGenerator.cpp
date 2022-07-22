@@ -11,23 +11,19 @@ struct FGenImp
 
     FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
     {
-        return TypeInfo->IsUEType() ? "UE." : "";
+        return TypeInfo->IsUEType() && !HadNamespace(TypeInfo->Name()) ? "UE." : "";
     }
 
     FString GetName(const puerts::CTypeInfo* TypeInfo)
     {
-        FString Ret = UTF8_TO_TCHAR(TypeInfo->Name());
-        if (TypeInfo->IsUEType())
-        {
-            return Ret.Mid(1);
-        }
-        return Ret;
+        return UTF8_TO_TCHAR(TypeInfo->Name());
     }
 
     void Begin()
     {
         Output << "declare module \"cpp\" {\n";
         Output << "    import * as UE from \"ue\"\n";
+        Output << "    import * as cpp from \"cpp\"\n";
         Output << "    import {$Ref, $Nullable, cstring} from \"puerts\"\n\n";
     }
 
@@ -82,7 +78,7 @@ struct FGenImp
 
     void GenClass(const puerts::JSClassDefinition* ClassDefinition)
     {
-        if (IsUEContainer(ClassDefinition->ScriptName))
+        if (HasUENamespace(ClassDefinition->ScriptName))
             return;
         Output << "    class " << ClassDefinition->ScriptName;
         if (ClassDefinition->SuperTypeId)

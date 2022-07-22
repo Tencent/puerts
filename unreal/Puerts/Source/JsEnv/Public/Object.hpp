@@ -61,7 +61,7 @@ struct ParamsDecl<N, T>
 {
     static constexpr auto Get()
     {
-        return Literal("p") + Literal(SI2A_T<N>().Str) + Literal(":") + ScriptTypeName<T>::value();
+        return Literal("p") + Literal(SI2A_T<N>().Str) + Literal(":") + ScriptTypeNameWithNamespace<T>::value();
     }
 };
 
@@ -79,7 +79,7 @@ struct ScriptTypeName<std::function<R(Args...)>>
 {
     static constexpr auto value()
     {
-        return Literal("(") + ParamsDecl<0, Args...>::Get() + Literal(") => ") + ScriptTypeName<R>::value();
+        return Literal("(") + ParamsDecl<0, Args...>::Get() + Literal(") => ") + ScriptTypeNameWithNamespace<R>::value();
     }
 };
 
@@ -95,13 +95,15 @@ struct Converter<std::function<R(Args...)>>
 
     static std::function<R(Args...)> toCpp(ContextType context, const ValueType value)
     {
+        if (IsNullOrUndefined(context, value))
+            return nullptr;
         Function PF(context, value);
         return [=](Args... cppArgs) -> R { return PF.Func<R>(cppArgs...); };
     }
 
     static bool accept(ContextType context, const ValueType value)
     {
-        return Converter<Function>::accept(context, value);
+        return IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
     }
 };
 
@@ -115,13 +117,15 @@ struct Converter<std::function<void(Args...)>>
 
     static std::function<void(Args...)> toCpp(ContextType context, const ValueType value)
     {
+        if (IsNullOrUndefined(context, value))
+            return nullptr;
         Function PF(context, value);
         return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
     }
 
     static bool accept(ContextType context, const ValueType value)
     {
-        return Converter<Function>::accept(context, value);
+        return IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
     }
 };
 }    // namespace converter
