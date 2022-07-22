@@ -277,7 +277,7 @@ public:
     }
 };
 
-template <typename Ret, bool ScriptTypePtrAsRef, typename... Args>
+template <typename Ret, bool ScriptTypePtrAsRef, std::size_t StartParameter, typename... Args>
 class CFunctionInfoImpl : public CFunctionInfo
 {
 protected:
@@ -305,7 +305,7 @@ public:
     }
     virtual unsigned int ArgumentCount() const override
     {
-        return argCount_;
+        return argCount_ - StartParameter;
     }
     virtual unsigned int DefaultCount() const override
     {
@@ -313,7 +313,7 @@ public:
     }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
-        return arguments_[index];
+        return arguments_[index + StartParameter];
     }
     virtual const char* CustomSignature() const override
     {
@@ -328,14 +328,14 @@ public:
     }
 };
 
-template <typename T, T, bool>
+template <typename T, T, bool, std::size_t StartParameter = 0>
 class CFunctionInfoByPtrImpl
 {
 };
 
-template <typename Ret, typename... Args, Ret (*func)(Args...), bool ScriptTypePtrAsRef>
-class CFunctionInfoByPtrImpl<Ret (*)(Args...), func, ScriptTypePtrAsRef>
-    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>
+template <typename Ret, typename... Args, Ret (*func)(Args...), bool ScriptTypePtrAsRef, std::size_t StartParameter>
+class CFunctionInfoByPtrImpl<Ret (*)(Args...), func, ScriptTypePtrAsRef, StartParameter>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, StartParameter, Args...>
 {
 public:
     virtual ~CFunctionInfoByPtrImpl()
@@ -352,7 +352,7 @@ public:
 
 template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ScriptTypePtrAsRef>
 class CFunctionInfoByPtrImpl<Ret (Inc::*)(Args...), func, ScriptTypePtrAsRef>
-    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, 0, Args...>
 {
 public:
     virtual ~CFunctionInfoByPtrImpl()
@@ -369,7 +369,7 @@ public:
 
 template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ScriptTypePtrAsRef>
 class CFunctionInfoByPtrImpl<Ret (Inc::*)(Args...) const, func, ScriptTypePtrAsRef>
-    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, Args...>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, 0, Args...>
 {
 public:
     virtual ~CFunctionInfoByPtrImpl()
