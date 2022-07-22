@@ -93,6 +93,15 @@ struct ScriptTypeName
 {
 };
 
+template <typename T, typename Enable = void>
+struct ScriptTypeNameWithNamespace
+{
+    static constexpr auto value()
+    {
+        return ScriptTypeName<T>::value();
+    }
+};
+
 template <typename T>
 struct ScriptTypeName<T*>
 {

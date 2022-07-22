@@ -343,17 +343,9 @@ struct ScriptTypeName<FArrayBuffer>
     }
 };
 
-template <typename T, typename Enable = void>
-struct ScriptTypeNameWithNamespace
-{
-    static constexpr auto value()
-    {
-        return ScriptTypeName<T>::value();
-    }
-};
-
 template <typename T>
-struct ScriptTypeNameWithNamespace<T, typename std::enable_if<is_objecttype<T>::value>::type>
+struct ScriptTypeNameWithNamespace<T,
+    typename std::enable_if<is_objecttype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value>::type>
 {
     static constexpr auto value()
     {
@@ -362,7 +354,8 @@ struct ScriptTypeNameWithNamespace<T, typename std::enable_if<is_objecttype<T>::
 };
 
 template <typename T>
-struct ScriptTypeNameWithNamespace<T, typename std::enable_if<is_uetype<T>::value>::type>
+struct ScriptTypeNameWithNamespace<T,
+    typename std::enable_if<is_uetype<typename std::remove_pointer<typename std::decay<T>::type>::type>::value>::type>
 {
     static constexpr auto value()
     {

@@ -61,7 +61,7 @@ struct ParamsDecl<N, T>
 {
     static constexpr auto Get()
     {
-        return Literal("p") + Literal(SI2A_T<N>().Str) + Literal(":") + ScriptTypeName<T>::value();
+        return Literal("p") + Literal(SI2A_T<N>().Str) + Literal(":") + ScriptTypeNameWithNamespace<T>::value();
     }
 };
 
@@ -79,7 +79,7 @@ struct ScriptTypeName<std::function<R(Args...)>>
 {
     static constexpr auto value()
     {
-        return Literal("(") + ParamsDecl<0, Args...>::Get() + Literal(") => ") + ScriptTypeName<R>::value();
+        return Literal("(") + ParamsDecl<0, Args...>::Get() + Literal(") => ") + ScriptTypeNameWithNamespace<R>::value();
     }
 };
 

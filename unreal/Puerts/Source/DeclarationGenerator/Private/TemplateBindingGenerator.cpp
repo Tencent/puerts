@@ -23,6 +23,7 @@ struct FGenImp
     {
         Output << "declare module \"cpp\" {\n";
         Output << "    import * as UE from \"ue\"\n";
+        Output << "    import * as cpp from \"cpp\"\n";
         Output << "    import {$Ref, $Nullable, cstring} from \"puerts\"\n\n";
     }
 
