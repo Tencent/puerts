@@ -199,6 +199,8 @@ private:
 
     v8::Persistent<v8::Context> Context;
 
+    v8::Persistent<v8::Function> MicroTasksRunner;
+
     int32_t Port;
 
     std::unique_ptr<v8_inspector::V8Inspector> V8Inspector;
@@ -243,6 +245,8 @@ void ReportException(const websocketpp::exception& Exception, const TCHAR* JobIn
 }
 #endif
 
+void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info) { }
+
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
 #if USING_UE
     : FTickerObjectBase(0.001f)
@@ -250,6 +254,7 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
 {
     Isolate = InContext->GetIsolate();
     Context.Reset(Isolate, InContext);
+    MicroTasksRunner.Reset(Isolate, v8::FunctionTemplate::New(Isolate, MicroTasksRunnerFunction)->GetFunction(InContext).ToLocalChecked());
     Port = InPort;
     IsAlive = false;
     Connected = false;
@@ -363,7 +368,17 @@ bool V8InspectorClientImpl::Tick(float /* DeltaTime */)
 #ifdef THREAD_SAFE
             v8::Locker Locker(Isolate);
 #endif
-            Server.poll();
+
+            {
+                // v8::Locker lock(Isolate);
+                Server.poll();
+
+                v8::Isolate::Scope IsolateScope(Isolate);
+                v8::HandleScope HandleScope(Isolate);
+                auto LocalContext = Context.Get(Isolate);
+                v8::Context::Scope ContextScope(LocalContext);
+                MicroTasksRunner.Get(Isolate)->Call(LocalContext, LocalContext->Global(), 0, nullptr);
+            }
         }
     }
     catch (const wspp_exception& Exception)
@@ -451,9 +466,12 @@ void V8InspectorClientImpl::OnReceiveMessage(wspp_connection_hdl Handle, wspp_me
     //#endif
     auto channel = V8InspectorChannels[Handle.lock().get()];
 
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::SealHandleScope scope(Isolate);
-    channel->DispatchProtocolMessage(Message->get_payload());
+    {
+        // v8::Locker Locker(Isolate);
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::SealHandleScope scope(Isolate);
+        channel->DispatchProtocolMessage(Message->get_payload());
+    }
 }
 
 void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std::string& Message)
