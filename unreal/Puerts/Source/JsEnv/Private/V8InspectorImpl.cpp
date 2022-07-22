@@ -238,7 +238,9 @@ void ReportException(const websocketpp::exception& Exception, const TCHAR* JobIn
 }
 #endif
 
-void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info) { }
+void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+}
 
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
 #if USING_UE
@@ -322,7 +324,7 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
 
 V8InspectorChannel* V8InspectorClientImpl::CreateV8InspectorChannel()
 {
-    return new V8InspectorChannelImpl(Isolate, V8Inspector, CtxGroupID);
+    return new V8InspectorChannelImpl(V8Inspector, CtxGroupID);
 }
 
 V8InspectorClientImpl::~V8InspectorClientImpl()
