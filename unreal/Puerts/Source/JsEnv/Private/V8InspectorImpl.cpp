@@ -50,8 +50,7 @@ namespace puerts
 class V8InspectorChannelImpl : public v8_inspector::V8Inspector::Channel, public V8InspectorChannel
 {
 public:
-    V8InspectorChannelImpl(
-        v8::Isolate* InIsolate, const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
+    V8InspectorChannelImpl(const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID);
 
     void DispatchProtocolMessage(const std::string& Message) override;
 
@@ -76,15 +75,12 @@ private:
     std::unique_ptr<v8_inspector::V8InspectorSession> V8InspectorSession;
 
     std::function<void(const std::string&)> OnSendMessage;
-
-    v8::Isolate* Isolate;
 };
 
 V8InspectorChannelImpl::V8InspectorChannelImpl(
-    v8::Isolate* InIsolate, const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID)
+    const std::unique_ptr<v8_inspector::V8Inspector>& InV8Inspector, const int32_t InCxtGroupID)
 {
     v8_inspector::StringView DummyState;
-    Isolate = InIsolate;
     V8InspectorSession = InV8Inspector->connect(InCxtGroupID, this, DummyState);
 }
 
@@ -94,11 +90,7 @@ void V8InspectorChannelImpl::DispatchProtocolMessage(const std::string& Message)
     const auto MessageLen = (size_t) Message.length();
 
     v8_inspector::StringView StringView(MessagePtr, MessageLen);
-#ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
-#endif
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::SealHandleScope HandleScope(Isolate);
+
     V8InspectorSession->dispatchProtocolMessage(StringView);
 }
 
@@ -199,13 +191,15 @@ private:
 
     v8::Persistent<v8::Context> Context;
 
+    v8::Persistent<v8::Function> MicroTasksRunner;
+
     int32_t Port;
 
     std::unique_ptr<v8_inspector::V8Inspector> V8Inspector;
 
     int32_t CtxGroupID;
 
-    std::unique_ptr<V8InspectorChannelImpl> V8InspectorChannel;
+    std::map<void*, V8InspectorChannelImpl*> V8InspectorChannels;
 
     wspp_server Server;
 
@@ -243,6 +237,10 @@ void ReportException(const websocketpp::exception& Exception, const TCHAR* JobIn
 }
 #endif
 
+void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+}
+
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
 #if USING_UE
     : FTickerObjectBase(0.001f)
@@ -250,6 +248,8 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
 {
     Isolate = InContext->GetIsolate();
     Context.Reset(Isolate, InContext);
+    MicroTasksRunner.Reset(
+        Isolate, v8::FunctionTemplate::New(Isolate, MicroTasksRunnerFunction)->GetFunction(InContext).ToLocalChecked());
     Port = InPort;
     IsAlive = false;
     Connected = false;
@@ -324,7 +324,7 @@ V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Conte
 
 V8InspectorChannel* V8InspectorClientImpl::CreateV8InspectorChannel()
 {
-    return new V8InspectorChannelImpl(Isolate, V8Inspector, CtxGroupID);
+    return new V8InspectorChannelImpl(V8Inspector, CtxGroupID);
 }
 
 V8InspectorClientImpl::~V8InspectorClientImpl()
@@ -340,7 +340,11 @@ void V8InspectorClientImpl::Close()
         v8::Locker Locker(Isolate);
 #endif
         Server.stop_listening();
-        V8InspectorChannel.reset();
+        for (auto Iter = V8InspectorChannels.begin(); Iter != V8InspectorChannels.end(); ++Iter)
+        {
+            delete Iter->second;
+        }
+        V8InspectorChannels.clear();
 
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -359,7 +363,17 @@ bool V8InspectorClientImpl::Tick(float /* DeltaTime */)
 #ifdef THREAD_SAFE
             v8::Locker Locker(Isolate);
 #endif
-            Server.poll();
+
+            {
+                // v8::Locker lock(Isolate);
+                Server.poll();
+
+                v8::Isolate::Scope IsolateScope(Isolate);
+                v8::HandleScope HandleScope(Isolate);
+                auto LocalContext = Context.Get(Isolate);
+                v8::Context::Scope ContextScope(LocalContext);
+                MicroTasksRunner.Get(Isolate)->Call(LocalContext, LocalContext->Global(), 0, nullptr);
+            }
         }
     }
     catch (const wspp_exception& Exception)
@@ -429,8 +443,9 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 
 void V8InspectorClientImpl::OnOpen(wspp_connection_hdl Handle)
 {
-    V8InspectorChannel.reset(new V8InspectorChannelImpl(Isolate, V8Inspector, CtxGroupID));
-    V8InspectorChannel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
+    V8InspectorChannelImpl* channel = new V8InspectorChannelImpl(V8Inspector, CtxGroupID);
+    V8InspectorChannels[Handle.lock().get()] = channel;
+    channel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Connect"));
 #else
@@ -445,8 +460,14 @@ void V8InspectorClientImpl::OnReceiveMessage(wspp_connection_hdl Handle, wspp_me
     //#else
     //    PLog(Log, "<---: %s", Message->get_payload().c_str());
     //#endif
+    auto channel = V8InspectorChannels[Handle.lock().get()];
 
-    V8InspectorChannel->DispatchProtocolMessage(Message->get_payload());
+    {
+        // v8::Locker Locker(Isolate);
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::SealHandleScope scope(Isolate);
+        channel->DispatchProtocolMessage(Message->get_payload());
+    }
 }
 
 void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std::string& Message)
@@ -473,7 +494,9 @@ void V8InspectorClientImpl::OnSendMessage(wspp_connection_hdl Handle, const std:
 
 void V8InspectorClientImpl::OnClose(wspp_connection_hdl Handle)
 {
-    V8InspectorChannel.reset();
+    void* HandlePtr = Handle.lock().get();
+    delete V8InspectorChannels[HandlePtr];
+    V8InspectorChannels.erase(HandlePtr);
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Disconnect"));
 #endif

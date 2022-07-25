@@ -2,7 +2,7 @@
 // ssl/detail/engine.hpp
 // ~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -58,53 +58,63 @@ public:
   // Construct a new engine for the specified context.
   ASIO_DECL explicit engine(SSL_CTX* context);
 
+#if defined(ASIO_HAS_MOVE)
+  // Move construct from another engine.
+  ASIO_DECL engine(engine&& other) ASIO_NOEXCEPT;
+#endif // defined(ASIO_HAS_MOVE)
+
   // Destructor.
   ASIO_DECL ~engine();
+
+#if defined(ASIO_HAS_MOVE)
+  // Move assign from another engine.
+  ASIO_DECL engine& operator=(engine&& other) ASIO_NOEXCEPT;
+#endif // defined(ASIO_HAS_MOVE)
 
   // Get the underlying implementation in the native type.
   ASIO_DECL SSL* native_handle();
 
   // Set the peer verification mode.
-  ASIO_DECL asio::error_code set_verify_mode(
-      verify_mode v, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code set_verify_mode(
+      verify_mode v, puerts_asio::error_code& ec);
 
   // Set the peer verification depth.
-  ASIO_DECL asio::error_code set_verify_depth(
-      int depth, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code set_verify_depth(
+      int depth, puerts_asio::error_code& ec);
 
   // Set a peer certificate verification callback.
-  ASIO_DECL asio::error_code set_verify_callback(
-      verify_callback_base* callback, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code set_verify_callback(
+      verify_callback_base* callback, puerts_asio::error_code& ec);
 
   // Perform an SSL handshake using either SSL_connect (client-side) or
   // SSL_accept (server-side).
   ASIO_DECL want handshake(
-      stream_base::handshake_type type, asio::error_code& ec);
+      stream_base::handshake_type type, puerts_asio::error_code& ec);
 
   // Perform a graceful shutdown of the SSL session.
-  ASIO_DECL want shutdown(asio::error_code& ec);
+  ASIO_DECL want shutdown(puerts_asio::error_code& ec);
 
   // Write bytes to the SSL session.
-  ASIO_DECL want write(const asio::const_buffer& data,
-      asio::error_code& ec, std::size_t& bytes_transferred);
+  ASIO_DECL want write(const puerts_asio::const_buffer& data,
+      puerts_asio::error_code& ec, std::size_t& bytes_transferred);
 
   // Read bytes from the SSL session.
-  ASIO_DECL want read(const asio::mutable_buffer& data,
-      asio::error_code& ec, std::size_t& bytes_transferred);
+  ASIO_DECL want read(const puerts_asio::mutable_buffer& data,
+      puerts_asio::error_code& ec, std::size_t& bytes_transferred);
 
   // Get output data to be written to the transport.
-  ASIO_DECL asio::mutable_buffer get_output(
-      const asio::mutable_buffer& data);
+  ASIO_DECL puerts_asio::mutable_buffer get_output(
+      const puerts_asio::mutable_buffer& data);
 
   // Put input data that was read from the transport.
-  ASIO_DECL asio::const_buffer put_input(
-      const asio::const_buffer& data);
+  ASIO_DECL puerts_asio::const_buffer put_input(
+      const puerts_asio::const_buffer& data);
 
   // Map an error::eof code returned by the underlying transport according to
   // the type and state of the SSL session. Returns a const reference to the
   // error code object, suitable for passing to a completion handler.
-  ASIO_DECL const asio::error_code& map_error_code(
-      asio::error_code& ec) const;
+  ASIO_DECL const puerts_asio::error_code& map_error_code(
+      puerts_asio::error_code& ec) const;
 
 private:
   // Disallow copying and assignment.
@@ -118,14 +128,14 @@ private:
 #if (OPENSSL_VERSION_NUMBER < 0x10000000L)
   // The SSL_accept function may not be thread safe. This mutex is used to
   // protect all calls to the SSL_accept function.
-  ASIO_DECL static asio::detail::static_mutex& accept_mutex();
+  ASIO_DECL static puerts_asio::detail::static_mutex& accept_mutex();
 #endif // (OPENSSL_VERSION_NUMBER < 0x10000000L)
 
   // Perform one operation. Returns >= 0 on success or error, want_read if the
   // operation needs more input, or want_write if it needs to write some output
   // before the operation can complete.
   ASIO_DECL want perform(int (engine::* op)(void*, std::size_t),
-      void* data, std::size_t length, asio::error_code& ec,
+      void* data, std::size_t length, puerts_asio::error_code& ec,
       std::size_t* bytes_transferred);
 
   // Adapt the SSL_accept function to the signature needed for perform().
@@ -149,7 +159,7 @@ private:
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

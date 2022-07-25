@@ -2,7 +2,7 @@
 // detail/global.hpp
 // ~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -29,7 +29,7 @@
 # error Only Windows, POSIX and std::call_once are supported!
 #endif
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename T>
@@ -47,6 +47,6 @@ inline T& global()
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_GLOBAL_HPP

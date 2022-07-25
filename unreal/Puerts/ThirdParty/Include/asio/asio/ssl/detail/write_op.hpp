@@ -2,7 +2,7 @@
 // ssl/detail/write_op.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -30,28 +30,37 @@ template <typename ConstBufferSequence>
 class write_op
 {
 public:
+  static ASIO_CONSTEXPR const char* tracking_name()
+  {
+    return "ssl::stream<>::async_write_some";
+  }
+
   write_op(const ConstBufferSequence& buffers)
     : buffers_(buffers)
   {
   }
 
   engine::want operator()(engine& eng,
-      asio::error_code& ec,
+      puerts_asio::error_code& ec,
       std::size_t& bytes_transferred) const
   {
-    asio::const_buffer buffer =
-      asio::detail::buffer_sequence_adapter<asio::const_buffer,
-        ConstBufferSequence>::first(buffers_);
+    unsigned char storage[
+      puerts_asio::detail::buffer_sequence_adapter<puerts_asio::const_buffer,
+        ConstBufferSequence>::linearisation_storage_size];
+
+    puerts_asio::const_buffer buffer =
+      puerts_asio::detail::buffer_sequence_adapter<puerts_asio::const_buffer,
+        ConstBufferSequence>::linearise(buffers_, puerts_asio::buffer(storage));
 
     return eng.write(buffer, ec, bytes_transferred);
   }
 
   template <typename Handler>
   void call_handler(Handler& handler,
-      const asio::error_code& ec,
+      const puerts_asio::error_code& ec,
       const std::size_t& bytes_transferred) const
   {
-    handler(ec, bytes_transferred);
+    ASIO_MOVE_OR_LVALUE(Handler)(handler)(ec, bytes_transferred);
   }
 
 private:
@@ -60,7 +69,7 @@ private:
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

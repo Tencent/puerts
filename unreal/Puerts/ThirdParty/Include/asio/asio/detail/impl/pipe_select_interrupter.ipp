@@ -2,7 +2,7 @@
 // detail/impl/pipe_select_interrupter.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -34,7 +34,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 pipe_select_interrupter::pipe_select_interrupter()
@@ -59,9 +59,9 @@ void pipe_select_interrupter::open_descriptors()
   }
   else
   {
-    asio::error_code ec(errno,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "pipe_select_interrupter");
+    puerts_asio::error_code ec(errno,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "pipe_select_interrupter");
   }
 }
 
@@ -101,17 +101,22 @@ bool pipe_select_interrupter::reset()
   {
     char data[1024];
     signed_size_type bytes_read = ::read(read_descriptor_, data, sizeof(data));
-    if (bytes_read < 0 && errno == EINTR)
+    if (bytes_read == sizeof(data))
       continue;
-    bool was_interrupted = (bytes_read > 0);
-    while (bytes_read == sizeof(data))
-      bytes_read = ::read(read_descriptor_, data, sizeof(data));
-    return was_interrupted;
+    if (bytes_read > 0)
+      return true;
+    if (bytes_read == 0)
+      return false;
+    if (errno == EINTR)
+      continue;
+    if (errno == EWOULDBLOCK || errno == EAGAIN)
+      return true;
+    return false;
   }
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

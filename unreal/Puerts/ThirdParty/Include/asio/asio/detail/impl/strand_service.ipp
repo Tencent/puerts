@@ -2,7 +2,7 @@
 // detail/impl/strand_service.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 struct strand_service::on_do_complete_exit
@@ -41,9 +41,10 @@ struct strand_service::on_do_complete_exit
   }
 };
 
-strand_service::strand_service(asio::io_context& io_context)
-  : asio::detail::service_base<strand_service>(io_context),
-    io_context_(asio::use_service<io_context_impl>(io_context)),
+strand_service::strand_service(puerts_asio::io_context& io_context)
+  : puerts_asio::detail::service_base<strand_service>(io_context),
+    io_context_(io_context),
+    io_context_impl_(puerts_asio::use_service<io_context_impl>(io_context)),
     mutex_(),
     salt_(0)
 {
@@ -53,7 +54,7 @@ void strand_service::shutdown()
 {
   op_queue<operation> ops;
 
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   for (std::size_t i = 0; i < num_implementations; ++i)
   {
@@ -67,7 +68,7 @@ void strand_service::shutdown()
 
 void strand_service::construct(strand_service::implementation_type& impl)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   std::size_t salt = salt_++;
 #if defined(ASIO_ENABLE_SEQUENTIAL_STRAND_ALLOCATION)
@@ -90,18 +91,44 @@ bool strand_service::running_in_this_thread(
   return call_stack<strand_impl>::contains(impl) != 0;
 }
 
-bool strand_service::do_dispatch(implementation_type& impl, operation* op)
+struct strand_service::on_dispatch_exit
+{
+  io_context_impl* io_context_impl_;
+  strand_impl* impl_;
+
+  ~on_dispatch_exit()
+  {
+    impl_->mutex_.lock();
+    impl_->ready_queue_.push(impl_->waiting_queue_);
+    bool more_handlers = impl_->locked_ = !impl_->ready_queue_.empty();
+    impl_->mutex_.unlock();
+
+    if (more_handlers)
+      io_context_impl_->post_immediate_completion(impl_, false);
+  }
+};
+
+void strand_service::do_dispatch(implementation_type& impl, operation* op)
 {
   // If we are running inside the io_context, and no other handler already
   // holds the strand lock, then the handler can run immediately.
-  bool can_dispatch = io_context_.can_dispatch();
+  bool can_dispatch = io_context_impl_.can_dispatch();
   impl->mutex_.lock();
   if (can_dispatch && !impl->locked_)
   {
     // Immediate invocation is allowed.
     impl->locked_ = true;
     impl->mutex_.unlock();
-    return true;
+
+    // Indicate that this strand is executing on the current thread.
+    call_stack<strand_impl>::context ctx(impl);
+
+    // Ensure the next handler, if any, is scheduled on block exit.
+    on_dispatch_exit on_exit = { &io_context_impl_, impl };
+    (void)on_exit;
+
+    op->complete(&io_context_impl_, puerts_asio::error_code(), 0);
+    return;
   }
 
   if (impl->locked_)
@@ -117,10 +144,8 @@ bool strand_service::do_dispatch(implementation_type& impl, operation* op)
     impl->locked_ = true;
     impl->mutex_.unlock();
     impl->ready_queue_.push(op);
-    io_context_.post_immediate_completion(impl, false);
+    io_context_impl_.post_immediate_completion(impl, false);
   }
-
-  return false;
 }
 
 void strand_service::do_post(implementation_type& impl,
@@ -140,12 +165,12 @@ void strand_service::do_post(implementation_type& impl,
     impl->locked_ = true;
     impl->mutex_.unlock();
     impl->ready_queue_.push(op);
-    io_context_.post_immediate_completion(impl, is_continuation);
+    io_context_impl_.post_immediate_completion(impl, is_continuation);
   }
 }
 
 void strand_service::do_complete(void* owner, operation* base,
-    const asio::error_code& ec, std::size_t /*bytes_transferred*/)
+    const puerts_asio::error_code& ec, std::size_t /*bytes_transferred*/)
 {
   if (owner)
   {
@@ -170,7 +195,7 @@ void strand_service::do_complete(void* owner, operation* base,
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

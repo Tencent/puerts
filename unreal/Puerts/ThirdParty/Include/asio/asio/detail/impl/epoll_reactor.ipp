@@ -2,7 +2,7 @@
 // detail/impl/epoll_reactor.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <sys/epoll.h>
 #include "asio/detail/epoll_reactor.hpp"
+#include "asio/detail/scheduler.hpp"
 #include "asio/detail/throw_error.hpp"
 #include "asio/error.hpp"
 
@@ -31,10 +32,10 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
-epoll_reactor::epoll_reactor(asio::execution_context& ctx)
+epoll_reactor::epoll_reactor(puerts_asio::execution_context& ctx)
   : execution_context_service_base<epoll_reactor>(ctx),
     scheduler_(use_service<scheduler>(ctx)),
     mutex_(ASIO_CONCURRENCY_HINT_IS_LOCKING(
@@ -91,9 +92,9 @@ void epoll_reactor::shutdown()
 }
 
 void epoll_reactor::notify_fork(
-    asio::execution_context::fork_event fork_ev)
+    puerts_asio::execution_context::fork_event fork_ev)
 {
-  if (fork_ev == asio::execution_context::fork_child)
+  if (fork_ev == puerts_asio::execution_context::fork_child)
   {
     if (epoll_fd_ != -1)
       ::close(epoll_fd_);
@@ -134,9 +135,9 @@ void epoll_reactor::notify_fork(
       int result = epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, state->descriptor_, &ev);
       if (result != 0)
       {
-        asio::error_code ec(errno,
-            asio::error::get_system_category());
-        asio::detail::throw_error(ec, "epoll re-registration");
+        puerts_asio::error_code ec(errno,
+            puerts_asio::error::get_system_category());
+        puerts_asio::detail::throw_error(ec, "epoll re-registration");
       }
     }
   }
@@ -234,7 +235,7 @@ void epoll_reactor::start_op(int op_type, socket_type descriptor,
 {
   if (!descriptor_data)
   {
-    op->ec_ = asio::error::bad_descriptor;
+    op->ec_ = puerts_asio::error::bad_descriptor;
     post_immediate_completion(op, is_continuation);
     return;
   }
@@ -268,7 +269,7 @@ void epoll_reactor::start_op(int op_type, socket_type descriptor,
 
       if (descriptor_data->registered_events_ == 0)
       {
-        op->ec_ = asio::error::operation_not_supported;
+        op->ec_ = puerts_asio::error::operation_not_supported;
         scheduler_.post_immediate_completion(op, is_continuation);
         return;
       }
@@ -286,8 +287,8 @@ void epoll_reactor::start_op(int op_type, socket_type descriptor,
           }
           else
           {
-            op->ec_ = asio::error_code(errno,
-                asio::error::get_system_category());
+            op->ec_ = puerts_asio::error_code(errno,
+                puerts_asio::error::get_system_category());
             scheduler_.post_immediate_completion(op, is_continuation);
             return;
           }
@@ -296,7 +297,7 @@ void epoll_reactor::start_op(int op_type, socket_type descriptor,
     }
     else if (descriptor_data->registered_events_ == 0)
     {
-      op->ec_ = asio::error::operation_not_supported;
+      op->ec_ = puerts_asio::error::operation_not_supported;
       scheduler_.post_immediate_completion(op, is_continuation);
       return;
     }
@@ -331,11 +332,40 @@ void epoll_reactor::cancel_ops(socket_type,
   {
     while (reactor_op* op = descriptor_data->op_queue_[i].front())
     {
-      op->ec_ = asio::error::operation_aborted;
+      op->ec_ = puerts_asio::error::operation_aborted;
       descriptor_data->op_queue_[i].pop();
       ops.push(op);
     }
   }
+
+  descriptor_lock.unlock();
+
+  scheduler_.post_deferred_completions(ops);
+}
+
+void epoll_reactor::cancel_ops_by_key(socket_type,
+    epoll_reactor::per_descriptor_data& descriptor_data,
+    int op_type, void* cancellation_key)
+{
+  if (!descriptor_data)
+    return;
+
+  mutex::scoped_lock descriptor_lock(descriptor_data->mutex_);
+
+  op_queue<operation> ops;
+  op_queue<reactor_op> other_ops;
+  while (reactor_op* op = descriptor_data->op_queue_[op_type].front())
+  {
+    descriptor_data->op_queue_[op_type].pop();
+    if (op->cancellation_key_ == cancellation_key)
+    {
+      op->ec_ = puerts_asio::error::operation_aborted;
+      ops.push(op);
+    }
+    else
+      other_ops.push(op);
+  }
+  descriptor_data->op_queue_[op_type].push(other_ops);
 
   descriptor_lock.unlock();
 
@@ -368,7 +398,7 @@ void epoll_reactor::deregister_descriptor(socket_type descriptor,
     {
       while (reactor_op* op = descriptor_data->op_queue_[i].front())
       {
-        op->ec_ = asio::error::operation_aborted;
+        op->ec_ = puerts_asio::error::operation_aborted;
         descriptor_data->op_queue_[i].pop();
         ops.push(op);
       }
@@ -590,9 +620,9 @@ int epoll_reactor::do_epoll_create()
 
   if (fd == -1)
   {
-    asio::error_code ec(errno,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "epoll");
+    puerts_asio::error_code ec(errno,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "epoll");
   }
 
   return fd;
@@ -764,7 +794,7 @@ operation* epoll_reactor::descriptor_state::perform_io(uint32_t events)
 
 void epoll_reactor::descriptor_state::do_complete(
     void* owner, operation* base,
-    const asio::error_code& ec, std::size_t bytes_transferred)
+    const puerts_asio::error_code& ec, std::size_t bytes_transferred)
 {
   if (owner)
   {
@@ -778,7 +808,7 @@ void epoll_reactor::descriptor_state::do_complete(
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

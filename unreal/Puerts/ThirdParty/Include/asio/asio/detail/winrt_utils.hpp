@@ -2,7 +2,7 @@
 // detail/winrt_utils.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -33,7 +33,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 namespace winrt_utils {
 
@@ -82,7 +82,7 @@ inline Windows::Storage::Streams::IBuffer^ buffer_dup(
     const ConstBufferSequence& buffers)
 {
   using Microsoft::WRL::ComPtr;
-  using asio::buffer_size;
+  using puerts_asio::buffer_size;
   std::size_t size = buffer_size(buffers);
   auto b = ref new Windows::Storage::Streams::Buffer(size);
   ComPtr<IInspectable> insp = reinterpret_cast<IInspectable*>(b);
@@ -90,14 +90,14 @@ inline Windows::Storage::Streams::IBuffer^ buffer_dup(
   insp.As(&bacc);
   byte* bytes = nullptr;
   bacc->Buffer(&bytes);
-  asio::buffer_copy(asio::buffer(bytes, size), buffers);
+  puerts_asio::buffer_copy(puerts_asio::buffer(bytes, size), buffers);
   b->Length = size;
   return b;
 }
 
 } // namespace winrt_utils
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

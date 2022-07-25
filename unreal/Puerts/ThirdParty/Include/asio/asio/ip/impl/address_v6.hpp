@@ -2,7 +2,7 @@
 // ip/impl/address_v6.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,31 +21,31 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 #if !defined(ASIO_NO_DEPRECATED)
 
 inline address_v6 address_v6::from_string(const char* str)
 {
-  return asio::ip::make_address_v6(str);
+  return puerts_asio::ip::make_address_v6(str);
 }
 
 inline address_v6 address_v6::from_string(
-    const char* str, asio::error_code& ec)
+    const char* str, puerts_asio::error_code& ec)
 {
-  return asio::ip::make_address_v6(str, ec);
+  return puerts_asio::ip::make_address_v6(str, ec);
 }
 
 inline address_v6 address_v6::from_string(const std::string& str)
 {
-  return asio::ip::make_address_v6(str);
+  return puerts_asio::ip::make_address_v6(str);
 }
 
 inline address_v6 address_v6::from_string(
-    const std::string& str, asio::error_code& ec)
+    const std::string& str, puerts_asio::error_code& ec)
 {
-  return asio::ip::make_address_v6(str, ec);
+  return puerts_asio::ip::make_address_v6(str, ec);
 }
 
 #endif // !defined(ASIO_NO_DEPRECATED)
@@ -58,7 +58,7 @@ std::basic_ostream<Elem, Traits>& operator<<(
 }
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

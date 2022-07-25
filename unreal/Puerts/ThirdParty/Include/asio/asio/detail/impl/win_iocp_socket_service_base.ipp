@@ -2,7 +2,7 @@
 // detail/impl/win_iocp_socket_service_base.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,13 +23,13 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 win_iocp_socket_service_base::win_iocp_socket_service_base(
-    asio::io_context& io_context)
-  : io_context_(io_context),
-    iocp_service_(use_service<win_iocp_io_context>(io_context)),
+    execution_context& context)
+  : context_(context),
+    iocp_service_(use_service<win_iocp_io_context>(context)),
     reactor_(0),
     connect_ex_(0),
     nt_set_info_(0),
@@ -41,7 +41,7 @@ win_iocp_socket_service_base::win_iocp_socket_service_base(
 void win_iocp_socket_service_base::base_shutdown()
 {
   // Close all implementations, causing all operations to complete.
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   base_implementation_type* impl = impl_list_;
   while (impl)
   {
@@ -61,7 +61,7 @@ void win_iocp_socket_service_base::construct(
 #endif // defined(ASIO_ENABLE_CANCELIO)
 
   // Insert implementation into linked list of all implementations.
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   impl.next_ = impl_list_;
   impl.prev_ = 0;
   if (impl_list_)
@@ -72,6 +72,7 @@ void win_iocp_socket_service_base::construct(
 void win_iocp_socket_service_base::base_move_construct(
     win_iocp_socket_service_base::base_implementation_type& impl,
     win_iocp_socket_service_base::base_implementation_type& other_impl)
+  ASIO_NOEXCEPT
 {
   impl.socket_ = other_impl.socket_;
   other_impl.socket_ = invalid_socket;
@@ -88,7 +89,7 @@ void win_iocp_socket_service_base::base_move_construct(
 #endif // defined(ASIO_ENABLE_CANCELIO)
 
   // Insert implementation into linked list of all implementations.
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   impl.next_ = impl_list_;
   impl.prev_ = 0;
   if (impl_list_)
@@ -106,7 +107,7 @@ void win_iocp_socket_service_base::base_move_assign(
   if (this != &other_service)
   {
     // Remove implementation from linked list of all implementations.
-    asio::detail::mutex::scoped_lock lock(mutex_);
+    puerts_asio::detail::mutex::scoped_lock lock(mutex_);
     if (impl_list_ == &impl)
       impl_list_ = impl.next_;
     if (impl.prev_)
@@ -134,7 +135,7 @@ void win_iocp_socket_service_base::base_move_assign(
   if (this != &other_service)
   {
     // Insert implementation into linked list of all implementations.
-    asio::detail::mutex::scoped_lock lock(other_service.mutex_);
+    puerts_asio::detail::mutex::scoped_lock lock(other_service.mutex_);
     impl.next_ = other_service.impl_list_;
     impl.prev_ = 0;
     if (other_service.impl_list_)
@@ -149,7 +150,7 @@ void win_iocp_socket_service_base::destroy(
   close_for_destruction(impl);
 
   // Remove implementation from linked list of all implementations.
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
   if (impl_list_ == &impl)
     impl_list_ = impl.next_;
   if (impl.prev_)
@@ -160,9 +161,9 @@ void win_iocp_socket_service_base::destroy(
   impl.prev_ = 0;
 }
 
-asio::error_code win_iocp_socket_service_base::close(
+puerts_asio::error_code win_iocp_socket_service_base::close(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   if (is_open(impl))
   {
@@ -185,7 +186,7 @@ asio::error_code win_iocp_socket_service_base::close(
   }
   else
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
   }
 
   impl.socket_ = invalid_socket;
@@ -200,7 +201,7 @@ asio::error_code win_iocp_socket_service_base::close(
 
 socket_type win_iocp_socket_service_base::release(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   if (!is_open(impl))
     return invalid_socket;
@@ -212,7 +213,7 @@ socket_type win_iocp_socket_service_base::release(
   nt_set_info_fn fn = get_nt_set_info();
   if (fn == 0)
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return invalid_socket;
   }
 
@@ -222,7 +223,7 @@ socket_type win_iocp_socket_service_base::release(
   if (fn(sock_as_handle, iosb, &info, sizeof(info),
         61 /* FileReplaceCompletionInformation */))
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return invalid_socket;
   }
 
@@ -231,13 +232,13 @@ socket_type win_iocp_socket_service_base::release(
   return tmp;
 }
 
-asio::error_code win_iocp_socket_service_base::cancel(
+puerts_asio::error_code win_iocp_socket_service_base::cancel(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   if (!is_open(impl))
   {
-    ec = asio::error::bad_descriptor;
+    ec = puerts_asio::error::bad_descriptor;
     return ec;
   }
 
@@ -249,7 +250,8 @@ asio::error_code win_iocp_socket_service_base::cancel(
   {
     // The version of Windows supports cancellation from any thread.
     typedef BOOL (WINAPI* cancel_io_ex_t)(HANDLE, LPOVERLAPPED);
-    cancel_io_ex_t cancel_io_ex = (cancel_io_ex_t)cancel_io_ex_ptr;
+    cancel_io_ex_t cancel_io_ex = reinterpret_cast<cancel_io_ex_t>(
+        reinterpret_cast<void*>(cancel_io_ex_ptr));
     socket_type sock = impl.socket_;
     HANDLE sock_as_handle = reinterpret_cast<HANDLE>(sock);
     if (!cancel_io_ex(sock_as_handle, 0))
@@ -260,24 +262,24 @@ asio::error_code win_iocp_socket_service_base::cancel(
         // ERROR_NOT_FOUND means that there were no operations to be
         // cancelled. We swallow this error to match the behaviour on other
         // platforms.
-        ec = asio::error_code();
+        ec = puerts_asio::error_code();
       }
       else
       {
-        ec = asio::error_code(last_error,
-            asio::error::get_system_category());
+        ec = puerts_asio::error_code(last_error,
+            puerts_asio::error::get_system_category());
       }
     }
     else
     {
-      ec = asio::error_code();
+      ec = puerts_asio::error_code();
     }
   }
 #if defined(ASIO_ENABLE_CANCELIO)
   else if (impl.safe_cancellation_thread_id_ == 0)
   {
     // No operations have been started, so there's nothing to cancel.
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
   }
   else if (impl.safe_cancellation_thread_id_ == ::GetCurrentThreadId())
   {
@@ -288,25 +290,25 @@ asio::error_code win_iocp_socket_service_base::cancel(
     if (!::CancelIo(sock_as_handle))
     {
       DWORD last_error = ::GetLastError();
-      ec = asio::error_code(last_error,
-          asio::error::get_system_category());
+      ec = puerts_asio::error_code(last_error,
+          puerts_asio::error::get_system_category());
     }
     else
     {
-      ec = asio::error_code();
+      ec = puerts_asio::error_code();
     }
   }
   else
   {
     // Asynchronous operations have been started from more than one thread,
     // so cancellation is not safe.
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
   }
 #else // defined(ASIO_ENABLE_CANCELIO)
   else
   {
     // Cancellation is not supported as CancelIo may not be used.
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
   }
 #endif // defined(ASIO_ENABLE_CANCELIO)
 
@@ -323,13 +325,13 @@ asio::error_code win_iocp_socket_service_base::cancel(
   return ec;
 }
 
-asio::error_code win_iocp_socket_service_base::do_open(
+puerts_asio::error_code win_iocp_socket_service_base::do_open(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    int family, int type, int protocol, asio::error_code& ec)
+    int family, int type, int protocol, puerts_asio::error_code& ec)
 {
   if (is_open(impl))
   {
-    ec = asio::error::already_open;
+    ec = puerts_asio::error::already_open;
     return ec;
   }
 
@@ -349,17 +351,17 @@ asio::error_code win_iocp_socket_service_base::do_open(
   default: impl.state_ = 0; break;
   }
   impl.cancel_token_.reset(static_cast<void*>(0), socket_ops::noop_deleter());
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code win_iocp_socket_service_base::do_assign(
+puerts_asio::error_code win_iocp_socket_service_base::do_assign(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    int type, socket_type native_socket, asio::error_code& ec)
+    int type, socket_type native_socket, puerts_asio::error_code& ec)
 {
   if (is_open(impl))
   {
-    ec = asio::error::already_open;
+    ec = puerts_asio::error::already_open;
     return ec;
   }
 
@@ -375,7 +377,7 @@ asio::error_code win_iocp_socket_service_base::do_assign(
   default: impl.state_ = 0; break;
   }
   impl.cancel_token_.reset(static_cast<void*>(0), socket_ops::noop_deleter());
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
@@ -390,7 +392,7 @@ void win_iocp_socket_service_base::start_send_op(
   if (noop)
     iocp_service_.on_completion(op);
   else if (!is_open(impl))
-    iocp_service_.on_completion(op, asio::error::bad_descriptor);
+    iocp_service_.on_completion(op, puerts_asio::error::bad_descriptor);
   else
   {
     DWORD bytes_transferred = 0;
@@ -416,7 +418,7 @@ void win_iocp_socket_service_base::start_send_to_op(
   iocp_service_.work_started();
 
   if (!is_open(impl))
-    iocp_service_.on_completion(op, asio::error::bad_descriptor);
+    iocp_service_.on_completion(op, puerts_asio::error::bad_descriptor);
   else
   {
     DWORD bytes_transferred = 0;
@@ -444,7 +446,7 @@ void win_iocp_socket_service_base::start_receive_op(
   if (noop)
     iocp_service_.on_completion(op);
   else if (!is_open(impl))
-    iocp_service_.on_completion(op, asio::error::bad_descriptor);
+    iocp_service_.on_completion(op, puerts_asio::error::bad_descriptor);
   else
   {
     DWORD bytes_transferred = 0;
@@ -464,23 +466,24 @@ void win_iocp_socket_service_base::start_receive_op(
   }
 }
 
-void win_iocp_socket_service_base::start_null_buffers_receive_op(
+int win_iocp_socket_service_base::start_null_buffers_receive_op(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    socket_base::message_flags flags, reactor_op* op)
+    socket_base::message_flags flags, reactor_op* op, operation* iocp_op)
 {
   if ((impl.state_ & socket_ops::stream_oriented) != 0)
   {
     // For stream sockets on Windows, we may issue a 0-byte overlapped
     // WSARecv to wait until there is data available on the socket.
     ::WSABUF buf = { 0, 0 };
-    start_receive_op(impl, &buf, 1, flags, false, op);
+    start_receive_op(impl, &buf, 1, flags, false, iocp_op);
+    return -1;
   }
   else
   {
-    start_reactor_op(impl,
-        (flags & socket_base::message_out_of_band)
-          ? select_reactor::except_op : select_reactor::read_op,
-        op);
+    int op_type = (flags & socket_base::message_out_of_band)
+      ? select_reactor::except_op : select_reactor::read_op;
+    start_reactor_op(impl, op_type, op);
+    return op_type;
   }
 }
 
@@ -493,7 +496,7 @@ void win_iocp_socket_service_base::start_receive_from_op(
   iocp_service_.work_started();
 
   if (!is_open(impl))
-    iocp_service_.on_completion(op, asio::error::bad_descriptor);
+    iocp_service_.on_completion(op, puerts_asio::error::bad_descriptor);
   else
   {
     DWORD bytes_transferred = 0;
@@ -520,12 +523,12 @@ void win_iocp_socket_service_base::start_accept_op(
   iocp_service_.work_started();
 
   if (!is_open(impl))
-    iocp_service_.on_completion(op, asio::error::bad_descriptor);
+    iocp_service_.on_completion(op, puerts_asio::error::bad_descriptor);
   else if (peer_is_open)
-    iocp_service_.on_completion(op, asio::error::already_open);
+    iocp_service_.on_completion(op, puerts_asio::error::already_open);
   else
   {
-    asio::error_code ec;
+    puerts_asio::error_code ec;
     new_socket.reset(socket_ops::socket(family, type, protocol, ec));
     if (new_socket.get() == invalid_socket)
       iocp_service_.on_completion(op, ec);
@@ -545,12 +548,18 @@ void win_iocp_socket_service_base::start_accept_op(
 
 void win_iocp_socket_service_base::restart_accept_op(
     socket_type s, socket_holder& new_socket, int family, int type,
-    int protocol, void* output_buffer, DWORD address_length, operation* op)
+    int protocol, void* output_buffer, DWORD address_length,
+    long* cancel_requested, operation* op)
 {
   new_socket.reset();
   iocp_service_.work_started();
 
-  asio::error_code ec;
+  // Check if we were cancelled after the first AcceptEx completed.
+  if (cancel_requested)
+    if (::InterlockedExchangeAdd(cancel_requested, 0) == 1)
+      iocp_service_.on_completion(op, puerts_asio::error::operation_aborted);
+
+  puerts_asio::error_code ec;
   new_socket.reset(socket_ops::socket(family, type, protocol, ec));
   if (new_socket.get() == invalid_socket)
     iocp_service_.on_completion(op, ec);
@@ -563,7 +572,19 @@ void win_iocp_socket_service_base::restart_accept_op(
     if (!result && last_error != WSA_IO_PENDING)
       iocp_service_.on_completion(op, last_error);
     else
+    {
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+      if (cancel_requested)
+      {
+        if (::InterlockedExchangeAdd(cancel_requested, 0) == 1)
+        {
+          HANDLE sock_as_handle = reinterpret_cast<HANDLE>(s);
+          ::CancelIoEx(sock_as_handle, op);
+        }
+      }
+#endif // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
       iocp_service_.on_pending(op);
+    }
   }
 }
 
@@ -580,15 +601,15 @@ void win_iocp_socket_service_base::start_reactor_op(
     return;
   }
   else
-    op->ec_ = asio::error::bad_descriptor;
+    op->ec_ = puerts_asio::error::bad_descriptor;
 
   iocp_service_.post_immediate_completion(op, false);
 }
 
-void win_iocp_socket_service_base::start_connect_op(
+int win_iocp_socket_service_base::start_connect_op(
     win_iocp_socket_service_base::base_implementation_type& impl,
-    int family, int type, const socket_addr_type* addr,
-    std::size_t addrlen, win_iocp_socket_connect_op_base* op)
+    int family, int type, const socket_addr_type* addr, std::size_t addrlen,
+    win_iocp_socket_connect_op_base* op, operation* iocp_op)
 {
   // If ConnectEx is available, use that.
   if (family == ASIO_OS_DEF(AF_INET)
@@ -610,10 +631,10 @@ void win_iocp_socket_service_base::start_connect_op(
       socket_ops::bind(impl.socket_, &a.base,
           family == ASIO_OS_DEF(AF_INET)
           ? sizeof(a.v4) : sizeof(a.v6), op->ec_);
-      if (op->ec_ && op->ec_ != asio::error::invalid_argument)
+      if (op->ec_ && op->ec_ != puerts_asio::error::invalid_argument)
       {
         iocp_service_.post_immediate_completion(op, false);
-        return;
+        return -1;
       }
 
       op->connect_ex_ = true;
@@ -621,13 +642,13 @@ void win_iocp_socket_service_base::start_connect_op(
       iocp_service_.work_started();
 
       BOOL result = connect_ex(impl.socket_,
-          addr, static_cast<int>(addrlen), 0, 0, 0, op);
+          addr, static_cast<int>(addrlen), 0, 0, 0, iocp_op);
       DWORD last_error = ::WSAGetLastError();
       if (!result && last_error != WSA_IO_PENDING)
-        iocp_service_.on_completion(op, last_error);
+        iocp_service_.on_completion(iocp_op, last_error);
       else
-        iocp_service_.on_pending(op);
-      return;
+        iocp_service_.on_pending(iocp_op);
+      return -1;
     }
   }
 
@@ -641,18 +662,19 @@ void win_iocp_socket_service_base::start_connect_op(
   {
     if (socket_ops::connect(impl.socket_, addr, addrlen, op->ec_) != 0)
     {
-      if (op->ec_ == asio::error::in_progress
-          || op->ec_ == asio::error::would_block)
+      if (op->ec_ == puerts_asio::error::in_progress
+          || op->ec_ == puerts_asio::error::would_block)
       {
-        op->ec_ = asio::error_code();
+        op->ec_ = puerts_asio::error_code();
         r.start_op(select_reactor::connect_op, impl.socket_,
             impl.reactor_data_, op, false, false);
-        return;
+        return select_reactor::connect_op;
       }
     }
   }
 
   r.post_immediate_completion(op, false);
+  return -1;
 }
 
 void win_iocp_socket_service_base::close_for_destruction(
@@ -672,7 +694,7 @@ void win_iocp_socket_service_base::close_for_destruction(
     if (r)
       r->deregister_descriptor(impl.socket_, impl.reactor_data_, true);
 
-    asio::error_code ignored_ec;
+    puerts_asio::error_code ignored_ec;
     socket_ops::close(impl.socket_, impl.state_, true, ignored_ec);
 
     if (r)
@@ -707,7 +729,7 @@ select_reactor& win_iocp_socket_service_base::get_reactor()
           reinterpret_cast<void**>(&reactor_), 0, 0));
   if (!r)
   {
-    r = &(use_service<select_reactor>(io_context_));
+    r = &(use_service<select_reactor>(context_));
     interlocked_exchange_pointer(reinterpret_cast<void**>(&reactor_), r);
   }
   return *r;
@@ -790,7 +812,7 @@ void* win_iocp_socket_service_base::interlocked_exchange_pointer(
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -2,7 +2,7 @@
 // detail/impl/signal_set_service.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -27,7 +27,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 struct signal_state
@@ -89,7 +89,8 @@ class signal_set_service::pipe_read_op : public reactor_op
 {
 public:
   pipe_read_op()
-    : reactor_op(&pipe_read_op::do_perform, pipe_read_op::do_complete)
+    : reactor_op(puerts_asio::error_code(),
+        &pipe_read_op::do_perform, pipe_read_op::do_complete)
   {
   }
 
@@ -107,7 +108,7 @@ public:
   }
 
   static void do_complete(void* /*owner*/, operation* base,
-      const asio::error_code& /*ec*/,
+      const puerts_asio::error_code& /*ec*/,
       std::size_t /*bytes_transferred*/)
   {
     pipe_read_op* o(static_cast<pipe_read_op*>(base));
@@ -118,14 +119,13 @@ public:
        //   && !defined(ASIO_WINDOWS_RUNTIME)
        //   && !defined(__CYGWIN__)
 
-signal_set_service::signal_set_service(
-    asio::io_context& io_context)
-  : service_base<signal_set_service>(io_context),
-    io_context_(asio::use_service<io_context_impl>(io_context)),
+signal_set_service::signal_set_service(execution_context& context)
+  : execution_context_service_base<signal_set_service>(context),
+    scheduler_(puerts_asio::use_service<scheduler_impl>(context)),
 #if !defined(ASIO_WINDOWS) \
   && !defined(ASIO_WINDOWS_RUNTIME) \
   && !defined(__CYGWIN__)
-    reactor_(asio::use_service<reactor>(io_context)),
+    reactor_(puerts_asio::use_service<reactor>(context)),
 #endif // !defined(ASIO_WINDOWS)
        //   && !defined(ASIO_WINDOWS_RUNTIME)
        //   && !defined(__CYGWIN__)
@@ -169,11 +169,10 @@ void signal_set_service::shutdown()
     }
   }
 
-  io_context_.abandon_operations(ops);
+  scheduler_.abandon_operations(ops);
 }
 
-void signal_set_service::notify_fork(
-    asio::io_context::fork_event fork_ev)
+void signal_set_service::notify_fork(execution_context::fork_event fork_ev)
 {
 #if !defined(ASIO_WINDOWS) \
   && !defined(ASIO_WINDOWS_RUNTIME) \
@@ -183,7 +182,7 @@ void signal_set_service::notify_fork(
 
   switch (fork_ev)
   {
-  case asio::io_context::fork_prepare:
+  case execution_context::fork_prepare:
     {
       int read_descriptor = state->read_descriptor_;
       state->fork_prepared_ = true;
@@ -192,7 +191,7 @@ void signal_set_service::notify_fork(
       reactor_.cleanup_descriptor_data(reactor_data_);
     }
     break;
-  case asio::io_context::fork_parent:
+  case execution_context::fork_parent:
     if (state->fork_prepared_)
     {
       int read_descriptor = state->read_descriptor_;
@@ -202,10 +201,10 @@ void signal_set_service::notify_fork(
           read_descriptor, reactor_data_, new pipe_read_op);
     }
     break;
-  case asio::io_context::fork_child:
+  case execution_context::fork_child:
     if (state->fork_prepared_)
     {
-      asio::detail::signal_blocker blocker;
+      puerts_asio::detail::signal_blocker blocker;
       close_descriptors();
       open_descriptors();
       int read_descriptor = state->read_descriptor_;
@@ -236,19 +235,19 @@ void signal_set_service::construct(
 void signal_set_service::destroy(
     signal_set_service::implementation_type& impl)
 {
-  asio::error_code ignored_ec;
+  puerts_asio::error_code ignored_ec;
   clear(impl, ignored_ec);
   cancel(impl, ignored_ec);
 }
 
-asio::error_code signal_set_service::add(
+puerts_asio::error_code signal_set_service::add(
     signal_set_service::implementation_type& impl,
-    int signal_number, asio::error_code& ec)
+    int signal_number, puerts_asio::error_code& ec)
 {
   // Check that the signal number is valid.
   if (signal_number < 0 || signal_number >= max_signal_number)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return ec;
   }
 
@@ -285,10 +284,10 @@ asio::error_code signal_set_service::add(
 # endif // defined(ASIO_HAS_SIGACTION)
       {
 # if defined(ASIO_WINDOWS) || defined(__CYGWIN__)
-        ec = asio::error::invalid_argument;
+        ec = puerts_asio::error::invalid_argument;
 # else // defined(ASIO_WINDOWS) || defined(__CYGWIN__)
-        ec = asio::error_code(errno,
-            asio::error::get_system_category());
+        ec = puerts_asio::error_code(errno,
+            puerts_asio::error::get_system_category());
 # endif // defined(ASIO_WINDOWS) || defined(__CYGWIN__)
         delete new_registration;
         return ec;
@@ -311,18 +310,18 @@ asio::error_code signal_set_service::add(
     ++state->registration_count_[signal_number];
   }
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code signal_set_service::remove(
+puerts_asio::error_code signal_set_service::remove(
     signal_set_service::implementation_type& impl,
-    int signal_number, asio::error_code& ec)
+    int signal_number, puerts_asio::error_code& ec)
 {
   // Check that the signal number is valid.
   if (signal_number < 0 || signal_number >= max_signal_number)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return ec;
   }
 
@@ -355,10 +354,10 @@ asio::error_code signal_set_service::remove(
 # endif // defined(ASIO_HAS_SIGACTION)
       {
 # if defined(ASIO_WINDOWS) || defined(__CYGWIN__)
-        ec = asio::error::invalid_argument;
+        ec = puerts_asio::error::invalid_argument;
 # else // defined(ASIO_WINDOWS) || defined(__CYGWIN__)
-        ec = asio::error_code(errno,
-            asio::error::get_system_category());
+        ec = puerts_asio::error_code(errno,
+            puerts_asio::error::get_system_category());
 # endif // defined(ASIO_WINDOWS) || defined(__CYGWIN__)
         return ec;
       }
@@ -381,13 +380,13 @@ asio::error_code signal_set_service::remove(
     delete reg;
   }
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code signal_set_service::clear(
+puerts_asio::error_code signal_set_service::clear(
     signal_set_service::implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   signal_state* state = get_signal_state();
   static_mutex::scoped_lock lock(state->mutex_);
@@ -409,10 +408,10 @@ asio::error_code signal_set_service::clear(
 # endif // defined(ASIO_HAS_SIGACTION)
       {
 # if defined(ASIO_WINDOWS) || defined(__CYGWIN__)
-        ec = asio::error::invalid_argument;
+        ec = puerts_asio::error::invalid_argument;
 # else // defined(ASIO_WINDOWS) || defined(__CYGWIN__)
-        ec = asio::error_code(errno,
-            asio::error::get_system_category());
+        ec = puerts_asio::error_code(errno,
+            puerts_asio::error::get_system_category());
 # endif // defined(ASIO_WINDOWS) || defined(__CYGWIN__)
         return ec;
       }
@@ -433,15 +432,15 @@ asio::error_code signal_set_service::clear(
     delete reg;
   }
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code signal_set_service::cancel(
+puerts_asio::error_code signal_set_service::cancel(
     signal_set_service::implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
-  ASIO_HANDLER_OPERATION((io_context_.context(),
+  ASIO_HANDLER_OPERATION((scheduler_.context(),
         "signal_set", &impl, 0, "cancel"));
 
   op_queue<operation> ops;
@@ -451,15 +450,15 @@ asio::error_code signal_set_service::cancel(
 
     while (signal_op* op = impl.queue_.front())
     {
-      op->ec_ = asio::error::operation_aborted;
+      op->ec_ = puerts_asio::error::operation_aborted;
       impl.queue_.pop();
       ops.push(op);
     }
   }
 
-  io_context_.post_deferred_completions(ops);
+  scheduler_.post_deferred_completions(ops);
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
@@ -493,7 +492,7 @@ void signal_set_service::deliver_signal(int signal_number)
       reg = reg->next_in_table_;
     }
 
-    service->io_context_.post_deferred_completions(ops);
+    service->scheduler_.post_deferred_completions(ops);
 
     service = service->next_;
   }
@@ -510,19 +509,19 @@ void signal_set_service::add_service(signal_set_service* service)
     open_descriptors();
 #endif // !defined(ASIO_WINDOWS) && !defined(__CYGWIN__)
 
-  // If an io_context object is thread-unsafe then it must be the only
-  // io_context used to create signal_set objects.
+  // If a scheduler_ object is thread-unsafe then it must be the only
+  // scheduler used to create signal_set objects.
   if (state->service_list_ != 0)
   {
     if (!ASIO_CONCURRENCY_HINT_IS_LOCKING(SCHEDULER,
-          service->io_context_.concurrency_hint())
+          service->scheduler_.concurrency_hint())
         || !ASIO_CONCURRENCY_HINT_IS_LOCKING(SCHEDULER,
-          state->service_list_->io_context_.concurrency_hint()))
+          state->service_list_->scheduler_.concurrency_hint()))
     {
       std::logic_error ex(
-          "Thread-unsafe io_context objects require "
+          "Thread-unsafe execution context objects require "
           "exclusive access to signal handling.");
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 
@@ -608,9 +607,9 @@ void signal_set_service::open_descriptors()
   }
   else
   {
-    asio::error_code ec(errno,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "signal_set_service pipe");
+    puerts_asio::error_code ec(errno,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "signal_set_service pipe");
   }
 #endif // !defined(ASIO_WINDOWS)
        //   && !defined(ASIO_WINDOWS_RUNTIME)
@@ -639,7 +638,7 @@ void signal_set_service::close_descriptors()
 void signal_set_service::start_wait_op(
     signal_set_service::implementation_type& impl, signal_op* op)
 {
-  io_context_.work_started();
+  scheduler_.work_started();
 
   signal_state* state = get_signal_state();
   static_mutex::scoped_lock lock(state->mutex_);
@@ -651,7 +650,7 @@ void signal_set_service::start_wait_op(
     {
       --reg->undelivered_;
       op->signal_number_ = reg->signal_number_;
-      io_context_.post_deferred_completion(op);
+      scheduler_.post_deferred_completion(op);
       return;
     }
 
@@ -662,7 +661,7 @@ void signal_set_service::start_wait_op(
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

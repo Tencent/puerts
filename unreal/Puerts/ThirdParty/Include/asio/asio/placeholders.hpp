@@ -2,7 +2,7 @@
 // placeholders.hpp
 // ~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace placeholders {
 
 #if defined(GENERATING_DOCUMENTATION)
@@ -34,28 +34,28 @@ unspecified error;
 
 /// An argument placeholder, for use with boost::bind(), that corresponds to
 /// the bytes_transferred argument of a handler for asynchronous functions such
-/// as asio::basic_stream_socket::async_write_some or
-/// asio::async_write.
+/// as puerts_asio::basic_stream_socket::async_write_some or
+/// puerts_asio::async_write.
 unspecified bytes_transferred;
 
 /// An argument placeholder, for use with boost::bind(), that corresponds to
 /// the iterator argument of a handler for asynchronous functions such as
-/// asio::async_connect.
+/// puerts_asio::async_connect.
 unspecified iterator;
 
 /// An argument placeholder, for use with boost::bind(), that corresponds to
 /// the results argument of a handler for asynchronous functions such as
-/// asio::basic_resolver::async_resolve.
+/// puerts_asio::basic_resolver::async_resolve.
 unspecified results;
 
 /// An argument placeholder, for use with boost::bind(), that corresponds to
 /// the results argument of a handler for asynchronous functions such as
-/// asio::async_connect.
+/// puerts_asio::async_connect.
 unspecified endpoint;
 
 /// An argument placeholder, for use with boost::bind(), that corresponds to
 /// the signal_number argument of a handler for asynchronous functions such as
-/// asio::signal_set::async_wait.
+/// puerts_asio::signal_set::async_wait.
 unspecified signal_number;
 
 #elif defined(ASIO_HAS_BOOST_BIND)
@@ -109,34 +109,34 @@ namespace detail
 #  if defined(ASIO_MSVC) && (ASIO_MSVC < 1400)
 
 static boost::arg<1>& error
-  = asio::placeholders::detail::placeholder<1>::get();
+  = puerts_asio::placeholders::detail::placeholder<1>::get();
 static boost::arg<2>& bytes_transferred
-  = asio::placeholders::detail::placeholder<2>::get();
+  = puerts_asio::placeholders::detail::placeholder<2>::get();
 static boost::arg<2>& iterator
-  = asio::placeholders::detail::placeholder<2>::get();
+  = puerts_asio::placeholders::detail::placeholder<2>::get();
 static boost::arg<2>& results
-  = asio::placeholders::detail::placeholder<2>::get();
+  = puerts_asio::placeholders::detail::placeholder<2>::get();
 static boost::arg<2>& endpoint
-  = asio::placeholders::detail::placeholder<2>::get();
+  = puerts_asio::placeholders::detail::placeholder<2>::get();
 static boost::arg<2>& signal_number
-  = asio::placeholders::detail::placeholder<2>::get();
+  = puerts_asio::placeholders::detail::placeholder<2>::get();
 
 #  else
 
 namespace
 {
   boost::arg<1>& error
-    = asio::placeholders::detail::placeholder<1>::get();
+    = puerts_asio::placeholders::detail::placeholder<1>::get();
   boost::arg<2>& bytes_transferred
-    = asio::placeholders::detail::placeholder<2>::get();
+    = puerts_asio::placeholders::detail::placeholder<2>::get();
   boost::arg<2>& iterator
-    = asio::placeholders::detail::placeholder<2>::get();
+    = puerts_asio::placeholders::detail::placeholder<2>::get();
   boost::arg<2>& results
-    = asio::placeholders::detail::placeholder<2>::get();
+    = puerts_asio::placeholders::detail::placeholder<2>::get();
   boost::arg<2>& endpoint
-    = asio::placeholders::detail::placeholder<2>::get();
+    = puerts_asio::placeholders::detail::placeholder<2>::get();
   boost::arg<2>& signal_number
-    = asio::placeholders::detail::placeholder<2>::get();
+    = puerts_asio::placeholders::detail::placeholder<2>::get();
 } // namespace
 
 #  endif
@@ -144,7 +144,7 @@ namespace
 #endif
 
 } // namespace placeholders
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

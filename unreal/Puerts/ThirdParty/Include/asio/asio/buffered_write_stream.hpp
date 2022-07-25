@@ -2,7 +2,7 @@
 // buffered_write_stream.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -25,12 +25,11 @@
 #include "asio/detail/noncopyable.hpp"
 #include "asio/detail/type_traits.hpp"
 #include "asio/error.hpp"
-#include "asio/io_context.hpp"
 #include "asio/write.hpp"
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Adds buffering to the write-related operations of a stream.
 /**
@@ -105,22 +104,6 @@ public:
     return next_layer_.lowest_layer().get_executor();
   }
 
-#if !defined(ASIO_NO_DEPRECATED)
-  /// (Deprecated: Use get_executor().) Get the io_context associated with the
-  /// object.
-  asio::io_context& get_io_context()
-  {
-    return next_layer_.get_io_context();
-  }
-
-  /// (Deprecated: Use get_executor().) Get the io_context associated with the
-  /// object.
-  asio::io_context& get_io_service()
-  {
-    return next_layer_.get_io_service();
-  }
-#endif // !defined(ASIO_NO_DEPRECATED)
-
   /// Close the stream.
   void close()
   {
@@ -128,7 +111,7 @@ public:
   }
 
   /// Close the stream.
-  ASIO_SYNC_OP_VOID close(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID close(puerts_asio::error_code& ec)
   {
     next_layer_.close(ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
@@ -142,13 +125,18 @@ public:
   /// Flush all data from the buffer to the next layer. Returns the number of
   /// bytes written to the next layer on the last write operation, or 0 if an
   /// error occurred.
-  std::size_t flush(asio::error_code& ec);
+  std::size_t flush(puerts_asio::error_code& ec);
 
   /// Start an asynchronous flush.
-  template <typename WriteHandler>
-  ASIO_INITFN_RESULT_TYPE(WriteHandler,
-      void (asio::error_code, std::size_t))
-  async_flush(ASIO_MOVE_ARG(WriteHandler) handler);
+  template <
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+        std::size_t)) WriteHandler
+          ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
+      void (puerts_asio::error_code, std::size_t))
+  async_flush(
+      ASIO_MOVE_ARG(WriteHandler) handler
+        ASIO_DEFAULT_COMPLETION_TOKEN(executor_type));
 
   /// Write the given data to the stream. Returns the number of bytes written.
   /// Throws an exception on failure.
@@ -159,15 +147,19 @@ public:
   /// or 0 if an error occurred and the error handler did not throw.
   template <typename ConstBufferSequence>
   std::size_t write_some(const ConstBufferSequence& buffers,
-      asio::error_code& ec);
+      puerts_asio::error_code& ec);
 
   /// Start an asynchronous write. The data being written must be valid for the
   /// lifetime of the asynchronous operation.
-  template <typename ConstBufferSequence, typename WriteHandler>
-  ASIO_INITFN_RESULT_TYPE(WriteHandler,
-      void (asio::error_code, std::size_t))
+  template <typename ConstBufferSequence,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+        std::size_t)) WriteHandler
+          ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
+      void (puerts_asio::error_code, std::size_t))
   async_write_some(const ConstBufferSequence& buffers,
-      ASIO_MOVE_ARG(WriteHandler) handler);
+      ASIO_MOVE_ARG(WriteHandler) handler
+        ASIO_DEFAULT_COMPLETION_TOKEN(executor_type));
 
   /// Read some data from the stream. Returns the number of bytes read. Throws
   /// an exception on failure.
@@ -181,18 +173,22 @@ public:
   /// an error occurred.
   template <typename MutableBufferSequence>
   std::size_t read_some(const MutableBufferSequence& buffers,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     return next_layer_.read_some(buffers, ec);
   }
 
   /// Start an asynchronous read. The buffer into which the data will be read
   /// must be valid for the lifetime of the asynchronous operation.
-  template <typename MutableBufferSequence, typename ReadHandler>
-  ASIO_INITFN_RESULT_TYPE(ReadHandler,
-      void (asio::error_code, std::size_t))
+  template <typename MutableBufferSequence,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+        std::size_t)) ReadHandler
+          ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
+      void (puerts_asio::error_code, std::size_t))
   async_read_some(const MutableBufferSequence& buffers,
-      ASIO_MOVE_ARG(ReadHandler) handler)
+      ASIO_MOVE_ARG(ReadHandler) handler
+        ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
     return next_layer_.async_read_some(buffers,
         ASIO_MOVE_CAST(ReadHandler)(handler));
@@ -210,7 +206,7 @@ public:
   /// or 0 if an error occurred.
   template <typename MutableBufferSequence>
   std::size_t peek(const MutableBufferSequence& buffers,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     return next_layer_.peek(buffers, ec);
   }
@@ -222,7 +218,7 @@ public:
   }
 
   /// Determine the amount of data that may be read without blocking.
-  std::size_t in_avail(asio::error_code& ec)
+  std::size_t in_avail(puerts_asio::error_code& ec)
   {
     return next_layer_.in_avail(ec);
   }
@@ -240,7 +236,7 @@ private:
   detail::buffered_stream_storage storage_;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

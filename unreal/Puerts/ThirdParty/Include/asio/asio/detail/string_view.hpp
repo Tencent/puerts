@@ -2,7 +2,7 @@
 // detail/string_view.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -27,7 +27,7 @@
 # error ASIO_HAS_STRING_VIEW is set but no string_view is available
 #endif // defined(ASIO_HAS_STD_EXPERIMENTAL_STRING_VIEW)
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_STD_STRING_VIEW)
 using std::basic_string_view;
@@ -37,9 +37,9 @@ using std::experimental::basic_string_view;
 using std::experimental::string_view;
 #endif // defined(ASIO_HAS_STD_EXPERIMENTAL_STRING_VIEW)
 
-} // namespace asio
+} // namespace puerts_asio
 
-# define ASIO_STRING_VIEW_PARAM asio::string_view
+# define ASIO_STRING_VIEW_PARAM puerts_asio::string_view
 #else // defined(ASIO_HAS_STRING_VIEW)
 # define ASIO_STRING_VIEW_PARAM const std::string&
 #endif // defined(ASIO_HAS_STRING_VIEW)

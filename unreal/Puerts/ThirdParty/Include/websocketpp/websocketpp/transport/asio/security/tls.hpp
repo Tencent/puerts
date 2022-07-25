@@ -43,21 +43,21 @@
 
 namespace websocketpp {
 namespace transport {
-namespace asio {
+namespace puerts_asio {
 /// A socket policy for the asio transport that implements a TLS encrypted
-/// socket by wrapping with an asio::ssl::stream
+/// socket by wrapping with an puerts_asio::ssl::stream
 namespace tls_socket {
 
 /// The signature of the socket_init_handler for this socket policy
-typedef lib::function<void(connection_hdl,lib::asio::ssl::stream<
-    lib::asio::ip::tcp::socket>&)> socket_init_handler;
+typedef lib::function<void(connection_hdl,lib::puerts_asio::ssl::stream<
+    lib::puerts_asio::ip::tcp::socket>&)> socket_init_handler;
 /// The signature of the tls_init_handler for this socket policy
-typedef lib::function<lib::shared_ptr<lib::asio::ssl::context>(connection_hdl)>
+typedef lib::function<lib::shared_ptr<lib::puerts_asio::ssl::context>(connection_hdl)>
     tls_init_handler;
 
 /// TLS enabled Asio connection socket component
 /**
- * transport::asio::tls_socket::connection implements a secure connection socket
+ * transport::puerts_asio::tls_socket::connection implements a secure connection socket
  * component that uses Asio's ssl::stream to wrap an ip::tcp::socket.
  */
 class connection : public lib::enable_shared_from_this<connection> {
@@ -68,18 +68,18 @@ public:
     typedef lib::shared_ptr<type> ptr;
 
     /// Type of the ASIO socket being used
-    typedef lib::asio::ssl::stream<lib::asio::ip::tcp::socket> socket_type;
+    typedef lib::puerts_asio::ssl::stream<lib::puerts_asio::ip::tcp::socket> socket_type;
     /// Type of a shared pointer to the ASIO socket being used
     typedef lib::shared_ptr<socket_type> socket_ptr;
     /// Type of a pointer to the ASIO io_service being used
-    typedef lib::asio::io_service * io_service_ptr;
+    typedef lib::puerts_asio::io_service * io_service_ptr;
     /// Type of a pointer to the ASIO io_service strand being used
-    typedef lib::shared_ptr<lib::asio::io_service::strand> strand_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::io_service::strand> strand_ptr;
     /// Type of a shared pointer to the ASIO TLS context being used
-    typedef lib::shared_ptr<lib::asio::ssl::context> context_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::ssl::context> context_ptr;
 
     explicit connection() {
-        //std::cout << "transport::asio::tls_socket::connection constructor"
+        //std::cout << "transport::puerts_asio::tls_socket::connection constructor"
         //          << std::endl;
     }
 
@@ -158,8 +158,8 @@ public:
     std::string get_remote_endpoint(lib::error_code & ec) const {
         std::stringstream s;
 
-        lib::asio::error_code aec;
-        lib::asio::ip::tcp::endpoint ep = m_socket->lowest_layer().remote_endpoint(aec);
+        lib::puerts_asio::error_code aec;
+        lib::puerts_asio::ip::tcp::endpoint ep = m_socket->lowest_layer().remote_endpoint(aec);
 
         if (aec) {
             ec = error::make_error_code(error::pass_through);
@@ -193,8 +193,7 @@ protected:
         if (!m_context) {
             return socket::make_error_code(socket::error::invalid_tls_context);
         }
-        m_socket = lib::make_shared<socket_type>(
-            _WEBSOCKETPP_REF(*service),lib::ref(*m_context));
+        m_socket.reset(new socket_type(*service, *m_context));
 
         if (m_socket_init_handler) {
             m_socket_init_handler(m_hdl, get_socket());
@@ -296,7 +295,7 @@ protected:
         m_hdl = hdl;
     }
 
-    void handle_init(init_handler callback,lib::asio::error_code const & ec) {
+    void handle_init(init_handler callback,lib::puerts_asio::error_code const & ec) {
         if (ec) {
             m_ec = socket::make_error_code(socket::error::tls_handshake_failed);
         } else {
@@ -319,8 +318,8 @@ protected:
      *
      * @return The error that occurred, if any.
      */
-    lib::asio::error_code cancel_socket() {
-        lib::asio::error_code ec;
+    lib::puerts_asio::error_code cancel_socket() {
+        lib::puerts_asio::error_code ec;
         get_raw_socket().cancel(ec);
         return ec;
     }
@@ -338,11 +337,11 @@ public:
     /**
      * Translate_ec takes an Asio error code and attempts to convert its value
      * to an appropriate websocketpp error code. In the case that the Asio and
-     * Websocketpp error types are the same (such as using boost::asio and
+     * Websocketpp error types are the same (such as using boost::puerts_asio and
      * boost::system_error or using standalone asio and std::system_error the
      * code will be passed through natively.
      *
-     * In the case of a mismatch (boost::asio with std::system_error) a
+     * In the case of a mismatch (boost::puerts_asio with std::system_error) a
      * translated code will be returned. Any error that is determined to be
      * related to TLS but does not have a more specific websocketpp error code
      * is returned under the catch all error `tls_error`. Non-TLS related errors
@@ -356,7 +355,7 @@ public:
     template <typename ErrorCodeType>
     static
     lib::error_code translate_ec(ErrorCodeType ec) {
-        if (ec.category() == lib::asio::error::get_ssl_category()) {
+        if (ec.category() == lib::puerts_asio::error::get_ssl_category()) {
             // We know it is a TLS related error, but otherwise don't know more.
             // Pass through as TLS generic.
             return make_error_code(transport::error::tls_error);
@@ -369,16 +368,16 @@ public:
 
     static
     /// Overload of translate_ec to catch cases where lib::error_code is the
-    /// same type as lib::asio::error_code
+    /// same type as lib::puerts_asio::error_code
     lib::error_code translate_ec(lib::error_code ec) {
         return ec;
     }
 private:
     socket_type::handshake_type get_handshake_type() {
         if (m_is_server) {
-            return lib::asio::ssl::stream_base::server;
+            return lib::puerts_asio::ssl::stream_base::server;
         } else {
-            return lib::asio::ssl::stream_base::client;
+            return lib::puerts_asio::ssl::stream_base::client;
         }
     }
 
@@ -398,7 +397,7 @@ private:
 
 /// TLS enabled Asio endpoint socket component
 /**
- * transport::asio::tls_socket::endpoint implements a secure endpoint socket
+ * transport::puerts_asio::tls_socket::endpoint implements a secure endpoint socket
  * component that uses Asio's ssl::stream to wrap an ip::tcp::socket.
  */
 class endpoint {
@@ -468,7 +467,7 @@ private:
 };
 
 } // namespace tls_socket
-} // namespace asio
+} // namespace puerts_asio
 } // namespace transport
 } // namespace websocketpp
 

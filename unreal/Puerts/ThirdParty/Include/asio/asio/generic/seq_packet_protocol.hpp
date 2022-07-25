@@ -2,7 +2,7 @@
 // generic/seq_packet_protocol.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -25,12 +25,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace generic {
 
 /// Encapsulates the flags needed for a generic sequenced packet socket.
 /**
- * The asio::generic::seq_packet_protocol class contains flags necessary
+ * The puerts_asio::generic::seq_packet_protocol class contains flags necessary
  * for seq_packet-oriented sockets of any address family and protocol.
  *
  * @par Examples
@@ -67,24 +67,24 @@ public:
     if (source_protocol.type() != type())
     {
       std::bad_cast ex;
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 
   /// Obtain an identifier for the type of the protocol.
-  int type() const
+  int type() const ASIO_NOEXCEPT
   {
     return ASIO_OS_DEF(SOCK_SEQPACKET);
   }
 
   /// Obtain an identifier for the protocol.
-  int protocol() const
+  int protocol() const ASIO_NOEXCEPT
   {
     return protocol_;
   }
 
   /// Obtain an identifier for the protocol family.
-  int family() const
+  int family() const ASIO_NOEXCEPT
   {
     return family_;
   }
@@ -115,7 +115,7 @@ private:
 };
 
 } // namespace generic
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

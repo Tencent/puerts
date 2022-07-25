@@ -2,7 +2,7 @@
 // local/basic_endpoint.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 // Derived from a public domain implementation written by Daniel Casimiro.
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -29,12 +29,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace local {
 
 /// Describes an endpoint for a UNIX socket.
 /**
- * The asio::local::basic_endpoint class template describes an endpoint
+ * The puerts_asio::local::basic_endpoint class template describes an endpoint
  * that may be associated with a particular UNIX socket.
  *
  * @par Thread Safety
@@ -56,11 +56,11 @@ public:
 #if defined(GENERATING_DOCUMENTATION)
   typedef implementation_defined data_type;
 #else
-  typedef asio::detail::socket_addr_type data_type;
+  typedef puerts_asio::detail::socket_addr_type data_type;
 #endif
 
   /// Default constructor.
-  basic_endpoint()
+  basic_endpoint() ASIO_NOEXCEPT
   {
   }
 
@@ -75,6 +75,14 @@ public:
     : impl_(path_name)
   {
   }
+
+  #if defined(ASIO_HAS_STRING_VIEW)
+  /// Construct an endpoint using the specified path name.
+  basic_endpoint(string_view path_name)
+    : impl_(path_name)
+  {
+  }
+  #endif // defined(ASIO_HAS_STRING_VIEW)
 
   /// Copy constructor.
   basic_endpoint(const basic_endpoint& other)
@@ -204,7 +212,7 @@ public:
 
 private:
   // The underlying UNIX domain endpoint.
-  asio::local::detail::endpoint impl_;
+  puerts_asio::local::detail::endpoint impl_;
 };
 
 /// Output an endpoint as a string.
@@ -217,7 +225,7 @@ private:
  *
  * @return The output stream.
  *
- * @relates asio::local::basic_endpoint
+ * @relates puerts_asio::local::basic_endpoint
  */
 template <typename Elem, typename Traits, typename Protocol>
 std::basic_ostream<Elem, Traits>& operator<<(
@@ -229,7 +237,7 @@ std::basic_ostream<Elem, Traits>& operator<<(
 }
 
 } // namespace local
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

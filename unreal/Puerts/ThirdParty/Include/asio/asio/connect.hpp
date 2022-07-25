@@ -2,7 +2,7 @@
 // connect.hpp
 // ~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 namespace detail
 {
@@ -56,7 +56,7 @@ struct is_endpoint_sequence
 };
 
 /**
- * @defgroup connect asio::connect
+ * @defgroup connect puerts_asio::connect
  *
  * @brief The @c connect function is a composed operation that establishes a
  * socket connection by trying each endpoint in a sequence.
@@ -77,22 +77,21 @@ struct is_endpoint_sequence
  *
  * @returns The successfully connected endpoint.
  *
- * @throws asio::system_error Thrown on failure. If the sequence is
- * empty, the associated @c error_code is asio::error::not_found.
+ * @throws puerts_asio::system_error Thrown on failure. If the sequence is
+ * empty, the associated @c error_code is puerts_asio::error::not_found.
  * Otherwise, contains the error from the last connection attempt.
  *
  * @par Example
- * @code tcp::resolver r(io_context);
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
- * asio::connect(s, r.resolve(q)); @endcode
+ * tcp::socket s(my_context);
+ * puerts_asio::connect(s, r.resolve(q)); @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename EndpointSequence>
-typename Protocol::endpoint connect(
-    basic_socket<Protocol ASIO_SVC_TARG>& s,
+template <typename Protocol, typename Executor, typename EndpointSequence>
+typename Protocol::endpoint connect(basic_socket<Protocol, Executor>& s,
     const EndpointSequence& endpoints,
-    typename enable_if<is_endpoint_sequence<
-        EndpointSequence>::value>::type* = 0);
+    typename constraint<is_endpoint_sequence<
+        EndpointSequence>::value>::type = 0);
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
 /**
@@ -107,29 +106,28 @@ typename Protocol::endpoint connect(
  * @param endpoints A sequence of endpoints.
  *
  * @param ec Set to indicate what error occurred, if any. If the sequence is
- * empty, set to asio::error::not_found. Otherwise, contains the error
+ * empty, set to puerts_asio::error::not_found. Otherwise, contains the error
  * from the last connection attempt.
  *
  * @returns On success, the successfully connected endpoint. Otherwise, a
  * default-constructed endpoint.
  *
  * @par Example
- * @code tcp::resolver r(io_context);
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
- * asio::error_code ec;
- * asio::connect(s, r.resolve(q), ec);
+ * tcp::socket s(my_context);
+ * puerts_asio::error_code ec;
+ * puerts_asio::connect(s, r.resolve(q), ec);
  * if (ec)
  * {
  *   // An error occurred.
  * } @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename EndpointSequence>
-typename Protocol::endpoint connect(
-    basic_socket<Protocol ASIO_SVC_TARG>& s,
-    const EndpointSequence& endpoints, asio::error_code& ec,
-    typename enable_if<is_endpoint_sequence<
-        EndpointSequence>::value>::type* = 0);
+template <typename Protocol, typename Executor, typename EndpointSequence>
+typename Protocol::endpoint connect(basic_socket<Protocol, Executor>& s,
+    const EndpointSequence& endpoints, puerts_asio::error_code& ec,
+    typename constraint<is_endpoint_sequence<
+        EndpointSequence>::value>::type = 0);
 
 #if !defined(ASIO_NO_DEPRECATED)
 /// (Deprecated: Use range overload.) Establishes a socket connection by trying
@@ -148,17 +146,17 @@ typename Protocol::endpoint connect(
  * @returns On success, an iterator denoting the successfully connected
  * endpoint. Otherwise, the end iterator.
  *
- * @throws asio::system_error Thrown on failure. If the sequence is
- * empty, the associated @c error_code is asio::error::not_found.
+ * @throws puerts_asio::system_error Thrown on failure. If the sequence is
+ * empty, the associated @c error_code is puerts_asio::error::not_found.
  * Otherwise, contains the error from the last connection attempt.
  *
  * @note This overload assumes that a default constructed object of type @c
  * Iterator represents the end of the sequence. This is a valid assumption for
- * iterator types such as @c asio::ip::tcp::resolver::iterator.
+ * iterator types such as @c puerts_asio::ip::tcp::resolver::iterator.
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename Iterator>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
-    typename enable_if<!is_endpoint_sequence<Iterator>::value>::type* = 0);
+template <typename Protocol, typename Executor, typename Iterator>
+Iterator connect(basic_socket<Protocol, Executor>& s, Iterator begin,
+    typename constraint<!is_endpoint_sequence<Iterator>::value>::type = 0);
 
 /// (Deprecated: Use range overload.) Establishes a socket connection by trying
 /// each endpoint in a sequence.
@@ -174,7 +172,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @param begin An iterator pointing to the start of a sequence of endpoints.
  *
  * @param ec Set to indicate what error occurred, if any. If the sequence is
- * empty, set to asio::error::not_found. Otherwise, contains the error
+ * empty, set to puerts_asio::error::not_found. Otherwise, contains the error
  * from the last connection attempt.
  *
  * @returns On success, an iterator denoting the successfully connected
@@ -182,12 +180,12 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *
  * @note This overload assumes that a default constructed object of type @c
  * Iterator represents the end of the sequence. This is a valid assumption for
- * iterator types such as @c asio::ip::tcp::resolver::iterator.
+ * iterator types such as @c puerts_asio::ip::tcp::resolver::iterator.
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename Iterator>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
-    Iterator begin, asio::error_code& ec,
-    typename enable_if<!is_endpoint_sequence<Iterator>::value>::type* = 0);
+template <typename Protocol, typename Executor, typename Iterator>
+Iterator connect(basic_socket<Protocol, Executor>& s,
+    Iterator begin, puerts_asio::error_code& ec,
+    typename constraint<!is_endpoint_sequence<Iterator>::value>::type = 0);
 #endif // !defined(ASIO_NO_DEPRECATED)
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
@@ -206,19 +204,19 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  *
  * @returns An iterator denoting the successfully connected endpoint.
  *
- * @throws asio::system_error Thrown on failure. If the sequence is
- * empty, the associated @c error_code is asio::error::not_found.
+ * @throws puerts_asio::system_error Thrown on failure. If the sequence is
+ * empty, the associated @c error_code is puerts_asio::error::not_found.
  * Otherwise, contains the error from the last connection attempt.
  *
  * @par Example
- * @code tcp::resolver r(io_context);
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
  * tcp::resolver::results_type e = r.resolve(q);
- * tcp::socket s(io_context);
- * asio::connect(s, e.begin(), e.end()); @endcode
+ * tcp::socket s(my_context);
+ * puerts_asio::connect(s, e.begin(), e.end()); @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename Iterator>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
+template <typename Protocol, typename Executor, typename Iterator>
+Iterator connect(basic_socket<Protocol, Executor>& s,
     Iterator begin, Iterator end);
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
@@ -236,27 +234,27 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @param end An iterator pointing to the end of a sequence of endpoints.
  *
  * @param ec Set to indicate what error occurred, if any. If the sequence is
- * empty, set to asio::error::not_found. Otherwise, contains the error
+ * empty, set to puerts_asio::error::not_found. Otherwise, contains the error
  * from the last connection attempt.
  *
  * @returns On success, an iterator denoting the successfully connected
  * endpoint. Otherwise, the end iterator.
  *
  * @par Example
- * @code tcp::resolver r(io_context);
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
  * tcp::resolver::results_type e = r.resolve(q);
- * tcp::socket s(io_context);
- * asio::error_code ec;
- * asio::connect(s, e.begin(), e.end(), ec);
+ * tcp::socket s(my_context);
+ * puerts_asio::error_code ec;
+ * puerts_asio::connect(s, e.begin(), e.end(), ec);
  * if (ec)
  * {
  *   // An error occurred.
  * } @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename Iterator>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
-    Iterator begin, Iterator end, asio::error_code& ec);
+template <typename Protocol, typename Executor, typename Iterator>
+Iterator connect(basic_socket<Protocol, Executor>& s,
+    Iterator begin, Iterator end, puerts_asio::error_code& ec);
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
 /**
@@ -273,7 +271,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -283,8 +281,8 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  *
  * @returns The successfully connected endpoint.
  *
- * @throws asio::system_error Thrown on failure. If the sequence is
- * empty, the associated @c error_code is asio::error::not_found.
+ * @throws puerts_asio::system_error Thrown on failure. If the sequence is
+ * empty, the associated @c error_code is puerts_asio::error::not_found.
  * Otherwise, contains the error from the last connection attempt.
  *
  * @par Example
@@ -293,7 +291,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @code struct my_connect_condition
  * {
  *   bool operator()(
- *       const asio::error_code& ec,
+ *       const puerts_asio::error_code& ec,
  *       const::tcp::endpoint& next)
  *   {
  *     if (ec) std::cout << "Error: " << ec.message() << std::endl;
@@ -301,21 +299,20 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  *     return true;
  *   }
  * }; @endcode
- * It would be used with the asio::connect function as follows:
- * @code tcp::resolver r(io_context);
+ * It would be used with the puerts_asio::connect function as follows:
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
- * tcp::endpoint e = asio::connect(s,
+ * tcp::socket s(my_context);
+ * tcp::endpoint e = puerts_asio::connect(s,
  *     r.resolve(q), my_connect_condition());
  * std::cout << "Connected to: " << e << std::endl; @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM,
+template <typename Protocol, typename Executor,
     typename EndpointSequence, typename ConnectCondition>
-typename Protocol::endpoint connect(
-    basic_socket<Protocol ASIO_SVC_TARG>& s,
+typename Protocol::endpoint connect(basic_socket<Protocol, Executor>& s,
     const EndpointSequence& endpoints, ConnectCondition connect_condition,
-    typename enable_if<is_endpoint_sequence<
-        EndpointSequence>::value>::type* = 0);
+    typename constraint<is_endpoint_sequence<
+        EndpointSequence>::value>::type = 0);
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
 /**
@@ -332,7 +329,7 @@ typename Protocol::endpoint connect(
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -341,7 +338,7 @@ typename Protocol::endpoint connect(
  * and false if it should be skipped.
  *
  * @param ec Set to indicate what error occurred, if any. If the sequence is
- * empty, set to asio::error::not_found. Otherwise, contains the error
+ * empty, set to puerts_asio::error::not_found. Otherwise, contains the error
  * from the last connection attempt.
  *
  * @returns On success, the successfully connected endpoint. Otherwise, a
@@ -353,7 +350,7 @@ typename Protocol::endpoint connect(
  * @code struct my_connect_condition
  * {
  *   bool operator()(
- *       const asio::error_code& ec,
+ *       const puerts_asio::error_code& ec,
  *       const::tcp::endpoint& next)
  *   {
  *     if (ec) std::cout << "Error: " << ec.message() << std::endl;
@@ -361,12 +358,12 @@ typename Protocol::endpoint connect(
  *     return true;
  *   }
  * }; @endcode
- * It would be used with the asio::connect function as follows:
- * @code tcp::resolver r(io_context);
+ * It would be used with the puerts_asio::connect function as follows:
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
- * asio::error_code ec;
- * tcp::endpoint e = asio::connect(s,
+ * tcp::socket s(my_context);
+ * puerts_asio::error_code ec;
+ * tcp::endpoint e = puerts_asio::connect(s,
  *     r.resolve(q), my_connect_condition(), ec);
  * if (ec)
  * {
@@ -377,14 +374,13 @@ typename Protocol::endpoint connect(
  *   std::cout << "Connected to: " << e << std::endl;
  * } @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM,
+template <typename Protocol, typename Executor,
     typename EndpointSequence, typename ConnectCondition>
-typename Protocol::endpoint connect(
-    basic_socket<Protocol ASIO_SVC_TARG>& s,
+typename Protocol::endpoint connect(basic_socket<Protocol, Executor>& s,
     const EndpointSequence& endpoints, ConnectCondition connect_condition,
-    asio::error_code& ec,
-    typename enable_if<is_endpoint_sequence<
-        EndpointSequence>::value>::type* = 0);
+    puerts_asio::error_code& ec,
+    typename constraint<is_endpoint_sequence<
+        EndpointSequence>::value>::type = 0);
 
 #if !defined(ASIO_NO_DEPRECATED)
 /// (Deprecated: Use range overload.) Establishes a socket connection by trying
@@ -403,7 +399,7 @@ typename Protocol::endpoint connect(
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -414,19 +410,19 @@ typename Protocol::endpoint connect(
  * @returns On success, an iterator denoting the successfully connected
  * endpoint. Otherwise, the end iterator.
  *
- * @throws asio::system_error Thrown on failure. If the sequence is
- * empty, the associated @c error_code is asio::error::not_found.
+ * @throws puerts_asio::system_error Thrown on failure. If the sequence is
+ * empty, the associated @c error_code is puerts_asio::error::not_found.
  * Otherwise, contains the error from the last connection attempt.
  *
  * @note This overload assumes that a default constructed object of type @c
  * Iterator represents the end of the sequence. This is a valid assumption for
- * iterator types such as @c asio::ip::tcp::resolver::iterator.
+ * iterator types such as @c puerts_asio::ip::tcp::resolver::iterator.
  */
-template <typename Protocol ASIO_SVC_TPARAM,
+template <typename Protocol, typename Executor,
     typename Iterator, typename ConnectCondition>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
+Iterator connect(basic_socket<Protocol, Executor>& s,
     Iterator begin, ConnectCondition connect_condition,
-    typename enable_if<!is_endpoint_sequence<Iterator>::value>::type* = 0);
+    typename constraint<!is_endpoint_sequence<Iterator>::value>::type = 0);
 
 /// (Deprecated: Use range overload.) Establishes a socket connection by trying
 /// each endpoint in a sequence.
@@ -444,7 +440,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -453,7 +449,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * and false if it should be skipped.
  *
  * @param ec Set to indicate what error occurred, if any. If the sequence is
- * empty, set to asio::error::not_found. Otherwise, contains the error
+ * empty, set to puerts_asio::error::not_found. Otherwise, contains the error
  * from the last connection attempt.
  *
  * @returns On success, an iterator denoting the successfully connected
@@ -461,13 +457,13 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  *
  * @note This overload assumes that a default constructed object of type @c
  * Iterator represents the end of the sequence. This is a valid assumption for
- * iterator types such as @c asio::ip::tcp::resolver::iterator.
+ * iterator types such as @c puerts_asio::ip::tcp::resolver::iterator.
  */
-template <typename Protocol ASIO_SVC_TPARAM,
+template <typename Protocol, typename Executor,
     typename Iterator, typename ConnectCondition>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
-    ConnectCondition connect_condition, asio::error_code& ec,
-    typename enable_if<!is_endpoint_sequence<Iterator>::value>::type* = 0);
+Iterator connect(basic_socket<Protocol, Executor>& s, Iterator begin,
+    ConnectCondition connect_condition, puerts_asio::error_code& ec,
+    typename constraint<!is_endpoint_sequence<Iterator>::value>::type = 0);
 #endif // !defined(ASIO_NO_DEPRECATED)
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
@@ -487,7 +483,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -497,8 +493,8 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *
  * @returns An iterator denoting the successfully connected endpoint.
  *
- * @throws asio::system_error Thrown on failure. If the sequence is
- * empty, the associated @c error_code is asio::error::not_found.
+ * @throws puerts_asio::system_error Thrown on failure. If the sequence is
+ * empty, the associated @c error_code is puerts_asio::error::not_found.
  * Otherwise, contains the error from the last connection attempt.
  *
  * @par Example
@@ -507,7 +503,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @code struct my_connect_condition
  * {
  *   bool operator()(
- *       const asio::error_code& ec,
+ *       const puerts_asio::error_code& ec,
  *       const::tcp::endpoint& next)
  *   {
  *     if (ec) std::cout << "Error: " << ec.message() << std::endl;
@@ -515,18 +511,18 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *     return true;
  *   }
  * }; @endcode
- * It would be used with the asio::connect function as follows:
- * @code tcp::resolver r(io_context);
+ * It would be used with the puerts_asio::connect function as follows:
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
  * tcp::resolver::results_type e = r.resolve(q);
- * tcp::socket s(io_context);
- * tcp::resolver::results_type::iterator i = asio::connect(
+ * tcp::socket s(my_context);
+ * tcp::resolver::results_type::iterator i = puerts_asio::connect(
  *     s, e.begin(), e.end(), my_connect_condition());
  * std::cout << "Connected to: " << i->endpoint() << std::endl; @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM,
+template <typename Protocol, typename Executor,
     typename Iterator, typename ConnectCondition>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
+Iterator connect(basic_socket<Protocol, Executor>& s, Iterator begin,
     Iterator end, ConnectCondition connect_condition);
 
 /// Establishes a socket connection by trying each endpoint in a sequence.
@@ -546,7 +542,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -555,7 +551,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * and false if it should be skipped.
  *
  * @param ec Set to indicate what error occurred, if any. If the sequence is
- * empty, set to asio::error::not_found. Otherwise, contains the error
+ * empty, set to puerts_asio::error::not_found. Otherwise, contains the error
  * from the last connection attempt.
  *
  * @returns On success, an iterator denoting the successfully connected
@@ -567,7 +563,7 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @code struct my_connect_condition
  * {
  *   bool operator()(
- *       const asio::error_code& ec,
+ *       const puerts_asio::error_code& ec,
  *       const::tcp::endpoint& next)
  *   {
  *     if (ec) std::cout << "Error: " << ec.message() << std::endl;
@@ -575,13 +571,13 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *     return true;
  *   }
  * }; @endcode
- * It would be used with the asio::connect function as follows:
- * @code tcp::resolver r(io_context);
+ * It would be used with the puerts_asio::connect function as follows:
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
  * tcp::resolver::results_type e = r.resolve(q);
- * tcp::socket s(io_context);
- * asio::error_code ec;
- * tcp::resolver::results_type::iterator i = asio::connect(
+ * tcp::socket s(my_context);
+ * puerts_asio::error_code ec;
+ * tcp::resolver::results_type::iterator i = puerts_asio::connect(
  *     s, e.begin(), e.end(), my_connect_condition());
  * if (ec)
  * {
@@ -592,16 +588,16 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *   std::cout << "Connected to: " << i->endpoint() << std::endl;
  * } @endcode
  */
-template <typename Protocol ASIO_SVC_TPARAM,
+template <typename Protocol, typename Executor,
     typename Iterator, typename ConnectCondition>
-Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
+Iterator connect(basic_socket<Protocol, Executor>& s,
     Iterator begin, Iterator end, ConnectCondition connect_condition,
-    asio::error_code& ec);
+    puerts_asio::error_code& ec);
 
 /*@}*/
 
 /**
- * @defgroup async_connect asio::async_connect
+ * @defgroup async_connect puerts_asio::async_connect
  *
  * @brief The @c async_connect function is a composed asynchronous operation
  * that establishes a socket connection by trying each endpoint in a sequence.
@@ -626,23 +622,23 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * signature of the handler must be:
  * @code void handler(
  *   // Result of operation. if the sequence is empty, set to
- *   // asio::error::not_found. Otherwise, contains the
+ *   // puerts_asio::error::not_found. Otherwise, contains the
  *   // error from the last connection attempt.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // On success, the successfully connected endpoint.
  *   // Otherwise, a default-constructed endpoint.
  *   const typename Protocol::endpoint& endpoint
  * ); @endcode
  * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation
- * of the handler will be performed in a manner equivalent to using
- * asio::io_context::post().
+ * not, the handler will not be invoked from within this function. On
+ * immediate completion, invocation of the handler will be performed in a
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Example
- * @code tcp::resolver r(io_context);
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
+ * tcp::socket s(my_context);
  *
  * // ...
  *
@@ -651,33 +647,46 @@ Iterator connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * // ...
  *
  * void resolve_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     tcp::resolver::results_type results)
  * {
  *   if (!ec)
  *   {
- *     asio::async_connect(s, results, connect_handler);
+ *     puerts_asio::async_connect(s, results, connect_handler);
  *   }
  * }
  *
  * // ...
  *
  * void connect_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const tcp::endpoint& endpoint)
  * {
  *   // ...
  * } @endcode
+ *
+ * @par Per-Operation Cancellation
+ * This asynchronous operation supports cancellation for the following
+ * puerts_asio::cancellation_type values:
+ *
+ * @li @c cancellation_type::terminal
+ *
+ * @li @c cancellation_type::partial
+ *
+ * if they are also supported by the socket's @c async_connect operation.
  */
-template <typename Protocol ASIO_SVC_TPARAM,
-    typename EndpointSequence, typename RangeConnectHandler>
-ASIO_INITFN_RESULT_TYPE(RangeConnectHandler,
-    void (asio::error_code, typename Protocol::endpoint))
-async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
+template <typename Protocol, typename Executor, typename EndpointSequence,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+      typename Protocol::endpoint)) RangeConnectHandler
+        ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(Executor)>
+ASIO_INITFN_AUTO_RESULT_TYPE(RangeConnectHandler,
+    void (puerts_asio::error_code, typename Protocol::endpoint))
+async_connect(basic_socket<Protocol, Executor>& s,
     const EndpointSequence& endpoints,
-    ASIO_MOVE_ARG(RangeConnectHandler) handler,
-    typename enable_if<is_endpoint_sequence<
-        EndpointSequence>::value>::type* = 0);
+    ASIO_MOVE_ARG(RangeConnectHandler) handler
+      ASIO_DEFAULT_COMPLETION_TOKEN(Executor),
+    typename constraint<is_endpoint_sequence<
+        EndpointSequence>::value>::type = 0);
 
 #if !defined(ASIO_NO_DEPRECATED)
 /// (Deprecated: Use range overload.) Asynchronously establishes a socket
@@ -698,30 +707,43 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * signature of the handler must be:
  * @code void handler(
  *   // Result of operation. if the sequence is empty, set to
- *   // asio::error::not_found. Otherwise, contains the
+ *   // puerts_asio::error::not_found. Otherwise, contains the
  *   // error from the last connection attempt.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // On success, an iterator denoting the successfully
  *   // connected endpoint. Otherwise, the end iterator.
  *   Iterator iterator
  * ); @endcode
  * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation
- * of the handler will be performed in a manner equivalent to using
- * asio::io_context::post().
+ * not, the handler will not be invoked from within this function. On
+ * immediate completion, invocation of the handler will be performed in a
+ * manner equivalent to using puerts_asio::post().
  *
  * @note This overload assumes that a default constructed object of type @c
  * Iterator represents the end of the sequence. This is a valid assumption for
- * iterator types such as @c asio::ip::tcp::resolver::iterator.
+ * iterator types such as @c puerts_asio::ip::tcp::resolver::iterator.
+ *
+ * @par Per-Operation Cancellation
+ * This asynchronous operation supports cancellation for the following
+ * puerts_asio::cancellation_type values:
+ *
+ * @li @c cancellation_type::terminal
+ *
+ * @li @c cancellation_type::partial
+ *
+ * if they are also supported by the socket's @c async_connect operation.
  */
-template <typename Protocol ASIO_SVC_TPARAM,
-    typename Iterator, typename IteratorConnectHandler>
-ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
-    void (asio::error_code, Iterator))
-async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
-    Iterator begin, ASIO_MOVE_ARG(IteratorConnectHandler) handler,
-    typename enable_if<!is_endpoint_sequence<Iterator>::value>::type* = 0);
+template <typename Protocol, typename Executor, typename Iterator,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+      Iterator)) IteratorConnectHandler
+        ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(Executor)>
+ASIO_INITFN_AUTO_RESULT_TYPE(IteratorConnectHandler,
+    void (puerts_asio::error_code, Iterator))
+async_connect(basic_socket<Protocol, Executor>& s, Iterator begin,
+    ASIO_MOVE_ARG(IteratorConnectHandler) handler
+      ASIO_DEFAULT_COMPLETION_TOKEN(Executor),
+    typename constraint<!is_endpoint_sequence<Iterator>::value>::type = 0);
 #endif // !defined(ASIO_NO_DEPRECATED)
 
 /// Asynchronously establishes a socket connection by trying each endpoint in a
@@ -744,42 +766,54 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * signature of the handler must be:
  * @code void handler(
  *   // Result of operation. if the sequence is empty, set to
- *   // asio::error::not_found. Otherwise, contains the
+ *   // puerts_asio::error::not_found. Otherwise, contains the
  *   // error from the last connection attempt.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // On success, an iterator denoting the successfully
  *   // connected endpoint. Otherwise, the end iterator.
  *   Iterator iterator
  * ); @endcode
  * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation
- * of the handler will be performed in a manner equivalent to using
- * asio::io_context::post().
+ * not, the handler will not be invoked from within this function. On
+ * immediate completion, invocation of the handler will be performed in a
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Example
  * @code std::vector<tcp::endpoint> endpoints = ...;
- * tcp::socket s(io_context);
- * asio::async_connect(s,
+ * tcp::socket s(my_context);
+ * puerts_asio::async_connect(s,
  *     endpoints.begin(), endpoints.end(),
  *     connect_handler);
  *
  * // ...
  *
  * void connect_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     std::vector<tcp::endpoint>::iterator i)
  * {
  *   // ...
  * } @endcode
+ *
+ * @par Per-Operation Cancellation
+ * This asynchronous operation supports cancellation for the following
+ * puerts_asio::cancellation_type values:
+ *
+ * @li @c cancellation_type::terminal
+ *
+ * @li @c cancellation_type::partial
+ *
+ * if they are also supported by the socket's @c async_connect operation.
  */
-template <typename Protocol ASIO_SVC_TPARAM,
-    typename Iterator, typename IteratorConnectHandler>
-ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
-    void (asio::error_code, Iterator))
-async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
-    Iterator begin, Iterator end,
-    ASIO_MOVE_ARG(IteratorConnectHandler) handler);
+template <typename Protocol, typename Executor, typename Iterator,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+      Iterator)) IteratorConnectHandler
+        ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(Executor)>
+ASIO_INITFN_AUTO_RESULT_TYPE(IteratorConnectHandler,
+    void (puerts_asio::error_code, Iterator))
+async_connect(basic_socket<Protocol, Executor>& s, Iterator begin, Iterator end,
+    ASIO_MOVE_ARG(IteratorConnectHandler) handler
+      ASIO_DEFAULT_COMPLETION_TOKEN(Executor));
 
 /// Asynchronously establishes a socket connection by trying each endpoint in a
 /// sequence.
@@ -797,7 +831,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -810,18 +844,18 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * signature of the handler must be:
  * @code void handler(
  *   // Result of operation. if the sequence is empty, set to
- *   // asio::error::not_found. Otherwise, contains the
+ *   // puerts_asio::error::not_found. Otherwise, contains the
  *   // error from the last connection attempt.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // On success, an iterator denoting the successfully
  *   // connected endpoint. Otherwise, the end iterator.
  *   Iterator iterator
  * ); @endcode
  * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation
- * of the handler will be performed in a manner equivalent to using
- * asio::io_context::post().
+ * not, the handler will not be invoked from within this function. On
+ * immediate completion, invocation of the handler will be performed in a
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Example
  * The following connect condition function object can be used to output
@@ -829,7 +863,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @code struct my_connect_condition
  * {
  *   bool operator()(
- *       const asio::error_code& ec,
+ *       const puerts_asio::error_code& ec,
  *       const::tcp::endpoint& next)
  *   {
  *     if (ec) std::cout << "Error: " << ec.message() << std::endl;
@@ -837,10 +871,10 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  *     return true;
  *   }
  * }; @endcode
- * It would be used with the asio::connect function as follows:
- * @code tcp::resolver r(io_context);
+ * It would be used with the puerts_asio::connect function as follows:
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
+ * tcp::socket s(my_context);
  *
  * // ...
  *
@@ -849,12 +883,12 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * // ...
  *
  * void resolve_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     tcp::resolver::results_type results)
  * {
  *   if (!ec)
  *   {
- *     asio::async_connect(s, results,
+ *     puerts_asio::async_connect(s, results,
  *         my_connect_condition(),
  *         connect_handler);
  *   }
@@ -863,7 +897,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * // ...
  *
  * void connect_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const tcp::endpoint& endpoint)
  * {
  *   if (ec)
@@ -875,16 +909,30 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  *     std::cout << "Connected to: " << endpoint << std::endl;
  *   }
  * } @endcode
+ *
+ * @par Per-Operation Cancellation
+ * This asynchronous operation supports cancellation for the following
+ * puerts_asio::cancellation_type values:
+ *
+ * @li @c cancellation_type::terminal
+ *
+ * @li @c cancellation_type::partial
+ *
+ * if they are also supported by the socket's @c async_connect operation.
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename EndpointSequence,
-    typename ConnectCondition, typename RangeConnectHandler>
-ASIO_INITFN_RESULT_TYPE(RangeConnectHandler,
-    void (asio::error_code, typename Protocol::endpoint))
-async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
+template <typename Protocol, typename Executor,
+    typename EndpointSequence, typename ConnectCondition,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+      typename Protocol::endpoint)) RangeConnectHandler
+        ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(Executor)>
+ASIO_INITFN_AUTO_RESULT_TYPE(RangeConnectHandler,
+    void (puerts_asio::error_code, typename Protocol::endpoint))
+async_connect(basic_socket<Protocol, Executor>& s,
     const EndpointSequence& endpoints, ConnectCondition connect_condition,
-    ASIO_MOVE_ARG(RangeConnectHandler) handler,
-    typename enable_if<is_endpoint_sequence<
-        EndpointSequence>::value>::type* = 0);
+    ASIO_MOVE_ARG(RangeConnectHandler) handler
+      ASIO_DEFAULT_COMPLETION_TOKEN(Executor),
+    typename constraint<is_endpoint_sequence<
+        EndpointSequence>::value>::type = 0);
 
 #if !defined(ASIO_NO_DEPRECATED)
 /// (Deprecated: Use range overload.) Asynchronously establishes a socket
@@ -903,7 +951,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -916,31 +964,45 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
  * signature of the handler must be:
  * @code void handler(
  *   // Result of operation. if the sequence is empty, set to
- *   // asio::error::not_found. Otherwise, contains the
+ *   // puerts_asio::error::not_found. Otherwise, contains the
  *   // error from the last connection attempt.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // On success, an iterator denoting the successfully
  *   // connected endpoint. Otherwise, the end iterator.
  *   Iterator iterator
  * ); @endcode
  * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation
- * of the handler will be performed in a manner equivalent to using
- * asio::io_context::post().
+ * not, the handler will not be invoked from within this function. On
+ * immediate completion, invocation of the handler will be performed in a
+ * manner equivalent to using puerts_asio::post().
  *
  * @note This overload assumes that a default constructed object of type @c
  * Iterator represents the end of the sequence. This is a valid assumption for
- * iterator types such as @c asio::ip::tcp::resolver::iterator.
+ * iterator types such as @c puerts_asio::ip::tcp::resolver::iterator.
+ *
+ * @par Per-Operation Cancellation
+ * This asynchronous operation supports cancellation for the following
+ * puerts_asio::cancellation_type values:
+ *
+ * @li @c cancellation_type::terminal
+ *
+ * @li @c cancellation_type::partial
+ *
+ * if they are also supported by the socket's @c async_connect operation.
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename Iterator,
-    typename ConnectCondition, typename IteratorConnectHandler>
-ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
-    void (asio::error_code, Iterator))
-async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
+template <typename Protocol, typename Executor,
+    typename Iterator, typename ConnectCondition,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+      Iterator)) IteratorConnectHandler
+        ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(Executor)>
+ASIO_INITFN_AUTO_RESULT_TYPE(IteratorConnectHandler,
+    void (puerts_asio::error_code, Iterator))
+async_connect(basic_socket<Protocol, Executor>& s, Iterator begin,
     ConnectCondition connect_condition,
-    ASIO_MOVE_ARG(IteratorConnectHandler) handler,
-    typename enable_if<!is_endpoint_sequence<Iterator>::value>::type* = 0);
+    ASIO_MOVE_ARG(IteratorConnectHandler) handler
+      ASIO_DEFAULT_COMPLETION_TOKEN(Executor),
+    typename constraint<!is_endpoint_sequence<Iterator>::value>::type = 0);
 #endif // !defined(ASIO_NO_DEPRECATED)
 
 /// Asynchronously establishes a socket connection by trying each endpoint in a
@@ -961,7 +1023,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @param connect_condition A function object that is called prior to each
  * connection attempt. The signature of the function object must be:
  * @code bool connect_condition(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     const typename Protocol::endpoint& next); @endcode
  * The @c ec parameter contains the result from the most recent connect
  * operation. Before the first connection attempt, @c ec is always set to
@@ -974,18 +1036,18 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * signature of the handler must be:
  * @code void handler(
  *   // Result of operation. if the sequence is empty, set to
- *   // asio::error::not_found. Otherwise, contains the
+ *   // puerts_asio::error::not_found. Otherwise, contains the
  *   // error from the last connection attempt.
- *   const asio::error_code& error,
+ *   const puerts_asio::error_code& error,
  *
  *   // On success, an iterator denoting the successfully
  *   // connected endpoint. Otherwise, the end iterator.
  *   Iterator iterator
  * ); @endcode
  * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation
- * of the handler will be performed in a manner equivalent to using
- * asio::io_context::post().
+ * not, the handler will not be invoked from within this function. On
+ * immediate completion, invocation of the handler will be performed in a
+ * manner equivalent to using puerts_asio::post().
  *
  * @par Example
  * The following connect condition function object can be used to output
@@ -993,7 +1055,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * @code struct my_connect_condition
  * {
  *   bool operator()(
- *       const asio::error_code& ec,
+ *       const puerts_asio::error_code& ec,
  *       const::tcp::endpoint& next)
  *   {
  *     if (ec) std::cout << "Error: " << ec.message() << std::endl;
@@ -1001,10 +1063,10 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *     return true;
  *   }
  * }; @endcode
- * It would be used with the asio::connect function as follows:
- * @code tcp::resolver r(io_context);
+ * It would be used with the puerts_asio::connect function as follows:
+ * @code tcp::resolver r(my_context);
  * tcp::resolver::query q("host", "service");
- * tcp::socket s(io_context);
+ * tcp::socket s(my_context);
  *
  * // ...
  *
@@ -1013,13 +1075,13 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * // ...
  *
  * void resolve_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     tcp::resolver::iterator i)
  * {
  *   if (!ec)
  *   {
  *     tcp::resolver::iterator end;
- *     asio::async_connect(s, i, end,
+ *     puerts_asio::async_connect(s, i, end,
  *         my_connect_condition(),
  *         connect_handler);
  *   }
@@ -1028,7 +1090,7 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  * // ...
  *
  * void connect_handler(
- *     const asio::error_code& ec,
+ *     const puerts_asio::error_code& ec,
  *     tcp::resolver::iterator i)
  * {
  *   if (ec)
@@ -1040,18 +1102,32 @@ async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s, Iterator begin,
  *     std::cout << "Connected to: " << i->endpoint() << std::endl;
  *   }
  * } @endcode
+ *
+ * @par Per-Operation Cancellation
+ * This asynchronous operation supports cancellation for the following
+ * puerts_asio::cancellation_type values:
+ *
+ * @li @c cancellation_type::terminal
+ *
+ * @li @c cancellation_type::partial
+ *
+ * if they are also supported by the socket's @c async_connect operation.
  */
-template <typename Protocol ASIO_SVC_TPARAM, typename Iterator,
-    typename ConnectCondition, typename IteratorConnectHandler>
-ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
-    void (asio::error_code, Iterator))
-async_connect(basic_socket<Protocol ASIO_SVC_TARG>& s,
-    Iterator begin, Iterator end, ConnectCondition connect_condition,
-    ASIO_MOVE_ARG(IteratorConnectHandler) handler);
+template <typename Protocol, typename Executor,
+    typename Iterator, typename ConnectCondition,
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+      Iterator)) IteratorConnectHandler
+        ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(Executor)>
+ASIO_INITFN_AUTO_RESULT_TYPE(IteratorConnectHandler,
+    void (puerts_asio::error_code, Iterator))
+async_connect(basic_socket<Protocol, Executor>& s, Iterator begin,
+    Iterator end, ConnectCondition connect_condition,
+    ASIO_MOVE_ARG(IteratorConnectHandler) handler
+      ASIO_DEFAULT_COMPLETION_TOKEN(Executor));
 
 /*@}*/
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
