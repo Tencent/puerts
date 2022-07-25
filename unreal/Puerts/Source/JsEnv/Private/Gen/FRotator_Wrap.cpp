@@ -1201,7 +1201,7 @@ struct AutoRegisterForFRotator
             {"CompressAxisToShort", FRotatorS_CompressAxisToShort}, {"DecompressAxisFromShort", FRotatorS_DecompressAxisFromShort},
             {"MakeFromEuler", FRotatorS_MakeFromEuler}, {0, 0}};
 
-        Def.UETypeName = "FRotator";
+        Def.UETypeName = "Rotator";
 
         Def.Initialize = _FRotatorNew_;
         Def.Finalize = _FRotatorDelete_;

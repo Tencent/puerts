@@ -436,6 +436,7 @@ void FScriptStructWrapper::New(
             else
             {
                 Memory = Alloc(static_cast<UScriptStruct*>(Struct.Get()));
+                Struct->InitializeStruct(Memory);
                 const int Count = Info.Length() < Properties.size() ? Info.Length() : Properties.size();
                 for (int i = 0; i < Count; ++i)
                 {

@@ -2366,7 +2366,7 @@ struct AutoRegisterForFTransform
             {"Multiply", FTransformS_Multiply}, {"AddTranslations", FTransformS_AddTranslations},
             {"SubtractTranslations", FTransformS_SubtractTranslations}, {0, 0}};
 
-        Def.UETypeName = "FTransform";
+        Def.UETypeName = "Transform";
 
         Def.Initialize = _FTransformNew_;
         Def.Finalize = _FTransformDelete_;

@@ -44,6 +44,10 @@ struct ArgumentBufferType
     [](::puerts::CallbackInfoType info)                                                         \
     { ::puerts::FuncCallWrapper<decltype(M), M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
         ::puerts::FuncCallWrapper<decltype(M), M>::info(puerts::Count(__VA_ARGS__))
+#define MakeExtension(M, ...)                                                                            \
+    [](::puerts::CallbackInfoType info)                                                                  \
+    { ::puerts::FuncCallWrapper<decltype(M), M>::callExtensionWithDefaultValues(info, ##__VA_ARGS__); }, \
+        ::puerts::FuncCallWrapper<decltype(M), M>::extensionInfo(puerts::Count(__VA_ARGS__))
 #define SelectFunction(SIGNATURE, M, ...)                                                                                         \
     [](::puerts::CallbackInfoType info) { ::puerts::FuncCallWrapper<SIGNATURE, M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
         ::puerts::FuncCallWrapper<SIGNATURE, M>::info(puerts::Count(__VA_ARGS__))
@@ -745,6 +749,67 @@ private:
         return true;
     }
 
+    template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
+    static
+        typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
+        callExtension(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+    {
+        auto context = GetContext(info);
+
+        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
+
+        if (!self)
+        {
+            ThrowException(info, "access a null object");
+            return true;
+        }
+
+        if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
+            return false;
+
+        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+
+        DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
+            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+
+        func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...);
+
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
+
+        return true;
+    }
+
+    template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
+    static
+        typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
+        callExtension(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+    {
+        auto context = GetContext(info);
+
+        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
+
+        if (!self)
+        {
+            ThrowException(info, "access a null object");
+            return true;
+        }
+
+        if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
+            return false;
+
+        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+
+        DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
+            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+
+        SetReturn(info, ReturnConverter<Ret>::Convert(context,
+                            std::forward<Ret>(func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+
+        RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
+
+        return true;
+    }
+
 public:
     template <typename Func, class... DefaultArguments>
     static bool call(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
@@ -758,6 +823,14 @@ public:
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
         return callMethod<Ins>(
+            func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
+    }
+
+    template <typename Ins, typename Func, class... DefaultArguments>
+    static bool callExtension(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
+    {
+        static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
+        return callExtension<Ins>(
             func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
 };
@@ -804,6 +877,27 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsR
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
         return CFunctionInfoByPtrImpl<Ret (*)(Args...), func, ScriptTypePtrAsRef>::get(defaultCount);
+    }
+    template <typename FirstType, typename... RestTypes>
+    struct ExtensionCallHelper
+    {
+        template <class... DefaultArguments>
+        static void call(CallbackInfoType info, DefaultArguments&&... defaultValues)
+        {
+            using FirstDecayType = typename std::decay<FirstType>::type;
+            using Helper =
+                internal::FuncCallHelper<std::pair<Ret, std::tuple<RestTypes...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+            Helper::template callExtension<FirstDecayType>(func, info, std::forward<DefaultArguments>(defaultValues)...);
+        }
+    };
+    template <class... DefaultArguments>
+    static void callExtensionWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    {
+        ExtensionCallHelper<Args...>::call(info, std::forward<DefaultArguments>(defaultValues)...);
+    }
+    static const CFunctionInfo* extensionInfo(unsigned int defaultCount = 0)
+    {
+        return CFunctionInfoByPtrImpl<Ret (*)(Args...), func, ScriptTypePtrAsRef, 1>::get(defaultCount);
     }
 };
 
@@ -916,7 +1010,7 @@ public:
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
     {
-        return CFunctionInfoImpl<T, true, Args...>::get(defaultCount);
+        return CFunctionInfoImpl<T, true, 0, Args...>::get(defaultCount);
     }
 };
 

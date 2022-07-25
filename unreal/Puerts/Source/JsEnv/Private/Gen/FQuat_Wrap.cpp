@@ -1789,7 +1789,7 @@ struct AutoRegisterForFQuat
             {"SlerpFullPath_NotNormalized", FQuatS_SlerpFullPath_NotNormalized}, {"SlerpFullPath", FQuatS_SlerpFullPath},
             {"Squad", FQuatS_Squad}, {"SquadFullPath", FQuatS_SquadFullPath}, {"CalcTangents", FQuatS_CalcTangents}, {0, 0}};
 
-        Def.UETypeName = "FQuat";
+        Def.UETypeName = "Quat";
 
         Def.Initialize = _FQuatNew_;
         Def.Finalize = _FQuatDelete_;

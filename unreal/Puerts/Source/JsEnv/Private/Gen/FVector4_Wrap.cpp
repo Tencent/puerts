@@ -1133,7 +1133,7 @@ struct AutoRegisterForFVector4
 
         static puerts::JSFunctionInfo Functions[] = {{0, 0}};
 
-        Def.UETypeName = "FVector4";
+        Def.UETypeName = "Vector4";
 
         Def.Initialize = _FVector4New_;
         Def.Finalize = _FVector4Delete_;
