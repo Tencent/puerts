@@ -32,6 +32,8 @@ public class DeclarationGenerator : ModuleRules {
                 "Projects",
                 "JsEnv",
                 "Puerts",
+                "Json",
+                "JsonUtilities",
 #if UE_5_0_OR_LATER
                 "ToolMenus",
 #endif
