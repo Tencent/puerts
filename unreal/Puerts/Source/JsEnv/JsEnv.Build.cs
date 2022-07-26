@@ -364,8 +364,11 @@ public class JsEnv : ModuleRules
     
     void ThirdPartyNodejs(ReadOnlyTargetRules Target)
     {
-        PrivateDefinitions.Add("WITHOUT_INSPECTOR");//node already had one
         PrivateDefinitions.Add("WITH_NODEJS");
+        string WsHeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(WsHeaderPath, "websocketpp") });
+        PublicIncludePaths.AddRange(new string[] { Path.Combine(WsHeaderPath, "asio") });
+
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "nodejs"));
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "include") });
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "deps", "v8", "include") });
