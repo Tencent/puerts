@@ -12,6 +12,8 @@
 #include <vector>
 
 #include "PropertyMacros.h"
+#include "FNameCodeMap.h"
+#include "FDtsAssetMap.h"
 
 struct DECLARATIONGENERATOR_API FStringBuffer
 {
@@ -35,6 +37,7 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     FStringBuffer Output{"", ""};
     TSet<UObject*> Processed;
     TSet<FString> ProcessedByName;
+    TSet<FName> CatchLoadedByName;
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
     struct FunctionKey
     {
@@ -66,6 +69,9 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     void NamespaceEnd(UObject* Obj);
 
+    FNameGuidInfo* GetNameGuidInfo(UObject* obj);
+    FName GetDtsMapKey(UObject* obj);
+
     void InitExtensionMethodsMap();
 
     virtual void Begin(FString Namespace = TEXT("ue"));
@@ -73,12 +79,13 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     void GenTypeScriptDeclaration(bool GenStruct = false, bool GenEnum = false);
 
     virtual void Gen(UObject* ToGen);
+    virtual void Gen(FName name);    //通过名字生成dts代码
 
     virtual bool GenTypeDecl(FStringBuffer& StringBuffer, PropertyMacro* Property, TArray<UObject*>& AddToGen,
-        bool ArrayDimProcessed = false, bool TreatAsRawFunction = false);
+        FNameGuidInfo* info = nullptr, bool ArrayDimProcessed = false, bool TreatAsRawFunction = false);
 
-    virtual bool GenFunction(FStringBuffer& OwnerBuffer, UFunction* Function, bool WithName = true, bool ForceOneway = false,
-        bool IgnoreOut = false, bool IsExtensionMethod = false);
+    virtual bool GenFunction(FStringBuffer& OwnerBuffer, UFunction* Function, FNameGuidInfo* info = nullptr, bool WithName = true,
+        bool ForceOneway = false, bool IgnoreOut = false, bool IsExtensionMethod = false);
 
     void GatherExtensions(UStruct* Struct, FStringBuffer& Buff);
 
@@ -103,6 +110,9 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     virtual ~FTypeScriptDeclarationGenerator()
     {
     }
+
+    static FDtsAssetMap AssetMap;
+    static FNameCodeMap CodeMap;
 };
 
 bool HasUENamespace(const char* name);
