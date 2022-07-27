@@ -23,6 +23,23 @@ namespace Puerts.UnitTest
         }
     }
 
+    public class GenericWrapperBase<T> where T : class, new()
+    { 
+        public static System.Type GetGenericType()
+        {
+            return typeof(T);
+        }
+    }
+
+    public class GenericGenTest2 :GenericWrapperBase<GenericGenTest2>
+    {
+        public System.Type GetTypeTest<T>(string arg0, System.Action<T> action = null) where T: WrapperTestBase
+        {
+            return typeof (T);
+        }
+    }
+
+
     public class WrapperTestBase
     {
         public void GeneratedMethod(bool isBase) 

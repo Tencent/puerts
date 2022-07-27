@@ -38,5 +38,36 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(typeof(Type), secondGenericType);
         }
+
+        [Test]
+        public void GenericTest2()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Type secondGenericType = jsEnv.Eval<Type>(@"
+                const CS = require('csharp');
+                const G1 = new CS.Puerts.UnitTest.GenericGenTest2();
+                G1.GetTypeTest('');
+            ");
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual(typeof(WrapperTestBase), secondGenericType);
+        }
+
+        [Test]
+        public void GenericTest3()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Type secondGenericType = jsEnv.Eval<Type>(@"
+                const CS = require('csharp');
+                CS.Puerts.UnitTest.GenericGenTest2.GetGenericType();
+            ");
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual(typeof(GenericGenTest2), secondGenericType);
+        }
     }
 }

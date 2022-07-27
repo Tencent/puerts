@@ -62,6 +62,12 @@
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
