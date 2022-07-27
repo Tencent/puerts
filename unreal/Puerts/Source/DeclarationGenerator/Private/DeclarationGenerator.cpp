@@ -799,7 +799,8 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
         {
             if (Struct->FindPropertyByName(UTF8_TO_TCHAR(PropertyInfo->Name)))
                 continue;
-            Buff << "    " << PropertyInfo->Name << ": " << PropertyInfo->Type << ";\n";
+            Buff << "    " << PropertyInfo->Name << ": " << GetNamePrefix(PropertyInfo->Type) << PropertyInfo->Type->Name()
+                 << ";\n";
             ++PropertyInfo;
         }
 
@@ -808,7 +809,7 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
         {
             int Pos = VariableInfo - ClassDefinition->VariableInfos;
             Buff << "    static " << (ClassDefinition->Variables[Pos].Setter ? "" : "readonly ") << VariableInfo->Name << ": "
-                 << VariableInfo->Type << ";\n";
+                 << GetNamePrefix(PropertyInfo->Type) << VariableInfo->Type->Name() << ";\n";
             ++VariableInfo;
         }
     }

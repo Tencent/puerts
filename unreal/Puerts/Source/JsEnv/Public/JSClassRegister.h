@@ -56,7 +56,7 @@ struct NamedFunctionInfo
 struct NamedPropertyInfo
 {
     const char* Name;
-    const char* Type;
+    const CTypeInfo* Type;
 };
 
 struct JSENV_API JSClassDefinition

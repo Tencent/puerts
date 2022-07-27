@@ -1152,10 +1152,9 @@ struct PropertyWrapper<Ret Ins::*, member,
         self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
     }
 
-    static const char* info()
+    static const CTypeInfo* info()
     {
-        static auto NameLiteral = ScriptTypeName<Ret>::value();
-        return NameLiteral.Data();
+        return CTypeInfoImpl<Ret, false>::get();
     }
 };
 
@@ -1199,10 +1198,9 @@ struct PropertyWrapper<Ret Ins::*, member,
         memcpy(self->*member, Src, sizeof(Ret));
     }
 
-    static const char* info()
+    static const CTypeInfo* info()
     {
-        static auto NameLiteral = ScriptTypeName<Ret>::value();
-        return NameLiteral.Data();
+        return CTypeInfoImpl<Ret, false>::get();
     }
 };
 
@@ -1235,10 +1233,9 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
         self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
     }
 
-    static const char* info()
+    static const CTypeInfo* info()
     {
-        static auto NameLiteral = ScriptTypeName<Ret>::value();
-        return NameLiteral.Data();
+        return CTypeInfoImpl<Ret, false>::get();
     }
 };
 
@@ -1257,10 +1254,9 @@ struct PropertyWrapper<Ret*, Variable>
         *Variable = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
     }
 
-    static const char* info()
+    static const CTypeInfo* info()
     {
-        static auto NameLiteral = ScriptTypeName<Ret>::value();
-        return NameLiteral.Data();
+        return CTypeInfoImpl<Ret, false>::get();
     }
 };
 
@@ -1362,7 +1358,7 @@ public:
     }
 
     ClassDefineBuilder<T>& Property(
-        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const char* type = nullptr)
+        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
         if (type)
         {
@@ -1373,7 +1369,7 @@ public:
     }
 
     ClassDefineBuilder<T>& Variable(
-        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const char* type = nullptr)
+        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
         if (type)
         {

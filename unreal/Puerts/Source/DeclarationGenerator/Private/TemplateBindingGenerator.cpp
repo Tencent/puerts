@@ -107,7 +107,8 @@ struct FGenImp
         puerts::NamedPropertyInfo* PropertyInfo = ClassDefinition->PropertyInfos;
         while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Type)
         {
-            Output << "        " << PropertyInfo->Name << ": " << PropertyInfo->Type << ";\n";
+            Output << "        " << PropertyInfo->Name << ": " << GetNamePrefix(PropertyInfo->Type) << PropertyInfo->Type->Name()
+                   << ";\n";
             ++PropertyInfo;
         }
 
@@ -116,7 +117,7 @@ struct FGenImp
         {
             int Pos = VariableInfo - ClassDefinition->VariableInfos;
             Output << "        static " << (ClassDefinition->Variables[Pos].Setter ? "" : "readonly ") << VariableInfo->Name << ": "
-                   << VariableInfo->Type << ";\n";
+                   << GetNamePrefix(PropertyInfo->Type) << VariableInfo->Type->Name() << ";\n";
             ++VariableInfo;
         }
 
