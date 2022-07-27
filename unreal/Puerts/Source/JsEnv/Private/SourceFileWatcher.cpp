@@ -21,7 +21,7 @@ FSourceFileWatcher::FSourceFileWatcher(std::function<void(const FString&)> InOnW
 void FSourceFileWatcher::OnSourceLoaded(const FString& InPath)
 {
     FString Dir = FPaths::GetPath(InPath);
-    FString FileName = FPaths::GetPathLeaf(InPath);
+    FString FileName = FPaths::GetCleanFilename(InPath);
 
     FScopeLock ScopeLock(&SourceFileWatcherCritical);
     if (!WatchedDirs.Contains(Dir))
@@ -60,7 +60,7 @@ void FSourceFileWatcher::OnDirectoryChanged(const TArray<FFileChangeData>& FileC
             FPaths::NormalizeFilename(Change.Filename);
             Change.Filename = FPaths::ConvertRelativePathToFull(Change.Filename);
             FString Dir = FPaths::GetPath(Change.Filename);
-            FString FileName = FPaths::GetPathLeaf(Change.Filename);
+            FString FileName = FPaths::GetCleanFilename(Change.Filename);
             FString Splitter = TEXT("/");
             if (!WatchedFiles.Contains(Dir))
             {

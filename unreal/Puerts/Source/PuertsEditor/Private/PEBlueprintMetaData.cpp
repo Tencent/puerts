@@ -510,9 +510,11 @@ bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
     bMetaDataChanged = UpdateTextMetaData(TEXT("Keywords"), MetaData, MetaDataToSet.Keywords) || bMetaDataChanged;
     bMetaDataChanged = UpdateTextMetaData(TEXT("CompactNodeTitle"), MetaData, MetaDataToSet.CompactNodeTitle) || bMetaDataChanged;
     bMetaDataChanged = UpdateTextMetaData(TEXT("ToolTip"), MetaData, MetaDataToSet.ToolTip) || bMetaDataChanged;
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
     bMetaDataChanged = UpdateBooleanMetaData(TEXT("DeprecatedFunction"), MetaData, MetaDataToSet.bIsDeprecated) || bMetaDataChanged;
     bMetaDataChanged =
         UpdateStringMetaData(TEXT("DeprecationMessage"), MetaData, MetaDataToSet.DeprecationMessage) || bMetaDataChanged;
+#endif
 
     return bFlagsChanged || bMetaDataChanged;
 }
