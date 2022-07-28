@@ -14,8 +14,8 @@ using UnityEditor.Experimental.AssetImporters;
 #endif
 using UnityEngine;
  
-[ScriptedImporter(1, "cjs")]
-public class CJSImporter : ScriptedImporter
+[ScriptedImporter(1, "mjs")]
+public class MJSImporter : ScriptedImporter
 {
     public override void OnImportAsset(AssetImportContext ctx)
     {
