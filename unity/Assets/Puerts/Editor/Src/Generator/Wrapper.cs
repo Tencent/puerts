@@ -138,7 +138,7 @@ namespace Puerts.Editor
                 {
                     bool IsGenericWrapper = false;
                     int GenericArgumentsCount = 0;
-#if PUERTS_GENERAL || UNITY_2019_OR_NEWER || PUERTS_FEATURE_GENERIC_WRAPPER
+#if (PUERTS_GENERAL || UNITY_2019_OR_NEWER) && PUERTS_FEATURE_GENERIC_WRAPPER
                     // 如果是泛型类，且泛型参数对于PuerTS来说是一个NativeObject类型，则Wrapper可以用泛型处理。
                     // 这里要先识别出NativeObject的参数位置，并将其替换
                     if (type.IsGenericType) {
