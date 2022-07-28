@@ -217,6 +217,76 @@ puerts::DefineClass<TestClass>()
     .Register();
 ~~~
 
+## 默认值
+
+### 没有重载的情况
+
+直接在MakeFunction、SelectFunction的函数参数后面加默认值即可。
+
+比如：
+
+~~~c++
+void SetNextWindowPos(const ImVec2& pos, ImGuiCond cond = 0, const ImVec2& pivot = ImVec2(0, 0)); 
+~~~
+
+声明：
+
+~~~c++
+Function("SetNextWindowPos", MakeFunction(&ImGui::SetNextWindowPos, 0, ImVec2(0,0)))
+~~~
+
+### 有重载的情况
+
+比如：
+
+~~~c++
+bool Selectable(const char* label, bool selected = false, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0, 0));
+bool Selectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0, 0));
+~~~
+
+得分两步
+
+1、前置声明（和UsingCppType放置的位置一样）
+
+~~~c++
+DeclOverloads(ImGui_Selectable);
+DeclOverload(ImGui_Selectable, bool (*)(const char*, bool, ImGuiSelectableFlags, const ImVec2&), &ImGui::Selectable, false, 0, ImVec2(0,0));
+DeclOverload(ImGui_Selectable, bool (*)(const char*, bool*, ImGuiSelectableFlags, const ImVec2&), &ImGui::Selectable, 0, ImVec2(0,0));
+~~~
+
+2、注册
+
+~~~c++
+Function("Selectable", CombineOverloads(
+    SelectOverload(ImGui_Selectable, bool (*)(const char*, bool, ImGuiSelectableFlags, const ImVec2&)), 
+    SelectOverload(ImGui_Selectable, bool (*)(const char*, bool*, ImGuiSelectableFlags, const ImVec2&)) 
+    ))
+~~~
+
+## 扩展函数
+
+类似C# extension method，用一个外部静态函数来模拟成员函数。
+
+和C# extension method也类似，要求该外部静态函数的第一个参数必须是被扩展类型的引用。
+
+以为TSharedPtr添加Equals方法为例
+
+~~~c++
+template <class T>
+struct TSharedPtrExtension
+{
+    static bool Equals(const TSharedPtr<T> Lhs, const TSharedPtr<T> Rhs)
+    {
+        return Lhs == Rhs;
+    }
+};
+
+#define RegisterTSharedPtr(ITEMCLS) \
+    puerts::DefineClass<TSharedPtr<ITEMCLS>>().Method("Equals", MakeExtension(&TSharedPtrExtension<ITEMCLS>::Equals)).Register();
+~~~
+
+用MakeExtension声明，参数是一个合格的外部静态函数。
+
 ## Js对象映射到JsObject并获取/修改Js对象属性
 
 ~~~c++
@@ -292,6 +362,20 @@ obj.StdFunctionTest((x:number, y:number) => {
     return x + y;
 })
 ~~~
+
+## UE模板类
+
+目前仅支持TArray以及TSharedPtr
+
+### TArray
+
+* 声明：UsingContainer(TArray<FVector>)
+* 注册：RegisterTArray(FVector);
+
+### TSharedPtr
+
+* 声明：UsingTSharedPtr(FVector);
+* 注册：RegisterTSharedPtr(FVector);
 
 ## UE类补充声明
 
