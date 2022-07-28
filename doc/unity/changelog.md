@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.3.7] - 2022-07-28
+1. 1.3版本改为默认不开启泛型类的泛型式生成 #937 #918
+2. fix: 生成BlittableCopy时报参数数量不匹配的错 #938
+3. fix: MJSImporter在2018下会出警告的问题
+
 ## [1.3.6] - 2022-07-13
 1. fix: UnityMenu.cs传参错误
 2. fix: 带约束的泛型类wrapper生成错误
