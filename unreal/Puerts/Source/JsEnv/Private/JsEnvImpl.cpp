@@ -216,7 +216,9 @@ void FJsEnvImpl::StartPolling()
         this);
 
 #if PLATFORM_WINDOWS
-    if (FPlatformMisc::NumberOfCores())
+    // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
+    // to avoid cpu pegging likely caused by a busy loop in PollEvents
+    if (FPlatformMisc::NumberOfCores() == 1)
     {
         if (NodeUVLoop.iocp && NodeUVLoop.iocp != INVALID_HANDLE_VALUE)
             CloseHandle(NodeUVLoop.iocp);
