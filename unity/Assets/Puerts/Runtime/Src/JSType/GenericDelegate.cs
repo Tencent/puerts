@@ -116,6 +116,14 @@ namespace Puerts
             return genericDelegate;
         }
 
+        public void RemoveGenericDelegate(IntPtr ptr) 
+        {
+            WeakReference maybeOne;
+            if (nativePtrToGenericDelegate.TryGetValue(ptr, out maybeOne) && !maybeOne.IsAlive) {
+                nativePtrToGenericDelegate.Remove(ptr);
+            }
+        }
+
         internal bool IsJsFunctionAlive(IntPtr ptr)
         {
             WeakReference maybeOne;
@@ -333,6 +341,7 @@ namespace Puerts
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif
+            jsEnv.genericDelegateFactory.RemoveGenericDelegate(nativeJsFuncPtr);
             jsEnv.DecFuncRef(nativeJsFuncPtr);
 #if THREAD_SAFE
             }
