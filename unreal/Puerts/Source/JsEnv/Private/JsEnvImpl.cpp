@@ -1643,11 +1643,27 @@ void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Para
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
     auto SignatureFunction = Proxy->SignatureFunction;
-    auto Iter = JsCallbackPrototypeMap.find(SignatureFunction);
+    auto Iter = JsCallbackPrototypeMap.find(SignatureFunction.Get());
     if (Iter == JsCallbackPrototypeMap.end())
     {
-        JsCallbackPrototypeMap[SignatureFunction] = std::make_unique<FFunctionTranslator>(Proxy->SignatureFunction, true);
+        if (!SignatureFunction.IsValid())
+        {
+            Logger->Warn(TEXT("invalid SignatureFunction!"));
+            return;
+        }
+        JsCallbackPrototypeMap[SignatureFunction.Get()] = std::make_unique<FFunctionTranslator>(SignatureFunction.Get(), true);
+        Iter = JsCallbackPrototypeMap.find(SignatureFunction.Get());
     }
+    else
+    {
+        if (!SignatureFunction.IsValid())
+        {
+            JsCallbackPrototypeMap.erase(Iter);
+            Logger->Warn(TEXT("invalid SignatureFunction!"));
+            return;
+        }
+    }
+
     auto Isolate = MainIsolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
@@ -1656,7 +1672,7 @@ void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Para
 
     v8::TryCatch TryCatch(Isolate);
 
-    JsCallbackPrototypeMap[SignatureFunction]->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Params);
+    Iter->second->CallJs(Isolate, Context, Proxy->JsFunction.Get(Isolate), Context->Global(), Params);
 
     if (TryCatch.HasCaught())
     {

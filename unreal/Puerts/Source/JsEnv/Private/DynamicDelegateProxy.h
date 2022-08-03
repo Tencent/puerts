@@ -34,7 +34,7 @@ public:
 
     TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
 
-    UFunction* SignatureFunction;
+    TWeakObjectPtr<UFunction> SignatureFunction;
 
     // So, only uobject's delelgate is supported!
     TWeakObjectPtr<UObject> Owner;
