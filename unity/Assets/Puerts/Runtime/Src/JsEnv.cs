@@ -912,6 +912,7 @@ namespace Puerts
                     JSObjRefCount.Remove(nativeJsObjPtr);
                     if (!jsObjectFactory.IsJsObjectAlive(nativeJsObjPtr))
                     {
+                        jsObjectFactory.RemoveJSObject(nativeJsObjPtr);
                         PuertsDLL.ReleaseJSObject(isolate, nativeJsObjPtr);
                     }
                 }

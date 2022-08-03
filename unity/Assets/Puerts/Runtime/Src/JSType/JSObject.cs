@@ -83,7 +83,6 @@ namespace Puerts
             lock(jsEnv) 
             {
 #endif
-            jsEnv.jsObjectFactory.RemoveJSObject(nativeJsObjectPtr);
             jsEnv.DecJSObjRef(nativeJsObjectPtr);
 #if THREAD_SAFE
             }
