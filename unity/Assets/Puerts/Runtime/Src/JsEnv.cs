@@ -887,6 +887,7 @@ namespace Puerts
                     funcRefCount.Remove(nativeJsFuncPtr);
                     if (!genericDelegateFactory.IsJsFunctionAlive(nativeJsFuncPtr))
                     {
+                        genericDelegateFactory.RemoveGenericDelegate(nativeJsFuncPtr);
                         PuertsDLL.ReleaseJSFunction(isolate, nativeJsFuncPtr);
                     }
                 }

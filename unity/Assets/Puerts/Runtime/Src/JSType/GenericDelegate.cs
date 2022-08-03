@@ -341,7 +341,6 @@ namespace Puerts
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif
-            jsEnv.genericDelegateFactory.RemoveGenericDelegate(nativeJsFuncPtr);
             jsEnv.DecFuncRef(nativeJsFuncPtr);
 #if THREAD_SAFE
             }
