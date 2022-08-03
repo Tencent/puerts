@@ -809,7 +809,7 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
         {
             int Pos = VariableInfo - ClassDefinition->VariableInfos;
             Buff << "    static " << (ClassDefinition->Variables[Pos].Setter ? "" : "readonly ") << VariableInfo->Name << ": "
-                 << GetNamePrefix(PropertyInfo->Type) << VariableInfo->Type->Name() << ";\n";
+                 << GetNamePrefix(VariableInfo->Type) << VariableInfo->Type->Name() << ";\n";
             ++VariableInfo;
         }
     }

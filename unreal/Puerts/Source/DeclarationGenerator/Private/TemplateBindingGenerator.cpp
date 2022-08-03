@@ -117,7 +117,7 @@ struct FGenImp
         {
             int Pos = VariableInfo - ClassDefinition->VariableInfos;
             Output << "        static " << (ClassDefinition->Variables[Pos].Setter ? "" : "readonly ") << VariableInfo->Name << ": "
-                   << GetNamePrefix(PropertyInfo->Type) << VariableInfo->Type->Name() << ";\n";
+                   << GetNamePrefix(VariableInfo->Type) << VariableInfo->Type->Name() << ";\n";
             ++VariableInfo;
         }
 
