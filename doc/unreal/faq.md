@@ -79,7 +79,7 @@ sudo xattr -r -d com.apple.quarantine *.dylib
     
     - 如果进一步在ts也没有引用该stub对象，该stub对象会被gc
 
-“ue对象持有stub对象”的情况
+“ue对象持有stub对象”，在ts持有并不能阻止ue的gc，有三种情况会产生这种类型的对象：
 
 * ts继承ue类型
 
@@ -87,8 +87,8 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 * makeUClass（这功能已经废弃，不建议使用）
 
-其它情况均为“stub对象持有ue对象”
+其它情况均为“stub对象持有ue对象”，这种类型的对象可以通过ts持有可以阻止ue对象的gc。
     
 
-最后即使是stub对象（或者是js侧）持有ue对象的强引用，也依然不能保证该ue对象不被销毁，ue的gc和其它正经的gc不一样，诸如c#、java、lua、js等虚拟机的gc，一个对象还被持有就肯定不释放，而ue下可以调用api强制删除一个对象（可能是用户自己调用，也可能是引擎调用，比较常见是切场景后，所有该场景挂的actor都会引擎删除），不管有没引用。
+但即使改对象不会被gc释放，依然不能保证一个ue对象不被销毁，ue的gc和其它正经的gc不一样，诸如c#、java、lua、js等虚拟机的gc，一个对象还被持有就肯定不销毁，而ue下可以调用api强制删除一个对象（可能是用户自己调用，也可能是引擎调用，比较常见是切场景后，所有该场景挂的actor都会自动销毁）。
 
