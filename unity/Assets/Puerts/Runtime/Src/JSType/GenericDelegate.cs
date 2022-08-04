@@ -116,6 +116,14 @@ namespace Puerts
             return genericDelegate;
         }
 
+        public void RemoveGenericDelegate(IntPtr ptr) 
+        {
+            WeakReference maybeOne;
+            if (nativePtrToGenericDelegate.TryGetValue(ptr, out maybeOne) && !maybeOne.IsAlive) {
+                nativePtrToGenericDelegate.Remove(ptr);
+            }
+        }
+
         internal bool IsJsFunctionAlive(IntPtr ptr)
         {
             WeakReference maybeOne;

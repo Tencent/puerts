@@ -28,6 +28,13 @@ namespace Puerts
             return jsObject;
         }
 
+        public void RemoveJSObject(IntPtr ptr) {
+            WeakReference maybeOne;
+            if (nativePtrToJSObject.TryGetValue(ptr, out maybeOne) && ! maybeOne.IsAlive) {
+                nativePtrToJSObject.Remove(ptr);
+            }
+        }
+
         internal bool IsJsObjectAlive(IntPtr ptr)
         {
             WeakReference maybeOne;
