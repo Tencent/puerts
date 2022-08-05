@@ -1,0 +1,4 @@
+BACKEND_ARTIFACT_NAME=nodejs_bin
+BACKEND_ARTIFACT_WORKFLOW=build_14.yml
+BACKEND_ARTIFACT_REPO=puerts/backend-nodejs
+BACKEND_URL=https://github.com/puerts/backend-nodejs/releases/download/NodeJS_0425/nodejs_bin_14.16.1.tgz

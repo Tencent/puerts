@@ -1,0 +1,4 @@
+BACKEND_ARTIFACT_NAME=v8_bin
+BACKEND_ARTIFACT_WORKFLOW=build_8.4.yml
+BACKEND_ARTIFACT_REPO=puerts/backend-v8
+BACKEND_URL=https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_20220705/v8_bin_8.4.371.19.tgz
