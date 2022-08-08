@@ -30,7 +30,20 @@ public:
 
     void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
     {
-        JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
+        // 对于cdo,应该在所有的虚拟机中调用construct,因为cdo并没有明确的jsenv
+        // 不过不大确定cdo的这样判断够不够
+        // JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
+        if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_WasLoaded))
+        {
+            for (int i = 0; i < JsEnvs.size(); i++)
+            {
+                JsEnvs[i]->TsConstruct(Class, Object);
+            }
+        }
+        else
+        {
+            JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
+        }
     }
 
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM) override

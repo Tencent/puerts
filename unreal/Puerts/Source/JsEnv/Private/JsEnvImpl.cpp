@@ -1229,6 +1229,9 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 }
                             }
                         }
+#if WITH_EDITOR
+                        TypeScriptGeneratedClass->FunctionToRedirectInitialized = true;
+#endif
 
                         TryReleaseType(TypeScriptGeneratedClass);
                         auto NativeCtor = GetJsClass(TypeScriptGeneratedClass, Context);
@@ -1436,8 +1439,21 @@ void FJsEnvImpl::RebindJs()
             {
                 if (!TsClass->NotSupportInject())
                 {
-                    MakeSureInject(TsClass, false, true);
-                    FinishInjection(TsClass);
+#if WITH_EDITOR
+                    if (TsClass->FunctionToRedirectInitialized)
+                    {
+                        TsClass->DynamicInvoker = TsDynamicInvoker;
+                        TsClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                        TsClass->NeedReBind = true;
+                        TsClass->GeneratedObjects.Empty(TsClass->GeneratedObjects.Num());
+                        TsClass->LazyLoadRedirect();
+                    }
+                    else
+#endif
+                    {
+                        MakeSureInject(TsClass, false, true);
+                        FinishInjection(TsClass);
+                    }
                 }
             }
             else
@@ -1461,6 +1477,30 @@ void FJsEnvImpl::RebindJs()
             }
         }
     }
+
+    //如果在notifyrebind的时候去遍历,那么多次遍历会明显拉低性能
+    //改为rebindjs的时候一次性找到全部需要rebind的object
+    //在遍历之后创建的uobject,虽然不会被GeneratedObjects记录,但是因为会走TypeScript::ObjectInialize,所以也不用担心没有被bind
+#if WITH_EDITOR
+    for (TObjectIterator<UObject> It; It; ++It)
+    {
+        if (UTypeScriptGeneratedClass* Cls = Cast<UTypeScriptGeneratedClass>(It->GetClass()))
+        {
+            while (true)
+            {
+                Cls->GeneratedObjects.Add(*It);
+                if (UTypeScriptGeneratedClass* TsClass = Cast<UTypeScriptGeneratedClass>(Cls->GetSuperClass()))
+                {
+                    Cls = TsClass;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+#endif
 }
 #endif
 
@@ -2053,6 +2093,38 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
 void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 {
+    auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+
+#if WITH_EDITOR
+    MakeSureInject(Class, false, false);
+    FinishInjection(Class);
+
+    while (UTypeScriptGeneratedClass* SuperCls = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass()))
+    {
+        Class = SuperCls;
+    }
+    {
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = DefaultContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        for (TWeakObjectPtr<UObject>& Iter : Class->GeneratedObjects)
+        {
+            auto Object = Iter.Get();
+            if (!Object || GeneratedObjectMap.Find(Object))
+                continue;
+            if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
+                continue;    //跳过父类重新编译后临时状态的对象
+            auto JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
+            GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
+            UnBind(Class, Object);
+        }
+    }
+#endif
 }
 #endif
 

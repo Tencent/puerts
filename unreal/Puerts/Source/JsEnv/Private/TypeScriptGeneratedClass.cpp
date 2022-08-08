@@ -37,6 +37,56 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     }
 }
 
+#if WITH_EDITOR
+DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
+{
+    UFunction* Function = Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node;
+    check(Function);
+    UClass* Class = Function->GetOuterUClass();
+    if (Class->ClassConstructor == &UTypeScriptGeneratedClass::StaticConstructor)
+    {
+        while (Class)
+        {
+            if (UTypeScriptGeneratedClass* TsClass = Cast<UTypeScriptGeneratedClass>(Class))
+            {
+                if (TsClass->NeedReBind && TsClass->DynamicInvoker.IsValid())
+                {
+                    TsClass->NeedReBind = false;
+                    TsClass->DynamicInvoker.Pin()->NotifyReBind(TsClass);
+                    Class = Class->GetSuperClass();
+                    while (Class)
+                    {
+                        if (UTypeScriptGeneratedClass* SuperTsClass = Cast<UTypeScriptGeneratedClass>(Class))
+                        {
+                            SuperTsClass->NeedReBind = false;
+                        }
+                        Class = Class->GetSuperClass();
+                    }
+                }
+                return;
+            }
+            Class = Class->GetSuperClass();
+        }
+    }
+    execCallJS(Context, Stack, RESULT_PARAM);
+}
+
+void UTypeScriptGeneratedClass::LazyLoadRedirect()
+{
+    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+    {
+        auto Function = *FuncIt;
+        if (!FunctionToRedirect.Contains(Function->GetFName()))
+        {
+            continue;
+        }
+        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
+        Function->SetNativeFunc(&UTypeScriptGeneratedClass::execLazyLoadCallJS);
+        AddNativeFunction(*Function->GetName(), &UTypeScriptGeneratedClass::execLazyLoadCallJS);
+    }
+}
+#endif
+
 void UTypeScriptGeneratedClass::ProcessPendingConstructJob()
 {
     FScopeLock ScopeLock(&PendingConstructJobMutex);

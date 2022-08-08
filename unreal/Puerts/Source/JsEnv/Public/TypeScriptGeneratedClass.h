@@ -41,6 +41,16 @@ public:
 
     bool IsProcessingPendingConstructJob = false;
 
+#if WITH_EDITOR
+    bool NeedReBind = true;
+    TSet<TWeakObjectPtr<UObject>> GeneratedObjects;
+    bool FunctionToRedirectInitialized = false;
+
+    void LazyLoadRedirect();
+
+    DECLARE_FUNCTION(execLazyLoadCallJS);
+#endif
+
     void ProcessPendingConstructJob();
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
