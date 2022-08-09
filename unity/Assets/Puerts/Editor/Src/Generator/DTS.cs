@@ -645,6 +645,19 @@ namespace Puerts.Editor
                     if (workTypes.Contains(type)) return;
                     workTypes.Add(type);
 
+                    var baseType = type.BaseType;
+                    while (baseType != null)
+                    {
+                        AddRefType(workTypes, refTypes, baseType);
+                        baseType = baseType.BaseType;
+                    }
+
+                    // 如果是泛型参数，取完父类（也就是约束类）后就结束
+                    if (type.IsGenericParameter) 
+                    {
+                        return;
+                    }
+
                     var rawType = Utils.GetRawType(type);
 
                     if (type.IsGenericType)
@@ -669,13 +682,6 @@ namespace Puerts.Editor
                         {
                             AddRefType(workTypes, refTypes, pinfo.ParameterType);
                         }
-                    }
-
-                    var baseType = type.BaseType;
-                    while (baseType != null)
-                    {
-                        AddRefType(workTypes, refTypes, baseType);
-                        baseType = baseType.BaseType;
                     }
 
                     Type[] interfaces = type.GetInterfaces();
