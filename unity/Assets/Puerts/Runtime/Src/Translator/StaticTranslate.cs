@@ -16,17 +16,25 @@ namespace Puerts
         public delegate T GetFunc(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr holder, bool isByRef);
 
         public static PushFunc Set = DefaultPush;
+        private static GeneralSetter Setter = null;
 
         public static GetFunc Get = DefaultGetResult;
+        private static GeneralGetter Getter = null;
 
         private static void DefaultPush(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr function, T o)
         {
-            JsEnv.jsEnvs[jsEnvIdx].GeneralSetterManager.GetTranslateFunc(typeof(T))(jsEnvIdx, isolate, setValueApi, function, o);
+            if (Setter == null) {
+                Setter = JsEnv.jsEnvs[jsEnvIdx].GeneralSetterManager.GetTranslateFunc(typeof(T));
+            }
+            Setter(jsEnvIdx, isolate, setValueApi, function, o);
         }
 
         private static T DefaultGetResult(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
-            object obj = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetTranslateFunc(typeof(T))(jsEnvIdx, isolate, getValueApi, value, isByRef);
+            if (Getter == null) {
+                Getter = JsEnv.jsEnvs[jsEnvIdx].GeneralGetterManager.GetTranslateFunc(typeof(T));
+            }
+            var obj = Getter(jsEnvIdx, isolate, getValueApi, value, isByRef);
             if (obj == null)
             {
                 return default(T);

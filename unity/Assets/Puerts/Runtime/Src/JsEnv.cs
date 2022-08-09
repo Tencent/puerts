@@ -124,8 +124,8 @@ namespace Puerts
             genericDelegateFactory = new GenericDelegateFactory(this);
             jsObjectFactory = new JSObjectFactory();
 
-            GeneralGetterManager = new GeneralGetterManager(this);
-            GeneralSetterManager = new GeneralSetterManager(this);
+            GeneralGetterManager = new GeneralGetterManager();
+            GeneralSetterManager = new GeneralSetterManager();
 
             // 注册JS对象通用GC回调
             PuertsDLL.SetGeneralDestructor(isolate, StaticCallbacks.GeneralDestructor);

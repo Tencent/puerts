@@ -35,7 +35,7 @@ namespace Puerts
                         throw new Exception("no suitable method found to make GenericMethodWrap");
                     }
                     reflectionWrap = new MethodReflectionWrap(memberName,
-                        overload.Select(m => new OverloadReflectionWrap(m, env.GeneralGetterManager, env.GeneralSetterManager, false)).ToList()
+                        overload.Select(m => new OverloadReflectionWrap(m, env, false)).ToList()
                     );
                 }
 
