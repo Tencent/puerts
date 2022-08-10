@@ -1484,14 +1484,21 @@ void FJsEnvImpl::RebindJs()
 #if WITH_EDITOR
     for (TObjectIterator<UObject> It; It; ++It)
     {
-        if (UTypeScriptGeneratedClass* Cls = Cast<UTypeScriptGeneratedClass>(It->GetClass()))
+        if (It->GetClass()->ClassConstructor == UTypeScriptGeneratedClass::StaticConstructor)
         {
-            while (true)
+            UClass* Cls = It->GetClass();
+            while (Cls)
             {
-                Cls->GeneratedObjects.Add(*It);
-                if (UTypeScriptGeneratedClass* TsClass = Cast<UTypeScriptGeneratedClass>(Cls->GetSuperClass()))
+                if (Cast<UTypeScriptGeneratedClass>(Cls))
+                    break;
+                Cls = Cls->GetSuperClass();
+            }
+            while (Cls)
+            {
+                if (UTypeScriptGeneratedClass* TsClass = Cast<UTypeScriptGeneratedClass>(Cls))
                 {
-                    Cls = TsClass;
+                    TsClass->GeneratedObjects.Add(*It);
+                    Cls = Cls->GetSuperClass();
                 }
                 else
                 {
