@@ -257,7 +257,8 @@ namespace Puerts.Editor
                         { 
                             BindingMode mode = Utils.getBindingMode(m);
                             if (mode == BindingMode.DontBinding) return false;
-                            if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
+                            // constrcutor is not allowed to be lazy
+                            // if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
                             return true; 
                         })
                         .Cast<MethodBase>()
