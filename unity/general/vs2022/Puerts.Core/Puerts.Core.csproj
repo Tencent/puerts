@@ -13,56 +13,68 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypedValue.cs">
-      <Link>Runtime\Src\TypedValue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\ReflectionWrap.cs">
-      <Link>Runtime\Src\ReflectionWrap.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\StaticCallbacks.cs">
-      <Link>Runtime\Src\StaticCallbacks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\ArgumentHelper.cs">
-      <Link>Runtime\Src\ArgumentHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
-      <Link>Runtime\Src\TypeExtensions.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\FileExporter.cs">
+      <Link>Editor\Src\Generator\FileExporter.cs</Link>
     </Compile>
     <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JsEnv.cs">
       <Link>Runtime\Src\JsEnv.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\LazyWrap.cs">
-      <Link>Runtime\Src\LazyWrap.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Loader.cs">
+      <Link>Runtime\Src\Loader.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\PuertsDLL.cs">
-      <Link>Runtime\Src\PuertsDLL.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\NativeValueApiGeneric.cs">
-      <Link>Runtime\Src\NativeValueApiGeneric.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\StaticWrapRegister.cs">
-      <Link>Runtime\Src\StaticWrapRegister.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\StaticTranslate.cs">
-      <Link>Runtime\Src\StaticTranslate.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
+      <Link>Runtime\Src\TypeExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypeRegister.cs">
       <Link>Runtime\Src\TypeRegister.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\GenericDelegate.cs">
-      <Link>Runtime\Src\GenericDelegate.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Utils.cs">
       <Link>Runtime\Src\Utils.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Loader.cs">
-      <Link>Runtime\Src\Loader.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\ArgumentHelper.cs">
+      <Link>Runtime\Src\Translator\ArgumentHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\DataTranslate.cs">
-      <Link>Runtime\Src\DataTranslate.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\ObjectPool.cs">
+      <Link>Runtime\Src\Translator\ObjectPool.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\ObjectPool.cs">
-      <Link>Runtime\Src\ObjectPool.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\DataTranslate.cs">
+      <Link>Runtime\Src\Translator\DataTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\NativeValueApiGeneric.cs">
+      <Link>Runtime\Src\Translator\NativeValueApiGeneric.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\StaticTranslate.cs">
+      <Link>Runtime\Src\Translator\StaticTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\TypedValue.cs">
+      <Link>Runtime\Src\JSType\TypedValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\GenericDelegate.cs">
+      <Link>Runtime\Src\JSType\GenericDelegate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\JSObject.cs">
+      <Link>Runtime\Src\JSType\JSObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\ArrayBuffer.cs">
+      <Link>Runtime\Src\JSType\ArrayBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\ReflectionWrap.cs">
+      <Link>Runtime\Src\Wrapper\ReflectionWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\LazyWrap.cs">
+      <Link>Runtime\Src\Wrapper\LazyWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\GenericMethodWrap.cs">
+      <Link>Runtime\Src\Wrapper\GenericMethodWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs">
+      <Link>Runtime\Src\Wrapper\StaticWrapRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Native\PuertsDLL.cs">
+      <Link>Runtime\Src\Native\PuertsDLL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Native\StaticCallbacks.cs">
+      <Link>Runtime\Src\Native\StaticCallbacks.cs</Link>
     </Compile>
     <Compile Include="..\..\..\Assets\Puerts\Editor\Src\CJSImporter.cs">
       <Link>Editor\Src\CJSImporter.cs</Link>
@@ -76,17 +88,14 @@
     <Compile Include="..\..\..\Assets\Puerts\Editor\Src\U2018Compatible.cs">
       <Link>Editor\Src\U2018Compatible.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Wrapper.cs">
-      <Link>Editor\Src\Generator\Wrapper.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Utils.cs">
+      <Link>Editor\Src\Generator\Utils.cs</Link>
     </Compile>
     <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\DTS.cs">
       <Link>Editor\Src\Generator\DTS.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Menu.cs">
-      <Link>Editor\Src\Generator\Menu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Utils.cs">
-      <Link>Editor\Src\Generator\Utils.cs</Link>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Wrapper.cs">
+      <Link>Editor\Src\Generator\Wrapper.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
