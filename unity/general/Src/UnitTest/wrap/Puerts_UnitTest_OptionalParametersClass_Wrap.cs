@@ -4,7 +4,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-    public static class Puerts_UnitTest_OptionalParametersClass_Wrap
+    public static class Puerts_UnitTest_OptionalParametersClass_Wrap 
     {
 
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]

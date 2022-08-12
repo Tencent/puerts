@@ -92,7 +92,7 @@ namespace Puerts
             }
         }
 
-        public static bool IsNotGenericOrValidGeneric(MethodInfo method)
+        public static bool IsNotGenericOrValidGeneric(MethodInfo method, ParameterInfo[] pinfos = null)
         {
             // 不包含泛型参数，肯定支持
             if (!method.ContainsGenericParameters)
@@ -100,7 +100,8 @@ namespace Puerts
 
             List<Type> validGenericParameter = new List<Type>();
 
-            foreach (var parameters in method.GetParameters())
+            if (pinfos == null) pinfos = method.GetParameters(); 
+            foreach (var parameters in pinfos)
             {
                 Type parameterType = parameters.ParameterType;
 

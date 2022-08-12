@@ -12,3 +12,4 @@
 /native_src/nodejs*
 /native_src/quickjs*
 /native_src/puerts-cpp-tester
+/native_src/node_modules

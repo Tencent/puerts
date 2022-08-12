@@ -4,7 +4,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-    public static class Puerts_UnitTest_GenericGenTest2_Wrap
+    public static class Puerts_UnitTest_GenericGenTest2_Wrap 
     {
 
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
@@ -39,15 +39,11 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.GenericGenTest2;
         
-                if (paramLen == 2)
-            
                 {
             
                     var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 
                     var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
-                
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.NativeObject | Puerts.JsValueType.Function, typeof(System.Action<Puerts.UnitTest.WrapperTestBase>), false, false))
                 
                     {
                 
@@ -59,34 +55,11 @@ namespace PuertsStaticWrap
                 
                         Puerts.ResultHelper.Set((int)data, isolate, info, result);
                         
-                        return;
-                    }
-                
-                }
-            
-                if (paramLen == 1)
-            
-                {
-            
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false))
-                
-                    {
-                
-                        var Arg0 = argHelper0.GetString(false);
-                    
-                        var result = obj.GetTypeTest<Puerts.UnitTest.WrapperTestBase>(Arg0);
-                
-                        Puerts.ResultHelper.Set((int)data, isolate, info, result);
                         
-                        return;
                     }
                 
                 }
             
-                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to GetTypeTest");
-        
             }
             catch (Exception e)
             {

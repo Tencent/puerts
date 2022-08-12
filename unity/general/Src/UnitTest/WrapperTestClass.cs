@@ -1,3 +1,5 @@
+using System;
+
 namespace Puerts.UnitTest
 {
     [Configure]
@@ -23,26 +25,89 @@ namespace Puerts.UnitTest
         }
     }
 
-    public class GenericWrapperBase<T> where T : class, new()
-    { 
+    public class GenericWrapperBase<T>
+    {
         public static System.Type GetGenericType()
         {
             return typeof(T);
         }
     }
 
-    public class GenericGenTest2 :GenericWrapperBase<GenericGenTest2>
+    public class GenericGenTest2 : GenericWrapperBase<GenericGenTest2>
     {
-        public System.Type GetTypeTest<T>(string arg0, System.Action<T> action = null) where T: WrapperTestBase
+        public System.Type GetTypeTest<T>(string arg0, System.Action<T> action = null) where T : WrapperTestBase
         {
-            return typeof (T);
+            return typeof(T);
         }
     }
 
+    public class GenericWrapperWithConstraintStruct<T> where T : struct
+    {
+        public static System.Type GetGenericType()
+        {
+            return typeof(T);
+        }
+    }
+
+    public class GenericWrapperWithConstraintClass<T> where T : class
+    {
+        public static System.Type GetGenericType()
+        {
+            return typeof(T);
+        }
+    }
+
+    //public class GenericWrapperWithConstraintNotnull<T> where T : notnull
+    //{
+    //    public static System.Type GetGenericType()
+    //    {
+    //        return typeof(T);
+    //    }
+    //}
+
+    public class GenericWrapperWithConstraintNew<T> where T : new()
+    {
+        public static System.Type GetGenericType()
+        {
+            return typeof(T);
+        }
+    }
+
+    //public class GenericWrapperWithConstraintNotnullNew<T> where T : notnull, new()
+    //{
+    //    public static System.Type GetGenericType()
+    //    {
+    //        return typeof(T);
+    //    }
+    //}
+
+    public class GenericWrapperWithConstraintNewClass<T> where T : class, new()
+    {
+        public static System.Type GetGenericType()
+        {
+            return typeof(T);
+        }
+    }
+
+    //public class GenericWrapperWithConstraintNotnullNewCkass<T> where T : notnull, class, new()
+    //{
+    //    public static System.Type GetGenericType()
+    //    {
+    //        return typeof(T);
+    //    }
+    //}
+
+    public class GenericWrapperWithConstraintStringComparer<T> where T : StringComparer
+    {
+        public static System.Type GetGenericType()
+        {
+            return typeof(T);
+        }
+    }
 
     public class WrapperTestBase
     {
-        public void GeneratedMethod(bool isBase) 
+        public void GeneratedMethod(bool isBase)
         {
 
         }
@@ -60,7 +125,7 @@ namespace Puerts.UnitTest
         }
     }
 
-    public class WrapperTest: WrapperTestBase
+    public class WrapperTest : WrapperTestBase
     {
         public string PropertyWithoutSetter
         {
@@ -77,9 +142,9 @@ namespace Puerts.UnitTest
             }
         }
         private string _Property = "Property";
-        public string Property 
+        public string Property
         {
-            get 
+            get
             {
                 return _Property;
             }
@@ -90,9 +155,9 @@ namespace Puerts.UnitTest
         }
 
         private static string _StaticProperty = "StaticProperty";
-        public static string StaticProperty 
+        public static string StaticProperty
         {
-            get 
+            get
             {
                 return _StaticProperty;
             }
@@ -105,8 +170,8 @@ namespace Puerts.UnitTest
         public string Field = "Field";
         public readonly string ReadonlyField = "ReadonlyField";
 
-        
-        public void GeneratedMethod() 
+
+        public void GeneratedMethod()
         {
 
         }
@@ -114,20 +179,22 @@ namespace Puerts.UnitTest
         {
 
         }
-        public void SupportedGenericMethod<T>(T t) where T: Puerts.ILoader
+        public void SupportedGenericMethod<T>(T t) where T : Puerts.ILoader
         {
 
         }
-        public void SupportedGenericMethod2<T>(System.Collections.Generic.List<T> list) where T: Puerts.ILoader
+        public void SupportedGenericMethod2<T>(System.Collections.Generic.List<T> list) where T : Puerts.ILoader
         {
 
         }
 
-        public void UnsupportedGenericMethod<T>(T t) {
-            
+        public void UnsupportedGenericMethod<T>(T t)
+        {
+
         }
-        public void UnsupportedGenericMethod2<T, S>(T t, S s) {
-            
+        public void UnsupportedGenericMethod2<T, S>(T t, S s)
+        {
+
         }
     }
 }

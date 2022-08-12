@@ -4,7 +4,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-    public static class Puerts_UnitTest_GenericWrapperBase_1_T__Wrap<T>
+    public static class Puerts_UnitTest_GenericWrapperBase_1_T__Wrap<T> 
     {
 
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
@@ -13,17 +13,17 @@ namespace PuertsStaticWrap
             try
             {
 
-                //{
+                {
             
-                //    {
+                    {
                 
-                //        var result = new Puerts.UnitTest.GenericWrapperBase<T>();
+                        var result = new Puerts.UnitTest.GenericWrapperBase<T>();
                 
-                //        return Puerts.Utils.GetObjectPtr((int)data, typeof(Puerts.UnitTest.GenericWrapperBase<T>), result);
+                        return Puerts.Utils.GetObjectPtr((int)data, typeof(Puerts.UnitTest.GenericWrapperBase<T>), result);
                     
-                //    }
+                    }
                 
-                //}
+                }
             
     
             } catch (Exception e) {
@@ -43,7 +43,7 @@ namespace PuertsStaticWrap
             
                     {
                 
-                        var result = Puerts.UnitTest.GenericWrapperBase<Version>.GetGenericType();
+                        var result = Puerts.UnitTest.GenericWrapperBase<T>.GetGenericType();
                 
                         Puerts.ResultHelper.Set((int)data, isolate, info, result);
                         

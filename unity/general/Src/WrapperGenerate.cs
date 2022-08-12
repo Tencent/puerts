@@ -34,7 +34,7 @@ public class PuertsTest
     public static void Main()
     {
         Puerts.Editor.Generator.FileExporter.ExportWrapper(
-            TxtLoader.PathToBinDir("../Src/UnitTest/wrap/"),
+            TxtLoader.PathToBinDir("../../Src/UnitTest/wrap/"),
             new TxtLoader()
         );
     }
