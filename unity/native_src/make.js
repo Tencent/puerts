@@ -18,13 +18,15 @@ if (!fs.existsSync(`${pwd}/node_modules`)) {
 const sx = require('shelljs');
 const iconv = require('iconv-lite')
 const sxExecAsync = async function(command) {
-    return new Promise(resolve=> {  
+    return new Promise((resolve, reject)=> {  
         options.async = true;
         let child = sx.exec(command, {
             async: true,
             silent: true,
             encoding: 'binary'
-        }, resolve);
+        }, code=> {
+            code ? reject(code) : resolve(code);
+        });
         child.stdout.on('data', function(data) {
             console.log(iconv.decode(data, process.platform == 'win32' ? "gb2312" : 'utf-8'));
         })
@@ -212,10 +214,10 @@ const platformCompileConfig = {
     } else if (!options.platform && !options.arch) {
         options.platform = nodePlatformToPuerPlatform[process.platform]
         options.arch = process.arch;
-        runMake();
+        return runMake();
     
     } else {
-        runMake();
+        return runMake();
     }
 })()
 
@@ -226,5 +228,5 @@ async function runMake() {
     
     sx.mkdir('-p', CMAKE_BUILD_PATH);
     sx.mkdir('-p', OUTPUT_PATH)
-    await BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);    
+    return await BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);    
 }
