@@ -1,4 +1,4 @@
 BACKEND_ARTIFACT_NAME=qjs_v8_bin
 BACKEND_ARTIFACT_WORKFLOW=build_quickjs.yml
 BACKEND_ARTIFACT_REPO=puerts/backend-quickjs
-BACKEND_URL=https://github.com/puerts/backend-quickjs/releases/download/QJS_0812/qjs_v8_bin.tgz
+BACKEND_URL=https://github.com/puerts/backend-quickjs/releases/download/QJS_0816/qjs_v8_bin.tgz
