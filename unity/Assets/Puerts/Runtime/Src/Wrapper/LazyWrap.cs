@@ -72,15 +72,15 @@ namespace Puerts
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    translateFunc(env.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(null));
+                    translateFunc(jsEnv.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(null));
                 };
             }
             else
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    var me = env.GeneralGetterManager.GetSelf(env.Idx, self);
-                    translateFunc(env.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
+                    var me = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self);
+                    translateFunc(jsEnv.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
                 };
             }
         }
@@ -111,7 +111,8 @@ namespace Puerts
                     {
                         if (value == null)
                         {
-                            field.SetValue(null, translateFunc(env.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                            value = translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr,
+                                false);
                         }
 
                         field.SetValue(null, value);
@@ -138,8 +139,8 @@ namespace Puerts
                     }
                     else
                     {
-                        var me = env.GeneralGetterManager.GetSelf(env.Idx, self);
-                        field.SetValue(me, translateFunc(env.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                        var me = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self);
+                        field.SetValue(me, translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
                     }
                 };
             }
@@ -160,7 +161,7 @@ namespace Puerts
                     MethodInfo xetMethodInfo = definitionType.GetMethod(memberName, flag);
 
                     reflectionWrap = new MethodReflectionWrap(memberName, new List<OverloadReflectionWrap>() {
-                        new OverloadReflectionWrap(xetMethodInfo, env)
+                        new OverloadReflectionWrap(xetMethodInfo, jsEnv)
                     });
                 }
 
@@ -186,7 +187,7 @@ namespace Puerts
                 {
                     MethodInfo[] overload = Utils.GetMethodAndOverrideMethodByName(definitionType, memberName);
                     reflectionWrap = new MethodReflectionWrap(memberName,
-                        overload.Select(m => new OverloadReflectionWrap(m, env, false)).ToList()
+                        overload.Select(m => new OverloadReflectionWrap(m, jsEnv, false)).ToList()
                     );
 
                 }

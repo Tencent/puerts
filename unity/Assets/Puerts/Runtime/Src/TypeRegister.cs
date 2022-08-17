@@ -447,7 +447,7 @@ namespace Puerts
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
                     var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
-                    var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);                    
+                    var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);
                     object value = null;
                     if (
                         !Utils.IsJsValueTypeMatchType(valueType, field.FieldType, typeMask, () =>
