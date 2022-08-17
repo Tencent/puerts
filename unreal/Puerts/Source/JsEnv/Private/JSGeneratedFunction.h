@@ -37,7 +37,7 @@ public:
 
     v8::UniquePersistent<v8::Function> JsFunction;
 
-    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
 

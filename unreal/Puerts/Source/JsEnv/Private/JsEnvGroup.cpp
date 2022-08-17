@@ -122,7 +122,7 @@ void FJsEnvGroup::Init()
     {
         JsEnvs.push_back(static_cast<FJsEnvImpl*>(JsEnvList[i].get()));
     }
-    auto GroupDynamicInvoker = MakeShared<FGroupDynamicInvoker>(JsEnvs);
+    auto GroupDynamicInvoker = MakeShared<FGroupDynamicInvoker, ESPMode::ThreadSafe>(JsEnvs);
     for (int i = 0; i < JsEnvs.size(); i++)
     {
         JsEnvs[i]->TsDynamicInvoker = GroupDynamicInvoker;

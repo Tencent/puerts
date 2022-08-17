@@ -17,8 +17,9 @@
 #define OLD_METHOD_PREFIX "__puerts_old__"
 #define MIXIN_METHOD_SUFFIX "__puerts_mixin__"
 
-UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker,
-    v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
+UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent,
+    TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, v8::Isolate* Isolate,
+    v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
 {
     auto Outer = GetTransientPackage();
     UClass* Class = nullptr;
@@ -98,7 +99,7 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
 }
 
 void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative)
+    TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative)
 {
     bool Existed = Super->GetOuter() == Class;
     FName FunctionName = Super->GetFName();
@@ -185,7 +186,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 }
 
 UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
+    TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;
 

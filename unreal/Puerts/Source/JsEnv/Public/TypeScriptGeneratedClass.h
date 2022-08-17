@@ -31,7 +31,7 @@ class JSENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
     GENERATED_BODY()
 
 public:
-    TWeakPtr<puerts::ITsDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::ITsDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
     TSet<FName> FunctionToRedirect;
 

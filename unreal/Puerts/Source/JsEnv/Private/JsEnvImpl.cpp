@@ -586,10 +586,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     SoftObjectPtrTemplate = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, FSoftObjectWrapper::ToFunctionTemplate(Isolate));
 
-    DynamicInvoker = MakeShared<DynamicInvokerImpl>(this);
+    DynamicInvoker = MakeShared<DynamicInvokerImpl, ESPMode::ThreadSafe>(this);
     MixinInvoker = DynamicInvoker;
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl>(this);
+    TsDynamicInvoker = MakeShared<TsDynamicInvokerImpl, ESPMode::ThreadSafe>(this);
 #endif
 
     Inspector = CreateV8Inspector(InDebugPort, &Context);

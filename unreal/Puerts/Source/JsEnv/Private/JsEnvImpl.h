@@ -434,9 +434,9 @@ public:
         FJsEnvImpl* Parent;
     };
 
-    TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
+    TSharedPtr<ITsDynamicInvoker, ESPMode::ThreadSafe> TsDynamicInvoker;
 
-    TSharedPtr<IDynamicInvoker> MixinInvoker;
+    TSharedPtr<IDynamicInvoker, ESPMode::ThreadSafe> MixinInvoker;
 #endif
 private:
     puerts::FObjectRetainer UserObjectRetainer;
@@ -612,7 +612,7 @@ private:
 
     void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject, bool RebindObject);
 #endif
-    TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
+    TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
 
     TSet<UClass*> GeneratedClasses;
 
