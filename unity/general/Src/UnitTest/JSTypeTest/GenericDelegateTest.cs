@@ -7,7 +7,7 @@
 
 using NUnit.Framework;
 
-namespace Puerts.UnitTest
+namespace Puerts.UnitTest.JSTypeTest
 {
     [TestFixture]
     public class GenericDelegateTest

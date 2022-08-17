@@ -8,7 +8,7 @@
 using NUnit.Framework;
 using System;
 
-namespace Puerts.UnitTest
+namespace Puerts.UnitTest.JSTypeTest
 {
     public class ArrayBufferClass
     {
@@ -45,7 +45,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab);
                 arr[1];
@@ -63,7 +63,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab,1);
                 ab = arr;
@@ -84,7 +84,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab,1);
                 obj.Sum(arr);
@@ -102,7 +102,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab,1);
                 obj.Sum(arr.buffer);
@@ -120,7 +120,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let arr = new Uint16Array([1,2,3]);
                 let ab = obj.GetMe(arr);
                 let arr2 = new Uint8Array(ab);
@@ -139,7 +139,7 @@ namespace Puerts.UnitTest
 
             ArrayBufferClass ret = jsEnv.Eval<ArrayBufferClass>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let arr = new Uint8Array(obj.AB);
                 arr[1] = 100;
                 obj;

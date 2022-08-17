@@ -41,14 +41,14 @@
     <Compile Include="..\Src\TxtLoader.cs">
       <Link>Src\TxtLoader.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\WrapperTestClass.cs">
-      <Link>Src\UnitTest\WrapperTestClass.cs</Link>
+    <Compile Include="..\Src\UnitTest\TestClass.cs">
+      <Link>Src\UnitTest\TestClass.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperTest\WrapperTestClass.cs">
+      <Link>Src\UnitTest\WrapperTest\WrapperTestClass.cs</Link>
     </Compile>
     <Compile Include="..\Src\WrapperGenerate.cs">
       <Link>Src\WrapperGenerate.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\OptionalParametersTest.cs">
-      <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
