@@ -25,6 +25,30 @@ namespace Puerts.UnitTest
         {
             return lastCallbackValue == null ? null : lastCallbackValue.GetType();
         }
+
+        public static long FieldLong = 0;
+        public static bool IsFieldLongEquals(long l) 
+        {
+            return FieldLong == l;
+        }
+
+        private static long _PropertyLong;
+        public static long PropertyLong
+        {
+            get
+            {
+                return _PropertyLong;
+            }
+            set
+            {
+                _PropertyLong = value;
+            }
+        }
+
+        public static bool IsPropertyLongEquals(long l) 
+        {
+            return PropertyLong == l;
+        }
     }
     [TestFixture]
     public class TypedValueTest
@@ -56,6 +80,29 @@ namespace Puerts.UnitTest
 
             Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
             Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+        }
+        public static long FieldLong = 0;
+        public static bool IsFieldLongEquals(long l) 
+        {
+            return FieldLong == l;
+        }
+
+        private static long _PropertyLong;
+        public static long PropertyLong
+        {
+            get
+            {
+                return _PropertyLong;
+            }
+            set
+            {
+                _PropertyLong = value;
+            }
+        }
+
+        public static bool IsPropertyLongEquals(long l) 
+        {
+            return PropertyLong == l;
         }
         [Test]
         public void FloatValue()

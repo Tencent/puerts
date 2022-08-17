@@ -146,39 +146,18 @@ namespace Puerts
                             argJsType = PuertsDLL.GetJsValueType(jsCallInfo.Isolate, jsCallInfo.NativePtrs[i], true);
                         }
                     }
-                    if (argJsType == JsValueType.NativeObject) 
-                    {
-                        if (paramTypes[i] == typeof(JSObject)) // 非要把一个NativeObject赋值给JSObject是允许的。
+                    if (
+                        !Utils.IsJsValueTypeMatchType(argJsType, paramTypes[i], paramJSTypeMasks[i], () =>
                         {
-                            continue;
-                        }
-                        else if (paramTypes[i].IsPrimitive) // TypedValue赋值给基础类型
-                        {
-                            // 可能的优化： 为TypedValue设计一个新的JSValueType，这样这里就不需要先取值
-                            if (jsCallInfo.Values[i] == null)
-                            {
-                                jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(generalGetterManager.jsEnv.Idx, jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
-                            }
-                            if (jsCallInfo.Values[i].GetType() == paramTypes[i])
-                            {
-                                continue;
-                            }
-                        }
-                    }
-                    if ((paramJSTypeMasks[i] & argJsType) != argJsType)
+                            jsCallInfo.Values[i] = generalGetterManager.jsEnv.GeneralGetterManager.AnyTranslator(generalGetterManager.jsEnv.Idx,
+                                jsCallInfo.Isolate,
+                                NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
+
+                            return jsCallInfo.Values[i];
+                        }, jsCallInfo.Values[i])
+                    )
                     {
                         return false;
-                    }
-                    if (argJsType == JsValueType.NativeObject)
-                    {
-                        if (jsCallInfo.Values[i] == null)
-                        {
-                            jsCallInfo.Values[i] = generalGetterManager.AnyTranslator(generalGetterManager.jsEnv.Idx, jsCallInfo.Isolate, NativeValueApi.GetValueFromArgument, jsCallInfo.NativePtrs[i], paramIsByRef[i]);
-                        }
-                        if (!paramTypes[i].IsAssignableFrom(jsCallInfo.Values[i].GetType()))
-                        {
-                            return false;
-                        }
                     }
                 }
             }
