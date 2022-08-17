@@ -203,6 +203,15 @@ struct StaticTypeId
     }
 };
 
+template <typename T, typename Enable = void>
+struct DynamicTypeId
+{
+    static void* get(T* Obj)
+    {
+        return StaticTypeId<T>::get();
+    }
+};
+
 template <typename T>
 struct is_uetype : std::false_type
 {
