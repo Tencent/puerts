@@ -587,7 +587,6 @@ namespace PuertsStaticWrap
         public static void InitBlittableCopy(Puerts.JsEnv jsEnv)
         {
             Puerts.StaticTranslate<${data.Name}>.ReplaceDefault(StaticSetter, StaticGetter);
-            int jsEnvIdx = jsEnv.Index;
             jsEnv.RegisterGeneralGetSet(typeof(${data.Name}), (int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
                 return StaticGetter(jsEnvIdx, isolate, getValueApi, value, isByRef);
