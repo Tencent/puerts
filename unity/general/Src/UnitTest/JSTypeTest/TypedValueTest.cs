@@ -82,6 +82,32 @@ namespace Puerts.UnitTest
             Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
         [Test]
+        public void Int64Value3()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let value = new CS.Puerts.Int64Value(512n);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.FieldLong = value;
+            ");
+
+            Assert.True(TypedValue.IsFieldLongEquals(512));
+        }
+        [Test]
+        public void Int64Value4()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                let value = new CS.Puerts.Int64Value(512n);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.PropertyLong = value;
+            ");
+
+            Assert.True(TypedValue.IsPropertyLongEquals(512));
+        }
+        [Test]
         public void FloatValue()
         {
             var jsEnv = new JsEnv(new TxtLoader());
