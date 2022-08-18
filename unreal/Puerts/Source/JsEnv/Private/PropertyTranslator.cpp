@@ -616,7 +616,6 @@ public:
         {
             // FScriptStructWrapper::Alloc using new, so delete in static wrapper is safe
             Ptr = FScriptStructWrapper::Alloc(StructProperty->Struct);
-            StructProperty->InitializeValue(Ptr);
             StructProperty->CopySingleValue(Ptr, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
@@ -1088,6 +1087,7 @@ public:
                     FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);
                     return;
                 }
+                //UE_LOG(LogTemp, Warning, TEXT("UEOutToJs empty ref"));
             }
 
             auto ReturnVal = Outer->Set(Context, 0, Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
