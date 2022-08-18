@@ -252,10 +252,7 @@ void FFunctionTranslator::Call(
     }
     for (int i = 0; i < Arguments.size(); ++i)
     {
-        if (Arguments[i]->ParamShallowCopySize == 0)
-        {
-            Arguments[i]->Property->InitializeValue_InContainer(Params);
-        }
+        Arguments[i]->Property->InitializeValue_InContainer(Params);
         if (UNLIKELY(ArgumentDefaultValues && Info[i]->IsUndefined()))
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);

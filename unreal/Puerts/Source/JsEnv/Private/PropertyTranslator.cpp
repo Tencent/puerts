@@ -617,6 +617,10 @@ public:
             // FScriptStructWrapper::Alloc using new, so delete in static wrapper is safe
             Ptr = FScriptStructWrapper::Alloc(StructProperty->Struct);
             StructProperty->CopySingleValue(Ptr, ValuePtr);
+            if (ParamShallowCopySize)
+            {
+                StructProperty->DestroyValue(const_cast<void*>(ValuePtr));
+            }
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddStruct(
             Isolate, Context, StructProperty->Struct, Ptr, PassByPointer);
@@ -787,13 +791,25 @@ public:
         FScriptArray* ScriptArray;
         if (ByPointer)
         {
-            ScriptArray =
-                const_cast<FScriptArray*>(reinterpret_cast<const FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr)));
+            ScriptArray = const_cast<FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr));
         }
         else
         {
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
-            ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
+            if (ParamShallowCopySize)
+            {
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+                ScriptArray->MoveAssign(
+                    *const_cast<FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr)), ArrayProperty->Inner->GetSize());
+#else
+                ArrayProperty->CopySingleValue(ScriptArray, ValuePtr);
+                ArrayProperty->DestroyValue(const_cast<void*>(ValuePtr));
+#endif
+            }
+            else
+            {
+                ArrayProperty->CopySingleValue(ScriptArray, ValuePtr);
+            }
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
             Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
@@ -807,7 +823,7 @@ public:
         {
             if (DeepCopy || !ParamShallowCopySize)
             {
-                ArrayProperty->CopyCompleteValue(ValuePtr, Ptr);
+                ArrayProperty->CopySingleValue(ValuePtr, Ptr);
             }
             else
             {
@@ -837,12 +853,26 @@ public:
         FScriptSet* ScriptSet;
         if (ByPointer)
         {
-            ScriptSet = const_cast<FScriptSet*>(reinterpret_cast<const FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr)));
+            ScriptSet = const_cast<FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr));
         }
         else
         {
             ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
-            SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
+            if (ParamShallowCopySize)
+            {
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+                auto ScriptLayout =
+                    FScriptSet::GetScriptLayout(SetProperty->ElementProp->GetSize(), SetProperty->ElementProp->GetMinAlignment());
+                ScriptSet->MoveAssign(*const_cast<FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr)), ScriptLayout);
+#else
+                SetProperty->CopySingleValue(ScriptSet, ValuePtr);
+                SetProperty->DestroyValue(const_cast<void*>(ValuePtr));
+#endif
+            }
+            else
+            {
+                SetProperty->CopySingleValue(ScriptSet, ValuePtr);
+            }
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
             Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
@@ -856,7 +886,7 @@ public:
         {
             if (DeepCopy || !ParamShallowCopySize)
             {
-                SetProperty->CopyCompleteValue(ValuePtr, Ptr);
+                SetProperty->CopySingleValue(ValuePtr, Ptr);
             }
             else
             {
@@ -886,12 +916,27 @@ public:
         FScriptMap* ScriptMap;
         if (ByPointer)
         {
-            ScriptMap = const_cast<FScriptMap*>(reinterpret_cast<const FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr)));
+            ScriptMap = const_cast<FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr));
         }
         else
         {
             ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
-            MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
+            if (ParamShallowCopySize)
+            {
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
+                auto ScriptLayout =
+                    FScriptMap::GetScriptLayout(MapProperty->KeyProp->GetSize(), MapProperty->KeyProp->GetMinAlignment(),
+                        MapProperty->ValueProp->GetSize(), MapProperty->ValueProp->GetMinAlignment());
+                ScriptMap->MoveAssign(*const_cast<FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr)), ScriptLayout);
+#else
+                MapProperty->CopySingleValue(ScriptMap, ValuePtr);
+                MapProperty->DestroyValue(const_cast<void*>(ValuePtr));
+#endif
+            }
+            else
+            {
+                MapProperty->CopySingleValue(ScriptMap, ValuePtr);
+            }
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
             Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
@@ -905,7 +950,7 @@ public:
         {
             if (DeepCopy || !ParamShallowCopySize)
             {
-                MapProperty->CopyCompleteValue(ValuePtr, Ptr);
+                MapProperty->CopySingleValue(ValuePtr, Ptr);
             }
             else
             {
