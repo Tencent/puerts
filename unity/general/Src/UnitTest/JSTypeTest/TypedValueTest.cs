@@ -47,7 +47,16 @@ namespace Puerts.UnitTest
 
         public static bool IsPropertyLongEquals(long l) 
         {
+            System.Console.WriteLine(PropertyLong);
+            System.Console.WriteLine(l);
             return PropertyLong == l;
+        }
+
+        public static long ReturnALong() {
+            return 9223372036854775807;
+        }
+        public static ulong ReturnAUlong() {
+            return 18446744073709551614;
         }
     }
     [TestFixture]
@@ -88,8 +97,8 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let value = new CS.Puerts.Int64Value(512n);
-                CS.Puerts.UnitTest.JSTypeTest.TypedValue.FieldLong = value;
+                let value = new CS.Puerts.Int64Value('512');
+                CS.Puerts.UnitTest.TypedValue.FieldLong = value;
             ");
 
             Assert.True(TypedValue.IsFieldLongEquals(512));
@@ -101,11 +110,65 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let value = new CS.Puerts.Int64Value(512n);
-                CS.Puerts.UnitTest.JSTypeTest.TypedValue.PropertyLong = value;
+                let value = new CS.Puerts.Int64Value('512');
+                CS.Puerts.UnitTest.TypedValue.PropertyLong = value;
             ");
 
             Assert.True(TypedValue.IsPropertyLongEquals(512));
+        }
+        [Test]
+        public void ConvertLongToString()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.RegisterGeneralGetSet(
+                typeof(long),
+                null,
+                (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
+                {
+                    setValueApi.SetString(isolate, holder, obj.ToString());
+                }
+            );
+            Puerts.StaticTranslate<long>.ReplaceDefault(
+                (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, long obj) =>
+                {
+                    setValueApi.SetString(isolate, holder, obj.ToString());
+                },
+                null
+            );
+
+            Assert.True(
+                jsEnv.Eval<bool>(@"
+                    const CS = require('csharp');
+                    typeof CS.Puerts.UnitTest.TypedValue.ReturnALong() == 'string';
+                ")
+            );
+        }
+        [Test]
+        public void ConvertULongToString()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.RegisterGeneralGetSet(
+                typeof(ulong),
+                null,
+                (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
+                {
+                    setValueApi.SetString(isolate, holder, obj.ToString());
+                }
+            );
+            Puerts.StaticTranslate<ulong>.ReplaceDefault(
+                (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, ulong obj) =>
+                {
+                    setValueApi.SetString(isolate, holder, obj.ToString());
+                },
+                null
+            );
+
+            Assert.True(
+                jsEnv.Eval<bool>(@"
+                    const CS = require('csharp');
+                    typeof CS.Puerts.UnitTest.TypedValue.ReturnAUlong() == 'string';
+                ")
+            );
         }
         [Test]
         public void FloatValue()
