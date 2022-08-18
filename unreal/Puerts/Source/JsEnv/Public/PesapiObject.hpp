@@ -90,7 +90,7 @@ public:
         return val && pesapi_is_object(env, val);
     }
 
-    void operator=(const Object &obj)
+    void operator=(const Object& obj)
     {
         env_holder = pesapi_duplicate_env_holder(obj.env_holder);
         value_holder = pesapi_duplicate_value_holder(obj.value_holder);
