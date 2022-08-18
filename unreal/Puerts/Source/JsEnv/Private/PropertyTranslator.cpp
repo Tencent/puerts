@@ -1087,7 +1087,6 @@ public:
                     FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);
                     return;
                 }
-                //UE_LOG(LogTemp, Warning, TEXT("UEOutToJs empty ref"));
             }
 
             auto ReturnVal = Outer->Set(Context, 0, Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
