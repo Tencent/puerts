@@ -786,7 +786,7 @@ class FScriptArrayPropertyTranslator : public FFastPropertyTranslator
 public:
     explicit FScriptArrayPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
     {
-        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
+        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm | CPF_ReturnParm))
         {
             ParamShallowCopySize = sizeof(FScriptArray);
         }
@@ -848,7 +848,7 @@ class FScriptSetPropertyTranslator : public FFastPropertyTranslator
 public:
     explicit FScriptSetPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
     {
-        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
+        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm | CPF_ReturnParm))
         {
             ParamShallowCopySize = sizeof(FScriptSet);
         }
@@ -911,7 +911,7 @@ class FScriptMapPropertyTranslator : public FFastPropertyTranslator
 public:
     explicit FScriptMapPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
     {
-        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
+        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm | CPF_ReturnParm))
         {
             ParamShallowCopySize = sizeof(FScriptMap);
         }
