@@ -42,7 +42,13 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
 {
     UFunction* Function = Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node;
     check(Function);
-    UClass* Class = Function->GetOuterUClass();
+
+    NotifyRebind(Function->GetOuterUClassUnchecked());
+    execCallJS(Context, Stack, RESULT_PARAM);
+}
+
+void UTypeScriptGeneratedClass::NotifyRebind(UClass* Class)
+{
     if (Class->ClassConstructor == &UTypeScriptGeneratedClass::StaticConstructor)
     {
         while (Class)
@@ -52,7 +58,7 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
                 if (TsClass->NeedReBind && TsClass->DynamicInvoker.IsValid())
                 {
                     TsClass->NeedReBind = false;
-                    TsClass->DynamicInvoker.Pin()->NotifyReBind(TsClass);
+                    UTypeScriptGeneratedClass* CachedClass = TsClass;
                     Class = Class->GetSuperClass();
                     while (Class)
                     {
@@ -62,13 +68,13 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
                         }
                         Class = Class->GetSuperClass();
                     }
+                    CachedClass->DynamicInvoker.Pin()->NotifyReBind(CachedClass);
                 }
                 return;
             }
             Class = Class->GetSuperClass();
         }
     }
-    execCallJS(Context, Stack, RESULT_PARAM);
 }
 
 void UTypeScriptGeneratedClass::LazyLoadRedirect()

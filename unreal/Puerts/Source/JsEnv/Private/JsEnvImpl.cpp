@@ -1072,6 +1072,14 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
+
+#if WITH_EDITOR
+    if (TypeScriptGeneratedClass->NeedReBind)
+    {
+        UTypeScriptGeneratedClass::NotifyRebind(TypeScriptGeneratedClass);
+    }
+#endif
+
     auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
 
     if (!BindInfoPtr || ForceReinject)    // create and link

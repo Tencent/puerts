@@ -45,7 +45,7 @@ public:
     bool NeedReBind = true;
     TSet<TWeakObjectPtr<UObject>> GeneratedObjects;
     bool FunctionToRedirectInitialized = false;
-
+    static void NotifyRebind(UClass* Class);
     void LazyLoadRedirect();
 
     DECLARE_FUNCTION(execLazyLoadCallJS);
