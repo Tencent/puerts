@@ -47,18 +47,18 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 ## How to Install | 最新版本安装
 
-* [unreal](doc/unreal/install.md)
-* [unity](doc/unity/install.md)
+* [unreal](doc/unreal/zhcn/install.md)
+* [unity](doc/unity/en/install.md)
 
 ### Changelog
 
-* [unreal](doc/unreal/changelog.md)
-* [unity](doc/unity/changelog.md)
+* [unreal](doc/unreal/zhcn/changelog.md)
+* [unity](doc/unity/zhcn/changelog.md)
 
 ### Known issues | 已知问题与解决办法
 
-* [unreal](doc/unreal/bugs.md)
-* [unity](doc/unity/bugs.md)
+* [unreal](doc/unreal/zhcn/bugs.md)
+* [unity](doc/unity/zhcn/bugs.md)
 
 ---
 
@@ -91,14 +91,13 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 > Unreal
 * [Unreal Readme](unreal/README.md)
-* [Unreal Manual](doc/unreal/manual.md)
-* [Unreal debugging](doc/unreal/vscode_debug.md)
-* [TypeScript and unreal engine interaction](unreal/interact_with_uclass.md)
-* [Template-based static binding](unreal/template_binding.md)
+* [Unreal Manual](doc/unreal/zhcn/manual.md)
+* [Unreal debugging](doc/unreal/zhcn/vscode_debug.md)
+* [TypeScript and unreal engine interaction](doc/unreal/zhcn/interact_with_uclass.md)
+* [Template-based static binding](doc/unreal/zhcn/template_binding.md)
 > Unity
-* [Unity Readme](unity/README.md)
-* [Unity Manual](doc/unity/manual.md)
-* [Unity debugging](doc/unity/vscode_debug.md)
+* [Unity Manual](doc/unity/zhcn/manual.md)
+* [Unity debugging](doc/unity/zhcn/other/debugging.md)
 * [More Framework for Unity](https://github.com/chexiongsheng/puerts_unity_demo#more-example--%E6%9B%B4%E5%A4%9A%E7%9A%84%E7%A4%BA%E4%BE%8B%E6%88%96%E8%80%85%E6%95%99%E7%A8%8B)
 
 ## Sample Projects | 示例项目
@@ -115,7 +114,7 @@ console.log(actor.K2_GetActorLocation().ToString());
 
 * [UsingMixin.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingMixin.ts)：演示mixin功能的使用
 
-* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](doc/unreal/manual.md)
+* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](doc/unreal/zhcn/manual.md)
 
 > Unity
 
@@ -138,8 +137,8 @@ console.log(actor.K2_GetActorLocation().ToString());
 ## FAQ | 常见问题
 
 * [general faq](doc/faq.md)
-* [unreal faq](doc/unreal/faq.md)
-* [unity faq](doc/unity/faq.md)
+* [unreal faq](doc/unreal/zhcn/faq.md)
+* [unity faq](doc/unity/zhcn/faq.md)
 
 ---
 

@@ -2,8 +2,8 @@
 
 ## 这文档描述的是UE、Unity通用问题，引擎专用问题分别看相应文档
 
-* [unreal faq](unreal/faq.md)
-* [unity faq](unity/faq.md)
+* [unreal faq](unreal/zhcn/faq.md)
+* [unity faq](unity/zhcn/faq.md)
 
 ## npm上所有包都可用么？
 

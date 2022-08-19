@@ -268,4 +268,4 @@ The first `V8` version provided by default.
 
 If you want to use `V8` version `8.4.371.19`, navigate to [the V8 GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_v8.yml) and download the latest `build V8` artifact. Extract the contents to `Plugins/Puerts/ThirdParty` (or appropriate location). Then in the [JsEnv.Build.cs](../../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs) file, set `UseNewV8` to `true`.
 
-If you want to use `quickjs`, navigate to [the quickjs GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_quickjs.yml), download compiled `quickjs`, extract to `Plugins/Puerts/ThirdParty` (or appropriate location), and set `UseQuickJs` to `true` in the [JsEnv.Build.cs](../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs) file.
+If you want to use `quickjs`, navigate to [the quickjs GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_quickjs.yml), download compiled `quickjs`, extract to `Plugins/Puerts/ThirdParty` (or appropriate location), and set `UseQuickJs` to `true` in the [JsEnv.Build.cs](../../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs) file.

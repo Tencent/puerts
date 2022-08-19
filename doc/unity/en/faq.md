@@ -24,7 +24,7 @@ System.Text.Encoding.UTF8.GetBytes("你好");
 
 ## 如何调试
 
-这是[vscode](vscode_debug.md)，其它IDE的看各IDE的指引，按nodejs的调试来处理即可。
+这是[vscode](./other/debugging.md)，其它IDE的看各IDE的指引，按nodejs的调试来处理即可。
 
 ## 如果需要调试，ILoader的debugpath参数该如何处理？
 ts/js中调用require('./a/b')时，ILoader会被调用并传入字符串".../a/b.js"(相对rootPath的完整路径)，你需要理解这字符串并(从文件/内存/网络等)加载好js文件并直接返回。而debugpath需要返回调试器可以理解的路径(比如js文件的绝对路径: D:/.../a/b.js)，通过设置out string debuggpath参数返回，调试器后续根据这个文件路径来匹配文件上的断点。

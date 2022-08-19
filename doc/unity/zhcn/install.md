@@ -1,8 +1,7 @@
 ## 如何安装
-## How to install
 
 <details>
-<summary>Add from OpenUPM | available in 2018+</summary>
+<summary>从 OpenUPM 安装 | Unity 2018+ 可用</summary>
 
 PuerTS 现已上传 OpenUPM: https://openupm.com/packages/com.tencent.puerts.core/
 
@@ -13,7 +12,7 @@ PuerTS 现已上传 OpenUPM: https://openupm.com/packages/com.tencent.puerts.cor
 -----------------------------------------------------
 
 <details>
-<summary>Add from GitHub | available in 2019.4+</summary>
+<summary>用 Unity UPM 从 Github 安装 | Unity 2019.4+ 可用</summary>
 
 You can add it directly from GitHub on Unity 2019.4+. Note that you won't be able to receive updates through Package Manager this way, you'll have to update manually.
 
@@ -27,7 +26,7 @@ You can add it directly from GitHub on Unity 2019.4+. Note that you won't be abl
 -----------------------------------------------------
 
 <details>
-<summary>Download code and native plugins manually  | available in all version</summary>
+<summary>手动下载代码与插件  | 全版本可用</summary>
 以往支持的源码安装模式依旧支持。相比前两种方式管理起来稍麻烦，但对代码魔改更友好。
 
 1. 前往 [Github Releases](https://github.com/Tencent/puerts/releases) 下载PuerTS_V8_x.x.x.tgz 或是别的你需要的Puerts版本。
@@ -37,3 +36,7 @@ You can add it directly from GitHub on Unity 2019.4+. Note that you won't be abl
 
 > mac下如果遇到移入废纸篓问题，请使用sudo xattr -r -d com.apple.quarantine puerts.bundle。但用了后提交git容易出问题
 </details>
+
+-----------------------------------------------------
+
+当然还有一种最傻瓜的办法：从官方Demo中拷贝出来用。

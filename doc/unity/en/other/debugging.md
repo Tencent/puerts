@@ -1,4 +1,6 @@
-## vscode debug指引
+# VSCode Debug 指引
+
+这里推荐你使用vscode进行debug。但如果是手机debug的时候，推荐你参考[开发blog](https://zhuanlan.zhihu.com/p/359598262)
 
 * new JsEnv的时候，需要按如下示例输入端口及vscode工程的js输出目录，并且在合适的地方调用jsEnv的Tick函数
 
@@ -21,7 +23,7 @@ void Update()
   - 如果c#版本高于7.2（支持async），建议用异步等待，否则用同步阻塞等待
   
   
-** 异步等待例子 
+## 异步等待例子 
 
 ```csharp
 async void RunScript()
@@ -63,4 +65,4 @@ void Update()
 
 * 打开“ProjectSetting/Player”页面，把“Run In Background”勾选上
 
-![throttle cpu](../../doc/pic/unity_run_in_background.png)
+![throttle cpu](../../pic/unity_run_in_background.png)
