@@ -10,7 +10,10 @@ you can get the english version change log at [Github Release](https://github.co
 1. 1.3版本改为默认不开启泛型类的泛型式生成 #937 #918
 2. fix: 生成BlittableCopy时报参数数量不匹配的错 #938
 3. fix: MJSImporter在2018下会出警告的问题
+<<<<<<< HEAD
 4. fix: #912
+=======
+>>>>>>> c710d19b (update doc)
 
 ## [1.3.6] - 2022-07-13
 1. fix: UnityMenu.cs传参错误
