@@ -179,6 +179,11 @@ const platformCompileConfig = {
                 sx.cd("..")
                 await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
                 
+                if (options.config != 'Release') {
+                    sx.mkdir('-p', '../general/vs2013/Bin');
+                    sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, '../general/vs2013/Bin')
+                    sx.cp('-r', `${options.backend}/Lib/Win64/*.dll`, '../general/vs2013/Bin')
+                }
                 sx.cp(`${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`, OUTPUT_PATH)
                 sx.cp('-r', `${options.backend}/Lib/Win32/*.dll`, OUTPUT_PATH)
             }
