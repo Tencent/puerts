@@ -595,33 +595,15 @@ public:
     }
 };
 
-class FFastPropertyTranslator : public FPropertyWithDestructorReflection
+class FScriptStructPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FFastPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    explicit FScriptStructPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-    }
-
-    virtual bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* TempBuff, void** OutValuePtr) const override
-    {
-        void* Ptr = FV8Utils::GetPointer(Context, Value);
-
-        if (Ptr)
+        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
-            *OutValuePtr = Ptr;
-            return true;
+            ParamShallowCopySize = StructProperty->Struct->GetStructureSize();
         }
-        *OutValuePtr = TempBuff;
-        return JsToUE(Isolate, Context, Value, TempBuff, false);
-    }
-};
-
-class FScriptStructPropertyTranslator : public FFastPropertyTranslator
-{
-public:
-    explicit FScriptStructPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
-    {
     }
 
     v8::Local<v8::Value> UEToJs(
@@ -647,7 +629,14 @@ public:
 
         if (Ptr)
         {
-            StructProperty->CopySingleValue(ValuePtr, Ptr);
+            if (DeepCopy || !ParamShallowCopySize)
+            {
+                StructProperty->CopySingleValue(ValuePtr, Ptr);
+            }
+            else
+            {
+                FMemory::Memcpy(ValuePtr, Ptr, ParamShallowCopySize);
+            }
         }
         else if (Value->IsObject())
         {
@@ -781,10 +770,10 @@ public:
 
 // containers
 
-class FScriptArrayPropertyTranslator : public FFastPropertyTranslator
+class FScriptArrayPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptArrayPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
+    explicit FScriptArrayPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
         if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
@@ -798,25 +787,13 @@ public:
         FScriptArray* ScriptArray;
         if (ByPointer)
         {
-            ScriptArray = const_cast<FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr));
+            ScriptArray =
+                const_cast<FScriptArray*>(reinterpret_cast<const FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr)));
         }
         else
         {
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(ArrayProperty->Inner));
-            if (ParamShallowCopySize)
-            {
-#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                ScriptArray->MoveAssign(
-                    *const_cast<FScriptArray*>(&ArrayProperty->GetPropertyValue(ValuePtr)), ArrayProperty->Inner->GetSize());
-#else
-                ArrayProperty->CopySingleValue(ScriptArray, ValuePtr);
-                ArrayProperty->DestroyValue(const_cast<void*>(ValuePtr));
-#endif
-            }
-            else
-            {
-                ArrayProperty->CopySingleValue(ScriptArray, ValuePtr);
-            }
+            ArrayProperty->CopyCompleteValue(ScriptArray, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
             Isolate, Context, ArrayProperty->Inner, ScriptArray, ByPointer);
@@ -830,7 +807,7 @@ public:
         {
             if (DeepCopy || !ParamShallowCopySize)
             {
-                ArrayProperty->CopySingleValue(ValuePtr, Ptr);
+                ArrayProperty->CopyCompleteValue(ValuePtr, Ptr);
             }
             else
             {
@@ -843,10 +820,10 @@ public:
 private:
 };
 
-class FScriptSetPropertyTranslator : public FFastPropertyTranslator
+class FScriptSetPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptSetPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
+    explicit FScriptSetPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
         if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
@@ -860,26 +837,12 @@ public:
         FScriptSet* ScriptSet;
         if (ByPointer)
         {
-            ScriptSet = const_cast<FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr));
+            ScriptSet = const_cast<FScriptSet*>(reinterpret_cast<const FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr)));
         }
         else
         {
             ScriptSet = reinterpret_cast<FScriptSet*>(new FScriptSetEx(SetProperty->ElementProp));
-            if (ParamShallowCopySize)
-            {
-#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                auto ScriptLayout =
-                    FScriptSet::GetScriptLayout(SetProperty->ElementProp->GetSize(), SetProperty->ElementProp->GetMinAlignment());
-                ScriptSet->MoveAssign(*const_cast<FScriptSet*>(&SetProperty->GetPropertyValue(ValuePtr)), ScriptLayout);
-#else
-                SetProperty->CopySingleValue(ScriptSet, ValuePtr);
-                SetProperty->DestroyValue(const_cast<void*>(ValuePtr));
-#endif
-            }
-            else
-            {
-                SetProperty->CopySingleValue(ScriptSet, ValuePtr);
-            }
+            SetProperty->CopyCompleteValue(ScriptSet, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
             Isolate, Context, SetProperty->ElementProp, ScriptSet, ByPointer);
@@ -893,7 +856,7 @@ public:
         {
             if (DeepCopy || !ParamShallowCopySize)
             {
-                SetProperty->CopySingleValue(ValuePtr, Ptr);
+                SetProperty->CopyCompleteValue(ValuePtr, Ptr);
             }
             else
             {
@@ -906,10 +869,10 @@ public:
 private:
 };
 
-class FScriptMapPropertyTranslator : public FFastPropertyTranslator
+class FScriptMapPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptMapPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
+    explicit FScriptMapPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
         if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
@@ -923,27 +886,12 @@ public:
         FScriptMap* ScriptMap;
         if (ByPointer)
         {
-            ScriptMap = const_cast<FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr));
+            ScriptMap = const_cast<FScriptMap*>(reinterpret_cast<const FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr)));
         }
         else
         {
             ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(MapProperty->KeyProp, MapProperty->ValueProp));
-            if (ParamShallowCopySize)
-            {
-#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
-                auto ScriptLayout =
-                    FScriptMap::GetScriptLayout(MapProperty->KeyProp->GetSize(), MapProperty->KeyProp->GetMinAlignment(),
-                        MapProperty->ValueProp->GetSize(), MapProperty->ValueProp->GetMinAlignment());
-                ScriptMap->MoveAssign(*const_cast<FScriptMap*>(&MapProperty->GetPropertyValue(ValuePtr)), ScriptLayout);
-#else
-                MapProperty->CopySingleValue(ScriptMap, ValuePtr);
-                MapProperty->DestroyValue(const_cast<void*>(ValuePtr));
-#endif
-            }
-            else
-            {
-                MapProperty->CopySingleValue(ScriptMap, ValuePtr);
-            }
+            MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
         }
         return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddContainer(
             Isolate, Context, MapProperty->KeyProp, MapProperty->ValueProp, ScriptMap, ByPointer);
@@ -957,7 +905,7 @@ public:
         {
             if (DeepCopy || !ParamShallowCopySize)
             {
-                MapProperty->CopySingleValue(ValuePtr, Ptr);
+                MapProperty->CopyCompleteValue(ValuePtr, Ptr);
             }
             else
             {
@@ -1121,19 +1069,6 @@ public:
             auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
             return Inner->JsToUE(Isolate, Context, Realvalue, ValuePtr, DeepCopy);
         }
-        return true;
-    }
-
-    virtual bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
-        void* TempBuff, void** OutValuePtr) const override
-    {
-        if (Value->IsObject())
-        {
-            auto Outer = Value->ToObject(Context).ToLocalChecked();
-            auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
-            return Inner->JsToUEFast(Isolate, Context, Realvalue, TempBuff, OutValuePtr);
-        }
-        *OutValuePtr = TempBuff;
         return true;
     }
 
