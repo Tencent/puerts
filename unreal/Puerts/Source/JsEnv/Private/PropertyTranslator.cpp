@@ -1090,6 +1090,10 @@ public:
             }
 
             auto ReturnVal = Outer->Set(Context, 0, Inner->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
+            if (Inner->ParamShallowCopySize)    // $ref(undefined) for shallow copy type
+            {
+                Property->DestroyValue(const_cast<void*>(ValuePtr));
+            }
         }
     }
 
