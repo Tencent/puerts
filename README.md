@@ -47,8 +47,8 @@ puerts是游戏引擎下的TypeScript编程解决方案
 
 ## Documentation | 官方文档
 
-* [Doc for Unity](https://puerts.github.io/unity/en/readme) [Doc for UE](https://puerts.github.io/unreal/en/readme)
-* [UE版文档](https://puerts.github.io/unreal/zhcn/readme) [Unity版文档](https://puerts.github.io/unity/zhcn/readme)
+* [Doc for Unity](https://puerts.github.io/unity/en/readme) | [Doc for UE](https://puerts.github.io/unreal/en/readme)
+* [UE版文档](https://puerts.github.io/unreal/zhcn/readme) | [Unity版文档](https://puerts.github.io/unity/zhcn/readme)
 
 ## FAQ | 常见问题
 
