@@ -45,8 +45,8 @@ PuerTS is a TypeScript programming solution within game engines. | PuerTS是游�
 
 ## Documentation | 官方文档
 
-* [Doc for Unity](https://puerts.github.io/unity/en/readme) | [Doc for UE](https://puerts.github.io/unreal/en/readme)
-* [UE版文档](https://puerts.github.io/unreal/zhcn/readme) | [Unity版文档](https://puerts.github.io/unity/zhcn/readme)
+* [Doc for Unity](https://puerts.github.io/unity/en/readme) | [Unity版文档](https://puerts.github.io/unity/zhcn/readme)
+* [UE版文档](https://puerts.github.io/unreal/zhcn/readme) | [Doc for UE](https://puerts.github.io/unreal/en/readme)
 
 ## FAQ | 常见问题
 
