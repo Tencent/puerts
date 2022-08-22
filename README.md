@@ -8,40 +8,38 @@
 
 ## What？
  
-> in English
+PuerTS is a TypeScript programming solution within game engines. | PuerTS是游戏引擎下的TypeScript编程解决方案
+* provides a JavaScript Runtime | 提供了一个JavaScript运行时
 
-puerts is a TypeScript programming solution within game engines.
-* provides a JavaScript Runtime
+* allows TypeScript to access the host engine by including: | 提供通过TypeScript访问宿主引擎的能力，包括:
+  * module-binding on the JavaScript level | JavaScript层面的绑定
+  * TypeScript declarations generation | TypeScript声明文件生成
 
-* allows TypeScript to access the host engine（module-binding on the JavaScript level and generating TypeScript declarations）
-
-> 说中文
-
-puerts是游戏引擎下的TypeScript编程解决方案
-* 提供了一个JavaScript运行时
-
-* 提供通过TypeScript访问宿主引擎的能力（JavaScript层面的绑定以及TypeScript声明生成）
- 
 
 ## Why?
 
-> in English
-* Facililates game building processes by combining JavaScript packages and toolchains with the rendering power of professional game engines
-
-* In contrast to lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
-
-* High efficiency: supports reflection binding throughout the platform (engine) - no extra steps (code generation) needed for development.
-
-* High performance：supports static binding throughout the platform (engine) - takes care of complex scenes
-
-> 说中文
+* Facililates game building processes by combining JavaScript ecosystem with the rendering power of professional game engines
 * JavaScript生态有众多的库和工具链，结合专业商业引擎的渲染能力，快速打造游戏
 
+> 
+
+* In contrast to lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
 * 相比游戏领域常用的lua脚本，TypeScript的静态类型检查有助于编写更健壮，可维护性更好的程序
 
+> 
+
+* High efficiency: supports reflection binding throughout the platform (engine) - no extra steps (code generation) needed for development.
 * 高效：全引擎，全平台支持反射Binding，无需额外（生成代码）步骤即可开发
 
+> 
+
+* High performance：supports static binding throughout the platform (engine) - takes care of complex scenes
 * 高性能：全引擎，全平台支持静态Binding，兼顾了高性能的场景
+
+> 
+
+* Talented WebGL Support: huge advantage in performance and dev efficiency compare to Lua.
+* WebGL平台下的天生优势：相比Lua脚本在WebGL版本的表现，在性能和效率上都有极大提升。
 
 ---
 
