@@ -13,6 +13,6 @@
     },
     "category": "Libraries",
     "dependencies": {
-      "com.tencent.puerts.core": "1.4.0-preview.4"
+      "com.tencent.puerts.core": "1.4.0-preview.6"
     }
 }
