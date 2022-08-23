@@ -37,4 +37,4 @@ GameScript->Start("QuickStart", Arguments);
 
 * 菜单打开“编辑->编辑器偏好设置”页面，在“通用->性能”中把“处于背景中时占用较少CPU”的勾选去掉，否则debug连接会很慢
 
-![throttle cpu](../../pic/ue_throttle_cpu.png)
+![throttle cpu](../../../doc/pic/ue_throttle_cpu.png)
