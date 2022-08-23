@@ -4,7 +4,7 @@
 
 * 菜单上选择“编辑->项目设置”，打开设置页面后在“插件->Puerts Setting”页面中开启调试以及设置端口
 
-![puerts_conf](../../pic/puerts_conf.png)
+![puerts_conf](../../../doc/pic/puerts_conf.png)
 
 * 勾选WaitDebugger是阻塞等待调试器链接
   - 调试器通过websocket连接，期间有TCP的握手，websocket握手，建立连接后，调试器和V8还会交换些信息，整个过程大概几百毫秒
