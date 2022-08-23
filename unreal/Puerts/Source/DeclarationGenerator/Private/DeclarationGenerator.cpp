@@ -41,6 +41,9 @@
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
 
+#define TYPE_DECL_START "// __TYPE_DECL_START: "
+#define TYPE_DECL_END "// __TYPE_DECL_END"
+
 static FString SafeName(const FString& Name)
 {
     auto Ret = Name.Replace(TEXT(" "), TEXT(""))
@@ -336,11 +339,61 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool GenStruct, b
         }
         Gen(Class);
     }
+
+    for (FAssetData const& AssetData : AssetList)
+    {
+        auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
+        if (BlueprintTypeDeclInfoPtr && BlueprintTypeDeclInfoPtr->Changed)
+        {
+            auto Asset = AssetData.GetAsset();
+            if (auto Blueprint = Cast<UBlueprint>(Asset))
+            {
+                Gen(Blueprint->GeneratedClass);
+            }
+            else if (auto UserDefinedEnum = Cast<UUserDefinedEnum>(Asset))
+            {
+                Gen(UserDefinedEnum);
+            }
+            if (GenStruct)
+            {
+                if (auto UserDefinedStruct = Cast<UUserDefinedStruct>(Asset))
+                {
+                    Gen(UserDefinedStruct);
+                }
+            }
+        }
+    }
+
     End();
 
     FFileHelper::SaveStringToFile(ToString(),
         *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")),
         FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
+    Begin();
+    for (auto& KV : BlueprintTypeDeclInfoCache)
+    {
+        if (KV.Value.IsExist)
+        {
+            Output << TYPE_DECL_START << KV.Value.FileVersionString << "\n";
+            Output << KV.Value.TypeDecl;
+            Output << TYPE_DECL_END << "\n";
+        }
+    }
+    End();
+
+    FFileHelper::SaveStringToFile(ToString(),
+        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts")),
+        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+}
+
+static UPackage* GetPackage(UObject* Obj)
+{
+#if ENGINE_MINOR_VERSION > 25 || ENGINE_MAJOR_VERSION > 4
+    return Obj->GetPackage();
+#else
+    return Obj->GetOutermost();
+#endif
 }
 
 const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
@@ -348,11 +401,7 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     auto Iter = NamespaceMap.find(Obj);
     if (Iter == NamespaceMap.end())
     {
-#if ENGINE_MINOR_VERSION > 25 || ENGINE_MAJOR_VERSION > 4
-        UPackage* Pkg = Obj->GetPackage();
-#else
-        UPackage* Pkg = Obj->GetOutermost();
-#endif
+        UPackage* Pkg = GetPackage(Obj);
         if (Pkg)
         {
             TArray<FString> PathFrags;
@@ -389,26 +438,124 @@ FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
 #endif
 }
 
-void FTypeScriptDeclarationGenerator::NamespaceBegin(UObject* Obj)
+void FTypeScriptDeclarationGenerator::NamespaceBegin(UObject* Obj, FStringBuffer& Buff)
 {
 #if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
     {
-        Output << "    namespace " << GetNamespace(Obj) << " {\n";
-        Output.Indent(4);
+        Buff << "    namespace " << GetNamespace(Obj) << " {\n";
+        Buff.Indent(4);
     }
 #endif
 }
 
-void FTypeScriptDeclarationGenerator::NamespaceEnd(UObject* Obj)
+void FTypeScriptDeclarationGenerator::NamespaceEnd(UObject* Obj, FStringBuffer& Buff)
 {
 #if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
     {
-        Output.Indent(-4);
-        Output << "    }\n\n";
+        Buff.Indent(-4);
+        Buff << "    }\n\n";
     }
 #endif
+}
+
+void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuffer& Buff)
+{
+    const UPackage* Pkg = GetPackage(Obj);
+    if (Pkg && !Obj->IsNative() && BlueprintTypeDeclInfoCache.Find(Pkg->GetFName()))
+    {
+        FStringBuffer Temp;
+        Temp.Prefix = Output.Prefix;
+        NamespaceBegin(Obj, Temp);
+        Temp << Buff;
+        NamespaceEnd(Obj, Temp);
+        BlueprintTypeDeclInfoCache[Pkg->GetFName()].TypeDecl = Temp.Buffer;
+        BlueprintTypeDeclInfoCache[Pkg->GetFName()].IsExist = true;
+    }
+    else
+    {
+        NamespaceBegin(Obj, Output);
+        Output << Buff;
+        NamespaceEnd(Obj, Output);
+    }
+}
+
+void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos()
+{
+    FString FileContent;
+    FFileHelper::LoadFileToString(
+        FileContent, *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts")));
+    RestoreBlueprintTypeDeclInfos(FileContent);
+}
+
+void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FString& FileContent)
+{
+    FString Rest = FileContent;
+    static const FString Start = TEXT(TYPE_DECL_START);
+    static const FString End = TEXT(TYPE_DECL_END);
+    static const FString NS_Keyword = TEXT("namespace ");
+    int Pos = FileContent.Find(*Start, ESearchCase::CaseSensitive);
+    while (Pos >= 0)
+    {
+        int VersionInfoEnd = FileContent.Find(TEXT("\n"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Pos + Start.Len());
+        int DeclEnd = FileContent.Find(*End, ESearchCase::CaseSensitive, ESearchDir::FromStart, VersionInfoEnd + 1);
+        if (DeclEnd < Pos)
+            return;
+        FString FileVersionString = FileContent.Mid(Pos + Start.Len(), VersionInfoEnd - Pos - Start.Len());
+        FString TypeDecl = FileContent.Mid(VersionInfoEnd + 1, DeclEnd - VersionInfoEnd - 1);
+        int NamespaceStart = TypeDecl.Find(*NS_Keyword);
+        if (NamespaceStart > 0)
+        {
+            int NamespaceEnd;
+            if (TypeDecl.FindChar('{', NamespaceEnd))
+            {
+                if (NamespaceEnd > NamespaceStart)
+                {
+                    FString Namespace =
+                        TypeDecl.Mid(NamespaceStart + NS_Keyword.Len(), NamespaceEnd - NamespaceStart - NS_Keyword.Len())
+                            .TrimStartAndEnd();
+                    FString PackageName = FString(TEXT("/")) + Namespace.Replace(TEXT("."), TEXT("/"));
+                    BlueprintTypeDeclInfoCache.Add(FName(*PackageName), {TypeDecl, FileVersionString, false, true});
+                }
+            }
+        }
+        Pos = FileContent.Find(*Start, ESearchCase::CaseSensitive, ESearchDir::FromStart, DeclEnd + End.Len());
+    }
+}
+
+void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName SearchPath)
+{
+    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(FName("AssetRegistry"));
+    IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+    FName PackagePath = (SearchPath == NAME_None) ? FName(TEXT("/Game")) : SearchPath;
+
+    FARFilter BPFilter;
+    BPFilter.PackagePaths.Add(PackagePath);
+    BPFilter.bRecursivePaths = true;
+    BPFilter.bRecursiveClasses = true;
+    BPFilter.ClassNames.Add(FName(TEXT("Blueprint")));
+    BPFilter.ClassNames.Add(FName(TEXT("UserDefinedEnum")));
+    BPFilter.ClassNames.Add(FName(TEXT("UserDefinedStruct")));
+
+    AssetRegistry.GetAssets(BPFilter, AssetList);
+    for (FAssetData const& AssetData : AssetList)
+    {
+        const FAssetPackageData* PackageData = AssetRegistry.GetAssetPackageData(AssetData.PackageName);
+        auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
+        auto FileVersion = PackageData->PackageGuid.ToString();
+        if (BlueprintTypeDeclInfoPtr)
+        {
+            BlueprintTypeDeclInfoPtr->IsExist = true;
+            BlueprintTypeDeclInfoPtr->Changed = FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString;
+            BlueprintTypeDeclInfoPtr->FileVersionString = FileVersion;
+        }
+        else
+        {
+            BlueprintTypeDeclInfoCache.Add(AssetData.PackageName, {TEXT(""), FileVersion, true, true});
+        }
+    }
 }
 
 void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
@@ -929,11 +1076,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     StringBuffer << "}\n\n";
 
-    NamespaceBegin(Class);
-
-    Output << StringBuffer;
-
-    NamespaceEnd(Class);
+    WriteOutput(Class, StringBuffer);
 }
 
 void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
@@ -1003,11 +1146,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
 
     StringBuffer << "}\n";
 
-    NamespaceBegin(Enum);
-
-    Output << StringBuffer;
-
-    NamespaceEnd(Enum);
+    WriteOutput(Enum, StringBuffer);
 }
 
 void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
@@ -1101,11 +1240,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
     StringBuffer << "    private __tid_" << SafeName(Struct->GetName()) << "__: boolean;\n";
     StringBuffer << "}\n\n";
 
-    NamespaceBegin(Struct);
-
-    Output << StringBuffer;
-
-    NamespaceEnd(Struct);
+    WriteOutput(Struct, StringBuffer);
 }
 
 void FTypeScriptDeclarationGenerator::End()
@@ -1170,7 +1305,6 @@ private:
 
     void GenUeDts()
     {
-        LoadAllWidgetBlueprint();
         GenTypeScriptDeclaration();
 
         TArray<UObject*> SortedClasses(GetSortedClasses());
@@ -1274,34 +1408,11 @@ public:
         FGenDTSCommands::Unregister();
     }
 
-    void LoadAllWidgetBlueprint() override
-    {
-#if WITH_EDITOR
-        FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(FName("AssetRegistry"));
-        IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-
-        TArray<FAssetData> AssetList;
-
-        FName PackagePath = (SearchPath == NAME_None) ? FName(TEXT("/Game")) : SearchPath;
-
-        FARFilter BPFilter;
-        BPFilter.PackagePaths.Add(PackagePath);
-        BPFilter.bRecursivePaths = true;
-        BPFilter.bRecursiveClasses = true;
-        BPFilter.ClassNames.Add(FName(TEXT("Blueprint")));
-        BPFilter.ClassNames.Add(FName(TEXT("UserDefinedEnum")));
-
-        AssetRegistry.GetAssets(BPFilter, AssetList);
-        for (FAssetData const& Asset : AssetList)
-        {
-            Asset.GetAsset();
-        }
-#endif
-    }
-
     void GenTypeScriptDeclaration() override
     {
         FTypeScriptDeclarationGenerator TypeScriptDeclarationGenerator;
+        TypeScriptDeclarationGenerator.RestoreBlueprintTypeDeclInfos();
+        TypeScriptDeclarationGenerator.LoadAllWidgetBlueprint(SearchPath);
         TypeScriptDeclarationGenerator.GenTypeScriptDeclaration(GenStruct, GenEnum);
     }
 
