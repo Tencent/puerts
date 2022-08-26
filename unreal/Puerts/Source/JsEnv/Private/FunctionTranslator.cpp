@@ -256,11 +256,13 @@ void FFunctionTranslator::Call(
         {
             Arguments[i]->Property->InitializeValue_InContainer(Params);
         }
-        if (UNLIKELY(ArgumentDefaultValues && Info[i]->IsUndefined()))
+        
+        const bool ArgIsUndefined = Info[i]->IsUndefined();
+        if (UNLIKELY(ArgumentDefaultValues && ArgIsUndefined))
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
         }
-        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
+        else if (!ArgIsUndefined && !Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
         {
             return;
         }
