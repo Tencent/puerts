@@ -13,6 +13,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// Portable Embedded Scripting API
+
 #define PESAPI_VERSION 2
 
 #define PESAPI_EXTERN
