@@ -62,35 +62,35 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class MultiThreadTest
     {
-        [Test]
-        public void MultiThread()
-        {
-            var jsEnv = new JsEnv(new TxtLoader());
-            var task = new Task(() =>
-            {
-                var env = new JsEnv(new TxtLoader());
-                env.Eval(@"
-                    const CS = require('csharp');
-                    setInterval(()=> {
-                        CS.System.Console.WriteLine(2 + ' : ' + CS.PuertsTest.Randomer.GetRandomAbility().Name);
-                    }, 100)
-                ");
-                while (true)
-                {
-                    env.Tick();
-                }
-            });
-            task.Start();
-            jsEnv.Eval(@"
-                const CS = require('csharp');
-                setInterval(()=> {
-                    CS.System.Console.WriteLine(1 + ' : ' + CS.PuertsTest.Randomer.GetRandomCharacter().Name);
-                }, 100)
-            ");
-            while (true)
-            {
-                jsEnv.Tick();
-            }
-        }
+        // [Test]
+        // public void MultiThread()
+        // {
+        //     var jsEnv = new JsEnv(new TxtLoader());
+        //     var task = new Task(() =>
+        //     {
+        //         var env = new JsEnv(new TxtLoader());
+        //         env.Eval(@"
+        //             const CS = require('csharp');
+        //             setInterval(()=> {
+        //                 CS.System.Console.WriteLine(2 + ' : ' + CS.PuertsTest.Randomer.GetRandomAbility().Name);
+        //             }, 100)
+        //         ");
+        //         while (true)
+        //         {
+        //             env.Tick();
+        //         }
+        //     });
+        //     task.Start();
+        //     jsEnv.Eval(@"
+        //         const CS = require('csharp');
+        //         setInterval(()=> {
+        //             CS.System.Console.WriteLine(1 + ' : ' + CS.PuertsTest.Randomer.GetRandomCharacter().Name);
+        //         }, 100)
+        //     ");
+        //     while (true)
+        //     {
+        //         jsEnv.Tick();
+        //     }
+        // }
     }
 }
