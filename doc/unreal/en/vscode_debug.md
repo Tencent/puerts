@@ -6,7 +6,7 @@ Below is a translated version of the original docs by Incanta Games. The transla
 
 - In the main menu, select `Edit -> Project Settings`, enable the `Debug Enable` setting under the `Plugin -> Puerts Setting` page.
 
-![puerts_conf](../../pic/puerts_conf.png)
+![puerts_conf](../../../doc/pic/puerts_conf.png)
 
 - Enable `Wait Debugger` in the settings above if you want to the JS to wait for a debugger to attach before executing any code
     - Even if you launch VSCode with the debugger to attach ASAP, it may take at least 100ms for the debugger connection handshake to finish.
