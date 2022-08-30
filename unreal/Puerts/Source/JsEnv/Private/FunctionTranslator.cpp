@@ -256,7 +256,7 @@ void FFunctionTranslator::Call(
         {
             Arguments[i]->Property->InitializeValue_InContainer(Params);
         }
-        
+
         const bool ArgIsUndefined = Info[i]->IsUndefined();
         if (UNLIKELY(ArgumentDefaultValues && ArgIsUndefined))
         {
@@ -534,11 +534,12 @@ void FExtensionMethodTranslator::CallExtension(
 
     for (int i = 1; i < Arguments.size(); ++i)
     {
-        if (UNLIKELY(ArgumentDefaultValues && Info[i - 1]->IsUndefined()))
+        const bool ArgIsUndefined = Info[i - 1]->IsUndefined();
+        if (UNLIKELY(ArgumentDefaultValues && ArgIsUndefined))
         {
             Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
         }
-        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
+        else if (!ArgIsUndefined && !Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
         {
             return;
         }
