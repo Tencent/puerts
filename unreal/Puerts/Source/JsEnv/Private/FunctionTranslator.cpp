@@ -243,45 +243,13 @@ void FFunctionTranslator::Call(
     }
 #endif
     if (Params)
-    {
         FMemory::Memzero(Params, ParamsBufferSize);
-        if (Return)
-        {
-            Return->Property->InitializeValue_InContainer(Params);
-        }
-    }
-    for (int i = 0; i < Arguments.size(); ++i)
-    {
-        if (Arguments[i]->ParamShallowCopySize == 0)
-        {
-            Arguments[i]->Property->InitializeValue_InContainer(Params);
-        }
-        if (UNLIKELY(ArgumentDefaultValues && Info[i]->IsUndefined()))
-        {
-            Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
-        }
-        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
-        {
-            return;
-        }
-    }
+
+    Call_ProcessParams(Isolate, Context, Info, Params, 0);
 
     CallObject->UObject::ProcessEvent(CallFunction.Get(), Params);
 
-    if (Return)
-    {
-        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
-        Return->Property->DestroyValue_InContainer(Params);
-    }
-
-    for (int i = 0; i < Arguments.size(); ++i)
-    {
-        Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
-        if (Arguments[i]->ParamShallowCopySize == 0)
-        {
-            Arguments[i]->Property->DestroyValue_InContainer(Params);
-        }
-    }
+    Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 0);
 }
 
 void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
@@ -292,39 +260,14 @@ void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
 #else
     void* Params = ParamsBufferSize > 0 ? FMemory_Alloca(ParamsBufferSize) : nullptr;
 #endif
-
     if (Params)
-    {
         FMemory::Memzero(Params, ParamsBufferSize);
-    }
-    for (int i = 0; i < Arguments.size(); ++i)
-    {
-        if (Arguments[i]->ParamShallowCopySize == 0)
-        {
-            Arguments[i]->Property->InitializeValue_InContainer(Params);
-        }
-        if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i], Params, false))
-        {
-            return;
-        }
-    }
+
+    Call_ProcessParams(Isolate, Context, Info, Params, 0);
 
     OnCall(Params);
 
-    if (Return)
-    {
-        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
-        Return->Property->DestroyValue_InContainer(Params);
-    }
-
-    for (int i = 0; i < Arguments.size(); ++i)
-    {
-        Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
-        if (Arguments[i]->ParamShallowCopySize == 0)
-        {
-            Arguments[i]->Property->DestroyValue_InContainer(Params);
-        }
-    }
+    Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 0);
 }
 
 void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction,
@@ -512,35 +455,16 @@ void FExtensionMethodTranslator::CallExtension(
 #endif
 
     if (Params)
-        Function->InitializeStruct(Params);
+        FMemory::Memzero(Params, ParamsBufferSize);
 
+    Arguments[0]->Property->InitializeValue_InContainer(Params);
     if (!Arguments[0]->JsToUEInContainer(Isolate, Context, Info.Holder(), Params, false))
     {
-        if (Params)
-        {
-            for (int i = 0; i < Arguments.size(); ++i)
-            {
-                if (Arguments[i]->ParamShallowCopySize == 0)
-                {
-                    Arguments[i]->Property->DestroyValue_InContainer(Params);
-                }
-            }
-        }
         FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
 
-    for (int i = 1; i < Arguments.size(); ++i)
-    {
-        if (UNLIKELY(ArgumentDefaultValues && Info[i - 1]->IsUndefined()))
-        {
-            Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
-        }
-        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
-        {
-            return;
-        }
-    }
+    Call_ProcessParams(Isolate, Context, Info, Params, 1);
 
     if (!BindObject.IsValid())
     {
@@ -549,16 +473,7 @@ void FExtensionMethodTranslator::CallExtension(
 
     BindObject->UObject::ProcessEvent(Function.Get(), Params);
 
-    if (Return)
-    {
-        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
-        Return->Property->DestroyValue_InContainer(Params);
-    }
-
-    for (int i = 1; i < Arguments.size(); ++i)
-    {
-        Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i - 1], Params, false);
-    }
+    Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 1);
 
     // Function->HasAnyFlags()
     if (!IsUObject)    // FScriptStruct, so copy back
@@ -566,16 +481,6 @@ void FExtensionMethodTranslator::CallExtension(
         auto StructProperty = Arguments[0]->StructProperty;
         StructProperty->CopySingleValue(FV8Utils::GetPointer(Info.Holder()), StructProperty->ContainerPtrToValuePtr<void>(Params));
     }
-
-    if (Params)
-    {
-        for (int i = 0; i < Arguments.size(); ++i)
-        {
-            if (Arguments[i]->ParamShallowCopySize == 0)
-            {
-                Arguments[i]->Property->DestroyValue_InContainer(Params);
-            }
-        }
-    }
+    Arguments[0]->Property->DestroyValue_InContainer(Params);
 }
 };    // namespace puerts
