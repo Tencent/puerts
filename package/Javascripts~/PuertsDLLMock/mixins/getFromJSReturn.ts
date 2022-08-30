@@ -1,4 +1,4 @@
-import { GetType, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32 } from "../library";
+import { GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32 } from "../library";
 /**
  * mixin
  * C#调用JS时，获取JS函数返回值
@@ -34,7 +34,18 @@ export default function WebGLBackendGetFromJSReturnAPI(engine: PuertsJSEngine) {
             return engine.csharpObjectMap.getCSIdentifierFromObject(engine.lastReturnCSResult);
         },
         GetTypeIdFromResult: function (resultInfo: IntPtr) {
-            return GetType(engine, engine.lastReturnCSResult);
+            var value = engine.lastReturnCSResult;
+            var typeid = 0;
+            if (value instanceof JSFunction) {
+                typeid = (value._func as any)["$cid"];
+            } else {
+                typeid = (value as any)["$cid"];
+            }
+
+            if (!typeid) {
+                throw new Error('cannot find typeid for' + value)
+            }
+            return typeid
         },
         GetFunctionFromResult: function (resultInfo: IntPtr): JSFunctionPtr {
             var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(engine.lastReturnCSResult);
