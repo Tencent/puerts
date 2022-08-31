@@ -447,8 +447,9 @@ void V8InspectorClientImpl::OnHTTP(wspp_connection_hdl Handle)
 
 void V8InspectorClientImpl::OnOpen(wspp_connection_hdl Handle)
 {
-    V8InspectorChannel.reset(new V8InspectorChannelImpl(Isolate, V8Inspector, CtxGroupID));
-    V8InspectorChannel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
+    V8InspectorChannelImpl* channel = new V8InspectorChannelImpl(V8Inspector, CtxGroupID);
+    V8InspectorChannels[Handle.lock().get()] = channel;
+    channel->OnMessage(std::bind(&V8InspectorClientImpl::OnSendMessage, this, Handle, std::placeholders::_1));
 #if USING_UE
     UE_LOG(LogV8Inspector, Display, TEXT("Inspector: Connect"));
 #else
