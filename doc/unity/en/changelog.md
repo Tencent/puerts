@@ -6,11 +6,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-preview.6] - 2022-07-25
+1. 支持同时连接多个inspector调试端
+2. 修复unity2021.3.4+ inspector崩溃的问题
+3. fix #708
+4. unity2018- 禁用generic wrapper
+
+## [1.4.0-preview.5] - 2022-07-08
+1. android、ios平台的v8降到8.4以规避 #908
+2. 修复 #907
+
+## [1.4.0-preview.3] - 2022-07-08
+1. 合入1.3.5的改动
+2. 修复 #899
+
+## [1.4.0-preview.1] - 2022-06-07
+1. 支持apple silicon芯片 #591
+2. 升级默认v8到9.4版本，nodejs到16版本
+3. 所有属性改为configurable #667
+4. 添加`require('puerts').getLastException`接口 #629
+
 ## [1.3.7] - 2022-07-28
 1. 1.3版本改为默认不开启泛型类的泛型式生成 #937 #918
 2. fix: 生成BlittableCopy时报参数数量不匹配的错 #938
 3. fix: MJSImporter在2018下会出警告的问题
-4. fix: #912
 
 ## [1.3.6] - 2022-07-13
 1. fix: UnityMenu.cs传参错误
