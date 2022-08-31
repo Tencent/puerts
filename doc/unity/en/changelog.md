@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.3.8] - 2022-08-31
+1. fix: didn't check NativeObject's type when setting fields. #954
+1. fix: easy to cause `task.GetAwaiter(...).OnCompleted is not a function` error in Unity's Ilcpp mode #966
+2. optimize: the memory usage for JSObject #947
+2. optimize: disable setting constructor's BindingMode to Lazy
+2. optimize: disable reflect extension feature in Editor's Playmode
+
 ## [1.3.7] - 2022-07-28
 1. disable generic wrapper by default in 1.3 #937 #918
 2. fix: arguments number mismatch when generating BlittableCopy #938
