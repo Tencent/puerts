@@ -26,6 +26,13 @@ you can get the english version change log at [Github Release](https://github.co
 3. 所有属性改为configurable #667
 4. 添加`require('puerts').getLastException`接口 #629
 
+## [1.3.8] - 2022-08-31
+1. fix: 优化JSObject的内存占用 #947
+1. fix: field赋值时没有NativeObject类型检查的问题 #954
+1. fix: ILCPP模式下容易出现`task.GetAwaiter(...).OnCompleted is not a function`的问题 #966
+2. optimize: 禁用构造函数设置为Lazy
+2. optimize: Editor下运行模式默认不打开反射extension功能
+
 ## [1.3.7] - 2022-07-28
 1. 1.3版本改为默认不开启泛型类的泛型式生成 #937 #918
 2. fix: 生成BlittableCopy时报参数数量不匹配的错 #938
