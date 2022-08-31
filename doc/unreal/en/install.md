@@ -43,11 +43,7 @@ puerts支持多种脚本后端：V8，quickjs，nodejs
 
 quickjs后端[下载](https://github.com/puerts/backend-quickjs)
 
-<<<<<<< HEAD
 nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases/tag/NodeJS_220726_2)
-=======
-nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases/tag/NodeJS_0329)
->>>>>>> c710d19b (update doc)
 
 解压到[YouProject/Plugins/Puerts/ThirdParty](unreal/Puerts/ThirdParty)
 
