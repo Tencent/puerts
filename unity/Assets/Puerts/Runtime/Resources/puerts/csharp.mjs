@@ -122,7 +122,7 @@ function setref(x, val) {
 
 function taskToPromise(task) {
     return new Promise((resolve, reject) => {
-        task.GetAwaiter().OnCompleted(() => {
+        task.GetAwaiter().UnsafeOnCompleted(() => {
             let t = task;
             task = undefined;
             if (t.IsFaulted) {
