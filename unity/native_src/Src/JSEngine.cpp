@@ -24,6 +24,9 @@ namespace puerts
     static void EvalWithPath(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
@@ -112,7 +115,10 @@ namespace puerts
         auto Isolate = MainIsolate;
         ResultInfo.Isolate = MainIsolate;
 
-        v8::Isolate::Scope Isolatescope(Isolate);
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
+        v8::Isolate::Scope IsolateScope(Isolate);
 
         v8::HandleScope HandleScope(Isolate);
 
@@ -193,6 +199,9 @@ namespace puerts
         ResultInfo.Isolate = MainIsolate;
         Isolate->SetData(0, this);
 
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 
@@ -252,7 +261,10 @@ namespace puerts
 
         {
             auto Isolate = MainIsolate;
-            v8::Isolate::Scope Isolatescope(Isolate);
+#ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+#endif
+            v8::Isolate::Scope IsolateScope(Isolate);
             v8::HandleScope HandleScope(Isolate);
             auto Context = ResultInfo.Context.Get(Isolate);
             v8::Context::Scope ContextScope(Context);
@@ -345,6 +357,9 @@ namespace puerts
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
 
         // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]ContextScope");
+#ifdef THREAD_SAFE
+        v8::Locker Locker(InIsolate);
+#endif
         v8::Isolate::Scope IsolateScope(InIsolate);
         v8::HandleScope HandleScope(InIsolate);
         v8::Context::Scope ContextScope(InContext);
@@ -396,6 +411,9 @@ namespace puerts
 
         // PLog(puerts::Log, std::to_string((long)InObject));
         v8::Isolate* Isolate = InObject->Isolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = InObject->Context.Get(Isolate);
@@ -466,6 +484,9 @@ namespace puerts
     void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -479,6 +500,9 @@ namespace puerts
     static void NewWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
@@ -520,6 +544,9 @@ namespace puerts
         }
 
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -552,6 +579,9 @@ namespace puerts
     bool JSEngine::RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -574,6 +604,9 @@ namespace puerts
     bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool NotReadonlyStatic)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -719,6 +752,9 @@ namespace puerts
     void JSEngine::CreateInspector(int32_t Port)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -733,6 +769,9 @@ namespace puerts
     void JSEngine::DestroyInspector()
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -750,6 +789,9 @@ namespace puerts
 #if WITH_NODEJS
 
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
