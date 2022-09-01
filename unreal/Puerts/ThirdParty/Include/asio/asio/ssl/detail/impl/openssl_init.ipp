@@ -3,7 +3,7 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // Copyright (c) 2005 Voipster / Indrek dot Juhani at voipster dot com
-// Copyright (c) 2005-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2005-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -42,7 +42,7 @@ public:
 
     mutexes_.resize(::CRYPTO_num_locks());
     for (size_t i = 0; i < mutexes_.size(); ++i)
-      mutexes_[i].reset(new asio::detail::mutex);
+      mutexes_[i].reset(new puerts_asio::detail::mutex);
     ::CRYPTO_set_locking_callback(&do_init::openssl_locking_func);
 #endif // (OPENSSL_VERSION_NUMBER < 0x10100000L)
 #if (OPENSSL_VERSION_NUMBER < 0x10000000L)
@@ -85,9 +85,9 @@ public:
 #endif // (OPENSSL_VERSION_NUMBER >= 0x10002000L)
        // && (OPENSSL_VERSION_NUMBER < 0x10100000L)
        // && !defined(SSL_OP_NO_COMPRESSION)
-#if !defined(OPENSSL_IS_BORINGSSL)
+#if !defined(OPENSSL_IS_BORINGSSL) && !defined(ASIO_USE_WOLFSSL)
     ::CONF_modules_unload(1);
-#endif // !defined(OPENSSL_IS_BORINGSSL)
+#endif // !defined(OPENSSL_IS_BORINGSSL) && !defined(ASIO_USE_WOLFSSL)
 #if !defined(OPENSSL_NO_ENGINE) \
   && (OPENSSL_VERSION_NUMBER < 0x10100000L)
     ::ENGINE_cleanup();
@@ -129,8 +129,8 @@ private:
   }
 
   // Mutexes to be used in locking callbacks.
-  std::vector<asio::detail::shared_ptr<
-        asio::detail::mutex> > mutexes_;
+  std::vector<puerts_asio::detail::shared_ptr<
+        puerts_asio::detail::mutex> > mutexes_;
 #endif // (OPENSSL_VERSION_NUMBER < 0x10100000L)
 
 #if !defined(SSL_OP_NO_COMPRESSION) \
@@ -140,10 +140,10 @@ private:
        // && (OPENSSL_VERSION_NUMBER >= 0x00908000L)
 };
 
-asio::detail::shared_ptr<openssl_init_base::do_init>
+puerts_asio::detail::shared_ptr<openssl_init_base::do_init>
 openssl_init_base::instance()
 {
-  static asio::detail::shared_ptr<do_init> init(new do_init);
+  static puerts_asio::detail::shared_ptr<do_init> init(new do_init);
   return init;
 }
 
@@ -158,7 +158,7 @@ STACK_OF(SSL_COMP)* openssl_init_base::get_null_compression_methods()
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

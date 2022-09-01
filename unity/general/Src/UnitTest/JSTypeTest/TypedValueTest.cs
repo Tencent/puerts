@@ -5,10 +5,17 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
 using NUnit.Framework;
 using System;
 
-namespace Puerts.UnitTest
+namespace Puerts.UnitTest.JSTypeTest
 {
     public class TypedValue
     {
@@ -47,8 +54,6 @@ namespace Puerts.UnitTest
 
         public static bool IsPropertyLongEquals(long l) 
         {
-            System.Console.WriteLine(PropertyLong);
-            System.Console.WriteLine(l);
             return PropertyLong == l;
         }
 
@@ -70,11 +75,11 @@ namespace Puerts.UnitTest
             jsEnv.Eval(@"
                 const CS = require('csharp');
                 let value = new CS.Puerts.Int64Value(512n);
-                CS.Puerts.UnitTest.TypedValue.Callback(value);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.Callback(value);
             ");
 
-            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
-            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+            Assert.True(TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
+            Assert.False(TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
         [Test]
         public void Int64Value2()
@@ -84,11 +89,11 @@ namespace Puerts.UnitTest
             jsEnv.Eval(@"
                 const CS = require('csharp');
                 let value = new CS.Puerts.Int64Value(512n);
-                CS.Puerts.UnitTest.TypedValue.CallbackLong(value);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.CallbackLong(value);
             ");
 
-            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
-            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+            Assert.True(TypedValue.GetLastCallbackValueType() == typeof(System.Int64));
+            Assert.False(TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
         [Test]
         public void Int64Value3()
@@ -97,8 +102,8 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let value = new CS.Puerts.Int64Value('512');
-                CS.Puerts.UnitTest.TypedValue.FieldLong = value;
+                let value = new CS.Puerts.Int64Value(512n);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.FieldLong = value;
             ");
 
             Assert.True(TypedValue.IsFieldLongEquals(512));
@@ -110,8 +115,8 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval(@"
                 const CS = require('csharp');
-                let value = new CS.Puerts.Int64Value('512');
-                CS.Puerts.UnitTest.TypedValue.PropertyLong = value;
+                let value = new CS.Puerts.Int64Value(512n);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.PropertyLong = value;
             ");
 
             Assert.True(TypedValue.IsPropertyLongEquals(512));
@@ -139,7 +144,7 @@ namespace Puerts.UnitTest
             Assert.True(
                 jsEnv.Eval<bool>(@"
                     const CS = require('csharp');
-                    typeof CS.Puerts.UnitTest.TypedValue.ReturnALong() == 'string';
+                    typeof CS.Puerts.UnitTest.JSTypeTest.TypedValue.ReturnALong() == 'string';
                 ")
             );
         }
@@ -166,7 +171,7 @@ namespace Puerts.UnitTest
             Assert.True(
                 jsEnv.Eval<bool>(@"
                     const CS = require('csharp');
-                    typeof CS.Puerts.UnitTest.TypedValue.ReturnAUlong() == 'string';
+                    typeof CS.Puerts.UnitTest.JSTypeTest.TypedValue.ReturnAUlong() == 'string';
                 ")
             );
         }
@@ -178,11 +183,11 @@ namespace Puerts.UnitTest
             jsEnv.Eval(@"
                 const CS = require('csharp');
                 let value = new CS.Puerts.FloatValue(512.256);
-                CS.Puerts.UnitTest.TypedValue.Callback(value);
+                CS.Puerts.UnitTest.JSTypeTest.TypedValue.Callback(value);
             ");
 
-            Assert.True(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Single));
-            Assert.False(UnitTest.TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
+            Assert.True(TypedValue.GetLastCallbackValueType() == typeof(System.Single));
+            Assert.False(TypedValue.GetLastCallbackValueType() == typeof(System.Int32));
         }
     }
 }

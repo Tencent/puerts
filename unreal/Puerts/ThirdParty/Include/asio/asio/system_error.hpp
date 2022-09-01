@@ -2,7 +2,7 @@
 // system_error.hpp
 // ~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -29,7 +29,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
@@ -119,12 +119,12 @@ private:
   std::string context_;
 
   // The string representation of the error.
-  mutable asio::detail::scoped_ptr<std::string> what_;
+  mutable puerts_asio::detail::scoped_ptr<std::string> what_;
 };
 
 #endif // defined(ASIO_HAS_STD_SYSTEM_ERROR)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

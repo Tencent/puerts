@@ -21,7 +21,7 @@ runs:
       run: echo "$(cat unity/native_src/cmake/${{ inputs.backend }}/backend.rc)" >> $GITHUB_ENV
       shell: bash
 
-    # if BACKEND_URL is specified, use this
+    # BACKEND_URL is the 1st option.
     - name: wget released artifact
       if: ${{ env.BACKEND_URL != '' && runner.os != 'Windows' }}
       shell: bash

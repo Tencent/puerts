@@ -11,24 +11,56 @@ using System;
 
 namespace Puerts.Editor 
 {
-    public class NodeJS
+    public class NodeRunner
     {
         protected static readonly string DefaultProjectPath = Application.dataPath + "/../Puer-Project/";
 
-        public static JsEnv RunInPuerProject(string Code, JsEnv env = null, string ProjectPath = null) 
+        public JsEnv env = null;
+
+        private string ProjectPath;
+
+        
+
+        public NodeRunner(string ProjectPath) 
+        {
+            if (ProjectPath == null) 
+            {
+                ProjectPath = DefaultProjectPath;
+            }
+            else 
+            {
+                this.ProjectPath = ProjectPath;
+            }
+            EditorApplication.update += Update;
+        }
+
+        void Update() 
+        {
+            if (env != null) {
+                env.Tick();
+            }
+        }
+
+        public T Run<T>(string Code) 
         {
             if (env == null) env = new JsEnv();
-            if (ProjectPath == null) ProjectPath = DefaultProjectPath;
-
+            
             EditorUtility.DisplayProgressBar("PuerNode", "Running in Puer-Project", 0);
+            T ret = default(T);
             try 
             {
-                env.Eval(@"
+                ret = env.Eval<T>(String.Format(@"
                     global.CS = puertsRequire('csharp');
-                    global.__puerProjectRoot = '" + DefaultProjectPath + @"';
-                    global.require = require('module').createRequire('" + ProjectPath + @"');
-                    " + Code + @"
-                ");
+                    global.__puerProjectRoot = '{0}';
+                    global.require = require('module').createRequire('{0}');
+                    if (!require('fs').existsSync(`{0}/node_modules`)) {{
+                        console.log('[Puer] installing node_modules');
+                        require('child_process').execSync('cd {0} && npm i')
+                    }}
+                    (async function() {{
+                        {1}
+                    }})().catch(console.error);
+                ", ProjectPath.Replace("\\", "/"), Code));
             }
             catch (Exception e)
             {
@@ -39,7 +71,37 @@ namespace Puerts.Editor
                 EditorUtility.ClearProgressBar();
             }
 
-            return env;
+            return ret;
+        }
+
+        public void Run(string Code) 
+        {
+            if (env == null) env = new JsEnv();
+            EditorUtility.DisplayProgressBar("PuerNode", "Running in Puer-Project", 0);
+            try 
+            {
+                env.Eval(String.Format(@"
+                    global.CS = puertsRequire('csharp');
+                    global.__puerProjectRoot = '{0}';
+                    global.require = require('module').createRequire('{0}');
+                    if (!require('fs').existsSync(`{0}/node_modules`)) {{
+                        console.log('[Puer] installing node_modules');
+                        require('child_process').execSync('cd {0} && npm i')
+                    }}
+
+                    (async function() {{
+                        {1}
+                    }})().catch(console.error);
+                ", ProjectPath.Replace("\\", "/"), Code));
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
         }
     }
 }

@@ -13,7 +13,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\Bin\</OutputPath>
+    <OutputPath>.\Bin\</OutputPath>
     <DefineConstants>DEBUG;_DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -21,7 +21,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
-    <OutputPath>..\Bin\</OutputPath>
+    <OutputPath>.\Bin\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -41,26 +41,32 @@
     <Compile Include="..\Src\TxtLoader.cs">
       <Link>Src\TxtLoader.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\WrapperTestClass.cs">
-      <Link>Src\UnitTest\WrapperTestClass.cs</Link>
+    <Compile Include="..\Src\UnitTest\TestClass.cs">
+      <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs">
-      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs</Link>
-    </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs">
-      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\WrapperTest\WrapperTestClass.cs">
+      <Link>Src\UnitTest\WrapperTest\WrapperTestClass.cs</Link>
     </Compile>
     <Compile Include="..\Src\WrapperGenerate.cs">
       <Link>Src\WrapperGenerate.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\OptionalParametersTest.cs">
-      <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
+      <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
-      <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup />

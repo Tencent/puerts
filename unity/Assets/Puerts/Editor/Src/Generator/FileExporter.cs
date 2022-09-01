@@ -123,8 +123,8 @@ namespace Puerts.Editor
                             continue;
                         }
                         while (makeFileUniqueMap.ContainsKey(filePath.ToLower()))
-                        {
-                            // 锟斤拷锟节达拷小写锟截革拷锟斤拷锟斤拷锟斤拷锟斤拷锟揭伙拷锟絠d去锟斤拷
+                        {                            
+                            // 存在大小写重复的情况，用一个id去重
                             filePath = saveTo + staticWrapperInfo.WrapClassName + "_" + uniqueId + ".cs";
                             uniqueId++;
                         }

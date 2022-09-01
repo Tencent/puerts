@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-preview.6] - 2022-07-08
+1. support multi inspector client 
+2. fix the inspector crash problem in unity2021.3.4+
+3. fix #708
+4. disable generic wrapper in unity2018-
+
+## [1.4.0-preview.5] - 2022-07-08
+1. downgrade the v8 to 8.4 in android、ios building. to avoid #908
+2. fix #907
+
+## [1.4.0-preview.3] - 2022-07-08
+1. merge 1.3.5 
+2. fix #899
+
+## [1.4.0-preview.2] - 2022-06-20
+1. fix android arm64 plugin meta
+
+## [1.4.0-preview.1] - 2022-06-10
+1. support apple silicon #591
+2. upgrade the default v8 to 9.4，nodejs to 16
+3. make all members become configurable #667
+4. add `require('puerts').getLastException` to get the Error instance #629
+5. change LC_RPATH setter to support silicon
+
 ## [1.3.8] - 2022-08-31
 1. fix: didn't check NativeObject's type when setting fields. #954
 1. fix: easy to cause `task.GetAwaiter(...).OnCompleted is not a function` error in Unity's Ilcpp mode #966

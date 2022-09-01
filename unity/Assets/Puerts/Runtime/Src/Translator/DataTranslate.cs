@@ -15,25 +15,12 @@ namespace Puerts
 
     public class GeneralGetterManager
     {
-        private ObjectPool objectPool;
-
-        private TypeRegister typeRegister;
-
-        internal readonly JsEnv jsEnv;
-
         private Dictionary<Type, GeneralGetter> generalGetterMap = new Dictionary<Type, GeneralGetter>();
 
         private Dictionary<Type, GeneralGetter> nullableTypeGeneralGetterMap = new Dictionary<Type, GeneralGetter>();
 
-        internal GenericDelegateFactory genericDelegateFactory;
-
-        internal GeneralGetterManager(JsEnv jsEnv)
+        internal GeneralGetterManager()
         {
-            this.jsEnv = jsEnv;
-            objectPool = jsEnv.objectPool;
-            typeRegister = jsEnv.TypeRegister;
-            genericDelegateFactory = jsEnv.genericDelegateFactory;
-
             generalGetterMap[typeof(char)] = CharTranslator;
             generalGetterMap[typeof(sbyte)] = SbyteTranslator;
             generalGetterMap[typeof(byte)] = ByteTranslator;
@@ -139,6 +126,7 @@ namespace Puerts
             var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
             if (jsValueType == JsValueType.JsObject)
             {
+                var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
                 IntPtr DLLJSObjectPtr = getValueApi.GetJSObject(isolate, value, isByRef);
                 return jsEnv.jsObjectFactory.GetOrCreateJSObject(DLLJSObjectPtr, jsEnv);
             }
@@ -154,7 +142,7 @@ namespace Puerts
             if (jsValueType == JsValueType.Function)
             {
                 var nativePtr = getValueApi.GetFunction(isolate, value, isByRef);
-                return jsEnv.ToGenericDelegate(nativePtr);
+                return JsEnv.jsEnvs[jsEnvIdx].ToGenericDelegate(nativePtr);
             }
             else
             {
@@ -165,6 +153,7 @@ namespace Puerts
         internal object AnyTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var type = getValueApi.GetJsValueType(isolate, value, isByRef);
+            var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
             switch (type)
             {
                 case JsValueType.BigInt:
@@ -181,16 +170,16 @@ namespace Puerts
                     return JSObjectTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.NativeObject:
                     var typeId = getValueApi.GetTypeId(isolate, value, isByRef);
-                    if (!typeRegister.IsArray(typeId))
+                    if (!jsEnv.TypeRegister.IsArray(typeId))
                     {
-                        var objType = typeRegister.GetType(typeId);
+                        var objType = jsEnv.TypeRegister.GetType(typeId);
                         if (objType != typeof(object) && generalGetterMap.ContainsKey(objType))
                         {
                             return generalGetterMap[objType](jsEnvIdx, isolate, getValueApi, value, isByRef);
                         }
                     }
                     var objPtr = getValueApi.GetNativeObject(isolate, value, isByRef);
-                    var result = objectPool.Get(objPtr.ToInt32());
+                    var result = jsEnv.objectPool.Get(objPtr.ToInt32());
 
                     var typedValueResult = result as TypedValue;
                     if (typedValueResult != null)
@@ -230,7 +219,7 @@ namespace Puerts
                 if (getValueApi.GetJsValueType(isolate, value, isByRef) == JsValueType.NativeObject)
                 {
                     var objPtr = getValueApi.GetNativeObject(isolate, value, isByRef);
-                    var obj = objectPool.Get(objPtr.ToInt32());
+                    var obj = JsEnv.jsEnvs[jsEnvIdx].objectPool.Get(objPtr.ToInt32());
                     return (obj != null && type.IsAssignableFrom(obj.GetType())) ? obj : null;
                 }
                 return null;
@@ -244,7 +233,7 @@ namespace Puerts
                     if (jsValueType == JsValueType.Function)
                     {
                         var nativePtr = getValueApi.GetFunction(isolate, value, isByRef);
-                        var result = genericDelegateFactory.Create(type, nativePtr);
+                        var result = JsEnv.jsEnvs[jsEnvIdx].genericDelegateFactory.Create(type, nativePtr);
                         if (result == null)
                         {
                             throw new Exception("can not find delegate bridge for " + type.GetFriendlyName() + ", Please use JsEnv.UsingAction() Or JsEnv.UsingFunc() following the FAQ.");
@@ -306,9 +295,9 @@ namespace Puerts
             }
         }
 
-        public object GetSelf(IntPtr Self)
+        public object GetSelf(int jsEnvIdx, IntPtr Self)
         {
-            return objectPool.Get(Self.ToInt32());
+            return JsEnv.jsEnvs[jsEnvIdx].objectPool.Get(Self.ToInt32());
         }
 
         static private Dictionary<Type, JsValueType> primitiveTypeMap = new Dictionary<Type, JsValueType>()
@@ -398,20 +387,10 @@ namespace Puerts
 
     public class GeneralSetterManager
     {
-        private ObjectPool objectPool;
-
-        private TypeRegister typeRegister;
-
-        internal int jsEnvIdx;
-
         private Dictionary<Type, GeneralSetter> generalSetterMap = new Dictionary<Type, GeneralSetter>();
 
-        public GeneralSetterManager(JsEnv jsEnv)
+        public GeneralSetterManager()
         {
-            objectPool = jsEnv.objectPool;
-            typeRegister = jsEnv.TypeRegister;
-            jsEnvIdx = jsEnv.Idx;
-
             generalSetterMap[typeof(char)] = CharTranslator;
             generalSetterMap[typeof(sbyte)] = SbyteTranslator;
             generalSetterMap[typeof(byte)] = ByteTranslator;
@@ -532,10 +511,11 @@ namespace Puerts
             else
             {
                 Type realType = obj.GetType();
+                var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
                 if (realType == typeof(object))
                 {
-                    int typeId = typeRegister.GetTypeId(isolate, realType);
-                    int objectId = objectPool.FindOrAddObject(obj);
+                    int typeId = jsEnv.TypeRegister.GetTypeId(isolate, realType);
+                    int objectId = jsEnv.objectPool.FindOrAddObject(obj);
                     setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                 }
                 else
@@ -551,14 +531,15 @@ namespace Puerts
             {
                 return (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
                 {
+                    var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
                     if (obj == null)
                     {
                         setValueApi.SetNull(isolate, holder);
                     }
                     else
                     {
-                        int typeId = typeRegister.GetTypeId(isolate, obj.GetType());
-                        int objectId = objectPool.AddBoxedValueType(obj);
+                        int typeId = jsEnv.TypeRegister.GetTypeId(isolate, obj.GetType());
+                        int objectId = jsEnv.objectPool.AddBoxedValueType(obj);
                         setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
                 };
@@ -567,14 +548,15 @@ namespace Puerts
             {
                 return (int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj) =>
                 {
+                    var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
                     if (obj == null)
                     {
                         setValueApi.SetNull(isolate, holder);
                     }
                     else
                     {
-                        int typeId = typeRegister.GetTypeId(isolate, obj.GetType());
-                        int objectId = objectPool.FindOrAddObject(obj);
+                        int typeId = jsEnv.TypeRegister.GetTypeId(isolate, obj.GetType());
+                        int objectId = jsEnv.objectPool.FindOrAddObject(obj);
                         setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
                 };

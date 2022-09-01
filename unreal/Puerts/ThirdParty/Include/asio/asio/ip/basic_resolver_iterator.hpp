@@ -2,7 +2,7 @@
 // ip/basic_resolver_iterator.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -32,12 +32,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// An iterator over the entries produced by a resolver.
 /**
- * The asio::ip::basic_resolver_iterator class template is used to define
+ * The puerts_asio::ip::basic_resolver_iterator class template is used to define
  * iterators over the results returned by a resolver.
  *
  * The iterator's value_type, obtained when the iterator is dereferenced, is:
@@ -179,13 +179,13 @@ protected:
   }
 
   typedef std::vector<basic_resolver_entry<InternetProtocol> > values_type;
-  typedef asio::detail::shared_ptr<values_type> values_ptr_type;
+  typedef puerts_asio::detail::shared_ptr<values_type> values_ptr_type;
   values_ptr_type values_;
   std::size_t index_;
 };
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

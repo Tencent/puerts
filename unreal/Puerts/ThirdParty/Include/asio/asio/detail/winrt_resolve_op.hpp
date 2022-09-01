@@ -2,7 +2,7 @@
 // detail/winrt_resolve_op.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,6 +23,7 @@
 #include "asio/detail/fenced_block.hpp"
 #include "asio/detail/handler_alloc_helpers.hpp"
 #include "asio/detail/handler_invoke_helpers.hpp"
+#include "asio/detail/handler_work.hpp"
 #include "asio/detail/memory.hpp"
 #include "asio/detail/winrt_async_op.hpp"
 #include "asio/ip/basic_resolver_results.hpp"
@@ -30,10 +31,10 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
-template <typename Protocol, typename Handler>
+template <typename Protocol, typename Handler, typename IoExecutor>
 class winrt_resolve_op :
   public winrt_async_op<
     Windows::Foundation::Collections::IVectorView<
@@ -43,29 +44,34 @@ public:
   ASIO_DEFINE_HANDLER_PTR(winrt_resolve_op);
 
   typedef typename Protocol::endpoint endpoint_type;
-  typedef asio::ip::basic_resolver_query<Protocol> query_type;
-  typedef asio::ip::basic_resolver_results<Protocol> results_type;
+  typedef puerts_asio::ip::basic_resolver_query<Protocol> query_type;
+  typedef puerts_asio::ip::basic_resolver_results<Protocol> results_type;
 
-  winrt_resolve_op(const query_type& query, Handler& handler)
+  winrt_resolve_op(const query_type& query,
+      Handler& handler, const IoExecutor& io_ex)
     : winrt_async_op<
         Windows::Foundation::Collections::IVectorView<
           Windows::Networking::EndpointPair^>^>(
             &winrt_resolve_op::do_complete),
       query_(query),
-      handler_(ASIO_MOVE_CAST(Handler)(handler))
+      handler_(ASIO_MOVE_CAST(Handler)(handler)),
+      work_(handler_, io_ex)
   {
-    handler_work<Handler>::start(handler_);
   }
 
   static void do_complete(void* owner, operation* base,
-      const asio::error_code&, std::size_t)
+      const puerts_asio::error_code&, std::size_t)
   {
     // Take ownership of the operation object.
     winrt_resolve_op* o(static_cast<winrt_resolve_op*>(base));
-    ptr p = { asio::detail::addressof(o->handler_), o, o };
-    handler_work<Handler> w(o->handler_);
+    ptr p = { puerts_asio::detail::addressof(o->handler_), o, o };
 
     ASIO_HANDLER_COMPLETION((*o));
+
+    // Take ownership of the operation's outstanding work.
+    handler_work<Handler, IoExecutor> w(
+        ASIO_MOVE_CAST2(handler_work<Handler, IoExecutor>)(
+          o->work_));
 
     results_type results = results_type();
     if (!o->ec_)
@@ -77,8 +83,8 @@ public:
       }
       catch (Platform::Exception^ e)
       {
-        o->ec_ = asio::error_code(e->HResult,
-            asio::system_category());
+        o->ec_ = puerts_asio::error_code(e->HResult,
+            puerts_asio::system_category());
       }
     }
 
@@ -88,9 +94,9 @@ public:
     // with the handler. Consequently, a local copy of the handler is required
     // to ensure that any owning sub-object remains valid until after we have
     // deallocated the memory here.
-    detail::binder2<Handler, asio::error_code, results_type>
+    detail::binder2<Handler, puerts_asio::error_code, results_type>
       handler(o->handler_, o->ec_, results);
-    p.h = asio::detail::addressof(handler.handler_);
+    p.h = puerts_asio::detail::addressof(handler.handler_);
     p.reset();
 
     // Make the upcall if required.
@@ -106,10 +112,11 @@ public:
 private:
   query_type query_;
   Handler handler_;
+  handler_work<Handler, IoExecutor> executor_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\Lib\</OutputPath>
+    <OutputPath>.\Lib\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.Core\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>obj\Any CPU\Debug\Puerts.Core</IntermediateOutputPath>
     <DefineConstants>_DEBUG;DEBUG;TRACE;;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;</DefineConstants>
@@ -32,7 +32,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\Lib\</OutputPath>
+    <OutputPath>.\Lib\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.Core\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>obj\Any CPU\Release\Puerts.Core</IntermediateOutputPath>
     <DefineConstants>;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;</DefineConstants>
@@ -53,12 +53,6 @@
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Loader.cs">
       <Link>Assets\Puerts\Runtime\Src\Loader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\PuertsDLL.cs">
-      <Link>Assets\Puerts\Runtime\Src\PuertsDLL.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Assets\Puerts\Runtime\Src\StaticCallbacks.cs">
-      <Link>Assets\Puerts\Runtime\Src\StaticCallbacks.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
       <Link>Assets\Puerts\Runtime\Src\TypeExtensions.cs</Link>
@@ -107,6 +101,12 @@
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs">
       <Link>Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Native\PuertsDLL.cs">
+      <Link>Assets\Puerts\Runtime\Src\Native\PuertsDLL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Native\StaticCallbacks.cs">
+      <Link>Assets\Puerts\Runtime\Src\Native\StaticCallbacks.cs</Link>
     </Compile>
     <Compile Include="..\..\Assets\Puerts\Editor\Src\CJSImporter.cs">
       <Link>Assets\Puerts\Editor\Src\CJSImporter.cs</Link>

@@ -2,7 +2,7 @@
 // detail/descriptor_read_op.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -29,16 +29,18 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename MutableBufferSequence>
 class descriptor_read_op_base : public reactor_op
 {
 public:
-  descriptor_read_op_base(int descriptor,
-      const MutableBufferSequence& buffers, func_type complete_func)
-    : reactor_op(&descriptor_read_op_base::do_perform, complete_func),
+  descriptor_read_op_base(const puerts_asio::error_code& success_ec,
+      int descriptor, const MutableBufferSequence& buffers,
+      func_type complete_func)
+    : reactor_op(success_ec,
+        &descriptor_read_op_base::do_perform, complete_func),
       descriptor_(descriptor),
       buffers_(buffers)
   {
@@ -48,12 +50,24 @@ public:
   {
     descriptor_read_op_base* o(static_cast<descriptor_read_op_base*>(base));
 
-    buffer_sequence_adapter<asio::mutable_buffer,
-        MutableBufferSequence> bufs(o->buffers_);
+    typedef buffer_sequence_adapter<puerts_asio::mutable_buffer,
+        MutableBufferSequence> bufs_type;
 
-    status result = descriptor_ops::non_blocking_read(o->descriptor_,
-        bufs.buffers(), bufs.count(), o->ec_, o->bytes_transferred_)
-      ? done : not_done;
+    status result;
+    if (bufs_type::is_single_buffer)
+    {
+      result = descriptor_ops::non_blocking_read1(o->descriptor_,
+          bufs_type::first(o->buffers_).data(),
+          bufs_type::first(o->buffers_).size(),
+          o->ec_, o->bytes_transferred_) ? done : not_done;
+    }
+    else
+    {
+      bufs_type bufs(o->buffers_);
+      result = descriptor_ops::non_blocking_read(o->descriptor_,
+          bufs.buffers(), bufs.count(), o->ec_, o->bytes_transferred_)
+        ? done : not_done;
+    }
 
     ASIO_HANDLER_REACTOR_OPERATION((*o, "non_blocking_read",
           o->ec_, o->bytes_transferred_));
@@ -66,32 +80,37 @@ private:
   MutableBufferSequence buffers_;
 };
 
-template <typename MutableBufferSequence, typename Handler>
+template <typename MutableBufferSequence, typename Handler, typename IoExecutor>
 class descriptor_read_op
   : public descriptor_read_op_base<MutableBufferSequence>
 {
 public:
   ASIO_DEFINE_HANDLER_PTR(descriptor_read_op);
 
-  descriptor_read_op(int descriptor,
-      const MutableBufferSequence& buffers, Handler& handler)
-    : descriptor_read_op_base<MutableBufferSequence>(
+  descriptor_read_op(const puerts_asio::error_code& success_ec,
+      int descriptor, const MutableBufferSequence& buffers,
+      Handler& handler, const IoExecutor& io_ex)
+    : descriptor_read_op_base<MutableBufferSequence>(success_ec,
         descriptor, buffers, &descriptor_read_op::do_complete),
-      handler_(ASIO_MOVE_CAST(Handler)(handler))
+      handler_(ASIO_MOVE_CAST(Handler)(handler)),
+      work_(handler_, io_ex)
   {
-    handler_work<Handler>::start(handler_);
   }
 
   static void do_complete(void* owner, operation* base,
-      const asio::error_code& /*ec*/,
+      const puerts_asio::error_code& /*ec*/,
       std::size_t /*bytes_transferred*/)
   {
     // Take ownership of the handler object.
     descriptor_read_op* o(static_cast<descriptor_read_op*>(base));
-    ptr p = { asio::detail::addressof(o->handler_), o, o };
-    handler_work<Handler> w(o->handler_);
+    ptr p = { puerts_asio::detail::addressof(o->handler_), o, o };
 
     ASIO_HANDLER_COMPLETION((*o));
+
+    // Take ownership of the operation's outstanding work.
+    handler_work<Handler, IoExecutor> w(
+        ASIO_MOVE_CAST2(handler_work<Handler, IoExecutor>)(
+          o->work_));
 
     // Make a copy of the handler so that the memory can be deallocated before
     // the upcall is made. Even if we're not about to make an upcall, a
@@ -99,9 +118,9 @@ public:
     // with the handler. Consequently, a local copy of the handler is required
     // to ensure that any owning sub-object remains valid until after we have
     // deallocated the memory here.
-    detail::binder2<Handler, asio::error_code, std::size_t>
+    detail::binder2<Handler, puerts_asio::error_code, std::size_t>
       handler(o->handler_, o->ec_, o->bytes_transferred_);
-    p.h = asio::detail::addressof(handler.handler_);
+    p.h = puerts_asio::detail::addressof(handler.handler_);
     p.reset();
 
     // Make the upcall if required.
@@ -116,10 +135,11 @@ public:
 
 private:
   Handler handler_;
+  handler_work<Handler, IoExecutor> work_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -89,12 +89,14 @@ if ( APPLE )
         )
 		set_xcode_property (puerts IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
-        # set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-        # 某些mac机器上会默认开始编译arm64版本，暂时先写死x86版本，后续再支持arm64
-        set(CMAKE_OSX_ARCHITECTURES x86_64)
-
+        if ( NOT DEFINED FOR_SILICON )
+            set(CMAKE_OSX_ARCHITECTURES x86_64)
+        else ()
+            set(CMAKE_OSX_ARCHITECTURES arm64)
+        endif ()
+        
         set(CMAKE_SKIP_RPATH FALSE)    
-        set(CMAKE_INSTALL_RPATH "@loader_path/")
+        add_link_options(-rpath "@loader_path/")
         add_library(puerts SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
         )
@@ -195,12 +197,22 @@ elseif ( APPLE )
     else ()
         # link
         foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-            target_link_libraries(puerts
-                ${ENGINE_ROOT}/Lib/macOS/${LIB_FILE_NAME}
-            )
+        
+            if ( NOT DEFINED FOR_SILICON )
+                target_link_libraries(puerts
+                    ${ENGINE_ROOT}/Lib/macOS/${LIB_FILE_NAME}
+                )
+            else ()
+                target_link_libraries(puerts
+                    ${ENGINE_ROOT}/Lib/macOS_arm64/${LIB_FILE_NAME}
+                )
+            endif ()
         endforeach()
     
         #definition
+        if ( DEFINED FOR_SILICON )
+            target_compile_definitions (puerts PRIVATE PLATFORM_MAC_ARM64)
+        endif()
         target_compile_definitions (puerts PRIVATE PLATFORM_MAC)
     endif ()
 

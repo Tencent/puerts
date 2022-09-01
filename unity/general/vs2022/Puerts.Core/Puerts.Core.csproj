@@ -1,0 +1,142 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\Lib</OutputPath>
+    <DefineConstants>PUERTS_GENERAL;DISABLE_AUTO_REGISTER;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\FileExporter.cs">
+      <Link>Editor\Src\Generator\FileExporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JsEnv.cs">
+      <Link>Runtime\Src\JsEnv.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Loader.cs">
+      <Link>Runtime\Src\Loader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
+      <Link>Runtime\Src\TypeExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypeRegister.cs">
+      <Link>Runtime\Src\TypeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Utils.cs">
+      <Link>Runtime\Src\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\ArgumentHelper.cs">
+      <Link>Runtime\Src\Translator\ArgumentHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\ObjectPool.cs">
+      <Link>Runtime\Src\Translator\ObjectPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\DataTranslate.cs">
+      <Link>Runtime\Src\Translator\DataTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\NativeValueApiGeneric.cs">
+      <Link>Runtime\Src\Translator\NativeValueApiGeneric.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Translator\StaticTranslate.cs">
+      <Link>Runtime\Src\Translator\StaticTranslate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\TypedValue.cs">
+      <Link>Runtime\Src\JSType\TypedValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\GenericDelegate.cs">
+      <Link>Runtime\Src\JSType\GenericDelegate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\JSObject.cs">
+      <Link>Runtime\Src\JSType\JSObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\JSType\ArrayBuffer.cs">
+      <Link>Runtime\Src\JSType\ArrayBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\ReflectionWrap.cs">
+      <Link>Runtime\Src\Wrapper\ReflectionWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\LazyWrap.cs">
+      <Link>Runtime\Src\Wrapper\LazyWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\GenericMethodWrap.cs">
+      <Link>Runtime\Src\Wrapper\GenericMethodWrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Wrapper\StaticWrapRegister.cs">
+      <Link>Runtime\Src\Wrapper\StaticWrapRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Native\PuertsDLL.cs">
+      <Link>Runtime\Src\Native\PuertsDLL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Native\StaticCallbacks.cs">
+      <Link>Runtime\Src\Native\StaticCallbacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\CJSImporter.cs">
+      <Link>Editor\Src\CJSImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Configure.cs">
+      <Link>Editor\Src\Configure.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\DocResolver.cs">
+      <Link>Editor\Src\DocResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\U2018Compatible.cs">
+      <Link>Editor\Src\U2018Compatible.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Utils.cs">
+      <Link>Editor\Src\Generator\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\DTS.cs">
+      <Link>Editor\Src\Generator\DTS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Editor\Src\Generator\Wrapper.cs">
+      <Link>Editor\Src\Generator\Wrapper.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\csharp.mjs">
+      <Link>Runtime\Resources\puerts\csharp.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\timer.mjs">
+      <Link>Runtime\Resources\puerts\timer.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\cjsload.mjs">
+      <Link>Runtime\Resources\puerts\cjsload.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\promises.mjs">
+      <Link>Runtime\Resources\puerts\promises.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\log.mjs">
+      <Link>Runtime\Resources\puerts\log.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\init.mjs">
+      <Link>Runtime\Resources\puerts\init.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\modular.mjs">
+      <Link>Runtime\Resources\puerts\modular.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\polyfill.mjs">
+      <Link>Runtime\Resources\puerts\polyfill.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\nodepatch.mjs">
+      <Link>Runtime\Resources\puerts\nodepatch.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Runtime\Resources\puerts\events.mjs">
+      <Link>Runtime\Resources\puerts\events.mjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Editor\Resources\puerts\templates\wrapper-reg.tpl.cjs">
+      <Link>Editor\Resources\puerts\templates\wrapper-reg.tpl.cjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Editor\Resources\puerts\templates\dts.tpl.cjs">
+      <Link>Editor\Resources\puerts\templates\dts.tpl.cjs</Link>
+    </None>
+    <None Include="..\..\..\Assets\Puerts\Editor\Resources\puerts\templates\wrapper.tpl.cjs">
+      <Link>Editor\Resources\puerts\templates\wrapper.tpl.cjs</Link>
+    </None>
+  </ItemGroup>
+</Project>

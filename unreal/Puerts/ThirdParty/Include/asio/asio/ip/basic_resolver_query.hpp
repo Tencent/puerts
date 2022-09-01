@@ -2,7 +2,7 @@
 // ip/basic_resolver_query.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -22,12 +22,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// An query to be passed to a resolver.
 /**
- * The asio::ip::basic_resolver_query class template describes a query
+ * The puerts_asio::ip::basic_resolver_query class template describes a query
  * that can be passed to a resolver.
  *
  * @par Thread Safety
@@ -213,7 +213,7 @@ public:
   }
 
   /// Get the hints associated with the query.
-  const asio::detail::addrinfo_type& hints() const
+  const puerts_asio::detail::addrinfo_type& hints() const
   {
     return hints_;
   }
@@ -231,13 +231,13 @@ public:
   }
 
 private:
-  asio::detail::addrinfo_type hints_;
+  puerts_asio::detail::addrinfo_type hints_;
   std::string host_name_;
   std::string service_name_;
 };
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

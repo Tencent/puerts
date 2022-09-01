@@ -160,7 +160,7 @@ module.exports = function TypingTemplate(data) {
 
 namespace PuertsStaticWrap
 {
-    public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeTSR(data.GenericArgumentsCount)}>` : ''}
+    public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeGenericAlphaBet(data.GenericArgumentsInfo)}>` : ''} ${data.IsGenericWrapper ? makeConstraints(data.GenericArgumentsInfo) : ''}
     {
 `
     data.BlittableCopy && tt`
@@ -193,7 +193,7 @@ namespace PuertsStaticWrap
             toJsArray(overloadGroup).forEach(overload => {
 
                 data.Constructor.HasOverloads && overload.ParameterInfos.Length > 0 &&
-                tt`
+                    tt`
                     if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) => `argHelper${idx}.IsMatch(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsByRef}, ${paramInfo.IsOut})`).join(' && ')})
                 `;
 
@@ -273,8 +273,8 @@ namespace PuertsStaticWrap
             toJsArray(overloadGroup).forEach(overload => {
                 method.HasOverloads && overload.ParameterInfos.Length > 0 && tt`
                     if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) =>
-                        `argHelper${idx}.${paramInfo.IsParams ? "IsMatchParams" : "IsMatch"}(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsParams ? idx : paramInfo.IsByRef}, ${paramInfo.IsParams ? "paramLen" : paramInfo.IsOut})`).join(' && ')
-                        })
+                    `argHelper${idx}.${paramInfo.IsParams ? "IsMatchParams" : "IsMatch"}(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsParams ? idx : paramInfo.IsByRef}, ${paramInfo.IsParams ? "paramLen" : paramInfo.IsOut})`).join(' && ')
+                    })
                 `
                 tt`
                     {
@@ -558,10 +558,10 @@ namespace PuertsStaticWrap
                     {"${property.Name}", new Puerts.PropertyRegisterInfo(){ IsStatic = ${property.IsStatic}, Getter = ${property.HasGetter ? "G_" + property.Name : "null"}, Setter = ${property.HasSetter ? "S_" + property.Name : "null"}} }`).join(',\n')}
                 },
                 LazyMembers = new System.Collections.Generic.List<Puerts.LazyMemberRegisterInfo>()
-                {   ${toJsArray(data.LazyMembers).map(item=> {
-                        return `
+                {   ${toJsArray(data.LazyMembers).map(item => {
+            return `
                     new Puerts.LazyMemberRegisterInfo() { Name = "${item.Name}", IsStatic = ${item.IsStatic}, Type = (Puerts.LazyMemberType)${item.Type}, HasGetter = ${item.HasGetter}, HasSetter = ${item.HasSetter} }`
-                    })}
+        })}
                 }
             };
         }
@@ -664,11 +664,29 @@ function paramLenCheck(group) {
     return group.get_Item(0).HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
 }
 
-function makeTSR(count) {
+function makeGenericAlphaBet(info) {
     const arr = [];
-    const startCharCode = 'T'.charCodeAt(0);
-    for (var i = 0; i < count; i++) {
-        arr.push(String.fromCharCode(startCharCode - i));
+    for (var i = 0; i < info.Length; i++) {
+        arr.push(info.get_Item(i).Name);
     }
     return arr.join(',')
+}
+
+function makeConstraints(info) {
+    const ret = [];
+    if (info.Length == 0) {
+        return '';
+    }
+    for (var i = 0; i < info.Length; i++) {
+        const item = info.get_Item(i);
+        if (item.Constraints.Length == 0) {
+            continue;
+        }
+        var consstr = [];
+        for (var j = 0; j < item.Constraints.Length; j++) {
+            consstr.push(item.Constraints.get_Item(j));
+        }
+        ret.push(`where ${item.Name} : ` + consstr.join(', '))
+    }
+    return ret.join(' ');
 }

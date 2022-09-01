@@ -34,7 +34,7 @@
 //
 // For the versions older than 1.49, the deadline_timer is used instead. this
 // brings in dependencies on boost date_time and it has a different interface
-// that is normalized by the `lib::asio::is_neg` and `lib::asio::milliseconds`
+// that is normalized by the `lib::puerts_asio::is_neg` and `lib::puerts_asio::milliseconds`
 // wrappers provided by this file.
 //
 // The primary reason for this continued support is that boost 1.48 is the
@@ -70,8 +70,8 @@ namespace websocketpp {
 namespace lib {
 
 #ifdef ASIO_STANDALONE
-    namespace asio {
-        using namespace ::asio;
+    namespace puerts_asio {
+        using namespace ::puerts_asio;
         // Here we assume that we will be using std::error_code with standalone
         // Asio. This is probably a good assumption, but it is possible in rare
         // cases that local Asio versions would be used.
@@ -88,15 +88,15 @@ namespace lib {
         inline lib::chrono::milliseconds milliseconds(long duration) {
             return lib::chrono::milliseconds(duration);
         }
-    } // namespace asio
+    } // namespace puerts_asio
     
 #else
-    namespace asio {
-        using namespace boost::asio;
+    namespace puerts_asio {
+        using namespace boost::puerts_asio;
         
         // See note above about boost <1.49 compatibility
         #if (BOOST_VERSION/100000) == 1 && ((BOOST_VERSION/100)%1000) > 48
-            // Using boost::asio >=1.49 so we use chrono and steady_timer
+            // Using boost::puerts_asio >=1.49 so we use chrono and steady_timer
             template <typename T>
             bool is_neg(T duration) {
                 return duration.count() < 0;
@@ -115,10 +115,10 @@ namespace lib {
                 }
             #endif
         #else
-            // Using boost::asio <1.49 we pretend a deadline timer is a steady
+            // Using boost::puerts_asio <1.49 we pretend a deadline timer is a steady
             // timer and wrap the negative detection and duration conversion
             // appropriately.
-            typedef boost::asio::deadline_timer steady_timer;
+            typedef boost::puerts_asio::deadline_timer steady_timer;
             
             template <typename T>
             bool is_neg(T duration) {
@@ -131,7 +131,7 @@ namespace lib {
         
         using boost::system::error_code;
         namespace errc = boost::system::errc;
-    } // namespace asio
+    } // namespace puerts_asio
 #endif
 
 

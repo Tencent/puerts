@@ -78,7 +78,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 16;
+            const int libVersionExpect = 17;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -124,8 +124,8 @@ namespace Puerts
             genericDelegateFactory = new GenericDelegateFactory(this);
             jsObjectFactory = new JSObjectFactory();
 
-            GeneralGetterManager = new GeneralGetterManager(this);
-            GeneralSetterManager = new GeneralSetterManager(this);
+            GeneralGetterManager = new GeneralGetterManager();
+            GeneralSetterManager = new GeneralSetterManager();
 
             // 注册JS对象通用GC回调
             PuertsDLL.SetGeneralDestructor(isolate, StaticCallbacks.GeneralDestructor);
@@ -216,15 +216,15 @@ namespace Puerts
             }
         }
 
-        internal string ResolveModuleContent(string identifer) 
+        internal string ResolveModuleContent(string identifer, out string pathForDebug) 
         {
+            pathForDebug = identifer;
             if (!loader.FileExists(identifer)) 
             {
                 return null;
             }
 
-            string debugPath;
-            return loader.ReadFile(identifer, out debugPath);
+            return loader.ReadFile(identifer, out pathForDebug);
         }
 
         /**

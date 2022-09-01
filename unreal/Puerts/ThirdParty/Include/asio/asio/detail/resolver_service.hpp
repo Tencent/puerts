@@ -2,7 +2,7 @@
 // detail/resolver_service.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -29,12 +29,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Protocol>
 class resolver_service :
-  public service_base<resolver_service<Protocol> >,
+  public execution_context_service_base<resolver_service<Protocol> >,
   public resolver_service_base
 {
 public:
@@ -46,15 +46,15 @@ public:
   typedef typename Protocol::endpoint endpoint_type;
 
   // The query type.
-  typedef asio::ip::basic_resolver_query<Protocol> query_type;
+  typedef puerts_asio::ip::basic_resolver_query<Protocol> query_type;
 
   // The results type.
-  typedef asio::ip::basic_resolver_results<Protocol> results_type;
+  typedef puerts_asio::ip::basic_resolver_results<Protocol> results_type;
 
   // Constructor.
-  resolver_service(asio::io_context& io_context)
-    : service_base<resolver_service<Protocol> >(io_context),
-      resolver_service_base(io_context)
+  resolver_service(execution_context& context)
+    : execution_context_service_base<resolver_service<Protocol> >(context),
+      resolver_service_base(context)
   {
   }
 
@@ -65,37 +65,37 @@ public:
   }
 
   // Perform any fork-related housekeeping.
-  void notify_fork(asio::io_context::fork_event fork_ev)
+  void notify_fork(execution_context::fork_event fork_ev)
   {
     this->base_notify_fork(fork_ev);
   }
 
   // Resolve a query to a list of entries.
-  results_type resolve(implementation_type&, const query_type& query,
-      asio::error_code& ec)
+  results_type resolve(implementation_type&, const query_type& qry,
+      puerts_asio::error_code& ec)
   {
-    asio::detail::addrinfo_type* address_info = 0;
+    puerts_asio::detail::addrinfo_type* address_info = 0;
 
-    socket_ops::getaddrinfo(query.host_name().c_str(),
-        query.service_name().c_str(), query.hints(), &address_info, ec);
+    socket_ops::getaddrinfo(qry.host_name().c_str(),
+        qry.service_name().c_str(), qry.hints(), &address_info, ec);
     auto_addrinfo auto_address_info(address_info);
 
     return ec ? results_type() : results_type::create(
-        address_info, query.host_name(), query.service_name());
+        address_info, qry.host_name(), qry.service_name());
   }
 
   // Asynchronously resolve a query to a list of entries.
-  template <typename Handler>
-  void async_resolve(implementation_type& impl,
-      const query_type& query, Handler& handler)
+  template <typename Handler, typename IoExecutor>
+  void async_resolve(implementation_type& impl, const query_type& qry,
+      Handler& handler, const IoExecutor& io_ex)
   {
     // Allocate and construct an operation to wrap the handler.
-    typedef resolve_query_op<Protocol, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef resolve_query_op<Protocol, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(impl, query, io_context_impl_, handler);
+    p.p = new (p.v) op(impl, qry, scheduler_, handler, io_ex);
 
-    ASIO_HANDLER_CREATION((io_context_impl_.context(),
+    ASIO_HANDLER_CREATION((scheduler_.context(),
           *p.p, "resolver", &impl, 0, "async_resolve"));
 
     start_resolve_op(p.p);
@@ -104,7 +104,7 @@ public:
 
   // Resolve an endpoint to a list of entries.
   results_type resolve(implementation_type&,
-      const endpoint_type& endpoint, asio::error_code& ec)
+      const endpoint_type& endpoint, puerts_asio::error_code& ec)
   {
     char host_name[NI_MAXHOST];
     char service_name[NI_MAXSERV];
@@ -117,17 +117,17 @@ public:
   }
 
   // Asynchronously resolve an endpoint to a list of entries.
-  template <typename Handler>
-  void async_resolve(implementation_type& impl,
-      const endpoint_type& endpoint, Handler& handler)
+  template <typename Handler, typename IoExecutor>
+  void async_resolve(implementation_type& impl, const endpoint_type& endpoint,
+      Handler& handler, const IoExecutor& io_ex)
   {
     // Allocate and construct an operation to wrap the handler.
-    typedef resolve_endpoint_op<Protocol, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef resolve_endpoint_op<Protocol, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(impl, endpoint, io_context_impl_, handler);
+    p.p = new (p.v) op(impl, endpoint, scheduler_, handler, io_ex);
 
-    ASIO_HANDLER_CREATION((io_context_impl_.context(),
+    ASIO_HANDLER_CREATION((scheduler_.context(),
           *p.p, "resolver", &impl, 0, "async_resolve"));
 
     start_resolve_op(p.p);
@@ -136,7 +136,7 @@ public:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

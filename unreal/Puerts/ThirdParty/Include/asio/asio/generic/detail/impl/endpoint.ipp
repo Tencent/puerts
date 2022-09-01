@@ -2,7 +2,7 @@
 // generic/detail/impl/endpoint.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -27,7 +27,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace generic {
 namespace detail {
 
@@ -44,10 +44,10 @@ endpoint::endpoint(const void* sock_addr,
 
 void endpoint::resize(std::size_t new_size)
 {
-  if (new_size > sizeof(asio::detail::sockaddr_storage_type))
+  if (new_size > sizeof(puerts_asio::detail::sockaddr_storage_type))
   {
-    asio::error_code ec(asio::error::invalid_argument);
-    asio::detail::throw_error(ec);
+    puerts_asio::error_code ec(puerts_asio::error::invalid_argument);
+    puerts_asio::detail::throw_error(ec);
   }
   else
   {
@@ -86,14 +86,14 @@ bool operator<(const endpoint& e1, const endpoint& e2)
 void endpoint::init(const void* sock_addr,
     std::size_t sock_addr_size, int sock_protocol)
 {
-  if (sock_addr_size > sizeof(asio::detail::sockaddr_storage_type))
+  if (sock_addr_size > sizeof(puerts_asio::detail::sockaddr_storage_type))
   {
-    asio::error_code ec(asio::error::invalid_argument);
-    asio::detail::throw_error(ec);
+    puerts_asio::error_code ec(puerts_asio::error::invalid_argument);
+    puerts_asio::detail::throw_error(ec);
   }
 
   using namespace std; // For memset and memcpy.
-  memset(&data_.generic, 0, sizeof(asio::detail::sockaddr_storage_type));
+  memset(&data_.generic, 0, sizeof(puerts_asio::detail::sockaddr_storage_type));
   if (sock_addr_size > 0)
     memcpy(&data_.generic, sock_addr, sock_addr_size);
 
@@ -103,7 +103,7 @@ void endpoint::init(const void* sock_addr,
 
 } // namespace detail
 } // namespace generic
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
