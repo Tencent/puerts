@@ -65,6 +65,9 @@ public:
 
     V8_INLINE static std::string ExceptionToString(v8::Isolate* Isolate, v8::Local<v8::Value> ExceptionValue)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::String::Utf8Value Exception(Isolate, ExceptionValue);
