@@ -2689,7 +2689,9 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
             // Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
 
             Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New);
-            Template->SetClassName(v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal).ToLocalChecked());
+            Template->SetClassName(
+                v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal).
+                ToLocalChecked());
             if (!ScriptStruct->IsNative())    //非原生的结构体，可能在实例没有的时候会释放
             {
                 SysObjectRetainer.Retain(ScriptStruct);
@@ -2707,7 +2709,9 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
             auto Class = Cast<UClass>(InStruct);
             check(Class);
             Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New);
-            Template->SetClassName(v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal).ToLocalChecked());
+            Template->SetClassName(
+                v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal).
+                ToLocalChecked());
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)
