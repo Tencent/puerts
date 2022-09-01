@@ -151,6 +151,12 @@ public:
 
     PUERTS_EXPORT_FOR_UT void LowMemoryNotification();
 
+    PUERTS_EXPORT_FOR_UT bool IdleNotificationDeadline(double DeadlineInSeconds);
+
+    PUERTS_EXPORT_FOR_UT void RequestMinorGarbageCollectionForTesting();
+
+    PUERTS_EXPORT_FOR_UT void RequestFullGarbageCollectionForTesting();
+
     PUERTS_EXPORT_FOR_UT JSFunction* CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction);
 
     PUERTS_EXPORT_FOR_UT void ReleaseJSFunction(JSFunction* InFunction);

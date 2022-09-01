@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define API_LEVEL 17
+#define API_LEVEL 18
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -146,6 +146,22 @@ V8_EXPORT void LowMemoryNotification(v8::Isolate *Isolate)
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->LowMemoryNotification();
 }
+V8_EXPORT bool IdleNotificationDeadline(v8::Isolate *Isolate, double DeadlineInSeconds)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->IdleNotificationDeadline(DeadlineInSeconds);
+}
+V8_EXPORT void RequestMinorGarbageCollectionForTesting(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->RequestMinorGarbageCollectionForTesting();
+}
+V8_EXPORT void RequestFullGarbageCollectionForTesting(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    JsEngine->RequestFullGarbageCollectionForTesting();
+}
+
 
 V8_EXPORT void SetGeneralDestructor(v8::Isolate *Isolate, CSharpDestructorCallback GeneralDestructor)
 {

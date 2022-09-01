@@ -17,6 +17,8 @@ namespace Puerts
     public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
     public class JsEnv : IDisposable
     {
+        public static List<JsEnv> jsEnvs = new List<JsEnv>();
+
         protected PushJSFunctionArgumentsCallback _ArgumentsPusher;
 
         public PushJSFunctionArgumentsCallback ArgumentsPusher {
@@ -48,7 +50,7 @@ namespace Puerts
 
         private readonly ILoader loader;
 
-        public static List<JsEnv> jsEnvs = new List<JsEnv>();
+        public Backend Backend;
 
 #if UNITY_EDITOR
         public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
@@ -78,7 +80,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 17;
+            const int libVersionExpect = 18;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -127,6 +129,13 @@ namespace Puerts
             GeneralGetterManager = new GeneralGetterManager();
             GeneralSetterManager = new GeneralSetterManager();
 
+            if (PuertsDLL.GetLibBackend() == 0) 
+                Backend = new BackendV8(this);
+            else if (PuertsDLL.GetLibBackend() == 1)
+                Backend = new BackendNodeJS(this);
+            else if (PuertsDLL.GetLibBackend() == 2)
+                Backend = new BackendQuickJS(this);
+
             // 注册JS对象通用GC回调
             PuertsDLL.SetGeneralDestructor(isolate, StaticCallbacks.GeneralDestructor);
 
@@ -165,7 +174,6 @@ namespace Puerts
             }
             try 
             {
-                bool isNode = PuertsDLL.GetLibBackend() == 1;
                 ExecuteModule("puerts/init.mjs");
                 ExecuteModule("puerts/log.mjs");
                 ExecuteModule("puerts/cjsload.mjs");
@@ -183,7 +191,7 @@ namespace Puerts
                     OnDispose += ExecuteModule<Action>("puerts/dispose.mjs", "default");
                 }
 #if !PUERTS_GENERAL
-                if (!isNode) 
+                if (!(Backend is BackendNodeJS)) 
                 {
 #endif
                     ExecuteModule("puerts/polyfill.mjs");
@@ -666,17 +674,6 @@ namespace Puerts
             lock(this) {
 #endif
             genericDelegateFactory.RegisterFunc<T1, T2, T3, T4, TResult>();
-#if THREAD_SAFE
-            }
-#endif
-        }
-
-        public void LowMemoryNotification()
-        {
-#if THREAD_SAFE
-            lock(this) {
-#endif
-            PuertsDLL.LowMemoryNotification(isolate);
 #if THREAD_SAFE
             }
 #endif
