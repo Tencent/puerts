@@ -22,6 +22,9 @@
     <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Loader.cs">
       <Link>Runtime\Src\Loader.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\Native\Backend.cs">
+      <Link>Runtime\Src\Native\Backend.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
       <Link>Runtime\Src\TypeExtensions.cs</Link>
     </Compile>

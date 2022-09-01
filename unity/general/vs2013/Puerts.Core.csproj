@@ -54,6 +54,9 @@
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\Loader.cs">
       <Link>Assets\Puerts\Runtime\Src\Loader.cs</Link>
     </Compile>
+    <Compile Include="..\..\Assets\Puerts\Runtime\Src\Native\Backend.cs">
+      <Link>Assets\Puerts\Runtime\Src\Native\Backend.cs</Link>
+    </Compile>
     <Compile Include="..\..\Assets\Puerts\Runtime\Src\TypeExtensions.cs">
       <Link>Assets\Puerts\Runtime\Src\TypeExtensions.cs</Link>
     </Compile>
