@@ -733,6 +733,7 @@ namespace puerts
         v8::Context::Scope ContextScope(Context);
 
         uv_run(NodeUVLoop, UV_RUN_NOWAIT);
+        static_cast<node::MultiIsolatePlatform*>(GPlatform.get())->DrainTasks(Isolate);
 #endif
     }
 
