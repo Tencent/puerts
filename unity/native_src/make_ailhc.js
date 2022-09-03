@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require("path");
 const pwd = process.cwd();
 const nodePlatformToPuerPlatform = {
     "darwin": "osx",
@@ -247,5 +248,5 @@ function getoutputPluginPath(options, BuildConfig) {
     } else if (backend.includes("nodejs")) {
         backEndFolderName = `Nodejs`;
     }
-    return BuildConfig.outputPluginPath + `${backEndFolderName}/`;
+    return path.join(BuildConfig.outputPluginPath, `${backEndFolderName}/`);
 }
