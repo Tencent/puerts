@@ -237,7 +237,7 @@ async function runMake() {
     return await BuildConfig.hook(CMAKE_BUILD_PATH, OUTPUT_PATH, options);
 }
 function getoutputPluginPath(options, BuildConfig) {
-    const backEndFolderName = "";
+    let backEndFolderName = "";
     const config = options.config ? options.config : "Debug";
     const backend = options.backend;
     if (backend.includes("v8")) {
