@@ -1,4 +1,4 @@
-name: unity publish ailhc
+name: unity publish all in one
 
 on: 
   workflow_dispatch:
