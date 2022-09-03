@@ -326,29 +326,76 @@ jobs:
       #     cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
       #     cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
       #     cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+      
+          
+      # - name: Upload V8 Plugins
+      #   #id: upload-release-asset 
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_content_type: application/tgz
+      # - name: Upload V8 Debug Plugins
+      #   #id: upload-release-asset 
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./PuerTS_V8_Debug_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_name: PuerTS_V8_Debug_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_content_type: application/tgz
+      # - name: Upload Quickjs Plugins
+      #   #id: upload-release-asset
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_name: PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_content_type: application/tgz
+          
+      # - name: Upload Nodejs Plugins
+      #   #id: upload-release-asset
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
+      #     asset_name: "PuerTS_Nodejs_${{ github.event.inputs.tag_name }}_EDITOR_ONLY.tgz"
+      #     asset_content_type: application/tgz
+
+      # - name: Trigger demo/upm repository update
+      #   run: |
+      #     curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json" https://api.github.com/repos/zombieyang/puerts_unity_demo/actions/workflows/sync-package.yml/dispatches -d '{"ref": "master", "inputs": {"push_tag_version": "${{ github.event.inputs.tag_name }}"}}'
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_V8
-          path: Release/Puerts/Runtime/Plugins/
+          path: ReleaseAsset/Puerts/Runtime/Plugins/
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_V8_Debug
-          path: Release/Puerts/Runtime/Plugins/
+          path: ReleaseAsset/Puerts/Runtime/Plugins/
           
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_Quickjs
-          path: Release/Puerts/Runtime/Plugins/
+          path: ReleaseAsset/Puerts/Runtime/Plugins/
 
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_Nodejs
-          path: Release/Puerts/Runtime/Plugins/
+          path: ReleaseAsset/Puerts/Runtime/Plugins/
       - name: Create Release Asset
         run: |
           cp $GITHUB_WORKSPACE/doc/unity/zhcn/changelog.md $GITHUB_WORKSPACE/unity/Assets/Puerts
           cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/Puerts
-          cd Release/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_${{ github.event.inputs.tag_name }}.tgz Puerts
+          cd ReleaseAsset/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_${{ github.event.inputs.tag_name }}.tgz Puerts
           
       - name: Create Release
         id: create_release
@@ -364,7 +411,6 @@ jobs:
           release_name: Unity_v${{ github.event.inputs.tag_name }},ApiLevel:${{ env.API_LEVEL }}
           draft: false
           prerelease: false
-          
       - name: Upload V8 Plugins
         #id: upload-release-asset 
         uses: actions/upload-release-asset@v1
@@ -372,41 +418,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
-          asset_name: PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz
+          asset_path: ./PuerTS_${{ github.event.inputs.tag_name }}.tgz
+          asset_name: PuerTS_${{ github.event.inputs.tag_name }}.tgz
           asset_content_type: application/tgz
-      - name: Upload V8 Debug Plugins
-        #id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_V8_Debug_${{ github.event.inputs.tag_name }}.tgz
-          asset_name: PuerTS_V8_Debug_${{ github.event.inputs.tag_name }}.tgz
-          asset_content_type: application/tgz
-      - name: Upload Quickjs Plugins
-        #id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz
-          asset_name: PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz
-          asset_content_type: application/tgz
-          
-      - name: Upload Nodejs Plugins
-        #id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz
-          asset_name: "PuerTS_Nodejs_${{ github.event.inputs.tag_name }}_EDITOR_ONLY.tgz"
-          asset_content_type: application/tgz
-
-      # - name: Trigger demo/upm repository update
-      #   run: |
-      #     curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json" https://api.github.com/repos/zombieyang/puerts_unity_demo/actions/workflows/sync-package.yml/dispatches -d '{"ref": "master", "inputs": {"push_tag_version": "${{ github.event.inputs.tag_name }}"}}'
