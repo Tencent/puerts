@@ -302,6 +302,10 @@ jobs:
         with:
           name: Unity_Plugins_V8
           path: V8/Puerts/Runtime/Plugins/
+      - uses: actions/download-artifact@v1
+        with:
+          name: Unity_Plugins_V8_Debug
+          path: V8/Puerts/Runtime/Plugins/
           
       - uses: actions/download-artifact@v1
         with:
