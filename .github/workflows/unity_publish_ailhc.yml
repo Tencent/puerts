@@ -31,7 +31,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8_9.4
+          ANDROID_NDK=~/android-ndk-r21b node make_ailhc.js --platform android --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -57,7 +57,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8_9.4 --config Debug
+          ANDROID_NDK=~/android-ndk-r21b node make_ailhc.js --platform android --backend v8_9.4 --config Debug
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -83,7 +83,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend quickjs
+          ANDROID_NDK=~/android-ndk-r21b node make_ailhc.js --platform android --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -104,7 +104,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend v8_9.4
+          node make_ailhc.js --platform ios --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -125,7 +125,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend v8_9.4 --config Debug
+          node make_ailhc.js --platform ios --backend v8_9.4 --config Debug
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -144,7 +144,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform ios --backend quickjs
+          node make_ailhc.js --platform ios --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -163,7 +163,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend v8_9.4
+          node make_ailhc.js --platform osx --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -182,7 +182,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend nodejs_16
+          node make_ailhc.js --platform osx --backend nodejs_16
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -201,7 +201,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform osx --backend quickjs
+          node make_ailhc.js --platform osx --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -220,7 +220,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend v8_9.4
+          node make_ailhc.js --platform win --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -239,7 +239,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend nodejs_16 --arch x64
+          node make_ailhc.js --platform win --backend nodejs_16 --arch x64
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -258,7 +258,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make.js --platform win --backend quickjs
+          node make_ailhc.js --platform win --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -282,7 +282,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make.js --platform linux --arch x64 --backend v8_9.4
+          node make_ailhc.js --platform linux --arch x64 --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -298,33 +298,57 @@ jobs:
         run: |
           echo "API_LEVEL=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=API_LEVEL\s)(\d+)')" >> $GITHUB_ENV
             
+      # - uses: actions/download-artifact@v1
+      #   with:
+      #     name: Unity_Plugins_V8
+      #     path: V8/Puerts/Runtime/Plugins/
+      # - uses: actions/download-artifact@v1
+      #   with:
+      #     name: Unity_Plugins_V8_Debug
+      #     path: V8/Puerts/Runtime/Plugins/
+          
+      # - uses: actions/download-artifact@v1
+      #   with:
+      #     name: Unity_Plugins_Quickjs
+      #     path: Quickjs/Puerts/Runtime/Plugins/
+
+      # - uses: actions/download-artifact@v1
+      #   with:
+      #     name: Unity_Plugins_Nodejs
+      #     path: Nodejs/Puerts/Editor/Plugins/
+      
+          
+      # - name: Create Release Asset
+      #   run: |
+      #     cp $GITHUB_WORKSPACE/doc/unity/zhcn/changelog.md $GITHUB_WORKSPACE/unity/Assets/Puerts
+      #     cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/Puerts
+      #     cd V8_Debug/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+      #     cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+      #     cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+      #     cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_V8
-          path: V8/Puerts/Runtime/Plugins/
+          path: Release/Puerts/Runtime/Plugins/
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_V8_Debug
-          path: V8/Puerts/Runtime/Plugins/
+          path: Release/Puerts/Runtime/Plugins/
           
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_Quickjs
-          path: Quickjs/Puerts/Runtime/Plugins/
+          path: Release/Puerts/Runtime/Plugins/
 
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins_Nodejs
-          path: Nodejs/Puerts/Editor/Plugins/
-          
+          path: Release/Puerts/Runtime/Plugins/
       - name: Create Release Asset
         run: |
           cp $GITHUB_WORKSPACE/doc/unity/zhcn/changelog.md $GITHUB_WORKSPACE/unity/Assets/Puerts
           cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/Puerts
-          cd V8_Debug/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cd Release/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_${{ github.event.inputs.tag_name }}.tgz Puerts
           
       - name: Create Release
         id: create_release
