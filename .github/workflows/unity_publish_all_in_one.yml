@@ -31,7 +31,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make_ailhc.js --platform android --backend v8_9.4
+          ANDROID_NDK=~/android-ndk-r21b node make_all_in_one.js --platform android --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -57,7 +57,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make_ailhc.js --platform android --backend v8_9.4 --config Debug
+          ANDROID_NDK=~/android-ndk-r21b node make_all_in_one.js --platform android --backend v8_9.4 --config Debug
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -83,7 +83,7 @@ jobs:
         run: |
           ls ~/android-ndk-r21b
           cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make_ailhc.js --platform android --backend quickjs
+          ANDROID_NDK=~/android-ndk-r21b node make_all_in_one.js --platform android --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -104,7 +104,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform ios --backend v8_9.4
+          node make_all_in_one.js --platform ios --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -125,7 +125,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform ios --backend v8_9.4 --config Debug
+          node make_all_in_one.js --platform ios --backend v8_9.4 --config Debug
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -144,7 +144,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform ios --backend quickjs
+          node make_all_in_one.js --platform ios --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -163,7 +163,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform osx --backend v8_9.4
+          node make_all_in_one.js --platform osx --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -182,7 +182,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform osx --backend nodejs_16
+          node make_all_in_one.js --platform osx --backend nodejs_16
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -201,7 +201,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform osx --backend quickjs
+          node make_all_in_one.js --platform osx --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -220,7 +220,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make_ailhc.js --platform win --backend v8_9.4
+          node make_all_in_one.js --platform win --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -239,7 +239,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make_ailhc.js --platform win --backend nodejs_16 --arch x64
+          node make_all_in_one.js --platform win --backend nodejs_16 --arch x64
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -258,7 +258,7 @@ jobs:
       - name: Build
         run: |
           cd unity\native_src
-          node make_ailhc.js --platform win --backend quickjs
+          node make_all_in_one.js --platform win --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -282,7 +282,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          node make_ailhc.js --platform linux --arch x64 --backend v8_9.4
+          node make_all_in_one.js --platform linux --arch x64 --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
