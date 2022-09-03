@@ -2,7 +2,7 @@
 // detail/impl/reactive_serial_port_service.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 // Copyright (c) 2008 Rep Invariant Systems, Inc. (info@repinvariant.com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -26,13 +26,13 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 reactive_serial_port_service::reactive_serial_port_service(
-    asio::io_context& io_context)
-  : service_base<reactive_serial_port_service>(io_context),
-    descriptor_service_(io_context)
+    execution_context& context)
+  : execution_context_service_base<reactive_serial_port_service>(context),
+    descriptor_service_(context)
 {
 }
 
@@ -41,13 +41,13 @@ void reactive_serial_port_service::shutdown()
   descriptor_service_.shutdown();
 }
 
-asio::error_code reactive_serial_port_service::open(
+puerts_asio::error_code reactive_serial_port_service::open(
     reactive_serial_port_service::implementation_type& impl,
-    const std::string& device, asio::error_code& ec)
+    const std::string& device, puerts_asio::error_code& ec)
 {
   if (is_open(impl))
   {
-    ec = asio::error::already_open;
+    ec = puerts_asio::error::already_open;
     return ec;
   }
 
@@ -62,15 +62,15 @@ asio::error_code reactive_serial_port_service::open(
     s = descriptor_ops::fcntl(fd, F_SETFL, s | O_NONBLOCK, ec);
   if (s < 0)
   {
-    asio::error_code ignored_ec;
+    puerts_asio::error_code ignored_ec;
     descriptor_ops::close(fd, state, ignored_ec);
     return ec;
   }
 
   // Set up default serial port options.
   termios ios;
-  errno = 0;
-  s = descriptor_ops::error_wrapper(::tcgetattr(fd, &ios), ec);
+  s = ::tcgetattr(fd, &ios);
+  descriptor_ops::get_last_error(ec, s < 0);
   if (s >= 0)
   {
 #if defined(_BSD_SOURCE) || defined(_DEFAULT_SOURCE)
@@ -85,12 +85,12 @@ asio::error_code reactive_serial_port_service::open(
 #endif
     ios.c_iflag |= IGNPAR;
     ios.c_cflag |= CREAD | CLOCAL;
-    errno = 0;
-    s = descriptor_ops::error_wrapper(::tcsetattr(fd, TCSANOW, &ios), ec);
+    s = ::tcsetattr(fd, TCSANOW, &ios);
+    descriptor_ops::get_last_error(ec, s < 0);
   }
   if (s < 0)
   {
-    asio::error_code ignored_ec;
+    puerts_asio::error_code ignored_ec;
     descriptor_ops::close(fd, state, ignored_ec);
     return ec;
   }
@@ -98,51 +98,48 @@ asio::error_code reactive_serial_port_service::open(
   // We're done. Take ownership of the serial port descriptor.
   if (descriptor_service_.assign(impl, fd, ec))
   {
-    asio::error_code ignored_ec;
+    puerts_asio::error_code ignored_ec;
     descriptor_ops::close(fd, state, ignored_ec);
   }
 
   return ec;
 }
 
-asio::error_code reactive_serial_port_service::do_set_option(
+puerts_asio::error_code reactive_serial_port_service::do_set_option(
     reactive_serial_port_service::implementation_type& impl,
     reactive_serial_port_service::store_function_type store,
-    const void* option, asio::error_code& ec)
+    const void* option, puerts_asio::error_code& ec)
 {
   termios ios;
-  errno = 0;
-  descriptor_ops::error_wrapper(::tcgetattr(
-        descriptor_service_.native_handle(impl), &ios), ec);
-  if (ec)
+  int s = ::tcgetattr(descriptor_service_.native_handle(impl), &ios);
+  descriptor_ops::get_last_error(ec, s < 0);
+  if (s < 0)
     return ec;
 
   if (store(option, ios, ec))
     return ec;
 
-  errno = 0;
-  descriptor_ops::error_wrapper(::tcsetattr(
-        descriptor_service_.native_handle(impl), TCSANOW, &ios), ec);
+  s = ::tcsetattr(descriptor_service_.native_handle(impl), TCSANOW, &ios);
+  descriptor_ops::get_last_error(ec, s < 0);
   return ec;
 }
 
-asio::error_code reactive_serial_port_service::do_get_option(
+puerts_asio::error_code reactive_serial_port_service::do_get_option(
     const reactive_serial_port_service::implementation_type& impl,
     reactive_serial_port_service::load_function_type load,
-    void* option, asio::error_code& ec) const
+    void* option, puerts_asio::error_code& ec) const
 {
   termios ios;
-  errno = 0;
-  descriptor_ops::error_wrapper(::tcgetattr(
-        descriptor_service_.native_handle(impl), &ios), ec);
-  if (ec)
+  int s = ::tcgetattr(descriptor_service_.native_handle(impl), &ios);
+  descriptor_ops::get_last_error(ec, s < 0);
+  if (s < 0)
     return ec;
 
   return load(option, ios, ec);
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

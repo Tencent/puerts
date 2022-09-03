@@ -1,0 +1,104 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\Bin</OutputPath>
+    <WarningLevel>4</WarningLevel>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Src\TxtLoader.cs">
+      <Link>Src\TxtLoader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\EvalTest.cs">
+      <Link>Src\UnitTest\EvalTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\ExceptionTest.cs">
+      <Link>Src\UnitTest\ExceptionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\GenerateTest\GenTest.cs">
+      <Link>Src\UnitTest\GenerateTest\GenTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\GenericTest.cs">
+      <Link>Src\UnitTest\GenericTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\MultiThreadTest.cs">
+      <Link>Src\UnitTest\MultiThreadTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TestClass.cs">
+      <Link>Src\UnitTest\TestClass.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TranslatorTest\CSToJSTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\CSToJSTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TranslatorTest\ExtensionTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\ExtensionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TranslatorTest\JSToCSTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\JSToCSTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TranslatorTest\OptionalParametersTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\OptionalParametersTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\TranslatorTest\TimerTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\TimerTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\GCTest.cs">
+      <Link>Src\UnitTest\GCTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\WrapperTest\WrapperTest.cs">
+      <Link>Src\UnitTest\WrapperTest\WrapperTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\WrapperTest\WrapperTestClass.cs">
+      <Link>Src\UnitTest\WrapperTest\WrapperTestClass.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
+      <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\JSTypeTest\ArrayBufferTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\ArrayBufferTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\JSTypeTest\GenericDelegateTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\GenericDelegateTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\JSTypeTest\JSObjectTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\JSObjectTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\JSTypeTest\TypedValueTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\TypedValueTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Puerts.Core\Puerts.Core.csproj" />
+  </ItemGroup>
+</Project>

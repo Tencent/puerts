@@ -2,7 +2,7 @@
 // detail/winrt_ssocket_service_base.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,7 +21,7 @@
 
 #include "asio/buffer.hpp"
 #include "asio/error.hpp"
-#include "asio/io_context.hpp"
+#include "asio/execution_context.hpp"
 #include "asio/socket_base.hpp"
 #include "asio/detail/buffer_sequence_adapter.hpp"
 #include "asio/detail/memory.hpp"
@@ -30,9 +30,15 @@
 #include "asio/detail/winrt_socket_recv_op.hpp"
 #include "asio/detail/winrt_socket_send_op.hpp"
 
+#if defined(ASIO_HAS_IOCP)
+# include "asio/detail/win_iocp_io_context.hpp"
+#else // defined(ASIO_HAS_IOCP)
+# include "asio/detail/scheduler.hpp"
+#endif // defined(ASIO_HAS_IOCP)
+
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class winrt_ssocket_service_base
@@ -61,8 +67,7 @@ public:
   };
 
   // Constructor.
-  ASIO_DECL winrt_ssocket_service_base(
-      asio::io_context& io_context);
+  ASIO_DECL winrt_ssocket_service_base(execution_context& context);
 
   // Destroy all user-defined handler objects owned by the service.
   ASIO_DECL void base_shutdown();
@@ -72,7 +77,7 @@ public:
 
   // Move-construct a new socket implementation.
   ASIO_DECL void base_move_construct(base_implementation_type& impl,
-      base_implementation_type& other_impl);
+      base_implementation_type& other_impl) ASIO_NOEXCEPT;
 
   // Move-assign from another socket implementation.
   ASIO_DECL void base_move_assign(base_implementation_type& impl,
@@ -89,12 +94,12 @@ public:
   }
 
   // Destroy a socket implementation.
-  ASIO_DECL asio::error_code close(
-      base_implementation_type& impl, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code close(
+      base_implementation_type& impl, puerts_asio::error_code& ec);
 
   // Release ownership of the socket.
   ASIO_DECL native_handle_type release(
-      base_implementation_type& impl, asio::error_code& ec);
+      base_implementation_type& impl, puerts_asio::error_code& ec);
 
   // Get the native socket representation.
   native_handle_type native_handle(base_implementation_type& impl)
@@ -103,35 +108,35 @@ public:
   }
 
   // Cancel all operations associated with the socket.
-  asio::error_code cancel(base_implementation_type&,
-      asio::error_code& ec)
+  puerts_asio::error_code cancel(base_implementation_type&,
+      puerts_asio::error_code& ec)
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return ec;
   }
 
   // Determine whether the socket is at the out-of-band data mark.
   bool at_mark(const base_implementation_type&,
-      asio::error_code& ec) const
+      puerts_asio::error_code& ec) const
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return false;
   }
 
   // Determine the number of bytes available for reading.
   std::size_t available(const base_implementation_type&,
-      asio::error_code& ec) const
+      puerts_asio::error_code& ec) const
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return 0;
   }
 
   // Perform an IO control command on the socket.
   template <typename IO_Control_Command>
-  asio::error_code io_control(base_implementation_type&,
-      IO_Control_Command&, asio::error_code& ec)
+  puerts_asio::error_code io_control(base_implementation_type&,
+      IO_Control_Command&, puerts_asio::error_code& ec)
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return ec;
   }
 
@@ -142,10 +147,10 @@ public:
   }
 
   // Sets the non-blocking mode of the socket.
-  asio::error_code non_blocking(base_implementation_type&,
-      bool, asio::error_code& ec)
+  puerts_asio::error_code non_blocking(base_implementation_type&,
+      bool, puerts_asio::error_code& ec)
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return ec;
   }
 
@@ -156,18 +161,10 @@ public:
   }
 
   // Sets the non-blocking mode of the native socket implementation.
-  asio::error_code native_non_blocking(base_implementation_type&,
-      bool, asio::error_code& ec)
+  puerts_asio::error_code native_non_blocking(base_implementation_type&,
+      bool, puerts_asio::error_code& ec)
   {
-    ec = asio::error::operation_not_supported;
-    return ec;
-  }
-
-  // Disable sends or receives on the socket.
-  asio::error_code shutdown(base_implementation_type&,
-      socket_base::shutdown_type, asio::error_code& ec)
-  {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return ec;
   }
 
@@ -175,55 +172,55 @@ public:
   template <typename ConstBufferSequence>
   std::size_t send(base_implementation_type& impl,
       const ConstBufferSequence& buffers,
-      socket_base::message_flags flags, asio::error_code& ec)
+      socket_base::message_flags flags, puerts_asio::error_code& ec)
   {
     return do_send(impl,
-        buffer_sequence_adapter<asio::const_buffer,
+        buffer_sequence_adapter<puerts_asio::const_buffer,
           ConstBufferSequence>::first(buffers), flags, ec);
   }
 
   // Wait until data can be sent without blocking.
   std::size_t send(base_implementation_type&, const null_buffers&,
-      socket_base::message_flags, asio::error_code& ec)
+      socket_base::message_flags, puerts_asio::error_code& ec)
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return 0;
   }
 
   // Start an asynchronous send. The data being sent must be valid for the
   // lifetime of the asynchronous operation.
-  template <typename ConstBufferSequence, typename Handler>
+  template <typename ConstBufferSequence, typename Handler, typename IoExecutor>
   void async_send(base_implementation_type& impl,
-      const ConstBufferSequence& buffers,
-      socket_base::message_flags flags, Handler& handler)
+      const ConstBufferSequence& buffers, socket_base::message_flags flags,
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
     // Allocate and construct an operation to wrap the handler.
-    typedef winrt_socket_send_op<ConstBufferSequence, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef winrt_socket_send_op<ConstBufferSequence, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(buffers, handler);
+    p.p = new (p.v) op(buffers, handler, io_ex);
 
-    ASIO_HANDLER_CREATION((io_context_.context(),
+    ASIO_HANDLER_CREATION((scheduler_.context(),
           *p.p, "socket", &impl, 0, "async_send"));
 
     start_send_op(impl,
-        buffer_sequence_adapter<asio::const_buffer,
+        buffer_sequence_adapter<puerts_asio::const_buffer,
           ConstBufferSequence>::first(buffers),
         flags, p.p, is_continuation);
     p.v = p.p = 0;
   }
 
   // Start an asynchronous wait until data can be sent without blocking.
-  template <typename Handler>
+  template <typename Handler, typename IoExecutor>
   void async_send(base_implementation_type&, const null_buffers&,
-      socket_base::message_flags, Handler& handler)
+      socket_base::message_flags, Handler& handler, const IoExecutor& io_ex)
   {
-    asio::error_code ec = asio::error::operation_not_supported;
+    puerts_asio::error_code ec = puerts_asio::error::operation_not_supported;
     const std::size_t bytes_transferred = 0;
-    io_context_.get_io_context().post(
+    puerts_asio::post(io_ex,
         detail::bind_handler(handler, ec, bytes_transferred));
   }
 
@@ -231,55 +228,56 @@ public:
   template <typename MutableBufferSequence>
   std::size_t receive(base_implementation_type& impl,
       const MutableBufferSequence& buffers,
-      socket_base::message_flags flags, asio::error_code& ec)
+      socket_base::message_flags flags, puerts_asio::error_code& ec)
   {
     return do_receive(impl,
-        buffer_sequence_adapter<asio::mutable_buffer,
+        buffer_sequence_adapter<puerts_asio::mutable_buffer,
           MutableBufferSequence>::first(buffers), flags, ec);
   }
 
   // Wait until data can be received without blocking.
   std::size_t receive(base_implementation_type&, const null_buffers&,
-      socket_base::message_flags, asio::error_code& ec)
+      socket_base::message_flags, puerts_asio::error_code& ec)
   {
-    ec = asio::error::operation_not_supported;
+    ec = puerts_asio::error::operation_not_supported;
     return 0;
   }
 
   // Start an asynchronous receive. The buffer for the data being received
   // must be valid for the lifetime of the asynchronous operation.
-  template <typename MutableBufferSequence, typename Handler>
+  template <typename MutableBufferSequence,
+      typename Handler, typename IoExecutor>
   void async_receive(base_implementation_type& impl,
-      const MutableBufferSequence& buffers,
-      socket_base::message_flags flags, Handler& handler)
+      const MutableBufferSequence& buffers, socket_base::message_flags flags,
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
     // Allocate and construct an operation to wrap the handler.
-    typedef winrt_socket_recv_op<MutableBufferSequence, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef winrt_socket_recv_op<MutableBufferSequence, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(buffers, handler);
+    p.p = new (p.v) op(buffers, handler, io_ex);
 
-    ASIO_HANDLER_CREATION((io_context_.context(),
+    ASIO_HANDLER_CREATION((scheduler_.context(),
           *p.p, "socket", &impl, 0, "async_receive"));
 
     start_receive_op(impl,
-        buffer_sequence_adapter<asio::mutable_buffer,
+        buffer_sequence_adapter<puerts_asio::mutable_buffer,
           MutableBufferSequence>::first(buffers),
         flags, p.p, is_continuation);
     p.v = p.p = 0;
   }
 
   // Wait until data can be received without blocking.
-  template <typename Handler>
+  template <typename Handler, typename IoExecutor>
   void async_receive(base_implementation_type&, const null_buffers&,
-      socket_base::message_flags, Handler& handler)
+      socket_base::message_flags, Handler& handler, const IoExecutor& io_ex)
   {
-    asio::error_code ec = asio::error::operation_not_supported;
+    puerts_asio::error_code ec = puerts_asio::error::operation_not_supported;
     const std::size_t bytes_transferred = 0;
-    io_context_.get_io_context().post(
+    puerts_asio::post(io_ex,
         detail::bind_handler(handler, ec, bytes_transferred));
   }
 
@@ -287,24 +285,24 @@ protected:
   // Helper function to obtain endpoints associated with the connection.
   ASIO_DECL std::size_t do_get_endpoint(
       const base_implementation_type& impl, bool local,
-      void* addr, std::size_t addr_len, asio::error_code& ec) const;
+      void* addr, std::size_t addr_len, puerts_asio::error_code& ec) const;
 
   // Helper function to set a socket option.
-  ASIO_DECL asio::error_code do_set_option(
+  ASIO_DECL puerts_asio::error_code do_set_option(
       base_implementation_type& impl,
       int level, int optname, const void* optval,
-      std::size_t optlen, asio::error_code& ec);
+      std::size_t optlen, puerts_asio::error_code& ec);
 
   // Helper function to get a socket option.
   ASIO_DECL void do_get_option(
       const base_implementation_type& impl,
       int level, int optname, void* optval,
-      std::size_t* optlen, asio::error_code& ec) const;
+      std::size_t* optlen, puerts_asio::error_code& ec) const;
 
   // Helper function to perform a synchronous connect.
-  ASIO_DECL asio::error_code do_connect(
+  ASIO_DECL puerts_asio::error_code do_connect(
       base_implementation_type& impl,
-      const void* addr, asio::error_code& ec);
+      const void* addr, puerts_asio::error_code& ec);
 
   // Helper function to start an asynchronous connect.
   ASIO_DECL void start_connect_op(
@@ -313,40 +311,45 @@ protected:
 
   // Helper function to perform a synchronous send.
   ASIO_DECL std::size_t do_send(
-      base_implementation_type& impl, const asio::const_buffer& data,
-      socket_base::message_flags flags, asio::error_code& ec);
+      base_implementation_type& impl, const puerts_asio::const_buffer& data,
+      socket_base::message_flags flags, puerts_asio::error_code& ec);
 
   // Helper function to start an asynchronous send.
   ASIO_DECL void start_send_op(base_implementation_type& impl,
-      const asio::const_buffer& data, socket_base::message_flags flags,
+      const puerts_asio::const_buffer& data, socket_base::message_flags flags,
       winrt_async_op<unsigned int>* op, bool is_continuation);
 
   // Helper function to perform a synchronous receive.
   ASIO_DECL std::size_t do_receive(
-      base_implementation_type& impl, const asio::mutable_buffer& data,
-      socket_base::message_flags flags, asio::error_code& ec);
+      base_implementation_type& impl, const puerts_asio::mutable_buffer& data,
+      socket_base::message_flags flags, puerts_asio::error_code& ec);
 
   // Helper function to start an asynchronous receive.
   ASIO_DECL void start_receive_op(base_implementation_type& impl,
-      const asio::mutable_buffer& data, socket_base::message_flags flags,
+      const puerts_asio::mutable_buffer& data, socket_base::message_flags flags,
       winrt_async_op<Windows::Storage::Streams::IBuffer^>* op,
       bool is_continuation);
 
-  // The io_context implementation used for delivering completions.
-  io_context_impl& io_context_;
+  // The scheduler implementation used for delivering completions.
+#if defined(ASIO_HAS_IOCP)
+  typedef class win_iocp_io_context scheduler_impl;
+#else
+  typedef class scheduler scheduler_impl;
+#endif
+  scheduler_impl& scheduler_;
 
   // The manager that keeps track of outstanding operations.
   winrt_async_manager& async_manager_;
 
   // Mutex to protect access to the linked list of implementations. 
-  asio::detail::mutex mutex_;
+  puerts_asio::detail::mutex mutex_;
 
   // The head of a linked list of all implementations.
   base_implementation_type* impl_list_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

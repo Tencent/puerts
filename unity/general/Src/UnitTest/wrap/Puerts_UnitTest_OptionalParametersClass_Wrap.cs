@@ -4,7 +4,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-    public static class Puerts_UnitTest_OptionalParametersClass_Wrap
+    public static class Puerts_UnitTest_OptionalParametersClass_Wrap 
     {
 
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
@@ -49,7 +49,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -61,12 +61,12 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test(Arg0, Arg1, Arg2);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -78,7 +78,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test(Arg0, Arg1, Arg2);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -93,7 +93,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -103,12 +103,12 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -118,7 +118,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -131,7 +131,7 @@ namespace PuertsStaticWrap
             
                     var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -139,12 +139,12 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test(Arg0);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false))
                 
                     {
                 
@@ -152,7 +152,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test(Arg0);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -167,7 +167,7 @@ namespace PuertsStaticWrap
                 
                         var result = obj.Test();
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -196,7 +196,7 @@ namespace PuertsStaticWrap
             
                     var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false))
                 
                     {
                 
@@ -204,7 +204,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test2(Arg0);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -219,7 +219,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -229,7 +229,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test2(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -246,7 +246,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.Boolean, null, 2, paramLen))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.Boolean, typeof(bool), 2, paramLen))
                 
                     {
                 
@@ -258,7 +258,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test2(Arg0, Arg1, Arg2);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -295,7 +295,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test3(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         
                     }
@@ -328,7 +328,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper3 = new Puerts.ArgumentHelper((int)data, isolate, info, 3);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper3.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper3.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -342,7 +342,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test4(Arg0, Arg1, Arg2, Arg3);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -359,7 +359,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -371,7 +371,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test4(Arg0, Arg1, Arg2);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -386,7 +386,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -396,7 +396,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test4(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -429,7 +429,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.Boolean, null, 2, paramLen))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.Boolean, typeof(bool), 2, paramLen))
                 
                     {
                 
@@ -441,7 +441,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test5(Arg0, Arg1, Arg2);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -456,7 +456,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -466,7 +466,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test5(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -499,7 +499,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, null, 2, paramLen))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), 2, paramLen))
                 
                     {
                 
@@ -511,7 +511,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test6(Arg0, Arg1, Arg2);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -526,7 +526,7 @@ namespace PuertsStaticWrap
                 
                     var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, null, false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -536,7 +536,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test6(Arg0, Arg1);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -549,7 +549,7 @@ namespace PuertsStaticWrap
             
                     var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
                 
                     {
                 
@@ -557,7 +557,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.Test6(Arg0);
                 
-                        Puerts.PuertsDLL.ReturnNumber(isolate, info, result);
+                        Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
@@ -590,7 +590,7 @@ namespace PuertsStaticWrap
                     
                         var result = obj.TestFilter(Arg0);
                 
-                        Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                        Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         
                     }

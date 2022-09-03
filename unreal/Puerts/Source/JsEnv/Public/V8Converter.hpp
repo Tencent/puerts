@@ -23,30 +23,30 @@
     };                                                \
     }
 
-#define __DefCDataPointerConverter(CLS)                                                           \
-    namespace puerts                                                                              \
-    {                                                                                             \
-    namespace converter                                                                           \
-    {                                                                                             \
-    template <>                                                                                   \
-    struct Converter<CLS*>                                                                        \
-    {                                                                                             \
-        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS* value)          \
-        {                                                                                         \
-            return ::puerts::DataTransfer::FindOrAddCData(                                        \
-                context->GetIsolate(), context, puerts::StaticTypeId<CLS>::get(), value, true);   \
-        }                                                                                         \
-        static CLS* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)      \
-        {                                                                                         \
-            return ::puerts::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());           \
-        }                                                                                         \
-        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)     \
-        {                                                                                         \
-            return ::puerts::DataTransfer::IsInstanceOf(                                          \
-                context->GetIsolate(), puerts::StaticTypeId<CLS>::get(), value.As<v8::Object>()); \
-        }                                                                                         \
-    };                                                                                            \
-    }                                                                                             \
+#define __DefCDataPointerConverter(CLS)                                                               \
+    namespace puerts                                                                                  \
+    {                                                                                                 \
+    namespace converter                                                                               \
+    {                                                                                                 \
+    template <>                                                                                       \
+    struct Converter<CLS*>                                                                            \
+    {                                                                                                 \
+        static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, CLS* value)              \
+        {                                                                                             \
+            return ::puerts::DataTransfer::FindOrAddCData(                                            \
+                context->GetIsolate(), context, puerts::DynamicTypeId<CLS>::get(value), value, true); \
+        }                                                                                             \
+        static CLS* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)          \
+        {                                                                                             \
+            return ::puerts::DataTransfer::GetPointerFast<CLS>(value.As<v8::Object>());               \
+        }                                                                                             \
+        static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)         \
+        {                                                                                             \
+            return ::puerts::DataTransfer::IsInstanceOf(                                              \
+                context->GetIsolate(), puerts::StaticTypeId<CLS>::get(), value.As<v8::Object>());     \
+        }                                                                                             \
+    };                                                                                                \
+    }                                                                                                 \
     }
 
 namespace puerts
@@ -123,6 +123,11 @@ V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
     return v8::Undefined(context->GetIsolate());
 }
 
+V8_INLINE bool IsNullOrUndefined(v8::Local<v8::Context> context, v8::Local<v8::Value> val)
+{
+    return val->IsNullOrUndefined();
+}
+
 }    // namespace puerts
 
 namespace puerts
@@ -130,17 +135,65 @@ namespace puerts
 class StringHolder
 {
 public:
-    StringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value) : utfString(context->GetIsolate(), value)
+    StringHolder(v8::Local<v8::Context> context, const v8::Local<v8::Value> value)
     {
+        needFree = false;
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
+#else
+            data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
+        }
+        else if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
+#else
+            data = static_cast<char*>(Ab->GetContents().Data());
+#endif
+        }
+        else
+        {
+            if (value.IsEmpty())
+                return;
+            const auto isolate = context->GetIsolate();
+            v8::TryCatch try_catch(isolate);
+            v8::Local<v8::String> str;
+            if (!value->ToString(context).ToLocal(&str))
+                return;
+            const int length = str->Utf8Length(isolate);
+            data = new char[length + 1];
+            str->WriteUtf8(isolate, data);
+            needFree = true;
+        }
+    }
+
+    ~StringHolder()
+    {
+        if (needFree && data)
+        {
+            delete[] data;
+        }
     }
 
     const char* Data() const
     {
-        return *utfString;
+        return data;
     }
 
+    // Disallow copying and assigning.
+    StringHolder(const StringHolder&) = delete;
+    void operator=(const StringHolder&) = delete;
+
 private:
-    v8::String::Utf8Value utfString;
+    char* data;
+
+    bool needFree;
 };
 
 template <>
@@ -303,6 +356,49 @@ struct Converter<const char*>
 };
 
 template <>
+struct Converter<void*>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, void* value)
+    {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0);
+#else
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
+#endif
+    }
+
+    static void* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
+#else
+            return static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
+        }
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            return v8::ArrayBuffer_Get_Data(Ab);
+#else
+            return Ab->GetContents().Data();
+#endif
+        }
+
+        return nullptr;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
+template <>
 struct Converter<bool>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, bool value)
@@ -376,29 +472,80 @@ struct Converter<std::reference_wrapper<T>, typename std::enable_if<is_objecttyp
 };
 
 template <typename T>
-struct Converter<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+struct Converter<T,
+    typename std::enable_if<is_script_type<typename std::remove_pointer<T>::type>::value && !std::is_array<T>::value &&
+                            !std::is_const<typename std::remove_pointer<T>::type>::value && std::is_pointer<T>::value>::type>
 {
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T& value)
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
-        auto result = v8::Object::New(context->GetIsolate());
-        auto _unused = result->Set(context, 0, Converter<T>::toScript(context, value));
-        return result;
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0);
+#else
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
+#endif
     }
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        if (!value.IsEmpty() && value->IsObject())
+        if (value->IsArrayBufferView())
         {
-            auto outer = value->ToObject(context).ToLocalChecked();
-            auto realvalue = outer->Get(context, 0).ToLocalChecked();
-            return Converter<typename std::decay<T>::type>::toCpp(context, realvalue);
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            return reinterpret_cast<T>(static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset());
+#else
+            return reinterpret_cast<T>(static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset());
+#endif
         }
-        return {};
+        if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            return static_cast<T>(v8::ArrayBuffer_Get_Data(Ab));
+#else
+            return static_cast<T>(Ab->GetContents().Data());
+#endif
+        }
+        return nullptr;
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return value->IsObject();    // do not checked inner
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
+template <typename T, std::size_t Size>
+struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value[Size])
+    {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), &(value[0]), sizeof(T) * Size);
+#else
+        return v8::ArrayBuffer::New(context->GetIsolate(), value, sizeof(T) * Size);
+#endif
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> buffView = value.As<v8::ArrayBufferView>();
+            return buffView->ByteLength() >= sizeof(T) * Size;
+        }
+        if (value->IsArrayBuffer())
+        {
+            auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            size_t byteLength;
+            auto _UnUsed = v8::ArrayBuffer_Get_Data(ab, byteLength);
+            return byteLength >= sizeof(T) * Size;
+#else
+            return ab->GetContents().ByteLength() >= sizeof(T) * Size;
+#endif
+        }
+        return false;
     }
 };
 
@@ -408,7 +555,7 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
-        return DataTransfer::FindOrAddCData(context->GetIsolate(), context, StaticTypeId<T>::get(), new T(value), false);
+        return DataTransfer::FindOrAddCData(context->GetIsolate(), context, DynamicTypeId<T>::get(&value), new T(value), false);
     }
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
@@ -421,11 +568,57 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
 };
 
+template <class T>
+struct Converter<const T*,
+    typename std::enable_if<(is_objecttype<T>::value || std::is_same<T, void>::value || is_script_type<T>::value) &&
+                            !is_uetype<T>::value && !std::is_same<T, char>::value>::type>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, const T* value)
+    {
+        return Converter<T*>::toScript(context, const_cast<T*>(value));
+    }
+    static const T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return Converter<T*>::toCpp(context, value);
+    }
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return Converter<T*>::accept(context, value);
+    }
+};
+
 }    // namespace converter
 
 template <>
 struct is_script_type<std::string> : std::true_type
 {
+};
+
+template <typename T, size_t Size>
+struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
+{
+    static constexpr auto value()
+    {
+        return Literal("ArrayBuffer");
+    }
+};
+
+template <>
+struct ScriptTypeName<void*>
+{
+    static constexpr auto value()
+    {
+        return Literal("ArrayBuffer");
+    }
+};
+
+template <>
+struct ScriptTypeName<const void*>
+{
+    static constexpr auto value()
+    {
+        return Literal("ArrayBuffer");
+    }
 };
 
 }    // namespace puerts

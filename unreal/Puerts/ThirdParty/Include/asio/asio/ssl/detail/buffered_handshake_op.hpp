@@ -2,7 +2,7 @@
 // ssl/detail/buffered_handshake_op.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,7 +21,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -29,35 +29,40 @@ template <typename ConstBufferSequence>
 class buffered_handshake_op
 {
 public:
+  static ASIO_CONSTEXPR const char* tracking_name()
+  {
+    return "ssl::stream<>::async_buffered_handshake";
+  }
+
   buffered_handshake_op(stream_base::handshake_type type,
       const ConstBufferSequence& buffers)
     : type_(type),
       buffers_(buffers),
-      total_buffer_size_(asio::buffer_size(buffers_))
+      total_buffer_size_(puerts_asio::buffer_size(buffers_))
   {
   }
 
   engine::want operator()(engine& eng,
-      asio::error_code& ec,
+      puerts_asio::error_code& ec,
       std::size_t& bytes_transferred) const
   {
     return this->process(eng, ec, bytes_transferred,
-        asio::buffer_sequence_begin(buffers_),
-        asio::buffer_sequence_end(buffers_));
+        puerts_asio::buffer_sequence_begin(buffers_),
+        puerts_asio::buffer_sequence_end(buffers_));
   }
 
   template <typename Handler>
   void call_handler(Handler& handler,
-      const asio::error_code& ec,
+      const puerts_asio::error_code& ec,
       const std::size_t& bytes_transferred) const
   {
-    handler(ec, bytes_transferred);
+    ASIO_MOVE_OR_LVALUE(Handler)(handler)(ec, bytes_transferred);
   }
 
 private:
   template <typename Iterator>
   engine::want process(engine& eng,
-      asio::error_code& ec,
+      puerts_asio::error_code& ec,
       std::size_t& bytes_transferred,
       Iterator begin, Iterator end) const
   {
@@ -107,7 +112,7 @@ private:
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

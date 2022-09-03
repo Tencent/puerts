@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -20,18 +20,7 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     UTypeScriptGeneratedClass* Class = Cast<UTypeScriptGeneratedClass>(Func->GetOuter());
     if (Class)
     {
-        if (Class->PendingConstructJob)
-        {
-#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
-            Class->PendingConstructJob->Wait();
-#else
-            FTaskGraphInterface::Get().WaitUntilTaskCompletes(Class->PendingConstructJob, ENamedThreads::AnyThread);
-#endif
-        }
-
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Class->Isolate);
-#endif
+        Class->ProcessPendingConstructJob();
         auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -45,6 +34,82 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     else
     {
         UE_LOG(Puerts, Error, TEXT("calling a not ts class method %s::%s"), *Func->GetOuter()->GetName(), *Func->GetName());
+    }
+}
+
+#if WITH_EDITOR
+DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
+{
+    UFunction* Function = Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node;
+    check(Function);
+
+    NotifyRebind(Function->GetOuterUClassUnchecked());
+    execCallJS(Context, Stack, RESULT_PARAM);
+}
+
+void UTypeScriptGeneratedClass::NotifyRebind(UClass* Class)
+{
+    if (Class->ClassConstructor == &UTypeScriptGeneratedClass::StaticConstructor)
+    {
+        while (Class)
+        {
+            if (UTypeScriptGeneratedClass* TsClass = Cast<UTypeScriptGeneratedClass>(Class))
+            {
+                if (TsClass->NeedReBind && TsClass->DynamicInvoker.IsValid())
+                {
+                    TsClass->NeedReBind = false;
+                    UTypeScriptGeneratedClass* CachedClass = TsClass;
+                    Class = Class->GetSuperClass();
+                    while (Class)
+                    {
+                        if (UTypeScriptGeneratedClass* SuperTsClass = Cast<UTypeScriptGeneratedClass>(Class))
+                        {
+                            SuperTsClass->NeedReBind = false;
+                        }
+                        Class = Class->GetSuperClass();
+                    }
+                    CachedClass->DynamicInvoker.Pin()->NotifyReBind(CachedClass);
+                }
+                return;
+            }
+            Class = Class->GetSuperClass();
+        }
+    }
+}
+
+void UTypeScriptGeneratedClass::LazyLoadRedirect()
+{
+    for (TFieldIterator<UFunction> FuncIt(this, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
+    {
+        auto Function = *FuncIt;
+        if (!FunctionToRedirect.Contains(Function->GetFName()))
+        {
+            continue;
+        }
+        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
+        Function->SetNativeFunc(&UTypeScriptGeneratedClass::execLazyLoadCallJS);
+        AddNativeFunction(*Function->GetName(), &UTypeScriptGeneratedClass::execLazyLoadCallJS);
+    }
+}
+#endif
+
+void UTypeScriptGeneratedClass::ProcessPendingConstructJob()
+{
+    FScopeLock ScopeLock(&PendingConstructJobMutex);
+    if (!IsProcessingPendingConstructJob && PendingConstructInfos.Num() > 0)
+    {
+        IsProcessingPendingConstructJob = true;
+        for (int Index = 0; Index < PendingConstructInfos.Num(); Index++)
+        {
+            PendingConstructInfos[Index].Ref.Reset();
+            auto ExecFunction = PendingConstructInfos[Index].Func;
+            if (!ExecFunction)
+                continue;
+            PendingConstructInfos[Index].Func = nullptr;
+            ExecFunction();
+        }
+        PendingConstructInfos.Empty();
+        IsProcessingPendingConstructJob = false;
     }
 }
 
@@ -82,7 +147,6 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
 #endif
 
 #ifdef THREAD_SAFE
-    v8::Locker Locker(Isolate);
     auto PinedDynamicInvoker = DynamicInvoker.Pin();
     if (PinedDynamicInvoker)
     {
@@ -94,43 +158,64 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
     {
         if (IsInGameThread())
         {
-            if (PendingConstructJob)
-            {
-#if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION > 4
-                PendingConstructJob->Wait();
-#else
-                FTaskGraphInterface::Get().WaitUntilTaskCompletes(PendingConstructJob, ENamedThreads::AnyThread);
-#endif
-            }
+            ProcessPendingConstructJob();
             PinedDynamicInvoker->TsConstruct(this, Object);
         }
-        else if (!PendingConstructJob)
+        else
         {
+            FScopeLock ScopeLock(&PendingConstructJobMutex);
+
             TWeakObjectPtr<UTypeScriptGeneratedClass> Class = this;
             TWeakObjectPtr<UObject> Self = Object;
-            PendingConstructJob = FFunctionGraphTask::CreateAndDispatchWhenReady(
-                [Class, Self]()
+            TSharedPtr<int> Ref(new int(0));
+            TWeakPtr<int> WeakRef(Ref);
+            int Index = PendingConstructInfos.Num();
+            PendingConstructInfos.AddDefaulted();
+            PendingConstructJobInfo& Info = PendingConstructInfos[Index];
+            Info.Ref = Ref;
+            Info.Func = [Class, Self, Index]()
+            {
+                if (Class.IsValid())
                 {
-                    if (Class.IsValid())
+                    FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
+                    if (Self.IsValid() && Class->PendingConstructInfos.Num() > Index)
                     {
-                        if (Self.IsValid())
+                        auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
+                        if (PinedDynamicInvoker)
                         {
-                            auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
-                            if (PinedDynamicInvoker)
-                            {
-                                PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
-                            }
-                            else
-                            {
-                                UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
-                                    *Self->GetName(), Self.Get());
-                            }
+                            PinedDynamicInvoker->TsConstruct(Class.Get(), Self.Get());
                         }
                         else
                         {
-                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
+                            UE_LOG(Puerts, Error, TEXT("call delay TsConstruct of %s(%p) fail!, DynamicInvoker invalid"),
+                                *Self->GetName(), Self.Get());
                         }
-                        Class->PendingConstructJob = nullptr;
+                    }
+                    else
+                    {
+                        UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Self of %s invalid"), *Class->GetName());
+                    }
+                }
+                else
+                {
+                    UE_LOG(Puerts, Error, TEXT("call delay TsConstruct fail!, Class invalid"));
+                }
+            };
+            FFunctionGraphTask::CreateAndDispatchWhenReady(
+                [Class, Self, Index, WeakRef]()
+                {
+                    if (Class.IsValid())
+                    {
+                        if (!WeakRef.IsValid())
+                            return;
+                        FScopeLock ScopeLock(&Class->PendingConstructJobMutex);
+                        if (Class->PendingConstructInfos.Num() > Index && Class->PendingConstructInfos[Index].Func)
+                        {
+                            auto ExecFunction = Class->PendingConstructInfos[Index].Func;
+                            Class->PendingConstructInfos[Index].Func = nullptr;
+                            Class->PendingConstructInfos[Index].Ref.Reset();
+                            ExecFunction();
+                        }
                     }
                     else
                     {
@@ -138,10 +223,6 @@ void UTypeScriptGeneratedClass::ObjectInitialize(const FObjectInitializer& Objec
                     }
                 },
                 TStatId{}, nullptr, ENamedThreads::GameThread);
-        }
-        else
-        {
-            UE_LOG(Puerts, Error, TEXT("not in gamethread and has exsited pending construct job"));
         }
     }
 #endif
@@ -232,7 +313,7 @@ void UTypeScriptGeneratedClass::Bind()
         // ClassFlags |= CLASS_Native;
     }
 #if WITH_EDITOR
-    if (IsRunningGame())
+    if (DynamicInvoker.IsValid())
 #endif
     {
         ClassConstructor = &StaticConstructor;

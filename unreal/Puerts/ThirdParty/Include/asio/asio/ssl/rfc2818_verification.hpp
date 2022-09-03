@@ -2,7 +2,7 @@
 // ssl/rfc2818_verification.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,24 +17,26 @@
 
 #include "asio/detail/config.hpp"
 
+#if !defined(ASIO_NO_DEPRECATED)
+
 #include <string>
 #include "asio/ssl/detail/openssl_types.hpp"
 #include "asio/ssl/verify_context.hpp"
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 
-/// Verifies a certificate against a hostname according to the rules described
-/// in RFC 2818.
+/// (Deprecated. Use ssl::host_name_verification.) Verifies a certificate
+/// against a hostname according to the rules described in RFC 2818.
 /**
  * @par Example
  * The following example shows how to synchronously open a secure connection to
  * a given host name:
  * @code
- * using asio::ip::tcp;
- * namespace ssl = asio::ssl;
+ * using puerts_asio::ip::tcp;
+ * namespace ssl = puerts_asio::ssl;
  * typedef ssl::stream<tcp::socket> ssl_socket;
  *
  * // Create a context that uses the default paths for finding CA certificates.
@@ -42,11 +44,11 @@ namespace ssl {
  * ctx.set_default_verify_paths();
  *
  * // Open a socket and connect it to the remote host.
- * asio::io_context io_context;
+ * puerts_asio::io_context io_context;
  * ssl_socket sock(io_context, ctx);
  * tcp::resolver resolver(io_context);
  * tcp::resolver::query query("host.name", "https");
- * asio::connect(sock.lowest_layer(), resolver.resolve(query));
+ * puerts_asio::connect(sock.lowest_layer(), resolver.resolve(query));
  * sock.lowest_layer().set_option(tcp::no_delay(true));
  *
  * // Perform SSL handshake and verify the remote host's certificate.
@@ -83,12 +85,14 @@ private:
 };
 
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
 #if defined(ASIO_HEADER_ONLY)
 # include "asio/ssl/impl/rfc2818_verification.ipp"
 #endif // defined(ASIO_HEADER_ONLY)
+
+#endif // !defined(ASIO_NO_DEPRECATED)
 
 #endif // ASIO_SSL_RFC2818_VERIFICATION_HPP

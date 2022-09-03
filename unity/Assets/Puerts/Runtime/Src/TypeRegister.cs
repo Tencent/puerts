@@ -100,7 +100,7 @@ namespace Puerts
         {
             try
             {
-                Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
+                Array array = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self) as Array;
                 PuertsDLL.ReturnNumber(isolate, info, array.Length);
             }
             catch (Exception e)
@@ -279,7 +279,7 @@ namespace Puerts
             {
                 try
                 {
-                    Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
+                    Array array = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self) as Array;
                     uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
                     if (FastArrayGet(isolate1, info, self, array, index)) return;
                     var transalteFunc = jsEnv.GeneralSetterManager.GetTranslateFunc(array.GetType().GetElementType());
@@ -295,7 +295,7 @@ namespace Puerts
             {
                 try
                 {
-                    Array array = jsEnv.GeneralGetterManager.GetSelf(self) as Array;
+                    Array array = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self) as Array;
                     uint index = (uint)PuertsDLL.GetNumberFromValue(isolate1, PuertsDLL.GetArgumentValue(info, 0), false);
                     var val = PuertsDLL.GetArgumentValue(info, 1);
                     if (FastArraySet(isolate1, info, self, array, index, val)) return;
@@ -432,7 +432,7 @@ namespace Puerts
             {
                 return (IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen) =>
                 {
-                    var me = jsEnv.GeneralGetterManager.GetSelf(self);
+                    var me = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self);
                     translateFunc(jsEnv.Idx, isolate, NativeValueApi.SetValueToResult, info, field.GetValue(me));
                 };
             }
@@ -448,13 +448,27 @@ namespace Puerts
                 {
                     var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
                     var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);
-                    if ((typeMask & valueType) != valueType)
+                    object value = null;
+                    if (
+                        !Utils.IsJsValueTypeMatchType(valueType, field.FieldType, typeMask, () =>
+                        {
+                            value = translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr,
+                                false);
+                            return value;
+                        }, value)
+                    )
                     {
                         PuertsDLL.ThrowException(isolate, "expect " + typeMask + " but got " + valueType);
                     }
                     else
                     {
-                        field.SetValue(null, translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
+                        if (value == null)
+                        {
+                            value = translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr,
+                                false);
+                        }
+
+                        field.SetValue(null, value);
                     }
                 };
             }
@@ -464,13 +478,21 @@ namespace Puerts
                 {
                     var valuePtr = PuertsDLL.GetArgumentValue(info, 0);
                     var valueType = PuertsDLL.GetJsValueType(isolate, valuePtr, false);
-                    if ((typeMask & valueType) != valueType)
+                    object value = null;
+                    if (
+                        !Utils.IsJsValueTypeMatchType(valueType, field.FieldType, typeMask, () =>
+                        {
+                            value = translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr,
+                                false);
+                            return value;
+                        }, value)
+                    )
                     {
                         PuertsDLL.ThrowException(isolate, "expect " + typeMask + " but got " + valueType);
                     }
                     else
                     {
-                        var me = jsEnv.GeneralGetterManager.GetSelf(self);
+                        var me = jsEnv.GeneralGetterManager.GetSelf(jsEnv.Idx, self);
                         field.SetValue(me, translateFunc(jsEnv.Idx, isolate, NativeValueApi.GetValueFromArgument, valuePtr, false));
                     }
                 };
@@ -603,7 +625,7 @@ namespace Puerts
 
                 if (typeof(Delegate).IsAssignableFrom(type))
                 {
-                    DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv.GeneralGetterManager);
+                    DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv);
                     constructorCallback = delegateConstructWrap.Construct;
                 }
                 else
@@ -616,12 +638,12 @@ namespace Puerts
                             {
                                 hasNoParametersCtor = true;
                             }
-                            return new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager);
+                            return new OverloadReflectionWrap(m, jsEnv);
                         })
                         .ToList();
                     if (type.IsValueType && !hasNoParametersCtor)
                     {
-                        constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv.GeneralGetterManager));
+                        constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv));
                     }
                     MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
                     constructorCallback = constructorReflectionWrap.Construct;
@@ -647,6 +669,9 @@ namespace Puerts
                 // extensionMethods
                 // 因为内存问题与crash问题移入宏中
 #if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
+    #if !PUERTS_REFLECT_ALL_EXTENSION && UNITY_EDITOR
+                if (!UnityEditor.EditorApplication.isPlaying) { 
+    #endif
                 IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                 if (extensionMethods != null)
                 {
@@ -659,6 +684,9 @@ namespace Puerts
                         AddMethodToSlowBindingGroup(methodKey, method);
                     }
                 }
+    #if !PUERTS_REFLECT_ALL_EXTENSION && UNITY_EDITOR
+                }
+    #endif
 #endif
 
                 // fields
@@ -785,7 +813,7 @@ namespace Puerts
 
             foreach (var kv in slowBindingMethodGroup)
             {
-                var overloadWraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager, kv.Key.IsExtension)).ToList();
+                var overloadWraps = kv.Value.Select(m => new OverloadReflectionWrap(m, jsEnv, kv.Key.IsExtension)).ToList();
                 MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Key.Name, overloadWraps);
                 PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, kv.Key.Name, kv.Key.IsStatic, callbackWrap, jsEnv.AddCallback(methodReflectionWrap.Invoke));
             }
@@ -798,7 +826,7 @@ namespace Puerts
                 {
                     getter = callbackWrap;
                     MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Value.Getter.Name, new List<OverloadReflectionWrap>() {
-                        new OverloadReflectionWrap(kv.Value.Getter, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)
+                        new OverloadReflectionWrap(kv.Value.Getter, jsEnv)
                     });
                     getterData = jsEnv.AddCallback(methodReflectionWrap.Invoke);
                     isStatic = kv.Value.Getter.IsStatic;
@@ -809,7 +837,7 @@ namespace Puerts
                 {
                     setter = callbackWrap;
                     MethodReflectionWrap methodReflectionWrap = new MethodReflectionWrap(kv.Value.Setter.Name, new List<OverloadReflectionWrap>() {
-                        new OverloadReflectionWrap(kv.Value.Setter, jsEnv.GeneralGetterManager, jsEnv.GeneralSetterManager)
+                        new OverloadReflectionWrap(kv.Value.Setter, jsEnv)
                     });
                     setterData = jsEnv.AddCallback(methodReflectionWrap.Invoke);
                     isStatic = kv.Value.Setter.IsStatic;

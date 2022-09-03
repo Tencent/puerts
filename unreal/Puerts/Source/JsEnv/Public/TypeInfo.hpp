@@ -10,82 +10,187 @@
 
 #include <string>
 
-#define __DefScriptTTypeName(CLSNAME, CLS)             \
-    namespace puerts                                   \
-    {                                                  \
-    template <>                                        \
-    struct ScriptTypeName<CLS>                         \
-    {                                                  \
-        static constexpr const char* value = #CLSNAME; \
-    };                                                 \
+#define __DefScriptTTypeName(CLSNAME, CLS) \
+    namespace puerts                       \
+    {                                      \
+    template <>                            \
+    struct ScriptTypeName<CLS>             \
+    {                                      \
+        static constexpr auto value()      \
+        {                                  \
+            return Literal(#CLSNAME);      \
+        }                                  \
+    };                                     \
     }
 
 namespace puerts
 {
+template <std::size_t N>
+class StringLiteral
+{
+public:
+    template <typename... Characters>
+    constexpr StringLiteral(Characters... characters) : m_value{characters..., '\0'}
+    {
+    }
+
+    template <std::size_t... Indexes>
+    constexpr StringLiteral(const char (&value)[N + 1], std::index_sequence<Indexes...> dummy) : StringLiteral(value[Indexes]...)
+    {
+    }
+
+    constexpr StringLiteral(const char (&value)[N + 1]) : StringLiteral(value, std::make_index_sequence<N>{})
+    {
+    }
+
+    constexpr char operator[](const std::size_t index) const
+    {
+        return m_value[index];
+    }
+
+    constexpr const char* Data() const
+    {
+        return m_value;
+    }
+
+    template <std::size_t Start, std::size_t... Index>
+    constexpr StringLiteral<N - Start> Sub(std::index_sequence<Index...> dummy) const
+    {
+        return StringLiteral<N - Start>(m_value[Start + Index]...);
+    }
+
+    template <std::size_t Start>
+    constexpr StringLiteral<N - Start> Sub() const
+    {
+        return Sub<Start>(std::make_index_sequence<N - Start>());
+    }
+
+private:
+    const char m_value[N + 1];
+};
+
+template <typename Left, typename Right, std::size_t... IndexesLeft, std::size_t... IndexesRight>
+constexpr StringLiteral<sizeof...(IndexesLeft) + sizeof...(IndexesRight)> ConcatStrings(
+    const Left& lhs, const Right& rhs, std::index_sequence<IndexesLeft...> dummy1, std::index_sequence<IndexesRight...> dummy2)
+{
+    return StringLiteral<sizeof...(IndexesLeft) + sizeof...(IndexesRight)>(lhs[IndexesLeft]..., rhs[IndexesRight]...);
+}
+
+template <std::size_t X, std::size_t Y>
+constexpr StringLiteral<X + Y> operator+(const StringLiteral<X>& lhs, const StringLiteral<Y>& rhs)
+{
+    return ConcatStrings(lhs, rhs, std::make_index_sequence<X>(), std::make_index_sequence<Y>());
+}
+
+template <std::size_t N>
+constexpr auto Literal(const char (&value)[N])
+{
+    return StringLiteral<N - 1>(value, typename std::make_index_sequence<N - 1>{});
+}
+
 template <typename T, typename Enable = void>
 struct ScriptTypeName
 {
 };
 
+template <typename T, typename Enable = void>
+struct ScriptTypeNameWithNamespace
+{
+    static constexpr auto value()
+    {
+        return ScriptTypeName<T>::value();
+    }
+};
+
 template <typename T>
 struct ScriptTypeName<T*>
 {
-    static constexpr const char* value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
+    static constexpr auto value()
+    {
+        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
+    }
 };
 
 template <typename T>
 struct ScriptTypeName<T&>
 {
-    static constexpr const char* value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
+    static constexpr auto value()
+    {
+        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
+    }
 };
 
 template <typename T>
 struct ScriptTypeName<T&&>
 {
-    static constexpr const char* value = ScriptTypeName<typename std::remove_cv<T>::type>::value;
+    static constexpr auto value()
+    {
+        return ScriptTypeName<typename std::remove_cv<T>::type>::value();
+    }
 };
 
 template <typename T>
 struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8>::type>
 {
-    static constexpr const char* value = "bigint";
+    static constexpr auto value()
+    {
+        return Literal("bigint");
+    }
 };
 
 template <typename T>
 struct ScriptTypeName<T, typename std::enable_if<std::is_enum<T>::value>::type>
 {
-    static constexpr const char* value = "number";
+    static constexpr auto value()
+    {
+        return Literal("number");
+    }
 };
 
 template <typename T>
 struct ScriptTypeName<T,
     typename std::enable_if<std::is_floating_point<T>::value || (std::is_integral<T>::value && sizeof(T) < 8)>::type>
 {
-    static constexpr const char* value = "number";
+    static constexpr auto value()
+    {
+        return Literal("number");
+    }
 };
 
 template <>
 struct ScriptTypeName<std::string>
 {
-    static constexpr const char* value = "string";
+    static constexpr auto value()
+    {
+        return Literal("string");
+    }
 };
 
 template <>
 struct ScriptTypeName<const char*>
 {
-    static constexpr const char* value = "string";
+    static constexpr auto value()
+    {
+        return Literal("cstring");
+    }
 };
 
 template <>
 struct ScriptTypeName<bool>
 {
-    static constexpr const char* value = "boolean";
+    static constexpr auto value()
+    {
+        return Literal("boolean");
+    }
 };
 
 template <>
 struct ScriptTypeName<void>
 {
-    static constexpr const char* value = "void";
+    static constexpr auto value()
+    {
+        return Literal("void");
+    }
 };
 
 template <typename T>
@@ -95,6 +200,15 @@ struct StaticTypeId
     {
         static T* dummy = nullptr;
         return &dummy;
+    }
+};
+
+template <typename T, typename Enable = void>
+struct DynamicTypeId
+{
+    static void* get(T* Obj)
+    {
+        return StaticTypeId<T>::get();
     }
 };
 
@@ -114,7 +228,8 @@ struct is_script_type : std::false_type
 };
 
 template <typename T>
-struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value>::type> : std::true_type
+struct is_script_type<T, typename std::enable_if<std::is_fundamental<T>::value && !std::is_same<T, void>::value>::type>
+    : std::true_type
 {
 };
 
@@ -134,25 +249,30 @@ class CFunctionInfo
 public:
     virtual const CTypeInfo* Return() const = 0;
     virtual unsigned int ArgumentCount() const = 0;
+    virtual unsigned int DefaultCount() const = 0;
     virtual const CTypeInfo* Argument(unsigned int index) const = 0;
     virtual const char* CustomSignature() const = 0;
 };
 
-template <typename T>
+template <typename T, bool ScriptTypePtrAsRef>
 class CTypeInfoImpl : CTypeInfo
 {
 public:
     virtual const char* Name() const override
     {
-        return ScriptTypeName<T>::value;
+        static auto NameLiteral = ScriptTypeName<T>::value();
+        return NameLiteral.Data();
     }
     virtual bool IsPointer() const override
     {
-        return std::is_pointer<T>::value;
+        return std::is_pointer<T>::value && !ScriptTypePtrAsRef;
     };
     virtual bool IsRef() const override
     {
-        return std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value;
+        return (std::is_reference<T>::value && !std::is_const<typename std::remove_reference<T>::type>::value) ||
+               (std::is_pointer<T>::value &&
+                   !std::is_same<void, typename std::decay<typename std::remove_pointer<T>::type>::type>::value &&
+                   ScriptTypePtrAsRef && !IsConst() && !IsUEType() && !IsObjectType());
     };
     virtual bool IsConst() const override
     {
@@ -175,14 +295,24 @@ public:
     }
 };
 
-template <typename Ret, typename... Args>
-class CFunctionInfoImpl : CFunctionInfo
+template <typename Ret, bool ScriptTypePtrAsRef, std::size_t StartParameter, typename... Args>
+class CFunctionInfoImpl : public CFunctionInfo
 {
+protected:
     const CTypeInfo* return_;
     const unsigned int argCount_;
     const CTypeInfo* arguments_[sizeof...(Args) + 1];
+    unsigned int defaultCount_;
 
-    CFunctionInfoImpl() : return_(CTypeInfoImpl<Ret>::get()), argCount_(sizeof...(Args)), arguments_{CTypeInfoImpl<Args>::get()...}
+    CFunctionInfoImpl()
+        : return_(CTypeInfoImpl<Ret, ScriptTypePtrAsRef>::get())
+        , argCount_(sizeof...(Args))
+        , arguments_{CTypeInfoImpl<Args, ScriptTypePtrAsRef>::get()...}
+        , defaultCount_(0)
+    {
+    }
+
+    virtual ~CFunctionInfoImpl()
     {
     }
 
@@ -193,21 +323,81 @@ public:
     }
     virtual unsigned int ArgumentCount() const override
     {
-        return argCount_;
+        return argCount_ - StartParameter;
+    }
+    virtual unsigned int DefaultCount() const override
+    {
+        return defaultCount_;
     }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
-        return arguments_[index];
+        return arguments_[index + StartParameter];
     }
-
     virtual const char* CustomSignature() const override
     {
         return nullptr;
     }
 
-    static const CFunctionInfo* get()
+    static const CFunctionInfo* get(unsigned int defaultCount)
     {
         static CFunctionInfoImpl instance{};
+        instance.defaultCount_ = defaultCount;
+        return &instance;
+    }
+};
+
+template <typename T, T, bool, std::size_t StartParameter = 0>
+class CFunctionInfoByPtrImpl
+{
+};
+
+template <typename Ret, typename... Args, Ret (*func)(Args...), bool ScriptTypePtrAsRef, std::size_t StartParameter>
+class CFunctionInfoByPtrImpl<Ret (*)(Args...), func, ScriptTypePtrAsRef, StartParameter>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, StartParameter, Args...>
+{
+public:
+    virtual ~CFunctionInfoByPtrImpl()
+    {
+    }
+
+    static const CFunctionInfo* get(unsigned int defaultCount)
+    {
+        static CFunctionInfoByPtrImpl instance{};
+        instance.defaultCount_ = defaultCount;
+        return &instance;
+    }
+};
+
+template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ScriptTypePtrAsRef>
+class CFunctionInfoByPtrImpl<Ret (Inc::*)(Args...), func, ScriptTypePtrAsRef>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, 0, Args...>
+{
+public:
+    virtual ~CFunctionInfoByPtrImpl()
+    {
+    }
+
+    static const CFunctionInfo* get(unsigned int defaultCount)
+    {
+        static CFunctionInfoByPtrImpl instance{};
+        instance.defaultCount_ = defaultCount;
+        return &instance;
+    }
+};
+
+template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ScriptTypePtrAsRef>
+class CFunctionInfoByPtrImpl<Ret (Inc::*)(Args...) const, func, ScriptTypePtrAsRef>
+    : public CFunctionInfoImpl<Ret, ScriptTypePtrAsRef, 0, Args...>
+{
+public:
+    virtual ~CFunctionInfoByPtrImpl()
+    {
+    }
+
+    static const CFunctionInfo* get(unsigned int defaultCount)
+    {
+        static CFunctionInfoByPtrImpl instance{};
+        instance.defaultCount_ = defaultCount;
         return &instance;
     }
 };
@@ -221,6 +411,10 @@ public:
     {
     }
 
+    virtual ~CFunctionInfoWithCustomSignature()
+    {
+    }
+
     virtual const CTypeInfo* Return() const override
     {
         return nullptr;
@@ -229,11 +423,14 @@ public:
     {
         return 0;
     }
+    virtual unsigned int DefaultCount() const override
+    {
+        return 0;
+    }
     virtual const CTypeInfo* Argument(unsigned int index) const override
     {
         return nullptr;
     }
-
     virtual const char* CustomSignature() const override
     {
         return _signature;

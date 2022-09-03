@@ -2,7 +2,7 @@
 // use_future.hpp
 // ~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Function, typename Allocator>
@@ -42,10 +42,10 @@ class packaged_handler;
  * The use_future_t class is used to indicate that an asynchronous operation
  * should return a std::future object. A use_future_t object may be passed as a
  * handler to an asynchronous operation, typically using the special value @c
- * asio::use_future. For example:
+ * puerts_asio::use_future. For example:
  *
  * @code std::future<std::size_t> my_future
- *   = my_socket.async_read_some(my_buffer, asio::use_future); @endcode
+ *   = my_socket.async_read_some(my_buffer, puerts_asio::use_future); @endcode
  *
  * The initiating function (async_read_some in the above example) returns a
  * future that will receive the result of the operation. If the operation
@@ -103,7 +103,7 @@ public:
    *
    * @code std::future<std::size_t> fut =
    *   my_socket.async_read_some(buffer,
-   *     use_future([](asio::error_code ec, std::size_t n)
+   *     use_future([](puerts_asio::error_code ec, std::size_t n)
    *       {
    *         return ec ? 0 : n;
    *       }));
@@ -140,7 +140,7 @@ private:
 
 /// A special value, similar to std::nothrow.
 /**
- * See the documentation for asio::use_future_t for a usage example.
+ * See the documentation for puerts_asio::use_future_t for a usage example.
  */
 #if defined(ASIO_HAS_CONSTEXPR) || defined(GENERATING_DOCUMENTATION)
 constexpr use_future_t<> use_future;
@@ -148,7 +148,7 @@ constexpr use_future_t<> use_future;
 __declspec(selectany) use_future_t<> use_future;
 #endif
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

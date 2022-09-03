@@ -37,15 +37,11 @@ public:
 
     v8::UniquePersistent<v8::Function> JsFunction;
 
-    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
     std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
 
     bool TakeJsObjectRef;
-
-#ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
-#endif
 
     UFunction* Original = nullptr;
 

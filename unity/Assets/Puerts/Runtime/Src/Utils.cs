@@ -92,7 +92,7 @@ namespace Puerts
             }
         }
 
-        public static bool IsNotGenericOrValidGeneric(MethodInfo method)
+        public static bool IsNotGenericOrValidGeneric(MethodInfo method, ParameterInfo[] pinfos = null)
         {
             // 不包含泛型参数，肯定支持
             if (!method.ContainsGenericParameters)
@@ -100,7 +100,8 @@ namespace Puerts
 
             List<Type> validGenericParameter = new List<Type>();
 
-            foreach (var parameters in method.GetParameters())
+            if (pinfos == null) pinfos = method.GetParameters(); 
+            foreach (var parameters in pinfos)
             {
                 Type parameterType = parameters.ParameterType;
 
@@ -324,6 +325,46 @@ namespace Puerts
                 throw new InvalidOperationException();
             return firstParameterConstraint;
         }
+        
+        public delegate object GetValueForCheck();
+        public static bool IsJsValueTypeMatchType(JsValueType jsType, Type csType, JsValueType csTypeMask, GetValueForCheck valueGetter = null, object value = null)
+        {
+            if (jsType == JsValueType.NativeObject) 
+            {
+                if (csType == typeof(JSObject)) // 非要把一个NativeObject赋值给JSObject是允许的。
+                {
+                    return true;
+                }
+                else if (csType.IsPrimitive) // TypedValue赋值给基础类型
+                {
+                    // 可能的优化： 为TypedValue设计一个新的JSValueType，这样这里就不需要先取值
+                    // 此处优化后，可以将下面使用valueGetter的地方独立出去，这里只专注typeMask
+                    value = valueGetter();
+                    if (value.GetType() == csType)
+                    {
+                        return true;
+                    }
+                }
+            }
+            if ((csTypeMask & jsType) != jsType)
+            {
+                return false;
+            }
+            if (jsType == JsValueType.NativeObject)
+            {
+                if (value == null)
+                {
+                    value = valueGetter();
+                }
+                if (!csType.IsAssignableFrom(value.GetType()))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
 
 #if (UNITY_WSA && !ENABLE_IL2CPP) && !UNITY_EDITOR
         public static List<Assembly> _assemblies;

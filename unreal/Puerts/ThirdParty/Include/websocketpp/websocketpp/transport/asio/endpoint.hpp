@@ -43,11 +43,11 @@
 
 namespace websocketpp {
 namespace transport {
-namespace asio {
+namespace puerts_asio {
 
 /// Asio based endpoint transport component
 /**
- * transport::asio::endpoint implements an endpoint transport component using
+ * transport::puerts_asio::endpoint implements an endpoint transport component using
  * Asio.
  */
 template <typename config>
@@ -72,21 +72,21 @@ public:
 
     /// Type of the connection transport component associated with this
     /// endpoint transport component
-    typedef asio::connection<config> transport_con_type;
+    typedef puerts_asio::connection<config> transport_con_type;
     /// Type of a shared pointer to the connection transport component
     /// associated with this endpoint transport component
     typedef typename transport_con_type::ptr transport_con_ptr;
 
     /// Type of a pointer to the ASIO io_service being used
-    typedef lib::asio::io_service * io_service_ptr;
+    typedef lib::puerts_asio::io_service * io_service_ptr;
     /// Type of a shared pointer to the acceptor being used
-    typedef lib::shared_ptr<lib::asio::ip::tcp::acceptor> acceptor_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::ip::tcp::acceptor> acceptor_ptr;
     /// Type of a shared pointer to the resolver being used
-    typedef lib::shared_ptr<lib::asio::ip::tcp::resolver> resolver_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::ip::tcp::resolver> resolver_ptr;
     /// Type of timer handle
-    typedef lib::shared_ptr<lib::asio::steady_timer> timer_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::steady_timer> timer_ptr;
     /// Type of a shared pointer to an io_service work object
-    typedef lib::shared_ptr<lib::asio::io_service::work> work_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::io_service::work> work_ptr;
 
     /// Type of socket pre-bind handler
     typedef lib::function<lib::error_code(acceptor_ptr)> tcp_pre_bind_handler;
@@ -95,11 +95,11 @@ public:
     explicit endpoint()
       : m_io_service(NULL)
       , m_external_io_service(false)
-      , m_listen_backlog(lib::asio::socket_base::max_connections)
+      , m_listen_backlog(lib::puerts_asio::socket_base::max_connections)
       , m_reuse_addr(false)
       , m_state(UNINITIALIZED)
     {
-        //std::cout << "transport::asio::endpoint constructor" << std::endl;
+        //std::cout << "transport::puerts_asio::endpoint constructor" << std::endl;
     }
 
     ~endpoint() {
@@ -114,7 +114,7 @@ public:
         }
     }
 
-    /// transport::asio objects are moveable but not copyable or assignable.
+    /// transport::puerts_asio objects are moveable but not copyable or assignable.
     /// The following code sets this situation up based on whether or not we
     /// have C++11 support or not
 #ifdef _WEBSOCKETPP_DEFAULT_DELETE_FUNCTIONS_
@@ -135,7 +135,7 @@ public:
       , m_io_service(src.m_io_service)
       , m_external_io_service(src.m_external_io_service)
       , m_acceptor(src.m_acceptor)
-      , m_listen_backlog(lib::asio::socket_base::max_connections)
+      , m_listen_backlog(lib::puerts_asio::socket_base::max_connections)
       , m_reuse_addr(src.m_reuse_addr)
       , m_elog(src.m_elog)
       , m_alog(src.m_alog)
@@ -159,7 +159,7 @@ public:
             rhs.m_io_service = NULL;
             rhs.m_external_io_service = false;
             rhs.m_acceptor = NULL;
-            rhs.m_listen_backlog = lib::asio::socket_base::max_connections;
+            rhs.m_listen_backlog = lib::puerts_asio::socket_base::max_connections;
             rhs.m_state = UNINITIALIZED;
             
             // TODO: this needs to be updated
@@ -177,7 +177,7 @@ public:
     /**
      * Initialize the ASIO transport policy for this endpoint using the provided
      * io_service object. asio_init must be called exactly once on any endpoint
-     * that uses transport::asio before it can be used.
+     * that uses transport::puerts_asio before it can be used.
      *
      * @param ptr A pointer to the io_service to use for asio events
      * @param ec Set to indicate what error occurred, if any.
@@ -185,18 +185,17 @@ public:
     void init_asio(io_service_ptr ptr, lib::error_code & ec) {
         if (m_state != UNINITIALIZED) {
             m_elog->write(log::elevel::library,
-                "asio::init_asio called from the wrong state");
+                "puerts_asio::init_asio called from the wrong state");
             using websocketpp::error::make_error_code;
             ec = make_error_code(websocketpp::error::invalid_state);
             return;
         }
 
-        m_alog->write(log::alevel::devel,"asio::init_asio");
+        m_alog->write(log::alevel::devel,"puerts_asio::init_asio");
 
         m_io_service = ptr;
         m_external_io_service = true;
-        m_acceptor = lib::make_shared<lib::asio::ip::tcp::acceptor>(
-            lib::ref(*m_io_service));
+        m_acceptor.reset(new lib::puerts_asio::ip::tcp::acceptor(*m_io_service));
 
         m_state = READY;
         ec = lib::error_code();
@@ -206,7 +205,7 @@ public:
     /**
      * Initialize the ASIO transport policy for this endpoint using the provided
      * io_service object. asio_init must be called exactly once on any endpoint
-     * that uses transport::asio before it can be used.
+     * that uses transport::puerts_asio before it can be used.
      *
      * @param ptr A pointer to the io_service to use for asio events
      */
@@ -231,9 +230,9 @@ public:
         // TODO: remove the use of auto_ptr when C++98/03 support is no longer
         //       necessary.
 #ifdef _WEBSOCKETPP_CPP11_MEMORY_
-        lib::unique_ptr<lib::asio::io_service> service(new lib::asio::io_service());
+        lib::unique_ptr<lib::puerts_asio::io_service> service(new lib::puerts_asio::io_service());
 #else
-        lib::auto_ptr<lib::asio::io_service> service(new lib::asio::io_service());
+        lib::auto_ptr<lib::puerts_asio::io_service> service(new lib::puerts_asio::io_service());
 #endif
         init_asio(service.get(), ec);
         if( !ec ) service.release(); // Call was successful, transfer ownership
@@ -253,9 +252,9 @@ public:
         // TODO: remove the use of auto_ptr when C++98/03 support is no longer
         //       necessary.
 #ifdef _WEBSOCKETPP_CPP11_MEMORY_
-        lib::unique_ptr<lib::asio::io_service> service(new lib::asio::io_service());
+        lib::unique_ptr<lib::puerts_asio::io_service> service(new lib::puerts_asio::io_service());
 #else
-        lib::auto_ptr<lib::asio::io_service> service(new lib::asio::io_service());
+        lib::auto_ptr<lib::puerts_asio::io_service> service(new lib::puerts_asio::io_service());
 #endif
         init_asio( service.get() );
         // If control got this far without an exception, then ownership has successfully been taken
@@ -331,7 +330,7 @@ public:
      *
      * New values affect future calls to listen only.
      *
-     * The default value is specified as *::asio::socket_base::max_connections
+     * The default value is specified as *::puerts_asio::socket_base::max_connections
      * which uses the operating system defined maximum queue length. Your OS
      * may restrict or silently lower this value. A value of zero may cause
      * all connections to be rejected.
@@ -376,7 +375,7 @@ public:
      *
      * @return A reference to the endpoint's io_service
      */
-    lib::asio::io_service & get_io_service() {
+    lib::puerts_asio::io_service & get_io_service() {
         return *m_io_service;
     }
     
@@ -393,12 +392,12 @@ public:
      * @param ec Set to indicate what error occurred, if any.
      * @return The local endpoint
      */
-    lib::asio::ip::tcp::endpoint get_local_endpoint(lib::asio::error_code & ec) {
+    lib::puerts_asio::ip::tcp::endpoint get_local_endpoint(lib::puerts_asio::error_code & ec) {
         if (m_acceptor) {
             return m_acceptor->local_endpoint(ec);
         } else {
-            ec = lib::asio::error::make_error_code(lib::asio::error::bad_descriptor);
-            return lib::asio::ip::tcp::endpoint();
+            ec = lib::puerts_asio::error::make_error_code(lib::puerts_asio::error::bad_descriptor);
+            return lib::puerts_asio::ip::tcp::endpoint();
         }
     }
 
@@ -410,24 +409,24 @@ public:
      * @param ep An endpoint to read settings from
      * @param ec Set to indicate what error occurred, if any.
      */
-    void listen(lib::asio::ip::tcp::endpoint const & ep, lib::error_code & ec)
+    void listen(lib::puerts_asio::ip::tcp::endpoint const & ep, lib::error_code & ec)
     {
         if (m_state != READY) {
             m_elog->write(log::elevel::library,
-                "asio::listen called from the wrong state");
+                "puerts_asio::listen called from the wrong state");
             using websocketpp::error::make_error_code;
             ec = make_error_code(websocketpp::error::invalid_state);
             return;
         }
 
-        m_alog->write(log::alevel::devel,"asio::listen");
+        m_alog->write(log::alevel::devel,"puerts_asio::listen");
 
-        lib::asio::error_code bec;
+        lib::puerts_asio::error_code bec;
 
         m_acceptor->open(ep.protocol(),bec);
         if (bec) {ec = clean_up_listen_after_error(bec);return;}
         
-        m_acceptor->set_option(lib::asio::socket_base::reuse_address(m_reuse_addr),bec);
+        m_acceptor->set_option(lib::puerts_asio::socket_base::reuse_address(m_reuse_addr),bec);
         if (bec) {ec = clean_up_listen_after_error(bec);return;}
         
         // if a TCP pre-bind handler is present, run it
@@ -458,7 +457,7 @@ public:
      *
      * @param ep An endpoint to read settings from
      */
-    void listen(lib::asio::ip::tcp::endpoint const & ep) {
+    void listen(lib::puerts_asio::ip::tcp::endpoint const & ep) {
         lib::error_code ec;
         listen(ep,ec);
         if (ec) { throw exception(ec); }
@@ -471,8 +470,8 @@ public:
      * listening.
      *
      * Common options include:
-     * - IPv6 with mapped IPv4 for dual stack hosts lib::asio::ip::tcp::v6()
-     * - IPv4 only: lib::asio::ip::tcp::v4()
+     * - IPv6 with mapped IPv4 for dual stack hosts lib::puerts_asio::ip::tcp::v6()
+     * - IPv4 only: lib::puerts_asio::ip::tcp::v4()
      *
      * @param internet_protocol The internet protocol to use.
      * @param port The port to listen on.
@@ -482,7 +481,7 @@ public:
     void listen(InternetProtocol const & internet_protocol, uint16_t port,
         lib::error_code & ec)
     {
-        lib::asio::ip::tcp::endpoint ep(internet_protocol, port);
+        lib::puerts_asio::ip::tcp::endpoint ep(internet_protocol, port);
         listen(ep,ec);
     }
 
@@ -493,8 +492,8 @@ public:
      * listening.
      *
      * Common options include:
-     * - IPv6 with mapped IPv4 for dual stack hosts lib::asio::ip::tcp::v6()
-     * - IPv4 only: lib::asio::ip::tcp::v4()
+     * - IPv6 with mapped IPv4 for dual stack hosts lib::puerts_asio::ip::tcp::v6()
+     * - IPv4 only: lib::puerts_asio::ip::tcp::v4()
      *
      * @param internet_protocol The internet protocol to use.
      * @param port The port to listen on.
@@ -502,7 +501,7 @@ public:
     template <typename InternetProtocol>
     void listen(InternetProtocol const & internet_protocol, uint16_t port)
     {
-        lib::asio::ip::tcp::endpoint ep(internet_protocol, port);
+        lib::puerts_asio::ip::tcp::endpoint ep(internet_protocol, port);
         listen(ep);
     }
 
@@ -519,7 +518,7 @@ public:
      * @param ec Set to indicate what error occurred, if any.
      */
     void listen(uint16_t port, lib::error_code & ec) {
-        listen(lib::asio::ip::tcp::v6(), port, ec);
+        listen(lib::puerts_asio::ip::tcp::v6(), port, ec);
     }
 
     /// Set up endpoint for listening on a port
@@ -535,7 +534,7 @@ public:
      * @param ec Set to indicate what error occurred, if any.
      */
     void listen(uint16_t port) {
-        listen(lib::asio::ip::tcp::v6(), port);
+        listen(lib::puerts_asio::ip::tcp::v6(), port);
     }
 
     /// Set up endpoint for listening on a host and service (exception free)
@@ -557,14 +556,14 @@ public:
     void listen(std::string const & host, std::string const & service,
         lib::error_code & ec)
     {
-        using lib::asio::ip::tcp;
+        using lib::puerts_asio::ip::tcp;
         tcp::resolver r(*m_io_service);
         tcp::resolver::query query(host, service);
         tcp::resolver::iterator endpoint_iterator = r.resolve(query);
         tcp::resolver::iterator end;
         if (endpoint_iterator == end) {
             m_elog->write(log::elevel::library,
-                "asio::listen could not resolve the supplied host or service");
+                "puerts_asio::listen could not resolve the supplied host or service");
             ec = make_error_code(error::invalid_host_service);
             return;
         }
@@ -605,7 +604,7 @@ public:
     void stop_listening(lib::error_code & ec) {
         if (m_state != LISTENING) {
             m_elog->write(log::elevel::library,
-                "asio::listen called from the wrong state");
+                "puerts_asio::listen called from the wrong state");
             using websocketpp::error::make_error_code;
             ec = make_error_code(websocketpp::error::invalid_state);
             return;
@@ -688,9 +687,7 @@ public:
      * @since 0.3.0
      */
     void start_perpetual() {
-        m_work = lib::make_shared<lib::asio::io_service::work>(
-            lib::ref(*m_io_service)
-        );
+        m_work.reset(new lib::puerts_asio::io_service::work(*m_io_service));
     }
 
     /// Clears the endpoint's perpetual flag, allowing it to exit when empty
@@ -718,9 +715,9 @@ public:
      * needed.
      */
     timer_ptr set_timer(long duration, timer_handler callback) {
-        timer_ptr new_timer = lib::make_shared<lib::asio::steady_timer>(
+        timer_ptr new_timer = lib::make_shared<lib::puerts_asio::steady_timer>(
             *m_io_service,
-             lib::asio::milliseconds(duration)
+             lib::puerts_asio::milliseconds(duration)
         );
 
         new_timer->async_wait(
@@ -746,10 +743,10 @@ public:
      * @param ec A status code indicating an error, if any.
      */
     void handle_timer(timer_ptr, timer_handler callback,
-        lib::asio::error_code const & ec)
+        lib::puerts_asio::error_code const & ec)
     {
         if (ec) {
-            if (ec == lib::asio::error::operation_aborted) {
+            if (ec == lib::puerts_asio::error::operation_aborted) {
                 callback(make_error_code(transport::error::operation_aborted));
             } else {
                 m_elog->write(log::elevel::info,
@@ -777,7 +774,7 @@ public:
             return;
         }
 
-        m_alog->write(log::alevel::devel, "asio::async_accept");
+        m_alog->write(log::alevel::devel, "puerts_asio::async_accept");
 
         if (config::enable_multithreading) {
             m_acceptor->async_accept(
@@ -828,15 +825,15 @@ protected:
         m_elog = e;
     }
 
-    void handle_accept(accept_handler callback, lib::asio::error_code const & 
+    void handle_accept(accept_handler callback, lib::puerts_asio::error_code const & 
         asio_ec)
     {
         lib::error_code ret_ec;
 
-        m_alog->write(log::alevel::devel, "asio::handle_accept");
+        m_alog->write(log::alevel::devel, "puerts_asio::handle_accept");
 
         if (asio_ec) {
-            if (asio_ec == lib::asio::errc::operation_canceled) {
+            if (asio_ec == lib::puerts_asio::errc::operation_canceled) {
                 ret_ec = make_error_code(websocketpp::error::operation_canceled);
             } else {
                 log_err(log::elevel::info,"asio handle_accept",asio_ec);
@@ -850,12 +847,11 @@ protected:
     /// Initiate a new connection
     // TODO: there have to be some more failure conditions here
     void async_connect(transport_con_ptr tcon, uri_ptr u, connect_handler cb) {
-        using namespace lib::asio::ip;
+        using namespace lib::puerts_asio::ip;
 
         // Create a resolver
         if (!m_resolver) {
-            m_resolver = lib::make_shared<lib::asio::ip::tcp::resolver>(
-                lib::ref(*m_io_service));
+            m_resolver.reset(new lib::puerts_asio::ip::tcp::resolver(*m_io_service));
         }
 
         tcon->set_uri(u);
@@ -969,11 +965,11 @@ protected:
     }
 
     void handle_resolve(transport_con_ptr tcon, timer_ptr dns_timer,
-        connect_handler callback, lib::asio::error_code const & ec,
-        lib::asio::ip::tcp::resolver::iterator iterator)
+        connect_handler callback, lib::puerts_asio::error_code const & ec,
+        lib::puerts_asio::ip::tcp::resolver::iterator iterator)
     {
-        if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(dns_timer->expires_from_now()))
+        if (ec == lib::puerts_asio::error::operation_aborted ||
+            lib::puerts_asio::is_neg(dns_timer->expires_from_now()))
         {
             m_alog->write(log::alevel::devel,"async_resolve cancelled");
             return;
@@ -991,7 +987,7 @@ protected:
             std::stringstream s;
             s << "Async DNS resolve successful. Results: ";
 
-            lib::asio::ip::tcp::resolver::iterator it, end;
+            lib::puerts_asio::ip::tcp::resolver::iterator it, end;
             for (it = iterator; it != end; ++it) {
                 s << (*it).endpoint() << " ";
             }
@@ -1016,7 +1012,7 @@ protected:
         );
 
         if (config::enable_multithreading) {
-            lib::asio::async_connect(
+            lib::puerts_asio::async_connect(
                 tcon->get_raw_socket(),
                 iterator,
                 tcon->get_strand()->wrap(lib::bind(
@@ -1029,7 +1025,7 @@ protected:
                 ))
             );
         } else {
-            lib::asio::async_connect(
+            lib::puerts_asio::async_connect(
                 tcon->get_raw_socket(),
                 iterator,
                 lib::bind(
@@ -1078,10 +1074,10 @@ protected:
     }
 
     void handle_connect(transport_con_ptr tcon, timer_ptr con_timer,
-        connect_handler callback, lib::asio::error_code const & ec)
+        connect_handler callback, lib::puerts_asio::error_code const & ec)
     {
-        if (ec == lib::asio::error::operation_aborted ||
-            lib::asio::is_neg(con_timer->expires_from_now()))
+        if (ec == lib::puerts_asio::error::operation_aborted ||
+            lib::puerts_asio::is_neg(con_timer->expires_from_now()))
         {
             m_alog->write(log::alevel::devel,"async_connect cancelled");
             return;
@@ -1115,7 +1111,7 @@ protected:
      * @return A status code indicating the success or failure of the operation
      */
     lib::error_code init(transport_con_ptr tcon) {
-        m_alog->write(log::alevel::devel, "transport::asio::init");
+        m_alog->write(log::alevel::devel, "transport::puerts_asio::init");
 
         // Initialize the connection socket component
         socket_type::init(lib::static_pointer_cast<socket_con_type,
@@ -1179,7 +1175,7 @@ private:
     state               m_state;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 } // namespace transport
 } // namespace websocketpp
 

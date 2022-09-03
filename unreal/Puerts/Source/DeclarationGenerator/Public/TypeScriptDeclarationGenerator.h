@@ -56,15 +56,35 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     std::map<UObject*, FString> NamespaceMap;
 
+    struct BlueprintTypeDeclInfo
+    {
+        FString TypeDecl;
+        FString FileVersionString;
+        bool IsExist;
+        bool Changed;
+    };
+
+    TMap<FName, BlueprintTypeDeclInfo> BlueprintTypeDeclInfoCache;
+
+    TArray<FAssetData> AssetList;
+
     bool RefFromOuter = false;
 
     const FString& GetNamespace(UObject* Obj);
 
     FString GetNameWithNamespace(UObject* Obj);
 
-    void NamespaceBegin(UObject* Obj);
+    void NamespaceBegin(UObject* Obj, FStringBuffer& Buff);
 
-    void NamespaceEnd(UObject* Obj);
+    void NamespaceEnd(UObject* Obj, FStringBuffer& Buff);
+
+    void WriteOutput(UObject* Obj, const FStringBuffer& Buff);
+
+    void RestoreBlueprintTypeDeclInfos();
+
+    void RestoreBlueprintTypeDeclInfos(const FString& FileContent);
+
+    void LoadAllWidgetBlueprint(FName SearchPath);
 
     void InitExtensionMethodsMap();
 
@@ -105,4 +125,6 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     }
 };
 
-bool IsUEContainer(const char* name);
+bool HasUENamespace(const char* name);
+
+bool HadNamespace(const char* name);

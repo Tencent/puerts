@@ -2,7 +2,7 @@
 // ip/impl/network_v4.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 // Copyright (c) 2014 Oliver Kowalke (oliver dot kowalke at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 network_v4::network_v4(const address_v4& addr, unsigned short prefix_len)
@@ -38,7 +38,7 @@ network_v4::network_v4(const address_v4& addr, unsigned short prefix_len)
   if (prefix_len > 32)
   {
     std::out_of_range ex("prefix length too large");
-    asio::detail::throw_exception(ex);
+    puerts_asio::detail::throw_exception(ex);
   }
 }
 
@@ -55,7 +55,7 @@ network_v4::network_v4(const address_v4& addr, const address_v4& mask)
       if (mask_bytes[i])
       {
         std::invalid_argument ex("non-contiguous netmask");
-        asio::detail::throw_exception(ex);
+        puerts_asio::detail::throw_exception(ex);
       }
       continue;
     }
@@ -85,7 +85,7 @@ network_v4::network_v4(const address_v4& addr, const address_v4& mask)
         break;
       default:
         std::out_of_range ex("non-contiguous netmask");
-        asio::detail::throw_exception(ex);
+        puerts_asio::detail::throw_exception(ex);
       }
     }
   }
@@ -118,16 +118,16 @@ bool network_v4::is_subnet_of(const network_v4& other) const
 
 std::string network_v4::to_string() const
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   std::string addr = to_string(ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return addr;
 }
 
-std::string network_v4::to_string(asio::error_code& ec) const
+std::string network_v4::to_string(puerts_asio::error_code& ec) const
 {
   using namespace std; // For sprintf.
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   char prefix_len[16];
 #if defined(ASIO_HAS_SECURE_RTL)
   sprintf_s(prefix_len, sizeof(prefix_len), "/%u", prefix_length_);
@@ -142,40 +142,40 @@ network_v4 make_network_v4(const char* str)
   return make_network_v4(std::string(str));
 }
 
-network_v4 make_network_v4(const char* str, asio::error_code& ec)
+network_v4 make_network_v4(const char* str, puerts_asio::error_code& ec)
 {
   return make_network_v4(std::string(str), ec);
 }
 
 network_v4 make_network_v4(const std::string& str)
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   network_v4 net = make_network_v4(str, ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return net;
 }
 
 network_v4 make_network_v4(const std::string& str,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   std::string::size_type pos = str.find_first_of("/");
 
   if (pos == std::string::npos)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v4();
   }
 
   if (pos == str.size() - 1)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v4();
   }
 
   std::string::size_type end = str.find_first_not_of("0123456789", pos + 1);
   if (end != std::string::npos)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v4();
   }
 
@@ -186,7 +186,7 @@ network_v4 make_network_v4(const std::string& str,
   const int prefix_len = std::atoi(str.substr(pos + 1).c_str());
   if (prefix_len < 0 || prefix_len > 32)
   {
-    ec = asio::error::invalid_argument;
+    ec = puerts_asio::error::invalid_argument;
     return network_v4();
   }
 
@@ -201,7 +201,7 @@ network_v4 make_network_v4(string_view str)
 }
 
 network_v4 make_network_v4(string_view str,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   return make_network_v4(static_cast<std::string>(str), ec);
 }
@@ -209,7 +209,7 @@ network_v4 make_network_v4(string_view str,
 #endif // defined(ASIO_HAS_STRING_VIEW)
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -22,86 +22,89 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Get backend artifact remote
+        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
+        shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
+          name: ${{ env.BACKEND_ARTIFACT_NAME }}
+          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
           path: unity/native_src/
       - name: Build plugin
         run: |
-          md unity\general\Bin
+          md unity\general\vs2013\Bin
           cd unity\native_src
-          .\make_win64.bat
-          copy build64_v8\Release\puerts.dll ..\general\Bin
+          node make.js --platform win --arch x64 --backend v8_9.4 --config Debug
       - name: UnitTest
         run: |
           cd unity\general\vs2013
           nuget restore Puerts.sln
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll   
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll   
   unittest-quickjs:
     runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v2
+      - name: Get backend artifact remote
+        run: echo "$(cat unity/native_src/cmake/quickjs/backend.rc)" >> $GITHUB_ENV
+        shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
+          name: ${{ env.BACKEND_ARTIFACT_NAME }}
+          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
           path: unity/native_src/
       - name: Build plugin
         run: |
-          md unity\general\Bin
+          md unity\general\vs2013\Bin
           cd unity\native_src
-          .\make_win64.bat quickjs
-          copy build64_quickjs\Release\puerts.dll ..\general\Bin
-          copy quickjs\Lib\Win64\*.dll ..\general\Bin
+          node make.js --platform win --arch x64 --backend quickjs --config Debug
       - name: UnitTest
         run: |
           cd unity\general\vs2013
           nuget restore Puerts.sln
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll
           
   unittest-nodejs:
     runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v2
+      - name: Get backend artifact remote
+        run: echo "$(cat unity/native_src/cmake/nodejs_16/backend.rc)" >> $GITHUB_ENV
+        shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          repo: puerts/backend-nodejs
-          workflow: build_nodejs.yml
-          name: nodejs_bin
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
+          name: ${{ env.BACKEND_ARTIFACT_NAME }}
+          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
           path: unity/native_src/
       - name: Build plugin
         run: |
-          md unity\general\Bin
+          md unity\general\vs2013\Bin
           cd unity\native_src
-          .\make_win64.bat nodejs
-          copy build64_nodejs\Release\puerts.dll ..\general\Bin
-          copy nodejs\Lib\Win64\*.dll ..\general\Bin
+          node make.js --platform win --arch x64 --backend nodejs_16 --config Debug
       - name: UnitTest
         run: |
           cd unity\general\vs2013
           nuget restore Puerts.sln
           nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
           msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../Bin/Puerts.UnitTest.dll
-
+          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll   

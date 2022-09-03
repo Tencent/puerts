@@ -436,6 +436,7 @@ void FScriptStructWrapper::New(
             else
             {
                 Memory = Alloc(static_cast<UScriptStruct*>(Struct.Get()));
+                Struct->InitializeStruct(Memory);
                 const int Count = Info.Length() < Properties.size() ? Info.Length() : Properties.size();
                 for (int i = 0; i < Count; ++i)
                 {
@@ -530,6 +531,11 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             if (Info.Length() > 0)
             {
                 Outer = FV8Utils::GetUObject(Context, Info[0]);
+                if (FV8Utils::IsReleasedPtr(Outer))
+                {
+                    FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                    return;
+                }
             }
             if (Info.Length() > 1)
             {

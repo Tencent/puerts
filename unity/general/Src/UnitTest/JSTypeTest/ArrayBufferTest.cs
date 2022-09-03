@@ -6,8 +6,9 @@
 */
 
 using NUnit.Framework;
+using System;
 
-namespace Puerts.UnitTest
+namespace Puerts.UnitTest.JSTypeTest
 {
     public class ArrayBufferClass
     {
@@ -44,7 +45,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab);
                 arr[1];
@@ -62,7 +63,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab,1);
                 ab = arr;
@@ -83,7 +84,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab,1);
                 obj.Sum(arr);
@@ -101,7 +102,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let ab = obj.AB;
                 let arr = new Uint8Array(ab,1);
                 obj.Sum(arr.buffer);
@@ -119,7 +120,7 @@ namespace Puerts.UnitTest
 
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let arr = new Uint16Array([1,2,3]);
                 let ab = obj.GetMe(arr);
                 let arr2 = new Uint8Array(ab);
@@ -138,7 +139,7 @@ namespace Puerts.UnitTest
 
             ArrayBufferClass ret = jsEnv.Eval<ArrayBufferClass>(@"
                 const CS = require('csharp');
-                let obj = new CS.Puerts.UnitTest.ArrayBufferClass();
+                let obj = new CS.Puerts.UnitTest.JSTypeTest.ArrayBufferClass();
                 let arr = new Uint8Array(obj.AB);
                 arr[1] = 100;
                 obj;
@@ -148,6 +149,69 @@ namespace Puerts.UnitTest
 
             Assert.AreEqual(2, ret.AB.Bytes[1]);
         }
+        
+        [Test]
+        public void Test7()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingFunc<Puerts.ArrayBuffer, string>();
 
+            Func<Puerts.ArrayBuffer, string> func = jsEnv.Eval<Func<Puerts.ArrayBuffer, string>>(@"
+                (function(ab) {
+                    return '' + new Uint8Array(ab)[0];
+                });
+            ");
+
+            var res = func(new ArrayBuffer(new byte[] { 1, 2, 3 }));
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual("1", res);
+        }
+
+        
+        [Test]
+        public void Test8()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingAction<int, Puerts.ArrayBuffer, bool>();
+            jsEnv.UsingFunc<int, Puerts.ArrayBuffer, bool, string>();
+
+            Action<int, Puerts.ArrayBuffer, bool> action = jsEnv.Eval<Action<int, Puerts.ArrayBuffer, bool>>(@"
+                (function(i, ab, b) {
+                });
+            ");
+            Func<int, Puerts.ArrayBuffer, bool, string> func = jsEnv.Eval<Func<int, Puerts.ArrayBuffer, bool, string>>(@"
+                (function(i, ab, b) {
+                    return '' + new Uint8Array(ab)[0];
+                });
+            ");
+
+            action(1, new ArrayBuffer(new byte[] { 1, 2, 3 }), false);
+            var res = func(1, new ArrayBuffer(new byte[] { 1, 2, 3 }), false);
+
+            jsEnv.Dispose();
+
+            Assert.AreEqual("1", res);
+        }
+        
+        [Test]
+        public void JSFunctionInvokeWithArrayBuffer()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.UsingFunc<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer>();
+
+            Func<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer> callback = jsEnv.Eval<Func<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer>>(@"
+                (function() {
+                    const CS = require('csharp');
+                
+                    return function(data, length) {
+                        return data.slice(0, length - 1)
+                    };
+                })()
+            ");
+            Puerts.ArrayBuffer ab = callback(new Puerts.ArrayBuffer(new byte[] { 1, 2, 3 }), 3);
+            Assert.True(ab.Count == 2);
+        }
     }
 }

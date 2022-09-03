@@ -2,7 +2,7 @@
 // detail/handler_tracking.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,11 +17,11 @@
 
 #include "asio/detail/config.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 class execution_context;
 
-} // namespace asio
+} // namespace puerts_asio
 
 #if defined(ASIO_CUSTOM_HANDLER_TRACKING)
 # include ASIO_CUSTOM_HANDLER_TRACKING
@@ -34,7 +34,7 @@ class execution_context;
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_CUSTOM_HANDLER_TRACKING)
@@ -87,6 +87,28 @@ public:
   // Initialise the tracking system.
   ASIO_DECL static void init();
 
+  class location
+  {
+  public:
+    // Constructor adds a location to the stack.
+    ASIO_DECL explicit location(const char* file,
+        int line, const char* func);
+
+    // Destructor removes a location from the stack.
+    ASIO_DECL ~location();
+
+  private:
+    // Disallow copying and assignment.
+    location(const location&) ASIO_DELETED;
+    location& operator=(const location&) ASIO_DELETED;
+
+    friend class handler_tracking;
+    const char* file_;
+    int line_;
+    const char* func_;
+    location* next_;
+  };
+
   // Record the creation of a tracked handler.
   ASIO_DECL static void creation(
       execution_context& context, tracked_handler& h,
@@ -107,19 +129,19 @@ public:
     ASIO_DECL void invocation_begin();
 
     // Records that handler is to be invoked with one arguments.
-    ASIO_DECL void invocation_begin(const asio::error_code& ec);
+    ASIO_DECL void invocation_begin(const puerts_asio::error_code& ec);
 
     // Constructor records that handler is to be invoked with two arguments.
     ASIO_DECL void invocation_begin(
-        const asio::error_code& ec, std::size_t bytes_transferred);
+        const puerts_asio::error_code& ec, std::size_t bytes_transferred);
 
     // Constructor records that handler is to be invoked with two arguments.
     ASIO_DECL void invocation_begin(
-        const asio::error_code& ec, int signal_number);
+        const puerts_asio::error_code& ec, int signal_number);
 
     // Constructor records that handler is to be invoked with two arguments.
     ASIO_DECL void invocation_begin(
-        const asio::error_code& ec, const char* arg);
+        const puerts_asio::error_code& ec, const char* arg);
 
     // Record that handler invocation has ended.
     ASIO_DECL void invocation_end();
@@ -151,12 +173,12 @@ public:
   // Record a reactor-based operation that is associated with a handler.
   ASIO_DECL static void reactor_operation(
       const tracked_handler& h, const char* op_name,
-      const asio::error_code& ec);
+      const puerts_asio::error_code& ec);
 
   // Record a reactor-based operation that is associated with a handler.
   ASIO_DECL static void reactor_operation(
       const tracked_handler& h, const char* op_name,
-      const asio::error_code& ec, std::size_t bytes_transferred);
+      const puerts_asio::error_code& ec, std::size_t bytes_transferred);
 
   // Write a line of output.
   ASIO_DECL static void write_line(const char* format, ...);
@@ -167,19 +189,22 @@ private:
 };
 
 # define ASIO_INHERIT_TRACKED_HANDLER \
-  : public asio::detail::handler_tracking::tracked_handler
+  : public puerts_asio::detail::handler_tracking::tracked_handler
 
 # define ASIO_ALSO_INHERIT_TRACKED_HANDLER \
-  , public asio::detail::handler_tracking::tracked_handler
+  , public puerts_asio::detail::handler_tracking::tracked_handler
 
 # define ASIO_HANDLER_TRACKING_INIT \
-  asio::detail::handler_tracking::init()
+  puerts_asio::detail::handler_tracking::init()
+
+# define ASIO_HANDLER_LOCATION(args) \
+  puerts_asio::detail::handler_tracking::location tracked_location args
 
 # define ASIO_HANDLER_CREATION(args) \
-  asio::detail::handler_tracking::creation args
+  puerts_asio::detail::handler_tracking::creation args
 
 # define ASIO_HANDLER_COMPLETION(args) \
-  asio::detail::handler_tracking::completion tracked_completion args
+  puerts_asio::detail::handler_tracking::completion tracked_completion args
 
 # define ASIO_HANDLER_INVOCATION_BEGIN(args) \
   tracked_completion.invocation_begin args
@@ -188,29 +213,30 @@ private:
   tracked_completion.invocation_end()
 
 # define ASIO_HANDLER_OPERATION(args) \
-  asio::detail::handler_tracking::operation args
+  puerts_asio::detail::handler_tracking::operation args
 
 # define ASIO_HANDLER_REACTOR_REGISTRATION(args) \
-  asio::detail::handler_tracking::reactor_registration args
+  puerts_asio::detail::handler_tracking::reactor_registration args
 
 # define ASIO_HANDLER_REACTOR_DEREGISTRATION(args) \
-  asio::detail::handler_tracking::reactor_deregistration args
+  puerts_asio::detail::handler_tracking::reactor_deregistration args
 
 # define ASIO_HANDLER_REACTOR_READ_EVENT 1
 # define ASIO_HANDLER_REACTOR_WRITE_EVENT 2
 # define ASIO_HANDLER_REACTOR_ERROR_EVENT 4
 
 # define ASIO_HANDLER_REACTOR_EVENTS(args) \
-  asio::detail::handler_tracking::reactor_events args
+  puerts_asio::detail::handler_tracking::reactor_events args
 
 # define ASIO_HANDLER_REACTOR_OPERATION(args) \
-  asio::detail::handler_tracking::reactor_operation args
+  puerts_asio::detail::handler_tracking::reactor_operation args
 
 #else // defined(ASIO_ENABLE_HANDLER_TRACKING)
 
 # define ASIO_INHERIT_TRACKED_HANDLER
 # define ASIO_ALSO_INHERIT_TRACKED_HANDLER
 # define ASIO_HANDLER_TRACKING_INIT (void)0
+# define ASIO_HANDLER_LOCATION(loc) (void)0
 # define ASIO_HANDLER_CREATION(args) (void)0
 # define ASIO_HANDLER_COMPLETION(args) (void)0
 # define ASIO_HANDLER_INVOCATION_BEGIN(args) (void)0
@@ -227,7 +253,7 @@ private:
 #endif // defined(ASIO_ENABLE_HANDLER_TRACKING)
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

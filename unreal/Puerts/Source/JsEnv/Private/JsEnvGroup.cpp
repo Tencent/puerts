@@ -30,7 +30,20 @@ public:
 
     void TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object) override
     {
-        JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
+        // 对于cdo,应该在所有的虚拟机中调用construct,因为cdo并没有明确的jsenv
+        // 不过不大确定cdo的这样判断够不够
+        // JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
+        if (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_WasLoaded))
+        {
+            for (int i = 0; i < JsEnvs.size(); i++)
+            {
+                JsEnvs[i]->TsConstruct(Class, Object);
+            }
+        }
+        else
+        {
+            JsEnvs[GetSelectIndex(Object)]->TsConstruct(Class, Object);
+        }
     }
 
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM) override
@@ -89,14 +102,15 @@ FJsEnvGroup::FJsEnvGroup(int Size, const FString& ScriptRoot)
 }
 
 FJsEnvGroup::FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger,
-    int InDebugStartPort, void* InExternalRuntime, void* InExternalContext)
+    int InDebugStartPort, std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime,
+    void* InExternalContext)
 {
     check(Size > 1);
     std::shared_ptr<IJSModuleLoader> SharedModuleLoader = std::move(InModuleLoader);
     for (int i = 0; i < Size; i++)
     {
-        JsEnvList.push_back(
-            std::make_shared<FJsEnvImpl>(SharedModuleLoader, InLogger, InDebugStartPort + i, InExternalRuntime, InExternalContext));
+        JsEnvList.push_back(std::make_shared<FJsEnvImpl>(
+            SharedModuleLoader, InLogger, InDebugStartPort + i, InOnSourceLoadedCallback, InExternalRuntime, InExternalContext));
     }
     Init();
 }
@@ -108,7 +122,7 @@ void FJsEnvGroup::Init()
     {
         JsEnvs.push_back(static_cast<FJsEnvImpl*>(JsEnvList[i].get()));
     }
-    auto GroupDynamicInvoker = MakeShared<FGroupDynamicInvoker>(JsEnvs);
+    auto GroupDynamicInvoker = MakeShared<FGroupDynamicInvoker, ESPMode::ThreadSafe>(JsEnvs);
     for (int i = 0; i < JsEnvs.size(); i++)
     {
         JsEnvs[i]->TsDynamicInvoker = GroupDynamicInvoker;

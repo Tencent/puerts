@@ -2,7 +2,7 @@
 // ip/network_v4.hpp
 // ~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 // Copyright (c) 2014 Oliver Kowalke (oliver dot kowalke at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -24,12 +24,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// Represents an IPv4 network.
 /**
- * The asio::ip::network_v4 class provides the ability to use and
+ * The puerts_asio::ip::network_v4 class provides the ability to use and
  * manipulate IP version 4 networks.
  *
  * @par Thread Safety
@@ -138,7 +138,7 @@ public:
   ASIO_DECL std::string to_string() const;
 
   /// Get the network as an address in dotted decimal format.
-  ASIO_DECL std::string to_string(asio::error_code& ec) const;
+  ASIO_DECL std::string to_string(puerts_asio::error_code& ec) const;
 
   /// Compare two networks for equality.
   friend bool operator==(const network_v4& a, const network_v4& b)
@@ -190,7 +190,7 @@ ASIO_DECL network_v4 make_network_v4(const char* str);
  * @relates network_v4
  */
 ASIO_DECL network_v4 make_network_v4(
-    const char* str, asio::error_code& ec);
+    const char* str, puerts_asio::error_code& ec);
 
 /// Create an IPv4 network from a string containing IP address and prefix
 /// length.
@@ -205,7 +205,7 @@ ASIO_DECL network_v4 make_network_v4(const std::string& str);
  * @relates network_v4
  */
 ASIO_DECL network_v4 make_network_v4(
-    const std::string& str, asio::error_code& ec);
+    const std::string& str, puerts_asio::error_code& ec);
 
 #if defined(ASIO_HAS_STRING_VIEW) \
   || defined(GENERATING_DOCUMENTATION)
@@ -223,7 +223,7 @@ ASIO_DECL network_v4 make_network_v4(string_view str);
  * @relates network_v4
  */
 ASIO_DECL network_v4 make_network_v4(
-    string_view str, asio::error_code& ec);
+    string_view str, puerts_asio::error_code& ec);
 
 #endif // defined(ASIO_HAS_STRING_VIEW)
        //  || defined(GENERATING_DOCUMENTATION)
@@ -240,7 +240,7 @@ ASIO_DECL network_v4 make_network_v4(
  *
  * @return The output stream.
  *
- * @relates asio::ip::address_v4
+ * @relates puerts_asio::ip::address_v4
  */
 template <typename Elem, typename Traits>
 std::basic_ostream<Elem, Traits>& operator<<(
@@ -249,7 +249,7 @@ std::basic_ostream<Elem, Traits>& operator<<(
 #endif // !defined(ASIO_NO_IOSTREAM)
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

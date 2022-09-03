@@ -161,5 +161,66 @@ namespace Puerts.UnitTest
             JsEnv.jsEnvs = oldEnvList;
             Assert.True(false);
         }
+
+        [Test]
+        public void UnhandledRejectionHandle()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                const puerts = require('puerts');
+                global.catched = false;
+                puerts.on('unhandledRejection', function(reason) {
+                    global.catched = true;
+                });
+                new Promise((resolve, reject)=>{
+                    throw new Error('unhandled rejection');
+                });
+            ");
+            var res = jsEnv.Eval<bool>("global.catched");
+            jsEnv.Dispose();
+            Assert.True(res);
+        }
+
+        [Test]
+        public void UnhandledRejectionCancel()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            jsEnv.Eval(@"
+                const CS = require('csharp');
+                const puerts = require('puerts');
+                global.catched = false;
+                puerts.on('unhandledRejection', function(reason) {
+                    global.catched = true;
+                });
+                new Promise((resolve, reject)=>{
+                    throw new Error('unhandled rejection');
+                }).catch(error => {});
+            ");
+            var res = jsEnv.Eval<bool>("global.catched");
+            jsEnv.Dispose();
+            Assert.False(res);
+        }
+        
+        [Test]
+        public void JSGetLastException()
+        {
+            var loader = new TxtLoader();
+            var jsEnv = new JsEnv(loader);
+            try
+            {
+                jsEnv.Eval(@"
+                    throw new Error('hello error');
+                ");
+            }
+            catch (Exception e) { }
+
+            string jsErrorMessage = jsEnv.Eval<string>(@"
+                const csharp = require('csharp');
+                puerts.getLastException().message
+            ");
+            Assert.True(jsErrorMessage == "hello error");
+            jsEnv.Dispose();
+        }
     }
 }

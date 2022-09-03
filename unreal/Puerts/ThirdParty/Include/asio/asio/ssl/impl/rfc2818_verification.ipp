@@ -2,7 +2,7 @@
 // ssl/impl/rfc2818_verification.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,6 +17,8 @@
 
 #include "asio/detail/config.hpp"
 
+#if !defined(ASIO_NO_DEPRECATED)
+
 #include <cctype>
 #include <cstring>
 #include "asio/ip/address.hpp"
@@ -25,7 +27,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 
 bool rfc2818_verification::operator()(
@@ -44,7 +46,7 @@ bool rfc2818_verification::operator()(
 
   // Try converting the host name to an address. If it is an address then we
   // need to look for an IP address in the certificate rather than a host name.
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   ip::address address = ip::make_address(host_, ec);
   bool is_address = !ec;
 
@@ -153,8 +155,10 @@ bool rfc2818_verification::match_pattern(const char* pattern,
 }
 
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
+
+#endif // !defined(ASIO_NO_DEPRECATED)
 
 #endif // ASIO_SSL_IMPL_RFC2818_VERIFICATION_IPP

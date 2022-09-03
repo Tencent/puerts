@@ -2,7 +2,7 @@
 // detail/completion_handler.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -24,32 +24,36 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
-template <typename Handler>
+template <typename Handler, typename IoExecutor>
 class completion_handler : public operation
 {
 public:
   ASIO_DEFINE_HANDLER_PTR(completion_handler);
 
-  completion_handler(Handler& h)
+  completion_handler(Handler& h, const IoExecutor& io_ex)
     : operation(&completion_handler::do_complete),
-      handler_(ASIO_MOVE_CAST(Handler)(h))
+      handler_(ASIO_MOVE_CAST(Handler)(h)),
+      work_(handler_, io_ex)
   {
-    handler_work<Handler>::start(handler_);
   }
 
   static void do_complete(void* owner, operation* base,
-      const asio::error_code& /*ec*/,
+      const puerts_asio::error_code& /*ec*/,
       std::size_t /*bytes_transferred*/)
   {
     // Take ownership of the handler object.
     completion_handler* h(static_cast<completion_handler*>(base));
-    ptr p = { asio::detail::addressof(h->handler_), h, h };
-    handler_work<Handler> w(h->handler_);
+    ptr p = { puerts_asio::detail::addressof(h->handler_), h, h };
 
     ASIO_HANDLER_COMPLETION((*h));
+
+    // Take ownership of the operation's outstanding work.
+    handler_work<Handler, IoExecutor> w(
+        ASIO_MOVE_CAST2(handler_work<Handler, IoExecutor>)(
+          h->work_));
 
     // Make a copy of the handler so that the memory can be deallocated before
     // the upcall is made. Even if we're not about to make an upcall, a
@@ -58,7 +62,7 @@ public:
     // to ensure that any owning sub-object remains valid until after we have
     // deallocated the memory here.
     Handler handler(ASIO_MOVE_CAST(Handler)(h->handler_));
-    p.h = asio::detail::addressof(handler);
+    p.h = puerts_asio::detail::addressof(handler);
     p.reset();
 
     // Make the upcall if required.
@@ -73,10 +77,11 @@ public:
 
 private:
   Handler handler_;
+  handler_work<Handler, IoExecutor> work_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

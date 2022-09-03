@@ -2,7 +2,7 @@
 // detail/winrt_async_manager.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,21 +23,27 @@
 #include "asio/detail/atomic_count.hpp"
 #include "asio/detail/winrt_async_op.hpp"
 #include "asio/error.hpp"
-#include "asio/io_context.hpp"
+#include "asio/execution_context.hpp"
+
+#if defined(ASIO_HAS_IOCP)
+# include "asio/detail/win_iocp_io_context.hpp"
+#else // defined(ASIO_HAS_IOCP)
+# include "asio/detail/scheduler.hpp"
+#endif // defined(ASIO_HAS_IOCP)
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class winrt_async_manager
-  : public asio::detail::service_base<winrt_async_manager>
+  : public execution_context_service_base<winrt_async_manager>
 {
 public:
   // Constructor.
-  winrt_async_manager(asio::io_context& io_context)
-    : asio::detail::service_base<winrt_async_manager>(io_context),
-      io_context_(use_service<io_context_impl>(io_context)),
+  winrt_async_manager(execution_context& context)
+    : execution_context_service_base<winrt_async_manager>(context),
+      scheduler_(use_service<scheduler_impl>(context)),
       outstanding_ops_(1)
   {
   }
@@ -59,12 +65,12 @@ public:
   }
 
   void sync(Windows::Foundation::IAsyncAction^ action,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     using namespace Windows::Foundation;
     using Windows::Foundation::AsyncStatus;
 
-    auto promise = std::make_shared<std::promise<asio::error_code>>();
+    auto promise = std::make_shared<std::promise<puerts_asio::error_code>>();
     auto future = promise->get_future();
 
     action->Completed = ref new AsyncActionCompletedHandler(
@@ -73,14 +79,14 @@ public:
         switch (status)
         {
         case AsyncStatus::Canceled:
-          promise->set_value(asio::error::operation_aborted);
+          promise->set_value(puerts_asio::error::operation_aborted);
           break;
         case AsyncStatus::Error:
         case AsyncStatus::Completed:
         default:
-          asio::error_code ec(
+          puerts_asio::error_code ec(
               action->ErrorCode.Value,
-              asio::system_category());
+              puerts_asio::system_category());
           promise->set_value(ec);
           break;
         }
@@ -91,12 +97,12 @@ public:
 
   template <typename TResult>
   TResult sync(Windows::Foundation::IAsyncOperation<TResult>^ operation,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     using namespace Windows::Foundation;
     using Windows::Foundation::AsyncStatus;
 
-    auto promise = std::make_shared<std::promise<asio::error_code>>();
+    auto promise = std::make_shared<std::promise<puerts_asio::error_code>>();
     auto future = promise->get_future();
 
     operation->Completed = ref new AsyncOperationCompletedHandler<TResult>(
@@ -105,14 +111,14 @@ public:
         switch (status)
         {
         case AsyncStatus::Canceled:
-          promise->set_value(asio::error::operation_aborted);
+          promise->set_value(puerts_asio::error::operation_aborted);
           break;
         case AsyncStatus::Error:
         case AsyncStatus::Completed:
         default:
-          asio::error_code ec(
+          puerts_asio::error_code ec(
               operation->ErrorCode.Value,
-              asio::system_category());
+              puerts_asio::system_category());
           promise->set_value(ec);
           break;
         }
@@ -126,12 +132,12 @@ public:
   TResult sync(
       Windows::Foundation::IAsyncOperationWithProgress<
         TResult, TProgress>^ operation,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     using namespace Windows::Foundation;
     using Windows::Foundation::AsyncStatus;
 
-    auto promise = std::make_shared<std::promise<asio::error_code>>();
+    auto promise = std::make_shared<std::promise<puerts_asio::error_code>>();
     auto future = promise->get_future();
 
     operation->Completed
@@ -142,16 +148,16 @@ public:
           switch (status)
           {
           case AsyncStatus::Canceled:
-            promise->set_value(asio::error::operation_aborted);
+            promise->set_value(puerts_asio::error::operation_aborted);
             break;
           case AsyncStatus::Started:
             break;
           case AsyncStatus::Error:
           case AsyncStatus::Completed:
           default:
-            asio::error_code ec(
+            puerts_asio::error_code ec(
                 operation->ErrorCode.Value,
-                asio::system_category());
+                puerts_asio::system_category());
             promise->set_value(ec);
             break;
           }
@@ -173,24 +179,24 @@ public:
         switch (status)
         {
         case AsyncStatus::Canceled:
-          handler->ec_ = asio::error::operation_aborted;
+          handler->ec_ = puerts_asio::error::operation_aborted;
           break;
         case AsyncStatus::Started:
           return;
         case AsyncStatus::Completed:
         case AsyncStatus::Error:
         default:
-          handler->ec_ = asio::error_code(
+          handler->ec_ = puerts_asio::error_code(
               action->ErrorCode.Value,
-              asio::system_category());
+              puerts_asio::system_category());
           break;
         }
-        io_context_.post_deferred_completion(handler);
+        scheduler_.post_deferred_completion(handler);
         if (--outstanding_ops_ == 0)
           promise_.set_value();
       });
 
-    io_context_.work_started();
+    scheduler_.work_started();
     ++outstanding_ops_;
     action->Completed = on_completed;
   }
@@ -208,7 +214,7 @@ public:
         switch (status)
         {
         case AsyncStatus::Canceled:
-          handler->ec_ = asio::error::operation_aborted;
+          handler->ec_ = puerts_asio::error::operation_aborted;
           break;
         case AsyncStatus::Started:
           return;
@@ -217,17 +223,17 @@ public:
           // Fall through.
         case AsyncStatus::Error:
         default:
-          handler->ec_ = asio::error_code(
+          handler->ec_ = puerts_asio::error_code(
               operation->ErrorCode.Value,
-              asio::system_category());
+              puerts_asio::system_category());
           break;
         }
-        io_context_.post_deferred_completion(handler);
+        scheduler_.post_deferred_completion(handler);
         if (--outstanding_ops_ == 0)
           promise_.set_value();
       });
 
-    io_context_.work_started();
+    scheduler_.work_started();
     ++outstanding_ops_;
     operation->Completed = on_completed;
   }
@@ -249,7 +255,7 @@ public:
           switch (status)
           {
           case AsyncStatus::Canceled:
-            handler->ec_ = asio::error::operation_aborted;
+            handler->ec_ = puerts_asio::error::operation_aborted;
             break;
           case AsyncStatus::Started:
             return;
@@ -258,24 +264,29 @@ public:
             // Fall through.
           case AsyncStatus::Error:
           default:
-            handler->ec_ = asio::error_code(
+            handler->ec_ = puerts_asio::error_code(
                 operation->ErrorCode.Value,
-                asio::system_category());
+                puerts_asio::system_category());
             break;
           }
-          io_context_.post_deferred_completion(handler);
+          scheduler_.post_deferred_completion(handler);
           if (--outstanding_ops_ == 0)
             promise_.set_value();
         });
 
-    io_context_.work_started();
+    scheduler_.work_started();
     ++outstanding_ops_;
     operation->Completed = on_completed;
   }
 
 private:
-  // The io_context implementation used to post completed handlers.
-  io_context_impl& io_context_;
+  // The scheduler implementation used to post completed handlers.
+#if defined(ASIO_HAS_IOCP)
+  typedef class win_iocp_io_context scheduler_impl;
+#else
+  typedef class scheduler scheduler_impl;
+#endif
+  scheduler_impl& scheduler_;
 
   // Count of outstanding operations.
   atomic_count outstanding_ops_;
@@ -285,7 +296,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

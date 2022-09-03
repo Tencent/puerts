@@ -36,6 +36,9 @@ namespace puerts
     JSFunction::~JSFunction()
     {
         v8::Isolate* Isolate = ResultInfo.Isolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -84,6 +87,9 @@ namespace puerts
     bool JSFunction::Invoke(int argumentsLength, bool HasResult)
     {
         v8::Isolate* Isolate = ResultInfo.Isolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -106,7 +112,9 @@ namespace puerts
         
         if (TryCatch.HasCaught())
         {
-            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            v8::Local<v8::Value> Exception = TryCatch.Exception();
+            LastException.Reset(Isolate, Exception);
+            LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, Exception);
             return false;
         }
         else

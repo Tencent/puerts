@@ -10,21 +10,38 @@
 
 #include "Binding.hpp"
 
+#ifdef USING_IN_UNREAL_ENGINE
+#include "JSLogger.h"
+#include "V8Utils.h"
+
+#define REPORT_EXCEPTION(TC) \
+    UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TC));
+#else
+#include <iostream>
+#define REPORT_EXCEPTION(TC) std::cout << "call function throw: " << *v8::String::Utf8Value(Isolate, TC.Exception()) << std::endl
+#endif
+
 namespace puerts
 {
 class Object
 {
 public:
-    Object(v8::Local<v8::Context> context, v8::Local<v8::Object> object)
+    Object()
+    {
+    }
+
+    Object(v8::Local<v8::Context> context, v8::Local<v8::Value> object)
     {
         Isolate = context->GetIsolate();
         GContext.Reset(Isolate, context);
-        GObject.Reset(Isolate, object);
+        GObject.Reset(Isolate, object.As<v8::Object>());
     }
 
     Object(const Object& InOther)
     {
         Isolate = InOther.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
     }
@@ -32,6 +49,8 @@ public:
     Object& operator=(const Object& InOther)
     {
         Isolate = InOther.Isolate;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
         return *this;
@@ -68,7 +87,18 @@ public:
             puerts::converter::Converter<T>::toScript(Context, val));
     }
 
-protected:
+    bool IsValid() const
+    {
+        if (!Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+            return false;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = GContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        auto Object = GObject.Get(Isolate);
+        return !Object.IsEmpty() && Object->IsObject();
+    }
+
     v8::Isolate* Isolate;
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
@@ -79,13 +109,16 @@ protected:
 class Function : public Object
 {
 public:
-    Function(v8::Local<v8::Context> context, v8::Local<v8::Object> object)
-        : Object(context, object), ExceptionMessage(""), HasCaught(false)
+    Function()
+    {
+    }
+
+    Function(v8::Local<v8::Context> context, v8::Local<v8::Value> object) : Object(context, object)
     {
     }
 
     template <typename... Args>
-    void Action(Args... cppArgs)
+    void Action(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -98,15 +131,14 @@ public:
 
         auto _UnUsed = InvokeHelper(Context, Object, cppArgs...);
 
-        HasCaught = TryCatch.HasCaught();
-        if (HasCaught)
+        if (TryCatch.HasCaught())
         {
-            ExceptionMessage = *v8::String::Utf8Value(Isolate, TryCatch.Exception());
+            REPORT_EXCEPTION(TryCatch);
         }
     }
 
     template <typename Ret, typename... Args>
-    Ret Func(Args... cppArgs)
+    Ret Func(Args... cppArgs) const
     {
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -119,10 +151,9 @@ public:
 
         auto MaybeRet = InvokeHelper(Context, Object, cppArgs...);
 
-        HasCaught = TryCatch.HasCaught();
-        if (HasCaught)
+        if (TryCatch.HasCaught())
         {
-            ExceptionMessage = *v8::String::Utf8Value(Isolate, TryCatch.Exception());
+            REPORT_EXCEPTION(TryCatch);
         }
 
         if (!MaybeRet.IsEmpty())
@@ -132,9 +163,17 @@ public:
         return {};
     }
 
-    std::string ExceptionMessage;
-
-    bool HasCaught;
+    bool IsValid() const
+    {
+        if (!Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+            return false;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = GContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        auto Object = GObject.Get(Isolate);
+        return !Object.IsEmpty() && Object->IsFunction();
+    }
 
 private:
     template <typename... Args>
@@ -142,8 +181,7 @@ private:
     {
         v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
-        ;
-    };
+    }
 
     auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
     {
@@ -156,13 +194,19 @@ private:
 template <>
 struct ScriptTypeName<::puerts::Object>
 {
-    static constexpr const char* value = "object";
+    static constexpr auto value()
+    {
+        return Literal("object");
+    }
 };
 
 template <>
 struct ScriptTypeName<::puerts::Function>
 {
-    static constexpr const char* value = "Function";
+    static constexpr auto value()
+    {
+        return Literal("()=>void");
+    }
 };
 
 namespace converter

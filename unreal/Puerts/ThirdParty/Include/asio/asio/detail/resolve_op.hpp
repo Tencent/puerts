@@ -2,7 +2,7 @@
 // detail/resolve_op.hpp
 // ~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,14 +21,14 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class resolve_op : public operation
 {
 public:
   // The error code to be passed to the completion handler.
-  asio::error_code ec_;
+  puerts_asio::error_code ec_;
 
 protected:
   resolve_op(func_type complete_func)
@@ -38,7 +38,7 @@ protected:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

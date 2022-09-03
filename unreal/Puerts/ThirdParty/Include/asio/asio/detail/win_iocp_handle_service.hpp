@@ -2,7 +2,7 @@
 // detail/win_iocp_handle_service.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 // Copyright (c) 2008 Rep Invariant Systems, Inc. (info@repinvariant.com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -20,8 +20,9 @@
 
 #if defined(ASIO_HAS_IOCP)
 
+#include "asio/associated_cancellation_slot.hpp"
 #include "asio/error.hpp"
-#include "asio/io_context.hpp"
+#include "asio/execution_context.hpp"
 #include "asio/detail/buffer_sequence_adapter.hpp"
 #include "asio/detail/cstdint.hpp"
 #include "asio/detail/handler_alloc_helpers.hpp"
@@ -34,11 +35,11 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class win_iocp_handle_service :
-  public service_base<win_iocp_handle_service>
+  public execution_context_service_base<win_iocp_handle_service>
 {
 public:
   // The native type of a stream handle.
@@ -75,7 +76,7 @@ public:
     implementation_type* prev_;
   };
 
-  ASIO_DECL win_iocp_handle_service(asio::io_context& io_context);
+  ASIO_DECL win_iocp_handle_service(execution_context& context);
 
   // Destroy all user-defined handler objects owned by the service.
   ASIO_DECL void shutdown();
@@ -96,8 +97,8 @@ public:
   ASIO_DECL void destroy(implementation_type& impl);
 
   // Assign a native handle to a handle implementation.
-  ASIO_DECL asio::error_code assign(implementation_type& impl,
-      const native_handle_type& handle, asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code assign(implementation_type& impl,
+      const native_handle_type& handle, puerts_asio::error_code& ec);
 
   // Determine whether the handle is open.
   bool is_open(const implementation_type& impl) const
@@ -106,8 +107,8 @@ public:
   }
 
   // Destroy a handle implementation.
-  ASIO_DECL asio::error_code close(implementation_type& impl,
-      asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code close(implementation_type& impl,
+      puerts_asio::error_code& ec);
 
   // Get the native handle representation.
   native_handle_type native_handle(const implementation_type& impl) const
@@ -116,13 +117,13 @@ public:
   }
 
   // Cancel all operations associated with the handle.
-  ASIO_DECL asio::error_code cancel(implementation_type& impl,
-      asio::error_code& ec);
+  ASIO_DECL puerts_asio::error_code cancel(implementation_type& impl,
+      puerts_asio::error_code& ec);
 
   // Write the given data. Returns the number of bytes written.
   template <typename ConstBufferSequence>
   size_t write_some(implementation_type& impl,
-      const ConstBufferSequence& buffers, asio::error_code& ec)
+      const ConstBufferSequence& buffers, puerts_asio::error_code& ec)
   {
     return write_some_at(impl, 0, buffers, ec);
   }
@@ -131,10 +132,10 @@ public:
   // written.
   template <typename ConstBufferSequence>
   size_t write_some_at(implementation_type& impl, uint64_t offset,
-      const ConstBufferSequence& buffers, asio::error_code& ec)
+      const ConstBufferSequence& buffers, puerts_asio::error_code& ec)
   {
-    asio::const_buffer buffer =
-      buffer_sequence_adapter<asio::const_buffer,
+    puerts_asio::const_buffer buffer =
+      buffer_sequence_adapter<puerts_asio::const_buffer,
         ConstBufferSequence>::first(buffers);
 
     return do_write(impl, offset, buffer, ec);
@@ -142,50 +143,68 @@ public:
 
   // Start an asynchronous write. The data being written must be valid for the
   // lifetime of the asynchronous operation.
-  template <typename ConstBufferSequence, typename Handler>
+  template <typename ConstBufferSequence, typename Handler, typename IoExecutor>
   void async_write_some(implementation_type& impl,
-      const ConstBufferSequence& buffers, Handler& handler)
+      const ConstBufferSequence& buffers,
+      Handler& handler, const IoExecutor& io_ex)
   {
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef win_iocp_handle_write_op<ConstBufferSequence, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef win_iocp_handle_write_op<
+        ConstBufferSequence, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(buffers, handler);
+    operation* o = p.p = new (p.v) op(buffers, handler, io_ex);
 
     ASIO_HANDLER_CREATION((iocp_service_.context(), *p.p, "handle", &impl,
           reinterpret_cast<uintmax_t>(impl.handle_), "async_write_some"));
 
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+      o = &slot.template emplace<iocp_op_cancellation>(impl.handle_, o);
+
     start_write_op(impl, 0,
-        buffer_sequence_adapter<asio::const_buffer,
-          ConstBufferSequence>::first(buffers), p.p);
+        buffer_sequence_adapter<puerts_asio::const_buffer,
+          ConstBufferSequence>::first(buffers), o);
     p.v = p.p = 0;
   }
 
   // Start an asynchronous write at a specified offset. The data being written
   // must be valid for the lifetime of the asynchronous operation.
-  template <typename ConstBufferSequence, typename Handler>
-  void async_write_some_at(implementation_type& impl, uint64_t offset,
-      const ConstBufferSequence& buffers, Handler& handler)
+  template <typename ConstBufferSequence, typename Handler, typename IoExecutor>
+  void async_write_some_at(implementation_type& impl,
+      uint64_t offset, const ConstBufferSequence& buffers,
+      Handler& handler, const IoExecutor& io_ex)
   {
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef win_iocp_handle_write_op<ConstBufferSequence, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef win_iocp_handle_write_op<
+        ConstBufferSequence, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(buffers, handler);
+    operation* o = p.p = new (p.v) op(buffers, handler, io_ex);
 
     ASIO_HANDLER_CREATION((iocp_service_.context(), *p.p, "handle", &impl,
           reinterpret_cast<uintmax_t>(impl.handle_), "async_write_some_at"));
 
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+      o = &slot.template emplace<iocp_op_cancellation>(impl.handle_, o);
+
     start_write_op(impl, offset,
-        buffer_sequence_adapter<asio::const_buffer,
-          ConstBufferSequence>::first(buffers), p.p);
+        buffer_sequence_adapter<puerts_asio::const_buffer,
+          ConstBufferSequence>::first(buffers), o);
     p.v = p.p = 0;
   }
 
   // Read some data. Returns the number of bytes received.
   template <typename MutableBufferSequence>
   size_t read_some(implementation_type& impl,
-      const MutableBufferSequence& buffers, asio::error_code& ec)
+      const MutableBufferSequence& buffers, puerts_asio::error_code& ec)
   {
     return read_some_at(impl, 0, buffers, ec);
   }
@@ -193,10 +212,10 @@ public:
   // Read some data at a specified offset. Returns the number of bytes received.
   template <typename MutableBufferSequence>
   size_t read_some_at(implementation_type& impl, uint64_t offset,
-      const MutableBufferSequence& buffers, asio::error_code& ec)
+      const MutableBufferSequence& buffers, puerts_asio::error_code& ec)
   {
-    asio::mutable_buffer buffer =
-      buffer_sequence_adapter<asio::mutable_buffer,
+    puerts_asio::mutable_buffer buffer =
+      buffer_sequence_adapter<puerts_asio::mutable_buffer,
         MutableBufferSequence>::first(buffers);
 
     return do_read(impl, offset, buffer, ec);
@@ -204,91 +223,113 @@ public:
 
   // Start an asynchronous read. The buffer for the data being received must be
   // valid for the lifetime of the asynchronous operation.
-  template <typename MutableBufferSequence, typename Handler>
+  template <typename MutableBufferSequence,
+      typename Handler, typename IoExecutor>
   void async_read_some(implementation_type& impl,
-      const MutableBufferSequence& buffers, Handler& handler)
+      const MutableBufferSequence& buffers,
+      Handler& handler, const IoExecutor& io_ex)
   {
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef win_iocp_handle_read_op<MutableBufferSequence, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef win_iocp_handle_read_op<
+        MutableBufferSequence, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(buffers, handler);
+    operation* o = p.p = new (p.v) op(buffers, handler, io_ex);
 
     ASIO_HANDLER_CREATION((iocp_service_.context(), *p.p, "handle", &impl,
           reinterpret_cast<uintmax_t>(impl.handle_), "async_read_some"));
 
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+      o = &slot.template emplace<iocp_op_cancellation>(impl.handle_, o);
+
     start_read_op(impl, 0,
-        buffer_sequence_adapter<asio::mutable_buffer,
-          MutableBufferSequence>::first(buffers), p.p);
+        buffer_sequence_adapter<puerts_asio::mutable_buffer,
+          MutableBufferSequence>::first(buffers), o);
     p.v = p.p = 0;
   }
 
   // Start an asynchronous read at a specified offset. The buffer for the data
   // being received must be valid for the lifetime of the asynchronous
   // operation.
-  template <typename MutableBufferSequence, typename Handler>
-  void async_read_some_at(implementation_type& impl, uint64_t offset,
-      const MutableBufferSequence& buffers, Handler& handler)
+  template <typename MutableBufferSequence,
+      typename Handler, typename IoExecutor>
+  void async_read_some_at(implementation_type& impl,
+      uint64_t offset, const MutableBufferSequence& buffers,
+      Handler& handler, const IoExecutor& io_ex)
   {
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef win_iocp_handle_read_op<MutableBufferSequence, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef win_iocp_handle_read_op<
+        MutableBufferSequence, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(buffers, handler);
+    operation* o = p.p = new (p.v) op(buffers, handler, io_ex);
 
     ASIO_HANDLER_CREATION((iocp_service_.context(), *p.p, "handle", &impl,
           reinterpret_cast<uintmax_t>(impl.handle_), "async_read_some_at"));
 
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+      o = &slot.template emplace<iocp_op_cancellation>(impl.handle_, o);
+
     start_read_op(impl, offset,
-        buffer_sequence_adapter<asio::mutable_buffer,
-          MutableBufferSequence>::first(buffers), p.p);
+        buffer_sequence_adapter<puerts_asio::mutable_buffer,
+          MutableBufferSequence>::first(buffers), o);
     p.v = p.p = 0;
   }
 
 private:
   // Prevent the use of the null_buffers type with this service.
   size_t write_some(implementation_type& impl,
-      const null_buffers& buffers, asio::error_code& ec);
+      const null_buffers& buffers, puerts_asio::error_code& ec);
   size_t write_some_at(implementation_type& impl, uint64_t offset,
-      const null_buffers& buffers, asio::error_code& ec);
-  template <typename Handler>
+      const null_buffers& buffers, puerts_asio::error_code& ec);
+  template <typename Handler, typename IoExecutor>
   void async_write_some(implementation_type& impl,
-      const null_buffers& buffers, Handler& handler);
-  template <typename Handler>
+      const null_buffers& buffers, Handler& handler,
+      const IoExecutor& io_ex);
+  template <typename Handler, typename IoExecutor>
   void async_write_some_at(implementation_type& impl, uint64_t offset,
-      const null_buffers& buffers, Handler& handler);
+      const null_buffers& buffers, Handler& handler, const IoExecutor& io_ex);
   size_t read_some(implementation_type& impl,
-      const null_buffers& buffers, asio::error_code& ec);
+      const null_buffers& buffers, puerts_asio::error_code& ec);
   size_t read_some_at(implementation_type& impl, uint64_t offset,
-      const null_buffers& buffers, asio::error_code& ec);
-  template <typename Handler>
+      const null_buffers& buffers, puerts_asio::error_code& ec);
+  template <typename Handler, typename IoExecutor>
   void async_read_some(implementation_type& impl,
-      const null_buffers& buffers, Handler& handler);
-  template <typename Handler>
+      const null_buffers& buffers, Handler& handler,
+      const IoExecutor& io_ex);
+  template <typename Handler, typename IoExecutor>
   void async_read_some_at(implementation_type& impl, uint64_t offset,
-      const null_buffers& buffers, Handler& handler);
+      const null_buffers& buffers, Handler& handler, const IoExecutor& io_ex);
 
   // Helper class for waiting for synchronous operations to complete.
   class overlapped_wrapper;
 
   // Helper function to perform a synchronous write operation.
   ASIO_DECL size_t do_write(implementation_type& impl,
-      uint64_t offset, const asio::const_buffer& buffer,
-      asio::error_code& ec);
+      uint64_t offset, const puerts_asio::const_buffer& buffer,
+      puerts_asio::error_code& ec);
 
   // Helper function to start a write operation.
   ASIO_DECL void start_write_op(implementation_type& impl,
-      uint64_t offset, const asio::const_buffer& buffer,
+      uint64_t offset, const puerts_asio::const_buffer& buffer,
       operation* op);
 
   // Helper function to perform a synchronous write operation.
   ASIO_DECL size_t do_read(implementation_type& impl,
-      uint64_t offset, const asio::mutable_buffer& buffer,
-      asio::error_code& ec);
+      uint64_t offset, const puerts_asio::mutable_buffer& buffer,
+      puerts_asio::error_code& ec);
 
   // Helper function to start a read operation.
   ASIO_DECL void start_read_op(implementation_type& impl,
-      uint64_t offset, const asio::mutable_buffer& buffer,
+      uint64_t offset, const puerts_asio::mutable_buffer& buffer,
       operation* op);
 
   // Update the ID of the thread from which cancellation is safe.
@@ -297,6 +338,45 @@ private:
   // Helper function to close a handle when the associated object is being
   // destroyed.
   ASIO_DECL void close_for_destruction(implementation_type& impl);
+
+  // Helper class used to implement per operation cancellation.
+  class iocp_op_cancellation : public operation
+  {
+  public:
+    iocp_op_cancellation(HANDLE h, operation* target)
+      : operation(&iocp_op_cancellation::do_complete),
+        handle_(h),
+        target_(target)
+    {
+    }
+
+    static void do_complete(void* owner, operation* base,
+        const puerts_asio::error_code& result_ec,
+        std::size_t bytes_transferred)
+    {
+      iocp_op_cancellation* o = static_cast<iocp_op_cancellation*>(base);
+      o->target_->complete(owner, result_ec, bytes_transferred);
+    }
+
+    void operator()(cancellation_type_t type)
+    {
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+      if (!!(type &
+            (cancellation_type::terminal
+              | cancellation_type::partial
+              | cancellation_type::total)))
+      {
+        ::CancelIoEx(handle_, this);
+      }
+#else // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+      (void)type;
+#endif // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+    }
+
+  private:
+    HANDLE handle_;
+    operation* target_;
+  };
 
   // The IOCP service used for running asynchronous operations and dispatching
   // handlers.
@@ -310,7 +390,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

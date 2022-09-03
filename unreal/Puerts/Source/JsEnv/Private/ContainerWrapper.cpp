@@ -49,10 +49,10 @@ void FScriptArrayWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
 
-        int32 Index = AddUninitialized(Self, Inner->Property->GetSize(), Info.Length());
+        int32 Index = AddUninitialized(Self, GetSizeWithAlignment(Inner->Property), Info.Length());
         for (int i = 0; i < Info.Length(); ++i)
         {
-            uint8* DataPtr = GetData(Self, Inner->Property->GetSize(), Index + i);
+            uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index + i);
             Inner->Property->InitializeValue(DataPtr);    //使用之前必须得初始化，即使是设置也要
             Inner->JsToUE(Isolate, Context, Info[i], DataPtr, false);
         }
@@ -82,7 +82,7 @@ void FScriptArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>&
         FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
         return;
     }
-    uint8* DataPtr = GetData(Self, Inner->Property->GetSize(), Index);
+    uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
     Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, DataPtr, PassByPointer));
 }
 
@@ -118,7 +118,7 @@ void FScriptArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
         FV8Utils::ThrowException(Isolate, TEXT("invalid index"));
         return;
     }
-    uint8* DataPtr = GetData(Self, Inner->Property->GetSize(), Index);
+    uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
     Inner->Property->InitializeValue(DataPtr);
     Inner->JsToUE(Isolate, Context, Info[1], DataPtr, false);
 }
@@ -162,7 +162,7 @@ void FScriptArrayWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& In
     else
     {
         FScriptArrayEx::Destruct(Self, Inner->Property, Index, 1);
-        Self->Remove(Index, 1, Inner->Property->GetSize());
+        Self->Remove(Index, 1, GetSizeWithAlignment(Inner->Property));
     }
 }
 
@@ -208,7 +208,7 @@ FORCEINLINE uint8* FScriptArrayWrapper::GetData(FScriptArray* ScriptArray, int32
 
 FORCEINLINE void FScriptArrayWrapper::Construct(FScriptArray* ScriptArray, FPropertyTranslator* Inner, int32 Index, int32 Count)
 {
-    int32 ElementSize = Inner->Property->GetSize();
+    int32 ElementSize = GetSizeWithAlignment(Inner->Property);
     uint8* Dest = GetData(ScriptArray, ElementSize, Index);
     for (int32 i = 0; i < Count; ++i)
     {
@@ -232,7 +232,7 @@ int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Val
     }
     auto Property = Inner->Property;
 
-    void* Dest = FMemory_Alloca(Property->GetSize());
+    void* Dest = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(Dest);
     Inner->JsToUE(Isolate, Context, Info[0], Dest, false);
 
@@ -240,7 +240,7 @@ int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Val
     int32 Result = INDEX_NONE;
     for (int32 i = 0; i < Num; ++i)
     {
-        uint8* Src = GetData(Self, Property->GetSize(), i);
+        uint8* Src = GetData(Self, GetSizeWithAlignment(Property), i);
         if (Property->Identical(Src, Dest))
         {
             Result = i;
@@ -293,7 +293,7 @@ void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     auto Property = Inner->Property;
 
-    void* DataPtr = FMemory_Alloca(Property->GetSize());
+    void* DataPtr = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(DataPtr);
     Inner->JsToUE(Isolate, Context, Info[0], DataPtr, false);
 
@@ -452,7 +452,7 @@ int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value
     }
     auto Property = Inner->Property;
 
-    void* DataPtr = FMemory_Alloca(Property->GetSize());
+    void* DataPtr = FMemory_Alloca(GetSizeWithAlignment(Property));
     Property->InitializeValue(DataPtr);
 
     Inner->JsToUE(Isolate, Context, Info[0], DataPtr, false);
@@ -509,10 +509,10 @@ void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
 
-    void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
+    void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
 
-    void* ValuePtr = FMemory_Alloca(ValueProperty->GetSize());
+    void* ValuePtr = FMemory_Alloca(GetSizeWithAlignment(ValueProperty));
     ValueProperty->InitializeValue(ValuePtr);
 
     KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
@@ -560,7 +560,7 @@ void FScriptMapWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& I
         return;
     }
 
-    void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
+    void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
     KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
 
@@ -612,7 +612,7 @@ void FScriptMapWrapper::Remove(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
 
-    void* KeyPtr = FMemory_Alloca(KeyProperty->GetSize());
+    void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
     KeyProperty->InitializeValue(KeyPtr);
     KeyPropertyTranslator->JsToUE(Isolate, Context, Info[0], KeyPtr, false);
 

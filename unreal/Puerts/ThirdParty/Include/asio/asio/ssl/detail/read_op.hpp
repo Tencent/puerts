@@ -2,7 +2,7 @@
 // ssl/detail/read_op.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -30,17 +30,22 @@ template <typename MutableBufferSequence>
 class read_op
 {
 public:
+  static ASIO_CONSTEXPR const char* tracking_name()
+  {
+    return "ssl::stream<>::async_read_some";
+  }
+
   read_op(const MutableBufferSequence& buffers)
     : buffers_(buffers)
   {
   }
 
   engine::want operator()(engine& eng,
-      asio::error_code& ec,
+      puerts_asio::error_code& ec,
       std::size_t& bytes_transferred) const
   {
-    asio::mutable_buffer buffer =
-      asio::detail::buffer_sequence_adapter<asio::mutable_buffer,
+    puerts_asio::mutable_buffer buffer =
+      puerts_asio::detail::buffer_sequence_adapter<puerts_asio::mutable_buffer,
         MutableBufferSequence>::first(buffers_);
 
     return eng.read(buffer, ec, bytes_transferred);
@@ -48,10 +53,10 @@ public:
 
   template <typename Handler>
   void call_handler(Handler& handler,
-      const asio::error_code& ec,
+      const puerts_asio::error_code& ec,
       const std::size_t& bytes_transferred) const
   {
-    handler(ec, bytes_transferred);
+    ASIO_MOVE_OR_LVALUE(Handler)(handler)(ec, bytes_transferred);
   }
 
 private:
@@ -60,7 +65,7 @@ private:
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

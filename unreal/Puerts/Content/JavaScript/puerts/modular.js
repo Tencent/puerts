@@ -168,6 +168,8 @@ var global = global || (function () { return this; }());
     
     puerts.__require = genRequire("");
     
+    global.require = puerts.__require;
+    
     puerts.getModuleBySID = getModuleBySID;
     
     puerts.registerBuildinModule = registerBuildinModule;

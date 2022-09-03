@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static Puerts.Editor.Generator.Wrapper.StaticWrapperInfo;
 
 namespace Puerts.Editor
 {
@@ -189,6 +190,12 @@ namespace Puerts.Editor
                 if (mbi is MethodInfo)
                 {
                     MethodInfo mi = mbi as MethodInfo;
+
+                    if (mi.Name.Contains("$")) 
+                    {
+                        // fix #964
+                        return true;
+                    }
                     if (mi.ReturnType.IsPointer
 #if UNITY_2021_1_OR_NEWER
                         || mi.ReturnType.IsByRefLike

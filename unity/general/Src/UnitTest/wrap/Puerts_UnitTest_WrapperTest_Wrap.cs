@@ -4,7 +4,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-    public static class Puerts_UnitTest_WrapperTest_Wrap
+    public static class Puerts_UnitTest_WrapperTest_Wrap 
     {
 
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
@@ -60,7 +60,7 @@ namespace PuertsStaticWrap
             
                     var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Boolean, null, false, false))
+                    if (argHelper0.IsMatch(Puerts.JsValueType.Boolean, typeof(bool), false, false))
                 
                     {
                 
@@ -91,7 +91,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.PropertyWithoutSetter;
-                Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
             }
             catch (Exception e)
             {
@@ -122,7 +122,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.Property;
-                Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
             }
             catch (Exception e)
             {
@@ -153,7 +153,7 @@ namespace PuertsStaticWrap
             {
                 
                 var result = Puerts.UnitTest.WrapperTest.StaticProperty;
-                Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
             }
             catch (Exception e)
             {
@@ -184,7 +184,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.Field;
-                Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
             }
             catch (Exception e)
             {
@@ -215,7 +215,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.ReadonlyField;
-                Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
             }
             catch (Exception e)
             {

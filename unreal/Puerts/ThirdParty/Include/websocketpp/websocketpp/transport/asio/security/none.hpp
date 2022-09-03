@@ -41,18 +41,18 @@
 
 namespace websocketpp {
 namespace transport {
-namespace asio {
+namespace puerts_asio {
 /// A socket policy for the asio transport that implements a plain, unencrypted
 /// socket
 namespace basic_socket {
 
 /// The signature of the socket init handler for this socket policy
-typedef lib::function<void(connection_hdl,lib::asio::ip::tcp::socket&)>
+typedef lib::function<void(connection_hdl,lib::puerts_asio::ip::tcp::socket&)>
     socket_init_handler;
 
 /// Basic Asio connection socket component
 /**
- * transport::asio::basic_socket::connection implements a connection socket
+ * transport::puerts_asio::basic_socket::connection implements a connection socket
  * component using Asio ip::tcp::socket.
  */
 class connection : public lib::enable_shared_from_this<connection> {
@@ -63,16 +63,16 @@ public:
     typedef lib::shared_ptr<type> ptr;
 
     /// Type of a pointer to the Asio io_service being used
-    typedef lib::asio::io_service* io_service_ptr;
+    typedef lib::puerts_asio::io_service* io_service_ptr;
     /// Type of a pointer to the Asio io_service strand being used
-    typedef lib::shared_ptr<lib::asio::io_service::strand> strand_ptr;
+    typedef lib::shared_ptr<lib::puerts_asio::io_service::strand> strand_ptr;
     /// Type of the ASIO socket being used
-    typedef lib::asio::ip::tcp::socket socket_type;
+    typedef lib::puerts_asio::ip::tcp::socket socket_type;
     /// Type of a shared pointer to the socket being used.
     typedef lib::shared_ptr<socket_type> socket_ptr;
 
     explicit connection() : m_state(UNINITIALIZED) {
-        //std::cout << "transport::asio::basic_socket::connection constructor"
+        //std::cout << "transport::puerts_asio::basic_socket::connection constructor"
         //          << std::endl;
     }
 
@@ -105,7 +105,7 @@ public:
     /**
      * This is used internally. It can also be used to set socket options, etc
      */
-    lib::asio::ip::tcp::socket & get_socket() {
+    lib::puerts_asio::ip::tcp::socket & get_socket() {
         return *m_socket;
     }
 
@@ -113,7 +113,7 @@ public:
     /**
      * This is used internally.
      */
-    lib::asio::ip::tcp::socket & get_next_layer() {
+    lib::puerts_asio::ip::tcp::socket & get_next_layer() {
         return *m_socket;
     }
 
@@ -121,7 +121,7 @@ public:
     /**
      * This is used internally. It can also be used to set socket options, etc
      */
-    lib::asio::ip::tcp::socket & get_raw_socket() {
+    lib::puerts_asio::ip::tcp::socket & get_raw_socket() {
         return *m_socket;
     }
 
@@ -138,8 +138,8 @@ public:
     std::string get_remote_endpoint(lib::error_code & ec) const {
         std::stringstream s;
 
-        lib::asio::error_code aec;
-        lib::asio::ip::tcp::endpoint ep = m_socket->remote_endpoint(aec);
+        lib::puerts_asio::error_code aec;
+        lib::puerts_asio::ip::tcp::endpoint ep = m_socket->remote_endpoint(aec);
 
         if (aec) {
             ec = error::make_error_code(error::pass_through);
@@ -168,8 +168,7 @@ protected:
             return socket::make_error_code(socket::error::invalid_state);
         }
 
-        m_socket = lib::make_shared<lib::asio::ip::tcp::socket>(
-            lib::ref(*service));
+        m_socket.reset(new lib::puerts_asio::ip::tcp::socket(*service));
 
         if (m_socket_init_handler) {
             m_socket_init_handler(m_hdl, *m_socket);
@@ -245,15 +244,15 @@ protected:
      *
      * @return The error that occurred, if any.
      */
-    lib::asio::error_code cancel_socket() {
-        lib::asio::error_code ec;
+    lib::puerts_asio::error_code cancel_socket() {
+        lib::puerts_asio::error_code ec;
         m_socket->cancel(ec);
         return ec;
     }
 
     void async_shutdown(socket::shutdown_handler h) {
-        lib::asio::error_code ec;
-        m_socket->shutdown(lib::asio::ip::tcp::socket::shutdown_both, ec);
+        lib::puerts_asio::error_code ec;
+        m_socket->shutdown(lib::puerts_asio::ip::tcp::socket::shutdown_both, ec);
         h(ec);
     }
 
@@ -266,11 +265,11 @@ public:
     /**
      * Translate_ec takes an Asio error code and attempts to convert its value 
      * to an appropriate websocketpp error code. In the case that the Asio and
-     * Websocketpp error types are the same (such as using boost::asio and
+     * Websocketpp error types are the same (such as using boost::puerts_asio and
      * boost::system_error or using standalone asio and std::system_error the
      * code will be passed through natively.
      *
-     * In the case of a mismatch (boost::asio with std::system_error) a
+     * In the case of a mismatch (boost::puerts_asio with std::system_error) a
      * translated code will be returned. The plain socket policy does not have 
      * any additional information so all such errors will be reported as the
      * generic transport pass_through error.
@@ -289,7 +288,7 @@ public:
 
     static
     /// Overload of translate_ec to catch cases where lib::error_code is the 
-    /// same type as lib::asio::error_code
+    /// same type as lib::puerts_asio::error_code
     lib::error_code translate_ec(lib::error_code ec) {
         // We don't know any more information about this error, but the error is
         // the same type as the one we are translating to, so pass through
@@ -312,7 +311,7 @@ private:
 
 /// Basic ASIO endpoint socket component
 /**
- * transport::asio::basic_socket::endpoint implements an endpoint socket
+ * transport::puerts_asio::basic_socket::endpoint implements an endpoint socket
  * component that uses Boost ASIO's ip::tcp::socket.
  */
 class endpoint {
@@ -366,7 +365,7 @@ private:
 };
 
 } // namespace basic_socket
-} // namespace asio
+} // namespace puerts_asio
 } // namespace transport
 } // namespace websocketpp
 

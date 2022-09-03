@@ -20,14 +20,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'v8_9.4'
       - name: Install NDK
         run: |
           cd ~
@@ -37,8 +34,7 @@ jobs:
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_android.sh
-          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -49,14 +45,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'quickjs'
       - name: Install NDK
         run: |
           cd ~
@@ -65,10 +58,8 @@ jobs:
           unzip -q NDK
       - name: Build
         run: |
-          ls ~/android-ndk-r21b
           cd unity/native_src
-          chmod 777 make_android.sh
-          ANDROID_NDK=~/android-ndk-r21b ./make_android.sh quickjs
+          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -79,20 +70,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'v8_9.4'
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh
+          node make.js --platform ios --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -103,92 +91,74 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'quickjs'
       - name: Use Xcode 12.0 for x86
         run: sudo xcode-select -switch "/Applications/Xcode_12.app"
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_ios.sh quickjs
+          node make.js --platform ios --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_QuickJS
   osx:
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
-      - name: Use Xcode 12.0 for x86
-        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'v8_9.4'
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh
+          node make.js --platform osx --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_V8
   osx_node:
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          repo: puerts/backend-nodejs
-          workflow: build_nodejs.yml
-          name: nodejs_bin
-          path: unity/native_src/
-      - name: Use Xcode 12.0 for x86
-        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'nodejs_16'
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh nodejs
+          node make.js --platform osx --backend nodejs_16
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           path: ./unity/Assets/Plugins/**/*
           name: Unity_Plugins_NodeJS
   osx_qjs:
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
-      - name: Use Xcode 12.0 for x86
-        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'quickjs'
       - name: Build
         run: |
           cd unity/native_src
-          sh ./make_osx.sh quickjs
+          node make.js --platform osx --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -199,19 +169,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'v8_9.4'
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat
-          .\make_win32.bat
+          node make.js --platform win --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -222,19 +188,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_quickjs.yml
-          name: qjs_v8_bin
-          repo: puerts/backend-quickjs
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'quickjs'
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat quickjs
-          .\make_win32.bat quickjs
+          node make.js --platform win --backend quickjs
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -245,19 +207,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          repo: puerts/backend-nodejs
-          workflow: build_nodejs.yml
-          name: nodejs_bin
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'nodejs_16'
       - name: Build
         run: |
           cd unity\native_src
-          .\make_win64.bat nodejs
-          # .\make_win32.bat nodejs
+          node make.js --platform win --backend nodejs_16 --arch=x64
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
@@ -273,19 +231,15 @@ jobs:
           sudo apt-get install libc++-dev
           sudo apt-get install libc++abi-dev
       - uses: actions/checkout@v2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Get backend artifact
+        uses: ./.github/workflows/composites/unity-download-backend/
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build_8.4.yml
-          name: v8_bin
-          repo: puerts/backend-v8
-          path: unity/native_src/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: 'v8_9.4'
       - name: Build
         run: |
           cd unity/native_src
-          chmod 777 make_linux64.sh
-          ./make_linux64.sh
+          node make.js --platform linux --arch=x64 --backend v8_9.4
       - name: Upload
         uses: actions/upload-artifact@v2
         with:

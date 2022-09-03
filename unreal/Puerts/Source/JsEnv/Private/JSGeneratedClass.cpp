@@ -17,8 +17,9 @@
 #define OLD_METHOD_PREFIX "__puerts_old__"
 #define MIXIN_METHOD_SUFFIX "__puerts_mixin__"
 
-UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent, TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker,
-    v8::Isolate* Isolate, v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
+UClass* UJSGeneratedClass::Create(const FString& Name, UClass* Parent,
+    TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, v8::Isolate* Isolate,
+    v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype)
 {
     auto Outer = GetTransientPackage();
     UClass* Class = nullptr;
@@ -98,7 +99,7 @@ void UJSGeneratedClass::StaticConstructor(const FObjectInitializer& ObjectInitia
 }
 
 void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool IsNative)
+    TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative)
 {
     bool Existed = Super->GetOuter() == Class;
     FName FunctionName = Super->GetFName();
@@ -106,9 +107,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
     {
         if (auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super))    //这种情况只需简单替换下js函数
         {
-#ifdef THREAD_SAFE
-            MaybeJSFunction->Isolate = Isolate;
-#endif
             MaybeJSFunction->DynamicInvoker = DynamicInvoker;
             MaybeJSFunction->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Super, false);
             MaybeJSFunction->JsFunction.Reset(Isolate, JSImpl);
@@ -158,9 +156,6 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 
     Function->SetNativeFunc(&UJSGeneratedFunction::execCallJS);
 
-#ifdef THREAD_SAFE
-    Function->Isolate = Isolate;
-#endif
     Function->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JSImpl);
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
@@ -191,7 +186,7 @@ void UJSGeneratedClass::Override(v8::Isolate* Isolate, UClass* Class, UFunction*
 }
 
 UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
-    TSharedPtr<puerts::IDynamicInvoker> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
+    TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning)
 {
     bool Existed = Super->GetOuter() == Class;
 
@@ -243,9 +238,6 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
         Function->SetSuperStruct(Super->GetSuperStruct());
     }
 
-#ifdef THREAD_SAFE
-    Function->Isolate = Isolate;
-#endif
     Function->DynamicInvoker = DynamicInvoker;
     Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
     Function->TakeJsObjectRef = TakeJsObjectRef;
