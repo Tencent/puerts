@@ -1,4 +1,4 @@
-name: unity build plugins
+name: unity build plugins ailhc
 
 on:
   workflow_dispatch:
