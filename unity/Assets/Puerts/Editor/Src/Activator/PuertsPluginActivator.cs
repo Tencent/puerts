@@ -394,7 +394,7 @@ public class PuertsPluginActivator
 
         UnityEditor.Menu.SetChecked(MENU_PATH + menuType, menuType == targetType);
     }
-    [UnityEditor.MenuItem(MENU_PATH + "DiableAll", false)]
+    [UnityEditor.MenuItem(MENU_PATH + "DisableAll", false)]
     public static void deactivateAllPlugins()
     {
         var importers = getPuertsPluginImporters(null);
