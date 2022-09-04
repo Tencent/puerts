@@ -1717,6 +1717,13 @@ void FJsEnvImpl::InvokeDelegateCallback(UDynamicDelegateProxy* Proxy, void* Para
             Logger->Warn(TEXT("invalid SignatureFunction!"));
             return;
         }
+
+        // 非 Editor 模式，函数签名地址可能会变且内存可能复用，不检查可能会访问到旧的非法地址。
+        if (!Iter->second->IsValid())
+        {
+            JsCallbackPrototypeMap[SignatureFunction.Get()] = std::make_unique<FFunctionTranslator>(SignatureFunction.Get(), true);
+            Iter = JsCallbackPrototypeMap.find(SignatureFunction.Get());
+        }
     }
 
     auto Isolate = MainIsolate;
@@ -2464,22 +2471,42 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
             PendingToRemove.push_back(KV.first);
         }
     }
-    if (PendingToRemove.size() == 0)
-        return true;
 
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
-    v8::Context::Scope ContextScope(Context);
-    for (int i = 0; i < PendingToRemove.size(); ++i)
+    if (PendingToRemove.size() > 0)
     {
-        ClearDelegate(Isolate, Context, PendingToRemove[i]);
-        if (!DelegateMap[PendingToRemove[i]].PassByPointer)
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        for (int i = 0; i < PendingToRemove.size(); ++i)
         {
-            delete ((FScriptDelegate*) PendingToRemove[i]);
+            ClearDelegate(Isolate, Context, PendingToRemove[i]);
+            if (!DelegateMap[PendingToRemove[i]].PassByPointer)
+            {
+                delete ((FScriptDelegate*)PendingToRemove[i]);
+            }
+            DelegateMap.erase(PendingToRemove[i]);
         }
-        DelegateMap.erase(PendingToRemove[i]);
     }
+
+    // Collecting invalid function translators to remove.
+    std::vector<UFunction*> PendingToRemoveJsCallbacks;
+    for (auto& KV : JsCallbackPrototypeMap)
+    {
+        if ((nullptr == KV.first) || (!KV.second->IsValid()))
+        {
+            PendingToRemoveJsCallbacks.push_back(KV.first);
+        }
+    }
+
+    if (PendingToRemoveJsCallbacks.size() > 0)
+    {
+        for (int32 i = 0; i < PendingToRemoveJsCallbacks.size(); i++)
+        {
+            JsCallbackPrototypeMap.erase(PendingToRemoveJsCallbacks[i]);
+        }
+    }
+
     return true;
 }
 
