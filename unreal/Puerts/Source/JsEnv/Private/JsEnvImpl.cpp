@@ -2483,7 +2483,7 @@ bool FJsEnvImpl::CheckDelegateProxies(float Tick)
             ClearDelegate(Isolate, Context, PendingToRemove[i]);
             if (!DelegateMap[PendingToRemove[i]].PassByPointer)
             {
-                delete ((FScriptDelegate*)PendingToRemove[i]);
+                delete ((FScriptDelegate*) PendingToRemove[i]);
             }
             DelegateMap.erase(PendingToRemove[i]);
         }
