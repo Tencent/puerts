@@ -418,6 +418,11 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     Stack.OutParms = OldOutParms;
 }
 
+bool FFunctionTranslator::IsValid() const
+{
+    return Function.IsValid();
+}
+
 FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction* InFunction) : FFunctionTranslator(InFunction, false)
 {
     TFieldIterator<PropertyMacro> It(InFunction);

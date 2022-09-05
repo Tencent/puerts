@@ -47,6 +47,8 @@ public:
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
         std::function<void(void*)> OnCall);
 
+    bool IsValid() const;
+
 protected:
     FORCEINLINE void Call_ProcessParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
         const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
