@@ -47,6 +47,12 @@
     <Compile Include="..\Src\UnitTest\WrapperTest\WrapperTestClass.cs">
       <Link>Src\UnitTest\WrapperTest\WrapperTestClass.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestA_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestA_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestB_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestB_Wrap.cs</Link>
+    </Compile>
     <Compile Include="..\Src\WrapperGenerate.cs">
       <Link>Src\WrapperGenerate.cs</Link>
     </Compile>

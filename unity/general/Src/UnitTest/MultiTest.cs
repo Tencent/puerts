@@ -60,7 +60,7 @@ namespace Puerts.UnitTest
     }
 
     [TestFixture]
-    public class MultiThreadTest
+    public class MultiTest
     {
         // [Test]
         // public void MultiThread()
@@ -92,5 +92,64 @@ namespace Puerts.UnitTest
         //         jsEnv.Tick();
         //     }
         // }
+
+        [Test]
+        public void MultiEnv() {
+            var jsEnv1 = new JsEnv(new TxtLoader());
+            var jsEnv2 = new JsEnv(new TxtLoader());
+
+            jsEnv1.Eval(@"
+                (function() {
+                    const CS = require('csharp');
+                    const A = CS.Puerts.UnitTest.MultiEnvTestA;
+                    const B = CS.Puerts.UnitTest.MultiEnvTestB;
+
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                })();
+            ");
+            jsEnv2.Eval(@"
+                (function() {
+                    const CS = require('csharp');
+                    const A = CS.Puerts.UnitTest.MultiEnvTestA;
+                    const B = CS.Puerts.UnitTest.MultiEnvTestB;
+
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                })();
+            ");
+            
+            if (jsEnv2.Backend is BackendV8)
+                (jsEnv2.Backend as BackendV8).LowMemoryNotification();
+            else if (jsEnv2.Backend is BackendNodeJS)
+                (jsEnv2.Backend as BackendNodeJS).LowMemoryNotification();
+            else if (jsEnv2.Backend is BackendQuickJS)
+                (jsEnv2.Backend as BackendQuickJS).LowMemoryNotification();
+            
+            jsEnv1.Eval(@"
+                (function() {
+                    const CS = require('csharp');
+                    const A = CS.Puerts.UnitTest.MultiEnvTestA;
+                    const B = CS.Puerts.UnitTest.MultiEnvTestB;
+
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                    A.CreateA().GetA();
+                    B.CreateB().GetB();
+                })();
+            ");
+            
+            Assert.True(true);
+        }
     }
 }

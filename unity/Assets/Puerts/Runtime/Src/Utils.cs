@@ -15,12 +15,12 @@ namespace Puerts
 {
     public static class Utils
     {
-        public static long TwoIntToLong(int a, int b)
+        public static long TwoIntToLong(int b, int a)
         {
             return (long)a << 32 | b & 0xFFFFFFFFL;
         }
 
-        public static void LongToTwoInt(long c, out int a, out int b)
+        public static void LongToTwoInt(long c, out int b, out int a)
         {
             a = (int)(c >> 32);
             b = (int)c;
