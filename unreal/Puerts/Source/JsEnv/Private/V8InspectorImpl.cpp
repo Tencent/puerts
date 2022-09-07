@@ -240,7 +240,8 @@ void ReportException(const websocketpp::exception& Exception, const TCHAR* JobIn
 void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     // throw an error so the v8 will clean pending exception later
-    Info.GetIsolate()->ThrowError(v8::String::NewFromUtf8(Info.GetIsolate(), "test", v8::NewStringType::kNormal).ToLocalChecked());
+    Info.GetIsolate()->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8(Info.GetIsolate(), "test", v8::NewStringType::kNormal).ToLocalChecked()));
 }
 
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
