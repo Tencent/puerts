@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -327,9 +327,8 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 
         if (Params)
         {
-            FOutParmRec** LastOut = nullptr;
-            if (!Stack.OutParms)
-                LastOut = &Stack.OutParms;
+            FMemory::Memzero(Params, ParamsBufferSize);
+            FOutParmRec** LastOut = &Stack.OutParms;
             // ScriptCore.cpp
             for (PropertyMacro* Property = (PropertyMacro*) (
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
@@ -365,13 +364,18 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 
                         if (*LastOut)
                         {
-                            (*LastOut)->NextOutParm = Out;
-                            LastOut = &(*LastOut)->NextOutParm;
+                            Out->NextOutParm = *LastOut;
+                            LastOut = &Out;
+
+                            //(*LastOut)->NextOutParm = Out;
+                            // LastOut = &(*LastOut)->NextOutParm;
                         }
                         else
                         {
                             *LastOut = Out;
+                            Out->NextOutParm = nullptr;
                         }
+                        Stack.OutParms = *LastOut;
                     }
                 }
                 else
@@ -412,6 +416,18 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
                 {
                     Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, true);
                 }
+            }
+        }
+    }
+
+    if (Params && Params != Stack.Locals)
+    {
+        // destruct properties on the stack, except for out params since we know we didn't use that memory
+        for (FProperty* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+        {
+            if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
+            {
+                Destruct->DestroyValue_InContainer(Params);
             }
         }
     }
