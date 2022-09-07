@@ -33,7 +33,7 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
     UJSGeneratedFunction* JsFunc = Cast<UJSGeneratedFunction>(Func);
     if (!JsFunc)
     {
-        JsFunc = Cast<UJSGeneratedFunction>(Func->GetSuperStruct());
+        JsFunc = GetJSGeneratedFunctionFromScript(Func);
     }
     check(JsFunc);
     // UE_LOG(LogTemp, Warning, TEXT("overrided function called, %s(%p)"), *Func->GetName(), Func);

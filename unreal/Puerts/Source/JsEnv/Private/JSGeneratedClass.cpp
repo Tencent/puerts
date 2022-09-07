@@ -195,7 +195,7 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
         auto MaybeJSFunction = Cast<UJSGeneratedFunction>(Super);
         if (!MaybeJSFunction)
         {
-            MaybeJSFunction = Cast<UJSGeneratedFunction>(Super->GetSuperStruct());
+            MaybeJSFunction = UJSGeneratedFunction::GetJSGeneratedFunctionFromScript(Super);
         }
         if (MaybeJSFunction)
         {
@@ -260,7 +260,7 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
         Super->FunctionFlags |= FUNC_Native;    //让UE不走解析
         Super->SetNativeFunc(&UJSGeneratedFunction::execCallMixin);
         Class->AddNativeFunction(*Super->GetName(), &UJSGeneratedFunction::execCallMixin);
-        Super->SetSuperStruct(Function);
+        UJSGeneratedFunction::SetJSGeneratedFunctionToScript(Super, Function);
     }
     return Function;
 }
@@ -287,7 +287,6 @@ void UJSGeneratedClass::Restore(UClass* Class)
                 JGF->Original->SetNativeFunc(JGF->OriginalFunc);
                 Class->AddNativeFunction(*JGF->Original->GetName(), JGF->OriginalFunc);
                 JGF->Original->FunctionFlags = JGF->OriginalFunctionFlags;
-                JGF->Original->SetSuperStruct(JGF->GetSuperStruct());
             }
             JGF->JsFunction.Reset();
             *PP = JGF->Next;
