@@ -21,108 +21,54 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact
-        uses: ./.github/workflows/composites/unity-download-backend/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: ${{ github.event.inputs.backend }}
-      - name: Install NDK
-        run: |
-          cd ~
-          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
-          sudo apt install unzip -y
-          unzip -q NDK
-      - name: Build
-        run: |
-          cd unity/native_src
-          ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v2
+    - name: BuildAndroid
+      uses: ./.github/workflows/composites/unity-build-plugins/android/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   ios:
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact
-        uses: ./.github/workflows/composites/unity-download-backend/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: ${{ github.event.inputs.backend }}
-      - name: Use Xcode 12.0 for x86
-        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
-      - name: Build
-        run: |
-          cd unity/native_src
-          node make.js --platform ios --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v2
+    - name: BuildiOS
+      uses: ./.github/workflows/composites/unity-build-plugins/ios/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   osx:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact
-        uses: ./.github/workflows/composites/unity-download-backend/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: ${{ github.event.inputs.backend }}
-      - name: Build
-        run: |
-          cd unity/native_src
-          node make.js --platform osx --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v2
+    - name: BuildOSX
+      uses: ./.github/workflows/composites/unity-build-plugins/osx/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   windows:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact
-        uses: ./.github/workflows/composites/unity-download-backend/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: ${{ github.event.inputs.backend }}
-      - name: Build
-        run: |
-          cd unity\native_src
-          node make.js --platform win --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v2
+    - name: BuildWindows
+      uses: ./.github/workflows/composites/unity-build-plugins/windows/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   linux64:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install libc++-dev
-        run: |
-          sudo apt-get install clang
-          sudo apt-get install libc++-dev
-          sudo apt-get install libc++abi-dev
-      - uses: actions/checkout@v2
-      - name: Get backend artifact
-        uses: ./.github/workflows/composites/unity-download-backend/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: ${{ github.event.inputs.backend }}
-      - name: Build
-        run: |
-          cd unity/native_src
-          node make.js --platform linux --backend ${{ github.event.inputs.backend }} --config ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
- 
+    - uses: actions/checkout@v2
+    - name: BuildLinux
+      uses: ./.github/workflows/composites/unity-build-plugins/linux/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
