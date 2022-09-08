@@ -21,7 +21,7 @@ namespace Puerts.Editor
 
         
 
-        public NodeRunner(string ProjectPath) 
+        public NodeRunner(string ProjectPath = "") 
         {
             if (ProjectPath == null) 
             {
