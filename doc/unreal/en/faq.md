@@ -1,100 +1,97 @@
 # FAQ
 
-## “new (std::nothrow) int[0] return nullptr, try fix it!”告警
+Below is a translated version of the original docs by Incanta Games. The translation is mainly done with Google Translate, but then modified by hand to try to make sense of what Google Translate is missing.
 
-Unreal重载了new，而且处理不符合C++规范：用no-throw方式new一个长度为0的数组，返回了nullptr，标准应该是返回有效值，只有OOM时才返回nullptr，这让遵从规范的V8误以为是OOM了，进而abort。目前只发现Window有该问题，而且该问题也经epic官方确认了。
-Puerts如果发现引擎有该bug，会通过覆盖内存分配行为修复该问题，并打印“new (std::nothrow) int[0] return nullptr, try fix it!”告警。该告警只是提示下当前UE版本存在该Bug，没什么影响。
+## `new (std::nothrow) int[0] return nullptr, try fix it!` Warning
 
-## 自动绑定模式有些扩展函数用不了
+Unreal overloads the `new` operator, and processing does not comply with C ++ specification. Initializing an empry array of `nothrow` mode `new`, returns `nullptr`, where it should return a valid value. It should only return `nullptr` if we're OOM (Out of Memory). (Incanta guessing this next sentence; I don't think it's critical here) The modification let's comply with the C++ specification, where V8 is misunderstanding OOM, thereby abort. This issues seems to be prevalent on Windows machines, and this issue is also confirmed by Epic official.
 
-这是由于puerts模块启动得比较早，它启动的时候遍历Class遍历不了比它后启动的模块里的扩展函数。
-解决办法：你所有模块启动完，调用下如下api就可以让它重新查找扩展函数。
+If the Puerts discovery engine finds this bug, it will repair this problem by overwriting the memory allocation behavior, and prints `new (std::nothrow) int [0] return nullptr, try fix it!` warning to the Output Log. The warning only prompts the user that this exists, and there is no impact.
 
-~~~c++
+### Notes from Incanta Games translating this
+
+The warning text is not telling the developer "to fix the issue", but rather it's telling the developer that Puerts is "trying to fix the issue."
+
+In actuality this warning is presented when the `JsEnvModule.cpp` initializes:
+
+``` c++
+int * Dummy = new (std::nothrow) int[0];
+if (!Dummy)
+{
+    UE_LOG(JsEnvModule, Warning, TEXT("new (std::nothrow) int[0] return nullptr, try fix it!"));
+    MallocWrapper = new FMallocWrapper(GMalloc);
+    GMalloc = MallocWrapper;
+}
+delete[] Dummy;
+```
+
+Per the documentation at https://www.cplusplus.com/reference/new/nothrow/, `new (std::nothrow) int[0]` shouldn't fail, and Puerts is trying to trying to fix the issue by providing a wrapper around `GMalloc` (which is Unreal's memory allocation overload). The `FMallocWrapper` merely checks to see if the size is `0` when allocating, and if so, it defaults it to `1`. This fix is meant to prevent further uses of `GMalloc` that use an array size of `0` during allocation from failing.
+
+## Some plugins can not be used in automatic building mode
+
+The Puerts module will traverse modules that are loaded before beforehand, so if your plugins or C++ modules are not being used, you can do one of two things:
+
+1. Set the module to load at an earlier phase
+1. After your module is started, you can call Puerts to reinitialize by calling the below function:
+
+``` c++
 IPuertsModule::Get().InitExtensionMethodsMap();
-~~~
+```
 
-## 勾选Wait Debugger选项启动卡住
+## Check WaitDebugger Option
 
-这个选项就是卡住进程来等待调试器连接，连上了就往下走了。
+(Incanta here) I'm not quite sure what the original author is trying to say here. There is a `WaitDebugger` setting for the plugin that is actually set to `false` with the latest checkout (Nov 4 2021) of the source branch. It appears that what this feature does is tell the V8 engine to "Break Before Start" and not run any JS until a debugger attaches.
 
-如果你还没配置好调试器，又不小心选了这个选项，也就没办法进入把这个选项去掉，此时可以关闭进程，打开Config\DefaultPuerts.ini把WaitDebugger改为False。
+Below is the raw google translate:
+
+> This option is a snap process to wait for the debugger connection, and even go down.
+>
+> If you haven't configured the debugger yet, I accidentally selected this option, and there is no way to go to remove this option. At this time, you can turn off the process and open it. `Config\DefaultPuerts.ini` Bundle WaitDebugger Change to False。
 
 
-## ts生成蓝图的StaticClass调用，返回UClass使用不符合预期
+## ts Blueprint StaticClass transfer, return UClass Use non-conformity
 
-ts类是没有StaticClass方法的，所以StaticClass调用其实是继承链上第一个有StaticClass方法的类，返回的也是该StaticClass方法所在类的UClass。
+The TS class is not a StaticClass method, so the StaticClass call is actually the first class with the StaticClass method on the inheritance chain, and the returned is also UCLASS where the StaticClass method is located.
 
-没理解这点可能会导致一些误解：比如我创建的对象为啥没子类方法，必然CreateDefaultSubobject报错说类是abstract的，无法创建等。
+I don't understand this may cause some misunderstanding: For example, the object I created is a non-sub-class method, I inevitably CreateDefaultSubiTSubject reporting is Abstract, unable to create.
 
-正确的做法应该是通过UE.Class.Load("path/to/your/blueprint/file")去加载。
+The correct approach should be loaded by UE.CLASS.LOAD ("path / to / your / blueprint / file").
 
-## mac下提示“无法打开libv8.dylib，因为无法验证开发者”
+## MacOS prompts "libv8.dylib cannot be opened because the developer cannot be verified"
 
-进入该dylib文件所在目录（通常是：youproject/Plugins/Puerts/ThirdParty/v8/Lib/macOSdylib），执行如下命令：
+(Incanta here) The original author is basically just telling you to tell the Mac firewall/antivirus to trust the library file by navigating to where ever the `dylib` file is (ususally `<YourProjectFolder>/Plugins/Puerts/ThirdParty/V8/Lib/macosdylib`), and execute the below command to authorize the files:
 
-~~~bash
+``` bash
 sudo xattr -r -d com.apple.quarantine *.dylib
-~~~
+```
 
-## 纯蓝图工程下加入puerts插件，提示"XXXProject counld not compiled. Try rebuilding from source manually"
+However, it should be noted that Puerts no longer uses shared `.dylib` files in favor of static `.a` libraries, and the original path has changed to `<YouProjectFolder>/Plugins/Puerts/ThirdParty/Library/V8/macOS` and you may have the issue with the FFI dependency too: `<YouProjectFolder>/Plugins/Puerts/ThirdParty/Library/ffi/macOS`. Instead of using `*.dylib` in the above command, you may need to use `*.a`. **HOWEVER**, it's likely you won't run into this issue as static libraries are not executed, but compiled in.
 
-对于纯蓝图工程，双击uproject文件，UE可能不会自动编译第三方的C++ Plugins。需要手动生成vs工程（mac下xcode工程），然后在ide编译。
+## "Project could not compiled. Try rebuilding from source manually"
 
-## 打包后运行时报一些字段找不到
+(Incanta here). The original author is trying to tell you what to do if you receive this error, however, I am giving you a completely different set of instructions, that are hopefully clearer with more details (I'm also a plugin developer and understand the issue here).
 
-这大多数是由UE对FName编辑器和运行时处理不一致导致的，默认编辑器下大小写敏感，运行时大小写不敏感。
+This issue is likely happening because you tried to install Puerts in a Blueprint-only project, but since Puerts is built using C++, you'll need to compile the plugin yourself. To do that, you need to do a few steps; I'll give you a link to a guide below:
+1. Download the necessary Visual Studio compiler dependencies.
+1. Convert your project to a C++ project. This doesn't really do anything other than tell the engine that your project has C++ modules. You can still use Blueprints exactly how you did before.
+1. Load the project again and let it compile the plugin for you.
 
-打比方，你在蓝图定义了一个count字段，在编辑器下生成代码，这个字段生成为count，运行也正常。
+You can follow my instructions on how to install plugins as a project plugin here: https://wiki.incanta.games/en/plugins/install-as-project-plugin
 
-而打包后，如果在你访问这个蓝图前，已经有另外一个地方初始化了一个“Count”字段，那么你访问这个蓝图时，该字段会是"Count"，因为FName.ToString返回的是第一次构造该FName输入的字符串，后面只要转成小写后和第一次一样的FName，都是重用第一次的。
+## After packaging, some fields cannot be found.
 
-所以你在脚本访问的count字段会不存在（变成了Count字段）。
+> Incanta here, below is my modified translation of the Google Translate. I kind of find it difficult to believe that UE would package your variable names with modified casing, so take this with a grain of salt and test on your own (I have not tested this). I know that UE displays variable and function names like `countThis` => `Count This` in the blueprint editor, but I didn't think it *actually changes* the exported symbol name. The author is saying that in some cases your `count` variables may get renamed to `Count` after packaging, causing references to `count` (i.e. through your JS) to be invalid since the variable got changed on you.
 
-## UE5下报 Construct TypeScript Object TestActor_C_1(000001E5057BD300) on illegal thread!
+Usually this is caused by how Unreal processes variable names of the type `FName` (or just `Name` in blueprints) while running in the editor vs running in the packaged runtime. In the editor, the default is case sensitive, but at runtime it's case insensitive.
 
-关闭AsyncLoadingThreadEnabled选项（该选项ue4默认关闭, ue5默认打开了）
+For example, you create a blueprint class and add a field called `count`. You write some BP code to under the BP to test it all. The field `count` can be referenced in PIE, and is running as normal.
 
-## 应如何避免"access a invalid object"异常
+After packaging, if you have access to this blueprint, there is already another place to initialize a `Count` field, then when you visit this blueprint, this field will be called `Count`. This happens because `FName.ToString` returns the first construction `FNameEntered` strings, (Incanta here, I can't decipher the meaning with the rest of Google Translate; what remains is raw) so as long as it is turned to lowercase and the first time FName It is the first time.
 
-那个异常是puerts内部的对象生命周期跟踪功能抛的，如果一个对象被这功能标记为无效，所有对其所有调用（包括UObject::IsValid，也是一个普通的UE调用），都会抛异常。
+So you don't exist in the `count` field accessed on the script (becoming a `count` field).
 
-技术上“对象生命周期跟踪功能”添加一个判断的api很简单（比写这faq简单）。但加这种api会导致业务到处都是这类判断，影响业务的代码可读性。
+## Generate buttons do not display in UE5 Early Access
 
-建议出现这种问题，应该设计上解决，避免持有无效对象（比如常见的切场景UE会强制删actor，那么切场景时应通知ts清理），解决不了又感觉可以忽略就try-catch。
+UE5 EA changed the behavior of how the toolbar works, causing a failure. Your options are to either wait for Epic to fix the issue or modify the plugin to change how the button renders in the engine.
 
-## GC相关
-
-一个UE对象传入到ts，ts侧会建立一个stub (ts)对象与之相对应（ts调用这个stub对象会被转发到真实的UE原生调用），而且在puerts中他们的生命周期间的关系有两种。
-
-* stub对象由js gc管理，stub对象持有ue对象的强引用（下称“stub对象持有ue对象”）
-
-    - 如果stub对象在ts无引用，将会被gc，进而释放对ue对象的强引用
-    
-    - 如果进一步在ue引擎也没有该ue对象，该ue对象会被gc
-
-* ue对象由ue gc管理，ue对象持有stub对象的强引用（下称“ue对象持有stub对象”）
-
-    - 如果ue对象在ue引擎无引用，该ue对象会被gc，进而释放对stub对象的强引用
-    
-    - 如果进一步在ts也没有引用该stub对象，该stub对象会被gc
-
-“ue对象持有stub对象”，在ts持有并不能阻止ue的gc，有三种情况会产生这种类型的对象：
-
-* ts继承ue类型
-
-* mixin中参数指明objectTakeByNative
-
-* makeUClass（这功能已经废弃，不建议使用）
-
-其它情况均为“stub对象持有ue对象”，这种类型的对象可以通过ts持有可以阻止ue对象的gc。
-    
-
-但即使改对象不会被gc释放，依然不能保证一个ue对象不被销毁，ue的gc和其它正经的gc不一样，诸如c#、java、lua、js等虚拟机的gc，一个对象还被持有就肯定不销毁，而ue下可以调用api强制删除一个对象（可能是用户自己调用，也可能是引擎调用，比较常见是切场景后，所有该场景挂的actor都会自动销毁）。
-
-## 手机/PC打包后脚本不执行/报找不到脚本错误
-
-生成的js脚本不是ue资产文件(*.asset)，需要手动设置打包。
-
-到“项目设置/打包/Additional Not-Asset Directories to Package”，把Content下的“JavaScript”目录添加进去。
-
+You can work around this by using the console command: `Puerts.Gen`
