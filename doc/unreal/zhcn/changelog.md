@@ -1,4 +1,74 @@
-### v1.0.0 2022年6月30日
+### v1.0.2 2022年9月8日
+
+#### 新增特性
+
+* 手机nodejs后端支持
+
+* 静态绑定支持bound array( 例如：int ba[10])字段，支持void *
+
+* 静态绑定支持仅声明无定义类的注册
+
+* 静态绑定支持“重载+默认参数”
+
+* 静态绑定增加对script type的const T*的支持
+
+* const char*支持通过ArrayBuffer传递
+
+* 自创建的JsEnv也能支持代码热刷新
+
+* 支持std::function的函数签名声明生成
+
+* 静态绑定添加ExtensionMethod（类似C#）的支持
+
+* 静态绑定添加TSharedPtr的支持
+
+* nodejs版本支持代码热刷新
+
+* 静态绑定支持运行时获取typeid
+
+#### 优化
+
+* 编辑器下虚拟机重置时，大量对象需要加载js脚本而导致启动速度慢的问题
+
+* 通过对BackingStore封装，支持编辑器下的结构体gc优化
+
+* JsEnv.Start统一改为通过require来加载，让初始脚本和其它脚本一致（debug、热刷新等）
+
+* 增量生成蓝图的ue.d.ts声明，解决业务连带资源过多，导致生成太慢的问题
+
+#### 变更
+
+
+#### bug修复
+
+* 解决开启ThreadSafe选项后，由ts触发ue gc可能会导致死锁的问题
+
+* 解决将std map替换成tmap后( b823ab9 )，tmap可能会因为插入操作而导致外部查找结果失效的问题
+
+* 解决release编译，由于同签名函数的CFunctionInfoImpl合并成一个导致生成d.ts的默认值个数不对的问题
+
+* 修复符合继承类格式，但是继承的不是UE类型而是ts原生类型时导致的报错
+
+* 稳定性增强，对FV8Utils::GetUObject返回的对象增加无效指针判断
+
+* previewworld下找不到jsobject的报错 
+
+* 解决UE静态绑定使用了cpp模块里头的类型作为字段，ue.d.ts报错的问题
+
+* 静态绑定的静态属性生成ue.d.ts时崩溃的问题
+
+* SignatureFunction所在内存被重用，导致FFunctionTranslator访问无效UFunction导致崩溃
+
+* 修复DynamicInvoker被多线程访问导致的问题
+
+* 解决容器（或者其它非POD UStruct）引用参数用$ref(undefined)传递时、内存泄漏的问题
+
+* 解压容器反射因为字节对齐问题导致的崩溃
+
+* 解决mixin特性在非运行状态使用，如果编辑器触发保存会触发蓝图非法断言的问题
+
+
+### v1.0.1 2022年6月30日
 
 #### 新增特性
 
