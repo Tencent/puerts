@@ -36,7 +36,7 @@ jobs:
           tar cvfz puerts_v8_for_ue424_or_below.tgz Puerts ReactUMG README.md LICENSE doc
           mv puerts_v8_for_ue424_or_below.tgz ..
           cd ..
-          rm -r unreal/Puerts/ThirdParty/v8
+          rm -r unreal/Puerts/ThirdParty/v8_for_ue424_or_below
           wget -O quickjs.tgz -q  ${{env.quickjs}}
           tar xvfz quickjs.tgz -C unreal/Puerts/ThirdParty
           cd unreal
@@ -45,6 +45,7 @@ jobs:
           mv puerts_quickjs.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/quickjs
+          git checkout .
           wget -O nodejs_bin.tgz -q  ${{env.nodejs}}
           tar xvfz nodejs_bin.tgz -C unreal/Puerts/ThirdParty
           cd unreal
