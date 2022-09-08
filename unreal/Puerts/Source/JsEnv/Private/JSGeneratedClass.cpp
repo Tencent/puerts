@@ -280,10 +280,11 @@ void UJSGeneratedClass::Restore(UClass* Class)
     auto PP = &Class->Children;
     while (*PP)
     {
-        if (auto JGF = Cast<UJSGeneratedFunction>(*PP))    // to delte
+        if (auto JGF = Cast<UJSGeneratedFunction>(*PP))    // to delete
         {
             if (JGF->Original)
             {
+                JGF->Original->Script = JGF->Script;
                 JGF->Original->SetNativeFunc(JGF->OriginalFunc);
                 Class->AddNativeFunction(*JGF->Original->GetName(), JGF->OriginalFunc);
                 JGF->Original->FunctionFlags = JGF->OriginalFunctionFlags;

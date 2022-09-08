@@ -53,6 +53,7 @@ public:
 
     FORCEINLINE static void SetJSGeneratedFunctionToScript(UFunction* InFunc, UJSGeneratedFunction* JsGenFunc)
     {
+        JsGenFunc->Script = InFunc->Script;
         InFunc->Script.Empty();
         InFunc->Script.AddUninitialized(3 + sizeof(int64));
         uint8* Code = InFunc->Script.GetData();
