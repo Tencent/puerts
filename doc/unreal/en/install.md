@@ -39,7 +39,7 @@ puerts支持多种脚本后端：V8，quickjs，nodejs
 
 * v8提供了纯净的ECMAScript实现
 * 对于包大小苛刻的场景，可以选用quickjs
-* nodejs相比v8版本，可以使用更多的npm模块，但目前只支持window和mac
+* nodejs相比v8版本，可以使用更多的npm模块，但包体比v8还要大些
 
 quickjs后端[下载](https://github.com/puerts/backend-quickjs)
 
