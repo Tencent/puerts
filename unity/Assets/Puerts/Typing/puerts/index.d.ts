@@ -24,6 +24,6 @@ declare module "puerts" {
     function off(eventType: string, listener: Function) : void;
     
     function emit(eventType: string, ...args:any[]) : boolean;
-}
 
-declare function require(name: string): any;
+    function require(name: string): any;
+}

@@ -21,16 +21,15 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             jsEnv.Eval(@"
-                const CS = require('csharp');
                 let obj = new CS.Puerts.UnitTest.BaseClass();
                 obj.ActionParam(Math.floor);
-                ");
+            ");
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
 
             jsEnv.Eval(@"
                 obj.ActionParam(Math.floor);
-                ");
+            ");
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
             jsEnv.Tick();

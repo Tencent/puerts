@@ -107,6 +107,7 @@ csharpModule.default = csharpModule;
 puerts.registerBuildinModule('csharp', csharpModule);
 
 csharpModule.System.Object.prototype.toString = csharpModule.System.Object.prototype.ToString;
+global.CS = csharpModule;
 
 function ref(x) {
     return {value:x};

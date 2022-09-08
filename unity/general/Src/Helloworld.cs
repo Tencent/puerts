@@ -13,7 +13,6 @@ public class PuertsTest
     {
         var jsEnv = new JsEnv(new TxtLoader());
         jsEnv.Eval(@"
-            const CS = require('csharp');
             CS.System.Console.WriteLine('hello world');
         ");
         jsEnv.Dispose();

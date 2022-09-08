@@ -145,8 +145,7 @@ namespace Puerts.UnitTest
         {
             var loader = new TxtLoader();
             loader.AddMockFileContent("whatever.mjs", @"
-                import csharp from 'csharp';
-                const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
+                const func = function() { return CS.System.String.Join(' ', 'hello', 'world') }
                 export { func };
             ");
             var jsEnv = new JsEnv(loader);
@@ -155,13 +154,12 @@ namespace Puerts.UnitTest
             Assert.True(func() == "hello world");
 
             jsEnv.Dispose();
-        }
+        }/*
         [Test]
         public void ESModuleImportCSharpNamespace()
         {
             var loader = new TxtLoader();
             loader.AddMockFileContent("whatever.mjs", @"
-                import csharp from 'csharp';
                 const func = function() { return csharp.System.String.Join(' ', 'hello', 'world') }
                 export { func };
             ");
@@ -172,6 +170,6 @@ namespace Puerts.UnitTest
             Assert.True(ns.GetType() == typeof(JSObject));
 
             jsEnv.Dispose();
-        }
+        }*/
     }
 }

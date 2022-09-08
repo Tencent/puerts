@@ -103,21 +103,20 @@ function registerBuildinModule(name, module) {
     buildinModule[name] = module;
 }
 
-registerBuildinModule("puerts", puerts)
-
 puerts.genRequire = genRequire;
 
 puerts.getModuleBySID = getModuleBySID;
 
 puerts.registerBuildinModule = registerBuildinModule;
 
-let nodeRequire = global.require;
-if (nodeRequire) {
-    global.require = global.puertsRequire = genRequire("");
-    global.nodeRequire = nodeRequire;
-} else {
-    global.require = genRequire("");
+puerts.require = genRequire("")
+if (!global.require) {
+    global.require = function() {
+        console.warn("global.require for puerts is deprecated. Use puerts.require instead. ");
+        return puerts.require.apply(this, arguments);
+    }
 }
+registerBuildinModule('puerts', puerts);
 
 function clearModuleCache () {
     tmpModuleStorage = [];

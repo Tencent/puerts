@@ -20,7 +20,7 @@ namespace Puerts
             {
                 if (identifer.Length < 4 || !identifer.EndsWith(".mjs")) 
                 {
-                    return "export default require('" + identifer + "')";
+                    return "export default puerts.require('" + identifer + "')";
                 } 
                 else 
                 {

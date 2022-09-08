@@ -73,7 +73,6 @@ namespace Puerts.UnitTest.JSTypeTest
             var jsEnv = new JsEnv(new TxtLoader());
 
             jsEnv.Eval(@"
-                const CS = require('csharp');
                 let value = new CS.Puerts.Int64Value(512n);
                 CS.Puerts.UnitTest.JSTypeTest.TypedValue.Callback(value);
             ");
@@ -87,7 +86,6 @@ namespace Puerts.UnitTest.JSTypeTest
             var jsEnv = new JsEnv(new TxtLoader());
 
             jsEnv.Eval(@"
-                const CS = require('csharp');
                 let value = new CS.Puerts.Int64Value(512n);
                 CS.Puerts.UnitTest.JSTypeTest.TypedValue.CallbackLong(value);
             ");
@@ -101,7 +99,6 @@ namespace Puerts.UnitTest.JSTypeTest
             var jsEnv = new JsEnv(new TxtLoader());
 
             jsEnv.Eval(@"
-                const CS = require('csharp');
                 let value = new CS.Puerts.Int64Value(512n);
                 CS.Puerts.UnitTest.JSTypeTest.TypedValue.FieldLong = value;
             ");
@@ -114,7 +111,6 @@ namespace Puerts.UnitTest.JSTypeTest
             var jsEnv = new JsEnv(new TxtLoader());
 
             jsEnv.Eval(@"
-                const CS = require('csharp');
                 let value = new CS.Puerts.Int64Value(512n);
                 CS.Puerts.UnitTest.JSTypeTest.TypedValue.PropertyLong = value;
             ");
@@ -143,7 +139,6 @@ namespace Puerts.UnitTest.JSTypeTest
 
             Assert.True(
                 jsEnv.Eval<bool>(@"
-                    const CS = require('csharp');
                     typeof CS.Puerts.UnitTest.JSTypeTest.TypedValue.ReturnALong() == 'string';
                 ")
             );
@@ -170,7 +165,6 @@ namespace Puerts.UnitTest.JSTypeTest
 
             Assert.True(
                 jsEnv.Eval<bool>(@"
-                    const CS = require('csharp');
                     typeof CS.Puerts.UnitTest.JSTypeTest.TypedValue.ReturnAUlong() == 'string';
                 ")
             );
@@ -181,7 +175,6 @@ namespace Puerts.UnitTest.JSTypeTest
             var jsEnv = new JsEnv(new TxtLoader());
 
             jsEnv.Eval(@"
-                const CS = require('csharp');
                 let value = new CS.Puerts.FloatValue(512.256);
                 CS.Puerts.UnitTest.JSTypeTest.TypedValue.Callback(value);
             ");
