@@ -544,16 +544,18 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName SearchPath)
     {
         const FAssetPackageData* PackageData = AssetRegistry.GetAssetPackageData(AssetData.PackageName);
         auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
-        auto FileVersion = PackageData->PackageGuid.ToString();
-        if (BlueprintTypeDeclInfoPtr)
+
+        if (PackageData && BlueprintTypeDeclInfoPtr)
         {
+            auto FileVersion = PackageData->PackageGuid.ToString();
             BlueprintTypeDeclInfoPtr->IsExist = true;
             BlueprintTypeDeclInfoPtr->Changed = FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString;
             BlueprintTypeDeclInfoPtr->FileVersionString = FileVersion;
         }
         else
         {
-            BlueprintTypeDeclInfoCache.Add(AssetData.PackageName, {TEXT(""), FileVersion, true, true});
+            BlueprintTypeDeclInfoCache.Add(AssetData.PackageName,
+                {TEXT(""), PackageData ? PackageData->PackageGuid.ToString() : FString(TEXT("")), true, true});
         }
     }
 }
