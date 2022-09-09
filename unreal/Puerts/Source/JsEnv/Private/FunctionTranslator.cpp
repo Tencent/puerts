@@ -315,7 +315,7 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 {
     void* Params = Stack.Locals;
 
-    auto OldOutParms = Stack.OutParms;
+    FOutParmRec* NewOutParms = nullptr;
 
     if (Stack.Node != Stack.CurrentNativeFunction)
     {
@@ -327,9 +327,9 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
 
         if (Params)
         {
-            FOutParmRec** LastOut = nullptr;
-            if (!Stack.OutParms)
-                LastOut = &Stack.OutParms;
+            FMemory::Memzero(Params, ParamsBufferSize);
+            FOutParmRec** LastOut = &NewOutParms;
+
             // ScriptCore.cpp
             for (PropertyMacro* Property = (PropertyMacro*) (
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
@@ -403,11 +403,13 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             Return->JsToUE(Isolate, Context, Result.ToLocalChecked(), RESULT_PARAM, true);
         }
 
+        auto OutParms = NewOutParms ? NewOutParms : Stack.OutParms;
+
         for (int i = 0; i < Arguments.size(); ++i)
         {
             if (Arguments[i]->IsOut())
             {
-                auto OutParmRec = GetMatchOutParmRec(Stack.OutParms, Arguments[i]->Property);
+                auto OutParmRec = GetMatchOutParmRec(OutParms, Arguments[i]->Property);
                 if (OutParmRec)
                 {
                     Arguments[i]->JsToUEOut(Isolate, Context, Args[i], OutParmRec->PropAddr, true);
@@ -415,7 +417,18 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
             }
         }
     }
-    Stack.OutParms = OldOutParms;
+
+    if (Params && Params != Stack.Locals)
+    {
+        // destruct properties on the stack, except for out params since we know we didn't use that memory
+        for (FProperty* Destruct = Function->DestructorLink; Destruct; Destruct = Destruct->DestructorLinkNext)
+        {
+            if (!Destruct->HasAnyPropertyFlags(CPF_OutParm))
+            {
+                Destruct->DestroyValue_InContainer(Params);
+            }
+        }
+    }
 }
 
 bool FFunctionTranslator::IsValid() const
