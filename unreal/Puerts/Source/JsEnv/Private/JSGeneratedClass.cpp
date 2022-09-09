@@ -239,7 +239,7 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
     }
 
     Function->DynamicInvoker = DynamicInvoker;
-    Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Function, false);
+    Function->FunctionTranslator = std::make_unique<puerts::FFunctionTranslator>(Existed ? Super : Function, false);
     Function->TakeJsObjectRef = TakeJsObjectRef;
 
     Function->Next = Class->Children;
