@@ -25,7 +25,6 @@
                 "/lib/Android/armeabi-v7a/libv8_libbase.a",
                 "/lib/Android/armeabi-v7a/libv8_libplatform.a",
                 "/lib/Android/armeabi-v7a/libv8_snapshot.a",
-                "/lib/Android/armeabi-v7a/libnode_stub.a",
                 "/lib/Android/armeabi-v7a/libv8_zlib.a",
                 "/lib/Android/armeabi-v7a/libuv.a",
                 "/lib/Android/armeabi-v7a/libzlib.a",
