@@ -77,7 +77,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/armeabi-v7a/',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = 'android-21';
+                const API = 'android-24';
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
@@ -91,7 +91,7 @@ const platformCompileConfig = {
             outputPluginPath: 'Android/libs/arm64-v8a/',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 const NDK = process.env.ANDROID_NDK || process.env.ANDROID_NDK_HOME || '~/android-ndk-r21b';
-                const API = 'android-21';
+                const API = 'android-24';
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
