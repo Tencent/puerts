@@ -12,8 +12,44 @@
             "x64": ["/Lib/Win64/libnode.lib"]
         },
         "android": {
-            "armv7": ["/lib/Android/armeabi-v7a/libnode.so"],
-            "arm64": ["/lib/Android/arm64-v8a/libnode.so"]
+            "armv7": [
+                "/lib/Android/armeabi-v7a/libnghttp2.a",
+                "/lib/Android/armeabi-v7a/libbrotli.a",
+                "/lib/Android/armeabi-v7a/libuvwasi.a",
+                "/lib/Android/armeabi-v7a/libcares.a",
+                "/lib/Android/armeabi-v7a/libv8_base_without_compiler.a",
+                "/lib/Android/armeabi-v7a/libhistogram.a",
+                "/lib/Android/armeabi-v7a/libv8_compiler.a",
+                "/lib/Android/armeabi-v7a/libllhttp.a",
+                "/lib/Android/armeabi-v7a/libv8_initializers.a",
+                "/lib/Android/armeabi-v7a/libv8_libbase.a",
+                "/lib/Android/armeabi-v7a/libv8_libplatform.a",
+                "/lib/Android/armeabi-v7a/libv8_snapshot.a",
+                "/lib/Android/armeabi-v7a/libnode_stub.a",
+                "/lib/Android/armeabi-v7a/libv8_zlib.a",
+                "/lib/Android/armeabi-v7a/libuv.a",
+                "/lib/Android/armeabi-v7a/libzlib.a",
+                "/lib/Android/armeabi-v7a/libnode.a"
+            ],
+            "arm64": [
+                "/lib/Android/arm64-v8a/libnghttp2.a",
+                "/lib/Android/arm64-v8a/libbrotli.a",
+                "/lib/Android/arm64-v8a/libuvwasi.a",
+                "/lib/Android/arm64-v8a/libcares.a",
+                "/lib/Android/arm64-v8a/libv8_base_without_compiler.a",
+                "/lib/Android/arm64-v8a/libhistogram.a",
+                "/lib/Android/arm64-v8a/libv8_compiler.a",
+                "/lib/Android/arm64-v8a/libllhttp.a",
+                "/lib/Android/arm64-v8a/libv8_initializers.a",
+                "/lib/Android/arm64-v8a/libv8_libbase.a",
+                "/lib/Android/arm64-v8a/libv8_libplatform.a",
+                "/lib/Android/arm64-v8a/libv8_snapshot.a",
+                "/lib/Android/arm64-v8a/libnode_stub.a",
+                "/lib/Android/arm64-v8a/libv8_zlib.a",
+                "/lib/Android/arm64-v8a/libuv.a",
+                "/lib/Android/arm64-v8a/libzlib.a",
+                "/lib/Android/arm64-v8a/libnode.a"
+            ]
         },
         "osx": {
             "x64": ["/lib/macOS/libnode.93.dylib"],
