@@ -112,10 +112,9 @@ endif ()
 
 # target_compile_definitions (puerts PRIVATE THREAD_SAFE)
 
-# link
-if ( WIN32 AND NOT CYGWIN )
-    target_compile_definitions (puerts PRIVATE BUILDING_V8_SHARED)
-endif ()
+# if ( WIN32 AND NOT CYGWIN )
+#     target_compile_definitions (puerts PRIVATE BUILDING_V8_SHARED)
+# endif ()
 
 if ( NOT CMAKE_BUILD_TYPE MATCHES "Release" )
     target_compile_definitions (puerts PRIVATE PUERTS_DEBUG)
