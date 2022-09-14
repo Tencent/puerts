@@ -32,9 +32,9 @@ set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 
-# string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_INC_NAMES "${BACKEND_ROOT}${BACKEND_INC_NAMES}")
-# string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_LIB_NAMES "${BACKEND_ROOT}${BACKEND_LIB_NAMES}")
-# string (REPLACE ";" "$<SEMICOLON>" BACKEND_DEFINITIONS "${BACKEND_DEFINITIONS}")
+string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_INC_NAMES "${BACKEND_ROOT}${BACKEND_INC_NAMES}")
+string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_LIB_NAMES "${BACKEND_ROOT}${BACKEND_LIB_NAMES}")
+string (REPLACE ";" "$<SEMICOLON>" BACKEND_DEFINITIONS "${BACKEND_DEFINITIONS}")
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -44,11 +44,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
     ${BACKEND_INC_NAMES}
 )
-foreach(BACKEND_INC_NAME ${BACKEND_INC_NAMES})
-    include_directories(
-        ${BACKEND_ROOT}${BACKEND_INC_NAME}
-    )
-endforeach()
 
 set ( PUERTS_INC
     Inc/Log.h
@@ -117,6 +112,7 @@ endif ()
 
 # target_compile_definitions (puerts PRIVATE THREAD_SAFE)
 
+# link
 if ( WIN32 AND NOT CYGWIN )
     target_compile_definitions (puerts PRIVATE BUILDING_V8_SHARED)
 endif ()
@@ -140,9 +136,6 @@ if ( MSYS OR WIN32 )
 elseif ( ANDROID )
 
     find_library(log-lib log)
-    target_link_libraries(puerts
-        ${log-lib}
-    )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
         # definition
@@ -202,7 +195,6 @@ target_link_libraries(puerts
     ${BACKEND_LIB_NAMES}
 )
 target_compile_definitions (puerts PRIVATE ${BACKEND_DEFINITION})
-
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
 	set_property(TARGET puerts PROPERTY

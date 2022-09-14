@@ -14,12 +14,10 @@
         "android": {
             "armv7": ["/lib/Android/armeabi-v7a/libnode.so"],
             "arm64": [
+                "/lib/Android/arm64-v8a/libnode.a",
                 "/lib/Android/arm64-v8a/libhistogram.a",
                 "/lib/Android/arm64-v8a/libuvwasi.a",
-                "/lib/Android/arm64-v8a/libnode.a",
                 "/lib/Android/arm64-v8a/libnode_stub.a",
-                "/lib/Android/arm64-v8a/libv8_snapshot.a",
-                "/lib/Android/arm64-v8a/libv8_libplatform.a",
                 "/lib/Android/arm64-v8a/libzlib.a",
                 "/lib/Android/arm64-v8a/libllhttp.a",
                 "/lib/Android/arm64-v8a/libcares.a",
@@ -27,9 +25,11 @@
                 "/lib/Android/arm64-v8a/libnghttp2.a",
                 "/lib/Android/arm64-v8a/libbrotli.a",
                 "/lib/Android/arm64-v8a/libv8_base_without_compiler.a",
+                "/lib/Android/arm64-v8a/libv8_compiler.a",
+                "/lib/Android/arm64-v8a/libv8_libplatform.a",
+                "/lib/Android/arm64-v8a/libv8_snapshot.a",
                 "/lib/Android/arm64-v8a/libv8_libbase.a",
                 "/lib/Android/arm64-v8a/libv8_zlib.a",
-                "/lib/Android/arm64-v8a/libv8_compiler.a",
                 "/lib/Android/arm64-v8a/libv8_initializers.a"
             ]
         },

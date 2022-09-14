@@ -38,21 +38,21 @@ const sxExecAsync = async function (command) {
 const { program, Option } = require('commander');
 const { join } = require('path');
 program.addOption(
-    new Option("--platform <platform>", "the target platform")
+    new Option("-p, --platform <platform>", "the target platform")
         .default("")
         .choices(["win", "osx", "linux", "android", "ios"])
 );
 program.addOption(
-    new Option("--arch <arch>", "the target architecture")
+    new Option("-a, --arch <arch>", "the target architecture")
         .default("auto")
         .choices(["auto", "ia32", "x64", "arm64", "armv7"])
 );
 program.addOption(
-    new Option("--config <ReleaseOrDebug>", "the target architecture")
+    new Option("-c, --config <ReleaseOrDebug>", "the target architecture")
         .default("Release")
         .choices(["Release", "Debug"])
 );
-program.option("--backend <backend>", "the JS backend will be used", "v8");
+program.option("-b, --backend <backend>", "the JS backend will be used", "v8");
 
 program.parse(process.argv);
 const options = program.opts();
