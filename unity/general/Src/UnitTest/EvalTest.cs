@@ -126,20 +126,20 @@ namespace Puerts.UnitTest
             }
             Assert.True(false);
         }
-        [Test]
-        public void ESModuleExecuteCJS()
-        {
-            var loader = new TxtLoader();
-            loader.AddMockFileContent("whatever.cjs", @"
-                module.exports = 'hello world';
-            ");
-            var jsEnv = new JsEnv(loader);
-            string str = jsEnv.ExecuteModule<string>("whatever.cjs", "default");
+        // [Test]
+        // public void ESModuleExecuteCJS()
+        // {
+        //     var loader = new TxtLoader();
+        //     loader.AddMockFileContent("whatever.cjs", @"
+        //         module.exports = 'hello world';
+        //     ");
+        //     var jsEnv = new JsEnv(loader);
+        //     string str = jsEnv.ExecuteModule<string>("whatever.cjs", "default");
 
-            Assert.True(str == "hello world");
+        //     Assert.True(str == "hello world");
 
-            jsEnv.Dispose();
-        }
+        //     jsEnv.Dispose();
+        // }
         [Test]
         public void ESModuleImportCSharp()
         {

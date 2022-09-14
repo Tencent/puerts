@@ -11,7 +11,7 @@
  * @param {GenClass.TypeGenInfo[]} types
  * @returns 
  */
-module.exports = function AutoRegTemplate(types, wrapperInfos) {
+export default function AutoRegTemplate(types, wrapperInfos) {
     types = toJsArray(types);
     wrapperInfos = toJsArray(wrapperInfos);
     return `using System;
@@ -49,7 +49,6 @@ function toJsArray(csArr) {
     }
     return arr;
 }
-const CS = require('csharp');
 function getNativeObjectGenericArgumentsList(type) {
     return toJsArray(type.GetGenericArguments()).filter(isNativeObjectType);
 }

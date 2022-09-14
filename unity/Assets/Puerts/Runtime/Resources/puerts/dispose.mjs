@@ -8,7 +8,7 @@ export default function resetAllFunctionWhenDisposed() {
     puerts.loadType = PuerIsDisposed
     puerts.getNestedTypes = PuerIsDisposed
     try {
-        setToGoodbyeFuncRecursive(require('csharp'));
+        setToGoodbyeFuncRecursive(CS);
     } catch(e) {}
 
     function setToGoodbyeFuncRecursive(obj) {

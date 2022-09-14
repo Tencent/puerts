@@ -13,7 +13,7 @@
  * @param {boolean} esmMode will only generate default export for d.ts.
  * @returns 
  */
-module.exports = function TypingTemplate(data, esmMode) {
+export default function TypingTemplate(data, esmMode) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -271,7 +271,7 @@ function typeDeclaration(type, level1) {
     }
     var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
     if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
-        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(interface=> typeDeclaration(interface)).join(', '))
+        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(itface=> typeDeclaration(itface)).join(', '))
     }
     if (!level1 && type.Namespace) {
         result = type.Namespace + "." + result;

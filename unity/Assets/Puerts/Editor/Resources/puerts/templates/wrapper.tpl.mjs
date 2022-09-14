@@ -103,7 +103,7 @@ const paramListLambda = (paramInfo, idx) => `${paramInfo.IsOut ? "out " : (param
  * @param {GenClass.TypeGenInfo} data 
  * @returns 
  */
-module.exports = function TypingTemplate(data) {
+export default function TypingTemplate(data) {
     let ret = '';
     function getSelf(type) {
         if (data.BlittableCopy) {
