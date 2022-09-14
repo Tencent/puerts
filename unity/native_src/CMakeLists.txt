@@ -136,17 +136,15 @@ if ( MSYS OR WIN32 )
 elseif ( ANDROID )
 
     find_library(log-lib log)
+    target_link_libraries(puerts
+        ${log-lib}
+    )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
 
     else ()
-        # link
-        target_link_libraries(puerts
-            ${log-lib}
-        )
-        
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
     endif ()
@@ -191,6 +189,13 @@ elseif (UNIX)
 endif ()
 
 # link
+if ( ANDROID )
+    set(BACKEND_LIB_NAMES
+        -Wl,--whole-archive 
+        ${BACKEND_LIB_NAMES}
+        -Wl,--no-whole-archive
+    )
+endif()
 target_link_libraries(puerts
     ${BACKEND_LIB_NAMES}
 )
