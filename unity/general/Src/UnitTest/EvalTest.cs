@@ -154,6 +154,22 @@ namespace Puerts.UnitTest
             Assert.True(func() == "hello world");
 
             jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("a/entry.mjs", @"
+                import { str } from '../b/whatever.mjs'; 
+                export { str };
+            ");
+            loader.AddMockFileContent("b/whatever.mjs", @"export const str = 'hello'");
+            var jsEnv = new JsEnv(loader);
+            string ret = jsEnv.ExecuteModule<string>("a/entry.mjs", "str");
+
+            Assert.True(ret == "hello");
+
+            jsEnv.Dispose();
         }/*
         [Test]
         public void ESModuleImportCSharpNamespace()
