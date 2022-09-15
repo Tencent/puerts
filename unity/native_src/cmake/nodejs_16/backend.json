@@ -16,6 +16,7 @@
                 "/lib/Android/armeabi-v7a/libnode.a",
                 "/lib/Android/armeabi-v7a/libhistogram.a",
                 "/lib/Android/armeabi-v7a/libuvwasi.a",
+                "/lib/Android/armeabi-v7a/libnode_stub.a",
                 "/lib/Android/armeabi-v7a/libzlib.a",
                 "/lib/Android/armeabi-v7a/libllhttp.a",
                 "/lib/Android/armeabi-v7a/libcares.a",

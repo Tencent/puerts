@@ -57,5 +57,11 @@ switch (command[2] || "") {
         realCommand += ' --config Release'; break;
 }
 
-console.log("quickmake: " + realCommand);
-// cp.execSync(realCommand);
+console.log(realCommand);
+const p = cp.exec(realCommand);
+p.stdout.on('data', (b) => {
+    console.log(b.toString())
+})
+p.stderr.on('data', (b) => {
+    console.error(b.toString())
+})
