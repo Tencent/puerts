@@ -53,7 +53,7 @@ function getNativeObjectGenericArgumentsList(type) {
     return toJsArray(type.GetGenericArguments()).filter(isNativeObjectType);
 }
 function isNativeObjectType(t) {
-    return !t.IsPrimitive && t != puerts.$typeof(CS.System.String) && t != puerts.$typeof(CS.System.DateTime);
+    return !t.IsPrimitive && t != puer.$typeof(CS.System.String) && t != puer.$typeof(CS.System.DateTime);
 }
 function getFriendlyName(type) {
     return CS.Puerts.TypeExtensions.GetFriendlyName(type);
