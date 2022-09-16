@@ -1630,6 +1630,21 @@ function watch(configFilePath:string) {
         });
         logErrors(diagnostics);
     } else {
+        function getClassPathInfo(sourceFilePath: string): {moduleFileName:string, modulePath:string} {
+            let emitOutput = service.getEmitOutput(sourceFilePath);
+            let modulePath:string = undefined;
+            let moduleFileName:string = undefined;
+            emitOutput.outputFiles.forEach(output => {
+                if (output.name.endsWith(".js")) {
+                    if (options.outDir && output.name.startsWith(options.outDir)) {
+                        moduleFileName = output.name.substr(options.outDir.length + 1);
+                        modulePath = getDirectoryPath(moduleFileName);
+                        moduleFileName = removeExtension(moduleFileName, ".js");
+                    }
+                }
+            });
+            return {moduleFileName, modulePath};
+        }
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
@@ -1639,7 +1654,12 @@ function watch(configFilePath:string) {
             }
         });
         fileNames.forEach(fileName => {
-            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
+            const {moduleFileName, modulePath} = getClassPathInfo(fileName);
+            let BPExisted = false;
+            if (moduleFileName) {
+                BPExisted = UE.PEBlueprintAsset.Existed(moduleFileName, modulePath);
+            }
+            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed || !BPExisted) {
                 onSourceFileAddOrChange(fileName, false, program, false);
                 changed = true;
             } else {

@@ -80,6 +80,9 @@ public:
     bool HasConstructor;
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    static bool Existed(const FString& InName, const FString& InPath);
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     bool LoadOrCreate(const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags);
 
     /**
