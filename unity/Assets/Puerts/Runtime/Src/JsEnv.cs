@@ -176,7 +176,6 @@ namespace Puerts
             {
                 ExecuteModule("puerts/init.mjs");
                 ExecuteModule("puerts/log.mjs");
-                ExecuteModule("puerts/cjsload.mjs");
                 ExecuteModule("puerts/csharp.mjs");
                 ExecuteModule("puerts/events.mjs");
                 

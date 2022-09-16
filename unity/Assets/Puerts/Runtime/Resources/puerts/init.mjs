@@ -18,10 +18,19 @@ delete global.__tgjsGetNestedTypes;
 puerts.getGenericMethod = global.__tgjsGetGenericMethod;
 delete global.__tgjsGetGenericMethod;
 
-puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
+puerts.evalScript = global.__tgjsEvalScript || function (script, debugPath) {
     return eval(script);
 }
 delete global.__tgjsEvalScript;
 
 puerts.getLastException = global.__puertsGetLastException
 delete global.__puertsGetLastException;
+
+let loader = global.__tgjsGetLoader();
+delete global.__tgjsGetLoader;
+function loadFile(path) {
+    let debugPath = {};
+    var content = loader.ReadFile(path, debugPath);
+    return { content: content, debugPath: debugPath.value };
+}
+puerts.loadFile = loadFile;

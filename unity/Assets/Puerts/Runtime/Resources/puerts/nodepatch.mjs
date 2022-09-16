@@ -12,7 +12,7 @@ process.exit = function() {
 process.kill = function() {
     console.log('`process.kill` is not allowed in puerts')
 }
-const customPromisify = nodeRequire('util').promisify.custom;
+const customPromisify = require('util').promisify.custom;
 Object.defineProperty(setTimeout, customPromisify, {
   enumerable: true,
   get() {

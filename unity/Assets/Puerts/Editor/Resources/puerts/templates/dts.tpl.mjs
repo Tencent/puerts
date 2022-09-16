@@ -10,10 +10,9 @@
  * 
  * TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
  * @param {DTS.TypingGenInfo} data 
- * @param {boolean} esmMode will only generate default export for d.ts.
  * @returns 
  */
-export default function TypingTemplate(data, esmMode) {
+export default function TypingTemplate(data) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -48,23 +47,22 @@ export default function TypingTemplate(data, esmMode) {
     }
 
     tt`
-declare module 'csharp' {
+declare namespace CS {
     //keep type incompatibility / 此属性保持类型不兼容
     const __keep_incompatibility: unique symbol;
 
-    namespace CSharp {
-        interface $Ref<T> {
-            value: T
+    interface $Ref<T> {
+        value: T
+    }
+    namespace System {
+        interface Array$1<T> extends System.Array {
+            get_Item(index: number):T;
+            
+            set_Item(index: number, value: T):void;
         }
-        namespace System {
-            interface Array$1<T> extends System.Array {
-                get_Item(index: number):T;
-                
-                set_Item(index: number, value: T):void;
-            }
-        }
-        ${data.TaskDef}
-        `
+    }
+    ${data.TaskDef}
+    `
 
     toJsArray(data.NamespaceInfos).forEach(ns=> {
         // namespace start;
@@ -74,7 +72,7 @@ declare module 'csharp' {
 
         toJsArray(ns.Types).forEach(type=> {
             // type start
-            t.indent = 12;
+            t.indent = 8;
             // the comment of the type
             t`
             ${type.Document}
@@ -106,7 +104,7 @@ declare module 'csharp' {
                     // class or interface.
                     t`{
                     `;
-                    t.indent = 16;
+                    t.indent = 12;
 
                     //keep type incompatibility / 此属性保持类型不兼容
                     if (!type.IsInterface) {
@@ -149,7 +147,7 @@ declare module 'csharp' {
                         `
                     });
                     // methods end
-                    t.indent = 12;
+                    t.indent = 8;
                     t`
                     }
                     `
@@ -157,14 +155,14 @@ declare module 'csharp' {
 
                 // extension methods start
                 if (type.ExtensionMethods.Length > 0 && !type.IsEnum) {
-                    t.indent = 12;
+                    t.indent = 8;
                     t`
                     ${type.Document}
                     interface ${type.Name} {
                     `
                     
                     toJsArray(type.ExtensionMethods).forEach(method=>{
-                        t.indent = 16;
+                        t.indent = 12;
                         
                         t`
                         ${method.Document}
@@ -174,7 +172,7 @@ declare module 'csharp' {
                         `
                     });
 
-                    t.indent = 12;
+                    t.indent = 8;
                     t`
                     }
                     `;
@@ -184,7 +182,7 @@ declare module 'csharp' {
                 
             } else {
                 // if the type is Puerts.JSObject, declare an alias for any;
-                t.indent = 12;
+                t.indent = 8;
                 t`type JSObject = any;`;
 
             }
@@ -192,28 +190,13 @@ declare module 'csharp' {
 
         // namespace end
         if (ns.Name) {
-            t.indent = 8;
+            t.indent = 4;
             t`
             }
             `
         }
 
     })
-    
-    // module end
-    t.indent = 4;
-    if (!esmMode) {
-        t`
-        }
-        export = CSharp;
-        `
-    } else {
-        
-        t`
-        }
-        export default CSharp;
-        `
-    }
     
     t.indent = 0;
     t`
