@@ -37,6 +37,7 @@ const sxExecAsync = async function (command) {
 }
 const { program, Option } = require('commander');
 const { join } = require('path');
+
 program.addOption(
     new Option("--platform <platform>", "the target platform")
         .default("")
@@ -54,7 +55,69 @@ program.addOption(
 );
 program.option("--backend <backend>", "the JS backend will be used", "v8");
 
-program.parse(process.argv);
+let pargv = process.argv;
+if (process.argv[2].match(/[vnq][aiwol][3678]d?/)) {
+    const command = process.argv[2];
+    pargv = [pargv[0], pargv[1]];
+
+    pargv.push('--backend');
+    switch (command[0]) {
+        case 'v':
+            pargv.push('v8_9.4'); break;
+        case 'n':
+            pargv.push('nodejs_16'); break;
+        case 'q':
+            pargv.push('quickjs'); break;
+
+        default:
+            throw new Error(`invalid command[0] : ${command[0]}`);
+    }
+
+    pargv.push('--platform');
+    switch (command[1]) {
+        case 'a':
+            pargv.push('android'); break;
+        case 'i':
+            pargv.push('ios'); break;
+        case 'w':
+            pargv.push('win'); break;
+        case 'o':
+            pargv.push('osx'); break;
+        case 'l':
+            pargv.push('linux'); break;
+
+        default:
+            throw new Error(`invalid command[1] : ${command[1]}`);
+    }
+
+    pargv.push('--arch');
+    switch (command[2]) {
+        case '3':
+            pargv.push('ia32'); break;
+        case '6':
+            pargv.push('x64'); break;
+        case '7':
+            pargv.push('armv7'); break;
+        case '8':
+            pargv.push('arm64'); break;
+
+        default:
+            throw new Error(`invalid command[2] : ${command[2]}`);
+    }
+
+    pargv.push('--config');
+    switch (command[3] || "") {
+        case 'd':
+            pargv.push('Debug'); break;
+
+        default:
+            pargv.push('Release'); break;
+    }
+
+    console.log('quick arg parse result:', pargv.join(' '));
+}
+
+program.parse(pargv);
 const options = program.opts();
 
 if (!fs.existsSync(`${pwd}/${options.backend}`)) {
