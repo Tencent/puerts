@@ -10,6 +10,9 @@
 #include "Binding.hpp"
 #include "UEDataBinding.hpp"
 #include "V8Utils.h"
+#if !defined(ENGINE_INDEPENDENT_JSENV)
+#include "Kismet/DataTableFunctionLibrary.h"
+#endif
 
 UsingUClass(UObject);
 UsingUClass(UClass);
@@ -18,6 +21,8 @@ UsingUClass(UStruct);
 UsingUClass(UWorld);    // for return type
 UsingUClass(USceneComponent);
 UsingUClass(UActorComponent);
+UsingUClass(UDataTable);
+UsingUClass(UDataTableFunctionLibrary);
 #endif
 #ifdef PUERTS_FTEXT_AS_OBJECT
 UsingCppType(FText);
@@ -105,6 +110,10 @@ struct AutoRegisterForUE
 
         puerts::DefineClass<UActorComponent>()
             .Method("RegisterComponent", MakeFunction(&UActorComponent::RegisterComponent))
+            .Register();
+
+        puerts::DefineClass<UDataTableFunctionLibrary>()
+            .Function("Generic_GetDataTableRowFromName", MakeFunction(&UDataTableFunctionLibrary::Generic_GetDataTableRowFromName))
             .Register();
 #endif
 
