@@ -144,6 +144,11 @@ elseif ( ANDROID )
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
 
     else ()
+        # link
+        target_link_libraries(puerts
+            ${log-lib}
+        )
+        
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
     endif ()
@@ -188,17 +193,11 @@ elseif (UNIX)
 endif ()
 
 # link
-if ( ANDROID )
-    set(BACKEND_LIB_NAMES
-        -Wl,--whole-archive 
-        ${BACKEND_LIB_NAMES}
-        -Wl,--no-whole-archive
-    )
-endif()
 target_link_libraries(puerts
     ${BACKEND_LIB_NAMES}
 )
-target_compile_definitions (puerts PRIVATE ${BACKEND_DEFINITION})
+
+target_compile_definitions (puerts PRIVATE ${BACKEND_DEFINITIONS})
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
 	set_property(TARGET puerts PROPERTY
