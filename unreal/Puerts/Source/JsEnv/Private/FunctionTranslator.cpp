@@ -242,14 +242,151 @@ void FFunctionTranslator::Call(
         Init(CallFunction.Get(), false);
     }
 #endif
+
+    auto CallFunctionPtr = CallFunction.Get();
+    auto FunctionCallspace = CallObject->GetFunctionCallspace(CallFunctionPtr, NULL);
+    if ((Function->FunctionFlags & FUNC_Native) && !(FunctionCallspace & FunctionCallspace::Remote) &&
+        !CallFunctionPtr->HasAnyFunctionFlags(FUNC_UbergraphFunction))
+    {
+        FastCall(Isolate, Context, Info, CallObject, CallFunctionPtr, Params);
+    }
+    else
+    {
+        SlowCall(Isolate, Context, Info, CallObject, CallFunctionPtr, Params);
+    }
+}
+
+void FFunctionTranslator::SlowCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    const v8::FunctionCallbackInfo<v8::Value>& Info, UObject* CallObject, UFunction* CallFunction, void* Params)
+{
     if (Params)
         FMemory::Memzero(Params, ParamsBufferSize);
 
     Call_ProcessParams(Isolate, Context, Info, Params, 0);
 
-    CallObject->UObject::ProcessEvent(CallFunction.Get(), Params);
+    CallObject->UObject::ProcessEvent(CallFunction, Params);
 
     Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 0);
+}
+
+void FFunctionTranslator::FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    const v8::FunctionCallbackInfo<v8::Value>& Info, UObject* CallObject, UFunction* CallFunction, void* Params)
+{
+    if (Params)
+    {
+        FMemory::Memzero(Params, ParamsBufferSize);
+        if (Return)
+        {
+            Return->Property->InitializeValue_InContainer(Params);
+        }
+    }
+    FFrame NewStack(CallObject, CallFunction, Params, nullptr, CallFunction->ChildProperties);
+
+    checkSlow(NewStack.Locals || Function->ParmsSize == 0);
+    FOutParmRec** LastOut = &NewStack.OutParms;
+    int Index = 0;
+    for (TFieldIterator<PropertyMacro> It(CallFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
+    {
+        PropertyMacro* Property = *It;
+        FOutParmRec* Out = nullptr;
+        if (Property->HasAnyPropertyFlags(CPF_OutParm))
+        {
+            CA_SUPPRESS(6263)
+            Out = (FOutParmRec*) FMemory_Alloca(sizeof(FOutParmRec));
+            Out->Property = Property;
+
+            if (*LastOut)
+            {
+                (*LastOut)->NextOutParm = Out;
+                LastOut = &(*LastOut)->NextOutParm;
+            }
+            else
+            {
+                *LastOut = Out;
+            }
+        }
+
+        if (Property->HasAnyPropertyFlags(CPF_ReturnParm))
+        {
+            if (Property->HasAnyPropertyFlags(CPF_OutParm))
+            {
+                Out->PropAddr = Property->ContainerPtrToValuePtr<uint8>(Params);
+            }
+            continue;
+        }
+
+        if (UNLIKELY(ArgumentDefaultValues && Info[Index]->IsUndefined()))
+        {
+            Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
+            if (Property->HasAnyPropertyFlags(CPF_OutParm))
+            {
+                Out->PropAddr = Property->ContainerPtrToValuePtr<uint8>(Params);
+            }
+        }
+        else
+        {
+            Property->InitializeValue_InContainer(Params);
+            if (Property->HasAnyPropertyFlags(CPF_OutParm))
+            {
+                if (!Arguments[Index]->JsToUEFastInContainer(
+                        Isolate, Context, Info[Index], Params, reinterpret_cast<void**>(&(Out->PropAddr))))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (!Arguments[Index]->JsToUEInContainer(Isolate, Context, Info[Index], Params, false))
+                {
+                    return;
+                }
+            }
+        }
+        ++Index;
+    }
+    if (CallFunction->HasAnyFunctionFlags(FUNC_HasOutParms))
+    {
+        if (*LastOut)
+        {
+            (*LastOut)->NextOutParm = NULL;
+        }
+    }
+
+    const bool bHasReturnParam = CallFunction->ReturnValueOffset != MAX_uint16;
+    uint8* ReturnValueAddress = bHasReturnParam ? ((uint8*) Params + CallFunction->ReturnValueOffset) : nullptr;
+    CallFunction->Invoke(CallObject, NewStack, ReturnValueAddress);
+
+    if (Return)
+    {
+        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Return->Property->DestroyValue_InContainer(Params);
+    }
+
+    LastOut = &NewStack.OutParms;
+    for (int i = 0; i < Arguments.size(); ++i)
+    {
+        auto PropertyFlags = Arguments[i]->Property->PropertyFlags;
+        if (PropertyFlags & CPF_OutParm)
+        {
+            if ((PropertyFlags & CPF_Parm) && (!(PropertyFlags & CPF_ConstParm)) && (!(PropertyFlags & CPF_ReturnParm)))
+            {
+                if ((*LastOut)->PropAddr >= (uint8*) Params && (*LastOut)->PropAddr < ((uint8*) Params + ParamsBufferSize))
+                {
+                    Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i], Params, false);
+                }
+                else
+                {
+                    LastOut = &(*LastOut)->NextOutParm;
+                    continue;
+                }
+            }
+            LastOut = &(*LastOut)->NextOutParm;
+        }
+        if (Arguments[i]->ParamShallowCopySize == 0)
+        {
+            Arguments[i]->Property->DestroyValue_InContainer(Params);
+        }
+    }
 }
 
 void FFunctionTranslator::Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
@@ -473,16 +610,35 @@ void FExtensionMethodTranslator::CallExtension(
 #endif
 
     if (Params)
-        FMemory::Memzero(Params, ParamsBufferSize);
+        Function->InitializeStruct(Params);
 
-    Arguments[0]->Property->InitializeValue_InContainer(Params);
     if (!Arguments[0]->JsToUEInContainer(Isolate, Context, Info.Holder(), Params, false))
     {
+        if (Params)
+        {
+            for (int i = 0; i < Arguments.size(); ++i)
+            {
+                if (Arguments[i]->ParamShallowCopySize == 0)
+                {
+                    Arguments[i]->Property->DestroyValue_InContainer(Params);
+                }
+            }
+        }
         FV8Utils::ThrowException(Isolate, "access a invalid object");
         return;
     }
 
-    Call_ProcessParams(Isolate, Context, Info, Params, 1);
+    for (int i = 1; i < Arguments.size(); ++i)
+    {
+        if (UNLIKELY(ArgumentDefaultValues && Info[i - 1]->IsUndefined()))
+        {
+            Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
+        }
+        else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - 1], Params, false))
+        {
+            return;
+        }
+    }
 
     if (!BindObject.IsValid())
     {
@@ -491,7 +647,16 @@ void FExtensionMethodTranslator::CallExtension(
 
     BindObject->UObject::ProcessEvent(Function.Get(), Params);
 
-    Call_ProcessReturnAndOutParams(Isolate, Context, Info, Params, 1);
+    if (Return)
+    {
+        Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+        Return->Property->DestroyValue_InContainer(Params);
+    }
+
+    for (int i = 1; i < Arguments.size(); ++i)
+    {
+        Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i - 1], Params, false);
+    }
 
     // Function->HasAnyFlags()
     if (!IsUObject)    // FScriptStruct, so copy back
@@ -499,6 +664,16 @@ void FExtensionMethodTranslator::CallExtension(
         auto StructProperty = Arguments[0]->StructProperty;
         StructProperty->CopySingleValue(FV8Utils::GetPointer(Info.Holder()), StructProperty->ContainerPtrToValuePtr<void>(Params));
     }
-    Arguments[0]->Property->DestroyValue_InContainer(Params);
+
+    if (Params)
+    {
+        for (int i = 0; i < Arguments.size(); ++i)
+        {
+            if (Arguments[i]->ParamShallowCopySize == 0)
+            {
+                Arguments[i]->Property->DestroyValue_InContainer(Params);
+            }
+        }
+    }
 }
 };    // namespace puerts
