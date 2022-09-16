@@ -51,22 +51,6 @@ namespace Puerts.Editor
                 Utils.filters = null;
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate index.d.ts ESM compatible (unstable)", false, 1)]
-            public static void GenerateDTSESM()
-            {
-                var start = DateTime.Now;
-                var saveTo = Configure.GetCodeOutputDirectory();
-                Directory.CreateDirectory(saveTo);
-                Directory.CreateDirectory(Path.Combine(saveTo, "Typing/csharp"));
-
-                FileExporter.ExportDTS(saveTo, null, true);
-                
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
-                AssetDatabase.Refresh();
-
-                Utils.filters = null;
-            }
-
             [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 2)]
             public static void ClearAll()
             {

@@ -18,7 +18,6 @@ namespace Puerts.UnitTest.TranslatorTest
             var jsEnv = new JsEnv(new TxtLoader());
             jsEnv.UsingFunc<int, int>();
             int result = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
                 function fibonacci(num) {
                     if (num == 0 || num == 1) { return num }
                     return CS.Puerts.UnitTest.Util.InvokeJSFunctionIntInt(fibonacci, num - 1) + CS.Puerts.UnitTest.Util.InvokeJSFunctionIntInt(fibonacci, num - 2)
@@ -36,8 +35,6 @@ namespace Puerts.UnitTest.TranslatorTest
 
             Func<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer> callback = jsEnv.Eval<Func<Puerts.ArrayBuffer, int, Puerts.ArrayBuffer>>(@"
                 (function() {
-                    const CS = require('csharp');
-                
                     return function(data, length) {
                         return data.slice(0, length - 1)
                     };

@@ -9,19 +9,31 @@ var global = global || globalThis || (function () { return this; }());
 // polyfill old code after use esm module.
 global.global = global;
 
-let puerts = global.puerts = global.puerts || {};
+let puer = global.puer = global.puerts = global.puer || global.puerts || {};
 
-puerts.loadType = global.__tgjsLoadType;
+puer.loadType = global.__tgjsLoadType;
 delete global.__tgjsLoadType;
-puerts.getNestedTypes = global.__tgjsGetNestedTypes;
+puer.getNestedTypes = global.__tgjsGetNestedTypes;
 delete global.__tgjsGetNestedTypes;
-puerts.getGenericMethod = global.__tgjsGetGenericMethod;
+puer.getGenericMethod = global.__tgjsGetGenericMethod;
 delete global.__tgjsGetGenericMethod;
 
-puerts.evalScript = global.__tgjsEvalScript || function(script, debugPath) {
+puer.evalScript = global.__tgjsEvalScript || function (script, debugPath) {
     return eval(script);
 }
 delete global.__tgjsEvalScript;
 
-puerts.getLastException = global.__puertsGetLastException
+puer.getLastException = global.__puertsGetLastException
 delete global.__puertsGetLastException;
+
+let loader = global.__tgjsGetLoader();
+delete global.__tgjsGetLoader;
+
+function loadFile(path) {
+    let debugPath = {};
+    var content = loader.ReadFile(path, debugPath);
+    return { content: content, debugPath: debugPath.value };
+}
+puer.loadFile = loadFile;
+
+puer.fileExists = loader.FileExists.bind(loader);

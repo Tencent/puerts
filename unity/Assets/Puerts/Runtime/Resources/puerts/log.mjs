@@ -7,7 +7,7 @@
 
 var global = global || globalThis || (function () { return this; }());
 
-let UnityEngine_Debug = puerts.loadType('UnityEngine.Debug');
+let UnityEngine_Debug = puer.loadType('UnityEngine.Debug');
 
 if (UnityEngine_Debug) {
     const console_org = global.console;
@@ -16,7 +16,7 @@ if (UnityEngine_Debug) {
     function toString(args) {
         return Array.prototype.map.call(args, x => {
             try {
-                return x+'';
+                return x instanceof Error ? x.stack : x + '';
             } catch (err) {
                 return err;
             }
@@ -66,5 +66,5 @@ if (UnityEngine_Debug) {
     }
     
     global.console = console;
-    puerts.console = console;
+    puer.console = console;
 }

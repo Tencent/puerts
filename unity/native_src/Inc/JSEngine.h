@@ -192,10 +192,13 @@ public:
     CSharpPushJSFunctionArgumentsCallback GetJSArgumentsCallback;
     
 #if defined(WITH_QUICKJS)
-    std::map<std::string, JSModuleDef*> ModuleCacheMap;
+    std::map<std::string, JSModuleDef*> PathToModuleMap;
 #else
-    std::map<std::string, v8::UniquePersistent<v8::Module>> ModuleCacheMap;
+    std::map<std::string, v8::UniquePersistent<v8::Module>> PathToModuleMap;
 #endif
+
+    std::map<int, std::string> ScriptIdToPathMap;
+    
 private:
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;

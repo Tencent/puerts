@@ -193,11 +193,9 @@ elseif (UNIX)
 endif ()
 
 # link
-# foreach(BACKEND_LIB_NAME in BACKEND_LIB_NAMES)
-    target_link_libraries(puerts
-        ${BACKEND_LIB_NAMES}
-    )
-# endforeach()
+target_link_libraries(puerts
+    ${BACKEND_LIB_NAMES}
+)
 
 target_compile_definitions (puerts PRIVATE ${BACKEND_DEFINITIONS})
 

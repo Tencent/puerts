@@ -181,32 +181,33 @@ const platformCompileConfig = {
 
 
     /////////////////// make
-    ; (async function () {
-        if (options.platform && options.arch == 'auto') {
-            let promiseChain = Promise.resolve();
-            Object.keys(platformCompileConfig[options.platform]).forEach(arch => {
-                promiseChain = promiseChain.then(function () {
-                    options.arch = arch;
-                    return runMake()
-                })
-            });
+;
+(async function () {
+    if (options.platform && options.arch == 'auto') {
+        let promiseChain = Promise.resolve();
+        Object.keys(platformCompileConfig[options.platform]).forEach(arch => {
+            promiseChain = promiseChain.then(function () {
+                options.arch = arch;
+                return runMake()
+            })
+        });
 
-        } else if (!options.platform && options.arch == 'auto') {
-            options.platform = nodePlatformToPuerPlatform[process.platform]
-            options.arch = process.arch;
-            return runMake();
+    } else if (!options.platform && options.arch == 'auto') {
+        options.platform = nodePlatformToPuerPlatform[process.platform]
+        options.arch = process.arch;
+        return runMake();
 
-        } else {
-            return runMake();
-        }
-    })().catch(e => {
-        console.error(e)
-    })
+    } else {
+        return runMake();
+    }
+})().catch(e => {
+    console.error(e)
+})
 
 async function runMake() {
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = pwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
-    const OUTPUT_PATH = pwd + '/../Assets/Plugins/' + BuildConfig.outputPluginPath;
+    const OUTPUT_PATH = pwd + '/../Assets/Puerts/Plugins/' + BuildConfig.outputPluginPath;
     const BackendConfig = JSON.parse(fs.readFileSync(pwd + `/cmake/${options.backend}/backend.json`))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {
@@ -228,16 +229,18 @@ async function runMake() {
         [definitionD, linkD, incD].map((r, index) => r ? DArgsName[index] + '"' + r + '"' : null).filter(t => t).join(' ')
     );
     const copyConfig = (BackendConfig.copy[options.platform]?.[options.arch] || [])
-        .map(pathToBackend=> join(pwd, options.backend, pathToBackend))
+        .map(pathToBackend => join(pwd, options.backend, pathToBackend))
         .concat([outputFile]);
-        
+
     copyConfig?.forEach(filepath => {
         sx.cp(filepath, OUTPUT_PATH)
         if (options.config != 'Release') {
-            sx.mkdir('-p', filepath, '../general/vs2013/Bin')
-            sx.mkdir('-p', filepath, '../general/vs2022/Bin')
+            if (!fs.existsSync('../general/vs2013/Bin'))
+                sx.mkdir('-p', filepath, '../general/vs2013/Bin')
+            if (!fs.existsSync('../general/vs2022/Bin'))
+                sx.mkdir('-p', filepath, '../general/vs2022/Bin')
             sx.cp(filepath, '../general/vs2022/Bin')
-            sx.cp(filepath, '../general/vs2013/Bin')    
+            sx.cp(filepath, '../general/vs2013/Bin')
         }
     })
 }

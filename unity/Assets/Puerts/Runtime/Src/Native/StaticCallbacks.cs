@@ -18,14 +18,7 @@ namespace Puerts
             pathForDebug = identifer;
             try
             {
-                if (identifer.Length < 4 || !identifer.EndsWith(".mjs")) 
-                {
-                    return "export default require('" + identifer + "')";
-                } 
-                else 
-                {
-                    return env.ResolveModuleContent(identifer, out pathForDebug);
-                }
+                return env.ResolveModuleContent(identifer, out pathForDebug);
             }
             catch (Exception e)
             {

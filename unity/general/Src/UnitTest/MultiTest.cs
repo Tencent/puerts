@@ -100,7 +100,6 @@ namespace Puerts.UnitTest
 
             jsEnv1.Eval(@"
                 (function() {
-                    const CS = require('csharp');
                     const A = CS.Puerts.UnitTest.MultiEnvTestA;
                     const B = CS.Puerts.UnitTest.MultiEnvTestB;
 
@@ -114,7 +113,6 @@ namespace Puerts.UnitTest
             ");
             jsEnv2.Eval(@"
                 (function() {
-                    const CS = require('csharp');
                     const A = CS.Puerts.UnitTest.MultiEnvTestA;
                     const B = CS.Puerts.UnitTest.MultiEnvTestB;
 
@@ -136,7 +134,6 @@ namespace Puerts.UnitTest
             
             jsEnv1.Eval(@"
                 (function() {
-                    const CS = require('csharp');
                     const A = CS.Puerts.UnitTest.MultiEnvTestA;
                     const B = CS.Puerts.UnitTest.MultiEnvTestB;
 

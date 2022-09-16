@@ -9,7 +9,7 @@ var global = global || globalThis || (function () { return this; }());
 
 
 function csTypeToClass(csType) {
-    let cls = puerts.loadType(csType);
+    let cls = puer.loadType(csType);
     
     if (cls) {
         let currentCls = cls, parentPrototype = Object.getPrototypeOf(currentCls.prototype);
@@ -57,7 +57,7 @@ function csTypeToClass(csType) {
             }
         }
 
-        let nestedTypes = puerts.getNestedTypes(csType);
+        let nestedTypes = puer.getNestedTypes(csType);
         if (nestedTypes) {
             for(var i = 0; i < nestedTypes.Length; i++) {
                 let ntype = nestedTypes.get_Item(i);
@@ -76,7 +76,7 @@ function csTypeToClass(csType) {
 }
 
 function Namespace() {}
-puerts.__$NamespaceType = Namespace;
+puer.__$NamespaceType = Namespace;
 
 function createTypeProxy(namespace) {
     return new Proxy(new Namespace, {
@@ -104,9 +104,9 @@ function createTypeProxy(namespace) {
 
 let csharpModule = createTypeProxy(undefined);
 csharpModule.default = csharpModule;
-puerts.registerBuildinModule('csharp', csharpModule);
 
 csharpModule.System.Object.prototype.toString = csharpModule.System.Object.prototype.ToString;
+global.CS = csharpModule;
 
 function ref(x) {
     return {value:x};
@@ -152,14 +152,14 @@ function makeGeneric(genericTypeInfo, ...genericArgs) {
         p = p.get(genericArg);
     }
     if (!p.has('$type')) {
-        p.set('$type', puerts.loadType(genericTypeInfo.get('$name'), ...genericArgs));
+        p.set('$type', puer.loadType(genericTypeInfo.get('$name'), ...genericArgs));
     }
     return p.get('$type');
 }
 
 function makeGenericMethod(cls, methodName, ...genericArgs) {
     if (cls && typeof methodName == 'string' && genericArgs && genericArgs.length > 0) {
-        return puerts.getGenericMethod(puerts.$typeof(cls), methodName, ...genericArgs);
+        return puer.getGenericMethod(puer.$typeof(cls), methodName, ...genericArgs);
         
     } else {
         throw new Error("invalid arguments for makeGenericMethod");
@@ -203,15 +203,15 @@ function doExtension(cls, extension) {
     })
 }
 
-puerts.$ref = ref;
-puerts.$unref = unref;
-puerts.$set = setref;
-puerts.$promise = taskToPromise;
-puerts.$generic = makeGeneric;
-puerts.$genericMethod = makeGenericMethod;
-puerts.$typeof = getType;
-puerts.$extension = (cls, extension) => { 
+puer.$ref = ref;
+puer.$unref = unref;
+puer.$set = setref;
+puer.$promise = taskToPromise;
+puer.$generic = makeGeneric;
+puer.$genericMethod = makeGenericMethod;
+puer.$typeof = getType;
+puer.$extension = (cls, extension) => { 
     typeof console != 'undefined' && console.warn(`deprecated! if you already generate static wrap for ${cls} and ${extension}, you are no need to invoke $extension`); 
     return doExtension(cls, extension)
 };
-puerts.$reflectExtension = doExtension;
+puer.$reflectExtension = doExtension;
