@@ -15,47 +15,88 @@ if (!fs.existsSync(`${pwd}/node_modules`)) {
     require('child_process').execSync('npm i')
 }
 
+const { exec } = require("@puerts/shell-util");
 const sx = require('shelljs');
-const iconv = require('iconv-lite')
-const sxExecAsync = async function (command) {
-    return new Promise((resolve, reject) => {
-        options.async = true;
-        let child = sx.exec(command, {
-            async: true,
-            silent: true,
-            encoding: 'binary'
-        }, code => {
-            code ? reject(code) : resolve(code);
-        });
-        child.stdout.on('data', function (data) {
-            console.log(iconv.decode(data, process.platform == 'win32' ? "gb2312" : 'utf-8'));
-        })
-        child.stderr.on('data', function (data) {
-            console.error(iconv.decode(data, process.platform == 'win32' ? "gb2312" : 'utf-8'));
-        })
-    })
-}
+
 const { program, Option } = require('commander');
 const { join } = require('path');
+
+let quickOptions = {};
+program.command('q')
+    .description('quick run. ')
+    .argument('<command>', 'quick command')
+    .action((command) => {
+
+        switch (command[0]) {
+            case 'v':
+                quickOptions.backend = 'v8_9.4'; break;
+            case 'n':
+                quickOptions.backend = 'nodejs_16'; break;
+            case 'q':
+                quickOptions.backend = 'quickjs'; break;
+
+            default:
+                throw new Error(`invalid command[0] : ${command[0]}`);
+        }
+
+        switch (command[1]) {
+            case 'a':
+                quickOptions.platform = 'android'; break;
+            case 'i':
+                quickOptions.platform = 'ios'; break;
+            case 'w':
+                quickOptions.platform = 'win'; break;
+            case 'o':
+                quickOptions.platform = 'osx'; break;
+            case 'l':
+                quickOptions.platform = 'linux'; break;
+
+            default:
+                throw new Error(`invalid command[1] : ${command[1]}`);
+        }
+
+        switch (command[2]) {
+            case '3':
+                quickOptions.arch = 'ia32'; break;
+            case '6':
+                quickOptions.arch = 'x64'; break;
+            case '7':
+                quickOptions.arch = 'armv7'; break;
+            case '8':
+                quickOptions.arch = 'arm64'; break;
+
+            default:
+                throw new Error(`invalid command[2] : ${command[2]}`);
+        }
+
+        switch (command[3] || "") {
+            case 'd':
+                quickOptions.config = 'Debug'; break;
+
+            default:
+                quickOptions.config = 'Release'; break;
+        }
+    })
+
 program.addOption(
-    new Option("-p, --platform <platform>", "the target platform")
+    new Option("--platform <platform>", "the target platform")
         .default("")
         .choices(["win", "osx", "linux", "android", "ios"])
 );
 program.addOption(
-    new Option("-a, --arch <arch>", "the target architecture")
+    new Option("--arch <arch>", "the target architecture")
         .default("auto")
         .choices(["auto", "ia32", "x64", "arm64", "armv7"])
 );
 program.addOption(
-    new Option("-c, --config <ReleaseOrDebug>", "the target architecture")
+    new Option("--config <ReleaseOrDebug>", "the target architecture")
         .default("Release")
         .choices(["Release", "Debug"])
 );
-program.option("-b, --backend <backend>", "the JS backend will be used", "v8");
+program.option("--backend <backend>", "the JS backend will be used", "v8");
 
 program.parse(process.argv);
-const options = program.opts();
+const options = quickOptions || program.opts();
 
 if (!fs.existsSync(`${pwd}/${options.backend}`)) {
     console.error("[Puer] Cannot find JS backend library");
@@ -66,9 +107,17 @@ if (checkCMake.stderr && !checkCMake.stdout) {
     console.error("[Puer] CMake is not installed");
     process.exit();
 }
-if (options.platform == "win" && options.config != "Release") {
-    options.config = "RelWithDebInfo"
-}
+
+
+
+
+
+
+
+
+
+
+
 
 //// 脚本 scripts
 const platformCompileConfig = {
@@ -81,8 +130,8 @@ const platformCompileConfig = {
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
-                await sxExecAsync(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/libpuerts.so`
             }
@@ -95,8 +144,8 @@ const platformCompileConfig = {
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
-                await sxExecAsync(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/libpuerts.so`
             }
@@ -107,9 +156,9 @@ const platformCompileConfig = {
             outputPluginPath: 'iOS',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 sx.cd(CMAKE_BUILD_PATH);
-                await sxExecAsync(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`)
+                await exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`)
                 sx.cd("..")
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}-iphoneos/libpuerts.a`
             }
@@ -120,9 +169,9 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/x86_64',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 sx.cd(CMAKE_BUILD_PATH);
-                await sxExecAsync(`cmake ${cmakeDArgs} -DTHREAD_SAFE=1 -DJS_ENGINE=${options.backend} -GXcode ..`)
+                await exec(`cmake ${cmakeDArgs} -DTHREAD_SAFE=1 -DJS_ENGINE=${options.backend} -GXcode ..`)
                 sx.cd("..")
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 sx.mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, `${CMAKE_BUILD_PATH}/${options.config}/puerts.bundle`)
                 return `${CMAKE_BUILD_PATH}/${options.config}/puerts.bundle`
@@ -132,9 +181,9 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/arm64',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 sx.cd(CMAKE_BUILD_PATH);
-                await sxExecAsync(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`)
+                await exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`)
                 sx.cd("..")
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`
             }
@@ -145,9 +194,9 @@ const platformCompileConfig = {
             outputPluginPath: 'x86_64',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 sx.cd(CMAKE_BUILD_PATH);
-                await sxExecAsync(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`)
+                await exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`)
                 sx.cd("..")
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`
             }
@@ -156,9 +205,9 @@ const platformCompileConfig = {
             outputPluginPath: 'x86',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 sx.cd(CMAKE_BUILD_PATH);
-                await sxExecAsync(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`)
+                await exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`)
                 sx.cd("..")
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`
             }
@@ -169,9 +218,9 @@ const platformCompileConfig = {
             outputPluginPath: 'x86_64',
             hook: async function (CMAKE_BUILD_PATH, options, cmakeDArgs) {
                 sx.cd(CMAKE_BUILD_PATH);
-                await sxExecAsync(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`)
+                await exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`)
                 sx.cd("..")
-                await sxExecAsync(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                await exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
 
                 return `${CMAKE_BUILD_PATH}/libpuerts.so`;
             }
@@ -193,7 +242,7 @@ const platformCompileConfig = {
         });
 
     } else if (!options.platform && options.arch == 'auto') {
-        options.platform = nodePlatformToPuerPlatform[process.platform]
+        options.platform = nodePlatformToPuerPlatform[process.platform] || 'linux'
         options.arch = process.arch;
         return runMake();
 
@@ -205,6 +254,9 @@ const platformCompileConfig = {
 })
 
 async function runMake() {
+    if (options.platform == "win" && options.config != "Release") {
+        options.config = "RelWithDebInfo"
+    }
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = pwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
     const OUTPUT_PATH = pwd + '/../Assets/Puerts/Plugins/' + BuildConfig.outputPluginPath;
