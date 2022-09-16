@@ -30,5 +30,5 @@ runs:
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
-        path: ./unity/Assets/Plugins/**/*
+        path: ./unity/Assets/Puerts/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

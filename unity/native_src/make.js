@@ -207,7 +207,7 @@ const platformCompileConfig = {
 async function runMake() {
     const BuildConfig = platformCompileConfig[options.platform][options.arch];
     const CMAKE_BUILD_PATH = pwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
-    const OUTPUT_PATH = pwd + '/../Assets/Plugins/' + BuildConfig.outputPluginPath;
+    const OUTPUT_PATH = pwd + '/../Assets/Puerts/Plugins/' + BuildConfig.outputPluginPath;
     const BackendConfig = JSON.parse(fs.readFileSync(pwd + `/cmake/${options.backend}/backend.json`))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {
