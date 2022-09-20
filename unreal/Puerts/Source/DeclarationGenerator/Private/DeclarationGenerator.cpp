@@ -354,12 +354,9 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool GenStruct, b
             {
                 Gen(UserDefinedEnum);
             }
-            if (GenStruct)
+            if (auto UserDefinedStruct = Cast<UUserDefinedStruct>(Asset))
             {
-                if (auto UserDefinedStruct = Cast<UUserDefinedStruct>(Asset))
-                {
-                    Gen(UserDefinedStruct);
-                }
+                Gen(UserDefinedStruct);
             }
         }
     }
