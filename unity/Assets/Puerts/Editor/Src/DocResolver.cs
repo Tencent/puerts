@@ -118,10 +118,10 @@ namespace Puerts
             {
                 var ext = Path.GetExtension(location);
                 var xmlFilePath = location.Substring(0, location.Length - ext.Length) + ".xml";
-                //LHC 增加文档查找路径 
+                //增加文档查找路径 
                 if (!File.Exists(xmlFilePath))
                 {
-                    xmlFilePath = xmlFilePath.Replace("Library\\ScriptAssemblies\\", "Temp\\bin\\Debug\\");
+                    xmlFilePath = xmlFilePath.Replace("Library\\ScriptAssemblies\\", "Library\\CommonetDocs\\");
                 }
                 return resolver.ParseXml(xmlFilePath);
             }
@@ -293,11 +293,10 @@ namespace Puerts
                     var pname = reader.GetAttribute("name");
                     var ptext = ReadSingleTextBlock(reader, body, "param");
 
-                    // if (!string.IsNullOrEmpty(ptext))
-                    // {
-                    //     body.parameters[pname] = ptext;
-                    // }
-                    body.parameters[pname] = ptext;
+                    if (!string.IsNullOrEmpty(ptext))
+                    {
+                        body.parameters[pname] = ptext;
+                    }
                 }
 
                 if (type == XmlNodeType.Element && reader.Name == "returns")
