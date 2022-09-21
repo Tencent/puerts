@@ -19,6 +19,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include <memory>
+
 namespace puerts
 {
 class ICppObjectMapper
@@ -33,6 +35,8 @@ public:
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) = 0;
 
     virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
+
+    virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
 
     virtual ~ICppObjectMapper()
     {

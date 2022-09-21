@@ -48,6 +48,11 @@ void DataTransfer::UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, c
     auto Ret = Outer->ToObject(Context).ToLocalChecked()->Set(Context, 0, Value);
 }
 
+std::weak_ptr<int> DataTransfer::GetJsEnvLifeCycleTracker(v8::Isolate* Isolate)
+{
+    return FV8Utils::IsolateData<ICppObjectMapper>(Isolate)->GetJsEnvLifeCycleTracker();
+}
+
 #if USING_IN_UNREAL_ENGINE
 FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
 {

@@ -262,6 +262,8 @@ public:
 
     static void UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, const v8::Local<v8::Value>& Value);
 
+    static std::weak_ptr<int> GetJsEnvLifeCycleTracker(v8::Isolate* Isolate);
+
 #if USING_IN_UNREAL_ENGINE
     template <typename T>
     static v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, T* UEObject)

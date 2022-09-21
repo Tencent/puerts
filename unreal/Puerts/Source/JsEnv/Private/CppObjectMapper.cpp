@@ -109,6 +109,11 @@ bool FCppObjectMapper::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::O
     return DataTransfer::GetPointerFast<const void>(JsObject, 1) == TypeId;
 }
 
+std::weak_ptr<int> FCppObjectMapper::GetJsEnvLifeCycleTracker()
+{
+    return std::weak_ptr<int>(Ref);
+}
+
 static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();

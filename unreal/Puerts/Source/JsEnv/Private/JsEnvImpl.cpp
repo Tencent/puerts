@@ -2800,6 +2800,11 @@ bool FJsEnvImpl::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object>
     return CppObjectMapper.IsInstanceOfCppObject(TypeId, JsObject);
 }
 
+std::weak_ptr<int> FJsEnvImpl::GetJsEnvLifeCycleTracker()
+{
+    return CppObjectMapper.GetJsEnvLifeCycleTracker();
+}
+
 v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
     v8::Isolate* Isolate, v8::Local<v8::Context> Context, FSoftObjectPtr* SoftObjectPtr, UClass* Class, bool IsSoftClass)
 {

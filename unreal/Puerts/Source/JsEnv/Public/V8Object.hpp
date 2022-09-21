@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Binding.hpp"
+#include <memory>
 
 #ifdef USING_IN_UNREAL_ENGINE
 #include "JSLogger.h"
@@ -35,6 +36,7 @@ public:
         Isolate = context->GetIsolate();
         GContext.Reset(Isolate, context);
         GObject.Reset(Isolate, object.As<v8::Object>());
+        JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
     Object(const Object& InOther)
@@ -44,6 +46,7 @@ public:
         v8::HandleScope HandleScope(Isolate);
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
+        JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
     Object& operator=(const Object& InOther)
@@ -53,12 +56,26 @@ public:
         v8::HandleScope HandleScope(Isolate);
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
+        JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
         return *this;
+    }
+
+    ~Object()
+    {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            GObject.Empty();
+            GContext.Empty();
+        }
     }
 
     template <typename T>
     T Get(const char* key) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            return {};
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -77,6 +94,10 @@ public:
     template <typename T>
     void Set(const char* key, T val) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            return;
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -89,7 +110,7 @@ public:
 
     bool IsValid() const
     {
-        if (!Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+        if (JsEnvLifeCycleTracker.expired() || !Isolate || GContext.IsEmpty() || GObject.IsEmpty())
             return false;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -102,6 +123,8 @@ public:
     v8::Isolate* Isolate;
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
+
+    std::weak_ptr<int> JsEnvLifeCycleTracker;
 
     friend struct puerts::converter::Converter<Object>;
 };
@@ -120,6 +143,10 @@ public:
     template <typename... Args>
     void Action(Args... cppArgs) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            return;
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -140,6 +167,10 @@ public:
     template <typename Ret, typename... Args>
     Ret Func(Args... cppArgs) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            return {};
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -165,7 +196,7 @@ public:
 
     bool IsValid() const
     {
-        if (!Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+        if (JsEnvLifeCycleTracker.expired() || !Isolate || GContext.IsEmpty() || GObject.IsEmpty())
             return false;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
