@@ -285,12 +285,12 @@ namespace puerts
                 Iter->second.Reset();
             }
 #if !WITH_QUICKJS
-            for (auto Iter = ModuleCacheMap.begin(); Iter != ModuleCacheMap.end(); ++Iter)
+            for (auto Iter = PathToModuleMap.begin(); Iter != PathToModuleMap.end(); ++Iter)
             {
                 Iter->second.Reset();
             }
 #endif
-            ModuleCacheMap.clear();
+            PathToModuleMap.clear();
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);

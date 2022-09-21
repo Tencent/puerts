@@ -354,12 +354,9 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool GenStruct, b
             {
                 Gen(UserDefinedEnum);
             }
-            if (GenStruct)
+            if (auto UserDefinedStruct = Cast<UUserDefinedStruct>(Asset))
             {
-                if (auto UserDefinedStruct = Cast<UUserDefinedStruct>(Asset))
-                {
-                    Gen(UserDefinedStruct);
-                }
+                Gen(UserDefinedStruct);
             }
         }
     }
@@ -544,16 +541,18 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName SearchPath)
     {
         const FAssetPackageData* PackageData = AssetRegistry.GetAssetPackageData(AssetData.PackageName);
         auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
-        auto FileVersion = PackageData->PackageGuid.ToString();
-        if (BlueprintTypeDeclInfoPtr)
+
+        if (PackageData && BlueprintTypeDeclInfoPtr)
         {
+            auto FileVersion = PackageData->PackageGuid.ToString();
             BlueprintTypeDeclInfoPtr->IsExist = true;
             BlueprintTypeDeclInfoPtr->Changed = FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString;
             BlueprintTypeDeclInfoPtr->FileVersionString = FileVersion;
         }
         else
         {
-            BlueprintTypeDeclInfoCache.Add(AssetData.PackageName, {TEXT(""), FileVersion, true, true});
+            BlueprintTypeDeclInfoCache.Add(AssetData.PackageName,
+                {TEXT(""), PackageData ? PackageData->PackageGuid.ToString() : FString(TEXT("")), true, true});
         }
     }
 }

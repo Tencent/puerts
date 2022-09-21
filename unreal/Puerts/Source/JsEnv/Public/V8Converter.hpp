@@ -388,6 +388,10 @@ struct Converter<void*>
             return Ab->GetContents().Data();
 #endif
         }
+        if (value->IsObject())
+        {
+            return ::puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
+        }
 
         return nullptr;
     }
@@ -608,7 +612,7 @@ struct ScriptTypeName<void*>
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return Literal("any");
     }
 };
 
@@ -617,7 +621,7 @@ struct ScriptTypeName<const void*>
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return Literal("any");
     }
 };
 

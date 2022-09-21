@@ -31,34 +31,7 @@ namespace PuertsStaticWrap
             }
             return IntPtr.Zero;
         }
-    
-        [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        private static void F_GetGenericType(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
-        {
-            try
-            {
-                
         
-                {
-            
-                    {
-                
-                        var result = Puerts.UnitTest.GenericWrapperBase<T>.GetGenericType();
-                
-                        Puerts.ResultHelper.Set((int)data, isolate, info, result);
-                        
-                        
-                    }
-                
-                }
-            
-            }
-            catch (Exception e)
-            {
-                Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
-            }
-        }
-            
         public static Puerts.TypeRegisterInfo GetRegisterInfo()
         {
             return new Puerts.TypeRegisterInfo()
@@ -67,7 +40,6 @@ namespace PuertsStaticWrap
                 Constructor = Constructor,
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
                 {   
-                    { new Puerts.MethodKey { Name = "GetGenericType", IsStatic = true}, F_GetGenericType }
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
                 {

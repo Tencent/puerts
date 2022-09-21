@@ -1,0 +1,46 @@
+{
+    "definition": ["WITH_NODEJS"],
+    "include": [
+        "/include",
+        "/deps/v8/include",
+        "/deps/uv/include"
+    ],
+    "skip": { "win": { "ia32": true } },
+    "link": {
+        "win": {
+            "ia32": ["/Lib/Win32/libnode.lib"],
+            "x64": ["/Lib/Win64/libnode.lib"]
+        },
+        "android": {
+            "armv7": ["/lib/Android/armeabi-v7a/libnode.so"],
+            "arm64": ["/lib/Android/arm64-v8a/libnode.so"]
+        },
+        "osx": {
+            "x64": ["/lib/macOS/libnode.93.dylib"],
+            "arm64": ["/lib/macOS_arm64/libnode.93.dylib"]
+        },
+        "linux": {
+            "x64": ["/lib/Linux/libnode.so.93"]
+        }
+    },
+    "copy": {
+        "win": {
+            "ia32": ["/Lib/Win32/libnode.dll"],
+            "x64": ["/Lib/Win64/libnode.dll"]
+        },
+        "android": {
+            "armv7": ["/lib/Android/armeabi-v7a/libnode.so"],
+            "arm64": ["/lib/Android/arm64-v8a/libnode.so"]
+        },
+        "osx": {
+            "x64": ["/lib/macOS/libnode.93.dylib"],
+            "arm64": ["/lib/macOS_arm64/libnode.93.dylib"]
+        },
+        "ios": {
+            "arm64": ["/lib/iOS/*.a"]
+        },
+        "linux": {
+            "x64": ["/lib/Linux/libnode.so.93"]
+        }
+    }
+}

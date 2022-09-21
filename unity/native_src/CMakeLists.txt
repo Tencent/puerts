@@ -28,18 +28,21 @@ if ( NOT DEFINED JS_ENGINE )
     set(JS_ENGINE v8)
 endif()
 
-set(ENGINE_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
-set(ENGINE_INC ${ENGINE_ROOT}/Inc)
+set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 
+string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_INC_NAMES "${BACKEND_ROOT}${BACKEND_INC_NAMES}")
+string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_LIB_NAMES "${BACKEND_ROOT}${BACKEND_LIB_NAMES}")
+string (REPLACE ";" "$<SEMICOLON>" BACKEND_DEFINITIONS "${BACKEND_DEFINITIONS}")
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
-    ${ENGINE_INC}
     ${ThirdParty}/Include/websocketpp
     ${ThirdParty}/Include/asio
     Inc
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
+    ${BACKEND_INC_NAMES}
 )
 
 set ( PUERTS_INC
@@ -121,8 +124,6 @@ if ( NOT WITH_INSPECTOR MATCHES "WITH_INSPECTOR" )
 endif ()
 
 
-include(${PROJECT_SOURCE_DIR}/cmake/${JS_ENGINE}/CMakeLists.txt)
-
 if ( MSYS OR WIN32 )
     if ( WIN32 ) 
         target_link_libraries(puerts
@@ -130,21 +131,6 @@ if ( MSYS OR WIN32 )
             dbghelp.lib
             shlwapi.lib
         )
-    endif ()
-    
-    # link
-    if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-            target_link_libraries(puerts
-                ${ENGINE_ROOT}/Lib/Win32/${LIB_FILE_NAME}
-            )
-        endforeach()
-    else ()
-        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-            target_link_libraries(puerts
-                ${ENGINE_ROOT}/Lib/Win64/${LIB_FILE_NAME}
-            )
-        endforeach()
     endif ()
 
     # definition
@@ -158,24 +144,14 @@ elseif ( ANDROID )
     )
 
     if( ANDROID_ABI STREQUAL "armeabi-v7a")
-        # link
-        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-            target_link_libraries(puerts
-                ${ENGINE_ROOT}/Lib/Android/armeabi-v7a/${LIB_FILE_NAME}
-            )
-        endforeach()
-
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
 
     else ()
         # link
-        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-            target_link_libraries(puerts
-                ${ENGINE_ROOT}/Lib/Android/arm64-v8a/${LIB_FILE_NAME}
-                ${log-lib}
-            )
-        endforeach()
+        target_link_libraries(puerts
+            ${log-lib}
+        )
         
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
@@ -201,19 +177,6 @@ elseif ( APPLE )
         endif ()
 
     else ()
-        # link
-        foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-        
-            if ( NOT DEFINED FOR_SILICON )
-                target_link_libraries(puerts
-                    ${ENGINE_ROOT}/Lib/macOS/${LIB_FILE_NAME}
-                )
-            else ()
-                target_link_libraries(puerts
-                    ${ENGINE_ROOT}/Lib/macOS_arm64/${LIB_FILE_NAME}
-                )
-            endif ()
-        endforeach()
     
         #definition
         if ( DEFINED FOR_SILICON )
@@ -224,12 +187,7 @@ elseif ( APPLE )
 
 elseif (UNIX)
     # link
-    foreach(LIB_FILE_NAME IN LISTS LIB_FILE_NAMES)
-        target_link_libraries(puerts
-            ${ENGINE_ROOT}/Lib/Linux/${LIB_FILE_NAME}
-            pthread
-        )
-    endforeach()
+    target_link_libraries(puerts pthread)
     
     # definition
     target_compile_definitions (puerts PRIVATE PLATFORM_LINUX)
@@ -237,6 +195,12 @@ elseif (UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 endif ()
+
+# link
+target_link_libraries(puerts
+    ${BACKEND_LIB_NAMES}
+)
+target_compile_definitions (puerts PRIVATE ${BACKEND_DEFINITIONS})
 
 if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) AND NOT ANDROID AND NOT MSYS)
 	set_property(TARGET puerts PROPERTY

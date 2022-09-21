@@ -92,3 +92,9 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 但即使改对象不会被gc释放，依然不能保证一个ue对象不被销毁，ue的gc和其它正经的gc不一样，诸如c#、java、lua、js等虚拟机的gc，一个对象还被持有就肯定不销毁，而ue下可以调用api强制删除一个对象（可能是用户自己调用，也可能是引擎调用，比较常见是切场景后，所有该场景挂的actor都会自动销毁）。
 
+## 手机/PC打包后脚本不执行/报找不到脚本错误
+
+生成的js脚本不是ue资产文件(*.asset)，需要手动设置打包。
+
+到“项目设置/打包/Additional Not-Asset Directories to Package”，把Content下的“JavaScript”目录添加进去。
+

@@ -18,7 +18,6 @@ namespace Puerts.UnitTest.JSTypeTest
             var jsEnv = new JsEnv(new TxtLoader());
 
             var ret = jsEnv.Eval<double>(@"
-                const CS = require('csharp');
                 let obj = new CS.Puerts.UnitTest.JsObjectTest();
                 let jsObj = {'c': 100};
                 obj.Setter = (path, value) => {

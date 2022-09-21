@@ -4,13 +4,59 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
+#include <algorithm>
 #include "JSEngine.h"
 #if WITH_QUICKJS
 #include "quickjs-msvc.h"
 #endif
 namespace puerts {
-    std::string CjsModulePrepend("export default globalThis.require('");
-    std::string CjsModuleAppend("');");
+    bool IsAbsolutePath(const std::string& path) {
+#if defined(_WIN32) || defined(_WIN64)
+    // This is an incorrect approximation, but should
+    // work for all our test-running cases.
+        return path.find(':') != std::string::npos;
+#else
+        return path[0] == '/';
+#endif
+    }
+
+    // Returns the directory part of path, without the trailing '/'.
+    std::string DirName(const std::string& path) { 
+        size_t last_slash = path.find_last_of('/');
+        printf("%s %d\n", path.c_str(), (int)last_slash);
+        if (last_slash == std::string::npos) return ".";
+        return path.substr(0, last_slash);
+    }
+
+    // Resolves path to an absolute path if necessary, and does some
+    // normalization (eliding references to the current directory
+    // and replacing backslashes with slashes).
+    std::string NormalizePath(const std::string& path,
+                              const std::string& from_path) {
+        std::string absolute_path;
+        if (IsAbsolutePath(path)) {
+            absolute_path = path;
+        } else {
+            absolute_path = DirName(from_path) + '/' + path;
+        }
+        std::replace(absolute_path.begin(), absolute_path.end(), '\\', '/');
+        std::vector<std::string> segments;
+        std::istringstream segment_stream(absolute_path);
+        std::string segment;
+        while (std::getline(segment_stream, segment, '/')) {
+            if (segment == "..") {
+                segments.pop_back();
+            } else if (segment != ".") {
+                segments.push_back(segment);
+            }
+        }
+        // Join path segments.
+        std::ostringstream os;
+        std::copy(segments.begin(), segments.end() - 1,
+                  std::ostream_iterator<std::string>(os, "/"));
+        os << *segments.rbegin();
+        return os.str();
+    }
 
 #if !WITH_QUICKJS
     v8::MaybeLocal<v8::Module> ResolveModule(
@@ -20,25 +66,31 @@ namespace puerts {
     )
     {
         v8::Isolate* Isolate = Context->GetIsolate();
-        JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        auto* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
         
         v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-        size_t Specifier_length = Specifier_std.length();
 
-        auto Iter = JsEngine->ModuleCacheMap.find(Specifier_std);
-        if (Iter != JsEngine->ModuleCacheMap.end())//create and link
+        const auto referIter = JsEngine->ScriptIdToPathMap.find(Referrer->ScriptId()); 
+        if (referIter != JsEngine->ScriptIdToPathMap.end())
         {
-            return v8::Local<v8::Module>::New(Isolate, Iter->second);
+            std::string referPath_std = referIter->second;
+            Specifier_std = NormalizePath(Specifier_std, referPath_std);
+        }
+
+        const auto cacheIter = JsEngine->PathToModuleMap.find(Specifier_std);
+        if (cacheIter != JsEngine->PathToModuleMap.end())//create and link
+        {
+            return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
         }
         v8::Local<v8::Module> Module;
         char* pathForDebug;
         const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx, pathForDebug);
         if (Code == nullptr) 
         {
-            std::string ErrorMessage = std::string("module not found") + Specifier_std;
+            const std::string ErrorMessage = std::string("module not found ") + Specifier_std;
             Isolate->ThrowException(v8::Exception::Error(FV8Utils::V8String(Isolate, ErrorMessage.c_str())));
-            return v8::MaybeLocal<v8::Module>();
+            return v8::MaybeLocal<v8::Module> {};
         }
         v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, (const char*)pathForDebug),
                             v8::Integer::New(Isolate, 0),                      // line offset
@@ -60,10 +112,10 @@ namespace puerts {
                 .ToLocal(&Module)) 
         {
             JsEngine->SetLastException(TryCatch.Exception());
-            return v8::MaybeLocal<v8::Module>();
+            return v8::MaybeLocal<v8::Module> {};
         }
-
-        JsEngine->ModuleCacheMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
+        JsEngine->ScriptIdToPathMap[Module->ScriptId()] = Specifier_std;
+        JsEngine->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
         return Module;
     }
 
@@ -101,8 +153,8 @@ namespace puerts {
         std::string name_std(name);
         size_t name_length = name_std.length();
 
-        auto Iter = JsEngine->ModuleCacheMap.find(name_std);
-        if (Iter != JsEngine->ModuleCacheMap.end())//create and link
+        auto Iter = JsEngine->PathToModuleMap.find(name_std);
+        if (Iter != JsEngine->PathToModuleMap.end())//create and link
         {
             return Iter->second;
         }
@@ -111,7 +163,7 @@ namespace puerts {
         const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx, pathForDebug);
         if (Code == nullptr) 
         {
-            std::string ErrorMessage = std::string("module not found") + name_std;
+            std::string ErrorMessage = std::string("module not found ") + name_std;
             JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
             JS_Throw(ctx, ex);
             return nullptr;
@@ -124,7 +176,7 @@ namespace puerts {
 
         auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
 
-        JsEngine->ModuleCacheMap[name_std] = module_;
+        JsEngine->PathToModuleMap[name_std] = module_;
 
         return module_;
     }

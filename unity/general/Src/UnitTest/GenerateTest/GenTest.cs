@@ -9,14 +9,14 @@ namespace Puerts.UnitTest
     class Zombie: Singleton1<Zombie> {}
 
     [TestFixture]
-    public class GenUnitTest
+    public class GenTest
     {
         [Test]
         public void GenericWrapper()
         {
 
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() { typeof(Dictionary<int, JsEnv>) };
             Editor.Generator.Wrapper.StaticWrapperInfo wrapperInfo = Editor.Generator.Wrapper.StaticWrapperInfo.FromType(typeof(Dictionary<int, JsEnv>), genList);
 
@@ -30,7 +30,7 @@ namespace Puerts.UnitTest
         {
 
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Dictionary<Type, JsEnv>)             
             };
@@ -44,7 +44,7 @@ namespace Puerts.UnitTest
         public void GenericWrapper_3()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Singleton1<Zombie>),            
                 typeof(Zombie)             
@@ -60,7 +60,7 @@ namespace Puerts.UnitTest
         public void GenericWrapper_4()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(List<int>)            
             };
@@ -74,7 +74,7 @@ namespace Puerts.UnitTest
         public void GenericWrapperWithConstraint_1()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Puerts.UnitTest.GenericWrapperWithConstraintStruct<TimeSpan>)         
             };
@@ -88,7 +88,7 @@ namespace Puerts.UnitTest
         public void GenericWrapperWithConstraint_2()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Puerts.UnitTest.GenericWrapperWithConstraintClass<JsEnv>)         
             };
@@ -102,7 +102,7 @@ namespace Puerts.UnitTest
         public void GenericWrapperWithConstraint_3()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Puerts.UnitTest.GenericWrapperWithConstraintNew<JsEnv>)         
             };
@@ -116,7 +116,7 @@ namespace Puerts.UnitTest
         public void GenericWrapperWithConstraint_4()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Puerts.UnitTest.GenericWrapperWithConstraintNewClass<JsEnv>)         
             };
@@ -130,7 +130,7 @@ namespace Puerts.UnitTest
         public void GenericWrapperWithConstraint_5()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            var wrapRender = jsEnv.Eval<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("require('puerts/templates/wrapper.tpl.cjs')");
+            var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() {
                 typeof(Puerts.UnitTest.GenericWrapperWithConstraintStringComparer<StringComparer>)         
             };

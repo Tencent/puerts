@@ -47,6 +47,8 @@ public:
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
         std::function<void(void*)> OnCall);
 
+    bool IsValid() const;
+
 protected:
     FORCEINLINE void Call_ProcessParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
         const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
@@ -112,6 +114,12 @@ private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void SlowCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        UObject* CallObject, UFunction* CallFunction, void* Params);
+
+    void FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        UObject* CallObject, UFunction* CallFunction, void* Params);
 
     void Init(UFunction* InFunction, bool IsDelegate);
 

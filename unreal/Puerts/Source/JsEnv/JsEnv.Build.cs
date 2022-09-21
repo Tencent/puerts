@@ -387,12 +387,50 @@ public class JsEnv : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            string V8LibraryPath = Path.Combine(LibraryPath, "Android", "armeabi-v7a");
-            RuntimeDependencies.Add("$(TargetOutputDir)/libnode.so", Path.Combine(V8LibraryPath, "libnode.so"));
-            AddRuntimeDependencies(new string[] { "libnode.so" }, V8LibraryPath, false);
-            V8LibraryPath = Path.Combine(LibraryPath, "Android", "arm64-v8a");
-            RuntimeDependencies.Add("$(TargetOutputDir)/libnode.so", Path.Combine(V8LibraryPath, "libnode.so"));
-            AddRuntimeDependencies(new string[] { "libnode.so" }, V8LibraryPath, false);
+            /*
+            #if UE_4_19_OR_LATER
+                        AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml"));
+            #else
+                        AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml")));
+            #endif
+            #if UE_4_24_OR_LATER
+                        PublicSystemLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "armeabi-v7a"));
+                        PublicSystemLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "arm64-v8a"));
+                        PublicSystemLibraries.Add("node");
+            #else
+                        PublicLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "armeabi-v7a"));
+                        PublicLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "arm64-v8a"));
+                        PublicAdditionalLibraries.Add("node");
+            #endif  //UE_4_24_OR_LATER
+            */
+            
+            string[] Archs = new string[] { "armeabi-v7a", "arm64-v8a" };
+            foreach (var Arch in Archs)
+            {
+                string V8LibraryPath = Path.Combine(LibraryPath, "Android", Arch);
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libhistogram.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libuvwasi.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode_stub.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_snapshot.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libzlib.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libllhttp.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libcares.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libuv.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnghttp2.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libbrotli.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_base_without_compiler.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_zlib.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_compiler.a"));
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_initializers.a"));
+                if (!Node16)
+                {
+                    PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
+                }
+            }
+            
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
@@ -427,12 +465,7 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_zlib.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_compiler.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_initializers.a"));
-            if (Node16)
-            {
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libngtcp2.a"));
-                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnghttp3.a"));
-            }
-            else
+            if (!Node16)
             {
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
             }

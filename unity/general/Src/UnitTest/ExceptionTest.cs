@@ -11,7 +11,6 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             var res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
                 let obj = new CS.Puerts.UnitTest.DerivedClass();
                 let res;
                 try{obj.adds(i,j);}catch(e){res = -1;}
@@ -26,7 +25,6 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
                 let obj = new CS.Puerts.UnitTest.DerivedClass();
                 let res;
                 try { res = obj.TestErrorParam('1');} catch(e){res = -1};
@@ -41,7 +39,6 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
                 let obj = new CS.Puerts.UnitTest.DerivedClass();
                 let s = new CS.Puerts.UnitTest.S(1,'anna');
                 let res;
@@ -59,7 +56,6 @@ namespace Puerts.UnitTest
             {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
-                    const CS = require('csharp');
                     let obj = new CS.Puerts.UnitTest.DerivedClass();
                     let iobj = new CS.Puerts.UnitTest.ISubA();
                     obj.TestErrorParamClass(undefined);"
@@ -74,7 +70,6 @@ namespace Puerts.UnitTest
 
             var jsEnv = new JsEnv(new TxtLoader());
             var res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
                 let obj = new CS.Puerts.UnitTest.BaseClass();
                 let iobj = new CS.Puerts.UnitTest.ISubA();
                 let res;
@@ -91,8 +86,6 @@ namespace Puerts.UnitTest
             {
                 var jsEnv = new JsEnv(new TxtLoader());
                 jsEnv.Eval(@"
-                    const CS = require('csharp');
-                    const PUERTS = require('puerts');
                     let obj = new CS.Puerts.UnitTest.DerivedClass();
                     let s = new CS.Puerts.UnitTest.S(1,'gyx');
                     obj.PrintStructRef(s);"
@@ -106,10 +99,8 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
-                const PUERTS = require('puerts');
                 let obj = new CS.Puerts.UnitTest.ISubA();
-                let arrayString = CS.System.Array.CreateInstance(PUERTS.$typeof(CS.System.String), 3);
+                let arrayString = CS.System.Array.CreateInstance(puerts.$typeof(CS.System.String), 3);
                 arrayString.set_Item(0, '111');
                 arrayString.set_Item(1, '222');
                 arrayString.set_Item(2, '333');
@@ -126,7 +117,6 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             int res = jsEnv.Eval<int>(@"
-                const CS = require('csharp');
                 try {
                     const timer = new CS.Puerts.UnitTest.Timer('expected to be a int');
                 } catch(e){res = -1;}
@@ -167,8 +157,6 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             jsEnv.Eval(@"
-                const CS = require('csharp');
-                const puerts = require('puerts');
                 global.catched = false;
                 puerts.on('unhandledRejection', function(reason) {
                     global.catched = true;
@@ -187,8 +175,6 @@ namespace Puerts.UnitTest
         {
             var jsEnv = new JsEnv(new TxtLoader());
             jsEnv.Eval(@"
-                const CS = require('csharp');
-                const puerts = require('puerts');
                 global.catched = false;
                 puerts.on('unhandledRejection', function(reason) {
                     global.catched = true;
@@ -216,7 +202,6 @@ namespace Puerts.UnitTest
             catch (Exception e) { }
 
             string jsErrorMessage = jsEnv.Eval<string>(@"
-                const csharp = require('csharp');
                 puerts.getLastException().message
             ");
             Assert.True(jsErrorMessage == "hello error");

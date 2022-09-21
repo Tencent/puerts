@@ -1,0 +1,42 @@
+name: build windows unity plugin
+
+inputs:
+  backend:
+    description: 'js backend'     
+    required: true
+  config:
+    type: choice
+    description: Release Or Debug
+    default: 'Release'
+    options:
+    - Release
+    - Debug
+  arch:
+    type: choice
+    description: building arch
+    default: 'auto'
+    options:
+      - auto
+      - x64
+      - ia32
+  GITHUB_TOKEN:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get backend artifact
+      uses: ./.github/workflows/composites/unity-download-backend/
+      with:
+        github_token: ${{ inputs.GITHUB_TOKEN }}
+        backend: ${{ inputs.backend }}
+    - name: Build
+      shell: powershell
+      run: |
+        cd unity\native_src
+        node make.js --platform win --backend ${{ inputs.backend }} --config ${{ inputs.config }} --arch ${{ inputs.arch }}
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        path: ./unity/Assets/Puerts/Plugins/**/*
+        name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

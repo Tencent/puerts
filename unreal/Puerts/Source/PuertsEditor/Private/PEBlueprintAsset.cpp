@@ -76,6 +76,18 @@ static bool IsPlaying()
         return;                                                                                            \
     }
 
+bool UPEBlueprintAsset::Existed(const FString& InName, const FString& InPath)
+{
+    FString BPPath = FString(TEXT(TS_BLUEPRINT_PATH)) / InPath / InName + TEXT(".uasset");
+    if (BPPath[0] == TEXT('/') || BPPath[0] == TEXT('\\'))
+    {
+        BPPath = BPPath.Mid(1);
+    }
+    BPPath = FPaths::ProjectContentDir() / BPPath;
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    return PlatformFile.FileExists(*BPPath);
+}
+
 bool UPEBlueprintAsset::LoadOrCreate(
     const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {

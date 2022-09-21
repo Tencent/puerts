@@ -74,5 +74,16 @@ namespace Puerts
         public BackendQuickJS(JsEnv env): base(env)
         {
         }
+
+        public void LowMemoryNotification()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            PuertsDLL.LowMemoryNotification(env.isolate);
+#if THREAD_SAFE
+            }
+#endif
+        }
     }
 }

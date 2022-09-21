@@ -595,15 +595,33 @@ public:
     }
 };
 
-class FScriptStructPropertyTranslator : public FPropertyWithDestructorReflection
+class FFastPropertyTranslator : public FPropertyWithDestructorReflection
 {
 public:
-    explicit FScriptStructPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    explicit FFastPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
     {
-        if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
+    }
+
+    virtual bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
+        void* TempBuff, void** OutValuePtr) const override
+    {
+        void* Ptr = FV8Utils::GetPointer(Context, Value);
+
+        if (Ptr)
         {
-            ParamShallowCopySize = StructProperty->Struct->GetStructureSize();
+            *OutValuePtr = Ptr;
+            return true;
         }
+        *OutValuePtr = TempBuff;
+        return JsToUE(Isolate, Context, Value, TempBuff, false);
+    }
+};
+
+class FScriptStructPropertyTranslator : public FFastPropertyTranslator
+{
+public:
+    explicit FScriptStructPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
+    {
     }
 
     v8::Local<v8::Value> UEToJs(
@@ -770,10 +788,10 @@ public:
 
 // containers
 
-class FScriptArrayPropertyTranslator : public FPropertyWithDestructorReflection
+class FScriptArrayPropertyTranslator : public FFastPropertyTranslator
 {
 public:
-    explicit FScriptArrayPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    explicit FScriptArrayPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
     {
         if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
@@ -820,10 +838,10 @@ public:
 private:
 };
 
-class FScriptSetPropertyTranslator : public FPropertyWithDestructorReflection
+class FScriptSetPropertyTranslator : public FFastPropertyTranslator
 {
 public:
-    explicit FScriptSetPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    explicit FScriptSetPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
     {
         if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
@@ -869,10 +887,10 @@ public:
 private:
 };
 
-class FScriptMapPropertyTranslator : public FPropertyWithDestructorReflection
+class FScriptMapPropertyTranslator : public FFastPropertyTranslator
 {
 public:
-    explicit FScriptMapPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    explicit FScriptMapPropertyTranslator(PropertyMacro* InProperty) : FFastPropertyTranslator(InProperty)
     {
         if (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm))
         {
@@ -1072,6 +1090,19 @@ public:
         return true;
     }
 
+    virtual bool JsToUEFast(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value,
+        void* TempBuff, void** OutValuePtr) const override
+    {
+        if (Value->IsObject())
+        {
+            auto Outer = Value->ToObject(Context).ToLocalChecked();
+            auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
+            return Inner->JsToUEFast(Isolate, Context, Realvalue, TempBuff, OutValuePtr);
+        }
+        *OutValuePtr = TempBuff;
+        return true;
+    }
+
     void UEOutToJs(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, const void* ValuePtr,
         bool PassByPointer) const override
     {
@@ -1082,7 +1113,7 @@ public:
             {
                 auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
                 auto Ptr = FV8Utils::GetPointer(Context, Realvalue);
-                if (Ptr)
+                if (Ptr && Ptr != ValuePtr)
                 {
                     FMemory::Memcpy(Ptr, ValuePtr, ParamShallowCopySize);
                     return;

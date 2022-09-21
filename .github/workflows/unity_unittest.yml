@@ -21,25 +21,16 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/v8_9.4/backend.rc)" >> $GITHUB_ENV
-        shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - uses: actions/checkout@v2
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Build plugin
-        run: |
-          md unity\general\vs2013\Bin
-          cd unity\native_src
-          node make.js --platform win --arch x64 --backend v8_9.4 --config Debug
+          backend: v8_9.4
+          config: Debug
+          arch: x64
       - name: UnitTest
         run: |
           cd unity\general\vs2013
@@ -51,25 +42,16 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/quickjs/backend.rc)" >> $GITHUB_ENV
-        shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - uses: actions/checkout@v2
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Build plugin
-        run: |
-          md unity\general\vs2013\Bin
-          cd unity\native_src
-          node make.js --platform win --arch x64 --backend quickjs --config Debug
+          backend: quickjs
+          config: Debug
+          arch: x64
       - name: UnitTest
         run: |
           cd unity\general\vs2013
@@ -82,25 +64,16 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/nodejs_16/backend.rc)" >> $GITHUB_ENV
-        shell: bash
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
+      - uses: actions/checkout@v2
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Build plugin
-        run: |
-          md unity\general\vs2013\Bin
-          cd unity\native_src
-          node make.js --platform win --arch x64 --backend nodejs_16 --config Debug
+          backend: nodejs_16
+          config: Debug
+          arch: x64
       - name: UnitTest
         run: |
           cd unity\general\vs2013
