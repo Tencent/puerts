@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-rc.0] - 2022-09-22
+1. fix the bug that inspector break point + `setInterval` will cause crash #707
+2. support multiple inspectors connection for one single JsEnv, `hotreload` can also be used with inspector at the same time now #841
+3. full platform support for Node.js (i.e. Android and iOS support added). upm package now uses Node.js Backend by default.
+4. In order to make Node.js features more convenient to use, and also to solve the problem of WebGL version in WeChat mini-games, from this version onwards, PuerTS no longer has built-in support for require. original `require('csharp')` and `require('puerts')` have been replaced by global variables `CS` and `puer `
+5. `ExecuteModule` handling of multi-level dependencies fixed.
+6. GeneralSetterManager/GeneralGetterManager optimization #688
+
+
 ## [1.4.0-preview.6] - 2022-07-08
 1. support multi inspector client 
 2. fix the inspector crash problem in unity2021.3.4+
