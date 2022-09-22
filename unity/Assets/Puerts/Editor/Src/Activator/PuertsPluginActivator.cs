@@ -373,6 +373,7 @@ public class PuertsPluginActivator
             Debug.LogWarning("[Puerts]can not change Plugin in play mode");
             return;
         }
+        if (type == PuertsBackEndType.None) return;
         var activatedBackEnd = activatePluginsForEditor(type);
         if (activatedBackEnd)
         {
@@ -395,6 +396,15 @@ public class PuertsPluginActivator
         UnityEditor.Menu.SetChecked(MENU_PATH + menuType, menuType == targetType);
     }
     [UnityEditor.MenuItem(MENU_PATH + "DisableAll", false)]
+    public static void disableAllPuertsPlugin()
+    {
+        PuertsPluginActivator.deactivateAllPlugins();
+        EditorBackEndTypeSetting.setCurEditorEngineType(PuertsBackEndType.None);
+        updateMenuItemState(PuertsBackEndType.None);
+    }
+    /// <summary>
+    /// puerts插件，所有平台禁用
+    /// </summary>
     public static void deactivateAllPlugins()
     {
         var importers = getPuertsPluginImporters(null);
@@ -441,7 +451,11 @@ public class PuertsPluginActivator
             }
 
         }
+
     }
+    /// <summary>
+    /// 所有puerts插件在编辑器平台禁用
+    /// </summary>
     private static void deactivateEditorPlugins()
     {
         var importers = getPuertsPluginImporters(null);
