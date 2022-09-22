@@ -58,7 +58,7 @@ namespace Puerts
                         if ((this.parameters != null || this.parameters.Count == 0) && string.IsNullOrEmpty(this.returns))
                         {
                             //sb.Append($"/** {this.summary[0]}");
-                            sb.Append(string.Format("/** {0}", this.summary[0]));
+                            sb.AppendLine(string.Format("/** {0}", this.summary[0]));
                         }
                         else
                         {
@@ -118,7 +118,11 @@ namespace Puerts
             {
                 var ext = Path.GetExtension(location);
                 var xmlFilePath = location.Substring(0, location.Length - ext.Length) + ".xml";
-
+                //增加文档查找路径 
+                if (!File.Exists(xmlFilePath))
+                {
+                    xmlFilePath = xmlFilePath.Replace("Library\\ScriptAssemblies\\", "Library\\CommonetDocs\\");
+                }
                 return resolver.ParseXml(xmlFilePath);
             }
             catch (Exception)
@@ -288,6 +292,7 @@ namespace Puerts
                 {
                     var pname = reader.GetAttribute("name");
                     var ptext = ReadSingleTextBlock(reader, body, "param");
+
                     if (!string.IsNullOrEmpty(ptext))
                     {
                         body.parameters[pname] = ptext;

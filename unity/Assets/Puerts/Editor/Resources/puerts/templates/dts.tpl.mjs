@@ -115,7 +115,8 @@ declare namespace CS {
                     
                     // properties start
                     distinctByName(type.Properties).forEach(property=> {
-                        t`${property.Document}
+                        t`
+                        ${property.Document}
                         `
 
                         var allowProperty = !type.IsInterface && (property.HasSetter || property.HasGetter); 
@@ -136,7 +137,8 @@ declare namespace CS {
 
                     // methods start
                     toJsArray(type.Methods).forEach(method=> {
-                        t`${method.Document}
+                        t`
+                        ${method.Document}
                         `
                         !type.IsInterface && t`public `;
                         method.IsStatic && t`static `;
