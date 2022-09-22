@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.0-rc.0] - 2022-07-25
+## [1.4.0-rc.0] - 2022-09-22
 1. 修复了在inspector下打断点+`setInterval`会引起crash的bug #707
 2. 支持一个JsEnv连接多个inspector，hotreload也能和inspector同时使用了 #841
 3. 全平台支持了Node.js（也就是新增了Android和iOS的支持）。upm包现在默认全使用Node.js Backend了。
