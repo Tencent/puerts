@@ -13,6 +13,7 @@ you can get the english version change log at [Github Release](https://github.co
 4. In order to make Node.js features more convenient to use, and also to solve the problem of WebGL version in WeChat mini-games, from this version onwards, PuerTS no longer has built-in support for require. original `require('csharp')` and `require('puerts')` have been replaced by global variables `CS` and `puer `
 5. `ExecuteModule` handling of multi-level dependencies fixed.
 6. GeneralSetterManager/GeneralGetterManager optimization #688
+7. Add `JsEnv.Backend` and add some GC API. `LowMemoryNotification` has moved into it too.
 
 
 ## [1.4.0-preview.6] - 2022-07-08
