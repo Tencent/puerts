@@ -609,6 +609,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     Require.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__require")).ToLocalChecked().As<v8::Function>());
 
+    GetESMMain.Reset(
+        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "getESMMain")).ToLocalChecked().As<v8::Function>());
+
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
     DelegateProxiesCheckerHandler =
@@ -653,6 +656,7 @@ FJsEnvImpl::~FJsEnvImpl()
     ManualReleaseCallbackMap.Reset();
     InspectorMessageHandler.Reset();
     Require.Reset();
+    GetESMMain.Reset();
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
@@ -3301,7 +3305,31 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
         FString OutDebugPath;
         if (ModuleLoader->Search(DirName, RefModuleName, OutPath, OutDebugPath))
         {
-            if (OutPath.EndsWith(TEXT(".mjs")))
+            if (OutPath.EndsWith(TEXT("package.json")))
+            {
+                TArray<uint8> PackageData;
+                if (ModuleLoader->Load(OutPath, PackageData))
+                {
+                    FString PackageScript;
+                    FFileHelper::BufferToString(PackageScript, PackageData.GetData(), PackageData.Num());
+                    v8::Local<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, PackageScript)};
+
+                    auto MaybeRet = GetESMMain.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 1, Args);
+
+                    v8::Local<v8::Value> ESMMainValue;
+                    if (MaybeRet.ToLocal(&ESMMainValue) && ESMMainValue->IsString())
+                    {
+                        FString ESMMain = FV8Utils::ToFString(Isolate, ESMMainValue);
+                        FString ESMMainOutPath;
+                        FString ESMMainOutDebugPath;
+                        if (ModuleLoader->Search(FPaths::GetPath(OutPath), ESMMain, ESMMainOutPath, ESMMainOutDebugPath))
+                        {
+                            OutPath = ESMMainOutPath;
+                        }
+                    }
+                }
+            }
+            if (OutPath.EndsWith(TEXT(".mjs")) || OutPath.EndsWith(TEXT(".js")))
             {
                 auto RefModule = FetchESModuleTree(Context, OutPath);
                 if (RefModule.IsEmpty())
@@ -3313,7 +3341,7 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
             }
         }
 
-        auto RefModule = FetchCJSModuleAsESModule(Context, RefModuleName);
+        auto RefModule = FetchCJSModuleAsESModule(Context, OutPath.EndsWith(TEXT(".cjs")) ? OutPath : RefModuleName);
 
         if (RefModule.IsEmpty())
         {
@@ -3430,6 +3458,27 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     CHECK_V8_ARGS(EArgString, EArgString);
 
     v8::Local<v8::String> Source = Info[0]->ToString(Context).ToLocalChecked();
+
+#ifndef WITH_QUICKJS
+    bool IsESM = Info[2]->BooleanValue(Isolate);
+
+    if (IsESM)
+    {
+        FString FullPath = FV8Utils::ToFString(Isolate, Info[3]);
+        v8::Local<v8::Module> RootModule;
+
+        if (!FetchESModuleTree(Context, FullPath).ToLocal(&RootModule))
+        {
+            return;
+        }
+
+        if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
+        {
+            __USE(RootModule->Evaluate(Context));
+        }
+        return;
+    }
+#endif
 
     v8::String::Utf8Value UrlArg(Isolate, Info[1]);
     FString ScriptUrl = UTF8_TO_TCHAR(*UrlArg);

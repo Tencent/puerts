@@ -496,6 +496,8 @@ private:
 
     v8::Global<v8::Function> Require;
 
+    v8::Global<v8::Function> GetESMMain;
+
     v8::Global<v8::Function> ReloadJs;
 
     TMap<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
