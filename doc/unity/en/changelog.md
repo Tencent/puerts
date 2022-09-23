@@ -15,6 +15,7 @@ you can get the english version change log at [Github Release](https://github.co
 6. GeneralSetterManager/GeneralGetterManager optimization #688
 7. fix the bug that inspector break point + `setInterval` will cause crash #707
 8. support multiple inspectors connection for one single JsEnv, `hotreload` can also be used with inspector at the same time now #841
+9. remove `Node.js backend`'s `--no-browser-globals`
 
 
 ## [1.4.0-preview.6] - 2022-07-08
