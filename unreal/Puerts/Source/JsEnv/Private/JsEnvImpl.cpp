@@ -3234,26 +3234,63 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchCJSModuleAsESModule(v8::Local<v8::Co
         return v8::MaybeLocal<v8::Module>();
     }
 
-    v8::Local<v8::Module> SyntheticModule = v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName),
-        {v8::String::NewFromUtf8(Isolate, "default", v8::NewStringType::kNormal).ToLocalChecked()},
-        [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
+    auto CJSValue = MaybeRet.ToLocalChecked();
+    std::vector<v8::Local<v8::String>> ExportNames = {
+        v8::String::NewFromUtf8(Isolate, "default", v8::NewStringType::kNormal).ToLocalChecked()};
+
+    if (CJSValue->IsObject())
+    {
+        auto JsObject = CJSValue->ToObject(Context).ToLocalChecked();
+        auto Keys = JsObject->GetOwnPropertyNames(Context).ToLocalChecked();
+        for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
         {
-            const auto IsolateInner = ContextInner->GetIsolate();
-            auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(IsolateInner));
+            v8::Local<v8::Value> Key;
+            if (Keys->Get(Context, i).ToLocal(&Key))
+            {
+                // UE_LOG(LogTemp, Warning, TEXT("---'%s' '%s'"), *ModuleName, *FV8Utils::ToFString(Isolate, Key));
+                ExportNames.push_back(Key->ToString(Context).ToLocalChecked());
+            }
+        }
+    }
 
-            const auto ModuleInfoIt = Self->FindModuleInfo(Module);
-            check(ModuleInfoIt != Self->HashToModuleInfo.end());
+    v8::Local<v8::Module> SyntheticModule =
+        v8::Module::CreateSyntheticModule(Isolate, FV8Utils::ToV8String(Isolate, ModuleName), ExportNames,
+            [](v8::Local<v8::Context> ContextInner, v8::Local<v8::Module> Module) -> v8::MaybeLocal<v8::Value>
+            {
+                const auto IsolateInner = ContextInner->GetIsolate();
+                auto Self = static_cast<FJsEnvImpl*>(FV8Utils::IsolateData<IObjectMapper>(IsolateInner));
 
-            __USE(Module->SetSyntheticModuleExport(IsolateInner,
-                v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(),
-                ModuleInfoIt->second->CJSValue.Get(IsolateInner)));
+                const auto ModuleInfoIt = Self->FindModuleInfo(Module);
+                check(ModuleInfoIt != Self->HashToModuleInfo.end());
+                auto CJSValueInner = ModuleInfoIt->second->CJSValue.Get(IsolateInner);
 
-            return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
-        });
+                __USE(Module->SetSyntheticModuleExport(IsolateInner,
+                    v8::String::NewFromUtf8(IsolateInner, "default", v8::NewStringType::kNormal).ToLocalChecked(), CJSValueInner));
+
+                if (CJSValueInner->IsObject())
+                {
+                    auto JsObjectInner = CJSValueInner->ToObject(ContextInner).ToLocalChecked();
+                    auto KeysInner = JsObjectInner->GetOwnPropertyNames(ContextInner).ToLocalChecked();
+                    for (decltype(KeysInner->Length()) ii = 0; ii < KeysInner->Length(); ++ii)
+                    {
+                        v8::Local<v8::Value> KeyInner;
+                        v8::Local<v8::Value> ValueInner;
+                        if (KeysInner->Get(ContextInner, ii).ToLocal(&KeyInner) &&
+                            JsObjectInner->Get(ContextInner, KeyInner).ToLocal(&ValueInner))
+                        {
+                            // UE_LOG(LogTemp, Warning, TEXT("-----set '%s'"), *FV8Utils::ToFString(IsolateInner, KeyInner));
+                            __USE(Module->SetSyntheticModuleExport(
+                                IsolateInner, KeyInner->ToString(ContextInner).ToLocalChecked(), ValueInner));
+                        }
+                    }
+                }
+
+                return v8::MaybeLocal<v8::Value>(v8::True(IsolateInner));
+            });
 
     FModuleInfo* Info = new FModuleInfo;
     Info->Module.Reset(Isolate, SyntheticModule);
-    Info->CJSValue.Reset(Isolate, MaybeRet.ToLocalChecked());
+    Info->CJSValue.Reset(Isolate, CJSValue);
     HashToModuleInfo.emplace(SyntheticModule->GetIdentityHash(), Info);
 
     return SyntheticModule;
@@ -3474,8 +3511,13 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
         if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
         {
-            __USE(RootModule->Evaluate(Context));
+            auto Result = RootModule->Evaluate(Context);
+            if (!Result.IsEmpty())
+            {
+                Info.GetReturnValue().Set(Result.ToLocalChecked());
+            }
         }
+
         return;
     }
 #endif

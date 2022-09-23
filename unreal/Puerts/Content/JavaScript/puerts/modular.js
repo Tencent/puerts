@@ -63,9 +63,10 @@ var global = global || (function () { return this; }());
         let wrapped = evalScript(
             // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
             // to enable stepping through original source in-place.
-            "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
+            isESM ? script: "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
             debugPath, isESM, fullPath
         )
+        if (isESM) return wrapped;
         wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
         return module.exports;
     }
@@ -121,7 +122,7 @@ var global = global || (function () { return this; }());
                 let packageConfigure = JSON.parse(script);
                 
                 if (fullPath.endsWith("package.json") && packageConfigure.main) {
-                    isESM = isESM || packageConfigure.type === "module"
+                    isESM = packageConfigure.type === "module"
                     let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
                     let tmpRequire = genRequire(fullDirInJs, isESM);
                     let r = tmpRequire(packageConfigure.main);

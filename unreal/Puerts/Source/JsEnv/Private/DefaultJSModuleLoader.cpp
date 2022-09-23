@@ -71,8 +71,8 @@ bool DefaultJSModuleLoader::SearchModuleInDir(
     {
         return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
                SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath);
+               SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath) ||
+               SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath);
     }
     else
     {
