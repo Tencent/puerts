@@ -91,6 +91,8 @@ PuerTS is a TypeScript programming solution within game engines. | PuerTS是游�
 
 ## Ask for help | 技术支持
 
+[Discord](https://discord.gg/RYRY7D833n)
+
 [Github Discussion](https://github.com/Tencent/puerts/discussions)
 
 QQ群：942696334
