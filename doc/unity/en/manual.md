@@ -33,7 +33,7 @@
     在js/ts调用时，可以找到该类；
 
     - 会生成一个静态类（wrap），在js调用时，直接静态调用，加快调用速度，否则是通过反射调用。
-    - 在index.d.ts中生成函数的声明，在ts调用时，import时，可以找到。
+    - 在index.d.ts中生成函数的声明，在ts调用时，可以由代码提示找到。
 
   - **用法**
 
@@ -225,7 +225,7 @@
     如果后续不需要-=，那么可以直接传函数当delegate。
 
     ```typescript
-    import { PuertsTest, System } from 'csharp'
+    const { PuertsTest, System } = CS
     let obj = new PuertsTest.DerivedClass();
     obj.MyCallback = msg => console.log("do not need remove, msg=" + msg);
     ```
@@ -275,8 +275,8 @@
   ```
 
   ```typescript
-  import {PuertsTest} from 'csharp'
-  import {$ref, $unref} from 'puerts'
+  const {PuertsTest} = CS
+  const {$ref, $unref} = puer
   let obj = new PuertsTest.DerivedClass();
   let p1 = $ref();
   let p2 = $ref(10);
@@ -308,8 +308,8 @@
     ```
 
     ```typescript
-    import {PuertsTest,System} from 'csharp'
-    import {$generic} from 'puerts'
+    const {PuertsTest,System} = CS
+    const {$generic} = puer
     //$generic调用性能不会太好，同样泛型参数建议整个工程，至少一个文件内只做一次
     let List = $generic(System.Collections.Generic.List$1, System.Int32);
     let Dictionary = $generic(System.Collections.Generic.Dictionary$2, System.String, List);
@@ -349,8 +349,8 @@
     ```
 
     ```typescript
-    import {PuertsTest,System} from 'csharp'
-    import {$typeof} from 'puerts'
+    const {PuertsTest,System} = CS
+    const {$typeof} = puer
     let arr = System.Array.CreateInstance($typeof(System.Int32),3) as System.Array$1<number>;
     arr.set_Item(0, 11);
     arr.set_Item(1, 22);
@@ -381,8 +381,8 @@
   ```
 
   ```typescript
-  import {PuertsTest} from 'csharp'
-  import {$extension} from 'puerts'
+  const {PuertsTest} = CS
+  const {$extension} = puer
   $extension(PuertsTest.BaseClass, PuertsTest.BaseClassExtension);
   let obj = new PuertsTest.BaseClass();
   obj.Extension1();	
@@ -414,8 +414,8 @@
   ```
 
   ```typescript
-  import {PuertsTest} from 'csharp'
-  import {$promise} from 'puerts'
+  const {PuertsTest} = CS
+  const {$promise} = puer
   async function asyncCall() {
       let obj = new PuertsTest.DerivedClass();
       let task = obj.GetFileLength("Assets/Examples/05_Typescript/TsQuickStart.cs");
@@ -448,8 +448,8 @@
     ```
 
     ```typescript
-    import {PuertsTest} from 'csharp'
-    import {$set} from 'puerts'
+    const {PuertsTest} = CS
+    const {$set} = puer
     let a = 10;
     let b = $ref(10);
     //b = 20; 如果这样赋值的话，最后运行结果 b = undefined 
@@ -480,7 +480,7 @@
     ```
     
     ```typescript
-    import {PuertsTest} from 'csharp'
+    const {PuertsTest} = CS
     let obj1 = new PuertsTest.BaseClass();
     let obj2 = new PuertsTest.BaseClass();
     obj1.baseIntField = 11;

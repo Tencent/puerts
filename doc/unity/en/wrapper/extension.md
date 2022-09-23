@@ -7,7 +7,7 @@ puerts会在生成代码时帮你遍历整个assembly，将该类存在的所有
 2. 在JS侧调用手动扩展函数
 如下图所示，参数0是扩展目标类，参数1是包含扩展函数的扩展类。你可以在JsEnv初始化的位置去调用这个函数
 ```
-puerts.$extension(CS.PuertsTest.BaseClass, CS.PuertsTest.BaseClassExtension);
+puer.$extension(CS.PuertsTest.BaseClass, CS.PuertsTest.BaseClassExtension);
 ```
 
 3. 打开PUERTS_REFLECT_ALL_EXTENSION宏
