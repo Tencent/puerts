@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
 ## [1.4.0-rc.0] - 2022-09-22
-1. 修复了在inspector下打断点+`setInterval`会引起crash的bug #707
-2. 支持一个JsEnv连接多个inspector，hotreload也能和inspector同时使用了 #841
 3. 全平台支持了Node.js（也就是新增了Android和iOS的支持）。upm包现在默认全使用Node.js Backend了。
 4. 为了让Node.js功能使用起来更方便，也同时解决WebGL版本在微信小游戏的问题，从本版本开始，PuerTS不再内置支持require。原本的`require('csharp')`和`require('puerts')`改为了全局变量`CS` 和 `puer`
+7. 添加 `JsEnv.Backend` 并加入了一些GC API. `LowMemoryNotification` 也移进去了。
 5. `ExecuteModule`处理多级依赖的问题修复。
 6. GeneralSetterManager/GeneralGetterManager优化 #688
+1. 修复了在inspector下打断点+`setInterval`会引起crash的bug #707
+2. 支持一个JsEnv连接多个inspector，hotreload也能和inspector同时使用了 #841
 
 ## [1.4.0-preview.6] - 2022-07-25
 1. 支持同时连接多个inspector调试端
