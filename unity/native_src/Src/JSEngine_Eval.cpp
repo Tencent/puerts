@@ -92,6 +92,14 @@ namespace puerts {
             Isolate->ThrowException(v8::Exception::Error(FV8Utils::V8String(Isolate, ErrorMessage.c_str())));
             return v8::MaybeLocal<v8::Module> {};
         }
+        if (pathForDebug != nullptr) 
+        {
+            int slen = strlen(pathForDebug);
+            if (slen == 0)
+            {
+                pathForDebug = strcpy(pathForDebug, Specifier_std.c_str());
+            }
+        }
         v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, (const char*)pathForDebug),
                             v8::Integer::New(Isolate, 0),                      // line offset
                             v8::Integer::New(Isolate, 0),                    // column offset
@@ -143,6 +151,22 @@ namespace puerts {
         }
 
         return true;
+    }
+    
+    void JSEngine::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+    {
+        v8::Isolate* Isolate = Context->GetIsolate();
+        auto* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+
+        auto iter = JsEngine->ScriptIdToPathMap.find(Module->ScriptId());
+        if (iter != JsEngine->ScriptIdToPathMap.end()) 
+        {
+            meta->CreateDataProperty(
+                Context, 
+                FV8Utils::V8String(Context->GetIsolate(), "url"), 
+                FV8Utils::V8String(Context->GetIsolate(), iter->second.c_str())
+            ).ToChecked();
+        }
     }
 #else 
     JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque) {
