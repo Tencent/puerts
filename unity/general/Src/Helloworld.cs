@@ -11,13 +11,10 @@ public class PuertsTest
 {
     public static void Main()
     {
-        var loader = new TxtLoader();
-        loader.AddMockFileContent("main.mjs", @"
-            CS.System.Console.WriteLine('' + 123123);
-            CS.System.Console.WriteLine('' + import.meta.url);
+        var jsEnv = new JsEnv(new TxtLoader());
+        jsEnv.Eval(@"
+            CS.System.Console.WriteLine('hello world');
         ");
-        var jsEnv = new JsEnv(loader);
-        jsEnv.ExecuteModule("main.mjs");
         jsEnv.Dispose();
     }
 }
