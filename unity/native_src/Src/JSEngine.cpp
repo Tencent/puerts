@@ -134,6 +134,10 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(MainIsolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
+#if !WITH_QUICKJS
+        MainIsolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
+#endif
+
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(MainIsolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(MainIsolate, v8::Map::New(MainIsolate));

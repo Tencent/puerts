@@ -26,8 +26,8 @@ namespace puerts {
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
         size_t Specifier_length = Specifier_std.length();
 
-        auto Iter = JsEngine->ModuleCacheMap.find(Specifier_std);
-        if (Iter != JsEngine->ModuleCacheMap.end())//create and link
+        auto Iter = JsEngine->PathToModuleMap.find(Specifier_std);
+        if (Iter != JsEngine->PathToModuleMap.end())//create and link
         {
             return v8::Local<v8::Module>::New(Isolate, Iter->second);
         }
@@ -62,8 +62,24 @@ namespace puerts {
             return v8::MaybeLocal<v8::Module>();
         }
 
-        JsEngine->ModuleCacheMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
+        JsEngine->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
         return Module;
+    }
+
+    void JSEngine::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+    {
+        v8::Isolate* Isolate = Context->GetIsolate();
+        auto* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+
+        auto iter = JsEngine->ScriptIdToPathMap.find(Module->6());
+        if (iter != JsEngine->ScriptIdToPathMap.end()) 
+        {
+            meta->CreateDataProperty(
+                Context, 
+                FV8Utils::V8String(Context->GetIsolate(), "url"), 
+                FV8Utils::V8String(Context->GetIsolate(), iter->second.c_str())
+            ).ToChecked();
+        }
     }
 #else 
     JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque) {
@@ -74,8 +90,8 @@ namespace puerts {
         std::string name_std(name);
         size_t name_length = name_std.length();
 
-        auto Iter = JsEngine->ModuleCacheMap.find(name_std);
-        if (Iter != JsEngine->ModuleCacheMap.end())//create and link
+        auto Iter = JsEngine->PathToModuleMap.find(name_std);
+        if (Iter != JsEngine->PathToModuleMap.end())//create and link
         {
             return Iter->second;
         }
@@ -96,7 +112,7 @@ namespace puerts {
 
         auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
 
-        JsEngine->ModuleCacheMap[name_std] = module_;
+        JsEngine->PathToModuleMap[name_std] = module_;
 
         return module_;
     }
