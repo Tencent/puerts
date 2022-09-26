@@ -59,10 +59,11 @@ namespace puerts {
     }
 
 #if !WITH_QUICKJS
-    v8::MaybeLocal<v8::Module> ResolveModule(
+    v8::MaybeLocal<v8::Module> _ResolveModule(
         v8::Local<v8::Context> Context,
         v8::Local<v8::String> Specifier,
-        v8::Local<v8::Module> Referrer
+        v8::Local<v8::Module> Referrer,
+        bool& isFromCache
     )
     {
         v8::Isolate* Isolate = Context->GetIsolate();
@@ -81,6 +82,7 @@ namespace puerts {
         const auto cacheIter = JsEngine->PathToModuleMap.find(Specifier_std);
         if (cacheIter != JsEngine->PathToModuleMap.end())//create and link
         {
+            isFromCache = true;
             return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
         }
         v8::Local<v8::Module> Module;
@@ -118,6 +120,15 @@ namespace puerts {
         JsEngine->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
         return Module;
     }
+    v8::MaybeLocal<v8::Module> ResolveModule(
+        v8::Local<v8::Context> Context,
+        v8::Local<v8::String> Specifier,
+        v8::Local<v8::Module> Referrer
+    )
+    {
+        bool isFromCache = false;
+        return _ResolveModule(Context, Specifier, Referrer, isFromCache);
+    }
 
     bool LinkModule(
         v8::Local<v8::Context> Context,
@@ -131,14 +142,18 @@ namespace puerts {
         {
             v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
 
-            v8::MaybeLocal<v8::Module> MaybeModule = ResolveModule(Context, Specifier_v8, RefModule);
+            bool isFromCache = false;
+            v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, RefModule, isFromCache);
             if (MaybeModule.IsEmpty())
             {
                 return false;
             }
-            if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
+            if (!isFromCache) 
             {
-                return false;
+                if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
+                {
+                    return false;
+                }
             }
         }
 

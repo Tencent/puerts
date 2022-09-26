@@ -170,6 +170,55 @@ namespace Puerts.UnitTest
             Assert.True(ret == "hello");
 
             jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportCircular()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("module1.mjs", @"
+                import module2 from './module2.mjs';
+                CS.System.Console.WriteLine('module1 loading');
+
+                function callMe(msg)
+                {
+                    module2.callMe('module 2');
+                    CS.System.Console.WriteLine('callMe called', msg);
+                }
+
+                class M1
+                {
+                    constructor()
+                    {
+                        CS.System.Console.WriteLine('M1');
+                    }
+                }
+
+                export default { callMe, M1 };
+            ");
+            loader.AddMockFileContent("module2.mjs", @"
+                import module1 from './module1.mjs';
+                CS.System.Console.WriteLine('module2 loading');
+
+                function callMe(msg)
+                {
+                    new module1.M1();
+                    CS.System.Console.WriteLine('callMe called', msg);
+                }
+
+
+                export default { callMe };
+            ");
+            loader.AddMockFileContent("main.mjs", @"
+                import module1 from './module1.mjs';
+                import module2 from './module2.mjs';
+
+                module1.callMe('from john');
+                module2.callMe('from bob');
+            ");
+            var jsEnv = new JsEnv(loader);
+
+            jsEnv.ExecuteModule("main.mjs");
+            jsEnv.Dispose();
         }/*
         [Test]
         public void ESModuleImportCSharpNamespace()
