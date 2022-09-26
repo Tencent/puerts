@@ -157,6 +157,71 @@ namespace Puerts.UnitTest
             jsEnv.Dispose();
         }
         [Test]
+        public void ESModuleImportRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("a/entry.mjs", @"
+                import { str } from '../b/whatever.mjs'; 
+                export { str };
+            ");
+            loader.AddMockFileContent("b/whatever.mjs", @"export const str = 'hello'");
+            var jsEnv = new JsEnv(loader);
+            string ret = jsEnv.ExecuteModule<string>("a/entry.mjs", "str");
+
+            Assert.True(ret == "hello");
+
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportCircular()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("module1.mjs", @"
+                import module2 from './module2.mjs';
+                CS.System.Console.WriteLine('module1 loading');
+
+                function callMe(msg)
+                {
+                    module2.callMe('module 2');
+                    CS.System.Console.WriteLine('callMe called', msg);
+                }
+
+                class M1
+                {
+                    constructor()
+                    {
+                        CS.System.Console.WriteLine('M1');
+                    }
+                }
+
+                export default { callMe, M1 };
+            ");
+            loader.AddMockFileContent("module2.mjs", @"
+                import module1 from './module1.mjs';
+                CS.System.Console.WriteLine('module2 loading');
+
+                function callMe(msg)
+                {
+                    new module1.M1();
+                    CS.System.Console.WriteLine('callMe called', msg);
+                }
+
+
+                export default { callMe };
+            ");
+            loader.AddMockFileContent("main.mjs", @"
+                import module1 from './module1.mjs';
+                import module2 from './module2.mjs';
+
+                module1.callMe('from john');
+                module2.callMe('from bob');
+            ");
+            var jsEnv = new JsEnv(loader);
+
+            jsEnv.ExecuteModule("main.mjs");
+            jsEnv.Dispose();
+        }/*
+        [Test]
         public void ESModuleImportCSharpNamespace()
         {
             var loader = new TxtLoader();
@@ -172,6 +237,6 @@ namespace Puerts.UnitTest
             Assert.True(ns.GetType() == typeof(JSObject));
 
             jsEnv.Dispose();
-        }
+        }*/
     }
 }

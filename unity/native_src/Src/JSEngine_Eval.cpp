@@ -13,10 +13,11 @@ namespace puerts {
     std::string CjsModuleAppend("');");
 
 #if !WITH_QUICKJS
-    v8::MaybeLocal<v8::Module> ResolveModule(
+    v8::MaybeLocal<v8::Module> _ResolveModule(
         v8::Local<v8::Context> Context,
         v8::Local<v8::String> Specifier,
-        v8::Local<v8::Module> Referrer
+        v8::Local<v8::Module> Referrer,
+        bool& isFromCache
     )
     {
         v8::Isolate* Isolate = Context->GetIsolate();
@@ -26,10 +27,18 @@ namespace puerts {
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
         size_t Specifier_length = Specifier_std.length();
 
-        auto Iter = JsEngine->PathToModuleMap.find(Specifier_std);
-        if (Iter != JsEngine->PathToModuleMap.end())//create and link
+        const auto referIter = JsEngine->ScriptIdToPathMap.find(Referrer->ScriptId()); 
+        if (referIter != JsEngine->ScriptIdToPathMap.end())
         {
-            return v8::Local<v8::Module>::New(Isolate, Iter->second);
+            std::string referPath_std = referIter->second;
+            Specifier_std = NormalizePath(Specifier_std, referPath_std);
+        }
+
+        const auto cacheIter = JsEngine->PathToModuleMap.find(Specifier_std);
+        if (cacheIter != JsEngine->PathToModuleMap.end())//create and link
+        {
+            isFromCache = true;
+            return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
         }
         v8::Local<v8::Module> Module;
         const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
@@ -64,6 +73,15 @@ namespace puerts {
 
         JsEngine->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
         return Module;
+    }
+    v8::MaybeLocal<v8::Module> ResolveModule(
+        v8::Local<v8::Context> Context,
+        v8::Local<v8::String> Specifier,
+        v8::Local<v8::Module> Referrer
+    )
+    {
+        bool isFromCache = false;
+        return _ResolveModule(Context, Specifier, Referrer, isFromCache);
     }
 
     void JSEngine::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
