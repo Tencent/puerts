@@ -92,14 +92,6 @@ namespace puerts {
             Isolate->ThrowException(v8::Exception::Error(FV8Utils::V8String(Isolate, ErrorMessage.c_str())));
             return v8::MaybeLocal<v8::Module> {};
         }
-        if (pathForDebug != nullptr) 
-        {
-            int slen = strlen(pathForDebug);
-            if (slen == 0)
-            {
-                pathForDebug = strcpy(pathForDebug, Specifier_std.c_str());
-            }
-        }
         v8::ScriptOrigin Origin(FV8Utils::V8String(Isolate, (const char*)pathForDebug),
                             v8::Integer::New(Isolate, 0),                      // line offset
                             v8::Integer::New(Isolate, 0),                    // column offset
