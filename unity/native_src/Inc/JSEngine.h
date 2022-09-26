@@ -22,16 +22,6 @@
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
 
-#if PUERTS_UT
-# if PLATFORM_WINDOWS
-#  define __declspec(dllexport)
-# else
-#  define __attribute__ ((visibility("default")))
-# endif
-#else 
-# define PUERTS_EXPORT_FOR_UT
-#endif
-
 #if WITH_NODEJS
 #pragma warning(push, 0)
 #include "node.h"
