@@ -363,6 +363,11 @@ namespace Puerts.Editor
                     return isParams ? (GetTsTypeName(type.GetElementType()) + "[]") : ("System.Array$1<" + GetTsTypeName(type.GetElementType()) + ">");
                 else if (type.IsGenericType)
                 {
+                    var underlyingType = Nullable.GetUnderlyingType(type);
+                    if (underlyingType != null)
+                    {
+                        return GetTsTypeName(underlyingType) + " | null";
+                    }
                     var fullName = type.FullName == null ? type.ToString() : type.FullName;
                     var parts = fullName.Replace('+', '.').Split('`');
                     var argTypenames = type.GetGenericArguments()
