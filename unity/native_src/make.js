@@ -299,9 +299,9 @@ async function runMake() {
         sx.cp(filepath, OUTPUT_PATH)
         if (options.config != 'Release') {
             if (!fs.existsSync('../general/vs2013/Bin'))
-                sx.mkdir('-p', filepath, '../general/vs2013/Bin')
+                sx.mkdir('-p', '../general/vs2013/Bin')
             if (!fs.existsSync('../general/vs2022/Bin'))
-                sx.mkdir('-p', filepath, '../general/vs2022/Bin')
+                sx.mkdir('-p', '../general/vs2022/Bin')
             sx.cp(filepath, '../general/vs2022/Bin')
             sx.cp(filepath, '../general/vs2013/Bin')
         }
