@@ -245,8 +245,6 @@ namespace Puerts
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-            if (loader.FileExists(filename))
-            {
 #if THREAD_SAFE
             lock(this) {
 #endif
@@ -263,17 +261,10 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
-            }
-            else
-            {
-                throw new InvalidProgramException("can not find " + filename);
-            }
         }
 
         public void ExecuteModule(string filename)
         {
-            if (loader.FileExists(filename))
-            {
 #if THREAD_SAFE
             lock(this) {
 #endif
@@ -287,11 +278,6 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
-            }
-            else
-            {
-                throw new InvalidProgramException("can not find " + filename);
-            }
         }
 
         public void Eval(string chunk, string chunkName = "chunk")

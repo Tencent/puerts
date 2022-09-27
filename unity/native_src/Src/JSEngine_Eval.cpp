@@ -19,6 +19,15 @@ namespace puerts {
         return path[0] == '/';
 #endif
     }
+    bool IsRelativePath(const std::string& path) {
+        if (path[0] == '.') {
+            if (path.length() == 1 || path[1] == '/') return true;
+            if (path[1] == '.') {
+                if (path.length() == 2 || path[2] == '/') return true;
+            }
+        }
+        return false;
+    }
 
     // Returns the directory part of path, without the trailing '/'.
     std::string DirName(const std::string& path) { 
@@ -34,10 +43,10 @@ namespace puerts {
     std::string NormalizePath(const std::string& path,
                               const std::string& from_path) {
         std::string absolute_path;
-        if (IsAbsolutePath(path)) {
-            absolute_path = path;
-        } else {
+        if (IsRelativePath(path)) {
             absolute_path = DirName(from_path) + '/' + path;
+        } else {
+            absolute_path = path;
         }
         std::replace(absolute_path.begin(), absolute_path.end(), '\\', '/');
         std::vector<std::string> segments;
