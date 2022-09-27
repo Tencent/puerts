@@ -220,6 +220,32 @@ namespace Puerts.UnitTest
 
             jsEnv.ExecuteModule("main.mjs");
             jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportNotRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("lib/test.mjs", @"
+                import { M2 } from 'module2.mjs';
+                const Test = 'Test ' + M2
+
+                export { Test };
+            ");
+            loader.AddMockFileContent("module2.mjs", @"
+                const M2 = 'M2';
+                export { M2 };
+            ");
+            loader.AddMockFileContent("main.mjs", @"
+                import { M2 } from 'module2.mjs'
+                import { Test } from './lib/test.mjs';
+
+                export default M2 + Test;
+            ");
+            var jsEnv = new JsEnv(loader);
+
+            string res = jsEnv.ExecuteModule<string>("main.mjs", "default");
+            Assert.True(res == "M2Test M2");
+            jsEnv.Dispose();
         }/*
         [Test]
         public void ESModuleImportCSharpNamespace()
