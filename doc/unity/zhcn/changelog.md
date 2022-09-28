@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.0-rc.1] - 2022-09-24
+## [1.4.0-rc.2] - 2022-09-28
 1. 全平台支持了Node.js（也就是新增了Android和iOS的支持）。upm包现在默认全使用Node.js Backend了。
-2. 为了让Node.js功能使用起来更方便，也同时解决WebGL版本在微信小游戏的问题，从本版本开始，PuerTS不再内置支持require。原本的`require('csharp')`和`require('puerts')`改为了全局变量`CS` 和 `puer`
+2. 为了让Node.js功能使用起来更方便，也同时解决WebGL版本在微信小游戏的问题，从本版本开始，添加全局变量`CS` 和 `puer`，对应原本的`require('csharp')`和`require('puerts')`。PuerTS的`require`不再建议使用，原有的使用require的地方请改成`global.CS`、`global.puer`、`import 'xxx'`。PuerTS的require将考虑在1.5版本去掉。
 3. 添加 `JsEnv.Backend` 并加入了一些GC API. `LowMemoryNotification` 也移进去了。
 4. 重构 `NodeRunner`
 5. `ExecuteModule`处理多级依赖的问题修复。
@@ -16,6 +16,10 @@ you can get the english version change log at [Github Release](https://github.co
 7. 修复了在inspector下打断点+`setInterval`会引起crash的bug #707
 8. 支持一个JsEnv连接多个inspector，hotreload也能和inspector同时使用了 #841
 9. 去掉了Node.js的`--no-browser-globals`选项
+10. 修复ESM加载时循环依赖会引起崩溃的问题
+11. 修复ESM使用相对路径加载依赖时报错的问题
+12. 添加了模块加载时的import.meta.url路径
+13. 修复生成可空类型时，dts报错的问题
 
 ## [1.4.0-preview.6] - 2022-07-25
 1. 支持同时连接多个inspector调试端
