@@ -133,8 +133,30 @@ namespace Puerts.UnitTest
             loader.AddMockFileContent("whatever.cjs", @"
                 module.exports = 'hello world';
             ");
+            loader.AddMockFileContent("whatever.mjs", @"
+                import str from 'whatever.cjs';
+                export default str;
+            ");
             var jsEnv = new JsEnv(loader);
-            string str = jsEnv.ExecuteModule<string>("whatever.cjs", "default");
+            string str = jsEnv.ExecuteModule<string>("whatever.mjs", "default");
+
+            Assert.True(str == "hello world");
+
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleExecuteCJSRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("cjs/whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("mjs/whatever.mjs", @"
+                import str from '../cjs/whatever.cjs';
+                export default str;
+            ");
+            var jsEnv = new JsEnv(loader);
+            string str = jsEnv.ExecuteModule<string>("mjs/whatever.mjs", "default");
 
             Assert.True(str == "hello world");
 
