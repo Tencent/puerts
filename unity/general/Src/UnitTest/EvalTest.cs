@@ -126,20 +126,42 @@ namespace Puerts.UnitTest
             }
             Assert.True(false);
         }
-        // [Test]
-        // public void ESModuleExecuteCJS()
-        // {
-        //     var loader = new TxtLoader();
-        //     loader.AddMockFileContent("whatever.cjs", @"
-        //         module.exports = 'hello world';
-        //     ");
-        //     var jsEnv = new JsEnv(loader);
-        //     string str = jsEnv.ExecuteModule<string>("whatever.cjs", "default");
+        [Test]
+        public void ESModuleExecuteCJS()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("whatever.mjs", @"
+                import str from 'whatever.cjs';
+                export default str;
+            ");
+            var jsEnv = new JsEnv(loader);
+            string str = jsEnv.ExecuteModule<string>("whatever.mjs", "default");
 
-        //     Assert.True(str == "hello world");
+            Assert.True(str == "hello world");
 
-        //     jsEnv.Dispose();
-        // }
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleExecuteCJSRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("cjs/whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("mjs/whatever.mjs", @"
+                import str from '../cjs/whatever.cjs';
+                export default str;
+            ");
+            var jsEnv = new JsEnv(loader);
+            string str = jsEnv.ExecuteModule<string>("mjs/whatever.mjs", "default");
+
+            Assert.True(str == "hello world");
+
+            jsEnv.Dispose();
+        }
         [Test]
         public void ESModuleImportCSharp()
         {

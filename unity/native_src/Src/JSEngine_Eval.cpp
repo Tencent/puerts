@@ -216,6 +216,10 @@ namespace puerts {
 
         auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
 
+        auto obj = JS_GetImportMeta(ctx, module_);
+        JS_SetProperty(ctx, obj, JS_NewAtom(ctx, "url"), JS_NewString(ctx, name));
+        JS_FreeValue(ctx, obj);
+
         JsEngine->PathToModuleMap[name_std] = module_;
 
         return module_;
