@@ -200,6 +200,8 @@ namespace Puerts
                     ExecuteModule("puerts/nodepatch.mjs");
                 }
 #endif
+                ExecuteModule("puerts/cjsload.mjs");
+                ExecuteModule("puerts/modular.mjs");
 
 #if UNITY_EDITOR
                 if (OnJsEnvCreate != null) 
@@ -229,8 +231,18 @@ namespace Puerts
             {
                 return null;
             }
+            if (identifer.Length < 4 || !identifer.EndsWith(".mjs"))
+            {
+                pathForDebug = "";
+                return String.Format(@"
 
-            return loader.ReadFile(identifer, out pathForDebug);
+                    export default puerts.require('{0}');
+                ", identifer);
+            } 
+            else 
+            {
+                return loader.ReadFile(identifer, out pathForDebug);
+            }
         }
 
         /**

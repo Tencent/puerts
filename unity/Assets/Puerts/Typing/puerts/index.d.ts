@@ -26,6 +26,8 @@ declare namespace puer {
     function loadFile(name: string): { content: string, debugpath: string };
 
     function evalScript(name: string): void;
+    
+    function require(name: string): any;
 }
 
 import puerts = puer;

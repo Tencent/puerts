@@ -10,9 +10,10 @@
  * 
  * TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
  * @param {DTS.TypingGenInfo} data 
+ * @param {boolean} notGlobalStyle will treat csharp as a module instead of global variable CS.
  * @returns 
  */
-export default function TypingTemplate(data) {
+ export default function TypingTemplate(data, notGlobalStyle) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -45,12 +46,14 @@ export default function TypingTemplate(data) {
 
         ret += newLines.join('\n');
     }
+    const baseIndent = notGlobalStyle ? 4 : 0;
 
     tt`
-declare namespace CS {
+${notGlobalStyle ? 'declare module "csharp"' : 'declare namespace CS'} {
     //keep type incompatibility / 此属性保持类型不兼容
     const __keep_incompatibility: unique symbol;
 
+${notGlobalStyle ? 'namespace CSharp {' : ''}
     interface $Ref<T> {
         value: T
     }
@@ -72,7 +75,7 @@ declare namespace CS {
 
         toJsArray(ns.Types).forEach(type=> {
             // type start
-            t.indent = 8;
+            t.indent = 8 + baseIndent;
             // the comment of the type
             t`
             ${type.Document}
@@ -104,7 +107,7 @@ declare namespace CS {
                     // class or interface.
                     t`{
                     `;
-                    t.indent = 12;
+                    t.indent = 12 + baseIndent;
 
                     //keep type incompatibility / 此属性保持类型不兼容
                     if (!type.IsInterface) {
@@ -149,7 +152,7 @@ declare namespace CS {
                         `
                     });
                     // methods end
-                    t.indent = 8;
+                    t.indent = 8 + baseIndent;
                     t`
                     }
                     `
@@ -157,14 +160,14 @@ declare namespace CS {
 
                 // extension methods start
                 if (type.ExtensionMethods.Length > 0 && !type.IsEnum) {
-                    t.indent = 8;
+                    t.indent = 8 + baseIndent;
                     t`
                     ${type.Document}
                     interface ${type.Name} {
                     `
                     
                     toJsArray(type.ExtensionMethods).forEach(method=>{
-                        t.indent = 12;
+                        t.indent = 12 + baseIndent;
                         
                         t`
                         ${method.Document}
@@ -174,7 +177,7 @@ declare namespace CS {
                         `
                     });
 
-                    t.indent = 8;
+                    t.indent = 8 + baseIndent;
                     t`
                     }
                     `;
@@ -184,7 +187,7 @@ declare namespace CS {
                 
             } else {
                 // if the type is Puerts.JSObject, declare an alias for any;
-                t.indent = 8;
+                t.indent = 8 + baseIndent;
                 t`type JSObject = any;`;
 
             }
@@ -192,7 +195,7 @@ declare namespace CS {
 
         // namespace end
         if (ns.Name) {
-            t.indent = 4;
+            t.indent = 4 + baseIndent;
             t`
             }
             `
@@ -201,6 +204,11 @@ declare namespace CS {
     })
     
     t.indent = 0;
+    if (notGlobalStyle) {
+        t`
+        }
+        `
+    }
     t`
     }
     `
@@ -256,7 +264,7 @@ function typeDeclaration(type, level1) {
     }
     var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
     if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
-        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(itface=> typeDeclaration(itface)).join(', '))
+        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(itf=> typeDeclaration(itf)).join(', '))
     }
     if (!level1 && type.Namespace) {
         result = type.Namespace + "." + result;

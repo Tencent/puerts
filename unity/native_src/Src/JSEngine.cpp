@@ -153,9 +153,7 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(MainIsolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
-#if !WITH_QUICKJS
         MainIsolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
-#endif
 
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(MainIsolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
         Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
@@ -226,6 +224,9 @@ namespace puerts
             Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
             Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
         }
+#if !WITH_QUICKJS
+        Isolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
+#endif
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }

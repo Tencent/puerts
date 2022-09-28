@@ -23,6 +23,7 @@ namespace Puerts.Editor
 
         public NodeRunner(string ProjectPath = "") 
         {
+            UnityEngine.Debug.LogWarning("NodeRunner is still experimental and could be changed later");
             if (ProjectPath == null || ProjectPath == "") 
             {
                 this.ProjectPath = DefaultProjectPath;

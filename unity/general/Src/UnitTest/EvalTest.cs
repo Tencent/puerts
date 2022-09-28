@@ -135,6 +135,7 @@ namespace Puerts.UnitTest
             ");
             loader.AddMockFileContent("whatever.mjs", @"
                 import str from 'whatever.cjs';
+                
                 export default str;
             ");
             var jsEnv = new JsEnv(loader);
@@ -153,6 +154,7 @@ namespace Puerts.UnitTest
             ");
             loader.AddMockFileContent("mjs/whatever.mjs", @"
                 import str from '../cjs/whatever.cjs';
+                
                 export default str;
             ");
             var jsEnv = new JsEnv(loader);
