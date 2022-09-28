@@ -10,10 +10,9 @@
  * 
  * TODO 待node.js版本成熟之后直接接入typescript formatter，现在先用手动指定indent的方式
  * @param {DTS.TypingGenInfo} data 
- * @param {boolean} notGlobalStyle will treat csharp as a module instead of global variable CS.
  * @returns 
  */
- export default function TypingTemplate(data, notGlobalStyle) {
+ export default function TypingTemplate(data) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -46,14 +45,13 @@
 
         ret += newLines.join('\n');
     }
-    const baseIndent = notGlobalStyle ? 4 : 0;
+    const baseIndent = 0;
 
     tt`
-${notGlobalStyle ? 'declare module "csharp"' : 'declare namespace CS'} {
+    declare namespace CS {
     //keep type incompatibility / 此属性保持类型不兼容
     const __keep_incompatibility: unique symbol;
 
-${notGlobalStyle ? 'namespace CSharp {' : ''}
     interface $Ref<T> {
         value: T
     }
@@ -204,12 +202,10 @@ ${notGlobalStyle ? 'namespace CSharp {' : ''}
     })
     
     t.indent = 0;
-    if (notGlobalStyle) {
-        t`
-        }
-        `
-    }
     t`
+    }
+    declare module 'csharp' {
+        export = CS;
     }
     `
 

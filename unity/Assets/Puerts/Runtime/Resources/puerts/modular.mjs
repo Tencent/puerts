@@ -43,6 +43,10 @@ function executeModule(fullPath, script, debugPath, sid) {
 }
 
 function genRequire(requiringDir) {
+    if (requiringDir.indexOf(":") != -1) {
+        if (requiringDir.startsWith("puer:")) requiringDir = requiringDir.substr(5)
+        else { throw new Error("puer's genRequire can only support prefix with puer:"); }
+    }
     let localModuleCache = Object.create(null);
     function require(moduleName) {
         moduleName = moduleName.startsWith('./') ? moduleName.substr(2) : moduleName;
