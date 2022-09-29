@@ -1,6 +1,6 @@
 ## What？
 
-puerts is a TypeScript programming solution within game engines.
+puerts is a TypeScript programming solution within game engines Unity/UE.
 * provides a JavaScript Runtime
 
 * allows TypeScript to access the host engine（module-binding on the JavaScript level and generating TypeScript declarations）
