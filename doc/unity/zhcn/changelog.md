@@ -8,7 +8,7 @@ you can get the english version change log at [Github Release](https://github.co
 
 ## [1.4.0-rc.2] - 2022-09-28
 1. 全平台支持了Node.js（也就是新增了Android和iOS的支持）。upm包现在默认全使用Node.js Backend了。
-2. 为了让Node.js功能使用起来更方便，也同时解决WebGL版本在微信小游戏的问题，从本版本开始，添加全局变量`CS` 和 `puer`，对应原本的`require('csharp')`和`require('puerts')`。PuerTS的`require`不再建议使用，原有的使用全局require的地方请改成`global.CS`、`global.puer`、`import 'xxx'`，再不济也改成`puerts.require`。PuerTS的全局require将考虑在1.5版本去掉。
+2. 为了让Node.js功能使用起来更方便，也同时解决WebGL版本在微信小游戏的问题，加上ES Module是JS生态的未来。从本版本开始，添加全局变量`CS` 和 `puer`，对应原本的`require('csharp')`和`require('puerts')`。PuerTS的`require`不再建议使用，原有的使用全局require的地方请改成`global.CS`、`global.puer`、`import 'xxx'`，抑或是`puerts.require`。PuerTS的全局require将考虑在1.5版本去掉。
 3. 添加 `JsEnv.Backend` 并加入了一些GC API. `LowMemoryNotification` 也移进去了。
 4. 重构 `NodeRunner`
 5. `ExecuteModule`处理多级依赖的问题修复。
