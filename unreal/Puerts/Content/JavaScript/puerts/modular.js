@@ -118,6 +118,7 @@ var global = global || (function () { return this; }());
             let sid = addModule(m);
             let script = loadModule(fullPath);
             isESM = isESM === true || fullPath.endsWith(".mjs")
+            if (fullPath.endsWith(".cjs")) isESM = false;
             if (fullPath.endsWith(".json")) {
                 let packageConfigure = JSON.parse(script);
                 
