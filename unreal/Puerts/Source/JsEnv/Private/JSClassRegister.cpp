@@ -84,7 +84,7 @@ public:
 #endif
 
 private:
-    std::map<const void*, JSClassDefinition*> NameToClassDefinition;
+    std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
     std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
 #if USING_IN_UNREAL_ENGINE
@@ -98,11 +98,11 @@ JSClassRegister::JSClassRegister()
 
 JSClassRegister::~JSClassRegister()
 {
-    for (auto& KV : NameToClassDefinition)
+    for (auto& KV : CDataIdToClassDefinition)
     {
         JSClassDefinitionDelete(KV.second);
     }
-    NameToClassDefinition.clear();
+    CDataIdToClassDefinition.clear();
 #if USING_IN_UNREAL_ENGINE
     for (auto& KV : StructNameToClassDefinition)
     {
@@ -116,14 +116,14 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 {
     if (ClassDefinition.TypeId && ClassDefinition.ScriptName)
     {
-        auto cd_iter = NameToClassDefinition.find(ClassDefinition.TypeId);
-        if (cd_iter != NameToClassDefinition.end())
+        auto cd_iter = CDataIdToClassDefinition.find(ClassDefinition.TypeId);
+        if (cd_iter != CDataIdToClassDefinition.end())
         {
             JSClassDefinitionDelete(cd_iter->second);
         }
-        NameToClassDefinition[ClassDefinition.TypeId] = JSClassDefinitionDuplicate(&ClassDefinition);
+        CDataIdToClassDefinition[ClassDefinition.TypeId] = JSClassDefinitionDuplicate(&ClassDefinition);
         std::string SN = ClassDefinition.ScriptName;
-        CDataNameToClassDefinition[SN] = NameToClassDefinition[ClassDefinition.TypeId];
+        CDataNameToClassDefinition[SN] = CDataIdToClassDefinition[ClassDefinition.TypeId];
     }
 #if USING_IN_UNREAL_ENGINE
     else if (ClassDefinition.UETypeName)
@@ -141,8 +141,8 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 
 const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
 {
-    auto Iter = NameToClassDefinition.find(TypeId);
-    if (Iter == NameToClassDefinition.end())
+    auto Iter = CDataIdToClassDefinition.find(TypeId);
+    if (Iter == CDataIdToClassDefinition.end())
     {
         return nullptr;
     }
