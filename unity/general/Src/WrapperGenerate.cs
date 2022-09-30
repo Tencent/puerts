@@ -21,7 +21,9 @@ public class WrapperGenConfig
             {
                 typeof(Puerts.UnitTest.OptionalParametersClass),
                 typeof(Puerts.UnitTest.WrapperTest),
-                typeof(Puerts.UnitTest.GenericGenTest<Type, JsEnv>)
+                typeof(Puerts.UnitTest.MultiEnvTestA),
+                typeof(Puerts.UnitTest.MultiEnvTestB),
+                typeof(Puerts.UnitTest.GenericGenTest<Type, JsEnv>),
             };
         }
     }
