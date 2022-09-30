@@ -401,6 +401,23 @@ pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
     return v8impl::PesapiValueFromV8LocalValue((*info).Holder());
 }
 
+void* pesapi_get_userdata(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    if ((*info).IsConstructCall())
+        return nullptr;
+    return v8::Local<v8::External>::Cast((*info).Data())->Value();
+}
+
+void* pesapi_get_constructor_userdata(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    if (!(*info).IsConstructCall())
+        return nullptr;
+    auto ClassDefinition = reinterpret_cast<puerts::JSClassDefinition*>((v8::Local<v8::External>::Cast((*info).Data()))->Value());
+    return ClassDefinition->Data;
+}
+
 void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
@@ -440,12 +457,11 @@ void pesapi_release_env_holder(pesapi_env_holder env_holder)
     }
 }
 
-pesapi_scope pesapi_open_scope(pesapi_env env)
+pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    context->GetIsolate()->Enter();
-    auto scope = new pesapi_scope__(context->GetIsolate());
-    context->Enter();
+    env_holder->isolate->Enter();
+    auto scope = new pesapi_scope__(env_holder->isolate);
+    env_holder->context_persistent.Get(env_holder->isolate)->Enter();
     return scope;
 }
 
@@ -590,10 +606,29 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     {
         return nullptr;
     }
-    else
+    return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
+}
+
+pesapi_value pesapi_eval(pesapi_env env, const char* code, const char* path)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto isolate = context->GetIsolate();
+    v8::Local<v8::String> url =
+        v8::String::NewFromUtf8(isolate, path == nullptr ? "" : path, v8::NewStringType::kNormal).ToLocalChecked();
+    v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, code, v8::NewStringType::kNormal).ToLocalChecked();
+    v8::ScriptOrigin origin(url);
+
+    auto CompiledScript = v8::Script::Compile(context, source, &origin);
+    if (CompiledScript.IsEmpty())
     {
-        return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
+        return nullptr;
     }
+    auto maybe_ret = CompiledScript.ToLocalChecked()->Run(context);
+    if (maybe_ret.IsEmpty())
+    {
+        return nullptr;
+    }
+    return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
 }
 
 struct pesapi_type_info__
@@ -716,12 +751,13 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties)
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* userdata)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
     classDef.ScriptName = type_name;
+    classDef.Data = userdata;
 
     classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
     classDef.Finalize = finalize;
