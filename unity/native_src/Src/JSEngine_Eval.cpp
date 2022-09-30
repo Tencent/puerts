@@ -4,6 +4,7 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
+#include <algorithm>
 #include "JSEngine.h"
 #if WITH_QUICKJS
 #include "quickjs-msvc.h"
@@ -81,7 +82,7 @@ namespace puerts {
         std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
         size_t Specifier_length = Specifier_std.length();
 
-        const auto referIter = JsEngine->ScriptIdToPathMap.find(Referrer->ScriptId()); 
+        const auto referIter = JsEngine->ScriptIdToPathMap.find(Referrer->GetIdentityHash()); 
         if (referIter != JsEngine->ScriptIdToPathMap.end())
         {
             std::string referPath_std = referIter->second;
@@ -98,7 +99,7 @@ namespace puerts {
         const char* Code = JsEngine->ModuleResolver(Specifier_std.c_str(), JsEngine->Idx);
         if (Code == nullptr) 
         {
-            std::string ErrorMessage = std::string("module not found") + Specifier_std;
+            std::string ErrorMessage = std::string("module not found ") + Specifier_std;
             Isolate->ThrowException(v8::Exception::Error(FV8Utils::V8String(Isolate, ErrorMessage.c_str())));
             return v8::MaybeLocal<v8::Module>();
         }
@@ -126,6 +127,7 @@ namespace puerts {
         }
 
         JsEngine->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
+        JsEngine->ScriptIdToPathMap[Module->GetIdentityHash()] = Specifier_std;
         return Module;
     }
     v8::MaybeLocal<v8::Module> ResolveModule(
@@ -143,7 +145,7 @@ namespace puerts {
         v8::Isolate* Isolate = Context->GetIsolate();
         auto* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
 
-        auto iter = JsEngine->ScriptIdToPathMap.find(Module->6());
+        auto iter = JsEngine->ScriptIdToPathMap.find(Module->GetIdentityHash());
         if (iter != JsEngine->ScriptIdToPathMap.end()) 
         {
             meta->CreateDataProperty(
@@ -171,7 +173,7 @@ namespace puerts {
         const char* Code = JsEngine->ModuleResolver(name_std.c_str(), JsEngine->Idx);
         if (Code == nullptr) 
         {
-            std::string ErrorMessage = std::string("module not found") + name_std;
+            std::string ErrorMessage = std::string("module not found ") + name_std;
             JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
             JS_Throw(ctx, ex);
             return nullptr;
@@ -228,6 +230,10 @@ namespace puerts {
 
         if (Module.IsEmpty())
         {
+            if (TryCatch.HasCaught())
+            {
+                LastExceptionInfo = FV8Utils::ExceptionToString(Isolate, TryCatch);
+            }
             return false;
         }
 

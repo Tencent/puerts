@@ -47,8 +47,6 @@ namespace Puerts.UnitTest
 
         public static bool IsPropertyLongEquals(long l) 
         {
-            System.Console.WriteLine(PropertyLong);
-            System.Console.WriteLine(l);
             return PropertyLong == l;
         }
 

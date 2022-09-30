@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32630.194
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Core", "Puerts.Core.csproj", "{7FF5AB8C-EBAA-2482-749F-1E59E0531B86}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Puerts.Helloworld", "Puerts.Helloworld.csproj", "{72C36DF1-DED9-6B87-2751-F7A893A63C0F}"
@@ -91,5 +93,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D70E5B15-6CE7-430E-A97E-7B972EA3F0FD}
 	EndGlobalSection
 EndGlobal
