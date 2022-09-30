@@ -149,7 +149,7 @@ namespace puerts {
             meta->CreateDataProperty(
                 Context, 
                 FV8Utils::V8String(Context->GetIsolate(), "url"), 
-                FV8Utils::V8String(Context->GetIsolate(), iter->second.c_str())
+                FV8Utils::V8String(Context->GetIsolate(), ("puer:" + iter->second).c_str())
             ).ToChecked();
         }
     }
@@ -185,7 +185,7 @@ namespace puerts {
         auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
 
         auto obj = JS_GetImportMeta(ctx, module_);
-        JS_SetProperty(ctx, obj, JS_NewAtom(ctx, "url"), JS_NewString(ctx, name));
+        JS_SetProperty(ctx, obj, JS_NewAtom(ctx, "url"), JS_NewString(ctx, ("puer:" + name_std).c_str()));
         JS_FreeValue(ctx, obj);
 
         JsEngine->PathToModuleMap[name_std] = module_;
