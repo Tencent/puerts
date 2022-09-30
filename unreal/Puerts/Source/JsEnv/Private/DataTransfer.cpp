@@ -50,7 +50,7 @@ void DataTransfer::UpdateRef(v8::Isolate* Isolate, v8::Local<v8::Value> Outer, c
 
 std::weak_ptr<int> DataTransfer::GetJsEnvLifeCycleTracker(v8::Isolate* Isolate)
 {
-    return FV8Utils::IsolateData<ICppObjectMapper>(Isolate)->GetJsEnvLifeCycleTracker();
+    return IsolateData<ICppObjectMapper>(Isolate)->GetJsEnvLifeCycleTracker();
 }
 
 #if USING_IN_UNREAL_ENGINE
