@@ -15,13 +15,15 @@ namespace PuertsStaticWrap
 
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var result = new Puerts.UnitTest.MultiEnvTestB(Arg0);
+                        var result = new Puerts.UnitTest.MultiEnvTestB(arg0);
                 
                         return Puerts.Utils.GetObjectPtr((int)data, typeof(Puerts.UnitTest.MultiEnvTestB), result);
                     

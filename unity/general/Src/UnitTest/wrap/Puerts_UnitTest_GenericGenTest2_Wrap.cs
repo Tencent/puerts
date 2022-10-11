@@ -41,17 +41,21 @@ namespace PuertsStaticWrap
         
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.Get<System.Action<Puerts.UnitTest.WrapperTestBase>>(false);
+                        argobj1 = argobj1 != null ? argobj1 : StaticTranslate<System.Action<Puerts.UnitTest.WrapperTestBase>>.Get((int)data, isolate, NativeValueApi.GetValueFromArgument, v8Value1, false); System.Action<Puerts.UnitTest.WrapperTestBase> arg1 = (System.Action<Puerts.UnitTest.WrapperTestBase>)argobj1;
                     
-                        var result = obj.GetTypeTest(Arg0, Arg1);
+                        var result = obj.GetTypeTest(arg0, arg1);
                 
                         Puerts.ResultHelper.Set((int)data, isolate, info, result);
                         

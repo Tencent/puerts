@@ -40,43 +40,49 @@ namespace PuertsStaticWrap
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.OptionalParametersClass;
         
                 if (paramLen == 3)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
+                    IntPtr v8Value2 = PuertsDLL.GetArgumentValue(info, 2);
+                    object argobj2 = null;
+                    JsValueType argType2 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value2, ref argobj2, ref argType2))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetInt32(false);
+                        int arg2 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value2, false);
                     
-                        var result = obj.Test(Arg0, Arg1, Arg2);
+                        var result = obj.Test(arg0, arg1, arg2);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value2, ref argobj2, ref argType2))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetInt32(false);
+                        int arg2 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value2, false);
                     
-                        var result = obj.Test(Arg0, Arg1, Arg2);
+                        var result = obj.Test(arg0, arg1, arg2);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -86,37 +92,41 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test(Arg0, Arg1);
+                        var result = obj.Test(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test(Arg0, Arg1);
+                        var result = obj.Test(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -126,31 +136,33 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 1)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value0, ref argobj0, ref argType0))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var result = obj.Test(Arg0);
+                        var result = obj.Test(arg0);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
                         return;
                     }
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var result = obj.Test(Arg0);
+                        var result = obj.Test(arg0);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -160,7 +172,7 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 0)
-            
+                
                 {
             
                     {
@@ -191,18 +203,20 @@ namespace PuertsStaticWrap
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.OptionalParametersClass;
         
                 if (paramLen == 1)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var result = obj.Test2(Arg0);
+                        var result = obj.Test2(arg0);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -212,22 +226,26 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test2(Arg0, Arg1);
+                        var result = obj.Test2(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -237,26 +255,32 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen >= 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
+                    IntPtr v8Value2 = PuertsDLL.GetArgumentValue(info, 2);
+                    object argobj2 = null;
+                    JsValueType argType2 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.Boolean, typeof(bool), 2, paramLen))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatchParams((int)data, isolate, info, Puerts.JsValueType.Boolean, typeof(bool), 2, paramLen, v8Value2, ref argobj2, ref argType2))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetParams<bool>(info, 2, paramLen);
+                        bool[] arg2 = ArgHelper.GetParams<bool>((int)data, isolate, info, 2, paramLen, v8Value2);
                     
-                        var result = obj.Test2(Arg0, Arg1, Arg2);
+                        var result = obj.Test2(arg0, arg1, arg2);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -283,17 +307,21 @@ namespace PuertsStaticWrap
         
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test3(Arg0, Arg1);
+                        var result = obj.Test3(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -317,30 +345,38 @@ namespace PuertsStaticWrap
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.OptionalParametersClass;
         
                 if (paramLen == 4)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
+                    IntPtr v8Value2 = PuertsDLL.GetArgumentValue(info, 2);
+                    object argobj2 = null;
+                    JsValueType argType2 = JsValueType.Invalid;
                 
-                    var argHelper3 = new Puerts.ArgumentHelper((int)data, isolate, info, 3);
+                    IntPtr v8Value3 = PuertsDLL.GetArgumentValue(info, 3);
+                    object argobj3 = null;
+                    JsValueType argType3 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper3.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value2, ref argobj2, ref argType2) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value3, ref argobj3, ref argType3))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetInt32(false);
+                        int arg2 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value2, false);
                     
-                        var Arg3 = argHelper3.GetInt32(false);
+                        int arg3 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value3, false);
                     
-                        var result = obj.Test4(Arg0, Arg1, Arg2, Arg3);
+                        var result = obj.Test4(arg0, arg1, arg2, arg3);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -350,26 +386,32 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 3)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
+                    IntPtr v8Value2 = PuertsDLL.GetArgumentValue(info, 2);
+                    object argobj2 = null;
+                    JsValueType argType2 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value2, ref argobj2, ref argType2))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetInt32(false);
+                        int arg2 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value2, false);
                     
-                        var result = obj.Test4(Arg0, Arg1, Arg2);
+                        var result = obj.Test4(arg0, arg1, arg2);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -379,22 +421,26 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test4(Arg0, Arg1);
+                        var result = obj.Test4(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -420,26 +466,32 @@ namespace PuertsStaticWrap
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.OptionalParametersClass;
         
                 if (paramLen >= 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
+                    IntPtr v8Value2 = PuertsDLL.GetArgumentValue(info, 2);
+                    object argobj2 = null;
+                    JsValueType argType2 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.Boolean, typeof(bool), 2, paramLen))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatchParams((int)data, isolate, info, Puerts.JsValueType.Boolean, typeof(bool), 2, paramLen, v8Value2, ref argobj2, ref argType2))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetParams<bool>(info, 2, paramLen);
+                        bool[] arg2 = ArgHelper.GetParams<bool>((int)data, isolate, info, 2, paramLen, v8Value2);
                     
-                        var result = obj.Test5(Arg0, Arg1, Arg2);
+                        var result = obj.Test5(arg0, arg1, arg2);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -449,22 +501,26 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test5(Arg0, Arg1);
+                        var result = obj.Test5(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -490,26 +546,32 @@ namespace PuertsStaticWrap
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.OptionalParametersClass;
         
                 if (paramLen >= 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    var argHelper2 = new Puerts.ArgumentHelper((int)data, isolate, info, 2);
+                    IntPtr v8Value2 = PuertsDLL.GetArgumentValue(info, 2);
+                    object argobj2 = null;
+                    JsValueType argType2 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper2.IsMatchParams(Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), 2, paramLen))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1) && ArgHelper.IsMatchParams((int)data, isolate, info, Puerts.JsValueType.NullOrUndefined | Puerts.JsValueType.String, typeof(string), 2, paramLen, v8Value2, ref argobj2, ref argType2))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var Arg2 = argHelper2.GetParams<string>(info, 2, paramLen);
+                        string[] arg2 = ArgHelper.GetParams<string>((int)data, isolate, info, 2, paramLen, v8Value2);
                     
-                        var result = obj.Test6(Arg0, Arg1, Arg2);
+                        var result = obj.Test6(arg0, arg1, arg2);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -519,22 +581,26 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 2)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    var argHelper1 = new Puerts.ArgumentHelper((int)data, isolate, info, 1);
+                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
+                    object argobj1 = null;
+                    JsValueType argType1 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false) && argHelper1.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value0, ref argobj0, ref argType0) && ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value1, ref argobj1, ref argType1))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var Arg1 = argHelper1.GetInt32(false);
+                        int arg1 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value1, false);
                     
-                        var result = obj.Test6(Arg0, Arg1);
+                        var result = obj.Test6(arg0, arg1);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -544,18 +610,20 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 1)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Number, typeof(int), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Number, typeof(int), false, false, v8Value0, ref argobj0, ref argType0))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetInt32(false);
+                        int arg0 = StaticTranslate<int>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var result = obj.Test6(Arg0);
+                        var result = obj.Test6(arg0);
                 
                         Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
@@ -582,13 +650,15 @@ namespace PuertsStaticWrap
         
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
                     {
                 
-                        var Arg0 = argHelper0.GetString(false);
+                        string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        var result = obj.TestFilter(Arg0);
+                        var result = obj.TestFilter(arg0);
                 
                         Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
                         
