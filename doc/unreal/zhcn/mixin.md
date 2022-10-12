@@ -149,7 +149,7 @@ class DerivedClassMixin extends MixinSuperTestBasePlaceHold {
 
 * objectTakeByNative为false时，需要保持对stub对象的引用，否则stub对象释放后，ue对象回传将会建立一个新对象，原来的数据就丢失了
 
-* objectTakeByNative为false不需要保持stub对象引用，但注意不要期望通过持有stub对象进而引用ue对象，该ue对象应保证被引擎持有
+* objectTakeByNative为true不需要保持stub对象引用，但注意不要期望通过持有stub对象进而引用ue对象，该ue对象应保证被引擎持有
 
 #### 原生类的mixin
 
