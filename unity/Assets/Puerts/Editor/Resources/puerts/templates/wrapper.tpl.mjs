@@ -4,6 +4,7 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
+import { default as $, IF, ELSE, ELSEIF, ENDIF, FOR } from './tte.mjs'
 
 class ArgumentCodeGenerator {
     constructor(i) {
@@ -42,7 +43,7 @@ class ArgumentCodeGenerator {
     getArg(typeInfo) {
         let typeName = typeInfo.TypeName;
         let isByRef = typeInfo.IsByRef ? "true" : "false";
-        
+
         if (typeInfo.IsParams) {
             return `${typeName}[] arg${this.index} = ArgHelper.GetParams<${typeName}>((int)data, isolate, info, ${this.index}, paramLen, ${this.v8Value()})`;
         } else if (typeInfo.IsEnum) {
@@ -169,235 +170,155 @@ export default function TypingTemplate(data) {
         return data.BlittableCopy ? "(*obj)" : "obj";
     }
 
-    function _es6tplJoin(str, ...values) {
-        return str.map((strFrag, index) => {
-            if (index == str.length - 1) {
-                return strFrag;
-
-            } else {
-                return strFrag + values[index];
-            }
-        }).join('');
-    }
-    function tt(str, ...values) {
-        // just append all estemplate values.
-        const appendtext = _es6tplJoin(str, ...values)
-
-        ret += appendtext;
-    }
-    function t(str, ...values) {
-        // just append all estemplate values. and indent them;
-        const appendtext = _es6tplJoin(str, ...values)
-
-        // indent
-        let lines = appendtext.split(/[\n\r]/);
-        let newLines = [lines[0]];
-        let append = " ".repeat(t.indent);
-        for (var i = 1; i < lines.length; i++) {
-            if (lines[i]) newLines.push(append + lines[i].replace(/^[\t\s]*/, ''));
-        }
-
-        ret += newLines.join('\n');
-    }
-
-    t.indent = 0;
-    toJsArray(data.Namespaces).forEach(name => {
-        t`
-        using ${name};
-        `
-    });
-
-    tt`using Puerts;
+    return $
+        `${FOR(toJsArray(data.Namespaces), name => `
+using ${name};`
+        )}
+using Puerts;
 
 namespace PuertsStaticWrap
 {
     public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeGenericAlphaBet(data.GenericArgumentsInfo)}>` : ''} ${data.IsGenericWrapper ? makeConstraints(data.GenericArgumentsInfo) : ''}
     {
-`
-    data.BlittableCopy && tt`
+    ${IF(data.BlittableCopy)}
         static ${data.Name} HeapValue;
-    `
-
-    // ==================== constructor start ====================
-    tt`
+    ${ENDIF()}
+    
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
         ${data.BlittableCopy ? 'unsafe ' : ''}private static IntPtr Constructor(IntPtr isolate, IntPtr info, int paramLen, long data)
         {
             try
             {
-`
-    if (data.Constructor) {
-        toJsArray(data.Constructor.OverloadGroups).forEach(overloadGroup => {
-            if (data.Constructor.HasOverloads) {
-                tt`
+${IF(data.Constructor, () => $`
+    ${FOR(toJsArray(data.Constructor?.OverloadGroups), overloadGroup => {
+            var argumentCodeGenerators = toJsArray(overloadGroup.get_Item(0).ParameterInfos).map((v, i) => new ArgumentCodeGenerator(i));
+            $`
+            ${IF(data.Constructor.HasOverloads)}
                 if (${paramLenCheck(overloadGroup)})
-                `
-            }
-            tt`
+            ${ENDIF()}
                 {
-            `
-            var argumentCodeGenerators = [];
-            for (var i = 0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {
-                var acg = new ArgumentCodeGenerator(i);
-                argumentCodeGenerators.push(acg)
-                tt`
+                ${FOR(argumentCodeGenerators, acg => `
                     ${acg.declareAndGetV8Value()};
                     ${acg.declareArgObj()};
                     ${acg.declareArgJSValueType()};
-                `
-            }
-            toJsArray(overloadGroup).forEach(overload => {
-
-                if (data.Constructor.HasOverloads && overload.ParameterInfos.Length > 0) {
-                tt`
+                `)}
+                ${FOR(toJsArray(overloadGroup), overload =>
+                    $`
+                    ${IF(data.Constructor.HasOverloads && overload.ParameterInfos.Length > 0)}
                     if (${argumentCodeGenerators.map((acg, idx) => {
                         return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
                     }).join(' && ')})
-                `;
-                }
+                    ${ENDIF()}
 
-                tt`
                     {
-                `
-                argumentCodeGenerators.forEach((acg, idx) => {
-                    tt`
-                        ${acg.getArg(overload.ParameterInfos.get_Item(idx))};
-                    `
-                })
-                tt`
+                    ${FOR(argumentCodeGenerators, (acg, index) => `
+                        ${acg.getArg(overload.ParameterInfos.get_Item(index))};
+                    `)}
                         ${data.BlittableCopy ? "HeapValue" : "var result"} = new ${data.Name}(${argumentCodeGenerators.map((acg, idx) => {
-                            var paramInfo = overload.ParameterInfos.get_Item(idx);
-                            return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
-                        }).join(', ')});
-                `
-                argumentCodeGenerators.forEach((acg, idx) => {
-                    var paramInfo = overload.ParameterInfos.get_Item(idx)
-                    paramInfo.IsByRef && tt`
-                        StaticTranslate<${paramInfo.TypeName}>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, ${acg.v8Value()}, ${acg.arg()});
-                    `
-                })
-                if (data.BlittableCopy) {
-                    tt` 
+                        var paramInfo = overload.ParameterInfos.get_Item(idx);
+                        return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
+                    }).join(', ')});
+
+                    ${FOR(argumentCodeGenerators, (acg, idx) => {
+                        var paramInfo = overload.ParameterInfos.get_Item(idx)
+                        paramInfo.IsByRef && $`
+                        StaticTranslate<${paramInfo.TypeName}>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, ${acg.v8Value()}, ${acg.arg()});`
+                    })}
+
+                    ${IF(data.BlittableCopy)}
                         fixed (${data.Name}* result = &HeapValue)
                         {
                             return new IntPtr(result);
                         }
-                    `
-                } else {
-                    tt`
+                    ${ELSE()}
                         return Puerts.Utils.GetObjectPtr((int)data, typeof(${data.Name}), result);
-                    `
-                }
-                tt`
+                    ${ENDIF()}
                     }
-                `
-            })
-            tt`
+                    `)}
                 }
-            `
-        })
-    }
-    !data.Constructor || (data.Constructor.OverloadCount != 1) && tt`
+        `
+        })}
+`)}
+${IF(!data.Constructor || (data.Constructor.OverloadCount != 1))}
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to " + typeof(${data.Name}).GetFriendlyName() + " constructor");
-    `
-    tt`
-    
+${ENDIF()}
             } catch (Exception e) {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
             return IntPtr.Zero;
         }
-    `
     // ==================== constructor end ====================
 
-
     // ==================== methods start ====================
-    toJsArray(data.Methods).filter(item => !item.IsLazyMember).forEach(method => {
-        tt`
+${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !method.IsStatic ? 'unsafe ' : ''}private static void ${(method.IsStatic ? "F" : "M")}_${method.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 ${!method.IsStatic ? `var obj = ${getSelf(data)};` : ''}
-        `
-        toJsArray(method.OverloadGroups).forEach(overloadGroup => {
-            if (method.HasOverloads) {
-                tt`
+        
+        ${FOR(toJsArray(method.OverloadGroups), overloadGroup => {
+            var argumentCodeGenerators = toJsArray(overloadGroup.get_Item(0).ParameterInfos)
+                // 这里取0可能是因为第一个重载参数肯定是最全的？
+                .map((item, i) => new ArgumentCodeGenerator(i));
+            $
+            `${IF(method.HasOverloads)}
                 if (${paramLenCheck(overloadGroup)})
-                `
-            }
-            tt`
+            ${ENDIF()}
                 {
-            `
-            var argumentCodeGenerators = [];
-
-            // 这里取0可能是因为第一个重载参数肯定是最全的？
-            for (var i = 0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {
-                var acg = new ArgumentCodeGenerator(i);
-                argumentCodeGenerators.push(acg)
-                tt`
+            
+                ${FOR(argumentCodeGenerators, acg => $`
                     ${acg.declareAndGetV8Value()};
                     ${acg.declareArgObj()};
                     ${acg.declareArgJSValueType()};
-                `
-            }
-            toJsArray(overloadGroup).forEach(overload => {
-                if (method.HasOverloads && overload.ParameterInfos.Length > 0) {
-                tt`
+                `)}
+                ${FOR(toJsArray(overloadGroup), overload => $`
+                    ${IF(method.HasOverloads && overload.ParameterInfos.Length > 0)}
                     if (${argumentCodeGenerators.map((acg, idx) => {
-                        return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
-                    }).join(' && ')})
-                `
-                }
-                tt`
+                return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
+            }).join(' && ')})
+                    ${ENDIF()}
                     {
-                `
-                argumentCodeGenerators.forEach((acg, idx) => {
-                    tt`
+                    ${FOR(argumentCodeGenerators, (acg, idx) => $`
                         ${acg.getArg(overload.ParameterInfos.get_Item(idx))};
-                    `
-                })
-                tt`
-                        ${overload.IsVoid ? "" : "var result = "}${method.IsStatic ? data.Name : refSelf()}.${UnK(method.Name)}(${argumentCodeGenerators.map((acg, idx) => {
+                    `)}
+
+                        ${overload.IsVoid ? "" : "var result = "}${method.IsStatic ? data.Name : refSelf()}.${UnK(method.Name)} (${argumentCodeGenerators.map((acg, idx) => {
                             var paramInfo = overload.ParameterInfos.get_Item(idx);
-                            return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
-                        }).join(', ')});
-                `
-                argumentCodeGenerators.forEach((acg, idx) => {
-                    overload.ParameterInfos.get_Item(idx).IsByRef && tt`
+                return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
+                            }).join(', ')
+                        });
+
+                    ${FOR(argumentCodeGenerators, (acg, idx) => $`
+                        ${IF(overload.ParameterInfos.get_Item(idx).IsByRef)}
                         StaticTranslate<${overload.ParameterInfos.get_Item(idx).TypeName}>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, ${acg.v8Value()}, ${acg.arg()});
-                    `
-                })
-                tt`
+                        ${ENDIF()}
+                    `)}
                         ${!overload.IsVoid ? setReturn(overload) + ';' : ''}
                         ${!data.BlittableCopy && !method.IsStatic ? setSelf(data) : ""}
                         ${method.HasOverloads ? 'return;' : ''}
                     }
-                `
-            })
-            tt`
+                `)}
                 }
             `
-        })
-        method.HasOverloads && tt`
+        })}
+        ${IF(method.HasOverloads)}
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to ${method.Name}");
-        `
-        tt`
+        ${ENDIF()}
             }
             catch (Exception e)
             {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        `
-    });
+`)}
     // ==================== methods end ====================
 
     // ==================== properties start ====================
-    toJsArray(data.Properties).filter(property => !property.IsLazyMember).forEach(property => {
-        if (property.HasGetter) {
-            tt`
+    ${FOR(toJsArray(data.Properties).filter(property => !property.IsLazyMember), property => {
+            if (property.HasGetter) {
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}private static void G_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -413,10 +334,10 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-        if (property.HasSetter) {
-            var acg = new ArgumentCodeGenerator(0);
-            tt`
+            }
+            if (property.HasSetter) {
+                var acg = new ArgumentCodeGenerator(0);
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}private static void S_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -435,14 +356,13 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-    })
+            }
+        })}
     // ==================== properties end ====================
-
     // ==================== array item get/set start ====================
-    if (data.GetIndexs.Length > 0) {
-        var acg = new ArgumentCodeGenerator(0);
-        tt`
+    ${IF(data.GetIndexs.Length > 0, () => {
+            var acg = new ArgumentCodeGenerator(0);
+            $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy ? 'unsafe ' : ''}private static void GetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -452,9 +372,7 @@ namespace PuertsStaticWrap
                 ${acg.declareAndGetV8Value()};
                 ${acg.declareArgObj()};
                 ${acg.declareArgJSValueType()};
-        `
-        toJsArray(data.GetIndexs).forEach(indexInfo => {
-            tt`
+            ${FOR(toJsArray(data.GetIndexs), indexInfo => $`
                 if (${acg.invokeIsMatch(indexInfo.IndexParameter)})
                 {
                     ${acg.getArg(indexInfo.IndexParameter)};
@@ -462,10 +380,7 @@ namespace PuertsStaticWrap
                     ${setReturn(indexInfo)};
                     return;
                 }
-            `;
-        })
-
-        tt`
+            `)}
             }
             catch (Exception e)
             {
@@ -473,10 +388,10 @@ namespace PuertsStaticWrap
             }
         }
         `
-    }
-    if (data.SetIndexs.Length > 0) {
-        var keyAcg = new ArgumentCodeGenerator(0);
-        tt`
+        })}
+    ${IF(data.SetIndexs.Length > 0, () => {
+            var keyAcg = new ArgumentCodeGenerator(0);
+            $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy ? 'unsafe ' : ''}private static void SetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -486,10 +401,10 @@ namespace PuertsStaticWrap
                 ${keyAcg.declareAndGetV8Value()};
                 ${keyAcg.declareArgObj()};
                 ${keyAcg.declareArgJSValueType()};
-        `
-        toJsArray(data.SetIndexs).forEach(indexInfo => {
-            var valueAcg = new ArgumentCodeGenerator(1);
-            tt`
+
+            ${FOR(toJsArray(data.SetIndexs), indexInfo => {
+                var valueAcg = new ArgumentCodeGenerator(1);
+                $`
                 if (${keyAcg.invokeIsMatch(indexInfo.IndexParameter)})
                 {
                     ${keyAcg.getArg(indexInfo.IndexParameter)};
@@ -500,10 +415,8 @@ namespace PuertsStaticWrap
 
                     ${refSelf()}[${keyAcg.arg()}] = ${valueAcg.arg()};
                     return;
-                }
-            `;
-        })
-        tt`
+                }`
+            })}
             }
             catch (Exception e)
             {
@@ -511,81 +424,62 @@ namespace PuertsStaticWrap
             }
         }
         `
-    }
+        })}
     // ==================== array item get/set end ====================
-
     // ==================== operator start ====================
-    toJsArray(data.Operators).filter(oper => !oper.IsLazyMember).forEach(operator => {
-        tt`
+    ${FOR(toJsArray(data.Operators).filter(oper => !oper.IsLazyMember), operator => $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         private static void O_${operator.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
-        `
-        toJsArray(operator.OverloadGroups).forEach(overloadGroup => {
-            operator.HasOverloads && tt`
+        ${FOR(toJsArray(operator.OverloadGroups), overloadGroup => {
+            var argumentCodeGenerators = toJsArray(overloadGroup.get_Item(0).ParameterInfos).map((v, i) => new ArgumentCodeGenerator(i));
+            $`
+                ${IF(operator.HasOverloads)}
                 if (${paramLenCheck(overloadGroup)})
-            `
-            tt`
+                ${ENDIF()}
                 {
-            `
-            var argumentCodeGenerators = [];
-            for (var i = 0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {
-                var acg = new ArgumentCodeGenerator(i);
-                argumentCodeGenerators.push(acg)
-                tt`
+                ${FOR(argumentCodeGenerators, (acg) => $`
                     ${acg.declareAndGetV8Value()};
                     ${acg.declareArgObj()};
                     ${acg.declareArgJSValueType()};
-                `
-            }
-            toJsArray(overloadGroup).forEach(overload => {
-                if (operator.HasOverloads && overload.ParameterInfos.Length > 0) {
-                    tt`
+                `)}
+                ${FOR(toJsArray(overloadGroup), overload => $`
+                    ${IF(operator.HasOverloads && overload.ParameterInfos.Length > 0)}
                     if (${argumentCodeGenerators.map((acg, idx) => {
-                        return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
-                    }).join(' && ')})
-                    `
-                }
-                tt`
+                return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
+            }).join(' && ')})
+                    ${ENDIF()}
+                    
                     {
-                `
-                argumentCodeGenerators.forEach((acg, idx) => {
-                    tt` 
+                    ${FOR(argumentCodeGenerators, (acg, idx) => $`
                         ${acg.getArg(overload.ParameterInfos.get_Item(idx))};
-                    `
-                })
-                tt`
+                    `)}
                         var result = ${operatorCall(operator.Name, argumentCodeGenerators, overload)};
                         ${!overload.IsVoid ? setReturn(overload) + ';' : ''}
                         ${operator.HasOverloads ? 'return;' : ''}
                     }
-                `
-            })
-            tt`
+                `)}
                 }
             `
-        })
-        operator.HasOverloads && tt`
+        })}
+        ${IF(operator.HasOverloads)}
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to ${operator.Name}");
-        `
-        tt`
+        ${ENDIF()}
             }
             catch (Exception e)
             {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        `
-    })
+    `)}
     // ==================== operator end ====================
-
     // ==================== events start ====================
-    toJsArray(data.Events).filter(ev => !ev.IsLazyMember).forEach(eventInfo => {
-        if (eventInfo.HasAdd) {
-            var acg = new ArgumentCodeGenerator(0);
-            tt`
+    ${FOR(toJsArray(data.Events).filter(ev => !ev.IsLazyMember), eventInfo => {
+            if (eventInfo.HasAdd) {
+                var acg = new ArgumentCodeGenerator(0);
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe ' : ''}private static void A_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -603,10 +497,10 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-        if (eventInfo.HasRemove) {
-            var acg = new ArgumentCodeGenerator(0);
-            tt`
+            }
+            if (eventInfo.HasRemove) {
+                var acg = new ArgumentCodeGenerator(0);
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe' : ''}private static void R_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -624,10 +518,10 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-    })
+            }
+        })}
     // ==================== events end ====================
-    tt`    
+
         public static Puerts.TypeRegisterInfo GetRegisterInfo()
         {
             return new Puerts.TypeRegisterInfo()
@@ -671,9 +565,8 @@ namespace PuertsStaticWrap
                 }
             };
         }
-    `
-    if (data.BlittableCopy) {
-        tt`
+    ${IF(data.BlittableCopy, () => {
+            $`
         unsafe private static ${data.Name} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             ${data.Name}* result = (${data.Name}*)getValueApi.GetNativeObject(isolate, value, isByRef);
@@ -689,7 +582,7 @@ namespace PuertsStaticWrap
                 setValueApi.SetNativeObject(isolate, value, typeId, new IntPtr(result));
             }
         }
-        
+
         public static void InitBlittableCopy(Puerts.JsEnv jsEnv)
         {
             Puerts.StaticTranslate<${data.Name}>.ReplaceDefault(StaticSetter, StaticGetter);
@@ -702,16 +595,14 @@ namespace PuertsStaticWrap
             });
         }
         `
-    }
-
-    tt`
+        })}
     }
 }
 `
-    return ret;
 }
 
 function toJsArray(csArr) {
+    if (!csArr) return [];
     let arr = [];
     for (var i = 0; i < csArr.Length; i++) {
         arr.push(csArr.get_Item(i));
