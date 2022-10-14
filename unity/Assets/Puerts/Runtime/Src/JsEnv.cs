@@ -13,8 +13,8 @@ using System.Threading.Tasks;
 
 namespace Puerts
 {
-    public delegate void FunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
-    public delegate object ConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
+    public delegate void JSFunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
+    public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
 
     public class JsEnv : IDisposable
     {
@@ -364,14 +364,14 @@ namespace Puerts
             callbacks[callbackIdx](isolate, info, self, paramLen);
         }
 
-        internal long AddCallback(FunctionCallback callback)
+        internal long AddCallback(JSFunctionCallback callback)
         {
             int callbackIdx = callbacks.Count;
             callbacks.Add(callback);
             return Utils.TwoIntToLong(Idx, callbackIdx);
         }
 
-        private readonly List<ConstructorCallback> constructorCallbacks = new List<ConstructorCallback>();
+        private readonly List<JSConstructorCallback> constructorCallbacks = new List<JSConstructorCallback>();
 
         internal IntPtr InvokeConstructor(IntPtr isolate, int callbackIdx, IntPtr info, int paramLen)
         {
@@ -381,7 +381,7 @@ namespace Puerts
             return new IntPtr(objectId);
         }
 
-        internal long AddConstructor(ConstructorCallback callback)
+        internal long AddConstructor(JSConstructorCallback callback)
         {
             int callbackIdx = constructorCallbacks.Count;
             constructorCallbacks.Add(callback);

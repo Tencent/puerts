@@ -105,12 +105,7 @@ namespace puerts
         }
         Arguments.clear();
         v8::TryCatch TryCatch(Isolate);
-        v8::Local<v8::Value> *args = (v8::Local<v8::Value> *)alloca(sizeof(v8::Local<v8::Value>) * Arguments.size());
-        for (int i = 0; i < Arguments.size(); i++)
-        {
-            args[i] = ToV8(Isolate, Context, Arguments[i]);
-        }
-        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(Arguments.size()), args);
+        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         
         if (TryCatch.HasCaught())
         {
