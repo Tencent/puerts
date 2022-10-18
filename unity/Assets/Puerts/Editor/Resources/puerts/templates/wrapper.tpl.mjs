@@ -43,6 +43,7 @@ class ArgumentCodeGenerator {
     getArg(typeInfo) {
         let typeName = typeInfo.TypeName;
         let isByRef = typeInfo.IsByRef ? "true" : "false";
+
         if (typeInfo.IsParams) {
             return `${typeName}[] arg${this.index} = ArgHelper.GetParams<${typeName}>((int)data, isolate, info, ${this.index}, paramLen, ${this.v8Value()})`;
         } else if (typeInfo.IsEnum) {
@@ -274,8 +275,8 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                 ${FOR(toJsArray(overloadGroup), overload => $`
                     ${IF(method.HasOverloads && overload.ParameterInfos.Length > 0)}
                     if (${argumentCodeGenerators.map((acg, idx) => {
-                return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
-            }).join(' && ')})
+                        return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
+                    }).join(' && ')})
                     ${ENDIF()}
                     {
                     ${FOR(argumentCodeGenerators, (acg, idx) => $`
@@ -285,7 +286,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                         ${overload.IsVoid ? "" : "var result = "}${method.IsStatic ? data.Name : refSelf()}.${UnK(method.Name)} (${argumentCodeGenerators.map((acg, idx) => {
                             var paramInfo = overload.ParameterInfos.get_Item(idx);
                 return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
-                            }).join(', ')
+                            }).concat(overload.EllipsisedParameterInfos.Length == 0 ? [] : toJsArray(overload.EllipsisedParameterInfos).map(info=> info.DefaultValue)).join(', ')
                         });
 
                     ${FOR(argumentCodeGenerators, (acg, idx) => $`
@@ -310,7 +311,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-`)}
+    `)}
     // ==================== methods end ====================
 
     // ==================== properties start ====================

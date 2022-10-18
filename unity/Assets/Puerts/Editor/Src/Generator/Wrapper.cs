@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 
 namespace Puerts.Editor
 {
@@ -363,8 +362,9 @@ namespace Puerts.Editor
                 public bool IsOut;
                 public bool IsByRef;
                 public string ExpectJsType;
-                public string ExpectCsType;
+                public string ExpectCsType; 
                 public bool IsParams;
+                public string DefaultValue;
 
                 public static ParameterGenInfo FromParameterInfo(ParameterInfo parameterInfo)
                 {
@@ -379,15 +379,33 @@ namespace Puerts.Editor
                         IsByRef = parameterInfo.ParameterType.IsByRef,
                         TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType).GetFriendlyName(),
                         ExpectJsType = Utils.ToCode(ExpectJsType),
-                        IsParams = isParams,
+                        IsParams = isParams
                     };
                     if (result.IsParams)
                     {
                         result.TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType.GetElementType()).GetFriendlyName();
                     }
                     result.ExpectCsType = string.Format("typeof({0})", result.TypeName);//((ExpectJsType & JsValueType.NativeObject) == JsValueType.NativeObject) ? string.Format("typeof({0})", result.TypeName) : "null";
+                    result.DefaultValue = ConvertDefaultValueToString(parameterInfo.DefaultValue, result.TypeName);
                     Utils.FillEnumInfo(result, parameterInfo.ParameterType);
                     return result;
+                }
+
+                private static string ConvertDefaultValueToString(object value, string typeName)
+                {
+                    if (value != null)
+                    {
+                        if (value is string)
+                        {
+                            return "\"" + value + "\"";
+                        }
+                        else if (value.GetType().IsPrimitive)
+                        {
+                            return value.ToString().ToLower();
+                        }
+                    }
+
+                    return "default(" + typeName + ")";
                 }
             }
 
@@ -482,9 +500,9 @@ namespace Puerts.Editor
             public class OverloadGenInfo : DataTypeInfo
             {
                 public ParameterGenInfo[] ParameterInfos;
+                public ParameterGenInfo[] EllipsisedParameterInfos;
                 public bool IsVoid;
                 public bool HasParams;
-                public bool EllipsisedParameters;
 
                 private string ParameterInfosMark = null;
                 internal string GetParameterInfosMark()
@@ -507,9 +525,9 @@ namespace Puerts.Editor
                         OverloadGenInfo mainInfo = new OverloadGenInfo()
                         {
                             ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
+                            EllipsisedParameterInfos = new ParameterGenInfo[] {},
                             TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                             IsVoid = methodInfo.ReturnType == typeof(void),
-                            EllipsisedParameters = false,
                         };
                         Utils.FillEnumInfo(mainInfo, methodInfo.ReturnType);
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
@@ -521,21 +539,22 @@ namespace Puerts.Editor
                             if (ps[i].IsOptional || mainInfo.ParameterInfos[i].IsParams)
                             {
                                 ParameterInfo[] pinfos = parameters.Take(i).ToArray();
+                                ParameterInfo[] ellipsisedPInfos = parameters.Where((item, index) => index >= i).ToArray();
                                 if (!Puerts.Utils.IsNotGenericOrValidGeneric((MethodInfo)methodBase, pinfos)) continue;
                                 optionalInfo = new OverloadGenInfo()
                                 {
                                     ParameterInfos = pinfos.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
+                                    EllipsisedParameterInfos = ellipsisedPInfos.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                                     TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                                     IsVoid = methodInfo.ReturnType == typeof(void),
-                                    EllipsisedParameters = true,
-                                };
+                                }; 
                                 Utils.FillEnumInfo(optionalInfo, methodInfo.ReturnType);
                                 optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
-                                ret.Add(optionalInfo);
+                                ret.Add(optionalInfo); 
                             }
                             else
                             {
-                                break;
+                                break; 
                             }
                         }
                     }
@@ -545,9 +564,9 @@ namespace Puerts.Editor
                         OverloadGenInfo mainInfo = new OverloadGenInfo()
                         {
                             ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
+                            EllipsisedParameterInfos = new ParameterGenInfo[] {},
                             TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                             IsVoid = false,
-                            EllipsisedParameters = false,
                         };
                         mainInfo.HasParams = mainInfo.ParameterInfos.Any(info => info.IsParams);
                         ret.Add(mainInfo);
@@ -560,9 +579,9 @@ namespace Puerts.Editor
                                 optionalInfo = new OverloadGenInfo()
                                 {
                                     ParameterInfos = constructorInfo.GetParameters().Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
+                                    EllipsisedParameterInfos = new ParameterGenInfo[] {},
                                     TypeName = constructorInfo.DeclaringType.GetFriendlyName(),
                                     IsVoid = false,
-                                    EllipsisedParameters = true,
                                 };
                                 optionalInfo.HasParams = optionalInfo.ParameterInfos.Any(info => info.IsParams);
                                 ret.Add(optionalInfo);
@@ -660,29 +679,29 @@ namespace Puerts.Editor
                                     OverloadGenInfo existedOverload = null;
                                     if (!distincter.TryGetValue(mark, out existedOverload))
                                     {
-                                        distincter.Add(mark, overload);
+                                        distincter.Add(mark, overload); 
                                     }
-                                    else
+                                    else 
                                     {
-                                        // if the value in distincter is null. Means that this overload is unavailable(will cause ambigious)
-                                        if (existedOverload == null)
+                                        // ambigious call handle.
+                                        
+                                        // if one of the overload is not ellipsised. use it.
+                                        // otherwise use the first overload 
+                                        if (overload.EllipsisedParameterInfos.Length == 0)
                                         {
-                                            continue;
-                                        }
-                                        if (!overload.EllipsisedParameters)
-                                        {
-                                            if (existedOverload == null || existedOverload.EllipsisedParameters)
+                                            if (existedOverload == null || existedOverload.EllipsisedParameterInfos.Length > 0)
                                             {
                                                 distincter[mark] = overload;
                                             }
                                         }
-                                        else
-                                        {
-                                            if (existedOverload.EllipsisedParameters)
-                                            {
-                                                distincter[mark] = null;
-                                            }
-                                        }
+                                        // // if the value in distincter is null. Means that this overload is unavailable(will cause ambigious)
+                                        // else if (existedOverload != null)
+                                        // {
+                                        //     if (existedOverload.EllipsisedParameterInfos.Length > 0)
+                                        //     {
+                                        //         distincter[mark] = null;
+                                        //     }
+                                        // }
                                     }
                                 }
                                 return distincter.Values.ToList().Where(item => item != null).ToArray();
