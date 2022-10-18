@@ -40,7 +40,7 @@ namespace PuertsStaticWrap
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
         
                 if (paramLen == 0)
-            
+                
                 {
             
                     {
@@ -55,18 +55,20 @@ namespace PuertsStaticWrap
                 }
             
                 if (paramLen == 1)
-            
+                
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Boolean, typeof(bool), false, false))
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Boolean, typeof(bool), false, false, v8Value0, ref argobj0, ref argType0))
                 
                     {
                 
-                        var Arg0 = argHelper0.GetBoolean(false);
+                        bool arg0 = StaticTranslate<bool>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
                     
-                        obj.GeneratedMethod(Arg0);
+                        obj.GeneratedMethod(arg0);
                 
                         
                         
@@ -105,8 +107,10 @@ namespace PuertsStaticWrap
             try
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                obj.PropertyWithoutGetter = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
+                obj.PropertyWithoutGetter = arg0;
                 
             }
             catch (Exception e)
@@ -136,8 +140,10 @@ namespace PuertsStaticWrap
             try
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                obj.Property = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
+                obj.Property = arg0;
                 
             }
             catch (Exception e)
@@ -167,8 +173,10 @@ namespace PuertsStaticWrap
             try
             {
                 
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                Puerts.UnitTest.WrapperTest.StaticProperty = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
+                Puerts.UnitTest.WrapperTest.StaticProperty = arg0;
                 
             }
             catch (Exception e)
@@ -198,8 +206,10 @@ namespace PuertsStaticWrap
             try
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                obj.Field = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = StaticTranslate<string>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, v8Value0, false);
+                obj.Field = arg0;
                 
             }
             catch (Exception e)
