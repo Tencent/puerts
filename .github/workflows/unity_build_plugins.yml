@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildAndroid
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildAndroidQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildAndroidNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -52,7 +52,7 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildiOS
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -63,7 +63,7 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildiOSQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -74,7 +74,7 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildiOSNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -85,7 +85,7 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildOSX
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -96,7 +96,7 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildOSXNodejs
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -107,7 +107,7 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildOSXQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -118,7 +118,7 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildWindows
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -129,7 +129,7 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -140,7 +140,7 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildWindowsNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -151,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: BuildLinux
         uses: ./.github/workflows/composites/unity-build-plugins/linux/
         with:

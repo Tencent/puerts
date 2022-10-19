@@ -22,8 +22,8 @@ jobs:
 
     steps:
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
-      - uses: actions/checkout@v2
+        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/checkout@v3
       - name: Build
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -43,8 +43,8 @@ jobs:
 
     steps:
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
-      - uses: actions/checkout@v2
+        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/checkout@v3
       - name: Build
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -65,8 +65,8 @@ jobs:
 
     steps:
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
-      - uses: actions/checkout@v2
+        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/checkout@v3
       - name: Build
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
