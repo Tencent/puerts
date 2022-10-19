@@ -11,6 +11,14 @@ using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public class AmbigiousCallTest {
+        public static int PlaySound(string uid, int tag = 0, Action onCompleted = default, bool cover = true) 
+        { return 1; }
+        public static int PlaySound(string uid,Action onCompleted = default) 
+        { return 2; }
+        public static int PlaySound(string uid) 
+        { return 3; }
+    }
     public class MultiEnvTestA
     {
         int number;

@@ -633,5 +633,28 @@ namespace Puerts.UnitTest.TranslatorTest
             ");
             jsEnv.Dispose();
         }
+        
+        [Test]
+        public void AmbigiousCallTestRefection()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int res = jsEnv.Eval<int>(@"
+                CS.Puerts.UnitTest.AmbigiousCallTest.PlaySound('haha');
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 1);
+        }
+        
+        [Test]
+        public void AmbigiousCallTestStatic()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int res = jsEnv.Eval<int>(@"
+                CS.Puerts.UnitTest.AmbigiousCallTest.PlaySound('haha');
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 1);
+        }
     }
 }
