@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-rc.3] - 2022-10-19
+1. support ambigious methods calling after generated staticwrapper. #1020
+2. fix a bug that after blittablecopy staticwrapper generated, passing two or more struct from C# to a JSFunction will get wrong JS arguments #1018
+3. fix Array Type arguments will cause error in staticwrapper #1015
+4. refactor the template of wrapper and get a little performance improvement [report](https://github.com/puerts/PerformanceTesting/tree/build/States) 
+
 ## [1.4.0-rc.2] - 2022-09-28
 1. full platform support for Node.js (i.e. Android and iOS support added). upm package now uses Node.js Backend by default.
 2. In order to make the Node.js function more convenient to use, and also to solve the problem of WebGL version in WeChat mini-game, from this version on, add global variables `CS` and `puer`, corresponding to the original `require('csharp')` and `require('puerts')`. Please change the using of `require` to `global.CS`, `global.puer`, `import 'xxx'`. The `require` in PuerTS will be considered to be removed in version 1.5.
