@@ -12,7 +12,26 @@ using System.Collections.Generic;
 namespace Puerts.UnitTest
 {
     public class AmbigiousCallTest {
-        public static int PlaySound(string uid, int tag = 0, Action onCompleted = default, bool cover = true) 
+        public enum AENUM
+        {
+            a = 123, b = 456
+        }
+
+        public static int PlaySound(
+            string uid, 
+            int a = 3, 
+            float b = .3f, 
+            char c = 'c', 
+            string d = "ddd", 
+            ulong e = 12381263987129837, 
+            long f = -123124124123,
+            bool g = false,
+            AENUM h = AENUM.b,
+            byte i = 255,
+            char j = char.MaxValue,
+            float k = float.PositiveInfinity,
+            IntPtr l = default(IntPtr)
+        )
         { return 1; }
         public static int PlaySound(string uid,Action onCompleted = default) 
         { return 2; }
