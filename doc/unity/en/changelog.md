@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.0-rc.3] - 2022-10-19
+## [1.4.0-rc.5] - 2022-10-19
 1. support ambigious methods calling after generated staticwrapper. #1020
 2. fix a bug that after blittablecopy staticwrapper generated, passing two or more struct from C# to a JSFunction will get wrong JS arguments #1018
 3. fix Array Type arguments will cause error in staticwrapper #1015

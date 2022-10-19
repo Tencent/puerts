@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.0-rc.3] - 2022-10-19
+## [1.4.0-rc.5] - 2022-10-19
 1. 支持了staticwrapper生成后，歧义方法的调用 #1020
 2. 修复BlittableCopy模式下，同时为JS函数传递两个结构体时的错误 #1018
 3. 修复Array类型再wrapper重载选择时报错 #1015
