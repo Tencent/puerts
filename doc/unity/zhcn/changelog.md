@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-rc.3] - 2022-10-19
+1. 
+2. 
+3.
+4.
+
 ## [1.4.0-rc.2] - 2022-09-28
 1. 全平台支持了Node.js（也就是新增了Android和iOS的支持）。upm包现在默认全使用Node.js Backend了。
 2. 为了让Node.js功能使用起来更方便，也同时解决WebGL版本在微信小游戏的问题，加上ES Module是JS生态的未来。从本版本开始，添加全局变量`CS` 和 `puer`，对应原本的`require('csharp')`和`require('puerts')`。PuerTS的`require`不再建议使用，原有的使用全局require的地方请改成`global.CS`、`global.puer`、`import 'xxx'`，抑或是`puerts.require`。PuerTS的**全局require**将考虑在1.5版本删除。

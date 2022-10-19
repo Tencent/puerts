@@ -675,33 +675,13 @@ namespace Puerts.Editor
 
                                 foreach (var overload in lst)
                                 {
+                                    // ambigious call handle.
+                                    // use the first overload. same as reflection mode
                                     string mark = overload.GetParameterInfosMark();
                                     OverloadGenInfo existedOverload = null;
                                     if (!distincter.TryGetValue(mark, out existedOverload))
                                     {
                                         distincter.Add(mark, overload); 
-                                    }
-                                    else 
-                                    {
-                                        // ambigious call handle.
-                                        
-                                        // if one of the overload is not ellipsised. use it.
-                                        // otherwise use the first overload 
-                                        if (overload.EllipsisedParameterInfos.Length == 0)
-                                        {
-                                            if (existedOverload == null || existedOverload.EllipsisedParameterInfos.Length > 0)
-                                            {
-                                                distincter[mark] = overload;
-                                            }
-                                        }
-                                        // // if the value in distincter is null. Means that this overload is unavailable(will cause ambigious)
-                                        // else if (existedOverload != null)
-                                        // {
-                                        //     if (existedOverload.EllipsisedParameterInfos.Length > 0)
-                                        //     {
-                                        //         distincter[mark] = null;
-                                        //     }
-                                        // }
                                     }
                                 }
                                 return distincter.Values.ToList().Where(item => item != null).ToArray();
