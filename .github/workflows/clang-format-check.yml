@@ -20,9 +20,9 @@ jobs:
           - 'unreal/Puerts/Source'
           - 'unreal/ReactUMG/Source'
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Run clang-format style check
-      uses: jidicula/clang-format-action@v4.4.1
+      uses: jidicula/clang-format-action@v4.9.0
       with:
         clang-format-version: '12'
         check-path: ${{ matrix.path }}
