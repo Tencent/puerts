@@ -244,8 +244,7 @@ void FFunctionTranslator::Call(
 #endif
 
     auto CallFunctionPtr = CallFunction.Get();
-    auto FunctionCallspace = CallObject->GetFunctionCallspace(CallFunctionPtr, NULL);
-    if ((Function->FunctionFlags & FUNC_Native) && !(FunctionCallspace & FunctionCallspace::Remote) &&
+    if ((Function->FunctionFlags & FUNC_Native) && !(Function->FunctionFlags & FUNC_Net) &&
         !CallFunctionPtr->HasAnyFunctionFlags(FUNC_UbergraphFunction))
     {
         FastCall(Isolate, Context, Info, CallObject, CallFunctionPtr, Params);
