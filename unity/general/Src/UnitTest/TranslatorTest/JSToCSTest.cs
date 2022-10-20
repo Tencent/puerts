@@ -661,7 +661,6 @@ namespace Puerts.UnitTest.TranslatorTest
         public void ParamsCallTestReflection()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
             string res = jsEnv.Eval<string>(@"
                 CS.Puerts.UnitTest.ParamsCallTest.CombinePath('a', 'b', 'c');
             ");
@@ -673,6 +672,7 @@ namespace Puerts.UnitTest.TranslatorTest
         public void ParamsCallTestStatic()
         {
             var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
             string res = jsEnv.Eval<string>(@"
                 CS.Puerts.UnitTest.ParamsCallTest.CombinePath('a', 'b', 'c');
             ");
