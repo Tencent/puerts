@@ -6,11 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.0-rc.5] - 2022-10-19
+## [1.4.0-rc.6] - 2022-10-20
 1. support ambigious methods calling after generated staticwrapper. #1020
 2. fix a bug that after blittablecopy staticwrapper generated, passing two or more struct from C# to a JSFunction will get wrong JS arguments #1018
 3. fix Array Type arguments will cause error in staticwrapper #1015
 4. refactor the template of wrapper and get a little performance improvement [report](https://github.com/puerts/PerformanceTesting/tree/build/States) 
+5. add missing '--jitless' flag for ios PuerTS with nodejs backend
 
 ## [1.4.0-rc.2] - 2022-09-28
 1. full platform support for Node.js (i.e. Android and iOS support added). upm package now uses Node.js Backend by default.
