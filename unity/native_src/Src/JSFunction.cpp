@@ -102,6 +102,7 @@ namespace puerts
         for (int i = 0; i < Arguments.size(); ++i)
         {
             V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
+            Arguments[i].Persistent.Reset();
         }
         Arguments.clear();
         v8::TryCatch TryCatch(Isolate);

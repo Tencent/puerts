@@ -17,8 +17,8 @@ namespace Puerts
 
             for (int i = start; i < end; i++)
             {
-                var val = PuertsDLL.GetArgumentValue(info, i);
-                result[i - start] = StaticTranslate<T>.Get(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, v8Value, false);
+                var val = i == start ? v8Value : PuertsDLL.GetArgumentValue(info, i);
+                result[i - start] = StaticTranslate<T>.Get(jsEnvIdx, isolate, NativeValueApi.GetValueFromArgument, val, false);
             }
 
             return result;

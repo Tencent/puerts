@@ -9,68 +9,10 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
+
+// too old. dont use this file anymore.
 namespace Puerts.UnitTest
 {
-    public class AmbigiousCallTest {
-        public enum AENUM
-        {
-            a = 123, b = 456
-        }
-
-        public static int PlaySound(
-            string uid, 
-            int a = 3, 
-            float b = .3f, 
-            char c = 'c', 
-            string d = "ddd", 
-            ulong e = 12381263987129837, 
-            long f = -123124124123,
-            bool g = false,
-            AENUM h = AENUM.b,
-            byte i = 255,
-            char j = char.MaxValue,
-            float k = float.PositiveInfinity,
-            IntPtr l = default(IntPtr)
-        )
-        { return 1; }
-        public static int PlaySound(string uid,Action onCompleted = default) 
-        { return 2; }
-        public static int PlaySound(string uid) 
-        { return 3; }
-    }
-    public class MultiEnvTestA
-    {
-        int number;
-
-        public MultiEnvTestA(int a) { number = a; }
-
-        public int GetA() 
-        {
-            return number;
-        }
-
-        public static MultiEnvTestA CreateA() 
-        {
-            return new MultiEnvTestA(3);
-        }
-    }
-    public class MultiEnvTestB
-    {
-        int number;
-
-        public MultiEnvTestB(int b) { number = b; }
-
-        public int GetB() 
-        {
-            return number;
-        }
-
-        public static MultiEnvTestB CreateB() 
-        {
-            return new MultiEnvTestB(3);
-        }
-    }
-    
     public class Util
     {
         public static int InvokeJSFunctionIntInt(Func<int, int> jsFunc, int arg)

@@ -27,6 +27,7 @@ public class WrapperGenConfig
                 typeof(Puerts.UnitTest.GenericGenTest2),
                 typeof(Puerts.UnitTest.GenericWrapperBase<JsEnv>),
                 typeof(Puerts.UnitTest.AmbigiousCallTest),
+                typeof(Puerts.UnitTest.ParamsCallTest)
             };
         }
     }
