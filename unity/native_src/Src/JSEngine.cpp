@@ -94,6 +94,9 @@ namespace puerts
 #if PUERTS_DEBUG
         Flags += "--expose-gc";
 #endif
+#if PLATFORM_IOS
+        Flags += " --jitless --no-expose-wasm";
+#endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
         NodeUVLoop = new uv_loop_t;
