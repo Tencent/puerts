@@ -44,6 +44,9 @@
     <Compile Include="..\Src\UnitTest\TestClass.cs">
       <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>
+    <Compile Include="..\Src\UnitTest\TestClasses.cs">
+      <Link>Src\UnitTest\TestClasses.cs</Link>
+    </Compile>
     <Compile Include="..\Src\UnitTest\WrapperTest\WrapperTestClass.cs">
       <Link>Src\UnitTest\WrapperTest\WrapperTestClass.cs</Link>
     </Compile>
@@ -52,6 +55,12 @@
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestB_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestB_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_AmbigiousCallTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_AmbigiousCallTest_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_ParamsCallTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_ParamsCallTest_Wrap.cs</Link>
     </Compile>
     <Compile Include="..\Src\WrapperGenerate.cs">
       <Link>Src\WrapperGenerate.cs</Link>

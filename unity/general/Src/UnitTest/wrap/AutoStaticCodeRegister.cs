@@ -35,6 +35,12 @@ namespace PuertsStaticWrap
                     typeof(Puerts_UnitTest_GenericWrapperBase_1_T__Wrap<Puerts.JsEnv>).GetGenericTypeDefinition()
                 );
                 
+            jsEnv.AddLazyStaticWrapLoader(typeof(Puerts.UnitTest.AmbigiousCallTest), Puerts_UnitTest_AmbigiousCallTest_Wrap.GetRegisterInfo);
+                
+                
+            jsEnv.AddLazyStaticWrapLoader(typeof(Puerts.UnitTest.ParamsCallTest), Puerts_UnitTest_ParamsCallTest_Wrap.GetRegisterInfo);
+                
+                
         }
     }
 }

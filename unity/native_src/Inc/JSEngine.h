@@ -22,16 +22,6 @@
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
 
-#if PUERTS_UT
-# if PLATFORM_WINDOWS
-#  define PUERTS_EXPORT_FOR_UT __declspec(dllexport)
-# else
-#  define PUERTS_EXPORT_FOR_UT __attribute__ ((visibility("default")))
-# endif
-#else 
-# define PUERTS_EXPORT_FOR_UT
-#endif
-
 #if WITH_NODEJS
 #pragma warning(push, 0)
 #include "node.h"
@@ -66,8 +56,6 @@
 #endif
 
 typedef char* (*CSharpModuleResolveCallback)(const char* identifer, int32_t jsEnvIdx, char*& pathForDebug);
-
-typedef void (*CSharpPushJSFunctionArgumentsCallback)(v8::Isolate* Isolate, int32_t jsEnvIdx, puerts::JSFunction* NativeFuncPtr);
 
 typedef void(*CSharpFunctionCallback)(v8::Isolate* Isolate, const v8::FunctionCallbackInfo<v8::Value>& Info, void* Self, int ParamLen, int64_t UserData);
 
@@ -117,61 +105,64 @@ class JSEngine
 private: 
     void JSEngineWithNode();
     void JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context);
+#if !WITH_QUICKJS
+    static void HostInitializeImportMetaObject(v8::Local<v8::Context> context, v8::Local<v8::Module> module, v8::Local<v8::Object> meta);
+#endif
 public:
-    PUERTS_EXPORT_FOR_UT JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
+    JSEngine(void* external_quickjs_runtime, void* external_quickjs_context);
 
-    PUERTS_EXPORT_FOR_UT ~JSEngine();
+    ~JSEngine();
 
-    PUERTS_EXPORT_FOR_UT void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
+    void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
-    PUERTS_EXPORT_FOR_UT bool ExecuteModule(const char* Path, const char* Exportee);
-    
-    PUERTS_EXPORT_FOR_UT bool Eval(const char *Code, const char* Path);
+    bool ExecuteModule(const char* Path, const char* Exportee);
+        
+    bool Eval(const char *Code, const char* Path);
 
-    PUERTS_EXPORT_FOR_UT int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
+    int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
 
-    PUERTS_EXPORT_FOR_UT bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
+    bool RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
 
-    PUERTS_EXPORT_FOR_UT bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
+    bool RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete);
 
-    PUERTS_EXPORT_FOR_UT v8::Local<v8::Value> GetClassConstructor(int ClassID);
+    v8::Local<v8::Value> GetClassConstructor(int ClassID);
 
-    PUERTS_EXPORT_FOR_UT v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context, int ClassID, void *Ptr);
+    v8::Local<v8::Value> FindOrAddObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context, int ClassID, void *Ptr);
 
-    PUERTS_EXPORT_FOR_UT void BindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr, v8::Local<v8::Object> JSObject);
+    void BindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr, v8::Local<v8::Object> JSObject);
 
-    PUERTS_EXPORT_FOR_UT void UnBindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr);
+    void UnBindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr);
 
     v8::UniquePersistent<v8::Value> LastException;
     std::string LastExceptionInfo;
 
-    PUERTS_EXPORT_FOR_UT void SetLastException(v8::Local<v8::Value> Exception);
+    void SetLastException(v8::Local<v8::Value> Exception);
 
     CSharpDestructorCallback GeneralDestructor;
 
-    PUERTS_EXPORT_FOR_UT void LowMemoryNotification();
+    void LowMemoryNotification();
 
-    PUERTS_EXPORT_FOR_UT bool IdleNotificationDeadline(double DeadlineInSeconds);
+    bool IdleNotificationDeadline(double DeadlineInSeconds);
 
-    PUERTS_EXPORT_FOR_UT void RequestMinorGarbageCollectionForTesting();
+    void RequestMinorGarbageCollectionForTesting();
 
-    PUERTS_EXPORT_FOR_UT void RequestFullGarbageCollectionForTesting();
+    void RequestFullGarbageCollectionForTesting();
 
-    PUERTS_EXPORT_FOR_UT JSFunction* CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction);
+    JSFunction* CreateJSFunction(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Function> InFunction);
 
-    PUERTS_EXPORT_FOR_UT void ReleaseJSFunction(JSFunction* InFunction);
+    void ReleaseJSFunction(JSFunction* InFunction);
 
-    PUERTS_EXPORT_FOR_UT JSObject* CreateJSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject);
+    JSObject* CreateJSObject(v8::Isolate* InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject);
 
-    PUERTS_EXPORT_FOR_UT void ReleaseJSObject(JSObject* InObject);
+    void ReleaseJSObject(JSObject* InObject);
 
-    PUERTS_EXPORT_FOR_UT void CreateInspector(int32_t Port);
+    void CreateInspector(int32_t Port);
 
-    PUERTS_EXPORT_FOR_UT void DestroyInspector();
+    void DestroyInspector();
 
-    PUERTS_EXPORT_FOR_UT bool InspectorTick();
+    bool InspectorTick();
 
-    PUERTS_EXPORT_FOR_UT void LogicTick();
+    void LogicTick();
 
     v8::Isolate* MainIsolate;
 
@@ -181,7 +172,7 @@ public:
 
     v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
 
-    PUERTS_EXPORT_FOR_UT V8_INLINE static JSEngine * Get(v8::Isolate* Isolate)
+    V8_INLINE static JSEngine * Get(v8::Isolate* Isolate)
     {
         return FV8Utils::IsolateData<JSEngine>(Isolate);
     }
@@ -189,8 +180,6 @@ public:
     int32_t Idx;
     
     CSharpModuleResolveCallback ModuleResolver;
-    CSharpPushJSFunctionArgumentsCallback GetJSArgumentsCallback;
-    
 #if defined(WITH_QUICKJS)
     std::map<std::string, JSModuleDef*> PathToModuleMap;
 #else

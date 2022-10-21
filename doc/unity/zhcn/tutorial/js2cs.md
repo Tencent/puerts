@@ -23,7 +23,6 @@ void Start() {
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        const CS = require('csharp')
         console.log(new CS.UnityEngine.Vector3(1, 2, 3));
         // (1.0, 2.0, 3.0)
     ")
@@ -46,7 +45,6 @@ void Start() {
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        const CS = require('csharp')
         CS.UnityEngine.Debug.Log('Hello World');
         const rect = new CS.UnityEngine.Rect(0, 0, 2, 2);
         CS.UnityEngine.Debug.Log(rect.Contains(CS.UnityEngine.Vector2.one)); // True
@@ -75,16 +73,15 @@ class Example4 {
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        const CS = require('csharp')
         // 通过puerts.$ref创建一个可以用于使用out/ref参数的变量
-        let p1 = puerts.$ref();
-        let p2 = puerts.$ref(10);
+        let p1 = puer.$ref();
+        let p2 = puer.$ref(10);
         let ret = Example4.InOutArgFunc(100, p1, p2);
         console.log('ret=' + ret + ', out=' + puerts_1.$unref(p1) + ', ref=' + puerts_1.$unref(p2));
         // ret=200, out=100, ref=20
 
         // 通过puerts.$generic来创建一个List<int>类型
-        let List = puerts.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+        let List = puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
         let lst = new List();
         lst.Add(1);
         lst.Add(0);
@@ -106,10 +103,8 @@ void Start() {
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        const CS = require('csharp');
-        
         let go = new CS.UnityEngine.GameObject('testObject');
-        go.AddComponent(puerts.$typeof(CS.UnityEngine.ParticleSystem));
+        go.AddComponent(puer.$typeof(CS.UnityEngine.ParticleSystem));
 
         const Vector3 = CS.UnityEngine.Vector3;
         Vector3.op_Multiply(Vector3.up, 1600)
@@ -143,11 +138,9 @@ class Example6 {
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        const CS = require('csharp');
-        
         (async function() {
             let task = obj.GetFileLength('xxxx');
-            let result = await puerts.$promise(task);
+            let result = await puer.$promise(task);
             console.log('file length is ' + result);
         })()
         .catch(err=> {
@@ -156,7 +149,7 @@ void Start() {
     ")
 }
 ```
-对于 C# 的`async`函数，JS 侧通过`puerts.$promise`包装一下 C# 返回的 task，即可 await 调用了
+对于 C# 的`async`函数，JS 侧通过`puer.$promise`包装一下 C# 返回的 task，即可 await 调用了
 
 -------------
 这一部分是有关 JS 调用 C# 的。下一部分我们反过来，介绍 C# 调用 JS

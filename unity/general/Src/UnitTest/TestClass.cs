@@ -9,41 +9,10 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
+
+// too old. dont use this file anymore.
 namespace Puerts.UnitTest
 {
-    public class MultiEnvTestA
-    {
-        int number;
-
-        public MultiEnvTestA(int a) { number = a; }
-
-        public int GetA() 
-        {
-            return number;
-        }
-
-        public static MultiEnvTestA CreateA() 
-        {
-            return new MultiEnvTestA(3);
-        }
-    }
-    public class MultiEnvTestB
-    {
-        int number;
-
-        public MultiEnvTestB(int b) { number = b; }
-
-        public int GetB() 
-        {
-            return number;
-        }
-
-        public static MultiEnvTestB CreateB() 
-        {
-            return new MultiEnvTestB(3);
-        }
-    }
-    
     public class Util
     {
         public static int InvokeJSFunctionIntInt(Func<int, int> jsFunc, int arg)

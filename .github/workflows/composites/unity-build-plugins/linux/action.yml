@@ -34,7 +34,7 @@ runs:
         cd unity/native_src
         node make.js --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         path: ./unity/Assets/Puerts/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

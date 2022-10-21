@@ -24,7 +24,7 @@ class AutoValueScope
 public:
     AutoValueScope(pesapi_env_holder env_holder)
     {
-        scope = pesapi_open_scope(pesapi_get_env_from_holder(env_holder));
+        scope = pesapi_open_scope(env_holder);
     }
 
     ~AutoValueScope()

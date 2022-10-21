@@ -19,6 +19,15 @@ namespace puerts {
         return path[0] == '/';
 #endif
     }
+    bool IsRelativePath(const std::string& path) {
+        if (path[0] == '.') {
+            if (path.length() == 1 || path[1] == '/') return true;
+            if (path[1] == '.') {
+                if (path.length() == 2 || path[2] == '/') return true;
+            }
+        }
+        return false;
+    }
 
     // Returns the directory part of path, without the trailing '/'.
     std::string DirName(const std::string& path) { 
@@ -34,10 +43,10 @@ namespace puerts {
     std::string NormalizePath(const std::string& path,
                               const std::string& from_path) {
         std::string absolute_path;
-        if (IsAbsolutePath(path)) {
-            absolute_path = path;
-        } else {
+        if (IsRelativePath(path)) {
             absolute_path = DirName(from_path) + '/' + path;
+        } else {
+            absolute_path = path;
         }
         std::replace(absolute_path.begin(), absolute_path.end(), '\\', '/');
         std::vector<std::string> segments;
@@ -59,10 +68,11 @@ namespace puerts {
     }
 
 #if !WITH_QUICKJS
-    v8::MaybeLocal<v8::Module> ResolveModule(
+    v8::MaybeLocal<v8::Module> _ResolveModule(
         v8::Local<v8::Context> Context,
         v8::Local<v8::String> Specifier,
-        v8::Local<v8::Module> Referrer
+        v8::Local<v8::Module> Referrer,
+        bool& isFromCache
     )
     {
         v8::Isolate* Isolate = Context->GetIsolate();
@@ -81,6 +91,7 @@ namespace puerts {
         const auto cacheIter = JsEngine->PathToModuleMap.find(Specifier_std);
         if (cacheIter != JsEngine->PathToModuleMap.end())//create and link
         {
+            isFromCache = true;
             return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
         }
         v8::Local<v8::Module> Module;
@@ -118,6 +129,15 @@ namespace puerts {
         JsEngine->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
         return Module;
     }
+    v8::MaybeLocal<v8::Module> ResolveModule(
+        v8::Local<v8::Context> Context,
+        v8::Local<v8::String> Specifier,
+        v8::Local<v8::Module> Referrer
+    )
+    {
+        bool isFromCache = false;
+        return _ResolveModule(Context, Specifier, Referrer, isFromCache);
+    }
 
     bool LinkModule(
         v8::Local<v8::Context> Context,
@@ -131,18 +151,38 @@ namespace puerts {
         {
             v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
 
-            v8::MaybeLocal<v8::Module> MaybeModule = ResolveModule(Context, Specifier_v8, RefModule);
+            bool isFromCache = false;
+            v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, RefModule, isFromCache);
             if (MaybeModule.IsEmpty())
             {
                 return false;
             }
-            if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
+            if (!isFromCache) 
             {
-                return false;
+                if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
+                {
+                    return false;
+                }
             }
         }
 
         return true;
+    }
+    
+    void JSEngine::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+    {
+        v8::Isolate* Isolate = Context->GetIsolate();
+        auto* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+
+        auto iter = JsEngine->ScriptIdToPathMap.find(Module->ScriptId());
+        if (iter != JsEngine->ScriptIdToPathMap.end()) 
+        {
+            meta->CreateDataProperty(
+                Context, 
+                FV8Utils::V8String(Context->GetIsolate(), "url"), 
+                FV8Utils::V8String(Context->GetIsolate(), ("puer:" + iter->second).c_str())
+            ).ToChecked();
+        }
     }
 #else 
     JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque) {
@@ -175,6 +215,10 @@ namespace puerts {
         }
 
         auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
+
+        auto obj = JS_GetImportMeta(ctx, module_);
+        JS_SetProperty(ctx, obj, JS_NewAtom(ctx, "url"), JS_NewString(ctx, ("puer:" + name_std).c_str()));
+        JS_FreeValue(ctx, obj);
 
         JsEngine->PathToModuleMap[name_std] = module_;
 

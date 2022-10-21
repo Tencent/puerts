@@ -12,7 +12,7 @@
  * @param {DTS.TypingGenInfo} data 
  * @returns 
  */
-export default function TypingTemplate(data) {
+ export default function TypingTemplate(data) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -45,9 +45,10 @@ export default function TypingTemplate(data) {
 
         ret += newLines.join('\n');
     }
+    const baseIndent = 0;
 
     tt`
-declare namespace CS {
+    declare namespace CS {
     //keep type incompatibility / 此属性保持类型不兼容
     const __keep_incompatibility: unique symbol;
 
@@ -72,7 +73,7 @@ declare namespace CS {
 
         toJsArray(ns.Types).forEach(type=> {
             // type start
-            t.indent = 8;
+            t.indent = 8 + baseIndent;
             // the comment of the type
             t`
             ${type.Document}
@@ -104,7 +105,7 @@ declare namespace CS {
                     // class or interface.
                     t`{
                     `;
-                    t.indent = 12;
+                    t.indent = 12 + baseIndent;
 
                     //keep type incompatibility / 此属性保持类型不兼容
                     if (!type.IsInterface) {
@@ -149,7 +150,7 @@ declare namespace CS {
                         `
                     });
                     // methods end
-                    t.indent = 8;
+                    t.indent = 8 + baseIndent;
                     t`
                     }
                     `
@@ -157,14 +158,14 @@ declare namespace CS {
 
                 // extension methods start
                 if (type.ExtensionMethods.Length > 0 && !type.IsEnum) {
-                    t.indent = 8;
+                    t.indent = 8 + baseIndent;
                     t`
                     ${type.Document}
                     interface ${type.Name} {
                     `
                     
                     toJsArray(type.ExtensionMethods).forEach(method=>{
-                        t.indent = 12;
+                        t.indent = 12 + baseIndent;
                         
                         t`
                         ${method.Document}
@@ -174,7 +175,7 @@ declare namespace CS {
                         `
                     });
 
-                    t.indent = 8;
+                    t.indent = 8 + baseIndent;
                     t`
                     }
                     `;
@@ -184,7 +185,7 @@ declare namespace CS {
                 
             } else {
                 // if the type is Puerts.JSObject, declare an alias for any;
-                t.indent = 8;
+                t.indent = 8 + baseIndent;
                 t`type JSObject = any;`;
 
             }
@@ -192,7 +193,7 @@ declare namespace CS {
 
         // namespace end
         if (ns.Name) {
-            t.indent = 4;
+            t.indent = 4 + baseIndent;
             t`
             }
             `
@@ -202,6 +203,9 @@ declare namespace CS {
     
     t.indent = 0;
     t`
+    }
+    declare module 'csharp' {
+        export = CS;
     }
     `
 
@@ -256,7 +260,7 @@ function typeDeclaration(type, level1) {
     }
     var interfaces = type.interfaces ? toJsArray(type.interfaces) : [];
     if (level1 && !type.IsDelegate && !type.IsEnum && interfaces.length) {
-        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(itface=> typeDeclaration(itface)).join(', '))
+        result += ((type.IsInterface ? " extends " : " implements ") + interfaces.map(itf=> typeDeclaration(itf)).join(', '))
     }
     if (!level1 && type.Namespace) {
         result = type.Namespace + "." + result;

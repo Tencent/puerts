@@ -77,6 +77,7 @@ struct JSENV_API JSClassDefinition
     NamedFunctionInfo* FunctionInfos;
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
+    void* Data = nullptr;
 };
 
 #define JSClassEmptyDefinition                      \

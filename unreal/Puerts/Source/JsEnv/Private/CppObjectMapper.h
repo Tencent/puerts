@@ -28,6 +28,8 @@ public:
 
     virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) override;
 
+    virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() override;
+
     virtual v8::Local<v8::Value> FindOrAddCppObject(
         v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* TypeId, void* Ptr, bool PassByPointer) override;
 
@@ -48,6 +50,8 @@ private:
     v8::UniquePersistent<v8::Function> PointerConstructor;
 
     std::map<void*, FinalizeFunc> CDataFinalizeMap;
+
+    std::shared_ptr<int> Ref = std::make_shared<int>(0);
 };
 
 }    // namespace puerts

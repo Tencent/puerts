@@ -23,15 +23,17 @@ namespace Puerts.Editor
 
         public NodeRunner(string ProjectPath = "") 
         {
-            if (ProjectPath == null) 
+            UnityEngine.Debug.LogWarning("NodeRunner is still experimental and could be changed later");
+            if (ProjectPath == null || ProjectPath == "") 
             {
-                ProjectPath = DefaultProjectPath;
+                this.ProjectPath = DefaultProjectPath;
             }
             else 
             {
                 this.ProjectPath = ProjectPath;
             }
             EditorApplication.update += Update;
+            env = new JsEnv();
         }
 
         void Update() 
@@ -50,7 +52,6 @@ namespace Puerts.Editor
             try 
             {
                 ret = env.Eval<T>(String.Format(@"
-                    global.CS = puertsRequire('csharp');
                     global.__puerProjectRoot = '{0}';
                     global.require = require('module').createRequire('{0}');
                     if (!require('fs').existsSync(`{0}/node_modules`)) {{
@@ -64,7 +65,7 @@ namespace Puerts.Editor
             }
             catch (Exception e)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -79,9 +80,8 @@ namespace Puerts.Editor
             if (env == null) env = new JsEnv();
             EditorUtility.DisplayProgressBar("PuerNode", "Running in Puer-Project", 0);
             try 
-            {
+            { 
                 env.Eval(String.Format(@"
-                    global.CS = puertsRequire('csharp');
                     global.__puerProjectRoot = '{0}';
                     global.require = require('module').createRequire('{0}');
                     if (!require('fs').existsSync(`{0}/node_modules`)) {{
@@ -96,7 +96,7 @@ namespace Puerts.Editor
             }
             catch (Exception e)
             {
-                throw e;
+                throw;
             }
             finally
             {

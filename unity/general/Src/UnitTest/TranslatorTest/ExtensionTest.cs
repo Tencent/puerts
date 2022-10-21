@@ -7,7 +7,7 @@
 
 using NUnit.Framework;
 
-namespace Puerts.UnitTest.UnitTest.TranslatorTest
+namespace Puerts.UnitTest.TranslatorTest
 {
     public class ExtensionTest
     {

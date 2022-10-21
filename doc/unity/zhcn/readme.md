@@ -1,5 +1,5 @@
 ## What？
-PuerTS是游戏引擎下的TypeScript编程解决方案
+PuerTS是Unity/UE游戏引擎下的TypeScript编程解决方案
 
 * 提供了一个JavaScript运行时
 

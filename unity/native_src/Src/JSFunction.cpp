@@ -53,9 +53,8 @@ namespace puerts
         ResultInfo.Context.Reset();
     }
 
-    static v8::Local<v8::Value> ToV8(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const FValue &Value)
+    static v8::Local<v8::Value> ToV8(v8::Isolate* Isolate, v8::Local<v8::Context> Context, FValue &Value)
     {
-        JSEngine *JsEngine = nullptr;
         switch (Value.Type)
         {
         case NullOrUndefined:
@@ -69,8 +68,7 @@ namespace puerts
         case String:
             return FV8Utils::V8String(Isolate, Value.Str.c_str());
         case NativeObject:
-            JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-            return JsEngine->FindOrAddObject(Isolate, Context, Value.ObjectInfo.ClassID, Value.ObjectInfo.ObjectPtr);
+            return Value.Persistent.Get(Isolate);
         case Function:
             return Value.FunctionPtr->GFunction.Get(Isolate);
         case JsObject:
@@ -78,13 +76,18 @@ namespace puerts
         case Boolean:
             return v8::Boolean::New(Isolate, Value.Boolean);
         case ArrayBuffer:
-            return Value.ArrayBuffer.Get(Isolate);
+            return Value.Persistent.Get(Isolate);
         default:
             return v8::Undefined(Isolate);
         }
     }
 
-    bool JSFunction::Invoke(int argumentsLength, bool HasResult)
+    /*void JSFunction::SetResult(v8::MaybeLocal<v8::Value> maybeValue)
+    {
+
+    }*/
+
+    bool JSFunction::Invoke(bool HasResult)
     {
         v8::Isolate* Isolate = ResultInfo.Isolate;
 #ifdef THREAD_SAFE
@@ -95,20 +98,15 @@ namespace puerts
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
 
+        std::vector< v8::Local<v8::Value>> V8Args;
+        for (int i = 0; i < Arguments.size(); ++i)
+        {
+            V8Args.push_back(ToV8(Isolate, Context, Arguments[i]));
+            Arguments[i].Persistent.Reset();
+        }
         Arguments.clear();
-        JSEngine* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-        if (argumentsLength > 0)
-        {
-            JsEngine->GetJSArgumentsCallback(Isolate, JsEngine->Idx, this);
-        }
-        
         v8::TryCatch TryCatch(Isolate);
-        v8::Local<v8::Value> *args = (v8::Local<v8::Value> *)alloca(sizeof(v8::Local<v8::Value>) * Arguments.size());
-        for (int i = 0; i < Arguments.size(); i++)
-        {
-            args[i] = ToV8(Isolate, Context, Arguments[i]);
-        }
-        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(Arguments.size()), args);
+        auto maybeValue = GFunction.Get(Isolate)->Call(Context, Context->Global(), static_cast<int>(V8Args.size()), V8Args.data());
         
         if (TryCatch.HasCaught())
         {

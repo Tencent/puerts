@@ -22,7 +22,7 @@ export default TS_Player;
 然后你在UE编辑器就能选择它
 
 
-![select_character.png](../../pic/select_character.png)
+![select_character.png](../../../doc/pic/select_character.png)
 
 * 能被UE识别的类，支持构造函数，支持override蓝图能override的方法，支持轴映射Axis、Action事件，支持RPC
 

@@ -15,22 +15,10 @@ namespace Puerts
 {
     public delegate void JSFunctionCallback(IntPtr isolate, IntPtr info, IntPtr self, int argumentsLen);
     public delegate object JSConstructorCallback(IntPtr isolate, IntPtr info, int argumentsLen);
+
     public class JsEnv : IDisposable
     {
         public static List<JsEnv> jsEnvs = new List<JsEnv>();
-
-        protected PushJSFunctionArgumentsCallback _ArgumentsPusher;
-
-        public PushJSFunctionArgumentsCallback ArgumentsPusher {
-            get 
-            {
-                return _ArgumentsPusher;
-            }
-            set 
-            {
-                _ArgumentsPusher = value;
-            }
-        }
 
         internal readonly int Idx;
 
@@ -80,7 +68,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 18;
+            const int libVersionExpect = 19;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -147,7 +135,7 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
             PuertsDLL.SetModuleResolver(isolate, StaticCallbacks.ModuleResolverCallback, Idx);
-            PuertsDLL.SetPushJSFunctionArgumentsCallback(isolate, StaticCallbacks.PushJSFunctionArgumentsCallback, Idx);
+
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
             const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.AutoStaticCodeRegister";
@@ -200,6 +188,8 @@ namespace Puerts
                     ExecuteModule("puerts/nodepatch.mjs");
                 }
 #endif
+                ExecuteModule("puerts/cjsload.mjs");
+                ExecuteModule("puerts/modular.mjs");
 
 #if UNITY_EDITOR
                 if (OnJsEnvCreate != null) 
@@ -229,8 +219,18 @@ namespace Puerts
             {
                 return null;
             }
+            if (identifer.Length < 4 || !identifer.EndsWith(".mjs"))
+            {
+                pathForDebug = "";
+                return String.Format(@"
 
-            return loader.ReadFile(identifer, out pathForDebug);
+                    export default puerts.require('{0}');
+                ", identifer);
+            } 
+            else 
+            {
+                return loader.ReadFile(identifer, out pathForDebug);
+            }
         }
 
         /**
@@ -245,8 +245,6 @@ namespace Puerts
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-            if (loader.FileExists(filename))
-            {
 #if THREAD_SAFE
             lock(this) {
 #endif
@@ -263,17 +261,10 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
-            }
-            else
-            {
-                throw new InvalidProgramException("can not find " + filename);
-            }
         }
 
         public void ExecuteModule(string filename)
         {
-            if (loader.FileExists(filename))
-            {
 #if THREAD_SAFE
             lock(this) {
 #endif
@@ -287,11 +278,6 @@ namespace Puerts
 #if THREAD_SAFE
             }
 #endif
-            }
-            else
-            {
-                throw new InvalidProgramException("can not find " + filename);
-            }
         }
 
         public void Eval(string chunk, string chunkName = "chunk")
@@ -699,11 +685,8 @@ namespace Puerts
             PuertsDLL.LogicTick(isolate);
             foreach (var fn in tickHandler)
             {
-                IntPtr resultInfo = GenericDelegate.InvokeJSFunction(
-                    this, fn, 0, false, 
-                    (IntPtr isolate, int envIdx, IntPtr nativeJsFuncPtr) => {}
-                );
-                if (resultInfo == IntPtr.Zero)
+                IntPtr resultInfo = PuertsDLL.InvokeJSFunction(fn, false);
+                if (resultInfo==IntPtr.Zero)
                 {
                     var exceptionInfo = PuertsDLL.GetFunctionLastExceptionInfo(fn);
                     throw new Exception(exceptionInfo);

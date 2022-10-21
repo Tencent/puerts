@@ -4,39 +4,98 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
+import { default as $, IF, ELSE, ELSEIF, ENDIF, FOR } from './tte.mjs'
+
+class ArgumentCodeGenerator {
+    constructor(i) {
+        this.index = i;
+    }
+
+    declareArgObj() {
+        return `object argobj${this.index} = null`;
+
+    }
+
+    argObj() {
+        return `argobj${this.index}`
+    }
+
+    declareArgJSValueType() {
+        return `JsValueType argType${this.index} = JsValueType.Invalid`;
+    }
+
+    argJSValueType() {
+        return `argType${this.index}`
+    }
+
+    declareAndGetV8Value() {
+        return `IntPtr v8Value${this.index} = PuertsDLL.GetArgumentValue(info, ${this.index})`
+    }
+
+    v8Value() {
+        return `v8Value${this.index}`
+    }
+
+    arg() {
+        return `arg${this.index}`
+    }
+
+    getArg(typeInfo) {
+        let typeName = typeInfo.TypeName;
+        let isByRef = typeInfo.IsByRef ? "true" : "false";
+
+        if (typeInfo.IsParams) {
+            return `${typeName}[] arg${this.index} = ArgHelper.GetParams<${typeName}>((int)data, isolate, info, ${this.index}, paramLen, ${this.v8Value()})`;
+        } else if (typeInfo.IsEnum) {
+            return `${typeName} arg${this.index} = (${typeName})StaticTranslate<${typeInfo.UnderlyingTypeName}>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, ${this.v8Value()}, ${isByRef})`;
+        } else if (typeName in fixGet) {
+            return `${typeName} arg${this.index} = ${fixGet[typeName](this.v8Value(), isByRef)}`;
+        } else {
+            return `argobj${this.index} = argobj${this.index} != null ? argobj${this.index} : StaticTranslate<${typeInfo.TypeName}>.Get((int)data, isolate, NativeValueApi.GetValueFromArgument, v8Value${this.index}, ${typeInfo.IsByRef ? "true" : "false"}); ${typeName} arg${this.index} = (${typeName})argobj${this.index}`
+        }
+    }
+
+    invokeIsMatch(paramInfo) {
+        if (paramInfo.IsParams) {
+            return `ArgHelper.IsMatchParams((int)data, isolate, info, ${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${this.index}, paramLen, ${this.v8Value()}, ref ${this.argObj()}, ref ${this.argJSValueType()})`
+
+        } else {
+            return `ArgHelper.IsMatch((int)data, isolate, ${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsByRef}, ${paramInfo.IsOut}, ${this.v8Value()}, ref ${this.argObj()}, ref ${this.argJSValueType()})`
+        }
+    }
+}
 
 const fixGet = {
-    char: 'GetChar',
-    sbyte: 'GetSByte',
-    byte: 'GetByte',
-    short: 'GetInt16',
-    ushort: 'GetUInt16',
-    int: 'GetInt32',
-    uint: 'GetUInt32',
-    long: 'GetInt64',
-    ulong: 'GetUInt64',
-    double: 'GetDouble',
-    float: 'GetFloat',
-    bool: 'GetBoolean',
-    string: 'GetString',
-    DateTime: 'GetDateTime',
+    char: (v8ValueCode, isByRef) => `(char)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    sbyte: (v8ValueCode, isByRef) => `(sbyte)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    byte: (v8ValueCode, isByRef) => `(byte)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    short: (v8ValueCode, isByRef) => `(short)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    ushort: (v8ValueCode, isByRef) => `(ushort)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    int: (v8ValueCode, isByRef) => `(int)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    uint: (v8ValueCode, isByRef) => `(uint)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    long: (v8ValueCode, isByRef) => `(long)StaticTranslate<long>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, ${v8ValueCode}, ${isByRef});`,
+    ulong: (v8ValueCode, isByRef) => `(ulong)StaticTranslate<ulong>.Get((int)data, isolate, Puerts.NativeValueApi.GetValueFromArgument, ${v8ValueCode}, ${isByRef});`,
+    double: (v8ValueCode, isByRef) => `(double)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    float: (v8ValueCode, isByRef) => `(float)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    bool: (v8ValueCode, isByRef) => `(bool)PuertsDLL.GetBooleanFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    string: (v8ValueCode, isByRef) => `(string)PuertsDLL.GetStringFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
+    'System.DateTime': (v8ValueCode, isByRef) => `(new DateTime(1970, 1, 1)).AddMilliseconds(PuertsDLL.GetDateFromValue(isolate, ${v8ValueCode}, ${isByRef}))`,
 };
-
 const fixReturn = {
-    char: 'Puerts.StaticTranslate<char>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    sbyte: 'Puerts.StaticTranslate<sbyte>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    byte: 'Puerts.StaticTranslate<byte>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    short: 'Puerts.StaticTranslate<short>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    ushort: 'Puerts.StaticTranslate<ushort>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    int: 'Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    uint: 'Puerts.StaticTranslate<uint>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    long: 'Puerts.StaticTranslate<long>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    ulong: 'Puerts.StaticTranslate<ulong>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    double: 'Puerts.StaticTranslate<double>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    float: 'Puerts.StaticTranslate<float>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    bool: 'Puerts.StaticTranslate<bool>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    string: 'Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
-    DateTime: 'Puerts.StaticTranslate<DateTime>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    char: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    sbyte: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    byte: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    short: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    ushort: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    int: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    uint: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    long: 'Puerts.PuertsDLL.ReturnBigInt(isolate, info, result)',
+    ulong: 'Puerts.PuertsDLL.ReturnBigInt(isolate, info, (long)result)',
+    double: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    float: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
+    bool: 'Puerts.PuertsDLL.ReturnBoolean(isolate, info, result)',
+    string: 'Puerts.PuertsDLL.ReturnString(isolate, info, result)',
+    "System.DateTime": 'Puerts.PuertsDLL.ReturnDate(isolate, info, (result - new DateTime(1970, 1, 1)).TotalMilliseconds)',
 };
 const operatorMap = {
     op_Equality: '==',
@@ -91,14 +150,6 @@ let csharpKeywords = {};
 });
 
 /**
- * generate the paramList. For Array.map() using
- * @param {} paramInfo 
- * @param {*} idx 
- * @returns 
- */
-const paramListLambda = (paramInfo, idx) => `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}Arg${idx}`;
-
-/**
  * this template is for generating the c# wrapper class
  * @param {GenClass.TypeGenInfo} data 
  * @returns 
@@ -118,211 +169,155 @@ export default function TypingTemplate(data) {
         return data.BlittableCopy ? "(*obj)" : "obj";
     }
 
-    function _es6tplJoin(str, ...values) {
-        return str.map((strFrag, index) => {
-            if (index == str.length - 1) {
-                return strFrag;
-
-            } else {
-                return strFrag + values[index];
-            }
-        }).join('');
-    }
-    function tt(str, ...values) {
-        // just append all estemplate values.
-        const appendtext = _es6tplJoin(str, ...values)
-
-        ret += appendtext;
-    }
-    function t(str, ...values) {
-        // just append all estemplate values. and indent them;
-        const appendtext = _es6tplJoin(str, ...values)
-
-        // indent
-        let lines = appendtext.split(/[\n\r]/);
-        let newLines = [lines[0]];
-        let append = " ".repeat(t.indent);
-        for (var i = 1; i < lines.length; i++) {
-            if (lines[i]) newLines.push(append + lines[i].replace(/^[\t\s]*/, ''));
-        }
-
-        ret += newLines.join('\n');
-    }
-
-    t.indent = 0;
-    toJsArray(data.Namespaces).forEach(name => {
-        t`
-        using ${name};
-        `
-    });
-
-    tt`using Puerts;
+    return $
+        `${FOR(toJsArray(data.Namespaces), name => `
+using ${name};`
+        )}
+using Puerts;
 
 namespace PuertsStaticWrap
 {
     public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeGenericAlphaBet(data.GenericArgumentsInfo)}>` : ''} ${data.IsGenericWrapper ? makeConstraints(data.GenericArgumentsInfo) : ''}
     {
-`
-    data.BlittableCopy && tt`
+    ${IF(data.BlittableCopy)}
         static ${data.Name} HeapValue;
-    `
-
-    // ==================== constructor start ====================
-    tt`
+    ${ENDIF()}
+    
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
         ${data.BlittableCopy ? 'unsafe ' : ''}private static IntPtr Constructor(IntPtr isolate, IntPtr info, int paramLen, long data)
         {
             try
             {
-`
-    if (data.Constructor) {
-        toJsArray(data.Constructor.OverloadGroups).forEach(overloadGroup => {
-            if (data.Constructor.HasOverloads) {
-                tt`
+${IF(data.Constructor, () => $`
+    ${FOR(toJsArray(data.Constructor?.OverloadGroups), overloadGroup => {
+            var argumentCodeGenerators = toJsArray(overloadGroup.get_Item(0).ParameterInfos).map((v, i) => new ArgumentCodeGenerator(i));
+            $`
+            ${IF(data.Constructor.HasOverloads)}
                 if (${paramLenCheck(overloadGroup)})
-                `
-            }
-            tt`
+            ${ENDIF()}
                 {
-            `
-            for (var i = 0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {
-                tt`
-                    var argHelper${i} = new Puerts.ArgumentHelper((int)data, isolate, info, ${i});
-                `
-            }
-            toJsArray(overloadGroup).forEach(overload => {
+                ${FOR(argumentCodeGenerators, acg => `
+                    ${acg.declareAndGetV8Value()};
+                    ${acg.declareArgObj()};
+                    ${acg.declareArgJSValueType()};
+                `)}
+                ${FOR(toJsArray(overloadGroup), overload =>
+                    $`
+                    ${IF(data.Constructor.HasOverloads && overload.ParameterInfos.Length > 0)}
+                    if (${argumentCodeGenerators.map((acg, idx) => {
+                        return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
+                    }).join(' && ')})
+                    ${ENDIF()}
 
-                data.Constructor.HasOverloads && overload.ParameterInfos.Length > 0 &&
-                    tt`
-                    if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) => `argHelper${idx}.IsMatch(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsByRef}, ${paramInfo.IsOut})`).join(' && ')})
-                `;
-
-                tt`
                     {
-                `
-                toJsArray(overload.ParameterInfos).forEach((paramInfo, idx) => {
-                    tt`
-                        var Arg${idx} = ${getArgument(paramInfo, 'argHelper' + idx, idx)};
-                    `
-                })
-                tt`
-                        ${data.BlittableCopy ? "HeapValue" : "var result"} = new ${data.Name}(${toJsArray(overload.ParameterInfos).map(paramListLambda).join(', ')});
-                `
-                toJsArray(overload.ParameterInfos).forEach((paramInfo, idx) => {
-                    paramInfo.IsByRef && tt`
-                        argHelper${idx}.SetByRefValue(Arg${idx});
-                    `
-                })
-                if (data.BlittableCopy) {
-                    tt` 
+                    ${FOR(argumentCodeGenerators, (acg, index) => `
+                        ${acg.getArg(overload.ParameterInfos.get_Item(index))};
+                    `)}
+                        ${data.BlittableCopy ? "HeapValue" : "var result"} = new ${data.Name}(${argumentCodeGenerators.map((acg, idx) => {
+                        var paramInfo = overload.ParameterInfos.get_Item(idx);
+                        return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
+                    }).join(', ')});
+
+                    ${FOR(argumentCodeGenerators, (acg, idx) => {
+                        var paramInfo = overload.ParameterInfos.get_Item(idx)
+                        paramInfo.IsByRef && $`
+                        StaticTranslate<${paramInfo.TypeName}>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, ${acg.v8Value()}, ${acg.arg()});`
+                    })}
+
+                    ${IF(data.BlittableCopy)}
                         fixed (${data.Name}* result = &HeapValue)
                         {
                             return new IntPtr(result);
                         }
-                    `
-                } else {
-                    tt`
+                    ${ELSE()}
                         return Puerts.Utils.GetObjectPtr((int)data, typeof(${data.Name}), result);
-                    `
-                }
-                tt`
+                    ${ENDIF()}
                     }
-                `
-            })
-            tt`
+                    `)}
                 }
-            `
-        })
-    }
-    !data.Constructor || (data.Constructor.OverloadCount != 1) && tt`
+        `
+        })}
+`)}
+${IF(!data.Constructor || (data.Constructor.OverloadCount != 1))}
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to " + typeof(${data.Name}).GetFriendlyName() + " constructor");
-    `
-    tt`
-    
+${ENDIF()}
             } catch (Exception e) {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
             return IntPtr.Zero;
         }
-    `
     // ==================== constructor end ====================
 
-
     // ==================== methods start ====================
-    toJsArray(data.Methods).filter(item => !item.IsLazyMember).forEach(method => {
-        tt`
+${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !method.IsStatic ? 'unsafe ' : ''}private static void ${(method.IsStatic ? "F" : "M")}_${method.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 ${!method.IsStatic ? `var obj = ${getSelf(data)};` : ''}
-        `
-        toJsArray(method.OverloadGroups).forEach(overloadGroup => {
-            method.HasOverloads && tt`
+        
+        ${FOR(toJsArray(method.OverloadGroups), overloadGroup => {
+            var argumentCodeGenerators = toJsArray(overloadGroup.get_Item(0).ParameterInfos)
+                // 这里取0可能是因为第一个重载参数肯定是最全的？
+                .map((item, i) => new ArgumentCodeGenerator(i));
+            $
+            `${IF(method.HasOverloads)}
                 if (${paramLenCheck(overloadGroup)})
-            `
-            tt`
+            ${ENDIF()}
                 {
-            `
-            for (var i = 0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {
-                tt`
-                    var argHelper${i} = new Puerts.ArgumentHelper((int)data, isolate, info, ${i});
-                `
-            }
-            toJsArray(overloadGroup).forEach(overload => {
-                method.HasOverloads && overload.ParameterInfos.Length > 0 && tt`
-                    if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) =>
-                    `argHelper${idx}.${paramInfo.IsParams ? "IsMatchParams" : "IsMatch"}(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsParams ? idx : paramInfo.IsByRef}, ${paramInfo.IsParams ? "paramLen" : paramInfo.IsOut})`).join(' && ')
-                    })
-                `
-                tt`
+            
+                ${FOR(argumentCodeGenerators, acg => $`
+                    ${acg.declareAndGetV8Value()};
+                    ${acg.declareArgObj()};
+                    ${acg.declareArgJSValueType()};
+                `)}
+                ${FOR(toJsArray(overloadGroup), overload => $`
+                    ${IF(method.HasOverloads && overload.ParameterInfos.Length > 0)}
+                    if (${argumentCodeGenerators.map((acg, idx) => {
+                        return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
+                    }).join(' && ')})
+                    ${ENDIF()}
                     {
-                `
-                toJsArray(overload.ParameterInfos).forEach((paramInfo, idx) => {
-                    tt`
-                        var Arg${idx} = ${getArgument(paramInfo, 'argHelper' + idx, idx)};
-                    `
-                })
-                tt`
-                        ${overload.IsVoid ? "" : "var result = "}${method.IsStatic ? data.Name : refSelf()}.${UnK(method.Name)}(${toJsArray(overload.ParameterInfos).map(paramListLambda).join(', ')});
-                `
-                toJsArray(overload.ParameterInfos).forEach((paramInfo, idx) => {
-                    if (paramInfo.IsByRef) {
-                        tt`
-                        argHelper${idx}.SetByRefValue(Arg${idx});
-                        `
-                    }
-                })
-                tt`
+                    ${FOR(argumentCodeGenerators, (acg, idx) => $`
+                        ${acg.getArg(overload.ParameterInfos.get_Item(idx))};
+                    `)}
+
+                        ${overload.IsVoid ? "" : "var result = "}${method.IsStatic ? data.Name : refSelf()}.${UnK(method.Name)} (${argumentCodeGenerators.map((acg, idx) => {
+                            var paramInfo = overload.ParameterInfos.get_Item(idx);
+                return `${paramInfo.IsOut ? "out " : (paramInfo.IsByRef ? (paramInfo.IsIn ? "in " : "ref ") : "")}${acg.arg()}`
+                            }).concat(overload.EllipsisedParameterInfos.Length == 0 ? [] : toJsArray(overload.EllipsisedParameterInfos).map(info=> info.DefaultValue)).join(', ')
+                        });
+
+                    ${FOR(argumentCodeGenerators, (acg, idx) => $`
+                        ${IF(overload.ParameterInfos.get_Item(idx).IsByRef)}
+                        StaticTranslate<${overload.ParameterInfos.get_Item(idx).TypeName}>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToByRefArgument, ${acg.v8Value()}, ${acg.arg()});
+                        ${ENDIF()}
+                    `)}
                         ${!overload.IsVoid ? setReturn(overload) + ';' : ''}
                         ${!data.BlittableCopy && !method.IsStatic ? setSelf(data) : ""}
                         ${method.HasOverloads ? 'return;' : ''}
                     }
-                `
-            })
-            tt`
+                `)}
                 }
             `
-        })
-        method.HasOverloads && tt`
+        })}
+        ${IF(method.HasOverloads)}
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to ${method.Name}");
-        `
-        tt`
+        ${ENDIF()}
             }
             catch (Exception e)
             {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        `
-    });
+    `)}
     // ==================== methods end ====================
 
     // ==================== properties start ====================
-    toJsArray(data.Properties).filter(property => !property.IsLazyMember).forEach(property => {
-        if (property.HasGetter) {
-            tt`
+    ${FOR(toJsArray(data.Properties).filter(property => !property.IsLazyMember), property => {
+            if (property.HasGetter) {
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}private static void G_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -338,17 +333,20 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-        if (property.HasSetter) {
-            tt`
+            }
+            if (property.HasSetter) {
+                var acg = new ArgumentCodeGenerator(0);
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}private static void S_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 ${!property.IsStatic ? `var obj = ${getSelf(data)};` : ''}
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                ${property.IsStatic ? data.Name : refSelf()}.${UnK(property.Name)} = ${getArgument(property, 'argHelper')};
+                ${acg.declareAndGetV8Value()};
+                ${acg.declareArgObj()};
+                ${acg.getArg(property)};
+                ${property.IsStatic ? data.Name : refSelf()}.${UnK(property.Name)} = ${acg.arg()};
                 ${!data.BlittableCopy && !property.IsStatic ? setSelf(data) : ''}
             }
             catch (Exception e)
@@ -357,33 +355,31 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-    })
+            }
+        })}
     // ==================== properties end ====================
-
     // ==================== array item get/set start ====================
-    if (data.GetIndexs.Length > 0) {
-        tt`
+    ${IF(data.GetIndexs.Length > 0, () => {
+            var acg = new ArgumentCodeGenerator(0);
+            $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy ? 'unsafe ' : ''}private static void GetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 var obj = ${getSelf(data)};
-                var keyHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-        `;
-        toJsArray(data.GetIndexs).forEach(indexInfo => {
-            tt`
-                if (keyHelper.IsMatch(${indexInfo.IndexParameter.ExpectJsType}, ${indexInfo.IndexParameter.ExpectCsType}, ${indexInfo.IndexParameter.IsByRef}, ${indexInfo.IndexParameter.IsOut}))
+                ${acg.declareAndGetV8Value()};
+                ${acg.declareArgObj()};
+                ${acg.declareArgJSValueType()};
+            ${FOR(toJsArray(data.GetIndexs), indexInfo => $`
+                if (${acg.invokeIsMatch(indexInfo.IndexParameter)})
                 {
-                    var key = ${getArgument(indexInfo.IndexParameter, 'keyHelper')};
-                    var result = ${refSelf()}[key];
+                    ${acg.getArg(indexInfo.IndexParameter)};
+                    var result = ${refSelf()}[${acg.arg()}];
                     ${setReturn(indexInfo)};
                     return;
                 }
-            `;
-        })
-        tt`
+            `)}
             }
             catch (Exception e)
             {
@@ -391,28 +387,35 @@ namespace PuertsStaticWrap
             }
         }
         `
-    }
-    if (data.SetIndexs.Length > 0) {
-        tt`
+        })}
+    ${IF(data.SetIndexs.Length > 0, () => {
+            var keyAcg = new ArgumentCodeGenerator(0);
+            $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy ? 'unsafe ' : ''}private static void SetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 var obj = ${getSelf(data)};
-                var keyHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                var valueHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 1);`
-        toJsArray(data.SetIndexs).forEach(indexInfo => {
-            tt`
-                if (keyHelper.IsMatch(${indexInfo.IndexParameter.ExpectJsType}, ${indexInfo.IndexParameter.ExpectCsType}, ${indexInfo.IndexParameter.IsByRef}, ${indexInfo.IndexParameter.IsOut}))
+                ${keyAcg.declareAndGetV8Value()};
+                ${keyAcg.declareArgObj()};
+                ${keyAcg.declareArgJSValueType()};
+
+            ${FOR(toJsArray(data.SetIndexs), indexInfo => {
+                var valueAcg = new ArgumentCodeGenerator(1);
+                $`
+                if (${keyAcg.invokeIsMatch(indexInfo.IndexParameter)})
                 {
-                    var key = ${getArgument(indexInfo.IndexParameter, 'keyHelper')};
-                    ${refSelf()}[key] = ${getArgument(indexInfo, 'valueHelper')};
+                    ${keyAcg.getArg(indexInfo.IndexParameter)};
+
+                    ${valueAcg.declareAndGetV8Value()};
+                    ${valueAcg.declareArgObj()};
+                    ${valueAcg.getArg(indexInfo)};
+
+                    ${refSelf()}[${keyAcg.arg()}] = ${valueAcg.arg()};
                     return;
-                }
-            `
-        });
-        tt`
+                }`
+            })}
             }
             catch (Exception e)
             {
@@ -420,79 +423,72 @@ namespace PuertsStaticWrap
             }
         }
         `
-    }
+        })}
     // ==================== array item get/set end ====================
-
     // ==================== operator start ====================
-    toJsArray(data.Operators).filter(oper => !oper.IsLazyMember).forEach(operator => {
-        tt`
+    ${FOR(toJsArray(data.Operators).filter(oper => !oper.IsLazyMember), operator => $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         private static void O_${operator.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
-        `
-        toJsArray(operator.OverloadGroups).forEach(overloadGroup => {
-            operator.HasOverloads && tt`
+        ${FOR(toJsArray(operator.OverloadGroups), overloadGroup => {
+            var argumentCodeGenerators = toJsArray(overloadGroup.get_Item(0).ParameterInfos).map((v, i) => new ArgumentCodeGenerator(i));
+            $`
+                ${IF(operator.HasOverloads)}
                 if (${paramLenCheck(overloadGroup)})
-            `
-            tt`
+                ${ENDIF()}
                 {
-            `
-            for (var i = 0; i < overloadGroup.get_Item(0).ParameterInfos.Length; i++) {
-                tt`
-                    var argHelper${i} = new Puerts.ArgumentHelper((int)data, isolate, info, ${i});
-                `
-            }
-            toJsArray(overloadGroup).forEach(overload => {
-                operator.HasOverloads && overload.ParameterInfos.Length > 0 && tt`
-                    if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) => `argHelper${idx}.IsMatch(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsByRef}, ${paramInfo.IsOut})`).join(' && ')})
-                `
-                tt`
+                ${FOR(argumentCodeGenerators, (acg) => $`
+                    ${acg.declareAndGetV8Value()};
+                    ${acg.declareArgObj()};
+                    ${acg.declareArgJSValueType()};
+                `)}
+                ${FOR(toJsArray(overloadGroup), overload => $`
+                    ${IF(operator.HasOverloads && overload.ParameterInfos.Length > 0)}
+                    if (${argumentCodeGenerators.map((acg, idx) => {
+                return acg.invokeIsMatch(overload.ParameterInfos.get_Item(idx))
+            }).join(' && ')})
+                    ${ENDIF()}
+                    
                     {
-                `
-                toJsArray(overload.ParameterInfos).forEach((paramInfo, idx) => {
-                    tt` 
-                        var arg${idx} = ${getArgument(paramInfo, 'argHelper' + idx, idx)};
-                    `
-                })
-                tt`
-                        var result = ${operatorCall(operator.Name, overload.ParameterInfos.Length, overload)};
+                    ${FOR(argumentCodeGenerators, (acg, idx) => $`
+                        ${acg.getArg(overload.ParameterInfos.get_Item(idx))};
+                    `)}
+                        var result = ${operatorCall(operator.Name, argumentCodeGenerators, overload)};
                         ${!overload.IsVoid ? setReturn(overload) + ';' : ''}
                         ${operator.HasOverloads ? 'return;' : ''}
                     }
-                `
-            })
-            tt`
+                `)}
                 }
             `
-        })
-        operator.HasOverloads && tt`
+        })}
+        ${IF(operator.HasOverloads)}
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to ${operator.Name}");
-        `
-        tt`
+        ${ENDIF()}
             }
             catch (Exception e)
             {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        `
-    })
+    `)}
     // ==================== operator end ====================
-
     // ==================== events start ====================
-    toJsArray(data.Events).filter(ev => !ev.IsLazyMember).forEach(eventInfo => {
-        if (eventInfo.HasAdd) {
-            tt`
+    ${FOR(toJsArray(data.Events).filter(ev => !ev.IsLazyMember), eventInfo => {
+            if (eventInfo.HasAdd) {
+                var acg = new ArgumentCodeGenerator(0);
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe ' : ''}private static void A_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 ${!eventInfo.IsStatic ? `var obj = ${getSelf(data)};` : ''}
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                ${eventInfo.IsStatic ? data.Name : refSelf()}.${eventInfo.Name} += ${getArgument(eventInfo, 'argHelper')};
+                ${acg.declareAndGetV8Value()};
+                ${acg.declareArgObj()};
+                ${acg.getArg(eventInfo)};
+                ${eventInfo.IsStatic ? data.Name : refSelf()}.${eventInfo.Name} += ${acg.arg()};
             }
             catch (Exception e)
             {
@@ -500,17 +496,20 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-        if (eventInfo.HasRemove) {
-            tt`
+            }
+            if (eventInfo.HasRemove) {
+                var acg = new ArgumentCodeGenerator(0);
+                $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe' : ''}private static void R_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
                 ${!eventInfo.IsStatic ? `var obj = ${getSelf(data)};` : ''}
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                ${eventInfo.IsStatic ? data.Name : refSelf()}.${eventInfo.Name} -= ${getArgument(eventInfo, 'argHelper')};
+                ${acg.declareAndGetV8Value()};
+                ${acg.declareArgObj()};
+                ${acg.getArg(eventInfo)};
+                ${eventInfo.IsStatic ? data.Name : refSelf()}.${eventInfo.Name} -= ${acg.arg()};
             }
             catch (Exception e)
             {
@@ -518,10 +517,10 @@ namespace PuertsStaticWrap
             }
         }
             `
-        }
-    })
+            }
+        })}
     // ==================== events end ====================
-    tt`    
+
         public static Puerts.TypeRegisterInfo GetRegisterInfo()
         {
             return new Puerts.TypeRegisterInfo()
@@ -565,9 +564,8 @@ namespace PuertsStaticWrap
                 }
             };
         }
-    `
-    if (data.BlittableCopy) {
-        tt`
+    ${IF(data.BlittableCopy, () => {
+            $`
         unsafe private static ${data.Name} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             ${data.Name}* result = (${data.Name}*)getValueApi.GetNativeObject(isolate, value, isByRef);
@@ -583,7 +581,7 @@ namespace PuertsStaticWrap
                 setValueApi.SetNativeObject(isolate, value, typeId, new IntPtr(result));
             }
         }
-        
+
         public static void InitBlittableCopy(Puerts.JsEnv jsEnv)
         {
             Puerts.StaticTranslate<${data.Name}>.ReplaceDefault(StaticSetter, StaticGetter);
@@ -596,16 +594,14 @@ namespace PuertsStaticWrap
             });
         }
         `
-    }
-
-    tt`
+        })}
     }
 }
 `
-    return ret;
 }
 
 function toJsArray(csArr) {
+    if (!csArr) return [];
     let arr = [];
     for (var i = 0; i < csArr.Length; i++) {
         arr.push(csArr.get_Item(i));
@@ -616,19 +612,6 @@ function UnK(identifier) {
     return csharpKeywords.hasOwnProperty(identifier) ? csharpKeywords[identifier] : identifier;
 }
 
-function getArgument(typeInfo, argHelper, idx) {
-    let typeName = typeInfo.TypeName;
-    let isByRef = typeInfo.IsByRef ? "true" : "false";
-    if (typeInfo.IsParams) {
-        return `${argHelper}.GetParams<${typeName}>(info, ${idx}, paramLen)`;
-    } else if (typeInfo.IsEnum) {
-        return `(${typeName})${argHelper}.${fixGet[typeInfo.UnderlyingTypeName]}(${isByRef})`;
-    } else if (typeName in fixGet) {
-        return `${argHelper}.${fixGet[typeName]}(${isByRef})`;
-    } else {
-        return `${argHelper}.Get<${typeName}>(${isByRef})`;
-    }
-}
 function setReturn(typeInfo) {
     let typeName = typeInfo.TypeName;
     if (typeName in fixReturn) {
@@ -639,14 +622,14 @@ function setReturn(typeInfo) {
         return `Puerts.ResultHelper.Set((int)data, isolate, info, result)`;
     }
 }
-function operatorCall(methodName, argCount, typeInfo) {
+function operatorCall(methodName, acgList, typeInfo) {
     if (methodName == 'op_Implicit') {
-        return `(${typeInfo.TypeName})arg0`;
+        return `(${typeInfo.TypeName})${acgList[0].arg()}`;
     }
-    if (argCount == 1) {
-        return operatorMap[methodName] + 'arg0';
-    } else if (argCount == 2) {
-        return 'arg0 ' + operatorMap[methodName] + ' arg1';
+    if (acgList.length == 1) {
+        return operatorMap[methodName] + acgList[0].arg();
+    } else if (acgList.length == 2) {
+        return [acgList[0].arg(), operatorMap[methodName], acgList[1].arg()].join(' ')
     }
 }
 

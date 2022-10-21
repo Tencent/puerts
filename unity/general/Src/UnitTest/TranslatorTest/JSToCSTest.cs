@@ -633,5 +633,51 @@ namespace Puerts.UnitTest.TranslatorTest
             ");
             jsEnv.Dispose();
         }
+        
+        [Test]
+        public void AmbigiousCallTestRefection()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            int res = jsEnv.Eval<int>(@"
+                CS.Puerts.UnitTest.AmbigiousCallTest.PlaySound('haha');
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 1);
+        }
+        
+        [Test]
+        public void AmbigiousCallTestStatic()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            int res = jsEnv.Eval<int>(@"
+                CS.Puerts.UnitTest.AmbigiousCallTest.PlaySound('haha');
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, 1);
+        }
+
+        [Test]
+        public void ParamsCallTestReflection()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            string res = jsEnv.Eval<string>(@"
+                CS.Puerts.UnitTest.ParamsCallTest.CombinePath('a', 'b', 'c');
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, "a/b/c");
+        }
+        
+        [Test]
+        public void ParamsCallTestStatic()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            string res = jsEnv.Eval<string>(@"
+                CS.Puerts.UnitTest.ParamsCallTest.CombinePath('a', 'b', 'c');
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, "a/b/c");
+        }
     }
 }

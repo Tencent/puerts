@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 3
+#define PESAPI_VERSION 4
 
 #define PESAPI_EXTERN
 
@@ -160,6 +160,8 @@ PESAPI_EXTERN pesapi_value pesapi_get_arg(pesapi_callback_info info, int index);
 PESAPI_EXTERN pesapi_env pesapi_get_env(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_this(pesapi_callback_info info);
 PESAPI_EXTERN pesapi_value pesapi_get_holder(pesapi_callback_info info);
+PESAPI_EXTERN void* pesapi_get_userdata(pesapi_callback_info info);
+PESAPI_EXTERN void* pesapi_get_constructor_userdata(pesapi_callback_info info);
 PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value value);
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg);
 
@@ -168,7 +170,7 @@ PESAPI_EXTERN pesapi_env pesapi_get_env_from_holder(pesapi_env_holder env_holder
 PESAPI_EXTERN pesapi_env_holder pesapi_duplicate_env_holder(pesapi_env_holder env_holder);
 PESAPI_EXTERN void pesapi_release_env_holder(pesapi_env_holder env_holder);
 
-PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env env);
+PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder);
 PESAPI_EXTERN bool pesapi_has_caught(pesapi_scope scope);
 PESAPI_EXTERN const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack);
 PESAPI_EXTERN void pesapi_close_scope(pesapi_scope scope);
@@ -187,6 +189,8 @@ PESAPI_EXTERN void pesapi_set_property_uint32(pesapi_env env, pesapi_value objec
 PESAPI_EXTERN pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 
+PESAPI_EXTERN pesapi_value pesapi_eval(pesapi_env env, const char* code, const char* path);
+
 PESAPI_EXTERN pesapi_type_info pesapi_alloc_type_infos(size_t count);
 
 PESAPI_EXTERN void pesapi_set_type_info(
@@ -197,14 +201,16 @@ PESAPI_EXTERN pesapi_signature_info pesapi_create_signature_info(
 
 PESAPI_EXTERN pesapi_property_descriptor pesapi_alloc_property_descriptors(size_t count);
 
+// using pesapi_get_userdata obtain userdata in callback
 PESAPI_EXTERN void pesapi_set_method_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback method, void* data, pesapi_signature_info signature_info);
+    pesapi_callback method, void* userdata, pesapi_signature_info signature_info);
 
 PESAPI_EXTERN void pesapi_set_property_info(pesapi_property_descriptor properties, size_t index, const char* name, bool is_static,
-    pesapi_callback getter, pesapi_callback setter, void* data, pesapi_type_info type_info);
+    pesapi_callback getter, pesapi_callback setter, void* userdata, pesapi_type_info type_info);
 
 PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name,
-    pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties);
+    pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
+    void* userdata);
 
 EXTERN_C_END
 

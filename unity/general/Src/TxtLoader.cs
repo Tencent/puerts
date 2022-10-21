@@ -36,6 +36,8 @@ public class TxtLoader : ILoader
         string mockContent;
         if (mockFileContent.TryGetValue(filepath, out mockContent))
         {
+            System.Console.WriteLine(filepath);
+            System.Console.WriteLine(mockContent);
             return mockContent;
         }
 

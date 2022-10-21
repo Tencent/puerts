@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-rc.6] - 2022-10-20
+1. support ambigious methods calling after generated staticwrapper. #1020
+2. fix a bug that after blittablecopy staticwrapper generated, passing two or more struct from C# to a JSFunction will get wrong JS arguments #1018
+3. fix Array Type arguments will cause error in staticwrapper #1015
+4. refactor the template of wrapper and get a little performance improvement [report](https://github.com/puerts/PerformanceTesting/tree/build/States) 
+5. add missing '--jitless' flag for ios PuerTS with nodejs backend
+
+## [1.4.0-rc.2] - 2022-09-28
+1. full platform support for Node.js (i.e. Android and iOS support added). upm package now uses Node.js Backend by default.
+2. In order to make the Node.js function more convenient to use, and also to solve the problem of WebGL version in WeChat mini-game, from this version on, add global variables `CS` and `puer`, corresponding to the original `require('csharp')` and `require('puerts')`. Please change the using of `require` to `global.CS`, `global.puer`, `import 'xxx'`. The `require` in PuerTS will be considered to be removed in version 1.5.
+3. Add `JsEnv.Backend` and add some GC API. `LowMemoryNotification` has moved into it too.
+4. refactor `NodeRunner`
+5. `ExecuteModule` handling of multi-level dependencies fixed.
+6. GeneralSetterManager/GeneralGetterManager optimization #688
+7. fix the bug that inspector break point + `setInterval` will cause crash #707
+8. support multiple inspectors connection for one single JsEnv, `hotreload` can also be used with inspector at the same time now #841
+9. remove `Node.js backend`'s `--no-browser-globals`
+10. fix the problem that circular dependency will cause crash when loading ESM
+11. fix the problem that ESM throws error when loading dependency with relative path
+12. add `import.meta.url` when module is loading
+13. fix the problem that dts reports an error when generating nullable types
+
 ## [1.4.0-preview.6] - 2022-07-08
 1. support multi inspector client 
 2. fix the inspector crash problem in unity2021.3.4+

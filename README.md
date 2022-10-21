@@ -39,7 +39,7 @@ PuerTS is a TypeScript programming solution within game engines. | PuerTS是游�
 > 
 
 * Talented WebGL Support: huge advantage in performance and dev efficiency compare to Lua.
-* WebGL平台下的天生优势：相比Lua脚本在WebGL版本的表现，在性能和效率上都有极大提升。
+* WebGL平台下的天生优势：相比Lua脚本在WebGL版本的表现，PuerTS在性能和效率上都有极大提升。
 
 ---
 
@@ -79,14 +79,19 @@ PuerTS is a TypeScript programming solution within game engines. | PuerTS是游�
 
 * unity 5 ~ latest
 
+* Any .net project | 任意.net环境
+
 ## Available on these Platform | 平台
 
-* iOS，Android，Windows，Macos
-
-* 任意.net环境 | Any .net project
+* iOS
+* Android
+* Windows
+* Macos
 
 
 ## Ask for help | 技术支持
+
+[Discord](https://discord.gg/RYRY7D833n)
 
 [Github Discussion](https://github.com/Tencent/puerts/discussions)
 

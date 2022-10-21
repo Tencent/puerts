@@ -6,32 +6,45 @@ namespace PuertsStaticWrap
 {
     public static class Puerts_UnitTest_WrapperTest_Wrap 
     {
-
+    
+    
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
         private static IntPtr Constructor(IntPtr isolate, IntPtr info, int paramLen, long data)
         {
             try
             {
 
-                {
+    
             
+                {
+                
+                
+                    
+
                     {
-                
+                    
                         var result = new Puerts.UnitTest.WrapperTest();
-                
+
+                    
+
+                    
                         return Puerts.Utils.GetObjectPtr((int)data, typeof(Puerts.UnitTest.WrapperTest), result);
                     
                     }
-                
+                    
                 }
-            
-    
+        
+
+
             } catch (Exception e) {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
             return IntPtr.Zero;
         }
-    
+    // ==================== constructor end ====================
+
+    // ==================== methods start ====================
+
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         private static void M_GeneratedMethod(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -39,14 +52,20 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
         
+        
                 if (paramLen == 0)
             
                 {
             
+                
+                
+                    
                     {
-                
-                        obj.GeneratedMethod();
-                
+                    
+
+                        obj.GeneratedMethod ();
+
+                    
                         
                         
                         return;
@@ -58,16 +77,25 @@ namespace PuertsStaticWrap
             
                 {
             
-                    var argHelper0 = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
                 
-                    if (argHelper0.IsMatch(Puerts.JsValueType.Boolean, typeof(bool), false, false))
+                    IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                    object argobj0 = null;
+                    JsValueType argType0 = JsValueType.Invalid;
                 
-                    {
                 
-                        var Arg0 = argHelper0.GetBoolean(false);
                     
-                        obj.GeneratedMethod(Arg0);
-                
+                    if (ArgHelper.IsMatch((int)data, isolate, Puerts.JsValueType.Boolean, typeof(bool), false, false, v8Value0, ref argobj0, ref argType0))
+                    
+                    {
+                    
+                        bool arg0 = (bool)PuertsDLL.GetBooleanFromValue(isolate, v8Value0, false);
+                    
+
+                        obj.GeneratedMethod (arg0);
+
+                    
+                        
+                    
                         
                         
                         return;
@@ -75,6 +103,7 @@ namespace PuertsStaticWrap
                 
                 }
             
+        
                 Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to GeneratedMethod");
         
             }
@@ -83,7 +112,11 @@ namespace PuertsStaticWrap
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-        
+    
+    // ==================== methods end ====================
+
+    // ==================== properties start ====================
+    
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
         private static void G_PropertyWithoutSetter(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
@@ -91,7 +124,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.PropertyWithoutSetter;
-                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
+                Puerts.PuertsDLL.ReturnString(isolate, info, result);
             }
             catch (Exception e)
             {
@@ -105,8 +138,10 @@ namespace PuertsStaticWrap
             try
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                obj.PropertyWithoutGetter = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = (string)PuertsDLL.GetStringFromValue(isolate, v8Value0, false);
+                obj.PropertyWithoutGetter = arg0;
                 
             }
             catch (Exception e)
@@ -122,7 +157,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.Property;
-                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
+                Puerts.PuertsDLL.ReturnString(isolate, info, result);
             }
             catch (Exception e)
             {
@@ -136,8 +171,10 @@ namespace PuertsStaticWrap
             try
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                obj.Property = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = (string)PuertsDLL.GetStringFromValue(isolate, v8Value0, false);
+                obj.Property = arg0;
                 
             }
             catch (Exception e)
@@ -153,7 +190,7 @@ namespace PuertsStaticWrap
             {
                 
                 var result = Puerts.UnitTest.WrapperTest.StaticProperty;
-                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
+                Puerts.PuertsDLL.ReturnString(isolate, info, result);
             }
             catch (Exception e)
             {
@@ -167,8 +204,10 @@ namespace PuertsStaticWrap
             try
             {
                 
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                Puerts.UnitTest.WrapperTest.StaticProperty = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = (string)PuertsDLL.GetStringFromValue(isolate, v8Value0, false);
+                Puerts.UnitTest.WrapperTest.StaticProperty = arg0;
                 
             }
             catch (Exception e)
@@ -184,7 +223,7 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.Field;
-                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
+                Puerts.PuertsDLL.ReturnString(isolate, info, result);
             }
             catch (Exception e)
             {
@@ -198,8 +237,10 @@ namespace PuertsStaticWrap
             try
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
-                var argHelper = new Puerts.ArgumentHelper((int)data, isolate, info, 0);
-                obj.Field = argHelper.GetString(false);
+                IntPtr v8Value0 = PuertsDLL.GetArgumentValue(info, 0);
+                object argobj0 = null;
+                string arg0 = (string)PuertsDLL.GetStringFromValue(isolate, v8Value0, false);
+                obj.Field = arg0;
                 
             }
             catch (Exception e)
@@ -215,14 +256,26 @@ namespace PuertsStaticWrap
             {
                 var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.WrapperTest;
                 var result = obj.ReadonlyField;
-                Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result);
+                Puerts.PuertsDLL.ReturnString(isolate, info, result);
             }
             catch (Exception e)
             {
                 Puerts.PuertsDLL.ThrowException(isolate, "c# exception:" + e.Message + ",stack:" + e.StackTrace);
             }
         }
-                
+            
+    // ==================== properties end ====================
+    // ==================== array item get/set start ====================
+    
+    
+    // ==================== array item get/set end ====================
+    // ==================== operator start ====================
+    
+    // ==================== operator end ====================
+    // ==================== events start ====================
+    
+    // ==================== events end ====================
+
         public static Puerts.TypeRegisterInfo GetRegisterInfo()
         {
             return new Puerts.TypeRegisterInfo()

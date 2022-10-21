@@ -94,6 +94,9 @@ namespace puerts
 #if PUERTS_DEBUG
         Flags += "--expose-gc";
 #endif
+#if PLATFORM_IOS
+        Flags += " --jitless --no-expose-wasm";
+#endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
         NodeUVLoop = new uv_loop_t;
@@ -153,6 +156,8 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(MainIsolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
+        MainIsolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
+
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(MainIsolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
         Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
 
@@ -222,6 +227,9 @@ namespace puerts
             Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
             Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
         }
+#if !WITH_QUICKJS
+        Isolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
+#endif
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }
@@ -700,8 +708,9 @@ namespace puerts
         
         JSObject->SetAlignedPointerInInternalField(1, LifeCycleInfo);
         JSObject->SetAlignedPointerInInternalField(2, reinterpret_cast<void *>(OBJECT_MAGIC));
-        ObjectMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-        ObjectMap[Ptr].SetWeak<FLifeCycleInfo>(LifeCycleInfo, OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        v8::UniquePersistent<v8::Value> persistent(MainIsolate, JSObject);
+        persistent.SetWeak<FLifeCycleInfo>(LifeCycleInfo, OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        ObjectMap[Ptr] = std::move(persistent);
     }
 
     void JSEngine::UnBindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr)

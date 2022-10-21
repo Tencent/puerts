@@ -25,8 +25,8 @@
     },
     "copy": {
         "win": {
-            "ia32": ["/Lib/Win32/libnode.dll"],
-            "x64": ["/Lib/Win64/libnode.dll"]
+            "ia32": ["/lib/Win32/libnode.dll"],
+            "x64": ["/lib/Win64/libnode.dll"]
         },
         "android": {
             "armv7": ["/lib/Android/armeabi-v7a/libnode.so"],

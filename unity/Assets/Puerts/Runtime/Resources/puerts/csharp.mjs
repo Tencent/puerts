@@ -104,9 +104,9 @@ function createTypeProxy(namespace) {
 
 let csharpModule = createTypeProxy(undefined);
 csharpModule.default = csharpModule;
+global.CS = csharpModule;
 
 csharpModule.System.Object.prototype.toString = csharpModule.System.Object.prototype.ToString;
-global.CS = csharpModule;
 
 function ref(x) {
     return {value:x};

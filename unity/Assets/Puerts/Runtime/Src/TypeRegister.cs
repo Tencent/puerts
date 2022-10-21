@@ -920,6 +920,9 @@ namespace Puerts
 
         public Type GetType(int typeId)
         {
+            if (typeId == arrayTypeId) {
+                return typeof(System.Array);
+            }
             return typeMap[typeId];
         }
     }

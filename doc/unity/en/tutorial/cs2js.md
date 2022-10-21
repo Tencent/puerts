@@ -26,8 +26,6 @@ public class TestClass
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        const CS = require('csharp');
-
         const obj = new CS.TestClass();
         obj.AddEventCallback1(i => console.log(i));
         obj.Trigger();
@@ -95,9 +93,7 @@ public class JsBehaviour : MonoBehaviour
     {
         if (jsEnv == null) jsEnv = new JsEnv(new DefaultLoader(), 9229);
 
-        var init = jsEnv.Eval<ModuleInit>(@"const m = 
-            const CS = require('csharp');
-
+        var init = jsEnv.Eval<ModuleInit>(@"
             class Rotate {
                 constructor(bindTo) {
                     this.bindTo = bindTo;

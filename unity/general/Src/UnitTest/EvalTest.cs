@@ -126,20 +126,44 @@ namespace Puerts.UnitTest
             }
             Assert.True(false);
         }
-        // [Test]
-        // public void ESModuleExecuteCJS()
-        // {
-        //     var loader = new TxtLoader();
-        //     loader.AddMockFileContent("whatever.cjs", @"
-        //         module.exports = 'hello world';
-        //     ");
-        //     var jsEnv = new JsEnv(loader);
-        //     string str = jsEnv.ExecuteModule<string>("whatever.cjs", "default");
+        [Test]
+        public void ESModuleExecuteCJS()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("whatever.mjs", @"
+                import str from 'whatever.cjs';
+                
+                export default str;
+            ");
+            var jsEnv = new JsEnv(loader);
+            string str = jsEnv.ExecuteModule<string>("whatever.mjs", "default");
 
-        //     Assert.True(str == "hello world");
+            Assert.True(str == "hello world");
 
-        //     jsEnv.Dispose();
-        // }
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleExecuteCJSRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("cjs/whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("mjs/whatever.mjs", @"
+                import str from '../cjs/whatever.cjs';
+                
+                export default str;
+            ");
+            var jsEnv = new JsEnv(loader);
+            string str = jsEnv.ExecuteModule<string>("mjs/whatever.mjs", "default");
+
+            Assert.True(str == "hello world");
+
+            jsEnv.Dispose();
+        }
         [Test]
         public void ESModuleImportCSharp()
         {
@@ -169,6 +193,81 @@ namespace Puerts.UnitTest
 
             Assert.True(ret == "hello");
 
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportCircular()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("module1.mjs", @"
+                import module2 from './module2.mjs';
+                CS.System.Console.WriteLine('module1 loading');
+
+                function callMe(msg)
+                {
+                    module2.callMe('module 2');
+                    CS.System.Console.WriteLine('callMe called', msg);
+                }
+
+                class M1
+                {
+                    constructor()
+                    {
+                        CS.System.Console.WriteLine('M1');
+                    }
+                }
+
+                export default { callMe, M1 };
+            ");
+            loader.AddMockFileContent("module2.mjs", @"
+                import module1 from './module1.mjs';
+                CS.System.Console.WriteLine('module2 loading');
+
+                function callMe(msg)
+                {
+                    new module1.M1();
+                    CS.System.Console.WriteLine('callMe called', msg);
+                }
+
+
+                export default { callMe };
+            ");
+            loader.AddMockFileContent("main.mjs", @"
+                import module1 from './module1.mjs';
+                import module2 from './module2.mjs';
+
+                module1.callMe('from john');
+                module2.callMe('from bob');
+            ");
+            var jsEnv = new JsEnv(loader);
+
+            jsEnv.ExecuteModule("main.mjs");
+            jsEnv.Dispose();
+        }
+        [Test]
+        public void ESModuleImportNotRelative()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("lib/test.mjs", @"
+                import { M2 } from 'module2.mjs';
+                const Test = 'Test ' + M2
+
+                export { Test };
+            ");
+            loader.AddMockFileContent("module2.mjs", @"
+                const M2 = 'M2';
+                export { M2 };
+            ");
+            loader.AddMockFileContent("main.mjs", @"
+                import { M2 } from 'module2.mjs'
+                import { Test } from './lib/test.mjs';
+
+                export default M2 + Test;
+            ");
+            var jsEnv = new JsEnv(loader);
+
+            string res = jsEnv.ExecuteModule<string>("main.mjs", "default");
+            Assert.True(res == "M2Test M2");
             jsEnv.Dispose();
         }/*
         [Test]

@@ -4,7 +4,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
-    public static class Puerts_UnitTest_GenericGenTest2_Wrap 
+    public static class Puerts_UnitTest_ParamsCallTest_Wrap 
     {
     
     
@@ -23,12 +23,12 @@ namespace PuertsStaticWrap
 
                     {
                     
-                        var result = new Puerts.UnitTest.GenericGenTest2();
+                        var result = new Puerts.UnitTest.ParamsCallTest();
 
                     
 
                     
-                        return Puerts.Utils.GetObjectPtr((int)data, typeof(Puerts.UnitTest.GenericGenTest2), result);
+                        return Puerts.Utils.GetObjectPtr((int)data, typeof(Puerts.UnitTest.ParamsCallTest), result);
                     
                     }
                     
@@ -46,13 +46,15 @@ namespace PuertsStaticWrap
     // ==================== methods start ====================
 
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        private static void M_GetTypeTest(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        private static void F_CombinePath(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
-                var obj = Puerts.Utils.GetSelf((int)data, self) as Puerts.UnitTest.GenericGenTest2;
+                
         
         
+                if (paramLen >= 0)
+            
                 {
             
                 
@@ -60,33 +62,49 @@ namespace PuertsStaticWrap
                     object argobj0 = null;
                     JsValueType argType0 = JsValueType.Invalid;
                 
-                    IntPtr v8Value1 = PuertsDLL.GetArgumentValue(info, 1);
-                    object argobj1 = null;
-                    JsValueType argType1 = JsValueType.Invalid;
+                
+                    
+                    if (ArgHelper.IsMatchParams((int)data, isolate, info, Puerts.JsValueType.Any, typeof(System.Object), 0, paramLen, v8Value0, ref argobj0, ref argType0))
+                    
+                    {
+                    
+                        System.Object[] arg0 = ArgHelper.GetParams<System.Object>((int)data, isolate, info, 0, paramLen, v8Value0);
+                    
+
+                        var result = Puerts.UnitTest.ParamsCallTest.CombinePath (arg0);
+
+                    
+                        
+                    
+                        Puerts.PuertsDLL.ReturnString(isolate, info, result);
+                        
+                        return;
+                    }
+                
+                }
+            
+                if (paramLen == 0)
+            
+                {
+            
                 
                 
                     
                     {
                     
-                        string arg0 = (string)PuertsDLL.GetStringFromValue(isolate, v8Value0, false);
-                    
-                        argobj1 = argobj1 != null ? argobj1 : StaticTranslate<System.Action<Puerts.UnitTest.WrapperTestBase>>.Get((int)data, isolate, NativeValueApi.GetValueFromArgument, v8Value1, false); System.Action<Puerts.UnitTest.WrapperTestBase> arg1 = (System.Action<Puerts.UnitTest.WrapperTestBase>)argobj1;
-                    
 
-                        var result = obj.GetTypeTest (arg0, arg1);
+                        var result = Puerts.UnitTest.ParamsCallTest.CombinePath (default(System.Object));
 
                     
+                        Puerts.PuertsDLL.ReturnString(isolate, info, result);
                         
-                    
-                        
-                    
-                        Puerts.ResultHelper.Set((int)data, isolate, info, result);
-                        
-                        
+                        return;
                     }
                 
                 }
             
+        
+                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to CombinePath");
         
             }
             catch (Exception e)
@@ -119,7 +137,7 @@ namespace PuertsStaticWrap
                 Constructor = Constructor,
                 Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
                 {   
-                    { new Puerts.MethodKey { Name = "GetTypeTest", IsStatic = false}, M_GetTypeTest }
+                    { new Puerts.MethodKey { Name = "CombinePath", IsStatic = true}, F_CombinePath }
                 },
                 Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
                 {
