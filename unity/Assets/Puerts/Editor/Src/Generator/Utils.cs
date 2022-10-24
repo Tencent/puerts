@@ -357,8 +357,10 @@ namespace Puerts.Editor
                     return "any";
                 else if (type == typeof(Delegate) || type == typeof(Puerts.GenericDelegate))
                     return "Function";
+#if CSHARP_7_3_OR_NEWER
                 else if (type == typeof(System.Threading.Tasks.Task)) 
                     return "$Task<any>";
+#endif
                 else if (type.IsByRef)
                     return "$Ref<" + GetTsTypeName(type.GetElementType()) + ">";
                 else if (type.IsArray)
