@@ -19,6 +19,7 @@ public class WebGLPuertsPostProcessor {
     private static void run(string runEntry, string lastBuiltPath) 
     {
         string PuertsWebglJSRoot = Path.GetFullPath("Packages/com.tencent.puerts.webgl/Javascripts~/");
+        UnityEngine.Debug.Log(PuertsWebglJSRoot);
         if (lastBuiltPath != null) {
             UnityEngine.Debug.Log("上一次构建路径：" + lastBuiltPath);
 
@@ -34,8 +35,8 @@ public class WebGLPuertsPostProcessor {
                 for (let i = 0; i < csFileGlobbers.Length; i++) {
                     fileGlobbers.push(csFileGlobbers.get_Item(i));
                 }
-                const tscAndWebpack = require(rPath + 'build.js');
-                const globAllJS = require(rPath + 'glob-js/index.js');
+                const tscAndWebpack = nodeRequire(rPath + 'build.js');
+                const globAllJS = nodeRequire(rPath + 'glob-js/index.js');
 
                 tscAndWebpack(targetPath);
                 globAllJS." + runEntry + @"(fileGlobbers, targetPath);

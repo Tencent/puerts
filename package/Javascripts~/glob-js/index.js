@@ -8,7 +8,6 @@ const path = require("path");
 const glob = require('glob');
 const mkdirp = require("mkdirp");
 const babel = require('@babel/core');
-const csharp = puertsRequire('csharp');
 
 function buildForBrowser(allJSFile, outputpath) {
     const puerts_js_file = {};

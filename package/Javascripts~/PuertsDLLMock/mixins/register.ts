@@ -8,11 +8,11 @@ import { FunctionCallbackInfoPtrManager, global, OnFinalize, PuertsJSEngine } fr
  */
 export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
     const returnee = {
-        SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, dataLow: number, dataHigh: number) {
+        SetGlobalFunction: function (isolate: IntPtr, nameString: CSString, v8FunctionCallback: IntPtr, jsEnvIdx: number, callbackidx: number) {
             const name = engine.unityApi.UTF8ToString(nameString);
-            global[name] = engine.makeV8FunctionCallbackFunction(true, v8FunctionCallback, dataLow);
+            global[name] = engine.makeV8FunctionCallbackFunction(true, v8FunctionCallback, callbackidx);
         },
-        _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, dataLow: number, dataHigh: number, size: number) {
+        _RegisterClass: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, jsEnvIdx: number, callbackidx: number, size: number) {
             const fullName = engine.unityApi.UTF8ToString(fullNameString);
             const csharpObjectMap = engine.csharpObjectMap;
             const id = csharpObjectMap.classes.length;
@@ -32,7 +32,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                     const args = Array.prototype.slice.call(arguments, 0);
                     const callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(args);
                     // 虽然puerts内Constructor的返回值叫self，但它其实就是CS对象的一个id而已。
-                    csID = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, dataLow);
+                    csID = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, callbackidx);
                     FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
                 }
                 // blittable
@@ -48,7 +48,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                     csharpObjectMap.add(csID, this);
                     OnFinalize(this, csID, (csIdentifier) => {
                         csharpObjectMap.remove(csIdentifier);
-                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifier, dataLow);
+                        engine.callV8DestructorCallback(destructor || engine.generalDestructor, csIdentifier, callbackidx);
                     })
                 }
             }
@@ -69,17 +69,17 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
 
             return id;
         },
-        RegisterStruct: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, /*long */dataLow: number, dataHigh: number, size: int) {
-            return returnee._RegisterClass(isolate, BaseTypeId, fullNameString, constructor, destructor, dataLow, dataHigh, size);
+        RegisterStruct: function (isolate: IntPtr, BaseTypeId: int, fullNameString: CSString, constructor: IntPtr, destructor: IntPtr, /*long */jsEnvIdx: number, callbackidx: number, size: int) {
+            return returnee._RegisterClass(isolate, BaseTypeId, fullNameString, constructor, destructor, callbackidx, callbackidx, size);
         },
-        RegisterFunction: function (isolate: IntPtr, classID: int, nameString: CSString, isStatic: bool, callback: IntPtr, /*long */data: number) {
+        RegisterFunction: function (isolate: IntPtr, classID: int, nameString: CSString, isStatic: bool, callback: IntPtr, /*long */jsEnvIdx: number, callbackidx: number) {
             var cls = engine.csharpObjectMap.classes[classID]
             if (!cls) {
                 return false;
             }
             const name = engine.unityApi.UTF8ToString(nameString);
 
-            var fn = engine.makeV8FunctionCallbackFunction(isStatic, callback, data)
+            var fn = engine.makeV8FunctionCallbackFunction(isStatic, callback, callbackidx)
             if (isStatic) {
                 cls[name] = fn
             } else {
@@ -92,11 +92,11 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             nameString: CSString,
             isStatic: bool,
             getter: IntPtr,
-            /*long */getterDataLow: number,
-            /*long */getterDataHigh: number,
+            /*long */getterjsEnvIdx: number,
+            /*long */gettercallbackidx: number,
             setter: IntPtr,
-            /*long */setterDataLow: number,
-            /*long */setterDataHigh: number,
+            /*long */setterjsEnvIdx: number,
+            /*long */settercallbackidx: number,
             dontDelete: bool
         ) {
             var cls = engine.csharpObjectMap.classes[classID]
@@ -109,9 +109,9 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 configurable: !dontDelete,
                 enumerable: false
             };
-            attr.get = engine.makeV8FunctionCallbackFunction(isStatic, getter, getterDataLow);
+            attr.get = engine.makeV8FunctionCallbackFunction(isStatic, getter, gettercallbackidx);
             if (setter) {
-                attr.set = engine.makeV8FunctionCallbackFunction(isStatic, setter, setterDataLow);
+                attr.set = engine.makeV8FunctionCallbackFunction(isStatic, setter, settercallbackidx);
             }
 
             if (isStatic) {

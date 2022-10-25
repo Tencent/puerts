@@ -375,7 +375,6 @@ export class PuertsJSEngine {
     public callV8Function: MockIntPtr;
     public callV8Constructor: MockIntPtr;
     public callV8Destructor: MockIntPtr;
-    public callJSArgumentsGetter: MockIntPtr;
 
     // 这两个是Puerts用的的真正的CSharp函数指针
     public GetJSArgumentsCallback: IntPtr
@@ -435,7 +434,7 @@ export class PuertsJSEngine {
         return buffer;
     }
 
-    makeV8FunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, data: number) {
+    makeV8FunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, callbackIdx: number) {
         // 不能用箭头函数！此处返回的函数会放到具体的class上，this有含义。
         const engine = this;
         return function (...args: any[]) {
@@ -446,26 +445,22 @@ export class PuertsJSEngine {
                 isStatic ? 0:engine.csharpObjectMap.getCSIdentifierFromObject(this),
                 callbackInfoPtr,
                 args.length,
-                data
+                callbackIdx
             )
             return FunctionCallbackInfoPtrManager.GetReturnValueAndRecycle(callbackInfoPtr);
         }
     }
 
-    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        this.unityApi.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, data);
+    callV8FunctionCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) {
+        this.unityApi.dynCall_viiiii(this.callV8Function, functionPtr, infoIntPtr, selfPtr, paramLen, callbackIdx);
     }
 
-    callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, data: number) {
-        return this.unityApi.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, data);
+    callV8ConstructorCallback(functionPtr: IntPtr, infoIntPtr: MockIntPtr, paramLen: number, callbackIdx: number) {
+        return this.unityApi.dynCall_iiiii(this.callV8Constructor, functionPtr, infoIntPtr, paramLen, callbackIdx);
     }
 
-    callV8DestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, data: number) {
-        this.unityApi.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, data);
-    }
-
-    callGetJSArgumentsCallback(jsEnvIdx: number, jsFuncPtr: JSFunctionPtr) {
-        this.unityApi.dynCall_viii(this.callJSArgumentsGetter, this.GetJSArgumentsCallback, jsEnvIdx, jsFuncPtr);
+    callV8DestructorCallback(functionPtr: IntPtr, selfPtr: CSIdentifier, callbackIdx: number) {
+        this.unityApi.dynCall_viii(this.callV8Destructor, functionPtr, selfPtr, callbackIdx);
     }
 }
 

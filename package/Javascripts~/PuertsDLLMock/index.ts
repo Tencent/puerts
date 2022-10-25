@@ -46,17 +46,20 @@ global.PuertsWebGL = {
             WebGLBackendRegisterAPI(engine),
             {
                 // bridgeLog: true,
-                SetCallV8: function(callV8Function: MockIntPtr, callV8Constructor: MockIntPtr, callV8Destructor: MockIntPtr, callJSArgumentsGetter: MockIntPtr) {
+                SetCallV8: function(
+                    callV8Function: MockIntPtr, 
+                    callV8Constructor: MockIntPtr, 
+                    callV8Destructor: MockIntPtr
+                ) {
                     engine.callV8Function = callV8Function;
                     engine.callV8Constructor = callV8Constructor;
                     engine.callV8Destructor = callV8Destructor;
-                    engine.callJSArgumentsGetter = callJSArgumentsGetter;
                 },
                 GetLibVersion: function () {
-                    return 17;
+                    return 19;
                 },
                 GetApiLevel: function () {
-                    return 17;
+                    return 19;
                 },
                 GetLibBackend: function () {
                     return 0;
@@ -73,9 +76,10 @@ global.PuertsWebGL = {
                 GetLastExceptionInfo: function (isolate: IntPtr,/* out int */strlen: any) {
                     return engine.JSStringToCSString(engine.lastException.message, strlen);
                 },
-                LowMemoryNotification: function (isolate: IntPtr) {
-
-                },
+                LowMemoryNotification: function (isolate: IntPtr) {},
+                IdleNotificationDeadline: function (isolate: IntPtr) {},
+                RequestMinorGarbageCollectionForTesting: function (isolate: IntPtr) {},
+                RequestFullGarbageCollectionForTesting: function (isolate: IntPtr) {},
                 SetGeneralDestructor: function (isolate: IntPtr, _generalDestructor: IntPtr) {
                     engine.generalDestructor = _generalDestructor
                 },
@@ -139,11 +143,8 @@ global.PuertsWebGL = {
                     throw new Error(UTF8ToString(messageString));
                 },
 
-                InvokeJSFunction: function (_function: JSFunctionPtr, argumentsLen: number, hasResult: bool) {
+                InvokeJSFunction: function (_function: JSFunctionPtr, hasResult: bool) {
                     const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
-                    if (argumentsLen > 0) {
-                        engine.callGetJSArgumentsCallback(0, _function);
-                    }
 
                     if (func instanceof JSFunction) {
                         try {
