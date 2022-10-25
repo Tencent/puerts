@@ -139,5 +139,14 @@ namespace Puerts.UnitTest
             string wrapperContent = wrapRender(wrapperInfo);
             Assert.True((new Regex(@"where T : System.StringComparer")).IsMatch(wrapperContent));
         }
+
+        [Test]
+        public void NestedType()
+        {
+            Assert.True(
+                typeof(Dictionary<string, string>.ValueCollection.Enumerator)
+                    .GetFriendlyName().Contains("ValueCollection")
+            );
+        }
     }
 }
