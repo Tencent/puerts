@@ -21,7 +21,6 @@ namespace Puerts.UnitTest
             Editor.Generator.Wrapper.StaticWrapperInfo wrapperInfo = Editor.Generator.Wrapper.StaticWrapperInfo.FromType(typeof(Dictionary<int, JsEnv>), genList);
 
             string wrapperContent = wrapRender(wrapperInfo);
-            System.Console.WriteLine(wrapperContent);
             Assert.True((new Regex(@"<TValue>")).IsMatch(wrapperContent));
         }
 
@@ -52,7 +51,6 @@ namespace Puerts.UnitTest
             Editor.Generator.Wrapper.StaticWrapperInfo wrapperInfo = Editor.Generator.Wrapper.StaticWrapperInfo.FromType(typeof(Singleton1<Zombie>), genList);
 
             string wrapperContent = wrapRender(wrapperInfo);
-            System.Console.WriteLine(wrapperContent);
             Assert.True((new Regex(@"where T : Puerts.UnitTest.Singleton1<T>")).IsMatch(wrapperContent));
         }
 

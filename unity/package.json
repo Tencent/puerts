@@ -1,0 +1,21 @@
+{
+  "name": "native_src",
+  "version": "1.0.0",
+  "description": "",
+  "main": "make.js",
+  "scripts": {
+    "test": "ts-node --esm general/run-test.mts",
+    "build": ""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@puerts/shell-util": "^1.0.4",
+    "@types/glob": "^8.0.0",
+    "@types/node": "^18.11.5",
+    "chardet": "^1.5.0",
+    "commander": "^9.3.0",
+    "glob": "^8.0.3",
+    "ts-node": "^10.9.1"
+  }
+}
