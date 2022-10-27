@@ -18,6 +18,7 @@ rm("-rf", workdir);
 mkdir("-p", workdir);
 exec(`dotnet new nunit`, { cwd: workdir });
 rm('-rf', join(workdir, 'UnitTest1.cs'));
+rm('-rf', join(workdir, 'Usings.cs'));
 exec(`dotnet add vsauto.csproj package NUnit.ConsoleRunner --version 3.15.2 --package-directory testrunner`, { cwd: workdir })
 const definitions = `
 <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
