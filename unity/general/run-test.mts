@@ -59,13 +59,19 @@ writeFileSync(
 exec(`dotnet build vsauto.csproj`, { cwd: workdir })
 
 const backend = 'v8_9.4'
-exec(`node make.js --platform ${process.platform == 'win32' ? 'win' : 'osx'} --config Debug --backend ${backend} --arch x64`, { cwd: join(dir, "../native_src") });
+exec(`node make.js --platform ${process.platform == 'win32' ? 'win' : 'osx'} --config Debug --backend ${backend} --arch ${process.arch}`, { cwd: join(dir, "../native_src") });
 if (process.platform == 'win32') {
     cp(
         join(dir, `../native_src/build_win_x64_${backend}_debug/RelWithDebInfo/puerts.dll`),
         join(workdir, './bin/Debug/')
     );
+    exec(`.\\testrunner\\nunit.consolerunner\\3.15.2\\tools\\nunit3-console.exe .\\bin\\Debug\\vsauto.dll`, { cwd: workdir })
+} else {
+    cp(
+        join(dir, `../native_src/build_osx_${process.arch}_${backend}_debug/Debug/libpuerts.dylib`),
+        join(workdir, './bin/Debug/libpuerts.dylib')
+    );
+    exec(`dotnet run ./testrunner/nunit.consolerunner/3.15.2/tools/nunit3-console.exe ./bin/Debug/vsauto.dll`, { cwd: workdir })
 }
 
-exec(`.\\testrunner\\nunit.consolerunner\\3.15.2\\tools\\nunit3-console.exe .\\bin\\Debug\\vsauto.dll`, { cwd: workdir })
 
