@@ -23,6 +23,9 @@ jobs:
     steps:
       # - name: Add msbuild to PATH
       #   uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
       - uses: actions/checkout@v3
       # - name: Build
       #   uses: ./.github/workflows/composites/unity-build-plugins/windows/
