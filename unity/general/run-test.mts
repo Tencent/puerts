@@ -1,4 +1,5 @@
 import { cp, exec, mkdir, rm, setWinCMDEncodingToUTF8 } from "@puerts/shell-util";
+import { program } from "commander";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import glob from "glob";
 import { dirname, join, relative } from "path";
@@ -56,9 +57,14 @@ writeFileSync(
         join(workdir, 'vsauto.csproj'), 'utf-8'
     ).replace('</Project>', [definitions, linkUnitTests, linkPuerTS + '</Project>'].join('\n'))
 );
-exec(`dotnet build vsauto.csproj`, { cwd: workdir })
+exec(`dotnet build vsauto.csproj --silent`, { cwd: workdir })
 
-const backend = 'v8_9.4'
+
+program.option("--backend <backend>", "the JS backend will be used", "v8_9.4");
+program.parse(process.argv);
+const options = program.opts();
+
+const backend = options.backend;
 exec(`node make.js --platform ${process.platform == 'win32' ? 'win' : 'osx'} --config Debug --backend ${backend} --arch ${process.arch}`, { cwd: join(dir, "../native_src") });
 if (process.platform == 'win32') {
     cp(

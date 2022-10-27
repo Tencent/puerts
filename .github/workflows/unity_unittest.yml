@@ -21,8 +21,6 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      # - name: Add msbuild to PATH
-      #   uses: microsoft/setup-msbuild@v1.1
       - uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.x.x'
@@ -38,33 +36,35 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general\run-test.mts
-  # unittest-quickjs:
-  #   runs-on: windows-2019
+          npx ts-node --esm general\run-test.mts --backend v8_9.4
+  unittest-quickjs:
+    runs-on: windows-2019
 
-  #   steps:
-  #     - name: Add msbuild to PATH
-  #       uses: microsoft/setup-msbuild@v1.1
-  #     - uses: actions/checkout@v3
-  #     - name: Build
-  #       uses: ./.github/workflows/composites/unity-build-plugins/windows/
-  #       with:
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
-  #         backend: quickjs
-  #         config: Debug
-  #         arch: x64
-  #     - name: UnitTest
-  #       run: |
-  #         cd unity
-  #         npm i
-  #         npx ts-node --esm general\run-test.mts
+    steps:
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
+          config: Debug
+          arch: x64
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          npx ts-node --esm general\run-test.mts --backend quickjs
           
   # unittest-nodejs:
   #   runs-on: windows-2019
 
   #   steps:
-  #     - name: Add msbuild to PATH
-  #       uses: microsoft/setup-msbuild@v1.1
+  #     - uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '6.x.x'
   #     - uses: actions/checkout@v3
   #     - name: Build
   #       uses: ./.github/workflows/composites/unity-build-plugins/windows/
@@ -77,4 +77,4 @@ jobs:
   #       run: |
   #         cd unity
   #         npm i
-  #         npx ts-node --esm general\run-test.mts
+  #         npx ts-node --esm general\run-test.mts --backend nodejs_16
