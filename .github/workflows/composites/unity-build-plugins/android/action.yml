@@ -32,8 +32,10 @@ runs:
     - name: Build
       shell: bash
       run: |
-        cd unity/native_src
-        ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+        cd unity
+        npm i
+        cd native_src
+        ANDROID_NDK=~/android-ndk-r21b npx ts-node --esm make.mts --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:

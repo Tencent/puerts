@@ -8,8 +8,11 @@
 /general/vs2022/*/obj
 /general/vs2022/*.user
 /general/vs2022/.vs
+/general/vsauto
+/general/Src/StaticWrapper
 /native_src/v8*
 /native_src/nodejs*
 /native_src/quickjs*
 /native_src/puerts-cpp-tester
-/native_src/node_modules
+/native_src/build*
+/node_modules

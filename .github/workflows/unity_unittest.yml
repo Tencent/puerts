@@ -17,12 +17,13 @@ env:
   RUNID: 613573412
 
 jobs:
-  unittest-v8:
+  unittest-win-v8:
     runs-on: windows-2019
 
     steps:
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
       - uses: actions/checkout@v3
       - name: Build
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
@@ -33,17 +34,16 @@ jobs:
           arch: x64
       - name: UnitTest
         run: |
-          cd unity\general\vs2013
-          nuget restore Puerts.sln
-          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
-          msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll   
-  unittest-quickjs:
+          cd unity
+          npm i
+          npx ts-node --esm general/run-test.mts --backend v8_9.4
+  unittest-win-quickjs:
     runs-on: windows-2019
 
     steps:
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
       - uses: actions/checkout@v3
       - name: Build
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
@@ -54,18 +54,17 @@ jobs:
           arch: x64
       - name: UnitTest
         run: |
-          cd unity\general\vs2013
-          nuget restore Puerts.sln
-          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
-          msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll
+          cd unity
+          npm i
+          npx ts-node --esm general/run-test.mts --backend quickjs
           
-  unittest-nodejs:
+  unittest-win-nodejs:
     runs-on: windows-2019
 
     steps:
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
       - uses: actions/checkout@v3
       - name: Build
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
@@ -76,8 +75,68 @@ jobs:
           arch: x64
       - name: UnitTest
         run: |
-          cd unity\general\vs2013
-          nuget restore Puerts.sln
-          nuget install NUnit.Runners -Version 3.2.0 -OutputDirectory testrunner -ExcludeVersion
-          msbuild /property:Configuration=Release Puerts.sln
-          ./testrunner/NUnit.ConsoleRunner/tools/nunit3-console.exe ../vs2013/Bin/Puerts.UnitTest.dll   
+          cd unity
+          npm i
+          npx ts-node --esm general/run-test.mts --backend nodejs_16
+
+  unittest-osx-v8:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4
+          config: Debug
+          arch: x64
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          npx ts-node --esm general/run-test.mts --backend v8_9.4
+  unittest-osx-quickjs:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: quickjs
+          config: Debug
+          arch: x64
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          npx ts-node --esm general/run-test.mts --backend quickjs
+          
+  unittest-osx-nodejs:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/osx/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: nodejs_16
+          config: Debug
+          arch: x64
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          npx ts-node --esm general/run-test.mts --backend nodejs_16
