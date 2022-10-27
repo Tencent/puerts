@@ -5,9 +5,9 @@
     "module": "ES2020",
     "jsx": "react",
     "sourceMap": true,
+    "moduleResolution": "node",
     "noImplicitAny": true,
     "typeRoots": [
-      "./node_modules/@puerts/",
       "./node_modules/@types"
     ]
   }
