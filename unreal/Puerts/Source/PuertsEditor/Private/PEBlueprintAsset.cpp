@@ -78,7 +78,7 @@ static bool IsPlaying()
 
 bool UPEBlueprintAsset::Existed(const FString& InName, const FString& InPath)
 {
-    FString BPPath = FString(TEXT(TS_BLUEPRINT_PATH)) / InPath / InName + TEXT(".uasset");
+    FString BPPath = FString(TEXT(TS_BLUEPRINT_PATH)) / InName + TEXT(".uasset");
     if (BPPath[0] == TEXT('/') || BPPath[0] == TEXT('\\'))
     {
         BPPath = BPPath.Mid(1);
