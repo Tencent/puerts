@@ -6,11 +6,11 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class EvalTest
     {
-        [Test]
-        public void ForceFail()
-        {
-            Assert.True(1 == 2);
-        }
+        // [Test]
+        // public void ForceFail()
+        // {
+        //     Assert.True(1 == 2);
+        // }
         [Test]
         public void EvalError()
         {
