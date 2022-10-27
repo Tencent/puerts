@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from "fs";
-import { cd, cp, exec, mkdir, mv } from "@puerts/shell-util"
+import { cd, cp, exec, mkdir, mv, setWinCMDEncodingToUTF8 } from "@puerts/shell-util"
 import { Option, program } from "commander";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = fileURLToPath(dirname(import.meta.url));
+setWinCMDEncodingToUTF8();
 
 const nodePlatformToPuerPlatform = {
     "darwin": "osx",
