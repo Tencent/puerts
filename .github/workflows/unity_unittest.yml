@@ -27,13 +27,13 @@ jobs:
         with:
           dotnet-version: '6.x.x'
       - uses: actions/checkout@v3
-      # - name: Build
-      #   uses: ./.github/workflows/composites/unity-build-plugins/windows/
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     backend: v8_9.4
-      #     config: Debug
-      #     arch: x64
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: v8_9.4
+          config: Debug
+          arch: x64
       - name: UnitTest
         run: |
           cd unity
