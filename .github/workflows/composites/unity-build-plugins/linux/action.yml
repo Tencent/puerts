@@ -31,8 +31,10 @@ runs:
     - name: Build
       shell: bash
       run: |
-        cd unity/native_src
-        node make.js --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+        cd unity
+        npm i
+        cd native_src
+        ts-node make.mts --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:

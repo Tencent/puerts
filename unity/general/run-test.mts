@@ -1,18 +1,14 @@
 import { cp, exec, mkdir, rm, setWinCMDEncodingToUTF8 } from "@puerts/shell-util";
 import { program } from "commander";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import glob from "glob";
-import { dirname, join, relative } from "path";
+import { basename, dirname, extname, join, relative } from "path";
 import { fileURLToPath } from "url";
+import runPuertsMake from "../native_src/make.mjs";
+
 const dir = fileURLToPath(dirname(import.meta.url));
 const workdir = join(dir, "vsauto");
 setWinCMDEncodingToUTF8();
-
-if (!existsSync(`${dir}/../node_modules`)) {
-    console.log("[Puer] installing node_modules");
-    require('child_process').execSync('npm i')
-    exec("npm i", { cwd: join(dir, '..') });
-}
 
 rm("-rf", workdir);
 
@@ -65,19 +61,30 @@ program.parse(process.argv);
 const options = program.opts();
 
 const backend = options.backend;
-exec(`node make.js --platform ${process.platform == 'win32' ? 'win' : 'osx'} --config Debug --backend ${backend} --arch ${process.arch}`, { cwd: join(dir, "../native_src") });
+const copyConfig = runPuertsMake({
+    platform: process.platform == 'win32' ? 'win' : 'osx',
+    config: "Debug",
+    backend: backend,
+    arch: process.arch as any
+})
+
+const binPath = join(workdir, './bin/Debug');
+copyConfig.forEach((fileToCopy: string)=> {
+    const ext = extname(fileToCopy)
+    cp(fileToCopy, binPath + (ext == '.bundle' ? `/lib${basename(fileToCopy, ext)}.dylib`: ''));
+})
 if (process.platform == 'win32') {
     cp(
         join(dir, `../native_src/build_win_x64_${backend}_debug/RelWithDebInfo/puerts.dll`),
         join(workdir, './bin/Debug/')
     );
-    exec(`.\\testrunner\\nunit.consolerunner\\3.15.2\\tools\\nunit3-console.exe .\\bin\\Debug\\vsauto.dll`, { cwd: workdir })
+    process.exit(exec(`.\\testrunner\\nunit.consolerunner\\3.15.2\\tools\\nunit3-console.exe .\\bin\\Debug\\vsauto.dll`, { cwd: workdir }).code)
 } else {
     cp(
         join(dir, `../native_src/build_osx_${process.arch}_${backend}_debug/Debug/libpuerts.dylib`),
         join(workdir, './bin/Debug/libpuerts.dylib')
     );
-    exec(`dotnet run ./testrunner/nunit.consolerunner/3.15.2/tools/nunit3-console.exe ./bin/Debug/vsauto.dll`, { cwd: workdir })
+    process.exit(exec(`dotnet run ./testrunner/nunit.consolerunner/3.15.2/tools/nunit3-console.exe ./bin/Debug/vsauto.dll`, { cwd: workdir }).code)
 }
 
 

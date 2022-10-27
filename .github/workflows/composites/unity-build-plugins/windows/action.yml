@@ -33,8 +33,10 @@ runs:
     - name: Build
       shell: powershell
       run: |
-        cd unity\native_src
-        node make.js --platform win --backend ${{ inputs.backend }} --config ${{ inputs.config }} --arch ${{ inputs.arch }}
+        cd unity
+        npm i
+        cd native_src
+        ts-node make.mts --platform win --backend ${{ inputs.backend }} --config ${{ inputs.config }} --arch ${{ inputs.arch }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
