@@ -3,6 +3,8 @@ import { cd, cp, exec, mkdir, mv, setWinCMDEncodingToUTF8 } from "@puerts/shell-
 import { Option, program } from "commander";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import assert from "assert";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = fileURLToPath(dirname(import.meta.url));
 setWinCMDEncodingToUTF8();
@@ -29,8 +31,8 @@ const platformCompileConfig = {
                 const ABI = 'armeabi-v7a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-4.9';
 
-                exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/libpuerts.so`
             }
@@ -43,8 +45,8 @@ const platformCompileConfig = {
                 const ABI = 'arm64-v8a';
                 const TOOLCHAIN_NAME = 'arm-linux-androideabi-clang';
 
-                exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`)
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/libpuerts.so`
             }
@@ -55,9 +57,9 @@ const platformCompileConfig = {
             outputPluginPath: 'iOS',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DPLATFORM=OS64 -GXcode ..`).code)
                 cd("..")
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}-iphoneos/libpuerts.a`
             }
@@ -68,9 +70,9 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/x86_64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                exec(`cmake ${cmakeDArgs} -DTHREAD_SAFE=1 -DJS_ENGINE=${options.backend} -GXcode ..`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DTHREAD_SAFE=1 -DJS_ENGINE=${options.backend} -GXcode ..`).code)
                 cd("..")
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 mv(`${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`, `${CMAKE_BUILD_PATH}/${options.config}/puerts.bundle`)
                 return `${CMAKE_BUILD_PATH}/${options.config}/puerts.bundle`
@@ -80,9 +82,9 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/arm64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DFOR_SILICON=ON -GXcode ..`).code)
                 cd("..")
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}/libpuerts.dylib`
             }
@@ -93,9 +95,9 @@ const platformCompileConfig = {
             outputPluginPath: 'x86_64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A x64 ..`).code)
                 cd("..")
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`
             }
@@ -104,9 +106,9 @@ const platformCompileConfig = {
             outputPluginPath: 'x86',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -G "Visual Studio 16 2019" -A Win32 ..`).code)
                 cd("..")
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/${options.config}/puerts.dll`
             }
@@ -117,9 +119,9 @@ const platformCompileConfig = {
             outputPluginPath: 'x86_64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} ..`).code)
                 cd("..")
-                exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`)
+                assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
                 return `${CMAKE_BUILD_PATH}/libpuerts.so`;
             }
