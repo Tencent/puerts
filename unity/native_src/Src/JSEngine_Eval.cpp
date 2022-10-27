@@ -32,7 +32,6 @@ namespace puerts {
     // Returns the directory part of path, without the trailing '/'.
     std::string DirName(const std::string& path) { 
         size_t last_slash = path.find_last_of('/');
-        printf("%s %d\n", path.c_str(), (int)last_slash);
         if (last_slash == std::string::npos) return ".";
         return path.substr(0, last_slash);
     }

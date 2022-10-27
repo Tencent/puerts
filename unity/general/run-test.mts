@@ -73,10 +73,7 @@ copyConfig.forEach((fileToCopy: string)=> {
     const ext = extname(fileToCopy)
     cp(fileToCopy, binPath + (ext == '.bundle' ? `/lib${basename(fileToCopy, ext)}.dylib`: ''));
 })
-if (process.platform == 'win32') {
-    process.exit(exec(`.\\testrunner\\nunit.consolerunner\\3.15.2\\tools\\nunit3-console.exe .\\bin\\Debug\\vsauto.dll`, { cwd: workdir }).code)
-} else {
-    process.exit(exec(`dotnet run ./testrunner/nunit.consolerunner/3.15.2/tools/nunit3-console.exe ./bin/Debug/vsauto.dll`, { cwd: workdir }).code)
-}
+
+process.exit(exec(`dotnet test vsauto.csproj`, { cwd: workdir }).code)
 
 
