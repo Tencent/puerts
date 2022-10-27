@@ -16,45 +16,18 @@ mkdir("-p", workdir);
 exec(`dotnet new nunit`, { cwd: workdir });
 rm('-rf', join(workdir, 'UnitTest1.cs'));
 rm('-rf', join(workdir, 'Usings.cs'));
-exec(`dotnet add vsauto.csproj package NUnit.ConsoleRunner --version 3.15.2 --package-directory testrunner`, { cwd: workdir })
-const definitions = `
-<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DefineConstants>PUER_CONSOLE_TEST;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-</PropertyGroup>
-`
-const linkPuerTS = `
-<ItemGroup>
-    ${glob.sync(join(dir, '../Assets/**/*.cs').replace(/\\/g, '/'))
-        .map(pathname =>
-            `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-        <Link>${relative(join(dir, '../Assets/'), pathname).replace(/\//, '\\')}</Link>
-    </Compile>`
-        ).join('\n')}
-</ItemGroup>
-`
 
-const linkUnitTests = `
-<ItemGroup>
-    ${glob.sync(join(dir, './Src/UnitTest/**/*.cs').replace(/\\/g, '/'))
-        .concat([join(dir, './Src/TxtLoader.cs').replace(/\\/g, '/')])
-        .map(pathname =>
-            `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-        <Link>${relative(join(dir, './Src'), pathname).replace(/\//, '\\')}</Link>
-    </Compile>`
-        ).join('\n')
-    }
-</ItemGroup>
-`
+const originProjectConfig = readFileSync(
+    join(workdir, 'vsauto.csproj'), 'utf-8'
+);
 
+// 运行generate
 writeFileSync(
     join(workdir, 'vsauto.csproj'),
-    readFileSync(
-        join(workdir, 'vsauto.csproj'), 'utf-8'
-    ).replace('</Project>', [definitions, linkUnitTests, linkPuerTS + '</Project>'].join('\n'))
+    originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(), '</Project>'].join('\n'))
 );
-exec(`dotnet build vsauto.csproj -v quiet`, { cwd: workdir })
-
+exec(`dotnet build vsauto.csproj -p:StartupObject=PuerGen -v quiet`, { cwd: workdir })
+exec(`dotnet run --project vsauto.csproj`, { cwd: workdir })
 
 program.option("--backend <backend>", "the JS backend will be used", "v8_9.4");
 program.parse(process.argv);
@@ -74,6 +47,42 @@ copyConfig.forEach((fileToCopy: string)=> {
     cp(fileToCopy, binPath + (ext == '.bundle' ? `/lib${basename(fileToCopy, ext)}.dylib`: ''));
 })
 
+// 带上wrapper重新写一次
+writeFileSync(
+    join(workdir, 'vsauto.csproj'),
+    originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(), '</Project>'].join('\n'))
+);
 process.exit(exec(`dotnet test vsauto.csproj`, { cwd: workdir }).code)
 
+function collectCSFilesAndMakeCompileConfig() {
 
+    const definitions = `
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <DefineConstants>PUER_CONSOLE_TEST;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    </PropertyGroup>
+    `
+    const linkPuerTS = `
+    <ItemGroup>
+        ${glob.sync(join(dir, '../Assets/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+                `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../Assets/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+    `
+    
+    const linkUnitTests = `
+    <ItemGroup>
+        ${glob.sync(join(dir, './Src/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+                `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, './Src'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')
+        }
+    </ItemGroup>
+    `
+    return [definitions, linkPuerTS, linkUnitTests].join('\n');
+}

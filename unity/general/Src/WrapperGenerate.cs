@@ -33,12 +33,12 @@ public class WrapperGenConfig
     }
 }
 
-public class PuertsTest
+public class PuerGen
 {
     public static void Main()
     {
         Puerts.Editor.Generator.FileExporter.ExportWrapper(
-            TxtLoader.PathToBinDir("../../Src/UnitTest/wrap/"),
+            TxtLoader.PathToBinDir("../../../Src/StaticWrapper/"),
             new TxtLoader()
         );
     }
