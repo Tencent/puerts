@@ -18,7 +18,7 @@ env:
 
 jobs:
   unittest-win-v8:
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/setup-dotnet@v3
@@ -38,7 +38,7 @@ jobs:
           npm i
           npx ts-node --esm general/run-test.mts --backend v8_9.4
   unittest-win-quickjs:
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/setup-dotnet@v3
@@ -59,7 +59,7 @@ jobs:
           npx ts-node --esm general/run-test.mts --backend quickjs
           
   unittest-win-nodejs:
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/setup-dotnet@v3
