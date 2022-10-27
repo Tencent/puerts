@@ -9,6 +9,7 @@
 /general/vs2022/*.user
 /general/vs2022/.vs
 /general/vsauto
+/general/Src/StaticWrapper
 /native_src/v8*
 /native_src/nodejs*
 /native_src/quickjs*
