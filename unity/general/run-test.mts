@@ -1,13 +1,17 @@
 import { cp, exec, mkdir, rm, setWinCMDEncodingToUTF8 } from "@puerts/shell-util";
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import glob from "glob";
 import { dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
-
 const dir = fileURLToPath(dirname(import.meta.url));
 const workdir = join(dir, "vsauto");
-
 setWinCMDEncodingToUTF8();
+
+if (!existsSync(`${dir}/../node_modules`)) {
+    console.log("[Puer] installing node_modules");
+    require('child_process').execSync('npm i')
+    exec("npm i", { cwd: join(dir, '..') });
+}
 
 rm("-rf", workdir);
 
@@ -24,8 +28,8 @@ const definitions = `
 const linkPuerTS = `
 <ItemGroup>
     ${glob.sync(join(dir, '../Assets/**/*.cs').replace(/\\/g, '/'))
-        .map(pathname => 
-`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+        .map(pathname =>
+            `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
         <Link>${relative(join(dir, '../Assets/'), pathname).replace(/\//, '\\')}</Link>
     </Compile>`
         ).join('\n')}
@@ -36,8 +40,8 @@ const linkUnitTests = `
 <ItemGroup>
     ${glob.sync(join(dir, './Src/UnitTest/**/*.cs').replace(/\\/g, '/'))
         .concat([join(dir, './Src/TxtLoader.cs').replace(/\\/g, '/')])
-        .map(pathname => 
-`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+        .map(pathname =>
+            `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
         <Link>${relative(join(dir, './Src'), pathname).replace(/\//, '\\')}</Link>
     </Compile>`
         ).join('\n')
@@ -46,7 +50,7 @@ const linkUnitTests = `
 `
 
 writeFileSync(
-    join(workdir, 'vsauto.csproj'), 
+    join(workdir, 'vsauto.csproj'),
     readFileSync(
         join(workdir, 'vsauto.csproj'), 'utf-8'
     ).replace('</Project>', [definitions, linkUnitTests, linkPuerTS + '</Project>'].join('\n'))

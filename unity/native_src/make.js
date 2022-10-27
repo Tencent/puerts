@@ -10,7 +10,7 @@ if (!fs.existsSync(`${pwd}/CMakeLists.txt`)) {
     console.error("[Puer] Cannot find CMakeLists.txt");
     process.exit();
 }
-if (!fs.existsSync(`${pwd}/node_modules`)) {
+if (!fs.existsSync(`${pwd}/../node_modules`)) {
     console.log("[Puer] installing node_modules");
     require('child_process').execSync('npm i')
 }
