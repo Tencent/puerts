@@ -57,7 +57,7 @@ writeFileSync(
         join(workdir, 'vsauto.csproj'), 'utf-8'
     ).replace('</Project>', [definitions, linkUnitTests, linkPuerTS + '</Project>'].join('\n'))
 );
-exec(`dotnet build vsauto.csproj --silent`, { cwd: workdir })
+exec(`dotnet build vsauto.csproj -v minimal`, { cwd: workdir })
 
 
 program.option("--backend <backend>", "the JS backend will be used", "v8_9.4");
