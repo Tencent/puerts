@@ -58,23 +58,23 @@ jobs:
           npm i
           npx ts-node --esm general\run-test.mts --backend quickjs
           
-  # unittest-nodejs:
-  #   runs-on: windows-2019
+  unittest-nodejs:
+    runs-on: windows-2019
 
-  #   steps:
-  #     - uses: actions/setup-dotnet@v3
-  #       with:
-  #         dotnet-version: '6.x.x'
-  #     - uses: actions/checkout@v3
-  #     - name: Build
-  #       uses: ./.github/workflows/composites/unity-build-plugins/windows/
-  #       with:
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
-  #         backend: nodejs_16
-  #         config: Debug
-  #         arch: x64
-  #     - name: UnitTest
-  #       run: |
-  #         cd unity
-  #         npm i
-  #         npx ts-node --esm general\run-test.mts --backend nodejs_16
+    steps:
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x.x'
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          backend: nodejs_16
+          config: Debug
+          arch: x64
+      - name: UnitTest
+        run: |
+          cd unity
+          npm i
+          npx ts-node --esm general\run-test.mts --backend nodejs_16

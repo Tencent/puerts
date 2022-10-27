@@ -74,16 +74,8 @@ copyConfig.forEach((fileToCopy: string)=> {
     cp(fileToCopy, binPath + (ext == '.bundle' ? `/lib${basename(fileToCopy, ext)}.dylib`: ''));
 })
 if (process.platform == 'win32') {
-    cp(
-        join(dir, `../native_src/build_win_x64_${backend}_debug/RelWithDebInfo/puerts.dll`),
-        join(workdir, './bin/Debug/')
-    );
     process.exit(exec(`.\\testrunner\\nunit.consolerunner\\3.15.2\\tools\\nunit3-console.exe .\\bin\\Debug\\vsauto.dll`, { cwd: workdir }).code)
 } else {
-    cp(
-        join(dir, `../native_src/build_osx_${process.arch}_${backend}_debug/Debug/libpuerts.dylib`),
-        join(workdir, './bin/Debug/libpuerts.dylib')
-    );
     process.exit(exec(`dotnet run ./testrunner/nunit.consolerunner/3.15.2/tools/nunit3-console.exe ./bin/Debug/vsauto.dll`, { cwd: workdir }).code)
 }
 

@@ -7,6 +7,11 @@ namespace Puerts.UnitTest
     public class EvalTest
     {
         [Test]
+        public void ForceFail()
+        {
+            Assert.True(1 == 2);
+        }
+        [Test]
         public void EvalError()
         {
             var jsEnv = new JsEnv(new TxtLoader());
