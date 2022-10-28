@@ -67,7 +67,9 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
 bool DefaultJSModuleLoader::SearchModuleInDir(
     const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath)
 {
-    if (FPaths::GetExtension(RequiredModule) == TEXT(""))
+    FString Extension = FPaths::GetExtension(RequiredModule);
+    bool IsJs = Extension == TEXT("js") || Extension == TEXT("mjs");
+    if (Extension == TEXT("") || !IsJs)
     {
         return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
                SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
