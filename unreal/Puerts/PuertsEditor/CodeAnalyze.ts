@@ -1525,11 +1525,11 @@ function watch(configFilePath:string) {
 
     console.log("start watch..", JSON.stringify({fileNames:fileNames, options: options}));
     const versionsFilePath = getDirectoryPath(configFilePath) + "/ts_file_versions_info.json";
-    const fileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
+    const fileVersions: ts.MapLike<{ version: string, processed: boolean, isBP: boolean }> = {};
   
     let beginTime = new Date().getTime();
     fileNames.forEach(fileName => {
-      fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false};
+      fileVersions[fileName] = { version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false, isBP: false};
     });
     console.log ("calc md5 using " + (new Date().getTime() - beginTime) + "ms");
 
@@ -1616,7 +1616,7 @@ function watch(configFilePath:string) {
     let program = getProgramFromService();
     console.log ("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics =  ts.getPreEmitDiagnostics(program);
-    let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
+    let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean, isBP: boolean }> = {};
     var changed = false;
     if (customSystem.fileExists(versionsFilePath)) {
         try {
@@ -1631,18 +1631,15 @@ function watch(configFilePath:string) {
         logErrors(diagnostics);
     } else {
         function getClassPathInfo(sourceFilePath: string): {moduleFileName:string, modulePath:string} {
-            let emitOutput = service.getEmitOutput(sourceFilePath);
             let modulePath:string = undefined;
             let moduleFileName:string = undefined;
-            emitOutput.outputFiles.forEach(output => {
-                if (output.name.endsWith(".js")) {
-                    if (options.outDir && output.name.startsWith(options.outDir)) {
-                        moduleFileName = output.name.substr(options.outDir.length + 1);
-                        modulePath = getDirectoryPath(moduleFileName);
-                        moduleFileName = removeExtension(moduleFileName, ".js");
-                    }
+            if(sourceFilePath.endsWith(".ts")) {
+                if (options.baseUrl && sourceFilePath.startsWith(options.baseUrl)) {
+                    moduleFileName = sourceFilePath.substr(options.baseUrl.length + 1);
+                    modulePath = getDirectoryPath(moduleFileName);
+                    moduleFileName = removeExtension(moduleFileName, ".ts");
                 }
-            });
+            }
             return {moduleFileName, modulePath};
         }
         fileNames.forEach(fileName => {
@@ -1654,12 +1651,14 @@ function watch(configFilePath:string) {
             }
         });
         fileNames.forEach(fileName => {
+            if (!(fileName in restoredFileVersions)) return;
+            if (!restoredFileVersions[fileName].isBP) return;
             const {moduleFileName, modulePath} = getClassPathInfo(fileName);
             let BPExisted = false;
             if (moduleFileName) {
                 BPExisted = UE.PEBlueprintAsset.Existed(moduleFileName, modulePath);
             }
-            if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed || !BPExisted) {
+            if (restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed || !BPExisted) {
                 onSourceFileAddOrChange(fileName, false, program, false);
                 changed = true;
             } else {
@@ -1746,6 +1745,7 @@ function watch(configFilePath:string) {
             if (diagnostics.length > 0) {
                 logErrors(diagnostics);
             } else {
+                fileVersions[sourceFilePath].isBP = false;
                 if (!sourceFile.isDeclarationFile) {
                     let emitOutput = service.getEmitOutput(sourceFilePath);
                     
@@ -1816,6 +1816,7 @@ function watch(configFilePath:string) {
                         });
 
                         if (foundType && foundBaseTypeUClass) {
+                            fileVersions[sourceFilePath].isBP = true;
                             onBlueprintTypeAddOrChange(foundBaseTypeUClass, foundType, modulePath);
                         }
                     }
