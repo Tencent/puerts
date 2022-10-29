@@ -1746,6 +1746,7 @@ function watch(configFilePath:string) {
                 logErrors(diagnostics);
             } else {
                 fileVersions[sourceFilePath].isBP = false;
+                fileVersions[sourceFilePath].processed = true;
                 if (!sourceFile.isDeclarationFile) {
                     let emitOutput = service.getEmitOutput(sourceFilePath);
                     
@@ -1821,7 +1822,6 @@ function watch(configFilePath:string) {
                         }
                     }
                 }
-                fileVersions[sourceFilePath].processed = true;
             }
 
             function typeNameToString(node: ts.EntityName): string {
