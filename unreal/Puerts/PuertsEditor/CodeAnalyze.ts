@@ -1649,6 +1649,9 @@ function watch(configFilePath:string) {
             } else {
                 fileVersions[fileName].processed = true;
             }
+            if (fileName in restoredFileVersions) {
+                fileVersions[fileName].isBP = restoredFileVersions[fileName].isBP;
+            }
         });
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions)) return;
@@ -1745,7 +1748,9 @@ function watch(configFilePath:string) {
             if (diagnostics.length > 0) {
                 logErrors(diagnostics);
             } else {
-                fileVersions[sourceFilePath].isBP = false;
+                if (doEmitBP) {
+                    fileVersions[sourceFilePath].isBP = false;
+                }
                 fileVersions[sourceFilePath].processed = true;
                 if (!sourceFile.isDeclarationFile) {
                     let emitOutput = service.getEmitOutput(sourceFilePath);
