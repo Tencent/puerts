@@ -11,10 +11,10 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class GenTest
     {
+#if PUERTS_GENERAL
         [Test]
         public void GenericWrapper()
         {
-
             var jsEnv = new JsEnv(new TxtLoader());
             var wrapRender = jsEnv.ExecuteModule<Func<Editor.Generator.Wrapper.StaticWrapperInfo, string>>("puerts/templates/wrapper.tpl.mjs", "default");
             var genList = new List<Type>() { typeof(Dictionary<int, JsEnv>) };
@@ -146,5 +146,6 @@ namespace Puerts.UnitTest
                     .GetFriendlyName().Contains("ValueCollection")
             );
         }
+#endif
     }
 }

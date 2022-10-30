@@ -31,10 +31,6 @@ namespace Puerts.UnitTest
     [TestFixture]
     public class TimerTest
     {
-        [OneTimeSetUp]
-        public static void Init()
-        {
-        }
 
         public static int SetTimeoutTestNum;
         [Test]

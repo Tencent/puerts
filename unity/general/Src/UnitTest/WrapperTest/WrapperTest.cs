@@ -10,7 +10,7 @@ namespace Puerts.UnitTest
         public void PropertyTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             string ret = jsEnv.Eval<string>(@"
                 const i1 = CS.Puerts.UnitTest.WrapperTest.StaticProperty;
                 CS.Puerts.UnitTest.WrapperTest.StaticProperty = 'Puerts'
@@ -26,7 +26,7 @@ namespace Puerts.UnitTest
         public void GenericTest()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             Type secondGenericType = jsEnv.Eval<Type>(@"
                 const G1 = puerts.$generic(CS.Puerts.UnitTest.GenericGenTest$2, CS.System.Type, CS.System.Type);
                 (new G1).GetGeneric2();
@@ -41,7 +41,7 @@ namespace Puerts.UnitTest
         public void GenericTest2()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             Type secondGenericType = jsEnv.Eval<Type>(@"
                 const G1 = new CS.Puerts.UnitTest.GenericGenTest2();
                 G1.GetTypeTest('');
@@ -56,7 +56,7 @@ namespace Puerts.UnitTest
         public void GenericTest3()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             Type secondGenericType = jsEnv.Eval<Type>(@"
                 CS.Puerts.UnitTest.GenericGenTest2.GetGenericType();
             ");

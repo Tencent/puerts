@@ -649,7 +649,7 @@ namespace Puerts.UnitTest.TranslatorTest
         public void AmbigiousCallTestStatic()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int res = jsEnv.Eval<int>(@"
                 CS.Puerts.UnitTest.AmbigiousCallTest.PlaySound('haha');
             ");
@@ -672,7 +672,7 @@ namespace Puerts.UnitTest.TranslatorTest
         public void ParamsCallTestStatic()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             string res = jsEnv.Eval<string>(@"
                 CS.Puerts.UnitTest.ParamsCallTest.CombinePath('a', 'b', 'c');
             ");

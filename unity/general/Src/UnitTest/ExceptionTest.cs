@@ -130,7 +130,7 @@ namespace Puerts.UnitTest
         public void JsEnvCreateFailedException()
         {
             var loader = new TxtLoader();
-            loader.AddMockFileContent("puerts/polyfill.mjs", @" throw new Error('expected exception') ");
+            loader.AddMockFileContent("puerts/events.mjs", @" throw new Error('expected exception') ");
             JsEnv env = null;
             var oldEnvList = JsEnv.jsEnvs;
             JsEnv.jsEnvs = new System.Collections.Generic.List<JsEnv>();

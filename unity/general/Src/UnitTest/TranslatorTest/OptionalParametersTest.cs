@@ -9,7 +9,7 @@ namespace Puerts.UnitTest
         public void WarpTest1()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test(1,3);
@@ -21,7 +21,7 @@ namespace Puerts.UnitTest
         public void WarpTest2()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test('1',3);
@@ -33,7 +33,7 @@ namespace Puerts.UnitTest
         public void WarpTest3()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test('1');
@@ -45,7 +45,7 @@ namespace Puerts.UnitTest
         public void WarpTest4()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test(6,6,6);
@@ -57,7 +57,7 @@ namespace Puerts.UnitTest
         public void WarpTest5()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test2('1',100);
@@ -70,7 +70,7 @@ namespace Puerts.UnitTest
         public void WarpTest6()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test2('1');
@@ -82,7 +82,7 @@ namespace Puerts.UnitTest
         public void WarpTest7()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
 
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
@@ -96,7 +96,7 @@ namespace Puerts.UnitTest
         public void WarpTest8()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.Test5('1', 1, false);
@@ -110,7 +110,7 @@ namespace Puerts.UnitTest
         public void WarpTest9()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                 const CS = require('csharp');
                 let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
@@ -126,7 +126,7 @@ namespace Puerts.UnitTest
         public void WarpTest10()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                let ret = 0;                
@@ -141,7 +141,7 @@ namespace Puerts.UnitTest
         public void WarpTest11()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                let ret = 0;                
@@ -156,7 +156,7 @@ namespace Puerts.UnitTest
         public void WarpTest12()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             int ret = jsEnv.Eval<int>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                let ret = 0;                
@@ -170,7 +170,7 @@ namespace Puerts.UnitTest
         public void WarpTest14()
         {
             var jsEnv = new JsEnv(new TxtLoader());
-            PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv);
+            Utils.RegisterStaticWrapper(jsEnv);
             string ret = jsEnv.Eval<string>(@"
                let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                temp.TestFilter('world');

@@ -84,4 +84,26 @@ namespace Puerts.UnitTest
             return new MultiEnvTestB(3);
         }
     }
+
+    public class Utils {
+
+        public static void RegisterStaticWrapper(JsEnv env) 
+        {
+            const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.AutoStaticCodeRegister";
+            var autoRegister = Type.GetType(AutoStaticCodeRegisterClassName, false);
+            if (autoRegister == null)
+            {
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    autoRegister = assembly.GetType(AutoStaticCodeRegisterClassName, false);
+                    if (autoRegister != null) break;
+                }
+            }
+            if (autoRegister != null)
+            {
+                var methodInfoOfRegister = autoRegister.GetMethod("Register");
+                methodInfoOfRegister.Invoke(null, new object[] { env });
+            }
+        }
+    }
 }
