@@ -1263,6 +1263,9 @@ function watch(configFilePath) {
             else {
                 fileVersions[fileName].processed = true;
             }
+            if (fileName in restoredFileVersions) {
+                fileVersions[fileName].isBP = restoredFileVersions[fileName].isBP;
+            }
         });
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions))
@@ -1353,7 +1356,10 @@ function watch(configFilePath) {
                 logErrors(diagnostics);
             }
             else {
-                fileVersions[sourceFilePath].isBP = false;
+                if (doEmitBP) {
+                    fileVersions[sourceFilePath].isBP = false;
+                }
+                fileVersions[sourceFilePath].processed = true;
                 if (!sourceFile.isDeclarationFile) {
                     let emitOutput = service.getEmitOutput(sourceFilePath);
                     if (!emitOutput.emitSkipped) {
@@ -1424,7 +1430,6 @@ function watch(configFilePath) {
                         }
                     }
                 }
-                fileVersions[sourceFilePath].processed = true;
             }
             function typeNameToString(node) {
                 if (ts.isIdentifier(node)) {
