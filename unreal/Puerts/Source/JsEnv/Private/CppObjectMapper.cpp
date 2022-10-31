@@ -139,6 +139,8 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             if (ClassDefinition->Initialize)
                 Ptr = ClassDefinition->Initialize(Info);
+            if (Ptr == nullptr)
+                return;
         }
         DataTransfer::IsolateData<ICppObjectMapper>(Isolate)->BindCppObject(Isolate, ClassDefinition, Ptr, Self, PassByPointer);
     }
