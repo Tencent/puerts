@@ -327,6 +327,15 @@ void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
     return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
 }
 
+const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    if (value.IsEmpty() || !value->IsObject())
+        return nullptr;
+    return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>(), 1);
+}
+
 bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -609,13 +618,17 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
 }
 
-pesapi_value pesapi_eval(pesapi_env env, const char* code, const char* path)
+pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto isolate = context->GetIsolate();
     v8::Local<v8::String> url =
         v8::String::NewFromUtf8(isolate, path == nullptr ? "" : path, v8::NewStringType::kNormal).ToLocalChecked();
-    v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, code, v8::NewStringType::kNormal).ToLocalChecked();
+    std::vector<char> buff;
+    buff.reserve(code_size + 1);
+    memcpy(buff.data(), code, code_size);
+    buff[code_size] = '\0';
+    v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, buff.data(), v8::NewStringType::kNormal).ToLocalChecked();
     v8::ScriptOrigin origin(url);
 
     auto CompiledScript = v8::Script::Compile(context, source, &origin);

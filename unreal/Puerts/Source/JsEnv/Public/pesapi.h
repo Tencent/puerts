@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 4
+#define PESAPI_VERSION 5
 
 #define PESAPI_EXTERN
 
@@ -148,6 +148,7 @@ PESAPI_EXTERN bool pesapi_is_binary(pesapi_env env, pesapi_value value);
 
 PESAPI_EXTERN pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy);
 PESAPI_EXTERN void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value value);
 
 PESAPI_EXTERN pesapi_value pesapi_create_ref(pesapi_env env, pesapi_value value);
@@ -189,7 +190,7 @@ PESAPI_EXTERN void pesapi_set_property_uint32(pesapi_env env, pesapi_value objec
 PESAPI_EXTERN pesapi_value pesapi_call_function(
     pesapi_env env, pesapi_value func, pesapi_value this_object, int argc, const pesapi_value argv[]);
 
-PESAPI_EXTERN pesapi_value pesapi_eval(pesapi_env env, const char* code, const char* path);
+PESAPI_EXTERN pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path);
 
 PESAPI_EXTERN pesapi_type_info pesapi_alloc_type_infos(size_t count);
 
