@@ -139,11 +139,12 @@ elseif ( ANDROID )
         ${log-lib}
     )
 
-    if( ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(BACKEND_LIB_NAMES "-Wl,--whole-archive$<SEMICOLON>${BACKEND_LIB_NAMES}$<SEMICOLON>-Wl,--no-whole-archive")
+    if ( ANDROID_ABI STREQUAL "armeabi-v7a")
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM)
 
-    else ()
+    elseif ( ANDROID_ABI STREQUAL "arm64-v8a")
         # link
         target_link_libraries(puerts
             ${log-lib}
@@ -151,6 +152,9 @@ elseif ( ANDROID )
         
         # definition
         target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_ARM64)
+    else ()
+
+        target_compile_definitions (puerts PRIVATE PLATFORM_ANDROID_x64)
     endif ()
 
     #set_target_properties( puerts PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)

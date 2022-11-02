@@ -8,7 +8,8 @@
         },
         "android": {
             "armv7": ["/Lib/Android/armeabi-v7a/libquickjs.a"],
-            "arm64": ["/Lib/Android/arm64-v8a/libquickjs.a"]
+            "arm64": ["/Lib/Android/arm64-v8a/libquickjs.a"],
+            "x64": ["/Lib/Android/x86_64/libquickjs.a"]
         },
         "osx": {
             "x64": ["/Lib/macOS/libquickjs.a"],
@@ -27,4 +28,4 @@
             "arm64": ["/Lib/iOS/arm64/libquickjs.a"]
         }
     }
-}
+}   
