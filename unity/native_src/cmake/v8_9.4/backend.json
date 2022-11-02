@@ -7,7 +7,8 @@
         },
         "android": {
             "armv7": ["/Lib/Android/armeabi-v7a/libwee8.a"],
-            "arm64": ["/Lib/Android/arm64-v8a/libwee8.a"]
+            "arm64": ["/Lib/Android/arm64-v8a/libwee8.a"],
+            "x64": ["/Lib/Android/x64/libwee8.a"]
         },
         "osx": {
             "x64": ["/Lib/macOS/libwee8.a"],
