@@ -81,13 +81,19 @@ void FReactDeclarationGenerator::End()
 
 void FReactDeclarationGenerator::GenReactDeclaration()
 {
-    RefFromOuter = true;
     FString Components = TEXT("exports.lazyloadComponents = {};\n");
     Output << "declare module \"react-umg\" {\n";
     Output << "    "
            << "import * as React from 'react';\n    import * as UE from 'ue';\n    import * as cpp from 'cpp';\n    type TArray<T> "
               "= UE.TArray<T>;\n    type "
               "TSet<T> = UE.TSet<T>;\n    type TMap<TKey, TValue> = UE.TMap<TKey, TValue>;\n\n";
+
+    Output << "    type RecursivePartial<T> = {\n"
+           << "        [P in keyof T]?:\n"
+           << "        T[P] extends (infer U)[] ? RecursivePartial<U>[] :\n"
+           << "        T[P] extends object ? RecursivePartial<T[P]> :\n"
+           << "        T[P];\n"
+           << "    };\n\n";
 
     for (TObjectIterator<UClass> It; It; ++It)
     {
@@ -211,9 +217,17 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
         {
             continue;
         }
+        if (CastFieldMacro<StructPropertyMacro>(Property))
+        {
+            TmpBuff << "RecursivePartial<";
+        }
         if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp, false, true))
         {
             continue;
+        }
+        if (CastFieldMacro<StructPropertyMacro>(Property))
+        {
+            TmpBuff << ">";
         }
         for (auto Type : RefTypesTmp)
         {
@@ -230,7 +244,7 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
         StringBuffer << "    "
                      << "class " << SafeName(Class->GetName()) << " extends React.Component<" << SafeName(Class->GetName())
                      << "Props> {\n"
-                     << "        nativePtr: UE." << GetNameWithNamespace(Class) << ";\n    }\n\n";
+                     << "        nativePtr: " << GetNameWithNamespace(Class) << ";\n    }\n\n";
     }
 
     Output << StringBuffer;
@@ -238,51 +252,10 @@ void FReactDeclarationGenerator::GenClass(UClass* Class)
 
 void FReactDeclarationGenerator::GenStruct(UStruct* Struct)
 {
-    FStringBuffer StringBuffer{"", ""};
-    StringBuffer << "    "
-                 << "interface " << SafeName(Struct->GetName());
-
-    auto Super = Struct->GetSuperStruct();
-
-    if (Super)
-    {
-        Gen(Super);
-        StringBuffer << " extends " << SafeName(Super->GetName());
-    }
-
-    StringBuffer << " {\n";
-
-    for (TFieldIterator<PropertyMacro> PropertyIt(Struct, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
-    {
-        auto Property = *PropertyIt;
-        if (Property->IsA<DelegatePropertyMacro>() || Property->IsA<MulticastDelegatePropertyMacro>())
-            continue;
-        if (!IsReactSupportProperty(Property))
-            continue;
-        FStringBuffer TmpBuff;
-        TmpBuff << "    " << SafeName(Property->GetName()) << "?: ";
-        TArray<UObject*> RefTypesTmp;
-        if (!GenTypeDecl(TmpBuff, Property, RefTypesTmp))
-        {
-            continue;
-        }
-        for (auto Type : RefTypesTmp)
-        {
-            Gen(Type);
-        }
-        StringBuffer << "    " << TmpBuff.Buffer << ";\n";
-    }
-
-    StringBuffer << "    "
-                 << "}\n\n";
-
-    Output << StringBuffer;
 }
 
 void FReactDeclarationGenerator::GenEnum(UEnum* Enum)
 {
-    Output << "    "
-           << "type " << SafeName(Enum->GetName()) << " = UE." << GetNameWithNamespace(Enum) << ";\n";
 }
 
 //--- FSlotDeclarationGenerator end ---
