@@ -18,7 +18,7 @@ namespace Puerts.Editor
             public static Dictionary<string, List<KeyValuePair<object, int>>> configure;
             public static List<Type> genTypes;
 
-            public static void ExportDTS(string saveTo, ILoader loader = null, bool esmMode = false)
+            public static void ExportDTS(string saveTo, ILoader loader = null, bool csharpModuleWillGen = false)
             {
                 if (Utils.filters == null)
                 {
@@ -54,7 +54,7 @@ namespace Puerts.Editor
                     var typingRender = jsEnv.ExecuteModule<Func<DTS.TypingGenInfo, bool, string>>("puerts/templates/dts.tpl.mjs", "default");
                     using (StreamWriter textWriter = new StreamWriter(saveTo + "Typing/csharp/index.d.ts", false, Encoding.UTF8))
                     {
-                        string fileContext = typingRender(DTS.TypingGenInfo.FromTypes(tsTypes), esmMode);
+                        string fileContext = typingRender(DTS.TypingGenInfo.FromTypes(tsTypes), csharpModuleWillGen);
                         textWriter.Write(fileContext);
                         textWriter.Flush();
                     }

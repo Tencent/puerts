@@ -12,7 +12,7 @@
  * @param {DTS.TypingGenInfo} data 
  * @returns 
  */
- export default function TypingTemplate(data) {
+ export default function TypingTemplate(data, csharpModuleWillGen) {
     
     let ret = '';
     function _es6tplJoin(str, ...values) {
@@ -202,12 +202,18 @@
     })
     
     t.indent = 0;
-    t`
+    if (csharpModuleWillGen) {
+        t`
+        }
+        declare module 'csharp' {
+            export = CS;
+        }
+        `
+    } else {
+        t`
+        }
+        `;
     }
-    declare module 'csharp' {
-        export = CS;
-    }
-    `
 
     return ret.replace(/\n(\s*)\n/g, '\n');
 };
