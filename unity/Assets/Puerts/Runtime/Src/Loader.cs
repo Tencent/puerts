@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+
 using System.Net.Mime;
 #if PUERTS_GENERAL || UNITY_EDITOR
 using System.IO;
@@ -77,3 +79,5 @@ namespace Puerts
         }
     }
 }
+
+#endif

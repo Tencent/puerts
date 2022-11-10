@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+
 using System;
 
 namespace Puerts
@@ -370,3 +372,6 @@ namespace Puerts
         }
     }
 }
+
+#endif
+

@@ -5,6 +5,8 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -60,3 +62,5 @@ namespace Puerts
         public List<LazyMemberRegisterInfo> LazyMembers;
     }
 }
+
+#endif
