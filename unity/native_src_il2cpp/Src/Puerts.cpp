@@ -193,7 +193,7 @@ static void* JsValueToCSRef(v8::Local<v8::Context> context, v8::Local<v8::Value>
 }
 
 //type != typeof(object) && !type.IsValueType 
-static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
+inline static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
 {
     if (!Obj)
     {
@@ -206,7 +206,7 @@ static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Local<v8::C
 }
 
 //type == typeof(object)
-static v8::Local<v8::Value> CSAnyToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
+inline static v8::Local<v8::Value> CSAnyToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
 {
     pesapi_value jsVal = GUnityExports.TryTranslatePrimitive(*Context, Obj);
     
@@ -230,6 +230,41 @@ inline static v8::Local<v8::Value> CopyValueType(v8::Isolate* Isolate, v8::Local
 inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
 {
     return puerts::DataTransfer::GetPointerFast<void>(Obj, 1);
+}
+
+inline static bool IsAssignableFrom(void* typeId, void* typeId2)
+{
+    return GUnityExports.IsAssignableFrom(typeId, typeId2);
+}
+
+inline static void* IsInst(void * obj, void* typeId)
+{
+    return GUnityExports.IsInst(obj, typeId);
+}
+
+inline static void FieldGet(void *obj, void *fieldInfo, size_t offset, void *value)
+{
+    GUnityExports.FieldGet(obj, fieldInfo, offset, value);
+}
+
+inline static void FieldSet(void *obj, void *fieldInfo, size_t offset, void *value)
+{
+    GUnityExports.FieldSet(obj, fieldInfo, offset, value);
+}
+
+inline static void* GetValueTypeFieldPtr(void *obj, void *fieldInfo, size_t offset)
+{
+    return GUnityExports.GetValueTypeFieldPtr(obj, fieldInfo, offset);
+}
+
+inline static void ThrowInvalidOperationException(const char* msg)
+{
+    GUnityExports.ThrowInvalidOperationException(msg);
+}
+
+inline static void* CStringToCSharpString(const char* str)
+{
+    return GUnityExports.CStringToCSharpString(str);
 }
 
 static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)

@@ -29,7 +29,7 @@ static int32_t b_i4i4i4(void* object, int32_t p1, int32_t p2, void* method)
     PersistentObjectInfo* delegateInfo = GetObjectData(object, PersistentObjectInfo);
     if (delegateInfo->JsEnvLifeCycleTracker.expired())
     {
-        GUnityExports.ThrowInvalidOperationException("JsEnv had been destroy");
+        ThrowInvalidOperationException("JsEnv had been destroy");
         return {};
     }
     //PLog("p1=%d, p2=%d", p1, p2);
@@ -48,7 +48,7 @@ static int32_t b_i4i4i4(void* object, int32_t p1, int32_t p2, void* method)
     if (TryCatch.HasCaught())
     {
         auto msg = DataTransfer::ExceptionToString(Isolate, TryCatch.Exception());
-        GUnityExports.ThrowInvalidOperationException(msg.c_str());
+        ThrowInvalidOperationException(msg.c_str());
         return {};
     }
 
@@ -335,6 +335,7 @@ static bool w_s_r4r4r4r4_(void* method, MethodPointer methodPointer, const v8::F
     //void* buff = ab->GetBackingStore()->Data();
     //uint8_t* buff = new uint8_t[sizeof(obj)]; // puerts VecRet using 4481
     
+    //仅用来对比测试
     void* buff =  GUnityExports.ObjectAllocate(klass); //TODO: allc by jsenv
     
     memcpy(buff, &obj, sizeof(obj));
@@ -354,7 +355,7 @@ static bool w_os(void* method, MethodPointer methodPointer, const v8::FunctionCa
     
     v8::String::Utf8Value s(Isolate, Info[0]);
     
-    auto p1 = GUnityExports.CStringToCSharpString(*s);
+    auto p1 = CStringToCSharpString(*s);
     
     typedef void* (*NativeFuncPtr)(void* p, const void* method);
     
@@ -372,7 +373,7 @@ static bool w_ots(void* method, MethodPointer methodPointer, const v8::FunctionC
     
     auto This = puerts::DataTransfer::GetPointerFast<void>(Info.Holder());
     
-    auto p1 = GUnityExports.CStringToCSharpString(*s);
+    auto p1 = CStringToCSharpString(*s);
     
     typedef void* (*NativeFuncPtr)(void* ___this, void* p, const void* method);
     
@@ -510,7 +511,7 @@ static void ifg_ti4(const v8::FunctionCallbackInfo<v8::Value>& info, void* field
     int32_t __ret;
     
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
-    GUnityExports.FieldGet(__this, fieldInfo, offset, &__ret);
+    FieldGet(__this, fieldInfo, offset, &__ret);
     
     info.GetReturnValue().Set(__ret);
 }
@@ -521,14 +522,14 @@ static void ifs_ti4(const v8::FunctionCallbackInfo<v8::Value>& info, void* field
     
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
     auto __p1 = info[0]->Int32Value(context).ToChecked();
-    GUnityExports.FieldSet(__this, fieldInfo, offset, &__p1);
+    FieldSet(__this, fieldInfo, offset, &__p1);
 }
 
 static void ifg_tr4(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo) {
     float __ret;
     
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
-    GUnityExports.FieldGet(__this, fieldInfo, offset, &__ret);
+    FieldGet(__this, fieldInfo, offset, &__ret);
     
     //PLog("get float %p %d %f", __this, offset, __ret);
     
@@ -542,7 +543,7 @@ static void ifs_tr4(const v8::FunctionCallbackInfo<v8::Value>& info, void* field
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
     auto __p1 = (float)info[0]->NumberValue(context).ToChecked();
     //PLog("set float %p %d %f", __this, offset, __p1);
-    GUnityExports.FieldSet(__this, fieldInfo, offset, &__p1);
+    FieldSet(__this, fieldInfo, offset, &__p1);
 }
 
 static void ifg_ts_r4r4r4_(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo) {
@@ -563,14 +564,14 @@ static void ifs_ts_r4r4r4_(const v8::FunctionCallbackInfo<v8::Value>& info, void
     
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
     auto __p1 = puerts::DataTransfer::GetPointerFast<s_r4r4r4_>(info[0]->ToObject(context).ToLocalChecked());
-    GUnityExports.FieldSet(__this, fieldInfo, offset, __p1);
+    FieldSet(__this, fieldInfo, offset, __p1);
 }
 
 static void ifg_s_r4r4r4_(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo) {
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     
-    auto ptr = GUnityExports.GetValueTypeFieldPtr(nullptr, fieldInfo, offset);
+    auto ptr = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);
     auto ret = DataTransfer::FindOrAddCData(isolate, context, typeInfo, ptr, true);
 
     info.GetReturnValue().Set(ret);
@@ -581,13 +582,13 @@ static void ifs_s_r4r4r4_(const v8::FunctionCallbackInfo<v8::Value>& info, void*
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     
     auto __p1 = puerts::DataTransfer::GetPointerFast<s_r4r4r4_>(info[0]->ToObject(context).ToLocalChecked());
-    GUnityExports.FieldSet(nullptr, fieldInfo, offset, __p1);
+    FieldSet(nullptr, fieldInfo, offset, __p1);
 }
 
 static void ifg_r4(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo) {
     float __ret;
     
-    GUnityExports.FieldGet(nullptr, fieldInfo, offset, &__ret);
+    FieldGet(nullptr, fieldInfo, offset, &__ret);
     
     //PLog("get float %p %d %f", __this, offset, __ret);
     
@@ -600,7 +601,7 @@ static void ifs_r4(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldI
     
     auto __p1 = (float)info[0]->NumberValue(context).ToChecked();
     //PLog("set float %p %d %f", __this, offset, __p1);
-    GUnityExports.FieldSet(nullptr, fieldInfo, offset, &__p1);
+    FieldSet(nullptr, fieldInfo, offset, &__p1);
 }
 
 static void ifg_to(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo) {
@@ -609,7 +610,7 @@ static void ifg_to(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldI
     
     void* obj;
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
-    GUnityExports.FieldGet(__this, fieldInfo, offset, &obj);
+    FieldGet(__this, fieldInfo, offset, &obj);
     
     void* klass = *reinterpret_cast<void**>(obj);
     
@@ -624,7 +625,7 @@ static void ifs_to(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldI
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
     auto __p1 = puerts::DataTransfer::GetPointerFast<void>(info[0]->ToObject(context).ToLocalChecked());
     //PLog("set float %p %d %f", __this, offset, __p1);
-    GUnityExports.FieldSet(__this, fieldInfo, offset, &__p1);
+    FieldSet(__this, fieldInfo, offset, &__p1);
 }
 
 static FieldWrapFuncInfo g_fieldWrapFuncInfos[] = {
