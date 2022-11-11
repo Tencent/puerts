@@ -1,0 +1,31 @@
+{
+    "definition": ["WITH_QUICKJS", "WITHOUT_INSPECTOR"],
+    "include": ["/Inc"],
+    "link": {
+        "win": {
+            "ia32": ["/Lib/Win32/quickjs.dll.lib"],
+            "x64": ["/Lib/Win64/quickjs.dll.lib"]
+        },
+        "android": {
+            "armv7": ["/Lib/Android/armeabi-v7a/libquickjs.a"],
+            "arm64": ["/Lib/Android/arm64-v8a/libquickjs.a"],
+            "x64": ["/Lib/Android/x86_64/libquickjs.a"]
+        },
+        "osx": {
+            "x64": ["/Lib/macOS/libquickjs.a"],
+            "arm64": ["/Lib/macOS_arm64/libquickjs.a"]
+        },
+        "linux": {
+            "x64": ["/Lib/Linux/libquickjs.a"]
+        }
+    },
+    "copy": {
+        "win": {
+            "ia32": ["/Lib/Win32/*.dll"],
+            "x64": ["/Lib/Win64/*.dll"]
+        },
+        "ios": {
+            "arm64": ["/Lib/iOS/arm64/libquickjs.a"]
+        }
+    }
+}   

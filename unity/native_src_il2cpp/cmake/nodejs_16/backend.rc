@@ -1,0 +1,4 @@
+BACKEND_ARTIFACT_NAME=nodejs_bin
+BACKEND_ARTIFACT_WORKFLOW=build_16.yml
+BACKEND_ARTIFACT_REPO=puerts/backend-nodejs
+BACKEND_URL=https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_0923_withssl/nodejs_bin_16.16.0.tgz
