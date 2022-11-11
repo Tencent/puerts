@@ -108,163 +108,6 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetObjectToGlobal(IntPtr jsEnv, string key, IntPtr objPtr);
 
-        public static string GetValueTypeFieldsSignature(Type type)
-        {
-            if (!type.IsValueType)
-            {
-                throw new Exception(type + " is not a valuetype");
-            }
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            if (type.BaseType.IsValueType)
-            {
-                sb.Append(GetValueTypeFieldsSignature(type.BaseType));
-            }
-            foreach(var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-                sb.Append((field.FieldType.IsValueType && !field.FieldType.IsPrimitive) ? GetValueTypeFieldsSignature(field.FieldType) : GetTypeSignature(field.FieldType));
-            }
-            return sb.ToString();
-        }
-
-        public static string GetTypeSignature(Type type)
-        {
-            if (type == typeof(void))
-            {
-                return "v";
-            }
-            else if (type == typeof(bool))
-            {
-                return "b";
-            }
-            else if (type == typeof(byte))
-            {
-                return "u1";
-            }
-            else if (type == typeof(sbyte))
-            {
-                return "i1";
-            }
-            else if (type == typeof(short))
-            {
-                return "i2";
-            }
-            else if (type == typeof(ushort))
-            {
-                return "u2";
-            }
-            else if (type == typeof(int))
-            {
-                return "i4";
-            }
-            else if (type == typeof(uint))
-            {
-                return "u4";
-            }
-            else if (type == typeof(long))
-            {
-                return "i8";
-            }
-            else if (type == typeof(ulong))
-            {
-                return "u8";
-            }
-            else if (type == typeof(char))
-            {
-                return "c";
-            }
-            else if (type == typeof(double))
-            {
-                return "r8";
-            }
-            else if (type == typeof(float))
-            {
-                return "r4";
-            }
-            else if (type == typeof(IntPtr) || type == typeof(UIntPtr))
-            {
-                return "p";
-            }
-            else if (type == typeof(DateTime)) //是否要支持？
-            {
-                return "d";
-            }
-            else if (type == typeof(string))
-            {
-                return "s";
-            }
-            else if (type == typeof(object)) //object特殊处理，比如check可以不用判断，比如return可以优化
-            {
-                return "O";
-            }
-            else if (type.IsByRef || type.IsPointer)
-            {
-                return "P" + GetTypeSignature(type.GetElementType());
-            }
-            //TODO: ArrayBuffer...
-            else if (!type.IsValueType)
-            {
-                return "o";
-            }
-            else if (type.IsValueType && !type.IsPrimitive)
-            {
-                //return "s" + Marshal.SizeOf(type);
-                return "s_" + GetValueTypeFieldsSignature(type) + "_" ;
-            }
-            throw new NotSupportedException("no support type: " + type);
-        }
-
-        public static string GetParamerterSignature(ParameterInfo parameterInfo)
-        {
-            return GetTypeSignature(parameterInfo.ParameterType);
-        }
-
-        public static string GetMethodSignature(MethodBase methodBase, bool isDelegateInvoke = false)
-        {
-            string signature = "";
-            if (methodBase is ConstructorInfo)
-            {
-                signature += "vt";
-                var constructorInfo = methodBase as ConstructorInfo;
-                foreach(var p in constructorInfo.GetParameters())
-                {
-                    signature += GetParamerterSignature(p);
-                }
-
-            }
-            else if (methodBase is MethodInfo)
-            {
-                var methodInfo = methodBase as MethodInfo;
-                signature += GetTypeSignature(methodInfo.ReturnType);
-                if (!methodInfo.IsStatic && !isDelegateInvoke) signature += methodBase.DeclaringType == typeof(object) ? "T" : "t";
-                foreach (var p in methodInfo.GetParameters())
-                {
-                    signature += GetParamerterSignature(p);
-                }
-
-            }
-            return signature;
-        }
-
-        static bool TypeInfoPassToJsFilter(Type type)
-        {
-            return type != typeof(void) && !type.IsPrimitive;
-        }
-
-        static List<Type> getUsedTypes(MethodBase methodBase)
-        {
-            List<Type> types = new List<Type>();
-            if (methodBase is MethodInfo)
-            {
-                var returnType = (methodBase as MethodInfo).ReturnType;
-                if (TypeInfoPassToJsFilter(returnType))
-                {
-                    types.Add(returnType);
-                }
-            }
-            types.AddRange(methodBase.GetParameters().Select(m => m.ParameterType.IsByRef ? m.ParameterType.GetElementType() : m.ParameterType).Where(TypeInfoPassToJsFilter));
-            return types;
-        }
-
         //call by native, do no throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {
@@ -301,7 +144,7 @@ namespace PuertsIl2cpp
                 var typeId = GetTypeId(type);
                 //UnityEngine.Debug.Log(string.Format("{0} typeId is {1}", type, typeId));
                 var superTypeId = (isDelegate || type == typeof(object) || type.BaseType == null) ? IntPtr.Zero : GetTypeId(type.BaseType);
-                typeInfo = CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? GetMethodSignature(type.GetMethod("Invoke"), true) : "");
+                typeInfo = CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
                 if (typeInfo == IntPtr.Zero)
                 {
                     throw new Exception(string.Format("create TypeInfo for {0} fail", type));
@@ -312,19 +155,19 @@ namespace PuertsIl2cpp
                     {
                         foreach (var ctor in ctors)
                         {
-                            List<Type> usedTypes = getUsedTypes(ctor);
+                            List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
                             //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
-                            var wrapData = AddConstructor(typeInfo, GetMethodSignature(ctor), GetMethodInfoPointer(ctor), GetMethodPointer(ctor), usedTypes.Count);
+                            var wrapData = AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), GetMethodInfoPointer(ctor), GetMethodPointer(ctor), usedTypes.Count);
                             if (wrapData == IntPtr.Zero)
                             {
                                 if (!throwIfMemberFail)
                                 {
 #if WARNING_IF_MEMBERFAIL
-                                    UnityEngine.Debug.LogWarning(string.Format("add constructor for {0} fail, signature:{1}", type, GetMethodSignature(ctor)));
+                                    UnityEngine.Debug.LogWarning(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor)));
 #endif
                                     continue;
                                 }
-                                throw new Exception(string.Format("add constructor for {0} fail, signature:{1}", type, GetMethodSignature(ctor)));
+                                throw new Exception(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor)));
                             }
                             for (int i = 0; i < usedTypes.Count; ++i)
                             {
@@ -337,19 +180,19 @@ namespace PuertsIl2cpp
 
                     Action<string, MethodInfo, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter) =>
                     {
-                        List<Type> usedTypes = getUsedTypes(method);
+                        List<Type> usedTypes = TypeUtils.GetUsedTypes(method);
                         //UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
-                        var wrapData = AddMethod(typeInfo, GetMethodSignature(method), name, method.IsStatic, isGeter, isSetter, GetMethodInfoPointer(method), GetMethodPointer(method), usedTypes.Count);
+                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method), name, method.IsStatic, isGeter, isSetter, GetMethodInfoPointer(method), GetMethodPointer(method), usedTypes.Count);
                         if (wrapData == IntPtr.Zero)
                         {
                             if (throwIfMemberFail)
                             {
-                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, GetMethodSignature(method)));
+                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method)));
                             }
                             else
                             {
 #if WARNING_IF_MEMBERFAIL
-                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, GetMethodSignature(method)));
+                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method)));
 #endif
                                 return;
                             }
@@ -391,7 +234,7 @@ namespace PuertsIl2cpp
                     {
                         foreach (var field in fields)
                         {
-                            string sig = (field.IsStatic ? "" : "t") + GetTypeSignature(field.FieldType);
+                            string sig = (field.IsStatic ? "" : "t") + TypeUtils.GetTypeSignature(field.FieldType);
                             if (!AddField(typeInfo, sig, field.Name, field.IsStatic, GetFieldInfoPointer(field), GetFieldOffset(field, type.IsValueType), GetTypeId(field.FieldType)))
                             {
                                 if (!throwIfMemberFail)

@@ -51,7 +51,7 @@ namespace Puerts
 
         public Type GetTypeByString(string className)
         {
-            return TypeUtils.GetType(className);
+            return PuertsIl2cpp.TypeUtils.GetType(className);
         }
 
         public void Eval(string chunk, string chunkName = "chunk")
