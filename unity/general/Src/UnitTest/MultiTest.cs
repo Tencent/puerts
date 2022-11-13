@@ -148,5 +148,39 @@ namespace Puerts.UnitTest
             
             Assert.True(true);
         }
+        
+#if UNITY_EDITOR
+        [Test]
+        public void MultiEnvInMultiThread() {
+            var env1 = new JsEnv(new TxtLoader());
+
+            var task = new Task<string>(() =>
+            {
+                try
+                {
+                    var env2 = new JsEnv(new TxtLoader());
+                    string hello1 = env2.Eval<string>(@"
+                        (function() {
+                            return 'hello world';
+                        })();
+                    ");
+                    return hello1;
+                }
+                catch (Exception e)
+                {
+                    return e.Message;
+                }
+            });
+            task.Start();
+            string hello = env1.Eval<string>(@"
+                (function() {
+                    return 'hello world';
+                })();
+            ");
+            Assert.AreEqual(hello, "hello world");
+            while(!task.IsCompleted) { }
+            Assert.AreEqual(task.Result, "hello world");
+        }
+#endif
     }
 }
