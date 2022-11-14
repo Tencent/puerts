@@ -1,8 +1,12 @@
 import { existsSync, readFileSync } from "fs";
 import { cd, cp, exec, mkdir, mv, setWinCMDEncodingToUTF8 } from "@puerts/shell-util"
-import { join } from "path";
+import { join, normalize } from "path";
 import assert from "assert";
 import downloadBackend from "./backend.mjs";
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
+
+const glob = createRequire(fileURLToPath(import.meta.url))('glob');
 
 setWinCMDEncodingToUTF8();
 
@@ -182,10 +186,17 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     );
     if (!(outputFile instanceof Array)) outputFile = [outputFile];
     const copyConfig = (BackendConfig['copy-libraries'][options.platform]?.[options.arch] || [])
-        .map((pathToBackend: string) => join(cwd, options.backend, pathToBackend))
+        .map((pathToBackend: string) => join(cwd, '.backends', options.backend, pathToBackend))
         .concat(outputFile);
 
     copyConfig?.forEach((filepath: string) => {
+        if (
+            process.platform == "win32" ? 
+            !glob.sync(normalize(filepath).replace(/\\/g, "/")).length :
+            !glob.sync(normalize(filepath)).length
+        ) {
+            throw new Error("copy failed:" + normalize(filepath));
+        }
         cp(filepath, OUTPUT_PATH)
         // if (options.config != 'Release') {
         //     if (!fs.existsSync('../general/vs2013/Bin'))

@@ -162,7 +162,8 @@ elseif ( ANDROID )
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
     add_custom_command(TARGET puerts POST_BUILD
             COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -g -S -d --strip-debug --verbose
-            "${CMAKE_BINARY_DIR}/libpuerts.so"
+            "${CMAKE_BINARY_DIR}/libpuerts.so" -o
+            "${CMAKE_BINARY_DIR}/~libpuerts.stripped.so"
             COMMENT "Strip debug symbols done on final binary.")
 
 elseif ( APPLE )
