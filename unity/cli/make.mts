@@ -158,7 +158,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
 
     const BuildConfig = (platformCompileConfig as any)[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
-    const OUTPUT_PATH = cwd + '/../package/upm/Plugins/' + BuildConfig.outputPluginPath;
+    const OUTPUT_PATH = cwd + '/../packages/core/upm/Plugins/' + BuildConfig.outputPluginPath;
     const BackendConfig = JSON.parse(readFileSync(cwd + `/.backends/${options.backend}/puer-build.json`, 'utf-8'))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {

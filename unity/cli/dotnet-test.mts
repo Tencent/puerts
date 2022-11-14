@@ -17,10 +17,10 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
     `
     const linkPuerTS = `
     <ItemGroup>
-        ${glob.sync(join(dir, '../package/upm/**/*.cs').replace(/\\/g, '/'))
+        ${glob.sync(join(dir, '../packages/core/upm/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, '../package/upm/'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../packages/core/upm/'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')}
     </ItemGroup>
