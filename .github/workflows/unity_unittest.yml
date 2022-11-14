@@ -36,7 +36,8 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend v8_9.4
+          cd general
+          node ../cli dotnet-test v8_9.4
   unittest-win-quickjs:
     runs-on: windows-2019
 
@@ -56,7 +57,8 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend quickjs
+          cd general
+          node ../cli dotnet-test quickjs
           
   unittest-win-nodejs:
     runs-on: windows-2019
@@ -77,7 +79,8 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend nodejs_16
+          cd general
+          node ../cli dotnet-test nodejs_16
 
   unittest-osx-v8:
     runs-on: macos-latest
@@ -98,7 +101,8 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend v8_9.4
+          cd general
+          node ../cli dotnet-test v8_9.4
   unittest-osx-quickjs:
     runs-on: macos-latest
 
@@ -118,7 +122,8 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend quickjs
+          cd general
+          node ../cli dotnet-test quickjs
           
   unittest-osx-nodejs:
     runs-on: macos-latest
@@ -139,4 +144,5 @@ jobs:
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend nodejs_16
+          cd general
+          node ../cli dotnet-test nodejs_16
