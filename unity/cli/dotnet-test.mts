@@ -41,16 +41,15 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
     return [definitions, linkPuerTS, linkUnitTests].join('\n');
 }
 
-export default function dotnetTest(backend: string) {
-    const dir = process.cwd();
-    if (!existsSync(`${dir}/Src/Helloworld.cs`)) {
+export default async function dotnetTest(cwd: string, backend: string) {
+    if (!existsSync(`${cwd}/Src/Helloworld.cs`)) {
         console.error("[Puer] Cannot find UnitTest Src");
         process.exit();
     }
-    const workdir = join(dir, "vsauto");
+    const workdir = join(cwd, "vsauto");
 
     rm("-rf", workdir);
-    rm("-rf", join(dir, 'Src/StaticWrapper'));
+    rm("-rf", join(cwd, 'Src/StaticWrapper'));
     
     mkdir("-p", workdir);
     exec(`dotnet new nunit`, { cwd: workdir });
@@ -63,11 +62,11 @@ export default function dotnetTest(backend: string) {
     // 生成
     writeFileSync(
         join(workdir, 'vsauto.csproj'),
-        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(dir, workdir, false), '</Project>'].join('\n'))
+        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, false), '</Project>'].join('\n'))
     );
     assert.equal(0, exec(`dotnet build vsauto.csproj -p:StartupObject=PuerGen -v quiet`, { cwd: workdir }).code)
     
-    const copyConfig = runPuertsMake({
+    const copyConfig = await runPuertsMake(join(cwd, '../native_src'), {
         platform: process.platform == 'win32' ? 'win' : 'osx',
         config: "Debug",
         backend: backend,
@@ -81,13 +80,13 @@ export default function dotnetTest(backend: string) {
     })
 
     // 运行generate
-    mkdir('-p', join(dir, "Src/StaticWrapper"));
+    mkdir('-p', join(cwd, "Src/StaticWrapper"));
     assert.equal(0, exec(`dotnet run --project vsauto.csproj`, { cwd: workdir }).code)
 
     // 带上wrapper重新生成csproj并运行测试
     writeFileSync(
         join(workdir, 'vsauto.csproj'),
-        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(dir, workdir, true), '</Project>'].join('\n'))
+        originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, true), '</Project>'].join('\n'))
     );
     assert.equal(0, exec(`dotnet build vsauto.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code)
     assert.equal(0, exec(`dotnet test vsauto.csproj`, { cwd: workdir }).code)

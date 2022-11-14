@@ -28,7 +28,7 @@ if ( NOT DEFINED JS_ENGINE )
     set(JS_ENGINE v8)
 endif()
 
-set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/${JS_ENGINE})
+set(BACKEND_ROOT ${PROJECT_SOURCE_DIR}/.backends/${JS_ENGINE})
 
 set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 
@@ -149,8 +149,8 @@ elseif ( ANDROID )
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
     add_custom_command(TARGET puerts_il2cpp POST_BUILD
-            COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -g -S -d --strip-debug --verbose
-            "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so"
+            COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -s --verbose
+            "${CMAKE_BINARY_DIR}/~libpuerts_il2cpp.stripped.so"
             COMMENT "Strip debug symbols done on final binary.")
 
 elseif ( APPLE )

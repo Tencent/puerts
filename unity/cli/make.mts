@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from "fs";
 import { cd, cp, exec, mkdir, mv, setWinCMDEncodingToUTF8 } from "@puerts/shell-util"
 import { join } from "path";
 import assert from "assert";
+import downloadBackend from "./backend.mjs";
 
-const cwd = process.cwd();
 setWinCMDEncodingToUTF8();
 
 interface BuildOptions {
@@ -27,7 +27,7 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                return `${CMAKE_BUILD_PATH}/libpuerts.so`
+                return [`${CMAKE_BUILD_PATH}/libpuerts.so`, `${CMAKE_BUILD_PATH}/~libpuerts.stripped.so`]
             }
         },
         'arm64': {
@@ -41,7 +41,7 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                return `${CMAKE_BUILD_PATH}/libpuerts.so`
+                return [`${CMAKE_BUILD_PATH}/libpuerts.so`, `${CMAKE_BUILD_PATH}/~libpuerts.stripped.so`]
             }
         },
         'x64': {
@@ -55,7 +55,7 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                return `${CMAKE_BUILD_PATH}/libpuerts.so`
+                return [`${CMAKE_BUILD_PATH}/libpuerts.so`, `${CMAKE_BUILD_PATH}/~libpuerts.stripped.so`]
             }
         }
     },
@@ -138,22 +138,19 @@ const platformCompileConfig = {
 
 
 /////////////////// make
-function runPuertsMake(options: BuildOptions) {
+async function runPuertsMake(cwd: string, options: BuildOptions) {
     //// 环境与依赖监测 environment and dependencies checking.
     if (!existsSync(`${cwd}/CMakeLists.txt`)) {
         console.error("[Puer] Cannot find CMakeLists.txt");
-        process.exit();
-    }
-
-
-    if (!existsSync(`${cwd}/${options.backend}`)) {
-        console.error("[Puer] Cannot find JS backend library");
         process.exit();
     }
     const checkCMake = exec("cmake --version", { silent: true });
     if (checkCMake.stderr && !checkCMake.stdout) {
         console.error("[Puer] CMake is not installed");
         process.exit();
+    }
+    if (!existsSync(`${cwd}/.backends/${options.backend}`)) {
+        await downloadBackend(cwd, options.backend);
     }
     if (options.platform == "win" && options.config != "Release") {
         options.config = "RelWithDebInfo"
@@ -162,7 +159,7 @@ function runPuertsMake(options: BuildOptions) {
     const BuildConfig = (platformCompileConfig as any)[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
     const OUTPUT_PATH = cwd + '/../Assets/Puerts/Plugins/' + BuildConfig.outputPluginPath;
-    const BackendConfig = JSON.parse(readFileSync(cwd + `/cmake/${options.backend}/backend.json`, 'utf-8'))
+    const BackendConfig = JSON.parse(readFileSync(cwd + `/.backends/${options.backend}/puer-build.json`, 'utf-8'))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {
         console.log("=== Puer ===");
@@ -171,20 +168,22 @@ function runPuertsMake(options: BuildOptions) {
         return;
     }
     const definitionD = (BackendConfig.definition || []).join(';')
-    const linkD = (BackendConfig.link[options.platform]?.[options.arch] || []).join(';')
+    const linkD = (BackendConfig['link-libraries'][options.platform]?.[options.arch] || []).join(';')
     const incD = (BackendConfig.include || []).join(';')
 
     mkdir('-p', CMAKE_BUILD_PATH);
     mkdir('-p', OUTPUT_PATH)
     const DArgsName = ['-DBACKEND_DEFINITIONS=', '-DBACKEND_LIB_NAMES=', '-DBACKEND_INC_NAMES=']
+    
     var outputFile = BuildConfig.hook(
         CMAKE_BUILD_PATH,
         options,
         [definitionD, linkD, incD].map((r, index) => r ? DArgsName[index] + '"' + r + '"' : null).filter(t => t).join(' ')
     );
-    const copyConfig = (BackendConfig.copy[options.platform]?.[options.arch] || [])
+    if (!(outputFile instanceof Array)) outputFile = [outputFile];
+    const copyConfig = (BackendConfig['copy-libraries'][options.platform]?.[options.arch] || [])
         .map((pathToBackend: string) => join(cwd, options.backend, pathToBackend))
-        .concat([outputFile]);
+        .concat(outputFile);
 
     copyConfig?.forEach((filepath: string) => {
         cp(filepath, OUTPUT_PATH)

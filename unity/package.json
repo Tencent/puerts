@@ -14,6 +14,7 @@
     "@types/glob": "^8.0.0",
     "@types/node": "^18.11.5",
     "commander": "^9.3.0",
+    "download": "^8.0.0",
     "glob": "^8.0.3",
     "ts-node": "^10.9.1"
   }

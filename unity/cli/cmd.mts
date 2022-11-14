@@ -1,10 +1,15 @@
+import { rm } from "@puerts/shell-util";
 import { Option, program } from "commander";
+import { join } from "path";
+import downloadBackend from "./backend.mjs";
+import dotnetTest from "./dotnet-test.mjs";
 import runPuertsMake, { platformCompileConfig } from "./make.mjs";
 
 const nodePlatformToPuerPlatform = {
     "darwin": "osx",
     "win32": "win"
 }
+const cwd = process.cwd();
 
 program
     .command("make [quickcommand]")
@@ -37,18 +42,18 @@ program
                     promiseChain = promiseChain.then(function () {
                         //@ts-ignore
                         options.arch = arch;
-                        runPuertsMake(options)
+                        runPuertsMake(cwd, options)
                     })
                 });
-            
+
             } else if (!options.platform && options.arch == 'auto') {
                 options.platform = (nodePlatformToPuerPlatform as any)[process.platform]
                 //@ts-ignore
                 options.arch = process.arch;
-                runPuertsMake(options);
-            
+                runPuertsMake(cwd, options);
+
             } else {
-                runPuertsMake(options);
+                runPuertsMake(cwd, options);
             }
 
         } else {
@@ -103,12 +108,27 @@ program
             }
 
             console.log('quick command parse result:', { backend, config, arch, platform });
-            runPuertsMake({ backend, config, arch, platform });
+            runPuertsMake(cwd, { backend, config, arch, platform });
         }
     })
 
+const backendProgram = program
+    .command("backend");
+
+backendProgram
+    .command("download [backend] [url]").action((backend, url) => {
+        downloadBackend(cwd, backend, url)
+    });
+backendProgram
+    .command("clean").action(() => {
+        rm('-rf', join(cwd, ".backends"))
+    });
+
 program
-    .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
-    .command("dotnet-test");
+    .command("dotnet-test [backend]")
+    // .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
+    .action((backend: string)=> {
+        dotnetTest(cwd, backend || "quickjs");
+    });
 
 program.parse(process.argv);

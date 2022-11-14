@@ -10,14 +10,10 @@
 /general/vs2022/.vs
 /general/vsauto
 /general/Src/StaticWrapper
-/native_src/v8*
-/native_src/nodejs*
-/native_src/quickjs*
+/native_src/.backends
 /native_src/puerts-cpp-tester
 /native_src/build*
-/native_src_il2cpp/v8*
-/native_src_il2cpp/nodejs*
-/native_src_il2cpp/quickjs*
+/native_src_il2cpp/.backends
 /native_src_il2cpp/puerts-cpp-tester
 /native_src_il2cpp/build*
 /node_modules
