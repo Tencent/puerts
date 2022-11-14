@@ -4,7 +4,6 @@
   "description": "",
   "main": "make.js",
   "scripts": {
-    "test": "ts-node --esm general/run-test.mts",
     "build": ""
   },
   "author": "",

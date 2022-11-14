@@ -5,7 +5,7 @@ on:
   push:
     paths: 
       - unity/Assets/**
-      - unity/general/**
+      - unity/dotnet-test/**
       - unity/native_src/**
       - unity/native_src_ourv8/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
@@ -36,7 +36,7 @@ jobs:
         run: |
           cd unity
           npm i
-          cd general
+          cd dotnet-test
           node ../cli dotnet-test v8_9.4
   unittest-win-quickjs:
     runs-on: windows-2019
@@ -57,7 +57,7 @@ jobs:
         run: |
           cd unity
           npm i
-          cd general
+          cd dotnet-test
           node ../cli dotnet-test quickjs
           
   unittest-win-nodejs:
@@ -79,7 +79,7 @@ jobs:
         run: |
           cd unity
           npm i
-          cd general
+          cd dotnet-test
           node ../cli dotnet-test nodejs_16
 
   unittest-osx-v8:
@@ -101,7 +101,7 @@ jobs:
         run: |
           cd unity
           npm i
-          cd general
+          cd dotnet-test
           node ../cli dotnet-test v8_9.4
   unittest-osx-quickjs:
     runs-on: macos-latest
@@ -122,7 +122,7 @@ jobs:
         run: |
           cd unity
           npm i
-          cd general
+          cd dotnet-test
           node ../cli dotnet-test quickjs
           
   unittest-osx-nodejs:
@@ -144,5 +144,5 @@ jobs:
         run: |
           cd unity
           npm i
-          cd general
+          cd dotnet-test
           node ../cli dotnet-test nodejs_16
