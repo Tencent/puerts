@@ -35,9 +35,9 @@ runs:
         cd unity
         npm i
         cd native_src
-        ANDROID_NDK=~/android-ndk-r21b npx ts-node --esm make.mts --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+        ANDROID_NDK=~/android-ndk-r21b node ../cli make --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        path: ./unity/Assets/Puerts/Plugins/**/*
+        path: ./unity/package/upm/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

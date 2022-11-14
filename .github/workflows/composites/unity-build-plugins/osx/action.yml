@@ -28,9 +28,9 @@ runs:
         cd unity
         npm i
         cd native_src
-        npx ts-node --esm make.mts --platform osx --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+        node ../cli make --platform osx --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        path: ./unity/Assets/Puerts/Plugins/**/*
+        path: ./unity/package/upm/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

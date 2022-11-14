@@ -15,11 +15,11 @@ public class TxtLoader : ILoader
         );
     }
 #if PUER_CONSOLE_TEST
-    private string root = PathToBinDir("../../../../Assets/Puerts/Runtime/Resources");
-    private string editorRoot = PathToBinDir("../../../../Assets/Puerts/Editor/Resources");
+    private string root = PathToBinDir("../../../../package/upm/Runtime/Resources");
+    private string editorRoot = PathToBinDir("../../../../package/upm/Editor/Resources");
 #else
-    private string root = PathToBinDir("../../../Assets/Puerts/Runtime/Resources");
-    private string editorRoot = PathToBinDir("../../../Assets/Puerts/Editor/Resources");
+    private string root = PathToBinDir("../../../package/upm/Runtime/Resources");
+    private string editorRoot = PathToBinDir("../../../package/upm/Editor/Resources");
 #endif
     public bool FileExists(string filepath)
     {
