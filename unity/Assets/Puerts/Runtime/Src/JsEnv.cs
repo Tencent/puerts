@@ -225,7 +225,7 @@ namespace Puerts
             {
                 return null;
             }
-            if (identifer.Length < 4 || !identifer.EndsWith(".mjs"))
+            if (!loader.IsESM(identifer))
             {
                 pathForDebug = "";
                 return String.Format(@"

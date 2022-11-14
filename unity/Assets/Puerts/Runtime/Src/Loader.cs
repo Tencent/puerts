@@ -18,6 +18,11 @@ namespace Puerts
     {
         bool FileExists(string filepath);
         string ReadFile(string filepath, out string debugpath);
+
+        virtual bool IsESM(string filepath)
+        {
+            return filepath.Length >= 4 && filepath.EndsWith(".mjs");
+        }
     }
 
     public class DefaultLoader : ILoader
