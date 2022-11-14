@@ -6,4 +6,6 @@ const p = require('child_process')
 p.stdout.on('data', console.log)
 p.stderr.on('data', console.error)
 
-procses.exit(p.exitCode)
+p.on('exit', ()=> {
+    process.exit(p.exitCode)
+})
