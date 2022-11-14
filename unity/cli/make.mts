@@ -1,22 +1,11 @@
-// run `npm i` in puerts/unity first
-// node --loader ts-node/esm make.mts --platform=win --backend=v8_9.4 --arch=x64
-// node --loader ts-node/esm -h
-
 import { existsSync, readFileSync } from "fs";
 import { cd, cp, exec, mkdir, mv, setWinCMDEncodingToUTF8 } from "@puerts/shell-util"
-import { Option, program } from "commander";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 import assert from "assert";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = fileURLToPath(dirname(import.meta.url));
+const cwd = process.cwd();
 setWinCMDEncodingToUTF8();
 
-const nodePlatformToPuerPlatform = {
-    "darwin": "osx",
-    "win32": "win"
-}
 interface BuildOptions {
     config: 'Debug' | 'Release' | "RelWithDebInfo",
     platform: 'osx' | 'win' | 'ios' | 'android' | 'linux',
@@ -148,16 +137,16 @@ const platformCompileConfig = {
 }
 
 
-    /////////////////// make
+/////////////////// make
 function runPuertsMake(options: BuildOptions) {
     //// 环境与依赖监测 environment and dependencies checking.
-    if (!existsSync(`${__dirname}/CMakeLists.txt`)) {
+    if (!existsSync(`${cwd}/CMakeLists.txt`)) {
         console.error("[Puer] Cannot find CMakeLists.txt");
         process.exit();
     }
-    
-    
-    if (!existsSync(`${__dirname}/${options.backend}`)) {
+
+
+    if (!existsSync(`${cwd}/${options.backend}`)) {
         console.error("[Puer] Cannot find JS backend library");
         process.exit();
     }
@@ -171,9 +160,9 @@ function runPuertsMake(options: BuildOptions) {
     }
 
     const BuildConfig = (platformCompileConfig as any)[options.platform][options.arch];
-    const CMAKE_BUILD_PATH = __dirname + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
-    const OUTPUT_PATH = __dirname + '/../Assets/Puerts/Plugins/' + BuildConfig.outputPluginPath;
-    const BackendConfig = JSON.parse(readFileSync(__dirname + `/cmake/${options.backend}/backend.json`, 'utf-8'))
+    const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
+    const OUTPUT_PATH = cwd + '/../Assets/Puerts/Plugins/' + BuildConfig.outputPluginPath;
+    const BackendConfig = JSON.parse(readFileSync(cwd + `/cmake/${options.backend}/backend.json`, 'utf-8'))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {
         console.log("=== Puer ===");
@@ -194,7 +183,7 @@ function runPuertsMake(options: BuildOptions) {
         [definitionD, linkD, incD].map((r, index) => r ? DArgsName[index] + '"' + r + '"' : null).filter(t => t).join(' ')
     );
     const copyConfig = (BackendConfig.copy[options.platform]?.[options.arch] || [])
-        .map((pathToBackend: string) => join(__dirname, options.backend, pathToBackend))
+        .map((pathToBackend: string) => join(cwd, options.backend, pathToBackend))
         .concat([outputFile]);
 
     copyConfig?.forEach((filepath: string) => {
@@ -213,109 +202,4 @@ function runPuertsMake(options: BuildOptions) {
 }
 
 export default runPuertsMake;
-
-
-if (import.meta.url.startsWith('file:') && process.argv[1] === __filename) {
-    program.addOption(
-        new Option("--platform <platform>", "the target platform")
-            .default("")
-            .choices(["win", "osx", "linux", "android", "ios"])
-    );
-    program.addOption(
-        new Option("--arch <arch>", "the target architecture")
-            .default("auto")
-            .choices(["auto", "ia32", "x64", "arm64", "armv7"])
-    );
-    program.addOption(
-        new Option("--config <ReleaseOrDebug>", "the target architecture")
-            .default("Release")
-            .choices(["Release", "Debug"])
-    );
-    program.option("--backend <backend>", "the JS backend will be used", "v8");
-    
-    let pargv = process.argv;
-    if (process.argv[2].match(/[vnq][aiwol][3678]d?/)) {
-        const command = process.argv[2];
-        pargv = [pargv[0], pargv[1]];
-    
-        pargv.push('--backend');
-        switch (command[0]) {
-            case 'v':
-                pargv.push('v8_9.4'); break;
-            case 'n':
-                pargv.push('nodejs_16'); break;
-            case 'q':
-                pargv.push('quickjs'); break;
-    
-            default:
-                throw new Error(`invalid command[0] : ${command[0]}`);
-        }
-    
-        pargv.push('--platform');
-        switch (command[1]) {
-            case 'a':
-                pargv.push('android'); break;
-            case 'i':
-                pargv.push('ios'); break;
-            case 'w':
-                pargv.push('win'); break;
-            case 'o':
-                pargv.push('osx'); break;
-            case 'l':
-                pargv.push('linux'); break;
-    
-            default:
-                throw new Error(`invalid command[1] : ${command[1]}`);
-        }
-    
-        pargv.push('--arch');
-        switch (command[2]) {
-            case '3':
-                pargv.push('ia32'); break;
-            case '6':
-                pargv.push('x64'); break;
-            case '7':
-                pargv.push('armv7'); break;
-            case '8':
-                pargv.push('arm64'); break;
-    
-            default:
-                throw new Error(`invalid command[2] : ${command[2]}`);
-        }
-    
-        pargv.push('--config');
-        switch (command[3] || "") {
-            case 'd':
-                pargv.push('Debug'); break;
-    
-            default:
-                pargv.push('Release'); break;
-        }
-    
-        console.log('quick arg parse result:', pargv.join(' '));
-    }
-    
-    program.parse(pargv);
-    const options: BuildOptions = program.opts() as any;
-    
-    if (options.platform && options.arch == 'auto') {
-        let promiseChain = Promise.resolve();
-        Object.keys((platformCompileConfig as any)[options.platform]).forEach(arch => {
-            promiseChain = promiseChain.then(function () {
-                //@ts-ignore
-                options.arch = arch;
-                runPuertsMake(options)
-            })
-        });
-    
-    } else if (!options.platform && options.arch == 'auto') {
-        options.platform = (nodePlatformToPuerPlatform as any)[process.platform]
-        //@ts-ignore
-        options.arch = process.arch;
-        runPuertsMake(options);
-    
-    } else {
-        runPuertsMake(options);
-    }
-    
-}
+export { platformCompileConfig }

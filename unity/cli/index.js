@@ -1,0 +1,1 @@
+require('child_process').execSync(`node --loader ts-node/esm ${__dirname}/cmd.mts ${process.argv.slice(2).join(' ')}`)
