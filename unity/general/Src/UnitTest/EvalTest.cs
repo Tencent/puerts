@@ -291,5 +291,24 @@ namespace Puerts.UnitTest
 
             jsEnv.Dispose();
         }*/
+        internal class ESMTxtLoader: TxtLoader, Puerts.IModuleChecker
+        {
+            public bool IsESM(string s) {
+                return true;
+            }
+        }
+        [Test]
+        public void ESMLoaderTest() 
+        {
+            var loader = new ESMTxtLoader();
+            loader.AddMockFileContent("main.js", @"
+                export default 'esm export';
+            ");
+            var jsEnv = new JsEnv(loader);
+
+            string res = jsEnv.ExecuteModule<string>("main.js", "default");
+            Assert.AreEqual(res, "esm export");
+            jsEnv.Dispose();
+        }
     }
 }

@@ -39,6 +39,7 @@ namespace Puerts
         internal ObjectPool objectPool;
 
         private readonly ILoader loader;
+        private bool loaderCanCheckESM;
 
         public Backend Backend;
 
@@ -78,6 +79,7 @@ namespace Puerts
             }
             // PuertsDLL.SetLogCallback(LogCallback, LogWarningCallback, LogErrorCallback);
             this.loader = loader;
+            this.loaderCanCheckESM = loader is IModuleChecker;
             
             if (externalRuntime != IntPtr.Zero)
             {
@@ -225,7 +227,10 @@ namespace Puerts
             {
                 return null;
             }
-            if (!loader.IsESM(identifer))
+            if (loaderCanCheckESM ? 
+                !((IModuleChecker)loader).IsESM(identifer) :
+                identifer.Length < 4 || !identifer.EndsWith(".mjs")
+            )
             {
                 pathForDebug = "";
                 return String.Format(@"
