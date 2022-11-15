@@ -162,6 +162,7 @@ jobs:
       - name: Retrieve version
         run: |
           echo "API_LEVEL=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=API_LEVEL\s)(\d+)')" >> $GITHUB_ENV
+          node -e "const pjson = JSON.parse(fs.readFileSync('$GITHUB_WORKSPACE/unity/packages/core/upm/package.json', 'utf-8')); pjson.version = '${{ github.event.inputs.tag_name }}' ; fs.writeFileSync('$GITHUB_WORKSPACE/unity/packages/core/upm/package.json', JSON.stringify(pjson))"
             
       - uses: actions/download-artifact@v1
         with:
@@ -180,11 +181,11 @@ jobs:
           
       - name: Create Release Asset
         run: |
-          cp $GITHUB_WORKSPACE/doc/unity/zhcn/changelog.md $GITHUB_WORKSPACE/unity/Assets/Puerts
-          cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/Puerts
-          cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/Puerts . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cp $GITHUB_WORKSPACE/doc/unity/zhcn/changelog.md $GITHUB_WORKSPACE/unity/packages/core/upm
+          cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/packages/core/upm
+          cd V8/ && cp -r $GITHUB_WORKSPACE/unity/packages/core/upm . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/packages/core/upm . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/packages/core/upm . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
           
       - name: Create Release
         id: create_release
