@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
 using System;
-using XLua;
 using Puerts;
 using System.IO;
+
+public delegate int SimpleDelegate(int a, int v);
+public delegate void ObjectArgDelegate(Calculator calculator);
+public delegate Calculator ObjectRetDelegate();
 
 struct TestStruct : IDisposable
 {
@@ -229,8 +232,15 @@ public class Calculator
 
 public class Test : MonoBehaviour
 {
+    private void PreventStrip()
+    {
+        var vec = new Vector3();
+        vec.Set(1,2,3);
+    }
+    
     void Start()
     {
+        PreventStrip();
         JsEnv jsEnv = new JsEnv();
         var jsCode = @"
             const CalculatorV8 = loadType(jsEnv.GetTypeByString('Calculator'));

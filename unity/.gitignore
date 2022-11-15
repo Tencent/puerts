@@ -2,6 +2,7 @@
 /test/dotnet/vsauto
 /test/dotnet/Src/StaticWrapper
 /test/unity/**/*.meta
+/test/unity/*
 /native_src/.backends
 /native_src/puerts-cpp-tester
 /native_src/build*
