@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-rc.7] - 2022-11-15
+1. fix：ts error when some methods are returning Task without GenericType #1027
+2. fix：Nested class in Generic class will cause error in StaticWrapper #1030
+3. fix：illegal unity api access erro when creating JsEnv not in main thread#1049
+4. fix：`IsByRefLike` missing error in Unity2021.1 #1050
+5. feature：add support for Android x86_64 (v8/quickjs)
+6. feature：add `Puerts.IModuleChecker`. if your `ILoader` implement this interface. Then you can indicate which extname of jsfile will be treated as ESM Module.
+
 ## [1.4.0-rc.6] - 2022-10-20
 1. support ambigious methods calling after generated staticwrapper. #1020
 2. fix a bug that after blittablecopy staticwrapper generated, passing two or more struct from C# to a JSFunction will get wrong JS arguments #1018

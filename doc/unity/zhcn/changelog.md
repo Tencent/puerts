@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0-rc.7] - 2022-11-15
+1. 修复：返回无泛型Task时typescript检查报错的问题 #1027
+2. 修复：泛型类内部类在wrapper报错的问题 #1030
+3. 修复：子线程创建JsEnv报跨线程访问Unity API的错#1049
+4. 修复：Unity2021.1下报`IsByRefLike`缺失的错 #1050
+5. 功能：添加v8和quickjs的Android x86_64支持
+6. 功能：新增Puerts.IModuleChecker。传入的ILoader如果实现了该接口，则可以自定义哪些文件后缀会被识别为ESM模块
+
 ## [1.4.0-rc.6] - 2022-10-20
 1. 支持了staticwrapper生成后，歧义方法的调用 #1020
 2. 修复BlittableCopy模式下，同时为JS函数传递两个结构体时的错误 #1018
