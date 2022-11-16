@@ -79,7 +79,7 @@ static bool IsPlaying()
 bool UPEBlueprintAsset::LoadOrCreate(
     const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {
-    FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
+    FString PackageName = FString(TEXT("/Game" TS_BLUEPRINT_PATH)) / InPath / InName;
 
     // UE_LOG(LogTemp, Warning, TEXT("LoadOrCreate.PackageName: %s"), *PackageName);
 
@@ -1072,7 +1072,6 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
             NeedSave = NeedSave || (RemoveOverrideEvent > 0);
         }
     }
-    FunctionAdded.Empty();
 }
 
 void UPEBlueprintAsset::Save()
@@ -1086,17 +1085,47 @@ void UPEBlueprintAsset::Save()
         TypeScriptGeneratedClass->HasConstructor = HasConstructor;
         if (NeedSave)
         {
+            FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+            FKismetEditorUtilities::CompileBlueprint(Blueprint);
+
             for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 auto Function = *FuncIt;
                 Function->FunctionFlags &= ~FUNC_Native;
+
+                auto FunctionFName = Function->GetFName();
+                FString FunctionName = Function->GetName();
+
+                static FString AxisPrefix(TEXT("InpAxisEvt_"));
+                if (FunctionName.StartsWith(AxisPrefix))
+                {
+                    auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
+                    int32 SubPos;
+                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                    {
+                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                    }
+                }
+                static FString ActionPrefix(TEXT("InpActEvt_"));
+                if (FunctionName.StartsWith(ActionPrefix))
+                {
+                    auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
+                    int32 SubPos;
+                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                    {
+                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                    }
+                }
+                if (FunctionAdded.Contains(*FunctionName))
+                {
+                    TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
+                }
             }
-            FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-            FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
             TArray<UPackage*> PackagesToSave;
             PackagesToSave.Add(Package);
             FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
         }
     }
+    FunctionAdded.Empty();
 }

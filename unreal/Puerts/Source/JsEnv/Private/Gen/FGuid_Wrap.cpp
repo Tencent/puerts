@@ -404,7 +404,7 @@ struct AutoRegisterForFGuid
         static puerts::JSFunctionInfo Functions[] = {
             {"NewGuid", FGuidS_NewGuid}, {"Parse", FGuidS_Parse}, {"ParseExact", FGuidS_ParseExact}, {0, 0}};
 
-        Def.UETypeName = "FGuid";
+        Def.UETypeName = "Guid";
 
         Def.Initialize = _FGuidNew_;
         Def.Finalize = _FGuidDelete_;

@@ -20,7 +20,12 @@ public class WrapperGenConfig
             return new List<Type>()
             {
                 typeof(Puerts.UnitTest.OptionalParametersClass),
-                typeof(Puerts.UnitTest.WrapperGenTest)
+                typeof(Puerts.UnitTest.WrapperTest),
+                typeof(Puerts.UnitTest.MultiEnvTestA),
+                typeof(Puerts.UnitTest.MultiEnvTestB),
+                typeof(Puerts.UnitTest.GenericGenTest<Type, JsEnv>),
+                typeof(Puerts.UnitTest.GenericGenTest2),
+                typeof(Puerts.UnitTest.GenericWrapperBase<JsEnv>),
             };
         }
     }
@@ -30,8 +35,8 @@ public class PuertsTest
 {
     public static void Main()
     {
-        Puerts.Editor.Generator.Menu.GenerateWrapper(
-            TxtLoader.PathToBinDir("../Src/UnitTest/wrap/"),
+        Puerts.Editor.Generator.FileExporter.ExportWrapper(
+            TxtLoader.PathToBinDir("../../Src/UnitTest/wrap/"),
             new TxtLoader()
         );
     }

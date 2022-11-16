@@ -22,7 +22,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\Bin\</OutputPath>
+    <OutputPath>.\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>obj\Any CPU\Debug\Puerts.UnitTest</IntermediateOutputPath>
     <DefineConstants>_DEBUG;DEBUG;TRACE;</DefineConstants>
@@ -33,7 +33,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\Bin\</OutputPath>
+    <OutputPath>.\Bin\</OutputPath>
     <BaseIntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>obj\Any CPU\Release\Puerts.UnitTest</IntermediateOutputPath>
     <DefineConstants>
@@ -52,26 +52,56 @@
     <Compile Include="..\Src\TxtLoader.cs">
       <Link>Src\TxtLoader.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\ArrayBufferTest.cs">
-      <Link>Src\UnitTest\ArrayBufferTest.cs</Link>
-    </Compile>
     <Compile Include="..\Src\UnitTest\EvalTest.cs">
       <Link>Src\UnitTest\EvalTest.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\ExceptionTest.cs">
       <Link>Src\UnitTest\ExceptionTest.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\OptionalParametersTest.cs">
-      <Link>Src\UnitTest\OptionalParametersTest.cs</Link>
+    <Compile Include="..\Src\UnitTest\GenerateTest\GenTest.cs">
+      <Link>Src\UnitTest\GenerateTest\GenTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\GenericTest.cs">
+      <Link>Src\UnitTest\GenericTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\MultiTest.cs">
+      <Link>Src\UnitTest\MultiTest.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\TestClass.cs">
       <Link>Src\UnitTest\TestClass.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\TimerTest.cs">
-      <Link>Src\UnitTest\TimerTest.cs</Link>
+    <Compile Include="..\Src\UnitTest\TranslatorTest\CSToJSTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\CSToJSTest.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\UnitTest.cs">
-      <Link>Src\UnitTest\UnitTest.cs</Link>
+    <Compile Include="..\Src\UnitTest\TranslatorTest\ExtensionTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\ExtensionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\TranslatorTest\JSToCSTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\JSToCSTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\TranslatorTest\OptionalParametersTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\OptionalParametersTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\TranslatorTest\TimerTest.cs">
+      <Link>Src\UnitTest\TranslatorTest\TimerTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\GCTest.cs">
+      <Link>Src\UnitTest\GCTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperTest\WrapperTest.cs">
+      <Link>Src\UnitTest\WrapperTest\WrapperTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\WrapperTest\WrapperTestClass.cs">
+      <Link>Src\UnitTest\WrapperTest\WrapperTestClass.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest_2_T_S__Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestA_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestA_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestB_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_MultiEnvTestB_Wrap.cs</Link>
     </Compile>
     <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs">
       <Link>Src\UnitTest\wrap\Puerts_UnitTest_OptionalParametersClass_Wrap.cs</Link>
@@ -79,11 +109,26 @@
     <Compile Include="..\Src\UnitTest\wrap\AutoStaticCodeRegister.cs">
       <Link>Src\UnitTest\wrap\AutoStaticCodeRegister.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\WrapperGenTest.cs">
-      <Link>Src\UnitTest\WrapperGenTest.cs</Link>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperTest_Wrap.cs</Link>
     </Compile>
-    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs">
-      <Link>Src\UnitTest\wrap\Puerts_UnitTest_WrapperGenTest_Wrap.cs</Link>
+    <Compile Include="..\Src\UnitTest\JSTypeTest\ArrayBufferTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\ArrayBufferTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\JSTypeTest\GenericDelegateTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\GenericDelegateTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\JSTypeTest\JSObjectTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\JSObjectTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\JSTypeTest\TypedValueTest.cs">
+      <Link>Src\UnitTest\JSTypeTest\TypedValueTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericGenTest2_Wrap.cs</Link>
+    </Compile>
+    <Compile Include="..\Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs">
+      <Link>Src\UnitTest\wrap\Puerts_UnitTest_GenericWrapperBase_1_T__Wrap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -95,7 +140,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

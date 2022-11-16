@@ -32,12 +32,16 @@ public:
 
     void ProcessEvent(UFunction*, void* Parms) override;
 
-    TWeakPtr<puerts::IDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
-    UFunction* SignatureFunction;
+    TWeakObjectPtr<UFunction> SignatureFunction;
 
     // So, only uobject's delelgate is supported!
     TWeakObjectPtr<UObject> Owner;
 
     v8::UniquePersistent<v8::Function> JsFunction;
+
+#ifdef THREAD_SAFE
+    v8::Isolate* Isolate;
+#endif
 };

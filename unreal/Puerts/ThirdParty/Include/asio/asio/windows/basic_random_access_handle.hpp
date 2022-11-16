@@ -2,7 +2,7 @@
 // windows/basic_random_access_handle.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -16,109 +16,156 @@
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
 #include "asio/detail/config.hpp"
-
-#if defined(ASIO_ENABLE_OLD_SERVICES)
+#include "asio/windows/basic_overlapped_handle.hpp"
 
 #if defined(ASIO_HAS_WINDOWS_RANDOM_ACCESS_HANDLE) \
   || defined(GENERATING_DOCUMENTATION)
 
-#include <cstddef>
-#include "asio/detail/handler_type_requirements.hpp"
-#include "asio/detail/throw_error.hpp"
-#include "asio/error.hpp"
-#include "asio/windows/basic_handle.hpp"
-#include "asio/windows/random_access_handle_service.hpp"
-
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace windows {
 
 /// Provides random-access handle functionality.
 /**
- * The windows::basic_random_access_handle class template provides asynchronous
- * and blocking random-access handle functionality.
+ * The windows::basic_random_access_handle class provides asynchronous and
+ * blocking random-access handle functionality.
  *
  * @par Thread Safety
  * @e Distinct @e objects: Safe.@n
  * @e Shared @e objects: Unsafe.
  */
-template <typename RandomAccessHandleService = random_access_handle_service>
+template <typename Executor = any_io_executor>
 class basic_random_access_handle
-  : public basic_handle<RandomAccessHandleService>
+  : public basic_overlapped_handle<Executor>
 {
 public:
-  /// The native representation of a handle.
-  typedef typename RandomAccessHandleService::native_handle_type
-    native_handle_type;
+  /// The type of the executor associated with the object.
+  typedef Executor executor_type;
 
-  /// Construct a basic_random_access_handle without opening it.
+  /// Rebinds the handle type to another executor.
+  template <typename Executor1>
+  struct rebind_executor
+  {
+    /// The handle type when rebound to the specified executor.
+    typedef basic_random_access_handle<Executor1> other;
+  };
+
+  /// The native representation of a handle.
+#if defined(GENERATING_DOCUMENTATION)
+  typedef implementation_defined native_handle_type;
+#else
+  typedef puerts_asio::detail::win_iocp_handle_service::native_handle_type
+    native_handle_type;
+#endif
+
+  /// Construct a random-access handle without opening it.
   /**
-   * This constructor creates a random-access handle without opening it. The
-   * handle needs to be opened before data can be written to or read from it.
+   * This constructor creates a random-access handle without opening it.
    *
-   * @param io_context The io_context object that the random-access handle will
-   * use to dispatch handlers for any asynchronous operations performed on the
-   * handle.
+   * @param ex The I/O executor that the random-access handle will use, by
+   * default, to dispatch handlers for any asynchronous operations performed on
+   * the random-access handle.
    */
-  explicit basic_random_access_handle(asio::io_context& io_context)
-    : basic_handle<RandomAccessHandleService>(io_context)
+  explicit basic_random_access_handle(const executor_type& ex)
+    : basic_overlapped_handle<Executor>(ex)
   {
   }
 
-  /// Construct a basic_random_access_handle on an existing native handle.
+  /// Construct a random-access handle without opening it.
+  /**
+   * This constructor creates a random-access handle without opening it. The
+   * handle needs to be opened or assigned before data can be sent or received
+   * on it.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the random-access handle will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the random-access handle.
+   */
+  template <typename ExecutionContext>
+  explicit basic_random_access_handle(ExecutionContext& context,
+      typename constraint<
+        is_convertible<ExecutionContext&, execution_context&>::value,
+        defaulted_constraint
+      >::type = defaulted_constraint())
+    : basic_overlapped_handle<Executor>(context)
+  {
+  }
+
+  /// Construct a random-access handle on an existing native handle.
   /**
    * This constructor creates a random-access handle object to hold an existing
    * native handle.
    *
-   * @param io_context The io_context object that the random-access handle will
-   * use to dispatch handlers for any asynchronous operations performed on the
-   * handle.
+   * @param ex The I/O executor that the random-access handle will use, by
+   * default, to dispatch handlers for any asynchronous operations performed on
+   * the random-access handle.
    *
    * @param handle The new underlying handle implementation.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
-  basic_random_access_handle(asio::io_context& io_context,
+  basic_random_access_handle(const executor_type& ex,
       const native_handle_type& handle)
-    : basic_handle<RandomAccessHandleService>(io_context, handle)
+    : basic_overlapped_handle<Executor>(ex, handle)
+  {
+  }
+
+  /// Construct a random-access handle on an existing native handle.
+  /**
+   * This constructor creates a random-access handle object to hold an existing
+   * native handle.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the random-access handle will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the random-access handle.
+   *
+   * @param handle The new underlying handle implementation.
+   *
+   * @throws puerts_asio::system_error Thrown on failure.
+   */
+  template <typename ExecutionContext>
+  basic_random_access_handle(ExecutionContext& context,
+      const native_handle_type& handle,
+      typename constraint<
+        is_convertible<ExecutionContext&, execution_context&>::value
+      >::type = 0)
+    : basic_overlapped_handle<Executor>(context, handle)
   {
   }
 
 #if defined(ASIO_HAS_MOVE) || defined(GENERATING_DOCUMENTATION)
-  /// Move-construct a basic_random_access_handle from another.
+  /// Move-construct a random-access handle from another.
   /**
    * This constructor moves a random-access handle from one object to another.
    *
-   * @param other The other basic_random_access_handle object from which the
+   * @param other The other random-access handle object from which the
    * move will occur.
    *
    * @note Following the move, the moved-from object is in the same state as if
-   * constructed using the @c basic_random_access_handle(io_context&)
+   * constructed using the @c basic_random_access_handle(const executor_type&)
    * constructor.
    */
   basic_random_access_handle(basic_random_access_handle&& other)
-    : basic_handle<RandomAccessHandleService>(
-        ASIO_MOVE_CAST(basic_random_access_handle)(other))
+    : basic_overlapped_handle<Executor>(std::move(other))
   {
   }
 
-  /// Move-assign a basic_random_access_handle from another.
+  /// Move-assign a random-access handle from another.
   /**
    * This assignment operator moves a random-access handle from one object to
    * another.
    *
-   * @param other The other basic_random_access_handle object from which the
+   * @param other The other random-access handle object from which the
    * move will occur.
    *
    * @note Following the move, the moved-from object is in the same state as if
-   * constructed using the @c basic_random_access_handle(io_context&)
+   * constructed using the @c basic_random_access_handle(const executor_type&)
    * constructor.
    */
   basic_random_access_handle& operator=(basic_random_access_handle&& other)
   {
-    basic_handle<RandomAccessHandleService>::operator=(
-        ASIO_MOVE_CAST(basic_random_access_handle)(other));
+    basic_overlapped_handle<Executor>::operator=(std::move(other));
     return *this;
   }
 #endif // defined(ASIO_HAS_MOVE) || defined(GENERATING_DOCUMENTATION)
@@ -135,8 +182,8 @@ public:
    *
    * @returns The number of bytes written.
    *
-   * @throws asio::system_error Thrown on failure. An error code of
-   * asio::error::eof indicates that the connection was closed by the
+   * @throws puerts_asio::system_error Thrown on failure. An error code of
+   * puerts_asio::error::eof indicates that the connection was closed by the
    * peer.
    *
    * @note The write_some_at operation may not write all of the data. Consider
@@ -146,7 +193,7 @@ public:
    * @par Example
    * To write a single data buffer use the @ref buffer function as follows:
    * @code
-   * handle.write_some_at(42, asio::buffer(data, size));
+   * handle.write_some_at(42, puerts_asio::buffer(data, size));
    * @endcode
    * See the @ref buffer documentation for information on writing multiple
    * buffers in one go, and how to use it with arrays, boost::array or
@@ -156,10 +203,10 @@ public:
   std::size_t write_some_at(uint64_t offset,
       const ConstBufferSequence& buffers)
   {
-    asio::error_code ec;
-    std::size_t s = this->get_service().write_some_at(
-        this->get_implementation(), offset, buffers, ec);
-    asio::detail::throw_error(ec, "write_some_at");
+    puerts_asio::error_code ec;
+    std::size_t s = this->impl_.get_service().write_some_at(
+        this->impl_.get_implementation(), offset, buffers, ec);
+    puerts_asio::detail::throw_error(ec, "write_some_at");
     return s;
   }
 
@@ -183,10 +230,10 @@ public:
    */
   template <typename ConstBufferSequence>
   std::size_t write_some_at(uint64_t offset,
-      const ConstBufferSequence& buffers, asio::error_code& ec)
+      const ConstBufferSequence& buffers, puerts_asio::error_code& ec)
   {
-    return this->get_service().write_some_at(
-        this->get_implementation(), offset, buffers, ec);
+    return this->impl_.get_service().write_some_at(
+        this->impl_.get_implementation(), offset, buffers, ec);
   }
 
   /// Start an asynchronous write at the specified offset.
@@ -205,13 +252,13 @@ public:
    * Copies will be made of the handler as required. The function signature of
    * the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   std::size_t bytes_transferred           // Number of bytes written.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using puerts_asio::post().
    *
    * @note The write operation may not transmit all of the data to the peer.
    * Consider using the @ref async_write_at function if you need to ensure that
@@ -220,25 +267,36 @@ public:
    * @par Example
    * To write a single data buffer use the @ref buffer function as follows:
    * @code
-   * handle.async_write_some_at(42, asio::buffer(data, size), handler);
+   * handle.async_write_some_at(42, puerts_asio::buffer(data, size), handler);
    * @endcode
    * See the @ref buffer documentation for information on writing multiple
    * buffers in one go, and how to use it with arrays, boost::array or
    * std::vector.
+   *
+   * @par Per-Operation Cancellation
+   * This asynchronous operation supports cancellation for the following
+   * puerts_asio::cancellation_type values:
+   *
+   * @li @c cancellation_type::terminal
+   *
+   * @li @c cancellation_type::partial
+   *
+   * @li @c cancellation_type::total
    */
-  template <typename ConstBufferSequence, typename WriteHandler>
-  ASIO_INITFN_RESULT_TYPE(WriteHandler,
-      void (asio::error_code, std::size_t))
+  template <typename ConstBufferSequence,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+        std::size_t)) WriteHandler
+          ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  ASIO_INITFN_AUTO_RESULT_TYPE(WriteHandler,
+      void (puerts_asio::error_code, std::size_t))
   async_write_some_at(uint64_t offset,
       const ConstBufferSequence& buffers,
-      ASIO_MOVE_ARG(WriteHandler) handler)
+      ASIO_MOVE_ARG(WriteHandler) handler
+        ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a WriteHandler.
-    ASIO_WRITE_HANDLER_CHECK(WriteHandler, handler) type_check;
-
-    return this->get_service().async_write_some_at(this->get_implementation(),
-        offset, buffers, ASIO_MOVE_CAST(WriteHandler)(handler));
+    return async_initiate<WriteHandler,
+      void (puerts_asio::error_code, std::size_t)>(
+        initiate_async_write_some_at(this), handler, offset, buffers);
   }
 
   /// Read some data from the handle at the specified offset.
@@ -253,8 +311,8 @@ public:
    *
    * @returns The number of bytes read.
    *
-   * @throws asio::system_error Thrown on failure. An error code of
-   * asio::error::eof indicates that the connection was closed by the
+   * @throws puerts_asio::system_error Thrown on failure. An error code of
+   * puerts_asio::error::eof indicates that the connection was closed by the
    * peer.
    *
    * @note The read_some operation may not read all of the requested number of
@@ -265,7 +323,7 @@ public:
    * @par Example
    * To read into a single data buffer use the @ref buffer function as follows:
    * @code
-   * handle.read_some_at(42, asio::buffer(data, size));
+   * handle.read_some_at(42, puerts_asio::buffer(data, size));
    * @endcode
    * See the @ref buffer documentation for information on reading into multiple
    * buffers in one go, and how to use it with arrays, boost::array or
@@ -275,10 +333,10 @@ public:
   std::size_t read_some_at(uint64_t offset,
       const MutableBufferSequence& buffers)
   {
-    asio::error_code ec;
-    std::size_t s = this->get_service().read_some_at(
-        this->get_implementation(), offset, buffers, ec);
-    asio::detail::throw_error(ec, "read_some_at");
+    puerts_asio::error_code ec;
+    std::size_t s = this->impl_.get_service().read_some_at(
+        this->impl_.get_implementation(), offset, buffers, ec);
+    puerts_asio::detail::throw_error(ec, "read_some_at");
     return s;
   }
 
@@ -303,10 +361,10 @@ public:
    */
   template <typename MutableBufferSequence>
   std::size_t read_some_at(uint64_t offset,
-      const MutableBufferSequence& buffers, asio::error_code& ec)
+      const MutableBufferSequence& buffers, puerts_asio::error_code& ec)
   {
-    return this->get_service().read_some_at(
-        this->get_implementation(), offset, buffers, ec);
+    return this->impl_.get_service().read_some_at(
+        this->impl_.get_implementation(), offset, buffers, ec);
   }
 
   /// Start an asynchronous read at the specified offset.
@@ -325,13 +383,13 @@ public:
    * Copies will be made of the handler as required. The function signature of
    * the handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   std::size_t bytes_transferred           // Number of bytes read.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using puerts_asio::post().
    *
    * @note The read operation may not read all of the requested number of bytes.
    * Consider using the @ref async_read_at function if you need to ensure that
@@ -341,36 +399,112 @@ public:
    * @par Example
    * To read into a single data buffer use the @ref buffer function as follows:
    * @code
-   * handle.async_read_some_at(42, asio::buffer(data, size), handler);
+   * handle.async_read_some_at(42, puerts_asio::buffer(data, size), handler);
    * @endcode
    * See the @ref buffer documentation for information on reading into multiple
    * buffers in one go, and how to use it with arrays, boost::array or
    * std::vector.
+   *
+   * @par Per-Operation Cancellation
+   * This asynchronous operation supports cancellation for the following
+   * puerts_asio::cancellation_type values:
+   *
+   * @li @c cancellation_type::terminal
+   *
+   * @li @c cancellation_type::partial
+   *
+   * @li @c cancellation_type::total
    */
-  template <typename MutableBufferSequence, typename ReadHandler>
-  ASIO_INITFN_RESULT_TYPE(ReadHandler,
-      void (asio::error_code, std::size_t))
+  template <typename MutableBufferSequence,
+      ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code,
+        std::size_t)) ReadHandler
+          ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  ASIO_INITFN_AUTO_RESULT_TYPE(ReadHandler,
+      void (puerts_asio::error_code, std::size_t))
   async_read_some_at(uint64_t offset,
       const MutableBufferSequence& buffers,
-      ASIO_MOVE_ARG(ReadHandler) handler)
+      ASIO_MOVE_ARG(ReadHandler) handler
+        ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a ReadHandler.
-    ASIO_READ_HANDLER_CHECK(ReadHandler, handler) type_check;
-
-    return this->get_service().async_read_some_at(this->get_implementation(),
-        offset, buffers, ASIO_MOVE_CAST(ReadHandler)(handler));
+    return async_initiate<ReadHandler,
+      void (puerts_asio::error_code, std::size_t)>(
+        initiate_async_read_some_at(this), handler, offset, buffers);
   }
+
+private:
+  class initiate_async_write_some_at
+  {
+  public:
+    typedef Executor executor_type;
+
+    explicit initiate_async_write_some_at(basic_random_access_handle* self)
+      : self_(self)
+    {
+    }
+
+    executor_type get_executor() const ASIO_NOEXCEPT
+    {
+      return self_->get_executor();
+    }
+
+    template <typename WriteHandler, typename ConstBufferSequence>
+    void operator()(ASIO_MOVE_ARG(WriteHandler) handler,
+        uint64_t offset, const ConstBufferSequence& buffers) const
+    {
+      // If you get an error on the following line it means that your handler
+      // does not meet the documented type requirements for a WriteHandler.
+      ASIO_WRITE_HANDLER_CHECK(WriteHandler, handler) type_check;
+
+      detail::non_const_lvalue<WriteHandler> handler2(handler);
+      self_->impl_.get_service().async_write_some_at(
+          self_->impl_.get_implementation(), offset, buffers,
+          handler2.value, self_->impl_.get_executor());
+    }
+
+  private:
+    basic_random_access_handle* self_;
+  };
+
+  class initiate_async_read_some_at
+  {
+  public:
+    typedef Executor executor_type;
+
+    explicit initiate_async_read_some_at(basic_random_access_handle* self)
+      : self_(self)
+    {
+    }
+
+    executor_type get_executor() const ASIO_NOEXCEPT
+    {
+      return self_->get_executor();
+    }
+
+    template <typename ReadHandler, typename MutableBufferSequence>
+    void operator()(ASIO_MOVE_ARG(ReadHandler) handler,
+        uint64_t offset, const MutableBufferSequence& buffers) const
+    {
+      // If you get an error on the following line it means that your handler
+      // does not meet the documented type requirements for a ReadHandler.
+      ASIO_READ_HANDLER_CHECK(ReadHandler, handler) type_check;
+
+      detail::non_const_lvalue<ReadHandler> handler2(handler);
+      self_->impl_.get_service().async_read_some_at(
+          self_->impl_.get_implementation(), offset, buffers,
+          handler2.value, self_->impl_.get_executor());
+    }
+
+  private:
+    basic_random_access_handle* self_;
+  };
 };
 
 } // namespace windows
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
 #endif // defined(ASIO_HAS_WINDOWS_RANDOM_ACCESS_HANDLE)
        //   || defined(GENERATING_DOCUMENTATION)
-
-#endif // defined(ASIO_ENABLE_OLD_SERVICES)
 
 #endif // ASIO_WINDOWS_BASIC_RANDOM_ACCESS_HANDLE_HPP

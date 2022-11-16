@@ -531,7 +531,7 @@ struct AutoRegisterForFColor
             {"MakeRedToGreenColorFromScalar", FColorS_MakeRedToGreenColorFromScalar},
             {"MakeFromColorTemperature", FColorS_MakeFromColorTemperature}, {0, 0}};
 
-        Def.UETypeName = "FColor";
+        Def.UETypeName = "Color";
 
         Def.Initialize = _FColorNew_;
         Def.Finalize = _FColorDelete_;

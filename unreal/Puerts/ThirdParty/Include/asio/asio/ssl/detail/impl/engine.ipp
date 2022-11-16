@@ -2,7 +2,7 @@
 // ssl/detail/impl/engine.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ssl {
 namespace detail {
 
@@ -34,10 +34,10 @@ engine::engine(SSL_CTX* context)
 {
   if (!ssl_)
   {
-    asio::error_code ec(
+    puerts_asio::error_code ec(
         static_cast<int>(::ERR_get_error()),
-        asio::error::get_ssl_category());
-    asio::detail::throw_error(ec, "engine");
+        puerts_asio::error::get_ssl_category());
+    puerts_asio::detail::throw_error(ec, "engine");
   }
 
 #if (OPENSSL_VERSION_NUMBER < 0x10000000L)
@@ -55,43 +55,70 @@ engine::engine(SSL_CTX* context)
   ::SSL_set_bio(ssl_, int_bio, int_bio);
 }
 
+#if defined(ASIO_HAS_MOVE)
+engine::engine(engine&& other) ASIO_NOEXCEPT
+  : ssl_(other.ssl_),
+    ext_bio_(other.ext_bio_)
+{
+  other.ssl_ = 0;
+  other.ext_bio_ = 0;
+}
+#endif // defined(ASIO_HAS_MOVE)
+
 engine::~engine()
 {
-  if (SSL_get_app_data(ssl_))
+  if (ssl_ && SSL_get_app_data(ssl_))
   {
     delete static_cast<verify_callback_base*>(SSL_get_app_data(ssl_));
     SSL_set_app_data(ssl_, 0);
   }
 
-  ::BIO_free(ext_bio_);
-  ::SSL_free(ssl_);
+  if (ext_bio_)
+    ::BIO_free(ext_bio_);
+
+  if (ssl_)
+    ::SSL_free(ssl_);
 }
+
+#if defined(ASIO_HAS_MOVE)
+engine& engine::operator=(engine&& other) ASIO_NOEXCEPT
+{
+  if (this != &other)
+  {
+    ssl_ = other.ssl_;
+    ext_bio_ = other.ext_bio_;
+    other.ssl_ = 0;
+    other.ext_bio_ = 0;
+  }
+  return *this;
+}
+#endif // defined(ASIO_HAS_MOVE)
 
 SSL* engine::native_handle()
 {
   return ssl_;
 }
 
-asio::error_code engine::set_verify_mode(
-    verify_mode v, asio::error_code& ec)
+puerts_asio::error_code engine::set_verify_mode(
+    verify_mode v, puerts_asio::error_code& ec)
 {
   ::SSL_set_verify(ssl_, v, ::SSL_get_verify_callback(ssl_));
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code engine::set_verify_depth(
-    int depth, asio::error_code& ec)
+puerts_asio::error_code engine::set_verify_depth(
+    int depth, puerts_asio::error_code& ec)
 {
   ::SSL_set_verify_depth(ssl_, depth);
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code engine::set_verify_callback(
-    verify_callback_base* callback, asio::error_code& ec)
+puerts_asio::error_code engine::set_verify_callback(
+    verify_callback_base* callback, puerts_asio::error_code& ec)
 {
   if (SSL_get_app_data(ssl_))
     delete static_cast<verify_callback_base*>(SSL_get_app_data(ssl_));
@@ -101,7 +128,7 @@ asio::error_code engine::set_verify_callback(
   ::SSL_set_verify(ssl_, ::SSL_get_verify_mode(ssl_),
       &engine::verify_callback_function);
 
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
@@ -129,23 +156,23 @@ int engine::verify_callback_function(int preverified, X509_STORE_CTX* ctx)
 }
 
 engine::want engine::handshake(
-    stream_base::handshake_type type, asio::error_code& ec)
+    stream_base::handshake_type type, puerts_asio::error_code& ec)
 {
-  return perform((type == asio::ssl::stream_base::client)
+  return perform((type == puerts_asio::ssl::stream_base::client)
       ? &engine::do_connect : &engine::do_accept, 0, 0, ec, 0);
 }
 
-engine::want engine::shutdown(asio::error_code& ec)
+engine::want engine::shutdown(puerts_asio::error_code& ec)
 {
   return perform(&engine::do_shutdown, 0, 0, ec, 0);
 }
 
-engine::want engine::write(const asio::const_buffer& data,
-    asio::error_code& ec, std::size_t& bytes_transferred)
+engine::want engine::write(const puerts_asio::const_buffer& data,
+    puerts_asio::error_code& ec, std::size_t& bytes_transferred)
 {
   if (data.size() == 0)
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
     return engine::want_nothing;
   }
 
@@ -154,12 +181,12 @@ engine::want engine::write(const asio::const_buffer& data,
       data.size(), ec, &bytes_transferred);
 }
 
-engine::want engine::read(const asio::mutable_buffer& data,
-    asio::error_code& ec, std::size_t& bytes_transferred)
+engine::want engine::read(const puerts_asio::mutable_buffer& data,
+    puerts_asio::error_code& ec, std::size_t& bytes_transferred)
 {
   if (data.size() == 0)
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
     return engine::want_nothing;
   }
 
@@ -167,37 +194,37 @@ engine::want engine::read(const asio::mutable_buffer& data,
       data.size(), ec, &bytes_transferred);
 }
 
-asio::mutable_buffer engine::get_output(
-    const asio::mutable_buffer& data)
+puerts_asio::mutable_buffer engine::get_output(
+    const puerts_asio::mutable_buffer& data)
 {
   int length = ::BIO_read(ext_bio_,
       data.data(), static_cast<int>(data.size()));
 
-  return asio::buffer(data,
+  return puerts_asio::buffer(data,
       length > 0 ? static_cast<std::size_t>(length) : 0);
 }
 
-asio::const_buffer engine::put_input(
-    const asio::const_buffer& data)
+puerts_asio::const_buffer engine::put_input(
+    const puerts_asio::const_buffer& data)
 {
   int length = ::BIO_write(ext_bio_,
       data.data(), static_cast<int>(data.size()));
 
-  return asio::buffer(data +
+  return puerts_asio::buffer(data +
       (length > 0 ? static_cast<std::size_t>(length) : 0));
 }
 
-const asio::error_code& engine::map_error_code(
-    asio::error_code& ec) const
+const puerts_asio::error_code& engine::map_error_code(
+    puerts_asio::error_code& ec) const
 {
   // We only want to map the error::eof code.
-  if (ec != asio::error::eof)
+  if (ec != puerts_asio::error::eof)
     return ec;
 
   // If there's data yet to be read, it's an error.
   if (BIO_wpending(ext_bio_))
   {
-    ec = asio::ssl::error::stream_truncated;
+    ec = puerts_asio::ssl::error::stream_truncated;
     return ec;
   }
 
@@ -211,22 +238,22 @@ const asio::error_code& engine::map_error_code(
   // Otherwise, the peer should have negotiated a proper shutdown.
   if ((::SSL_get_shutdown(ssl_) & SSL_RECEIVED_SHUTDOWN) == 0)
   {
-    ec = asio::ssl::error::stream_truncated;
+    ec = puerts_asio::ssl::error::stream_truncated;
   }
 
   return ec;
 }
 
 #if (OPENSSL_VERSION_NUMBER < 0x10000000L)
-asio::detail::static_mutex& engine::accept_mutex()
+puerts_asio::detail::static_mutex& engine::accept_mutex()
 {
-  static asio::detail::static_mutex mutex = ASIO_STATIC_MUTEX_INIT;
+  static puerts_asio::detail::static_mutex mutex = ASIO_STATIC_MUTEX_INIT;
   return mutex;
 }
 #endif // (OPENSSL_VERSION_NUMBER < 0x10000000L)
 
 engine::want engine::perform(int (engine::* op)(void*, std::size_t),
-    void* data, std::size_t length, asio::error_code& ec,
+    void* data, std::size_t length, puerts_asio::error_code& ec,
     std::size_t* bytes_transferred)
 {
   std::size_t pending_output_before = ::BIO_ctrl_pending(ext_bio_);
@@ -238,16 +265,25 @@ engine::want engine::perform(int (engine::* op)(void*, std::size_t),
 
   if (ssl_error == SSL_ERROR_SSL)
   {
-    ec = asio::error_code(sys_error,
-        asio::error::get_ssl_category());
-    return want_nothing;
+    ec = puerts_asio::error_code(sys_error,
+        puerts_asio::error::get_ssl_category());
+    return pending_output_after > pending_output_before
+      ? want_output : want_nothing;
   }
 
   if (ssl_error == SSL_ERROR_SYSCALL)
   {
-    ec = asio::error_code(sys_error,
-        asio::error::get_system_category());
-    return want_nothing;
+    if (sys_error == 0)
+    {
+      ec = puerts_asio::ssl::error::unspecified_system_error;
+    }
+    else
+    {
+      ec = puerts_asio::error_code(sys_error,
+          puerts_asio::error::get_ssl_category());
+    }
+    return pending_output_after > pending_output_before
+      ? want_output : want_nothing;
   }
 
   if (result > 0 && bytes_transferred)
@@ -255,27 +291,32 @@ engine::want engine::perform(int (engine::* op)(void*, std::size_t),
 
   if (ssl_error == SSL_ERROR_WANT_WRITE)
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
     return want_output_and_retry;
   }
   else if (pending_output_after > pending_output_before)
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
     return result > 0 ? want_output : want_output_and_retry;
   }
   else if (ssl_error == SSL_ERROR_WANT_READ)
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
     return want_input_and_retry;
   }
-  else if (::SSL_get_shutdown(ssl_) & SSL_RECEIVED_SHUTDOWN)
+  else if (ssl_error == SSL_ERROR_ZERO_RETURN)
   {
-    ec = asio::error::eof;
+    ec = puerts_asio::error::eof;
+    return want_nothing;
+  }
+  else if (ssl_error == SSL_ERROR_NONE)
+  {
+    ec = puerts_asio::error_code();
     return want_nothing;
   }
   else
   {
-    ec = asio::error_code();
+    ec = puerts_asio::ssl::error::unexpected_result;
     return want_nothing;
   }
 }
@@ -283,7 +324,7 @@ engine::want engine::perform(int (engine::* op)(void*, std::size_t),
 int engine::do_accept(void*, std::size_t)
 {
 #if (OPENSSL_VERSION_NUMBER < 0x10000000L)
-  asio::detail::static_mutex::scoped_lock lock(accept_mutex());
+  puerts_asio::detail::static_mutex::scoped_lock lock(accept_mutex());
 #endif // (OPENSSL_VERSION_NUMBER < 0x10000000L)
   return ::SSL_accept(ssl_);
 }
@@ -315,7 +356,7 @@ int engine::do_write(void* data, std::size_t length)
 
 } // namespace detail
 } // namespace ssl
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

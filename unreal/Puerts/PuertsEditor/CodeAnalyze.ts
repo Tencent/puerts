@@ -1298,7 +1298,7 @@ function getCustomSystem(): ts.System {
         if (res) {
             return $unref(data);
         } else {
-            console.warn("readFile: read file fail! path=" + path);
+            console.warn("readFile: read file fail! path=" + path + ", stack:" + new Error().stack);
             return undefined;
         }
     }
@@ -1536,6 +1536,8 @@ function watch(configFilePath:string) {
     function getDefaultLibLocation(): string {
         return getDirectoryPath(normalizePath(customSystem.getExecutingFilePath()));
     }
+
+    const scriptSnapshotsCache = new Map<string, {version: string, scriptSnapshot:ts.IScriptSnapshot}>();
   
     // Create the language service host to allow the LS to communicate with the host
     const servicesHost: ts.LanguageServiceHost = {
@@ -1551,12 +1553,40 @@ function watch(configFilePath:string) {
       },
       getScriptSnapshot: fileName => {
         if (!customSystem.fileExists(fileName)) {
-            console.log("getScriptSnapshot: file not existed! path=" + fileName);
+            console.error("getScriptSnapshot: file not existed! path=" + fileName);
             return undefined;
+        }
+
+        if (!(fileName in fileVersions)) {
+            fileVersions[fileName] = {version: UE.FileSystemOperation.FileMD5Hash(fileName), processed: false};
+        }
+
+        if (!scriptSnapshotsCache.has(fileName)) {
+            const sourceFile = customSystem.readFile(fileName);
+            if (!sourceFile) {
+                console.error("getScriptSnapshot: read file failed! path=" + fileName);
+                return undefined;
+            }
+            scriptSnapshotsCache.set(fileName, {
+                version:fileVersions[fileName].version,
+                scriptSnapshot: ts.ScriptSnapshot.fromString(sourceFile)
+            });
+        }
+
+        let scriptSnapshotsInfo = scriptSnapshotsCache.get(fileName);
+
+        if (scriptSnapshotsInfo.version != fileVersions[fileName].version) {
+            const sourceFile = customSystem.readFile(fileName);
+            if (!sourceFile) {
+                console.error("getScriptSnapshot: read file failed! path=" + fileName);
+                return undefined;
+            }
+            scriptSnapshotsInfo.version = fileVersions[fileName].version;
+            scriptSnapshotsInfo.scriptSnapshot = ts.ScriptSnapshot.fromString(sourceFile);
         }
         //console.log("getScriptSnapshot:"+ fileName + ",in:" + new Error().stack)
   
-        return ts.ScriptSnapshot.fromString(customSystem.readFile(fileName));
+        return scriptSnapshotsInfo.scriptSnapshot;
       },
       getCurrentDirectory: customSystem.getCurrentDirectory,
       getCompilationSettings: () => options,
@@ -1586,17 +1616,20 @@ function watch(configFilePath:string) {
     let program = getProgramFromService();
     console.log ("full compile using " + (new Date().getTime() - beginTime) + "ms");
     let diagnostics =  ts.getPreEmitDiagnostics(program);
+    let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
+    var changed = false;
+    if (customSystem.fileExists(versionsFilePath)) {
+        try {
+            restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
+            console.log("restore versions from ", versionsFilePath);
+        } catch {}
+    }
     if (diagnostics.length > 0) {
+        fileNames.forEach(fileName => {
+            fileVersions[fileName] = restoredFileVersions[fileName] || fileVersions[fileName];
+        });
         logErrors(diagnostics);
     } else {
-        let restoredFileVersions: ts.MapLike<{ version: string, processed: boolean }> = {};
-        var changed = false;
-        if (customSystem.fileExists(versionsFilePath)) {
-            try {
-                restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
-                console.log("restore versions from ", versionsFilePath);
-            } catch {}
-        }
         fileNames.forEach(fileName => {
             if (!(fileName in restoredFileVersions) || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed) {
                 onSourceFileAddOrChange(fileName, false, program, true, false);
@@ -1734,7 +1767,21 @@ function watch(configFilePath:string) {
                                 
                                 let baseTypes = type.getBaseTypes();
                                 if (!baseTypes || baseTypes.length != 1) return;
-                                let baseTypeUClass = getUClassOfType(baseTypes[0]);
+                                let structOfType = getUClassOfType(baseTypes[0]);
+                                let baseTypeUClass:UE.Class = undefined;
+
+                                if(!structOfType){
+                                    return
+                                }
+                                
+                                if (structOfType.GetClass().IsChildOf(UE.Class.StaticClass())) {
+                                    baseTypeUClass = structOfType as UE.Class;
+                                }
+                                else {
+                                    console.warn("do not support UStruct:" + checker.typeToString(type));
+                                    return;
+                                }
+
                                 if (baseTypeUClass) {
                                     if (isSubclassOf(type, "Subsystem")) {
                                         console.warn("do not support Subsystem " + checker.typeToString(type));
@@ -1816,7 +1863,7 @@ function watch(configFilePath:string) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = getDirectoryPath(moduleFileName);
                         let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0);
                         bp.Save();
                         return bp.GeneratedClass;
                     }
@@ -1837,7 +1884,7 @@ function watch(configFilePath:string) {
             function tsTypeToPinType(type: ts.Type, node: ts.Node) : { pinType: UE.PEGraphPinType, pinValueType?: UE.PEGraphTerminalType} | undefined {
                 if (!type) return undefined;
                 try {
-                    let typeNode = checker.typeToTypeNode(type);
+                    let typeNode = checker.typeToTypeNode(type, undefined, undefined);
                     //console.log(checker.typeToString(type), tds)
                     if (ts.isTypeReferenceNode(typeNode) && type.symbol) {
                         let typeName = type.symbol.getName();
@@ -3818,11 +3865,6 @@ function watch(configFilePath:string) {
                                     let paramPinType = tsTypeToPinType(paramType, getSymbolTypeNode(signature.parameters[i]));
                                     if (!paramPinType)  {
                                         console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has not supported parameter!");
-                                        bp.ClearParameter();
-                                        return;
-                                    }
-                                    if (paramPinType.pinType.PinContainerType == UE.EPinContainerType.Array && paramPinType.pinType.bIsReference == false) {
-                                        console.warn(symbol.getName() + " of " + checker.typeToString(type) + " has TArray<T> parameter, using $InRef<UE.TArray<T>> instead!");
                                         bp.ClearParameter();
                                         return;
                                     }

@@ -711,7 +711,7 @@ struct AutoRegisterForFBox2D
 
         static puerts::JSFunctionInfo Functions[] = {{0, 0}};
 
-        Def.UETypeName = "FBox2D";
+        Def.UETypeName = "Box2D";
 
         Def.Initialize = _FBox2DNew_;
         Def.Finalize = _FBox2DDelete_;

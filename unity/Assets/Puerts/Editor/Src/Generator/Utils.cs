@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static Puerts.Editor.Generator.Wrapper.StaticWrapperInfo;
 
 namespace Puerts.Editor
 {
@@ -144,7 +145,12 @@ namespace Puerts.Editor
                 if (mbi is FieldInfo)
                 {
                     FieldInfo fi = (mbi as FieldInfo);
-                    if (fi.FieldType.IsPointer)
+                    if (
+                        fi.FieldType.IsPointer
+#if UNITY_2021_1_OR_NEWER
+                        || fi.FieldType.IsByRefLike
+#endif
+                    )
                     {
                         return true;
                     }
@@ -160,7 +166,12 @@ namespace Puerts.Editor
                 if (mbi is PropertyInfo)
                 {
                     PropertyInfo pi = (mbi as PropertyInfo);
-                    if (pi.PropertyType.IsPointer)
+                    if (
+                        pi.PropertyType.IsPointer
+#if UNITY_2021_1_OR_NEWER
+                        || pi.PropertyType.IsByRefLike
+#endif
+                    )
                     {
                         return true;
                     }
@@ -179,7 +190,17 @@ namespace Puerts.Editor
                 if (mbi is MethodInfo)
                 {
                     MethodInfo mi = mbi as MethodInfo;
-                    if (mi.ReturnType.IsPointer)
+
+                    if (mi.Name.Contains("$")) 
+                    {
+                        // fix #964
+                        return true;
+                    }
+                    if (mi.ReturnType.IsPointer
+#if UNITY_2021_1_OR_NEWER
+                        || mi.ReturnType.IsByRefLike
+#endif
+                    )
                     {
                         return true;
                     }
@@ -196,7 +217,12 @@ namespace Puerts.Editor
                 if (mbi is MethodBase)
                 {
                     MethodBase mb = mbi as MethodBase;
-                    if (mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer))
+                    if (
+                        mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer
+#if UNITY_2021_1_OR_NEWER
+                        || pInfo.ParameterType.IsByRefLike
+#endif
+                    ))
                     {
                         return true;
                     }

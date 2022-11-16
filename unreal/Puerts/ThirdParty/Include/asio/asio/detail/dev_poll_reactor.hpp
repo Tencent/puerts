@@ -2,7 +2,7 @@
 // detail/dev_poll_reactor.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -37,7 +37,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class dev_poll_reactor
@@ -53,7 +53,7 @@ public:
   };
 
   // Constructor.
-  ASIO_DECL dev_poll_reactor(asio::execution_context& ctx);
+  ASIO_DECL dev_poll_reactor(puerts_asio::execution_context& ctx);
 
   // Destructor.
   ASIO_DECL ~dev_poll_reactor();
@@ -63,7 +63,7 @@ public:
 
   // Recreate internal descriptors following a fork.
   ASIO_DECL void notify_fork(
-      asio::execution_context::fork_event fork_ev);
+      puerts_asio::execution_context::fork_event fork_ev);
 
   // Initialise the task.
   ASIO_DECL void init_task();
@@ -84,10 +84,7 @@ public:
       per_descriptor_data& source_descriptor_data);
 
   // Post a reactor operation for immediate completion.
-  void post_immediate_completion(reactor_op* op, bool is_continuation)
-  {
-    scheduler_.post_immediate_completion(op, is_continuation);
-  }
+  void post_immediate_completion(reactor_op* op, bool is_continuation);
 
   // Start a new operation. The reactor operation will be performed when the
   // given descriptor is flagged as ready, or an error has occurred.
@@ -99,6 +96,13 @@ public:
   // handlers associated with the descriptor will be invoked with the
   // operation_aborted error.
   ASIO_DECL void cancel_ops(socket_type descriptor, per_descriptor_data&);
+
+  // Cancel all operations associated with the given descriptor and key. The
+  // handlers associated with the descriptor will be invoked with the
+  // operation_aborted error.
+  ASIO_DECL void cancel_ops_by_key(socket_type descriptor,
+      per_descriptor_data& descriptor_data,
+      int op_type, void* cancellation_key);
 
   // Cancel any operations that are running against the descriptor and remove
   // its registration from the reactor. The reactor resources associated with
@@ -170,7 +174,7 @@ private:
   // function of the handler objects will be invoked. This function does not
   // acquire the dev_poll_reactor's mutex.
   ASIO_DECL void cancel_ops_unlocked(socket_type descriptor,
-      const asio::error_code& ec);
+      const puerts_asio::error_code& ec);
 
   // Add a pending event entry for the given descriptor.
   ASIO_DECL ::pollfd& add_pending_event_change(int descriptor);
@@ -179,7 +183,7 @@ private:
   scheduler& scheduler_;
 
   // Mutex to protect access to internal data.
-  asio::detail::mutex mutex_;
+  puerts_asio::detail::mutex mutex_;
 
   // The /dev/poll file descriptor.
   int dev_poll_fd_;
@@ -204,7 +208,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

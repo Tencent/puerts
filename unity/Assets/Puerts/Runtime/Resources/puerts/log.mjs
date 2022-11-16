@@ -23,6 +23,13 @@ if (UnityEngine_Debug) {
         }).join(',');
     }
     
+    function getStack(error) {
+        let stack = error.stack; // get js stack
+        stack = stack.substring(stack.indexOf("\n")+1); // remove first line ("Error")
+        stack = stack.replace(/^ {4}/gm, ""); // remove indentation
+        return stack
+    }
+    
     console.log = function() {
         if (console_org) console_org.log.apply(null, Array.prototype.slice.call(arguments));
         UnityEngine_Debug.Log(toString(arguments));
@@ -45,10 +52,17 @@ if (UnityEngine_Debug) {
     
     console.trace = function() {
         if (console_org) console_org.trace.apply(null, Array.prototype.slice.call(arguments));
-        let stack = new Error().stack; // get js stack
-        stack = stack.substring(stack.indexOf("\n")+1); // remove first line ("Error")
-        stack = stack.replace(/^ {4}/gm, ""); // remove indentation
-        UnityEngine_Debug.Log(toString(arguments) + "\n" + stack + "\n");
+        UnityEngine_Debug.Log(toString(arguments) + "\n" + getStack(new Error()) + "\n");
+    }
+
+    console.assert = function(condition) {
+        if (console_org) console_org.assert.apply(null, Array.prototype.slice.call(arguments));
+        if (condition)
+            return
+        if (arguments.length > 1)
+            UnityEngine_Debug.Assert(false, "Assertion failed: " + toString(Array.prototype.slice.call(arguments, 1)) + "\n" + getStack(new Error()) + "\n");
+        else
+            UnityEngine_Debug.Assert(false, "Assertion failed: console.assert\n" + getStack(new Error()) + "\n");
     }
     
     global.console = console;

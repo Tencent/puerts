@@ -2,7 +2,7 @@
 // impl/error.ipp
 // ~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,14 +21,14 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace error {
 
 #if !defined(ASIO_WINDOWS) && !defined(__CYGWIN__)
 
 namespace detail {
 
-class netdb_category : public asio::error_category
+class netdb_category : public puerts_asio::error_category
 {
 public:
   const char* name() const ASIO_ERROR_CATEGORY_NOEXCEPT
@@ -52,7 +52,7 @@ public:
 
 } // namespace detail
 
-const asio::error_category& get_netdb_category()
+const puerts_asio::error_category& get_netdb_category()
 {
   static detail::netdb_category instance;
   return instance;
@@ -60,7 +60,7 @@ const asio::error_category& get_netdb_category()
 
 namespace detail {
 
-class addrinfo_category : public asio::error_category
+class addrinfo_category : public puerts_asio::error_category
 {
 public:
   const char* name() const ASIO_ERROR_CATEGORY_NOEXCEPT
@@ -80,7 +80,7 @@ public:
 
 } // namespace detail
 
-const asio::error_category& get_addrinfo_category()
+const puerts_asio::error_category& get_addrinfo_category()
 {
   static detail::addrinfo_category instance;
   return instance;
@@ -90,7 +90,7 @@ const asio::error_category& get_addrinfo_category()
 
 namespace detail {
 
-class misc_category : public asio::error_category
+class misc_category : public puerts_asio::error_category
 {
 public:
   const char* name() const ASIO_ERROR_CATEGORY_NOEXCEPT
@@ -114,14 +114,14 @@ public:
 
 } // namespace detail
 
-const asio::error_category& get_misc_category()
+const puerts_asio::error_category& get_misc_category()
 {
   static detail::misc_category instance;
   return instance;
 }
 
 } // namespace error
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

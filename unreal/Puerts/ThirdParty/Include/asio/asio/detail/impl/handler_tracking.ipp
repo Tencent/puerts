@@ -2,7 +2,7 @@
 // detail/impl/handler_tracking.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -43,7 +43,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 struct handler_tracking_timestamp
@@ -59,7 +59,7 @@ struct handler_tracking_timestamp
       boost::posix_time::microsec_clock::universal_time() - epoch;
 #elif defined(ASIO_HAS_CHRONO)
     typedef chrono_time_traits<chrono::system_clock,
-        asio::wait_traits<chrono::system_clock> > traits_helper;
+        puerts_asio::wait_traits<chrono::system_clock> > traits_helper;
     traits_helper::posix_time_duration now(
         chrono::system_clock::now().time_since_epoch());
 #endif
@@ -73,11 +73,12 @@ struct handler_tracking::tracking_state
   static_mutex mutex_;
   uint64_t next_id_;
   tss_ptr<completion>* current_completion_;
+  tss_ptr<location>* current_location_;
 };
 
 handler_tracking::tracking_state* handler_tracking::get_state()
 {
-  static tracking_state state = { ASIO_STATIC_MUTEX_INIT, 1, 0 };
+  static tracking_state state = { ASIO_STATIC_MUTEX_INIT, 1, 0, 0 };
   return &state;
 }
 
@@ -90,6 +91,25 @@ void handler_tracking::init()
   static_mutex::scoped_lock lock(state->mutex_);
   if (state->current_completion_ == 0)
     state->current_completion_ = new tss_ptr<completion>;
+  if (state->current_location_ == 0)
+    state->current_location_ = new tss_ptr<location>;
+}
+
+handler_tracking::location::location(
+    const char* file, int line, const char* func)
+  : file_(file),
+    line_(line),
+    func_(func),
+    next_(*get_state()->current_location_)
+{
+  if (file_)
+    *get_state()->current_location_ = this;
+}
+
+handler_tracking::location::~location()
+{
+  if (file_)
+    *get_state()->current_location_ = next_;
 }
 
 void handler_tracking::creation(execution_context&,
@@ -108,6 +128,24 @@ void handler_tracking::creation(execution_context&,
   uint64_t current_id = 0;
   if (completion* current_completion = *state->current_completion_)
     current_id = current_completion->id_;
+
+  for (location* current_location = *state->current_location_;
+      current_location; current_location = current_location->next_)
+  {
+    write_line(
+#if defined(ASIO_WINDOWS)
+        "@asio|%I64u.%06I64u|%I64u^%I64u|%s%s%.80s%s(%.80s:%d)\n",
+#else // defined(ASIO_WINDOWS)
+        "@asio|%llu.%06llu|%llu^%llu|%s%s%.80s%s(%.80s:%d)\n",
+#endif // defined(ASIO_WINDOWS)
+        timestamp.seconds, timestamp.microseconds,
+        current_id, h.id_,
+        current_location == *state->current_location_ ? "in " : "called from ",
+        current_location->func_ ? "'" : "",
+        current_location->func_ ? current_location->func_ : "",
+        current_location->func_ ? "' " : "",
+        current_location->file_, current_location->line_);
+  }
 
   write_line(
 #if defined(ASIO_WINDOWS)
@@ -163,7 +201,7 @@ void handler_tracking::completion::invocation_begin()
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   handler_tracking_timestamp timestamp;
 
@@ -180,7 +218,7 @@ void handler_tracking::completion::invocation_begin(
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec, std::size_t bytes_transferred)
+    const puerts_asio::error_code& ec, std::size_t bytes_transferred)
 {
   handler_tracking_timestamp timestamp;
 
@@ -198,7 +236,7 @@ void handler_tracking::completion::invocation_begin(
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec, int signal_number)
+    const puerts_asio::error_code& ec, int signal_number)
 {
   handler_tracking_timestamp timestamp;
 
@@ -215,7 +253,7 @@ void handler_tracking::completion::invocation_begin(
 }
 
 void handler_tracking::completion::invocation_begin(
-    const asio::error_code& ec, const char* arg)
+    const puerts_asio::error_code& ec, const char* arg)
 {
   handler_tracking_timestamp timestamp;
 
@@ -288,7 +326,7 @@ void handler_tracking::reactor_events(execution_context& /*context*/,
 
 void handler_tracking::reactor_operation(
     const tracked_handler& h, const char* op_name,
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   handler_tracking_timestamp timestamp;
 
@@ -304,7 +342,7 @@ void handler_tracking::reactor_operation(
 
 void handler_tracking::reactor_operation(
     const tracked_handler& h, const char* op_name,
-    const asio::error_code& ec, std::size_t bytes_transferred)
+    const puerts_asio::error_code& ec, std::size_t bytes_transferred)
 {
   handler_tracking_timestamp timestamp;
 
@@ -349,7 +387,7 @@ void handler_tracking::write_line(const char* format, ...)
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -26,7 +26,7 @@ for(var i = 0; i < lines.length; i++) {
             j++;
         }
     }
-    let m = line.match(/^PESAPI_EXTERN\s+([\w\*]+)\s+(pesapi_[^\(]+)(.+);/);
+    let m = line.match(/^PESAPI_EXTERN\s+([\w\* ]+)\s+(pesapi_[^\(]+)(.+);/);
     if (m) {
         //console.log(`${m[1]} ${m[2]} ${m[3]}`);
         let [_, returnType, functionName, paramertsDef] = m;

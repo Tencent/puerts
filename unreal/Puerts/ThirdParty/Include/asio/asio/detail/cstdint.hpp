@@ -2,7 +2,7 @@
 // detail/cstdint.hpp
 // ~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,7 +23,7 @@
 # include <boost/cstdint.hpp>
 #endif // defined(ASIO_HAS_CSTDINT)
 
-namespace asio {
+namespace puerts_asio {
 
 #if defined(ASIO_HAS_CSTDINT)
 using std::int16_t;
@@ -55,6 +55,6 @@ using boost::uint_least64_t;
 using boost::uintmax_t;
 #endif // defined(ASIO_HAS_CSTDINT)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_CSTDINT_HPP

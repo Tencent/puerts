@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace Puerts.Editor
 {
@@ -17,7 +18,6 @@ namespace Puerts.Editor
 
         namespace Wrapper
         {
-
             public class LazyMemberCollector
             {
                 public Dictionary<string, LazyMemberRegisterInfo> LazyMembers = new Dictionary<string, LazyMemberRegisterInfo>();
@@ -90,10 +90,18 @@ namespace Puerts.Editor
                 }
             }
 
-            public class TypeGenInfo
+            public class StaticWrapperInfo
             {
+
+                public class TypeGenericArgumentsGenInfo {
+                    public string Name;
+                    public string[] Constraints;
+                }
                 public string Name;
                 public string WrapClassName;
+                public string CSharpTypeName;
+                public bool IsGenericWrapper;
+                public TypeGenericArgumentsGenInfo[] GenericArgumentsInfo;
                 public string[] Namespaces;
                 public MethodGenInfo[] Methods;
                 public bool IsValueType;
@@ -106,8 +114,69 @@ namespace Puerts.Editor
                 public LazyMemberRegisterInfo[] LazyMembers;
                 public bool BlittableCopy;
 
-                public static TypeGenInfo FromType(Type type, List<Type> genTypes)
+                public static StaticWrapperInfo FromType(Type type, List<Type> genTypes)
                 {
+                    bool IsGenericWrapper = false;
+                    TypeGenericArgumentsGenInfo[] GenericArgumentsInfos = null;
+#if PUERTS_GENERAL || UNITY_2019_OR_NEWER
+                    // 如果是泛型类，且泛型参数对于PuerTS来说是一个NativeObject类型，则Wrapper可以用泛型处理。
+                    // 这里要先识别出NativeObject的参数位置，并将其替换
+                    if (type.IsGenericType) {
+                        var genericArguments = type.GetGenericArguments();
+                        if (
+                            genericArguments
+                                .Where((t, index) => !t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime))
+                                .Count() > 0
+                        )
+                        {
+                            var definitionType = type.GetGenericTypeDefinition();
+                            var definitionGenericArguments = definitionType.GetGenericArguments();
+                            IsGenericWrapper = true;
+                            type = definitionType.MakeGenericType(
+                                definitionGenericArguments.Select((dType, index)=> {
+                                    Type t = genericArguments[index];
+                                    if (!t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime)) return dType;
+                                    else return t;
+                                }).ToArray()
+                            );
+
+                            GenericArgumentsInfos = definitionGenericArguments.Select((ga, index) =>
+                            {
+                                Type t = genericArguments[index];
+                                if (!(!t.IsPrimitive && t != typeof(System.String) && t != typeof(DateTime))) return null;
+
+                                var constraintsInfo = new List<string>();
+
+                                var contraintTypes = ga.GetGenericParameterConstraints();
+                                GenericParameterAttributes constraints = ga.GenericParameterAttributes &
+                                    GenericParameterAttributes.SpecialConstraintMask;
+
+                                bool hasValueTypeConstraint = false;
+                                for (var i = 0; i < contraintTypes.Length; i++)
+                                {
+                                    if (contraintTypes[i] == typeof(System.ValueType))
+                                    {
+                                        hasValueTypeConstraint = true;
+                                        continue;
+                                    }
+                                    constraintsInfo.Add(contraintTypes[i].GetFriendlyName());
+                                }
+                                if ((constraints & GenericParameterAttributes.ReferenceTypeConstraint) != 0)
+                                    constraintsInfo.Add("class");
+                                if (hasValueTypeConstraint && (constraints & GenericParameterAttributes.DefaultConstructorConstraint) != 0 && (constraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
+                                    constraintsInfo.Add("struct");
+                                else if ((constraints & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
+                                    constraintsInfo.Add("new()");
+
+                                var genericArgumentsGenInfo = new TypeGenericArgumentsGenInfo();
+                                genericArgumentsGenInfo.Constraints = constraintsInfo.ToArray();
+                                genericArgumentsGenInfo.Name = ga.Name;
+
+                                return genericArgumentsGenInfo;
+                            }).Where(t => t != null).ToArray();
+                        }
+                    }
+#endif
                     // 关于懒绑定的成员函数：先全部丢进lazy收集器中。尔后如果发现有同名方法是不lazy的，那么它也要变成不lazy
                     // 做这个事情的原因是目前还没法做到重载级别的lazy。
                     LazyMemberCollector lazyCollector = new LazyMemberCollector();
@@ -194,13 +263,14 @@ namespace Puerts.Editor
                         { 
                             BindingMode mode = Utils.getBindingMode(m);
                             if (mode == BindingMode.DontBinding) return false;
-                            if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
+                            // constrcutor is not allowed to be lazy
+                            // if (mode == BindingMode.LazyBinding) { lazyCollector.Add(m); return false; }
                             return true; 
                         })
                         .Cast<MethodBase>()
                         .ToList();
-
-                    return new TypeGenInfo
+                    
+                    return new StaticWrapperInfo
                     {
                         WrapClassName = Utils.GetWrapTypeName(type),
                         Namespaces = (extensionMethodsList != null ? extensionMethodsList
@@ -211,6 +281,8 @@ namespace Puerts.Editor
                             .ToArray(),
                         Name = type.GetFriendlyName(),
                         IsValueType = type.IsValueType,
+                        IsGenericWrapper = IsGenericWrapper,
+                        GenericArgumentsInfo = GenericArgumentsInfos,
 
                         Methods = methodGroups
                             .Select(kv =>
@@ -279,7 +351,7 @@ namespace Puerts.Editor
 
             public class DataTypeInfo
             {
-                public string TypeName;
+                public string TypeName; // If it is a methodGenInfo, TypeName represents the return type
                 public bool IsEnum;
                 public string UnderlyingTypeName;
             }
@@ -313,7 +385,7 @@ namespace Puerts.Editor
                     {
                         result.TypeName = Utils.RemoveRefAndToConstraintType(parameterInfo.ParameterType.GetElementType()).GetFriendlyName();
                     }
-                    result.ExpectCsType = ((ExpectJsType & JsValueType.NativeObject) == JsValueType.NativeObject) ? string.Format("typeof({0})", result.TypeName) : "null";
+                    result.ExpectCsType = string.Format("typeof({0})", result.TypeName);//((ExpectJsType & JsValueType.NativeObject) == JsValueType.NativeObject) ? string.Format("typeof({0})", result.TypeName) : "null";
                     Utils.FillEnumInfo(result, parameterInfo.ParameterType);
                     return result;
                 }
@@ -448,9 +520,11 @@ namespace Puerts.Editor
                             OverloadGenInfo optionalInfo = null;
                             if (ps[i].IsOptional || mainInfo.ParameterInfos[i].IsParams)
                             {
+                                ParameterInfo[] pinfos = parameters.Take(i).ToArray();
+                                if (!Puerts.Utils.IsNotGenericOrValidGeneric((MethodInfo)methodBase, pinfos)) continue;
                                 optionalInfo = new OverloadGenInfo()
                                 {
-                                    ParameterInfos = parameters.Select(info => ParameterGenInfo.FromParameterInfo(info)).Take(i).ToArray(),
+                                    ParameterInfos = pinfos.Select(info => ParameterGenInfo.FromParameterInfo(info)).ToArray(),
                                     TypeName = Utils.RemoveRefAndToConstraintType(methodInfo.ReturnType).GetFriendlyName(),
                                     IsVoid = methodInfo.ReturnType == typeof(void),
                                     EllipsisedParameters = true,

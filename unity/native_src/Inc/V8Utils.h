@@ -17,7 +17,7 @@
 
 namespace puerts
 {
-const intptr_t OBJECT_MAGIC = 0xFA0E5D68;
+const intptr_t OBJECT_MAGIC = 0xFA0E5D68; // a random value
 
 enum JsValueType
 {
@@ -63,14 +63,17 @@ public:
         return v8::String::NewFromUtf8(Isolate, String, v8::NewStringType::kNormal).ToLocalChecked();
     }
 
-    V8_INLINE static std::string ExceptionToString(v8::Isolate* Isolate, const v8::TryCatch &TryCatch)
+    V8_INLINE static std::string ExceptionToString(v8::Isolate* Isolate, v8::Local<v8::Value> ExceptionValue)
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
-        v8::String::Utf8Value Exception(Isolate, TryCatch.Exception());
+        v8::String::Utf8Value Exception(Isolate, ExceptionValue);
         const char * StrException = *Exception;
         std::string ExceptionStr(StrException == nullptr ? "" : StrException);
-        v8::Local<v8::Message> Message = TryCatch.Message();
+        v8::Local<v8::Message> Message = v8::Exception::CreateMessage(Isolate, ExceptionValue);
         if (Message.IsEmpty())
         {
             // 如果没有提供更详细的信息，直接输出Exception
@@ -90,10 +93,10 @@ public:
             stm << std::endl;
 
             // 输出调用栈信息
-            v8::Local<v8::Value> StackTrace;
-            if (TryCatch.StackTrace(Context).ToLocal(&StackTrace))
+            v8::MaybeLocal<v8::Value> MaybeStackTrace = v8::TryCatch::StackTrace(Context, ExceptionValue);
+            if (!MaybeStackTrace.IsEmpty())
             {
-                v8::String::Utf8Value StackTraceVal(Isolate, StackTrace);
+                v8::String::Utf8Value StackTraceVal(Isolate, MaybeStackTrace.ToLocalChecked());
                 stm << std::endl << *StackTraceVal;
             }
             return stm.str();

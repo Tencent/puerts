@@ -11,6 +11,39 @@ using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public class MultiEnvTestA
+    {
+        int number;
+
+        public MultiEnvTestA(int a) { number = a; }
+
+        public int GetA() 
+        {
+            return number;
+        }
+
+        public static MultiEnvTestA CreateA() 
+        {
+            return new MultiEnvTestA(3);
+        }
+    }
+    public class MultiEnvTestB
+    {
+        int number;
+
+        public MultiEnvTestB(int b) { number = b; }
+
+        public int GetB() 
+        {
+            return number;
+        }
+
+        public static MultiEnvTestB CreateB() 
+        {
+            return new MultiEnvTestB(3);
+        }
+    }
+    
     public class Util
     {
         public static int InvokeJSFunctionIntInt(Func<int, int> jsFunc, int arg)
@@ -525,18 +558,63 @@ namespace Puerts.UnitTest
             if (b && Callback != null) Callback();
             return true;
         }
-    }
     
-    public class TypedValue
+    }
+
+    public class ReadonlyStaticTest
     {
-        static object lastCallbackValue = null;
-        public static void Callback(object o)
+        public readonly static int ReadonlyStaticField = 1;
+        public static int StaticField = 3;
+    }
+    public class OptionalParametersClass
+    {
+        public int Test(int i = 0, int j = 1, int k = 2)
         {
-            lastCallbackValue = o;
+            return i * 100 + j * 10 + k;
         }
-        public static Type GetLastCallbackValueType() 
+
+        public int Test(string i, int j = 1, int k = 2)
         {
-            return lastCallbackValue == null ? null : lastCallbackValue.GetType();
+            return j * 10 + k;
+        }
+
+        public int Test2(string i)
+        {
+            return 0;
+        }
+
+        public int Test2(string i, int j)
+        {
+            return j;
+        }
+
+        public int Test2(string i, int j, params bool[] k)
+        {
+            return -1;
+        }
+
+        public int Test3(string i, int b)
+        {
+            return 0;
+        }
+
+        public int Test4(string i, int b, int c = 0, int d = 1)
+        {
+            return 0;
+        }
+
+        public int Test5(string i, int j, params bool[] k)
+        {
+            return -1;
+        }
+        public int Test6(int d, int i = 1, params string[] strs)
+        {
+            return i + d;
+        }
+        public string TestFilter(string str)
+        {
+            return str + " hello";
         }
     }
+
 }

@@ -24,10 +24,11 @@ var global = global || (function () { return this; }());
     }
     global.__tgjsEvalScript = undefined;
     
-    let loadModule = global.__tgjsLoadModule || function(moduleName, requiringDir) {
-        return sendRequestSync('loadModule', moduleName + '#' + requiringDir);
-    }
+    let loadModule = global.__tgjsLoadModule;
     global.__tgjsLoadModule = undefined;
+    
+    let searchModule = global.__tgjsSearchModule;
+    global.__tgjsSearchModule = undefined;
     
     let org_require = global.require;
     
@@ -93,12 +94,13 @@ var global = global || (function () { return this; }());
                     return org_require(moduleName);
                 } catch (e) {}
             }
-            let moduleInfo = loadModule(moduleName, requiringDir);
-            let split = moduleInfo.indexOf('\n');
-            let split2 = moduleInfo.indexOf('\n', split + 1);
-            let fullPath = moduleInfo.substring(0, split);
-            let debugPath = moduleInfo.substring(split + 1, split2);
-            let script = moduleInfo.substring(split2 + 1);
+            let moduleInfo = searchModule(moduleName, requiringDir);
+            if (!moduleInfo) {
+                throw new Error(`can not find ${moduleName} in ${requiringDir}`);
+            }
+            
+            let [fullPath, debugPath] = moduleInfo;
+            
             let key = fullPath;
             if ((key in moduleCache) && !forceReload) {
                 localModuleCache[moduleName] = moduleCache[key];
@@ -108,6 +110,7 @@ var global = global || (function () { return this; }());
             localModuleCache[moduleName] = m;
             moduleCache[key] = m;
             let sid = addModule(m);
+            let script = loadModule(fullPath);
             if (fullPath.endsWith(".json")) {
                 let packageConfigure = JSON.parse(script);
                 
@@ -164,6 +167,8 @@ var global = global || (function () { return this; }());
     puerts.genRequire = genRequire;
     
     puerts.__require = genRequire("");
+    
+    global.require = puerts.__require;
     
     puerts.getModuleBySID = getModuleBySID;
     

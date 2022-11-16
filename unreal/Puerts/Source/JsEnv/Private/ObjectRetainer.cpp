@@ -7,11 +7,19 @@
  */
 
 #include "ObjectRetainer.h"
+#ifdef THREAD_SAFE
+#pragma warning(push, 0)
+#include "v8.h"
+#pragma warning(pop)
+#endif
 
 namespace puerts
 {
 void FObjectRetainer::Retain(UObject* Object)
 {
+#ifdef THREAD_SAFE
+    FScopeLock ScopeLock(&RetainedObjectsCritical);
+#endif
     if (!RetainedObjects.Contains(Object))
     {
         RetainedObjects.Add(Object);
@@ -20,6 +28,9 @@ void FObjectRetainer::Retain(UObject* Object)
 
 void FObjectRetainer::Release(UObject* Object)
 {
+#ifdef THREAD_SAFE
+    FScopeLock ScopeLock(&RetainedObjectsCritical);
+#endif
     if (RetainedObjects.Contains(Object))
     {
         RetainedObjects.Remove(Object);
@@ -28,11 +39,17 @@ void FObjectRetainer::Release(UObject* Object)
 
 void FObjectRetainer::Clear()
 {
+#ifdef THREAD_SAFE
+    FScopeLock ScopeLock(&RetainedObjectsCritical);
+#endif
     RetainedObjects.Empty();
 }
 
 void FObjectRetainer::AddReferencedObjects(FReferenceCollector& Collector)
 {
+#ifdef THREAD_SAFE
+    FScopeLock ScopeLock(&RetainedObjectsCritical);
+#endif
     Collector.AddReferencedObjects(RetainedObjects);
 }
 

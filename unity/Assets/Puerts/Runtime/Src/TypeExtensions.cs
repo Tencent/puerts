@@ -190,12 +190,16 @@ namespace Puerts
             {
                 if (type.GetArrayRank() > 1)
                 {
-                    return GetFriendlyName(type.GetElementType()) + "["+ new String(',', type.GetArrayRank() - 1) + "]";
+                    return GetFriendlyName(type.GetElementType()) + "[" + new String(',', type.GetArrayRank() - 1) + "]";
                 }
                 else
                 {
                     return GetFriendlyName(type.GetElementType()) + "[]";
                 }
+            }
+            else if (type.IsGenericParameter)
+            {
+                return type.Name;
             }
             else if (type.IsNested)
             {
@@ -214,7 +218,7 @@ namespace Puerts
             {
                 var genericArgumentNames = type.GetGenericArguments()
                     .Select(x => GetFriendlyName(x)).ToArray();
-                return type.FullName.Split('`')[0] + "<" + string.Join(", ", genericArgumentNames) + ">";
+                return (type.FullName == null ? type.Namespace + "." + type.Name : type.FullName).Split('`')[0] + "<" + string.Join(", ", genericArgumentNames) + ">";
             }
             else
                 return type.FullName;

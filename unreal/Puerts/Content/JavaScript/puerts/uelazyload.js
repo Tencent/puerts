@@ -26,6 +26,53 @@ var global = global || (function () { return this; }());
         }
     });
     
+    const TNAMESPACE = 0;
+    const TENUM = 1
+    const TBLUEPRINT = 2;
+    const TSTRUCT = 3
+    
+    function createNamespaceOrClass(path, parentDir, nodeType) {
+        return new Proxy({__path: path, __parent:parentDir, __type:nodeType}, {
+            get: function(node, name) {
+                if (!(name in node)) {
+                    if (name === '__parent' || name === '__path') return undefined;
+                    
+                    if (node.__type == TENUM) { // auto load
+                        node[name] = createNamespaceOrClass(name, node, TNAMESPACE);
+                        blueprint_load(node[name]);
+                    } else {
+                        let newNodeType = node.__type;
+                        
+                        if (newNodeType === TNAMESPACE) {
+                            let path = `/${name}.${name}`
+                            let c = node;
+                            while (c && c.__path) {
+                                path = `/${c.__path}${path}`
+                                c = c.__parent;
+                            }
+                            const obj = UE.Object.Load(path);
+                            if (obj) {
+                                const typeName = obj.GetClass().GetName();
+                                if (typeName === 'UserDefinedEnum') {
+                                    newNodeType = TENUM;
+                                } else if (typeName === 'UserDefinedStruct') {
+                                    newNodeType = TSTRUCT;
+                                } else {
+                                    newNodeType = TBLUEPRINT;
+                                }
+                            }
+                        }
+                        
+                        node[name] = createNamespaceOrClass(name, node, newNodeType);
+                    }
+                }
+                return node[name];
+            }
+        });
+    }
+    
+    cache["Game"] = createNamespaceOrClass("Game", undefined, TNAMESPACE);
+    
     puerts.registerBuildinModule('ue', UE);
     
     let CPP = new Proxy(cache, {
@@ -62,6 +109,9 @@ var global = global || (function () { return this; }());
     puerts.$set = setref;
     puerts.merge = global.__tgjsMergeObject;
     global.__tgjsMergeObject = undefined;
+    
+    cache.FNameLiteral = global.__tgjsFNameToArrayBuffer;
+    global.__tgjsFNameToArrayBuffer = undefined;
     
     let rawmakeclass = global.__tgjsMakeUClass
     global.__tgjsMakeUClass = undefined;
@@ -104,10 +154,10 @@ var global = global || (function () { return this; }());
     
     function blueprint(path) {
         console.warn('deprecated! use blueprint.tojs instead');
-        let uclass = UE.Struct.Load(path);
-        if (uclass) {
-            let jsclass = UEClassToJSClass(uclass);
-            jsclass.__puerts_uclass = uclass;
+        let ufield = UE.Field.Load(path);
+        if (ufield) {
+            let jsclass = UEClassToJSClass(ufield);
+            jsclass.__puerts_ufield = ufield;
             return jsclass;
         } else {
             throw new Error("can not load type in " + path);
@@ -130,7 +180,7 @@ var global = global || (function () { return this; }());
                  mixinMethods[name] = mixinClass.prototype[name];
             }
         }
-        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit);
+        let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit, config.noMixinedWarning);
         
         let jsCls = UEClassToJSClass(cls);
         Object.getOwnPropertyNames(mixinMethods).forEach(name => {
@@ -152,32 +202,85 @@ var global = global || (function () { return this; }());
     
     blueprint.mixin = mixin;
     
+    function unmixin(to) {
+        __tgjsMixin(to.StaticClass(), {}, undefined, undefined, undefined, true);
+    }
+    
+    blueprint.unmixin = unmixin;
+    
+    function blueprint_load(cls) {
+        if (cls.__path) {
+            let c = cls
+            let path = `.${c.__path}`
+            c = c.__parent;
+            while (c && c.__path) {
+                path = `/${c.__path}${path}`
+                c = c.__parent;
+            }
+            let ufield = UE.Field.Load(path);
+            if (!ufield) {
+                throw new Error(`load ${path} fail!`);
+            }
+            let jsclass = UEClassToJSClass(ufield);
+            jsclass.__puerts_ufield = ufield;
+            
+            if (cls.__parent) {
+                jsclass.__parent = cls.__parent;
+                jsclass.__name = cls.__path;
+                cls.__parent[cls.__path] = jsclass;
+            }
+            
+        } else {
+            throw new Error("argument #0 is not a unload type");
+        }
+    }
+    
+    blueprint.load = blueprint_load;
+    
+    function blueprint_unload(cls) {
+        if (cls.__puerts_ufield) {
+            delete cls.__puerts_ufield;
+            if (cls.__parent) {
+                cls.__parent[cls.__name] = createNamespaceOrClass(cls.__name, cls.__parent);
+            }
+        }
+    }
+    
+    blueprint.unload = blueprint_unload;
+    
     puerts.blueprint = blueprint;
     
     const newContainer = global.__tgjsNewContainer;
     global.__tgjsNewContainer = undefined;
     
-    function NewArray(t1) {
-        if (typeof t1 !== 'number') {
-            t1 = t1.StaticClass();
+    function translateType(t) {
+        if (typeof t !== 'number') {
+            if (t.hasOwnProperty('__puerts_ufield')) {
+                return t.__puerts_ufield
+            } else {
+                return t.StaticClass();
+            }
+        } else {
+            return t;
         }
+    }
+    
+    function NewArray(t1) {
+        t1 = translateType(t1);
+
         return newContainer(0, t1);
     }
     
     function NewSet(t1) {
-        if (typeof t1 !== 'number') {
-            t1 = t1.StaticClass();
-        }
+        t1 = translateType(t1);
+        
         return newContainer(1, t1);
     }
     
     function NewMap(t1, t2) {
-        if (typeof t1 !== 'number') {
-            t1 = t1.StaticClass();
-        }
-        if (typeof t2 !== 'number') {
-            t2 = t2.StaticClass();
-        }
+        t1 = translateType(t1);
+        t2 = translateType(t2);
+        
         return newContainer(2, t1, t2);
     }
     

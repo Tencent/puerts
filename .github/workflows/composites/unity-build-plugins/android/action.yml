@@ -1,0 +1,41 @@
+name: build android unity plugin
+
+inputs:
+  backend:
+    description: 'js backend'     
+    required: true
+  config:
+    type: choice
+    description: Release Or Debug
+    default: 'Release'
+    options:
+    - Release
+    - Debug
+  GITHUB_TOKEN:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get backend artifact
+      uses: ./.github/workflows/composites/unity-download-backend/
+      with:
+        github_token: ${{ inputs.GITHUB_TOKEN }}
+        backend: ${{ inputs.backend }}
+    - name: Install NDK
+      shell: bash
+      run: |
+        cd ~
+        wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
+        sudo apt install unzip -y
+        unzip -q NDK
+    - name: Build
+      shell: bash
+      run: |
+        cd unity/native_src
+        ANDROID_NDK=~/android-ndk-r21b node make.js --platform android --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        path: ./unity/Assets/Plugins/**/*
+        name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

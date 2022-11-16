@@ -21,21 +21,22 @@ const fixGet = {
     string: 'GetString',
     DateTime: 'GetDateTime',
 };
+
 const fixReturn = {
-    char: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    sbyte: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    byte: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    short: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    ushort: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    int: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    uint: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    long: 'Puerts.PuertsDLL.ReturnBigInt(isolate, info, result)',
-    ulong: 'Puerts.PuertsDLL.ReturnBigInt(isolate, info, (long)result)',
-    double: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    float: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
-    bool: 'Puerts.PuertsDLL.ReturnBoolean(isolate, info, result)',
-    string: 'Puerts.PuertsDLL.ReturnString(isolate, info, result)',
-    DateTime: 'Puerts.PuertsDLL.ReturnDate(isolate, info, (result - new DateTime(1970, 1, 1)).TotalMilliseconds)',
+    char: 'Puerts.StaticTranslate<char>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    sbyte: 'Puerts.StaticTranslate<sbyte>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    byte: 'Puerts.StaticTranslate<byte>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    short: 'Puerts.StaticTranslate<short>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    ushort: 'Puerts.StaticTranslate<ushort>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    int: 'Puerts.StaticTranslate<int>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    uint: 'Puerts.StaticTranslate<uint>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    long: 'Puerts.StaticTranslate<long>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    ulong: 'Puerts.StaticTranslate<ulong>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    double: 'Puerts.StaticTranslate<double>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    float: 'Puerts.StaticTranslate<float>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    bool: 'Puerts.StaticTranslate<bool>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    string: 'Puerts.StaticTranslate<string>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
+    DateTime: 'Puerts.StaticTranslate<DateTime>.Set((int)data, isolate, Puerts.NativeValueApi.SetValueToResult, info, result)',
 };
 const operatorMap = {
     op_Equality: '==',
@@ -155,10 +156,11 @@ module.exports = function TypingTemplate(data) {
         `
     });
 
-    tt`
+    tt`using Puerts;
+
 namespace PuertsStaticWrap
 {
-    public static class ${data.WrapClassName}
+    public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeGenericAlphaBet(data.GenericArgumentsInfo)}>` : ''} ${data.IsGenericWrapper ? makeConstraints(data.GenericArgumentsInfo) : ''}
     {
 `
     data.BlittableCopy && tt`
@@ -191,7 +193,7 @@ namespace PuertsStaticWrap
             toJsArray(overloadGroup).forEach(overload => {
 
                 data.Constructor.HasOverloads && overload.ParameterInfos.Length > 0 &&
-                tt`
+                    tt`
                     if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) => `argHelper${idx}.IsMatch(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsByRef}, ${paramInfo.IsOut})`).join(' && ')})
                 `;
 
@@ -233,7 +235,7 @@ namespace PuertsStaticWrap
         })
     }
     !data.Constructor || (data.Constructor.OverloadCount != 1) && tt`
-                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to ${data.Name} constructor");
+                Puerts.PuertsDLL.ThrowException(isolate, "invalid arguments to " + typeof(${data.Name}).GetFriendlyName() + " constructor");
     `
     tt`
     
@@ -271,8 +273,8 @@ namespace PuertsStaticWrap
             toJsArray(overloadGroup).forEach(overload => {
                 method.HasOverloads && overload.ParameterInfos.Length > 0 && tt`
                     if (${toJsArray(overload.ParameterInfos).map((paramInfo, idx) =>
-                        `argHelper${idx}.${paramInfo.IsParams ? "IsMatchParams" : "IsMatch"}(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsParams ? idx : paramInfo.IsByRef}, ${paramInfo.IsParams ? "paramLen" : paramInfo.IsOut})`).join(' && ')
-                        })
+                    `argHelper${idx}.${paramInfo.IsParams ? "IsMatchParams" : "IsMatch"}(${paramInfo.ExpectJsType}, ${paramInfo.ExpectCsType}, ${paramInfo.IsParams ? idx : paramInfo.IsByRef}, ${paramInfo.IsParams ? "paramLen" : paramInfo.IsOut})`).join(' && ')
+                    })
                 `
                 tt`
                     {
@@ -556,10 +558,10 @@ namespace PuertsStaticWrap
                     {"${property.Name}", new Puerts.PropertyRegisterInfo(){ IsStatic = ${property.IsStatic}, Getter = ${property.HasGetter ? "G_" + property.Name : "null"}, Setter = ${property.HasSetter ? "S_" + property.Name : "null"}} }`).join(',\n')}
                 },
                 LazyMembers = new System.Collections.Generic.List<Puerts.LazyMemberRegisterInfo>()
-                {   ${toJsArray(data.LazyMembers).map(item=> {
-                        return `
+                {   ${toJsArray(data.LazyMembers).map(item => {
+            return `
                     new Puerts.LazyMemberRegisterInfo() { Name = "${item.Name}", IsStatic = ${item.IsStatic}, Type = (Puerts.LazyMemberType)${item.Type}, HasGetter = ${item.HasGetter}, HasSetter = ${item.HasSetter} }`
-                    })}
+        })}
                 }
             };
         }
@@ -585,11 +587,10 @@ namespace PuertsStaticWrap
         public static void InitBlittableCopy(Puerts.JsEnv jsEnv)
         {
             Puerts.StaticTranslate<${data.Name}>.ReplaceDefault(StaticSetter, StaticGetter);
-            int jsEnvIdx = jsEnv.Index;
-            jsEnv.RegisterGeneralGetSet(typeof(${data.Name}), (IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
+            jsEnv.RegisterGeneralGetSet(typeof(${data.Name}), (int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef) =>
             {
                 return StaticGetter(jsEnvIdx, isolate, getValueApi, value, isByRef);
-            }, (IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, object obj) => 
+            }, (int jsEnvIdx, IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, object obj) => 
             {
                 StaticSetter(jsEnvIdx, isolate, setValueApi, value, (${data.Name})obj);
             });
@@ -661,4 +662,31 @@ function setSelf(type) {
 function paramLenCheck(group) {
     let len = group.get_Item(0).ParameterInfos.Length;
     return group.get_Item(0).HasParams ? `paramLen >= ${len - 1}` : `paramLen == ${len}`;
+}
+
+function makeGenericAlphaBet(info) {
+    const arr = [];
+    for (var i = 0; i < info.Length; i++) {
+        arr.push(info.get_Item(i).Name);
+    }
+    return arr.join(',')
+}
+
+function makeConstraints(info) {
+    const ret = [];
+    if (info.Length == 0) {
+        return '';
+    }
+    for (var i = 0; i < info.Length; i++) {
+        const item = info.get_Item(i);
+        if (item.Constraints.Length == 0) {
+            continue;
+        }
+        var consstr = [];
+        for (var j = 0; j < item.Constraints.Length; j++) {
+            consstr.push(item.Constraints.get_Item(j));
+        }
+        ret.push(`where ${item.Name} : ` + consstr.join(', '))
+    }
+    return ret.join(' ');
 }

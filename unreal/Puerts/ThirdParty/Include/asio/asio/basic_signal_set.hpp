@@ -2,7 +2,7 @@
 // basic_signal_set.hpp
 // ~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,24 +17,25 @@
 
 #include "asio/detail/config.hpp"
 
-#if defined(ASIO_ENABLE_OLD_SERVICES)
-
-#include "asio/basic_io_object.hpp"
+#include "asio/any_io_executor.hpp"
+#include "asio/async_result.hpp"
 #include "asio/detail/handler_type_requirements.hpp"
+#include "asio/detail/io_object_impl.hpp"
+#include "asio/detail/non_const_lvalue.hpp"
+#include "asio/detail/signal_set_service.hpp"
 #include "asio/detail/throw_error.hpp"
+#include "asio/detail/type_traits.hpp"
 #include "asio/error.hpp"
-#include "asio/signal_set_service.hpp"
+#include "asio/execution_context.hpp"
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 /// Provides signal functionality.
 /**
- * The basic_signal_set class template provides the ability to perform an
- * asynchronous wait for one or more signals to occur.
- *
- * Most applications will use the asio::signal_set typedef.
+ * The basic_signal_set class provides the ability to perform an asynchronous
+ * wait for one or more signals to occur.
  *
  * @par Thread Safety
  * @e Distinct @e objects: Safe.@n
@@ -44,7 +45,7 @@ namespace asio {
  * Performing an asynchronous wait:
  * @code
  * void handler(
- *     const asio::error_code& error,
+ *     const puerts_asio::error_code& error,
  *     int signal_number)
  * {
  *   if (!error)
@@ -56,7 +57,7 @@ namespace asio {
  * ...
  *
  * // Construct a signal set registered for process termination.
- * asio::signal_set signals(io_context, SIGINT, SIGTERM);
+ * puerts_asio::signal_set signals(my_context, SIGINT, SIGTERM);
  *
  * // Start an asynchronous wait for one of the signals to occur.
  * signals.async_wait(handler);
@@ -91,20 +92,49 @@ namespace asio {
  * that any signals registered using signal_set objects are unblocked in at
  * least one thread.
  */
-template <typename SignalSetService = signal_set_service>
+template <typename Executor = any_io_executor>
 class basic_signal_set
-  : public basic_io_object<SignalSetService>
 {
 public:
+  /// The type of the executor associated with the object.
+  typedef Executor executor_type;
+
+  /// Rebinds the signal set type to another executor.
+  template <typename Executor1>
+  struct rebind_executor
+  {
+    /// The signal set type when rebound to the specified executor.
+    typedef basic_signal_set<Executor1> other;
+  };
+
   /// Construct a signal set without adding any signals.
   /**
    * This constructor creates a signal set without registering for any signals.
    *
-   * @param io_context The io_context object that the signal set will use to
-   * dispatch handlers for any asynchronous operations performed on the set.
+   * @param ex The I/O executor that the signal set will use, by default, to
+   * dispatch handlers for any asynchronous operations performed on the
+   * signal set.
    */
-  explicit basic_signal_set(asio::io_context& io_context)
-    : basic_io_object<SignalSetService>(io_context)
+  explicit basic_signal_set(const executor_type& ex)
+    : impl_(0, ex)
+  {
+  }
+
+  /// Construct a signal set without adding any signals.
+  /**
+   * This constructor creates a signal set without registering for any signals.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the signal set will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the signal set.
+   */
+  template <typename ExecutionContext>
+  explicit basic_signal_set(ExecutionContext& context,
+      typename constraint<
+        is_convertible<ExecutionContext&, execution_context&>::value,
+        defaulted_constraint
+      >::type = defaulted_constraint())
+    : impl_(0, 0, context)
   {
   }
 
@@ -112,56 +142,119 @@ public:
   /**
    * This constructor creates a signal set and registers for one signal.
    *
-   * @param io_context The io_context object that the signal set will use to
-   * dispatch handlers for any asynchronous operations performed on the set.
+   * @param ex The I/O executor that the signal set will use, by default, to
+   * dispatch handlers for any asynchronous operations performed on the
+   * signal set.
    *
    * @param signal_number_1 The signal number to be added.
    *
    * @note This constructor is equivalent to performing:
-   * @code asio::signal_set signals(io_context);
+   * @code puerts_asio::signal_set signals(ex);
    * signals.add(signal_number_1); @endcode
    */
-  basic_signal_set(asio::io_context& io_context, int signal_number_1)
-    : basic_io_object<SignalSetService>(io_context)
+  basic_signal_set(const executor_type& ex, int signal_number_1)
+    : impl_(0, ex)
   {
-    asio::error_code ec;
-    this->get_service().add(this->get_implementation(), signal_number_1, ec);
-    asio::detail::throw_error(ec, "add");
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number_1, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+  }
+
+  /// Construct a signal set and add one signal.
+  /**
+   * This constructor creates a signal set and registers for one signal.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the signal set will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the signal set.
+   *
+   * @param signal_number_1 The signal number to be added.
+   *
+   * @note This constructor is equivalent to performing:
+   * @code puerts_asio::signal_set signals(context);
+   * signals.add(signal_number_1); @endcode
+   */
+  template <typename ExecutionContext>
+  basic_signal_set(ExecutionContext& context, int signal_number_1,
+      typename constraint<
+        is_convertible<ExecutionContext&, execution_context&>::value,
+        defaulted_constraint
+      >::type = defaulted_constraint())
+    : impl_(0, 0, context)
+  {
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number_1, ec);
+    puerts_asio::detail::throw_error(ec, "add");
   }
 
   /// Construct a signal set and add two signals.
   /**
    * This constructor creates a signal set and registers for two signals.
    *
-   * @param io_context The io_context object that the signal set will use to
-   * dispatch handlers for any asynchronous operations performed on the set.
+   * @param ex The I/O executor that the signal set will use, by default, to
+   * dispatch handlers for any asynchronous operations performed on the
+   * signal set.
    *
    * @param signal_number_1 The first signal number to be added.
    *
    * @param signal_number_2 The second signal number to be added.
    *
    * @note This constructor is equivalent to performing:
-   * @code asio::signal_set signals(io_context);
+   * @code puerts_asio::signal_set signals(ex);
    * signals.add(signal_number_1);
    * signals.add(signal_number_2); @endcode
    */
-  basic_signal_set(asio::io_context& io_context, int signal_number_1,
+  basic_signal_set(const executor_type& ex, int signal_number_1,
       int signal_number_2)
-    : basic_io_object<SignalSetService>(io_context)
+    : impl_(0, ex)
   {
-    asio::error_code ec;
-    this->get_service().add(this->get_implementation(), signal_number_1, ec);
-    asio::detail::throw_error(ec, "add");
-    this->get_service().add(this->get_implementation(), signal_number_2, ec);
-    asio::detail::throw_error(ec, "add");
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number_1, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+    impl_.get_service().add(impl_.get_implementation(), signal_number_2, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+  }
+
+  /// Construct a signal set and add two signals.
+  /**
+   * This constructor creates a signal set and registers for two signals.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the signal set will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the signal set.
+   *
+   * @param signal_number_1 The first signal number to be added.
+   *
+   * @param signal_number_2 The second signal number to be added.
+   *
+   * @note This constructor is equivalent to performing:
+   * @code puerts_asio::signal_set signals(context);
+   * signals.add(signal_number_1);
+   * signals.add(signal_number_2); @endcode
+   */
+  template <typename ExecutionContext>
+  basic_signal_set(ExecutionContext& context, int signal_number_1,
+      int signal_number_2,
+      typename constraint<
+        is_convertible<ExecutionContext&, execution_context&>::value,
+        defaulted_constraint
+      >::type = defaulted_constraint())
+    : impl_(0, 0, context)
+  {
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number_1, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+    impl_.get_service().add(impl_.get_implementation(), signal_number_2, ec);
+    puerts_asio::detail::throw_error(ec, "add");
   }
 
   /// Construct a signal set and add three signals.
   /**
    * This constructor creates a signal set and registers for three signals.
    *
-   * @param io_context The io_context object that the signal set will use to
-   * dispatch handlers for any asynchronous operations performed on the set.
+   * @param ex The I/O executor that the signal set will use, by default, to
+   * dispatch handlers for any asynchronous operations performed on the
+   * signal set.
    *
    * @param signal_number_1 The first signal number to be added.
    *
@@ -170,22 +263,76 @@ public:
    * @param signal_number_3 The third signal number to be added.
    *
    * @note This constructor is equivalent to performing:
-   * @code asio::signal_set signals(io_context);
+   * @code puerts_asio::signal_set signals(ex);
    * signals.add(signal_number_1);
    * signals.add(signal_number_2);
    * signals.add(signal_number_3); @endcode
    */
-  basic_signal_set(asio::io_context& io_context, int signal_number_1,
+  basic_signal_set(const executor_type& ex, int signal_number_1,
       int signal_number_2, int signal_number_3)
-    : basic_io_object<SignalSetService>(io_context)
+    : impl_(0, ex)
   {
-    asio::error_code ec;
-    this->get_service().add(this->get_implementation(), signal_number_1, ec);
-    asio::detail::throw_error(ec, "add");
-    this->get_service().add(this->get_implementation(), signal_number_2, ec);
-    asio::detail::throw_error(ec, "add");
-    this->get_service().add(this->get_implementation(), signal_number_3, ec);
-    asio::detail::throw_error(ec, "add");
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number_1, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+    impl_.get_service().add(impl_.get_implementation(), signal_number_2, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+    impl_.get_service().add(impl_.get_implementation(), signal_number_3, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+  }
+
+  /// Construct a signal set and add three signals.
+  /**
+   * This constructor creates a signal set and registers for three signals.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the signal set will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the signal set.
+   *
+   * @param signal_number_1 The first signal number to be added.
+   *
+   * @param signal_number_2 The second signal number to be added.
+   *
+   * @param signal_number_3 The third signal number to be added.
+   *
+   * @note This constructor is equivalent to performing:
+   * @code puerts_asio::signal_set signals(context);
+   * signals.add(signal_number_1);
+   * signals.add(signal_number_2);
+   * signals.add(signal_number_3); @endcode
+   */
+  template <typename ExecutionContext>
+  basic_signal_set(ExecutionContext& context, int signal_number_1,
+      int signal_number_2, int signal_number_3,
+      typename constraint<
+        is_convertible<ExecutionContext&, execution_context&>::value,
+        defaulted_constraint
+      >::type = defaulted_constraint())
+    : impl_(0, 0, context)
+  {
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number_1, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+    impl_.get_service().add(impl_.get_implementation(), signal_number_2, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+    impl_.get_service().add(impl_.get_implementation(), signal_number_3, ec);
+    puerts_asio::detail::throw_error(ec, "add");
+  }
+
+  /// Destroys the signal set.
+  /**
+   * This function destroys the signal set, cancelling any outstanding
+   * asynchronous wait operations associated with the signal set as if by
+   * calling @c cancel.
+   */
+  ~basic_signal_set()
+  {
+  }
+
+  /// Get the executor associated with the object.
+  executor_type get_executor() ASIO_NOEXCEPT
+  {
+    return impl_.get_executor();
   }
 
   /// Add a signal to a signal_set.
@@ -195,13 +342,13 @@ public:
    *
    * @param signal_number The signal to be added to the set.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    */
   void add(int signal_number)
   {
-    asio::error_code ec;
-    this->get_service().add(this->get_implementation(), signal_number, ec);
-    asio::detail::throw_error(ec, "add");
+    puerts_asio::error_code ec;
+    impl_.get_service().add(impl_.get_implementation(), signal_number, ec);
+    puerts_asio::detail::throw_error(ec, "add");
   }
 
   /// Add a signal to a signal_set.
@@ -213,9 +360,10 @@ public:
    *
    * @param ec Set to indicate what error occurred, if any.
    */
-  ASIO_SYNC_OP_VOID add(int signal_number, asio::error_code& ec)
+  ASIO_SYNC_OP_VOID add(int signal_number,
+      puerts_asio::error_code& ec)
   {
-    this->get_service().add(this->get_implementation(), signal_number, ec);
+    impl_.get_service().add(impl_.get_implementation(), signal_number, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
   }
 
@@ -226,16 +374,16 @@ public:
    *
    * @param signal_number The signal to be removed from the set.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note Removes any notifications that have been queued for the specified
    * signal number.
    */
   void remove(int signal_number)
   {
-    asio::error_code ec;
-    this->get_service().remove(this->get_implementation(), signal_number, ec);
-    asio::detail::throw_error(ec, "remove");
+    puerts_asio::error_code ec;
+    impl_.get_service().remove(impl_.get_implementation(), signal_number, ec);
+    puerts_asio::detail::throw_error(ec, "remove");
   }
 
   /// Remove a signal from a signal_set.
@@ -251,9 +399,9 @@ public:
    * signal number.
    */
   ASIO_SYNC_OP_VOID remove(int signal_number,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
-    this->get_service().remove(this->get_implementation(), signal_number, ec);
+    impl_.get_service().remove(impl_.get_implementation(), signal_number, ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
   }
 
@@ -262,15 +410,15 @@ public:
    * This function removes all signals from the set. It has no effect if the set
    * is already empty.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note Removes all queued notifications.
    */
   void clear()
   {
-    asio::error_code ec;
-    this->get_service().clear(this->get_implementation(), ec);
-    asio::detail::throw_error(ec, "clear");
+    puerts_asio::error_code ec;
+    impl_.get_service().clear(impl_.get_implementation(), ec);
+    puerts_asio::detail::throw_error(ec, "clear");
   }
 
   /// Remove all signals from a signal_set.
@@ -282,9 +430,9 @@ public:
    *
    * @note Removes all queued notifications.
    */
-  ASIO_SYNC_OP_VOID clear(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID clear(puerts_asio::error_code& ec)
   {
-    this->get_service().clear(this->get_implementation(), ec);
+    impl_.get_service().clear(impl_.get_implementation(), ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
   }
 
@@ -292,12 +440,12 @@ public:
   /**
    * This function forces the completion of any pending asynchronous wait
    * operations against the signal set. The handler for each cancelled
-   * operation will be invoked with the asio::error::operation_aborted
+   * operation will be invoked with the puerts_asio::error::operation_aborted
    * error code.
    *
    * Cancellation does not alter the set of registered signals.
    *
-   * @throws asio::system_error Thrown on failure.
+   * @throws puerts_asio::system_error Thrown on failure.
    *
    * @note If a registered signal occurred before cancel() is called, then the
    * handlers for asynchronous wait operations will:
@@ -311,16 +459,16 @@ public:
    */
   void cancel()
   {
-    asio::error_code ec;
-    this->get_service().cancel(this->get_implementation(), ec);
-    asio::detail::throw_error(ec, "cancel");
+    puerts_asio::error_code ec;
+    impl_.get_service().cancel(impl_.get_implementation(), ec);
+    puerts_asio::detail::throw_error(ec, "cancel");
   }
 
   /// Cancel all operations associated with the signal set.
   /**
    * This function forces the completion of any pending asynchronous wait
    * operations against the signal set. The handler for each cancelled
-   * operation will be invoked with the asio::error::operation_aborted
+   * operation will be invoked with the puerts_asio::error::operation_aborted
    * error code.
    *
    * Cancellation does not alter the set of registered signals.
@@ -337,9 +485,9 @@ public:
    * These handlers can no longer be cancelled, and therefore are passed an
    * error code that indicates the successful completion of the wait operation.
    */
-  ASIO_SYNC_OP_VOID cancel(asio::error_code& ec)
+  ASIO_SYNC_OP_VOID cancel(puerts_asio::error_code& ec)
   {
-    this->get_service().cancel(this->get_implementation(), ec);
+    impl_.get_service().cancel(impl_.get_implementation(), ec);
     ASIO_SYNC_OP_VOID_RETURN(ec);
   }
 
@@ -354,38 +502,75 @@ public:
    * @li One of the registered signals in the signal set occurs; or
    *
    * @li The signal set was cancelled, in which case the handler is passed the
-   * error code asio::error::operation_aborted.
+   * error code puerts_asio::error::operation_aborted.
    *
    * @param handler The handler to be called when the signal occurs. Copies
    * will be made of the handler as required. The function signature of the
    * handler must be:
    * @code void handler(
-   *   const asio::error_code& error, // Result of operation.
+   *   const puerts_asio::error_code& error, // Result of operation.
    *   int signal_number // Indicates which signal occurred.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using puerts_asio::post().
    */
-  template <typename SignalHandler>
-  ASIO_INITFN_RESULT_TYPE(SignalHandler,
-      void (asio::error_code, int))
-  async_wait(ASIO_MOVE_ARG(SignalHandler) handler)
+  template <
+    ASIO_COMPLETION_TOKEN_FOR(void (puerts_asio::error_code, int))
+      SignalHandler ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  ASIO_INITFN_AUTO_RESULT_TYPE(SignalHandler,
+      void (puerts_asio::error_code, int))
+  async_wait(
+      ASIO_MOVE_ARG(SignalHandler) handler
+        ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a SignalHandler.
-    ASIO_SIGNAL_HANDLER_CHECK(SignalHandler, handler) type_check;
-
-    return this->get_service().async_wait(this->get_implementation(),
-        ASIO_MOVE_CAST(SignalHandler)(handler));
+    return async_initiate<SignalHandler, void (puerts_asio::error_code, int)>(
+        initiate_async_wait(this), handler);
   }
+
+private:
+  // Disallow copying and assignment.
+  basic_signal_set(const basic_signal_set&) ASIO_DELETED;
+  basic_signal_set& operator=(const basic_signal_set&) ASIO_DELETED;
+
+  class initiate_async_wait
+  {
+  public:
+    typedef Executor executor_type;
+
+    explicit initiate_async_wait(basic_signal_set* self)
+      : self_(self)
+    {
+    }
+
+    executor_type get_executor() const ASIO_NOEXCEPT
+    {
+      return self_->get_executor();
+    }
+
+    template <typename SignalHandler>
+    void operator()(ASIO_MOVE_ARG(SignalHandler) handler) const
+    {
+      // If you get an error on the following line it means that your handler
+      // does not meet the documented type requirements for a SignalHandler.
+      ASIO_SIGNAL_HANDLER_CHECK(SignalHandler, handler) type_check;
+
+      detail::non_const_lvalue<SignalHandler> handler2(handler);
+      self_->impl_.get_service().async_wait(
+          self_->impl_.get_implementation(),
+          handler2.value, self_->impl_.get_executor());
+    }
+
+  private:
+    basic_signal_set* self_;
+  };
+
+  detail::io_object_impl<detail::signal_set_service, Executor> impl_;
 };
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
-
-#endif // defined(ASIO_ENABLE_OLD_SERVICES)
 
 #endif // ASIO_BASIC_SIGNAL_SET_HPP

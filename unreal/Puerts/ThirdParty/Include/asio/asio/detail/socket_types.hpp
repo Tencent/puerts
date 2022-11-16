@@ -2,7 +2,7 @@
 // detail/socket_types.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -93,7 +93,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_WINDOWS_RUNTIME)
@@ -206,6 +206,7 @@ typedef unsigned long ioctl_arg_type;
 typedef u_long u_long_type;
 typedef u_short u_short_type;
 typedef int signed_size_type;
+struct sockaddr_un_type { u_short sun_family; char sun_path[108]; };
 # define ASIO_OS_DEF(c) ASIO_OS_DEF_##c
 # define ASIO_OS_DEF_AF_UNSPEC AF_UNSPEC
 # define ASIO_OS_DEF_AF_INET AF_INET
@@ -409,7 +410,7 @@ const int enable_connection_aborted_option = 1;
 const int always_fail_option = 2;
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

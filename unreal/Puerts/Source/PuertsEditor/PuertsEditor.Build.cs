@@ -34,6 +34,6 @@ public class PuertsEditor : ModuleRules {
                 "AssetTools"
             }
         );
-        bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
+        bEnableUndefinedIdentifierWarnings = false; // 閬垮厤鍦╒S 2017缂栬瘧鏃跺嚭鐜癈4668閿欒
     }
 }

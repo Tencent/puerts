@@ -2,7 +2,7 @@
 // detail/descriptor_ops.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 namespace descriptor_ops {
 
@@ -50,63 +50,81 @@ enum
 
 typedef unsigned char state_type;
 
-template <typename ReturnType>
-inline ReturnType error_wrapper(ReturnType return_value,
-    asio::error_code& ec)
+inline void get_last_error(
+    puerts_asio::error_code& ec, bool is_error_condition)
 {
-  ec = asio::error_code(errno,
-      asio::error::get_system_category());
-  return return_value;
+  if (!is_error_condition)
+  {
+    ec.assign(0, ec.category());
+  }
+  else
+  {
+    ec = puerts_asio::error_code(errno,
+        puerts_asio::error::get_system_category());
+  }
 }
 
 ASIO_DECL int open(const char* path, int flags,
-    asio::error_code& ec);
+    puerts_asio::error_code& ec);
 
 ASIO_DECL int close(int d, state_type& state,
-    asio::error_code& ec);
+    puerts_asio::error_code& ec);
 
 ASIO_DECL bool set_user_non_blocking(int d,
-    state_type& state, bool value, asio::error_code& ec);
+    state_type& state, bool value, puerts_asio::error_code& ec);
 
 ASIO_DECL bool set_internal_non_blocking(int d,
-    state_type& state, bool value, asio::error_code& ec);
+    state_type& state, bool value, puerts_asio::error_code& ec);
 
 typedef iovec buf;
 
 ASIO_DECL std::size_t sync_read(int d, state_type state, buf* bufs,
-    std::size_t count, bool all_empty, asio::error_code& ec);
+    std::size_t count, bool all_empty, puerts_asio::error_code& ec);
+
+ASIO_DECL std::size_t sync_read1(int d, state_type state, void* data,
+    std::size_t size, puerts_asio::error_code& ec);
 
 ASIO_DECL bool non_blocking_read(int d, buf* bufs, std::size_t count,
-    asio::error_code& ec, std::size_t& bytes_transferred);
+    puerts_asio::error_code& ec, std::size_t& bytes_transferred);
+
+ASIO_DECL bool non_blocking_read1(int d, void* data, std::size_t size,
+    puerts_asio::error_code& ec, std::size_t& bytes_transferred);
 
 ASIO_DECL std::size_t sync_write(int d, state_type state,
     const buf* bufs, std::size_t count, bool all_empty,
-    asio::error_code& ec);
+    puerts_asio::error_code& ec);
+
+ASIO_DECL std::size_t sync_write1(int d, state_type state,
+    const void* data, std::size_t size, puerts_asio::error_code& ec);
 
 ASIO_DECL bool non_blocking_write(int d,
     const buf* bufs, std::size_t count,
-    asio::error_code& ec, std::size_t& bytes_transferred);
+    puerts_asio::error_code& ec, std::size_t& bytes_transferred);
+
+ASIO_DECL bool non_blocking_write1(int d,
+    const void* data, std::size_t size,
+    puerts_asio::error_code& ec, std::size_t& bytes_transferred);
 
 ASIO_DECL int ioctl(int d, state_type& state, long cmd,
-    ioctl_arg_type* arg, asio::error_code& ec);
+    ioctl_arg_type* arg, puerts_asio::error_code& ec);
 
-ASIO_DECL int fcntl(int d, int cmd, asio::error_code& ec);
+ASIO_DECL int fcntl(int d, int cmd, puerts_asio::error_code& ec);
 
 ASIO_DECL int fcntl(int d, int cmd,
-    long arg, asio::error_code& ec);
+    long arg, puerts_asio::error_code& ec);
 
 ASIO_DECL int poll_read(int d,
-    state_type state, asio::error_code& ec);
+    state_type state, puerts_asio::error_code& ec);
 
 ASIO_DECL int poll_write(int d,
-    state_type state, asio::error_code& ec);
+    state_type state, puerts_asio::error_code& ec);
 
 ASIO_DECL int poll_error(int d,
-    state_type state, asio::error_code& ec);
+    state_type state, puerts_asio::error_code& ec);
 
 } // namespace descriptor_ops
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

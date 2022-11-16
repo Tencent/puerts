@@ -15,8 +15,8 @@ public class TxtLoader : ILoader
         );
     }
 
-    private string root = PathToBinDir("../../Assets/Puerts/Runtime/Resources");
-    private string editorRoot = PathToBinDir("../../Assets/Puerts/Editor/Resources");
+    private string root = PathToBinDir("../../../Assets/Puerts/Runtime/Resources");
+    private string editorRoot = PathToBinDir("../../../Assets/Puerts/Editor/Resources");
 
     public bool FileExists(string filepath)
     {

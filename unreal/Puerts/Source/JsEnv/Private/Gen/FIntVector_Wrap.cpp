@@ -616,7 +616,7 @@ struct AutoRegisterForFIntVector
         static puerts::JSFunctionInfo Functions[] = {
             {"DivideAndRoundUp", FIntVectorS_DivideAndRoundUp}, {"Num", FIntVectorS_Num}, {0, 0}};
 
-        Def.UETypeName = "FIntVector";
+        Def.UETypeName = "IntVector";
 
         Def.Initialize = _FIntVectorNew_;
         Def.Finalize = _FIntVectorDelete_;

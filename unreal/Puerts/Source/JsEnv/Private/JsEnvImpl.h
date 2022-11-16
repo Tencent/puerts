@@ -72,18 +72,27 @@ public:
     explicit FJsEnvImpl(const FString& ScriptRoot);
 
     FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
-        void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
+        std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime = nullptr,
+        void* InExternalContext = nullptr);
 
     virtual ~FJsEnvImpl() override;
 
-    virtual void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments) override;
+    virtual void Start(
+        const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments, bool IsScript) override;
+
+    virtual bool IdleNotificationDeadline(double DeadlineInSeconds) override;
 
     virtual void LowMemoryNotification() override;
 
-    virtual void MinorGarbageCollection() override;
+    virtual void RequestMinorGarbageCollectionForTesting() override;
+
+    virtual void RequestFullGarbageCollectionForTesting() override;
 
     virtual void WaitDebugger(double timeout) override
     {
+#ifdef THREAD_SAFE
+        v8::Locker Locker(MainIsolate);
+#endif
         const auto startTime = FDateTime::Now();
         while (Inspector && !Inspector->Tick())
         {
@@ -111,6 +120,12 @@ public:
     void JsHotReload(FName ModuleName, const FString& JsSource);
 
     virtual void ReloadModule(FName ModuleName, const FString& JsSource) override;
+
+    virtual void ReloadSource(const FString& Path, const std::string& JsSource) override;
+
+    std::function<void(const FString&)> OnSourceLoadedCallback;
+
+    virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) override;
 
 public:
     virtual void Bind(UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject) override;
@@ -236,9 +251,15 @@ private:
 
     void Log(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void SearchModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     void LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    v8::Local<v8::Value> UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type);
+
     void LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void LoadCppType(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void UEClassToJSClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -413,9 +434,9 @@ public:
         FJsEnvImpl* Parent;
     };
 
-    TSharedPtr<ITsDynamicInvoker> TsDynamicInvoker;
+    TSharedPtr<ITsDynamicInvoker, ESPMode::ThreadSafe> TsDynamicInvoker;
 
-    TSharedPtr<IDynamicInvoker> MixinInvoker;
+    TSharedPtr<IDynamicInvoker, ESPMode::ThreadSafe> MixinInvoker;
 #endif
 private:
     puerts::FObjectRetainer UserObjectRetainer;
@@ -488,7 +509,7 @@ private:
 
     FCppObjectMapper CppObjectMapper;
 
-#if !WITH_BACKING_STORE_AUTO_FREE
+#if !WITH_BACKING_STORE_AUTO_FREE && !defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
     struct ScriptStructFinalizeInfo
     {
         TWeakObjectPtr<UStruct> Struct;
@@ -591,7 +612,7 @@ private:
 
     void MakeSureInject(UTypeScriptGeneratedClass* Class, bool ForceReinject, bool RebindObject);
 #endif
-    TSharedPtr<DynamicInvokerImpl> DynamicInvoker;
+    TSharedPtr<DynamicInvokerImpl, ESPMode::ThreadSafe> DynamicInvoker;
 
     TSet<UClass*> GeneratedClasses;
 
@@ -603,7 +624,9 @@ private:
 
     std::map<void*, DelegateObjectInfo> DelegateMap;
 
-    std::map<UFunction*, TsFunctionInfo> TsFunctionMap;
+    TMap<UFunction*, TsFunctionInfo> TsFunctionMap;
+
+    TMap<UFunction*, v8::UniquePersistent<v8::Function>> MixinFunctionMap;
 
     std::map<UStruct*, std::vector<UFunction*>> ExtensionMethodsMap;
 
@@ -634,6 +657,29 @@ private:
 #ifdef SINGLE_THREAD_VERIFY
     uint32 BoundThreadId;
 #endif
+
+    typedef void (FJsEnvImpl::*V8MethodCallback)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    template <V8MethodCallback callback>
+    struct MethodBindingHelper
+    {
+        static void Bind(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj, const char* Key,
+            v8::Local<v8::External> This)
+        {
+            Obj->Set(Context, FV8Utils::ToV8String(Isolate, Key),
+                   v8::FunctionTemplate::New(
+                       Isolate,
+                       [](const v8::FunctionCallbackInfo<v8::Value>& Info)
+                       {
+                           auto Self = static_cast<FJsEnvImpl*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+                           (Self->*callback)(Info);
+                       },
+                       This)
+                       ->GetFunction(Context)
+                       .ToLocalChecked())
+                .Check();
+        }
+    };
 };
 
 }    // namespace puerts

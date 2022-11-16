@@ -97,6 +97,21 @@ void FStructWrapper::InitTemplateProperties(v8::Isolate* Isolate, UStruct* InStr
                 v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
             ++PropertyInfo;
         }
+
+        PropertyInfo = ClassDefinition->Variables;
+        while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Getter)
+        {
+            v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
+            if (!PropertyInfo->Setter)
+                PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
+            auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
+                                           : v8::Local<v8::Value>();
+
+            Template->SetAccessorProperty(FV8Utils::InternalString(Isolate, PropertyInfo->Name),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Getter, Data),
+                v8::FunctionTemplate::New(Isolate, PropertyInfo->Setter, Data), PropertyAttribute);
+            ++PropertyInfo;
+        }
     }
     for (TFieldIterator<PropertyMacro> PropertyIt(InStruct, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
     {
@@ -230,6 +245,12 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
     Result->Set(FV8Utils::InternalString(Isolate, "StaticClass"),
         v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
 
+    if (!Struct->IsA<UClass>())
+    {
+        Result->Set(FV8Utils::InternalString(Isolate, "StaticStruct"),
+            v8::FunctionTemplate::New(Isolate, StaticClass, v8::External::New(Isolate, this)));
+    }
+
 #ifndef WITH_QUICKJS
     Result->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
         [](v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
@@ -358,7 +379,7 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (Class && Info.Length() == 1 && Info[0]->IsString())
     {
-        auto Object = StaticLoadObject(Class, nullptr, *FV8Utils::ToFString(Isolate, Info[0]));
+        auto Object = StaticLoadObject(Class, nullptr, *FV8Utils::ToFString(Isolate, Info[0]), nullptr, LOAD_NoWarn);
         if (Object)
         {
             auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
@@ -415,6 +436,7 @@ void FScriptStructWrapper::New(
             else
             {
                 Memory = Alloc(static_cast<UScriptStruct*>(Struct.Get()));
+                Struct->InitializeStruct(Memory);
                 const int Count = Info.Length() < Properties.size() ? Info.Length() : Properties.size();
                 for (int i = 0; i < Count; ++i)
                 {
@@ -509,6 +531,11 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             if (Info.Length() > 0)
             {
                 Outer = FV8Utils::GetUObject(Context, Info[0]);
+                if (FV8Utils::IsReleasedPtr(Outer))
+                {
+                    FV8Utils::ThrowException(Isolate, "passing a invalid object");
+                    return;
+                }
             }
             if (Info.Length() > 1)
             {

@@ -10,6 +10,8 @@ on:
 env:
   UE424_V8: "https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz"
   UE425_V8: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+  quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_0816/qjs_v8_bin.tgz"
+  nodejs: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_220904/nodejs_bin_16.16.0.tgz"
 
 jobs:
   
@@ -24,15 +26,32 @@ jobs:
           wget -O v8_for_ue425.tgz -q  ${{env.UE425_V8}} 
           tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts.tgz Puerts ReactUMG README.md LICENSE doc
-          mv puerts.tgz ..
+          tar cvfz puerts_v8.tgz Puerts ReactUMG README.md LICENSE doc
+          mv puerts_v8.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts_for_ue424_or_below.tgz Puerts ReactUMG README.md LICENSE doc
-          mv puerts_for_ue424_or_below.tgz ..
+          tar cvfz puerts_v8_for_ue424_or_below.tgz Puerts ReactUMG README.md LICENSE doc
+          mv puerts_v8_for_ue424_or_below.tgz ..
+          cd ..
+          rm -r unreal/Puerts/ThirdParty/v8_for_ue424_or_below
+          wget -O quickjs.tgz -q  ${{env.quickjs}}
+          tar xvfz quickjs.tgz -C unreal/Puerts/ThirdParty
+          cd unreal
+          sed -i 's/UseQuickjs = false/UseQuickjs = true/g' Puerts/Source/JsEnv/JsEnv.Build.cs
+          tar cvfz puerts_quickjs.tgz Puerts ReactUMG README.md LICENSE doc
+          mv puerts_quickjs.tgz ..
+          cd ..
+          rm -r unreal/Puerts/ThirdParty/quickjs
+          git checkout .
+          wget -O nodejs_bin.tgz -q  ${{env.nodejs}}
+          tar xvfz nodejs_bin.tgz -C unreal/Puerts/ThirdParty
+          cd unreal
+          sed -i 's/UseNodejs = false/UseNodejs = true/g' Puerts/Source/JsEnv/JsEnv.Build.cs
+          tar cvfz puerts_nodejs.tgz Puerts ReactUMG README.md LICENSE doc
+          mv puerts_nodejs.tgz ..
           
       - name: Create Release
         id: create_release
@@ -58,8 +77,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./puerts.tgz
-          asset_name: puerts.tgz
+          asset_path: ./puerts_v8.tgz
+          asset_name: puerts_v8.tgz
           asset_content_type: application/tgz
           
       - name: Upload Puerts Plugins UE424 Or Below
@@ -69,7 +88,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./puerts_for_ue424_or_below.tgz
-          asset_name: puerts_for_ue424_or_below.tgz
+          asset_path: ./puerts_v8_for_ue424_or_below.tgz
+          asset_name: puerts_v8_for_ue424_or_below.tgz
           asset_content_type: application/tgz
           
+      - name: Upload Puerts Plugins With Quickjs Backend
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./puerts_quickjs.tgz
+          asset_name: puerts_quickjs.tgz
+          asset_content_type: application/tgz
+
+      - name: Upload Puerts Plugins With Nodejs Backend
+        #id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./puerts_nodejs.tgz
+          asset_name: puerts_nodejs.tgz
+          asset_content_type: application/tgz

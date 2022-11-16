@@ -156,13 +156,12 @@ private:
     {
         v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
-        ;
-    };
+    }
 
     FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object) const
     {
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), 0, nullptr);
-    };
+    }
 
 private:
     v8::Isolate* Isolate;
@@ -177,13 +176,10 @@ namespace puerts
 template <>
 struct ScriptTypeName<FJsObject>
 {
-    static constexpr const char* value = "object";
-};
-
-template <typename R, typename... Args>
-struct ScriptTypeName<std::function<R(Args...)>>
-{
-    static constexpr const char* value = "Function";
+    static constexpr auto value()
+    {
+        return Literal("object");
+    }
 };
 
 namespace converter
@@ -204,46 +200,6 @@ struct Converter<FJsObject>
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
         return value->IsObject();
-    }
-};
-
-template <typename R, typename... Args>
-struct Converter<std::function<R(Args...)>>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<R(Args...)> value)
-    {
-        return v8::Undefined(context->GetIsolate());
-    }
-
-    static std::function<R(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        FJsObject PF(context, value.As<v8::Object>());
-        return [=](Args... cppArgs) -> R { return PF.Func<R>(cppArgs...); };
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsFunction();
-    }
-};
-
-template <typename... Args>
-struct Converter<std::function<void(Args...)>>
-{
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, std::function<void(Args...)> value)
-    {
-        return v8::Undefined(context->GetIsolate());
-    }
-
-    static std::function<void(Args...)> toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        FJsObject PF(context, value.As<v8::Object>());
-        return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
-    }
-
-    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
-    {
-        return value->IsFunction();
     }
 };
 }    // namespace converter

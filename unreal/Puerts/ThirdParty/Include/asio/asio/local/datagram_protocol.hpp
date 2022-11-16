@@ -2,7 +2,7 @@
 // local/datagram_protocol.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -26,12 +26,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace local {
 
 /// Encapsulates the flags needed for datagram-oriented UNIX sockets.
 /**
- * The asio::local::datagram_protocol class contains flags necessary for
+ * The puerts_asio::local::datagram_protocol class contains flags necessary for
  * datagram-oriented UNIX domain sockets.
  *
  * @par Thread Safety
@@ -45,19 +45,19 @@ class datagram_protocol
 {
 public:
   /// Obtain an identifier for the type of the protocol.
-  int type() const
+  int type() const ASIO_NOEXCEPT
   {
     return SOCK_DGRAM;
   }
 
   /// Obtain an identifier for the protocol.
-  int protocol() const
+  int protocol() const ASIO_NOEXCEPT
   {
     return 0;
   }
 
   /// Obtain an identifier for the protocol family.
-  int family() const
+  int family() const ASIO_NOEXCEPT
   {
     return AF_UNIX;
   }
@@ -70,7 +70,7 @@ public:
 };
 
 } // namespace local
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

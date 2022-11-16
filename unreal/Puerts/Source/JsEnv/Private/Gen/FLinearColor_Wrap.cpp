@@ -1159,7 +1159,7 @@ struct AutoRegisterForFLinearColor
             {"MakeFromColorTemperature", FLinearColorS_MakeFromColorTemperature}, {"Dist", FLinearColorS_Dist},
             {"LerpUsingHSV", FLinearColorS_LerpUsingHSV}, {0, 0}};
 
-        Def.UETypeName = "FLinearColor";
+        Def.UETypeName = "LinearColor";
 
         Def.Initialize = _FLinearColorNew_;
         Def.Finalize = _FLinearColorDelete_;

@@ -85,7 +85,8 @@ void FReactDeclarationGenerator::GenReactDeclaration()
     FString Components = TEXT("exports.lazyloadComponents = {};\n");
     Output << "declare module \"react-umg\" {\n";
     Output << "    "
-           << "import * as React from 'react';\n    import * as UE from 'ue';\n    type TArray<T> = UE.TArray<T>;\n    type "
+           << "import * as React from 'react';\n    import * as UE from 'ue';\n    import * as cpp from 'cpp';\n    type TArray<T> "
+              "= UE.TArray<T>;\n    type "
               "TSet<T> = UE.TSet<T>;\n    type TMap<TKey, TValue> = UE.TMap<TKey, TValue>;\n\n";
 
     for (TObjectIterator<UClass> It; It; ++It)

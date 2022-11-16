@@ -2,7 +2,7 @@
 // detail/impl/service_registry.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -22,7 +22,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 service_registry::service_registry(execution_context& owner)
@@ -62,7 +62,7 @@ void service_registry::notify_fork(execution_context::fork_event fork_ev)
   // back into this class.
   std::vector<execution_context::service*> services;
   {
-    asio::detail::mutex::scoped_lock lock(mutex_);
+    puerts_asio::detail::mutex::scoped_lock lock(mutex_);
     execution_context::service* service = first_service_;
     while (service)
     {
@@ -113,7 +113,7 @@ execution_context::service* service_registry::do_use_service(
     const execution_context::service::key& key,
     factory_type factory, void* owner)
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   // First see if there is an existing service object with the given key.
   execution_context::service* service = first_service_;
@@ -154,16 +154,16 @@ void service_registry::do_add_service(
     execution_context::service* new_service)
 {
   if (&owner_ != &new_service->context())
-    asio::detail::throw_exception(invalid_service_owner());
+    puerts_asio::detail::throw_exception(invalid_service_owner());
 
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   // Check if there is an existing service object with the given key.
   execution_context::service* service = first_service_;
   while (service)
   {
     if (keys_match(service->key_, key))
-      asio::detail::throw_exception(service_already_exists());
+      puerts_asio::detail::throw_exception(service_already_exists());
     service = service->next_;
   }
 
@@ -176,7 +176,7 @@ void service_registry::do_add_service(
 bool service_registry::do_has_service(
     const execution_context::service::key& key) const
 {
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   execution_context::service* service = first_service_;
   while (service)
@@ -190,7 +190,7 @@ bool service_registry::do_has_service(
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

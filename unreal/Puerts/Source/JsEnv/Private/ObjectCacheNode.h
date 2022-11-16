@@ -69,8 +69,9 @@ public:
             {
                 if (Next)
                 {
+                    auto PreNext = Next;
                     *this = std::move(*Next);
-                    delete Next;
+                    delete PreNext;
                 }
                 else
                 {
