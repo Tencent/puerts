@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace Puerts.UnitTest
+namespace PuerTS.UnitTest
 {
     [TestFixture]
     public class OptionalParametersTest

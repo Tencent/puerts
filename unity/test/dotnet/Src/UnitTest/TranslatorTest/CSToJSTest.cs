@@ -8,7 +8,7 @@
 using NUnit.Framework;
 using System;
 
-namespace Puerts.UnitTest.TranslatorTest
+namespace PuerTS.UnitTest.TranslatorTest
 {
     public class CSToJSTest
     {

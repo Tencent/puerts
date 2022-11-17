@@ -7,7 +7,7 @@
 
 using NUnit.Framework;
 
-namespace Puerts.UnitTest
+namespace PuerTS.UnitTest
 {
     public class Timer
     {

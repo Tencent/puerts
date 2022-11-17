@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System;
-using Puerts;
+using PuerTS;
 using System.IO;
 
 public delegate int SimpleDelegate(int a, int v);
@@ -236,13 +236,25 @@ public class Test : MonoBehaviour
     {
         var vec = new Vector3();
         vec.Set(1,2,3);
+        var loader = new DefaultLoader();
+        string str;
+        loader.ReadFile(loader.Resolve("main.js", out str), out str);
+        var cal = new Calculator();
+        object obj = null;
+        cal.ObjRef(ref obj);
     }
     
     void Start()
     {
         PreventStrip();
+
         JsEnv jsEnv = new JsEnv();
         var jsCode = @"
+            log(__puer__loader)
+            log(__puer__loader.FixIdentifier)
+            log(__puer__loader.Resolve)
+            log(__puer__loader.ReadFile)
+
             const CalculatorV8 = loadType(jsEnv.GetTypeByString('Calculator'));
             const Vector3 =  loadType(jsEnv.GetTypeByString('UnityEngine.Vector3'));
             

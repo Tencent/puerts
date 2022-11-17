@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace Puerts.UnitTest 
+namespace PuerTS.UnitTest 
 {
     public class GenericTestClass
     {

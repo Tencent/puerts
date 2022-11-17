@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace Puerts.UnitTest.TranslatorTest
+namespace PuerTS.UnitTest.TranslatorTest
 {
     public class JSToCSTest
     {

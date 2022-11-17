@@ -1,6 +1,6 @@
 using System;
 
-namespace Puerts.UnitTest
+namespace PuerTS.UnitTest
 {
     [Configure]
     public class WrapperGenTestConfig

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 
-namespace Puerts.UnitTest 
+namespace PuerTS.UnitTest 
 {
     class Singleton1<T> where T: Singleton1<T>, new() {}
     class Zombie: Singleton1<Zombie> {}

@@ -7,7 +7,7 @@
 
 using NUnit.Framework;
 
-namespace Puerts.UnitTest.JSTypeTest
+namespace PuerTS.UnitTest.JSTypeTest
 {
     [TestFixture]
     public class JSObjectTest

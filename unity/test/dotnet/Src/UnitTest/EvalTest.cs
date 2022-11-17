@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using System;
 
-namespace Puerts.UnitTest
+namespace PuerTS.UnitTest
 {
     [TestFixture]
     public class EvalTest

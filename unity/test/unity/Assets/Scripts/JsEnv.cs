@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Puerts
+namespace PuerTS
 {
     public class JsEnv : IDisposable
     {
@@ -23,9 +23,14 @@ namespace Puerts
         MethodInfo tryLoadTypeMethodInfo;
 
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
+        DefaultLoader loader;
 
-        public JsEnv()
+        public JsEnv(): this(new DefaultLoader()){}
+
+        public JsEnv(DefaultLoader loader)
         {
+            this.loader = loader;
+
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
             PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetPesapiImpl());
@@ -47,6 +52,7 @@ namespace Puerts
                 PuertsIl2cpp.NativeAPI.GetObjectPointer(objectPool));
 
             PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
+            PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "__puer__loader", PuertsIl2cpp.NativeAPI.GetObjectPointer(loader));
         }
 
         public Type GetTypeByString(string className)

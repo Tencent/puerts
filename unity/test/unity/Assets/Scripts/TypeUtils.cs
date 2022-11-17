@@ -4,7 +4,7 @@ using UnityEngine;
 using System;
 using System.Reflection;
 
-namespace Puerts
+namespace PuerTS
 {
     public static class TypeUtils
     {

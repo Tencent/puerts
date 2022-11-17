@@ -8,7 +8,7 @@
 using NUnit.Framework;
 using System;
 
-namespace Puerts.UnitTest.JSTypeTest
+namespace PuerTS.UnitTest.JSTypeTest
 {
     public class ArrayBufferClass
     {

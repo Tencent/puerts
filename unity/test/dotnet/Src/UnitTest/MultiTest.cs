@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Puerts.UnitTest
+namespace PuerTS.UnitTest
 {
     public class Ability
     {
