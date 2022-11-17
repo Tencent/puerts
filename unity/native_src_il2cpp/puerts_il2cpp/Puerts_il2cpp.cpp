@@ -314,10 +314,12 @@ int GetTID(Il2CppObject* obj)
 
 pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
 {
+    PLog("TryTranslatePrimitive: %lld\n". obj);
     if (obj)
     {
         const Il2CppType *type = Class::GetType(obj->klass);
         int t = type->type;
+        PLog("t == IL2CPP_TYPE_STRING: %d\n". t == IL2CPP_TYPE_STRING);
         if (t == IL2CPP_TYPE_STRING)
         {
             const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars((Il2CppString*)obj);

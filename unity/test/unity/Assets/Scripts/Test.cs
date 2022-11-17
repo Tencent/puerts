@@ -249,11 +249,12 @@ public class Test : MonoBehaviour
         PreventStrip();
 
         JsEnv jsEnv = new JsEnv();
+        jsEnv.GetTypeByString("System.Type");
         var jsCode = @"
-            log(__puer__loader)
-            log(__puer__loader.FixIdentifier)
-            log(__puer__loader.Resolve)
-            log(__puer__loader.ReadFile)
+            const mainPath = __puer__loader.Resolve('main.mjs', ['']);
+            const content = [''];
+            __puer__loader.ReadFile(mainPath, content);
+            log(content);
 
             const CalculatorV8 = loadType(jsEnv.GetTypeByString('Calculator'));
             const Vector3 =  loadType(jsEnv.GetTypeByString('UnityEngine.Vector3'));
