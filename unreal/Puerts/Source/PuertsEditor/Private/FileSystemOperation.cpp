@@ -3,7 +3,7 @@
 #include "FileSystemOperation.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
-#include "HAL/PlatformFilemanager.h"
+#include "HAL/PlatformFileManager.h"
 #include "PuertsModule.h"
 #include "Misc/SecureHash.h"
 
