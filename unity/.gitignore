@@ -12,6 +12,7 @@
 /test/unity/.vsconfig
 /test/unity/unity.sln
 /test/unity/Assembly-CSharp.csproj
+/Assets/**/*.meta
 /native_src/.backends
 /native_src/puerts-cpp-tester
 /native_src/build*

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System;
-using PuerTS;
+using Puerts;
 using System.IO;
 
 public delegate int SimpleDelegate(int a, int v);
