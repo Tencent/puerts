@@ -5,13 +5,13 @@
 /test/unity/build*
 /test/unity/Library
 /test/unity/Logs
-/test/unity/Packages
 /test/unity/Temp
 /test/unity/ProjectSettings
 /test/unity/UserSettings
 /test/unity/.vsconfig
 /test/unity/unity.sln
 /test/unity/Assembly-CSharp.csproj
+/test/unity/Assets/Plugins/*
 /Assets/**/*.meta
 /native_src/.backends
 /native_src/puerts-cpp-tester
