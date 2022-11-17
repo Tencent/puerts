@@ -2839,58 +2839,14 @@ v8::Local<v8::Value> FJsEnvImpl::AddSoftObjectPtr(
     return JSObject;
 }
 
-void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
+v8::Local<v8::Value> FJsEnvImpl::UETypeToJsClass(v8::Isolate* Isolate, v8::Local<v8::Context> Context, UField* Type)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    CHECK_V8_ARGS(EArgString);
-
-    FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
-
-    UObject* ClassPackage = ANY_PACKAGE;
-    UField* Type = FindObject<UClass>(ClassPackage, *TypeName);
-
-    if (!Type)
+    if (const auto Struct = Cast<UStruct>(Type))
     {
-        Type = FindObject<UScriptStruct>(ClassPackage, *TypeName);
+        return GetJsClass(Struct, Context);
     }
 
-    if (!Type)
-    {
-        Type = FindObject<UEnum>(ClassPackage, *TypeName);
-    }
-
-    if (!Type)
-    {
-        Type = LoadObject<UClass>(nullptr, *TypeName);
-    }
-
-    if (!Type)
-    {
-        Type = LoadObject<UScriptStruct>(nullptr, *TypeName);
-    }
-
-    if (!Type)
-    {
-        Type = LoadObject<UEnum>(nullptr, *TypeName);
-    }
-
-    if (auto Struct = Cast<UStruct>(Type))
-    {
-        if (!Struct->IsNative())
-        {
-            FV8Utils::ThrowException(
-                Isolate, FString::Printf(
-                             TEXT("%s is blueprint type, load it using UE.Class.Load('path/to/your/blueprint/file')."), *TypeName));
-            return;
-        }
-        Info.GetReturnValue().Set(GetJsClass(Struct, Context));
-    }
-    else if (auto Enum = Cast<UEnum>(Type))
+    if (const auto Enum = Cast<UEnum>(Type))
     {
         auto Result = v8::Object::New(Isolate);
         for (int i = 0; i < Enum->NumEnums(); ++i)
