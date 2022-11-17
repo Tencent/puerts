@@ -30,6 +30,7 @@
 #include "DataTransfer.h"
 #include "pesapi.h"
 #include "JSClassRegister.h"
+#include "Binding.hpp"   
 #include <stdarg.h>
 
 #define USE_OUTSIZE_UNITY 1
@@ -232,7 +233,7 @@ inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
     return puerts::DataTransfer::GetPointerFast<void>(Obj, 1);
 }
 
-inline static bool IsAssignableFrom(void* typeId, void* typeId2)
+inline static bool IsAssignableFrom(const void* typeId, const void* typeId2)
 {
     return GUnityExports.IsAssignableFrom(typeId, typeId2);
 }

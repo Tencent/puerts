@@ -25,7 +25,7 @@ typedef void* (*IsInstFunc)(void * obj, void* typeId);
 
 typedef bool (*IsValueTypeFunc)(void* typeId); 
 
-typedef bool (*IsAssignableFromFunc)(void* typeId, void* typeId2); 
+typedef bool (*IsAssignableFromFunc)(const void* typeId, const void* typeId2); 
 
 typedef void* (*JsValueToCSRefFunc)(const void *typeId, v8::Context* env, v8::Value* jsval);
 
