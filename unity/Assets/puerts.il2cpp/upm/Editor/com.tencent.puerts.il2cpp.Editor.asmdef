@@ -1,0 +1,20 @@
+{
+    "name": "com.tencent.puerts.il2cpp.Editor",
+    "rootNamespace": "",
+    "references": [
+        "com.tencent.puerts.core",
+        "com.tencent.puerts.core.Editor",
+        "com.tencent.puerts.ul2cpp"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
