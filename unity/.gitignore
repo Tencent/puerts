@@ -2,7 +2,16 @@
 /test/dotnet/vsauto
 /test/dotnet/Src/StaticWrapper
 /test/unity/**/*.meta
-/test/unity/*
+/test/unity/build*
+/test/unity/Library
+/test/unity/Logs
+/test/unity/Packages
+/test/unity/Temp
+/test/unity/ProjectSettings
+/test/unity/UserSettings
+/test/unity/.vsconfig
+/test/unity/unity.sln
+/test/unity/Assembly-CSharp.csproj
 /native_src/.backends
 /native_src/puerts-cpp-tester
 /native_src/build*
