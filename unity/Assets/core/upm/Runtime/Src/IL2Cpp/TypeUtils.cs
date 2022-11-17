@@ -171,6 +171,24 @@ namespace PuertsIl2cpp
         {
             return GetTypeSignature(parameterInfo.ParameterType);
         }
+
+        public static string GetThisSignature(MethodBase methodBase)
+        {
+            if (methodBase is ConstructorInfo)
+            {
+                return "t";
+            }
+            else if (methodBase is MethodInfo)
+            {
+                bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(methodBase.DeclaringType);
+                var methodInfo = methodBase as MethodInfo;
+                if (!isDelegate && !methodInfo.IsStatic)
+                {
+                    return methodBase.DeclaringType == typeof(object) ? "T" : "t";
+                }
+            }
+            return "";
+        }
         public static string GetMethodSignature(MethodBase methodBase, bool isDelegateInvoke = false)
         {
             string signature = "";
