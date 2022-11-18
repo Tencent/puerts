@@ -54,7 +54,6 @@ struct ${valueTypeInfo.Signature}
 {
 ${listToJsArray(valueTypeInfo.FieldSignatures).map(genVariableDecl).map(s => `    ${s};`).join('\n')}
 };
-UsingCppType(${valueTypeInfo.Signature});
 `;
 }
 
@@ -210,8 +209,6 @@ export default function Gen(genInfos) {
 
 // Auto Gen
 
-} // end of namespace puerts
-
 #if !__SNC__
 #ifndef __has_feature 
 #define __has_feature(x) 0 
@@ -227,9 +224,6 @@ typedef uint16_t Il2CppChar;
 #endif
 
 ${valueTypeInfos.map(genValueTypeDefine).join('\n')}
-
-namespace puerts
-{
 
 ${wrapperInfos.map(genWrapper).join('\n')}
 

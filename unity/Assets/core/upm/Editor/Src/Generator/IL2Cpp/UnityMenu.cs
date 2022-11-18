@@ -27,8 +27,8 @@ namespace PuertsIl2cpp.Editor
             {
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                //var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
                 Directory.CreateDirectory(saveTo);
-                Directory.CreateDirectory(Path.Combine(saveTo, "cpp"));
                 FileExporter.GenCPPWrap(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();

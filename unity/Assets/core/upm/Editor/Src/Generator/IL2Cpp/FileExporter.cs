@@ -152,7 +152,7 @@ namespace PuertsIl2cpp.Editor
                 {
                     jsEnv.UsingFunc<CppWrappersInfo, string>();
                     var cppWrapRender = jsEnv.ExecuteModule<Func<CppWrappersInfo, string>>("puerts/templates/cppwrapper.tpl.mjs", "default");
-                    using (StreamWriter textWriter = new StreamWriter(saveTo + "cpp/FunctionBridge.Gen.h", false, Encoding.UTF8))
+                    using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, "FunctionBridge.Gen.h"), false, Encoding.UTF8))
                     {
                         string fileContext = cppWrapRender(new CppWrappersInfo { 
                             ValueTypeInfos  = valueTypeInfos,
