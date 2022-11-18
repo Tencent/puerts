@@ -96,23 +96,25 @@ function genGetArg(signature, index, wrapperInfo) {
         return `    v8::String::Utf8Value t${index}(isolate, info[${index}]);
     void* p${index} = CStringToCSharpString(*t${index});`;
     } else if (signature == 'Ps') { // string ref
-        return `    void* p${index} = nullptr; // string ref
+        return `    void* up${index} = nullptr; // string ref
+    void** p${index} = &up${index};
     v8::Local<v8::Object> o${index};
     if (!info[${index}].IsEmpty() && info[${index}]->IsObject()) {
         o${index} = info[${index}]->ToObject(context).ToLocalChecked();
         v8::String::Utf8Value t${index}(isolate, o${index}->Get(context, 0).ToLocalChecked());
-        p${index} = CStringToCSharpString(*t${index});
+        up${index} = CStringToCSharpString(*t${index});
     }
     `
     } else if (signature == 'o' || signature == 'O') { // object
-        return `    auto p${index} = JsValueToCSRef(context, info[${index}], typeInfos[${getTypeInfoIndex(wrapperInfo, index)}]);`;
+        return `    void* p${index} = JsValueToCSRef(context, info[${index}], typeInfos[${getTypeInfoIndex(wrapperInfo, index)}]);`;
     } else if (signature == 'Po' || signature == 'PO') {
-        return `    void* p${index} = nullptr; // object ref
+        return `    void* up${index} = nullptr; // object ref
+    void** p${index} = &up${index};
     v8::Local<v8::Object> o${index};
     if (!info[${index}].IsEmpty() && info[${index}]->IsObject()) {
         o${index} = info[${index}]->ToObject(context).ToLocalChecked();
         auto t${index} = o${index}->Get(context, 0).ToLocalChecked();
-        p${index} = JsValueToCSRef(context, t${index}, typeInfos[${getTypeInfoIndex(wrapperInfo, index)}]);
+        up${index} = JsValueToCSRef(context, t${index}, typeInfos[${getTypeInfoIndex(wrapperInfo, index)}]);
     }
     `
     } else if (signature.startsWith('s_') && signature.endsWith('_')) { //valuetype
@@ -130,7 +132,12 @@ function genGetArg(signature, index, wrapperInfo) {
     `
     } else if (signature[0] == 'P' && signature != 'Pv') {
         const elementSignatrue = signature.substring(1);
-        return `    ${genVariableDecl((elementSignatrue in PrimitiveSignatureCppTypeMap) ? elementSignatrue: signature, index)} = ${genArgValue(elementSignatrue, index, true)};`
+        if (elementSignatrue in PrimitiveSignatureCppTypeMap) {
+            return `    ${genVariableDecl(elementSignatrue)} up${index} = ${genArgValue(elementSignatrue, index, true)};
+    ${genVariableDecl(elementSignatrue)}* p${index} = &up${index};`
+        } else {
+            return `    ${genVariableDecl(signature, index)} = ${genArgValue(elementSignatrue, index, true)};`
+        }
     } else {
         return `    ${genVariableDecl(signature, index)} = ${genArgValue(signature, index)};`
     }
@@ -150,6 +157,21 @@ function genArgumentCheck(signature, index, wrapperInfo) {
     }
 }
 
+function genThisParameter(wrapperInfo) {
+    const signature = wrapperInfo.ThisSignature;
+    return (signature == 't' || signature == 'T') ? 'void*,' : '';
+}
+
+function genPassThis(wrapperInfo) {
+    const signature = wrapperInfo.ThisSignature;
+    return (signature == 't' || signature == 'T') ? 'self,' : '';
+}
+
+function genRetDecl(wrapperInfo) {
+    const signature = wrapperInfo.ReturnSignature;
+    return (signature == 'v') ? '' : `${genVariableDecl(signature)} ret = `;
+}
+
 function genWrapper(wrapperInfo) {
     var parameterSignatures = listToJsArray(wrapperInfo.ParameterSignatures);
     
@@ -162,9 +184,13 @@ static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer
         if ( info.Length() != ${parameterSignatures.length}) return false;
 ${parameterSignatures.map((x, i) => genArgumentCheck(x, i, wrapperInfo)).map(x => `        if(${x}) return false;`).join('\n')}
     }
-    ${genGetThis(wrapperInfo.ReturnSignature)}
+    ${genGetThis(wrapperInfo.ThisSignature)}
     
 ${parameterSignatures.map((x, i) => genGetArg(x, i, wrapperInfo)).join('\n')}
+
+    typedef ${genVariableDecl(wrapperInfo.ReturnSignature)} (*FuncToCall)(${genThisParameter(wrapperInfo)}${parameterSignatures.map(genVariableDecl).map(s => `${s}, `).join('')}const void* method);
+    
+    ${genRetDecl(wrapperInfo)}((FuncToCall)methodPointer)(${genPassThis(wrapperInfo)} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
     
     return true;
 }`;
