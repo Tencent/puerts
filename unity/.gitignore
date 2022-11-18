@@ -1,6 +1,18 @@
 # *.meta
-/dotnet-test/vsauto
-/dotnet-test/Src/StaticWrapper
+/test/dotnet/vsauto
+/test/dotnet/Src/StaticWrapper
+/test/unity/**/*.meta
+/test/unity/build*
+/test/unity/Library
+/test/unity/Logs
+/test/unity/Temp
+/test/unity/ProjectSettings
+/test/unity/UserSettings
+/test/unity/.vsconfig
+/test/unity/obj
+/test/unity/unity.sln
+/test/unity/*.csproj
+/Assets/**/*.meta
 /native_src/.backends
 /native_src/puerts-cpp-tester
 /native_src/build*
