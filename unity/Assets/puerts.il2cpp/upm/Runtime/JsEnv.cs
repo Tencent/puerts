@@ -24,11 +24,7 @@ namespace Puerts
 
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
-        DefaultLoader loader;
-
-        public JsEnv(): this(new DefaultLoader()){}
-
-        public JsEnv(DefaultLoader loader)
+        public JsEnv()
         {
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
@@ -51,7 +47,6 @@ namespace Puerts
                 PuertsIl2cpp.NativeAPI.GetObjectPointer(objectPool));
 
             PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
-            PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "__puer__loader", PuertsIl2cpp.NativeAPI.GetObjectPointer(loader));
         }
 
         public Type GetTypeByString(string className)

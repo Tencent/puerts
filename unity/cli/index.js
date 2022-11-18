@@ -2,7 +2,6 @@ const { existsSync } = require('node:fs');
 const cp = require('node:child_process');
 
 if (!existsSync(__dirname + "/../node_modules")) {
-    console.log('installing node_modules');
     cp.execSync("npm i", { cwd: __dirname + "/.." })
 }
 
