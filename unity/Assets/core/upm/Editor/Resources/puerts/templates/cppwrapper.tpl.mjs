@@ -123,11 +123,15 @@ function genGetArg(signature, index, wrapperInfo) {
     } else if (signature.startsWith('Ps_') && signature.endsWith('_')) { //valuetype ref
         const elementSignatrue = signature.substring(1);
         return `    ${elementSignatrue}* p${index} = nullptr; // valuetype ref
+    ${elementSignatrue} up${index};
     v8::Local<v8::Object> o${index};
     if (!info[${index}].IsEmpty() && info[${index}]->IsObject()) {
         o${index} = info[${index}]->ToObject(context).ToLocalChecked();
         auto t${index} = o${index}->Get(context, 0).ToLocalChecked();
         p${index} = DataTransfer::GetPointer<${elementSignatrue}>(context, t${index});
+    }
+    if (!p${index}) {
+        p${index} = &up${index};
     }
     `
     } else if (signature[0] == 'P' && signature != 'Pv') {
@@ -186,6 +190,12 @@ function genRefArgumentSetBack(signature, index, wrapperInfo) {
             val = `CSAnyToJsValue(isolate, context, *p${index})`;
         } else if (elementSignatrue == 'o') {
             val = `CSRefToJsValue(isolate, context, *p${index})`;
+        } else if (elementSignatrue.startsWith('s_') && elementSignatrue.endsWith('_')) { 
+            return `    if (!o${index}.IsEmpty() && p${index} == &up${index})
+    {
+        auto _unused = o${index}->Set(context, 0, CopyValueType(isolate, context, typeInfos[${getTypeInfoIndex(wrapperInfo, index)}], p${index}, sizeof(*p${index})));
+    }
+`;
         }
         if (val) {
             return `    if (!o${index}.IsEmpty())
