@@ -24,11 +24,11 @@ namespace Puerts
 
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
-        ILoader loader;
+        DefaultLoader loader;
 
         public JsEnv(): this(new DefaultLoader()){}
 
-        public JsEnv(ILoader loader)
+        public JsEnv(DefaultLoader loader)
         {
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);

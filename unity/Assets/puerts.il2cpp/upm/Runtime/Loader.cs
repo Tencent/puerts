@@ -49,7 +49,6 @@ namespace Puerts
             string fixedIdentifier = FixIdentifier(identifier);
 
             localFilePath = System.IO.Path.Combine(root, identifier);
-            UnityEngine.Debug.Log("localFilePath: " + localFilePath);
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             localFilePath = debugpath.Replace("/", "\\");
 #endif
