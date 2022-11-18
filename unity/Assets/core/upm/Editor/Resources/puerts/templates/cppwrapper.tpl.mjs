@@ -134,7 +134,11 @@ function genGetArg(signature, index, wrapperInfo) {
         const elementSignatrue = signature.substring(1);
         if (elementSignatrue in PrimitiveSignatureCppTypeMap) {
             return `    ${genVariableDecl(elementSignatrue)} up${index} = ${genArgValue(elementSignatrue, index, true)};
-    ${genVariableDecl(elementSignatrue)}* p${index} = &up${index};`
+    ${genVariableDecl(elementSignatrue)}* p${index} = &up${index};
+    v8::Local<v8::Object> o${index};
+    if (!info[${index}].IsEmpty() && info[${index}]->IsObject()) {
+        o${index} = info[${index}]->ToObject(context).ToLocalChecked();
+    }`
         } else {
             return `    ${genVariableDecl(signature, index)} = ${genArgValue(elementSignatrue, index, true)};`
         }
@@ -170,6 +174,21 @@ function genPassThis(wrapperInfo) {
 function genRetDecl(wrapperInfo) {
     const signature = wrapperInfo.ReturnSignature;
     return (signature == 'v') ? '' : `${genVariableDecl(signature)} ret = `;
+}
+
+function genRefArgumentSetBack(signature, index, wrapperInfo) {
+    if (signature[0] == 'P' && signature != 'Pv') {
+        const elementSignatrue = signature.substring(1);
+        if (elementSignatrue in PrimitiveSignatureCppTypeMap) {
+            return `    if (!o${index}.IsEmpty())
+    {
+        auto _unused = o${index}->Set(context, 0, converter::Converter<${PrimitiveSignatureCppTypeMap[elementSignatrue]}>::toScript(context, *p${index}));
+    }
+    `;
+        }
+    }
+    
+    return '';
 }
 
 function genSetReturnValue(wrapperInfo) {
@@ -218,6 +237,8 @@ ${parameterSignatures.map((x, i) => genGetArg(x, i, wrapperInfo)).join('\n')}
     typedef ${genVariableDecl(wrapperInfo.ReturnSignature)} (*FuncToCall)(${genThisParameter(wrapperInfo)}${parameterSignatures.map(genVariableDecl).map(s => `${s}, `).join('')}const void* method);
     
     ${genRetDecl(wrapperInfo)}((FuncToCall)methodPointer)(${genPassThis(wrapperInfo)} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
+    
+${parameterSignatures.map((x, i) => genRefArgumentSetBack(x, i, wrapperInfo)).join('')}
     
     ${genSetReturnValue(wrapperInfo)}
     
