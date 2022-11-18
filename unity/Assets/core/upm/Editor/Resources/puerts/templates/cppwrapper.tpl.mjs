@@ -172,6 +172,33 @@ function genRetDecl(wrapperInfo) {
     return (signature == 'v') ? '' : `${genVariableDecl(signature)} ret = `;
 }
 
+function genSetReturnValue(wrapperInfo) {
+    const signature = wrapperInfo.ReturnSignature;
+    
+    if (signature != 'v') {
+        if ( signature== 'i8') {
+            return 'info.GetReturnValue().Set(v8::BigInt::New(isolate, ret));';
+        } else if ( signature== 'u8' ) {
+            return 'info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, ret));';
+        } else if (signature in PrimitiveSignatureCppTypeMap) {
+            return 'info.GetReturnValue().Set(ret);';
+        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+            return 'info.GetReturnValue().Set(CopyValueType(isolate, context, typeInfos[0], &ret, sizeof(ret)));';
+        } else if (signature == 'o') { // classes without System.Object
+            return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
+        } else if (signature == 'O') { // System.Object
+            return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
+        } else if (signature == 's') { // string
+            return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
+        } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
+            return 'info.GetReturnValue().Set(v8::ArrayBuffer::New(isolate, v8::ArrayBuffer::NewBackingStore(ret, 0, &v8::BackingStore::EmptyDeleter, nullptr)));';
+        } else { //TODO: 能处理的就处理, DateTime是否要处理呢？
+            return `// unknow ret signature: ${signature}`
+        }
+    }
+    return '';
+}
+
 function genWrapper(wrapperInfo) {
     var parameterSignatures = listToJsArray(wrapperInfo.ParameterSignatures);
     
@@ -191,6 +218,8 @@ ${parameterSignatures.map((x, i) => genGetArg(x, i, wrapperInfo)).join('\n')}
     typedef ${genVariableDecl(wrapperInfo.ReturnSignature)} (*FuncToCall)(${genThisParameter(wrapperInfo)}${parameterSignatures.map(genVariableDecl).map(s => `${s}, `).join('')}const void* method);
     
     ${genRetDecl(wrapperInfo)}((FuncToCall)methodPointer)(${genPassThis(wrapperInfo)} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
+    
+    ${genSetReturnValue(wrapperInfo)}
     
     return true;
 }`;
