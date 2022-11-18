@@ -343,10 +343,12 @@ V8WrapFuncPtr FindWrapFunc(const char* signature)
     {
         if (strcmp(ptr->Signature, signature) == 0)
         {
+            // PLog("%s %d\n", signature, ptr - &g_wrapFuncInfos[0]);
             return ptr->Method;
         }
         ++ptr;
     }
+    // PLog("%s nullptr\n", signature);
     return nullptr;
 }
 
