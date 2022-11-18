@@ -179,12 +179,20 @@ function genRetDecl(wrapperInfo) {
 function genRefArgumentSetBack(signature, index, wrapperInfo) {
     if (signature[0] == 'P' && signature != 'Pv') {
         const elementSignatrue = signature.substring(1);
+        var val = undefined
         if (elementSignatrue in PrimitiveSignatureCppTypeMap) {
+            val = `converter::Converter<${PrimitiveSignatureCppTypeMap[elementSignatrue]}>::toScript(context, *p${index})`;
+        } else if (elementSignatrue == 's' || elementSignatrue == 'O') {
+            val = `CSAnyToJsValue(isolate, context, *p${index})`;
+        } else if (elementSignatrue == 'o') {
+            val = `CSRefToJsValue(isolate, context, *p${index})`;
+        }
+        if (val) {
             return `    if (!o${index}.IsEmpty())
     {
-        auto _unused = o${index}->Set(context, 0, converter::Converter<${PrimitiveSignatureCppTypeMap[elementSignatrue]}>::toScript(context, *p${index}));
+        auto _unused = o${index}->Set(context, 0, ${val});
     }
-    `;
+`;
         }
     }
     
