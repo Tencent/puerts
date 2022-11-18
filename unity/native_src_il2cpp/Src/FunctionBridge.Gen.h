@@ -479,85 +479,6 @@ static bool w_vO(void* method, MethodPointer methodPointer, const v8::FunctionCa
     return true;
 }
 
-static bool w_stsPs(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& Info, bool checkArgument, void** typeInfos) {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    
-    // t
-    auto This = puerts::DataTransfer::GetPointerFast<void>(Info.Holder());
-    
-    // s
-    v8::String::Utf8Value s1(Isolate, Info[0]);
-    auto p1 = CStringToCSharpString(*s1);
-    
-    // Ps
-    void* p2 = nullptr;
-    v8::Local<v8::Object> Outer;
-    if (Info[0]->IsObject())
-    {
-        Outer = Info[0]->ToObject(Context).ToLocalChecked();
-        auto Realvalue = Outer->Get(Context, 0).ToLocalChecked();
-        v8::String::Utf8Value s2(Isolate, Realvalue);
-        p2 = CStringToCSharpString(*s2);
-    }
-
-    // invoke
-    typedef void* (*NativeFuncPtr)(void* ___this, void* p1, void* p2, const void* method);
-    auto ret = ((NativeFuncPtr)methodPointer)(This, p1, p2, method);
-
-    // Ps
-    if (!Outer.IsEmpty())
-    {
-        Outer->Set(Context, 0, CSAnyToJsValue(Isolate, Context, (void *)p2));
-    }
-
-    // s
-    if (ret)
-    {
-        Info.GetReturnValue().Set(CSAnyToJsValue(Isolate, Context, ret));
-    }
-    return true;
-}
-
-static bool w_vtsPs(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& Info, bool checkArgument, void** typeInfos) {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    
-    if (checkArgument)
-    {
-        // TODO
-    }
-    
-    auto This = puerts::DataTransfer::GetPointerFast<void>(Info.Holder());
-    
-    
-    void* p0;
-    v8::String::Utf8Value p0s(Isolate, Info[0]);  p0 = CStringToCSharpString(*p0s);
-            
-    void* p1;
-    v8::Local<v8::Object> Outer1;
-    if (Info[1]->IsObject())
-    {
-        Outer1 = Info[1]->ToObject(Context).ToLocalChecked();
-        auto Realvalue = Outer1->Get(Context, 1).ToLocalChecked();
-        v8::String::Utf8Value p1s(Isolate, Info[0]);  p1 = CStringToCSharpString(*p1s);
-    }
-            
-    void* p2;
-    v8::String::Utf8Value p2s(Isolate, Info[0]);  p2 = CStringToCSharpString(*p2s);
-            
-    // invoke
-    typedef void (*NativeFuncPtr)(void* ___this, void* p0, void* p1, void* p2, const void* method);
-    ((NativeFuncPtr)methodPointer)(This, p0, p1, p2, method);
-    
-    if (!Outer1.IsEmpty())
-    {
-        Outer1->Set(Context, 0, CSAnyToJsValue(Isolate, Context, (void *)p1));
-    }
-    
-    return true;
-}
-
 static WrapFuncInfo g_wrapFuncInfos[] = {
     {"i4i4i4", w_i4i4i4},
     {"vt", w_vt},
@@ -582,8 +503,6 @@ static WrapFuncInfo g_wrapFuncInfos[] = {
     {"sT", w_sT},
     {"st", w_st},
     {"vO", w_vO},
-    {"stsPs", w_stsPs},
-    {"vtsPs", w_vtsPs},
     {nullptr, nullptr}
 };
 

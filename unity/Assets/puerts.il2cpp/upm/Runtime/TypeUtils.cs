@@ -138,7 +138,7 @@ namespace PuertsIl2cpp
             {
                 return "p";
             }
-            else if (type == typeof(DateTime)) //ï¿½Ç·ï¿½ÒªÖ§ï¿½Ö£ï¿½
+            else if (type == typeof(DateTime)) //ÊÇ·ñÒªÖ§³Ö£¿
             {
                 return "d";
             }
@@ -146,7 +146,7 @@ namespace PuertsIl2cpp
             {
                 return "s";
             }
-            else if (type == typeof(object)) //objectï¿½ï¿½ï¿½â´¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½checkï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½ï¿½ï¿½ï¿½returnï¿½ï¿½ï¿½ï¿½ï¿½Å»ï¿½
+            else if (type == typeof(object)) //objectÌØÊâ´¦Àí£¬±ÈÈçcheck¿ÉÒÔ²»ÓÃÅÐ¶Ï£¬±ÈÈçreturn¿ÉÒÔÓÅ»¯
             {
                 return "O";
             }
@@ -213,7 +213,6 @@ namespace PuertsIl2cpp
                 }
 
             }
-            UnityEngine.Debug.Log("GetMethodSignature of " + methodBase.DeclaringType + "." + methodBase.Name + ":" + signature);
             return signature;
         }
 

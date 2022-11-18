@@ -10,7 +10,10 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "ENABLE_IL2CPP",
+        "EXPERIMENTAL_IL2CPP_PUERTS"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }
