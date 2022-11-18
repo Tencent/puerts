@@ -151,7 +151,7 @@ elseif ( ANDROID )
     add_custom_command(TARGET puerts_il2cpp POST_BUILD
             COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -s --verbose
             "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so" -o
-            "${CMAKE_BINARY_DIR}/~libpuerts_il2cpp.stripped.so"
+            "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.stripped.so~"
             COMMENT "Strip debug symbols done on final binary.")
 
 elseif ( APPLE )
