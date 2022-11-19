@@ -149,7 +149,7 @@ export function ENDIF() {
     return TTEndif
 }
 export function FOR(arr, fn, joiner = '') {
-    if (!arr) return;
+    if (!arr || !(arr instanceof Array)) return '';
 
     let scope = enterScope();
     let ret = arr.map(fn);

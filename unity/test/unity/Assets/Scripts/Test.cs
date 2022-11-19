@@ -267,6 +267,7 @@ public class Test : MonoBehaviour
         JsEnv jsEnv = new JsEnv();
 
         // prevent strip
+#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
         var loader = jsEnv.GetLoader("");
         string debugPath, content;
         loader.ReadFile(loader.Resolve("main.mjs", out debugPath), out content);
@@ -275,6 +276,7 @@ public class Test : MonoBehaviour
         var cal = new Calculator();
         object obj = null;
         cal.ObjRef(ref obj);
+#endif
         // prevent strip end
 
         var jsCode = @"

@@ -138,7 +138,7 @@ namespace PuertsIl2cpp
             {
                 return "p";
             }
-            else if (type == typeof(DateTime)) //是否要支持？
+            else if (type == typeof(DateTime)) //鏄惁瑕佹敮鎸侊紵
             {
                 return "d";
             }
@@ -146,7 +146,7 @@ namespace PuertsIl2cpp
             {
                 return "s";
             }
-            else if (type == typeof(object)) //object特殊处理，比如check可以不用判断，比如return可以优化
+            else if (type == typeof(object)) //object鐗规畩澶勭悊锛屾瘮濡俢heck鍙互涓嶇敤鍒ゆ柇锛屾瘮濡俽eturn鍙互浼樺寲
             {
                 return "O";
             }
@@ -213,6 +213,8 @@ namespace PuertsIl2cpp
                 }
 
             }
+
+            // UnityEngine.Debug.Log("GetMethodSignature " + methodBase.DeclaringType + "." + methodBase.Name + "->" + signature);
             return signature;
         }
 

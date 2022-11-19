@@ -1,0 +1,10 @@
+<linker>
+ 
+    <!-- This fixes GameSparks 'ERROR: The authentication
+          or decryption has failed' errors when stripping is enabled -->
+ 
+     <assembly fullname="Assembly-CSharp">
+         <type fullname="PuertsTest.TestHelper" preserve="all"/>
+     </assembly>
+ 
+</linker>

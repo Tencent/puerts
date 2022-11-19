@@ -166,7 +166,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
     const OUTPUT_PATH = cmakeAddedLibraryName == "puerts_il2cpp" ?
         cwd + '/../test/unity/Assets/Plugins/' + BuildConfig.outputPluginPath :
-        cwd + '/../packages/core/upm/Plugins/' + BuildConfig.outputPluginPath;
+        cwd + '/../test/unity/Assets/Plugins/' + BuildConfig.outputPluginPath;
     const BackendConfig = JSON.parse(readFileSync(cwd + `/.backends/${options.backend}/puer-build.json`, 'utf-8'))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {

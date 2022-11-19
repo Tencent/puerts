@@ -2,6 +2,8 @@
 /test/dotnet/vsauto
 /test/dotnet/Src/StaticWrapper
 /test/unity/**/*.meta
+/test/unity/Assets/Gen
+/test/unity/Assets/Plugins
 /test/unity/build*
 /test/unity/Library
 /test/unity/Logs
