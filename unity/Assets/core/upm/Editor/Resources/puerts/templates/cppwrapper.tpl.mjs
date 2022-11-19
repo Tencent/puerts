@@ -1,4 +1,4 @@
-import { FOR, default as t, IF, ENDIF } from "./tte.mjs"
+import { FOR, default as t, IF, ENDIF, ELSE } from "./tte.mjs"
 
 function listToJsArray(csArr) {
     let arr = [];
@@ -25,6 +25,9 @@ const PrimitiveSignatureCppTypeMap = {
     r4: 'float'
 };
 
+function needThis(wrapperInfo) {
+    return wrapperInfo.ThisSignature == 't' || wrapperInfo.ThisSignature == 'T'
+}
 function getSignatureWithoutRef(signature) {
     if (signature[0] == 'P') {
         return signature.substring(1);
@@ -47,12 +50,13 @@ const CODE_SNIPPETS = {
     },
     
     defineValueType(valueTypeInfo) {
-        return `// ${valueTypeInfo.CsName}
-    struct ${valueTypeInfo.Signature}
-    {${FOR(listToJsArray(valueTypeInfo.FieldSignatures), (s, i) => t`
-        ${CODE_SNIPPETS.SToCPPType(s)} p${i};`
-    )}
-    };
+        return t`// ${valueTypeInfo.CsName}
+struct ${valueTypeInfo.Signature}
+{
+    ${FOR(listToJsArray(valueTypeInfo.FieldSignatures), (s, i) => t`
+    ${CODE_SNIPPETS.SToCPPType(s)} p${i};
+    `)}
+};
     `;
     },
     
@@ -91,26 +95,17 @@ const CODE_SNIPPETS = {
 
     declareTypeInfo(wrapperInfo) {   
         const returnHasTypeInfo = wrapperInfo.ReturnSignature && !(getSignatureWithoutRef(wrapperInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap)
+        const ret = [];
         let i = 0;
-        return t`
-    ${IF(returnHasTypeInfo, () => `auto TIret = typeInfos[${i++}];`)}
-    ${FOR(listToJsArray(wrapperInfo.ParameterSignatures), (ps, index) => t`
-    ${IF(!(getSignatureWithoutRef(ps) in PrimitiveSignatureCppTypeMap), () => `auto TIp${index} = typeInfos[${i++}];`)}`
-    )}
-        `
-    },
-    
-    getTypeInfoIndex(wrapperInfo, parameterIndex) {
-        var index = 0;
-        if (wrapperInfo.ReturnSignature && wrapperInfo.ReturnSignature != 'v') {
-            ++index;
+        if (returnHasTypeInfo) {
+            ret.push(`auto TIret = typeInfos[${i++}];`);
         }
-        for (var i = 0; i < parameterIndex; ++i) {
-            if (!(wrapperInfo.ParameterSignatures[i] in PrimitiveSignatureCppTypeMap)) {
-                ++index;
+        listToJsArray(wrapperInfo.ParameterSignatures).forEach((ps, index) => {
+            if (!(getSignatureWithoutRef(ps) in PrimitiveSignatureCppTypeMap)) {
+                ret.push(`auto TIp${index} = typeInfos[${i++}];`);
             }
-        }
-        return index;
+        })
+        return ret.join('\n    ')
     },
     
     checkJSArg(signature, index) {
@@ -127,39 +122,25 @@ const CODE_SNIPPETS = {
         }
     },
     
-    thisParam(wrapperInfo) {
-        const signature = wrapperInfo.ThisSignature;
-        return (signature == 't' || signature == 'T') ? 'void*,' : '';
-    },
-    
-    passThis(wrapperInfo) {
-        const signature = wrapperInfo.ThisSignature;
-        return (signature == 't' || signature == 'T') ? 'self,' : '';
-    },
-    
-    refSetback(signature, index, wrapperInfo) {
+    refSetback(signature, index) {
         if (signature[0] == 'P' && signature != 'Pv') {
             const elementSignatrue = signature.substring(1);
-            var val = undefined
-            if (elementSignatrue in PrimitiveSignatureCppTypeMap) {
-                val = `converter::Converter<${PrimitiveSignatureCppTypeMap[elementSignatrue]}>::toScript(context, *p${index})`;
-            } else if (elementSignatrue == 's' || elementSignatrue == 'O') {
-                val = `CSAnyToJsValue(isolate, context, *p${index})`;
-            } else if (elementSignatrue == 'o') {
-                val = `CSRefToJsValue(isolate, context, *p${index})`;
-            } else if (elementSignatrue.startsWith('s_') && elementSignatrue.endsWith('_')) { 
-                return `    if (!op${index}.IsEmpty() && p${index} == &up${index})
-        {
-            auto _unused = op${index}->Set(context, 0, CopyValueType(isolate, context, typeInfos[${CODE_SNIPPETS.getTypeInfoIndex(wrapperInfo, index)}], p${index}, sizeof(*p${index})));
-        }
-    `;
-            }
+            var val = CODE_SNIPPETS.CSValToJSVal(elementSignatrue, `*p${index}`)
+
             if (val) {
-                return `    if (!op${index}.IsEmpty())
-        {
-            auto _unused = op${index}->Set(context, 0, ${val});
-        }
+                if (elementSignatrue.startsWith('s_') && elementSignatrue.endsWith('_')) {
+                    return `if (!op${index}.IsEmpty() && p${index} == &up${index})
+    {
+        auto _unused = op${index}->Set(context, 0, ${val});
+    }
+            `;    
+                } else {
+                    return `if (!op${index}.IsEmpty())
+    {
+        auto _unused = op${index}->Set(context, 0, ${val});
+    }
     `;
+                }
             }
         }
         
@@ -169,105 +150,103 @@ const CODE_SNIPPETS = {
     returnToJS(wrapperInfo) {
         const signature = wrapperInfo.ReturnSignature;
     
-        if (signature != 'v') {
-            if (signature == 'i8') {
-                return 'info.GetReturnValue().Set(v8::BigInt::New(isolate, ret));';
-            } else if (signature == 'u8') {
-                return 'info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, ret));';
-            } else if (signature in PrimitiveSignatureCppTypeMap) {
-                return 'info.GetReturnValue().Set(ret);';
-            } else if (signature.startsWith('s_') && signature.endsWith('_')) {
-                return 'info.GetReturnValue().Set(CopyValueType(isolate, context, typeInfos[0], &ret, sizeof(ret)));';
-            } else if (signature == 'o') { // classes except System.Object
-                return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
-            } else if (signature == 'O') { // System.Object
-                return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
-            } else if (signature == 's') { // string
-                return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
-            } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
-                return 'info.GetReturnValue().Set(v8::ArrayBuffer::New(isolate, v8::ArrayBuffer::NewBackingStore(ret, 0, &v8::BackingStore::EmptyDeleter, nullptr)));';
-            } else { //TODO: 能处理的就处理, DateTime是否要处理呢？
-                return `// unknow ret signature: ${signature}`
-            }
+        if (signature == 'i8') {
+            return 'info.GetReturnValue().Set(v8::BigInt::New(isolate, ret));';
+        } else if (signature == 'u8') {
+            return 'info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, ret));';
+        } else if (signature in PrimitiveSignatureCppTypeMap) {
+            return 'info.GetReturnValue().Set(ret);';
+        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+            return 'info.GetReturnValue().Set(CopyValueType(isolate, context, typeInfos[0], &ret, sizeof(ret)));';
+        } else if (signature == 'o') { // classes except System.Object
+            return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
+        } else if (signature == 'O') { // System.Object
+            return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
+        } else if (signature == 's') { // string
+            return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
+        } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
+            return 'info.GetReturnValue().Set(v8::ArrayBuffer::New(isolate, v8::ArrayBuffer::NewBackingStore(ret, 0, &v8::BackingStore::EmptyDeleter, nullptr)));';
+        } else { //TODO: 能处理的就处理, DateTime是否要处理呢？
+            return `// unknow ret signature: ${signature}`
         }
-        return '';
     },
     
     returnToCS(signature) {
-        return `${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
-            return ret;
+        return `
+${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
+    return ret;
         `
     },
 
     JSValToCSVal(signature, JSName, CSName) {
         if (signature == 's') { // string
             return `    // JSValToCSVal s
-        v8::String::Utf8Value t${CSName}(isolate, ${JSName});
-        void* ${CSName} = CStringToCSharpString(*t${CSName});`;
+    v8::String::Utf8Value t${CSName}(isolate, ${JSName});
+    void* ${CSName} = CStringToCSharpString(*t${CSName});`;
 
         } else if (signature == 'Ps') { // string ref
             return `    // JSValToCSVal Ps
-        void* u${CSName} = nullptr; // string ref
-        void** ${CSName} = &u${CSName};
-        v8::Local<v8::Object> o${CSName};
-        if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
-            o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
-            v8::String::Utf8Value t${CSName}(isolate, o${CSName}->Get(context, 0).ToLocalChecked());
-            u${CSName} = CStringToCSharpString(*t${CSName});
-        }
+    void* u${CSName} = nullptr; // string ref
+    void** ${CSName} = &u${CSName};
+    v8::Local<v8::Object> o${CSName};
+    if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
+        o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
+        v8::String::Utf8Value t${CSName}(isolate, o${CSName}->Get(context, 0).ToLocalChecked());
+        u${CSName} = CStringToCSharpString(*t${CSName});
+    }
         `
         } else if (signature == 'o' || signature == 'O') { // object
             return `    // JSValToCSVal o/O
-        void* ${CSName} = JsValueToCSRef(context, ${JSName}, TI${CSName});`;
+    void* ${CSName} = JsValueToCSRef(context, ${JSName}, TI${CSName});`;
 
         } else if (signature == 'Po' || signature == 'PO') {
             return `    // JSValToCSVal Po/PO
-        void* u${CSName} = nullptr; // object ref
-        void** ${CSName} = &u${CSName};
-        v8::Local<v8::Object> o${CSName};
-        if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
-            o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
-            auto t${CSName} = o${CSName}->Get(context, 0).ToLocalChecked();
-            u${CSName} = JsValueToCSRef(context, t${CSName}, TI${CSName});
-        }
+    void* u${CSName} = nullptr; // object ref
+    void** ${CSName} = &u${CSName};
+    v8::Local<v8::Object> o${CSName};
+    if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
+        o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
+        auto t${CSName} = o${CSName}->Get(context, 0).ToLocalChecked();
+        u${CSName} = JsValueToCSRef(context, t${CSName}, TI${CSName});
+    }
         `
         } else if (signature.startsWith('s_') && signature.endsWith('_')) { //valuetype
             return `    // JSValToCSVal struct
-        ${signature}* p${CSName} = DataTransfer::GetPointer<${signature}>(context, ${JSName});
-        ${signature} ${CSName} = p${CSName} ? *p${CSName} : ${signature} {};`
+    ${signature}* p${CSName} = DataTransfer::GetPointer<${signature}>(context, ${JSName});
+    ${signature} ${CSName} = p${CSName} ? *p${CSName} : ${signature} {};`
 
         } else if (signature.startsWith('Ps_') && signature.endsWith('_')) { //valuetype ref
             const S = signature.substring(1);
             return `    // JSValToCSVal Pstruct
-        ${S}* ${CSName} = nullptr; // valuetype ref
-        ${S} u${CSName};
-        v8::Local<v8::Object> o${CSName};
-        if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
-            o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
-            auto t${CSName} = o${CSName}->Get(context, 0).ToLocalChecked();
-            ${CSName} = DataTransfer::GetPointer<${S}>(context, t${CSName});
-        }
-        if (!${CSName}) {
-            ${CSName} = &u${CSName};
-        }
+    ${S}* ${CSName} = nullptr; // valuetype ref
+    ${S} u${CSName};
+    v8::Local<v8::Object> o${CSName};
+    if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
+        o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
+        auto t${CSName} = o${CSName}->Get(context, 0).ToLocalChecked();
+        ${CSName} = DataTransfer::GetPointer<${S}>(context, t${CSName});
+    }
+    if (!${CSName}) {
+        ${CSName} = &u${CSName};
+    }
         `
         } else if (signature[0] == 'P' && signature != 'Pv') {
             const S = signature.substring(1);
             if (S in PrimitiveSignatureCppTypeMap) {
                 return `    // JSValToCSVal P primitive
-        ${CODE_SNIPPETS.SToCPPType(S)} u${CSName} = ${CODE_SNIPPETS.getArgValue(S, JSName, true)};
-        ${CODE_SNIPPETS.SToCPPType(S)}* ${CSName} = &u${CSName};
-        v8::Local<v8::Object> o${CSName};
-        if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
-            o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
-        }`
+    ${CODE_SNIPPETS.SToCPPType(S)} u${CSName} = ${CODE_SNIPPETS.getArgValue(S, JSName, true)};
+    ${CODE_SNIPPETS.SToCPPType(S)}* ${CSName} = &u${CSName};
+    v8::Local<v8::Object> o${CSName};
+    if (!${JSName}.IsEmpty() && ${JSName}->IsObject()) {
+        o${CSName} = ${JSName}->ToObject(context).ToLocalChecked();
+    }`
             } else {
                 return `    // JSValToCSVal P not primitive
-        ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(S, JSName, true)};`
+    ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(S, JSName, true)};`
             }
         } else {
             return `    // JSValToCSVal P any
-            ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(signature, JSName)};`
+    ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(signature, JSName)};`
         }
     },
 
@@ -279,13 +258,7 @@ const CODE_SNIPPETS = {
         } else if (signature == 'o') {
             return `CSRefToJsValue(isolate, context, ${CSName})`;
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {
-            // TODO fix
-            return `CopyValueType(isolate, context, TI${CSName}, &${CSName}, sizeof(${CSName}))`
-        // } else if (signature == 'd') {
-        //     return "{}";
-
-        // } else {
-        //     throw new Error('CSValToJsVal: invalid signature ' + signature);
+            return `CopyValueType(isolate, context, TI${CSName[0] == '*' ? CSName.substring(1) : CSName}, ${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`}, sizeof(${CSName}))`
         }
     }
 }
@@ -298,29 +271,32 @@ function genFuncWrapper(wrapperInfo) {
 // ${wrapperInfo.CsName}
 static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
     PLog("Running w_${wrapperInfo.Signature}");
+    
     ${CODE_SNIPPETS.declareTypeInfo(wrapperInfo)}
+
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
     if (checkJSArgument) {
         if ( info.Length() != ${parameterSignatures.length}) return false;
-    ${FOR(parameterSignatures, (x, i) => t`
-        if(${CODE_SNIPPETS.checkJSArg(x, i)}) return false;`
-    )}
+        ${FOR(parameterSignatures, (x, i) => t`
+        if(${CODE_SNIPPETS.checkJSArg(x, i)}) return false;
+        `)}
     }
     ${CODE_SNIPPETS.getThis(wrapperInfo.ThisSignature)}
     
 ${parameterSignatures.map((x, i) => CODE_SNIPPETS.JSValToCSVal(x, `info[${i}]`, `p${i}`)).join('\n')}
 
-    typedef ${CODE_SNIPPETS.SToCPPType(wrapperInfo.ReturnSignature)} (*FuncToCall)(${CODE_SNIPPETS.thisParam(wrapperInfo)}${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}const void* method);
-    
-    ${IF(wrapperInfo.ReturnSignature != 'v')}${CODE_SNIPPETS.SToCPPType(wrapperInfo.ReturnSignature)} ret = ${ENDIF()}((FuncToCall)methodPointer)(${CODE_SNIPPETS.passThis(wrapperInfo)} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
-    
+    typedef ${CODE_SNIPPETS.SToCPPType(wrapperInfo.ReturnSignature)} (*FuncToCall)(${needThis(wrapperInfo) ? 'void*,' : ''}${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}const void* method);
+    ${IF(wrapperInfo.ReturnSignature != 'v')}${CODE_SNIPPETS.SToCPPType(wrapperInfo.ReturnSignature)} ret = ${ENDIF()}((FuncToCall)methodPointer)(${needThis(wrapperInfo) ? 'self,' : ''} ${parameterSignatures.map((_, i) => `p${i}, `).join('')} method);
+
     ${FOR(parameterSignatures, (x, i) => t`
-    ${CODE_SNIPPETS.refSetback(x, i, wrapperInfo)}`
-    )}
+    ${CODE_SNIPPETS.refSetback(x, i, wrapperInfo)}
+    `)}
     
+    ${IF(wrapperInfo.ReturnSignature != "v")}
     ${CODE_SNIPPETS.returnToJS(wrapperInfo)}
-    
+    ${ENDIF()}
     return true;
 }`;
 }
@@ -330,7 +306,8 @@ function genBridge(bridgeInfo) {
     return t`
 static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
     PLog("Running b_${bridgeInfo.Signature}");
-    // TODO
+
+    // TODO 11.20 fill these var after typeinfo of bridge is done
     void* TIp0;
     void* TIp1;
     void* TIp2;
@@ -356,7 +333,8 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
     v8::TryCatch TryCatch(isolate);
     auto Function = delegateInfo->JsObject.Get(isolate).As<v8::Function>();
     v8::Local<v8::Value> Argv[${bridgeInfo.ParameterSignatures.Count}]{
-        ${listToJsArray(bridgeInfo.ParameterSignatures).map((ps, i)=> CODE_SNIPPETS.CSValToJSVal(ps, `p${i}`) || 'v8::Undefined(isolate)').join(',\n')}
+        ${listToJsArray(bridgeInfo.ParameterSignatures).map((ps, i)=> CODE_SNIPPETS.CSValToJSVal(ps, `p${i}`) || 'v8::Undefined(isolate)').join(`,
+        `)}
     };
     auto MaybeRet = Function->Call(context, v8::Undefined(isolate), ${bridgeInfo.ParameterSignatures.Count}, Argv);
     
@@ -364,17 +342,16 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
     {
         auto msg = DataTransfer::ExceptionToString(isolate, TryCatch.Exception());
         ThrowInvalidOperationException(msg.c_str());
-    ${IF(bridgeInfo.ReturnSignature != 'v')}
-        return {};
-    ${ENDIF()}
+    ${IF(bridgeInfo.ReturnSignature == 'v')}
     }
-    ${IF(bridgeInfo.ReturnSignature != 'v')}
-        if (!MaybeRet.IsEmpty())
-        {
-            ${CODE_SNIPPETS.returnToCS(bridgeInfo.ReturnSignature)}
-        }
-
+    ${ELSE()}
         return {};
+    }
+    if (MaybeRet.IsEmpty())
+    {
+        return {};
+    }
+    ${CODE_SNIPPETS.returnToCS(bridgeInfo.ReturnSignature)}
     ${ENDIF()}
 }`;
 }
@@ -430,8 +407,8 @@ ${wrapperInfos.map(genFuncWrapper).join('\n')}
 
 static WrapFuncInfo g_wrapFuncInfos[] = {
     ${FOR(wrapperInfos, info => t`
-    {"${info.Signature}", w_${info.Signature}},`
-    )}
+    {"${info.Signature}", w_${info.Signature}},
+    `)}
     {nullptr, nullptr}
 };
 
@@ -439,8 +416,8 @@ ${bridgeInfos.map(genBridge).join('\n')}
 
 static BridgeFuncInfo g_bridgeFuncInfos[] = {
     ${FOR(bridgeInfos, info => t`
-    {"${info.Signature}", (MethodPointer)b_${info.Signature}},`
-    )}
+    {"${info.Signature}", (MethodPointer)b_${info.Signature}},
+    `)}
     {nullptr, nullptr}
 };
 
@@ -448,8 +425,8 @@ ${fieldWrapperInfos.map(genFieldWrapper).join('\n')}
 
 static FieldWrapFuncInfo g_fieldWrapFuncInfos[] = {
     ${FOR(fieldWrapperInfos, info => t`
-    {"${info.Signature}", ifg_${info.Signature}, ifs_${info.Signature}},`
-    )}
+    {"${info.Signature}", ifg_${info.Signature}, ifs_${info.Signature}},
+    `)}
     {nullptr, nullptr, nullptr}    
 };
 
