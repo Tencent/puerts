@@ -147,8 +147,7 @@ struct ${valueTypeInfo.Signature}
         return '';
     },
     
-    returnToJS(wrapperInfo) {
-        const signature = wrapperInfo.ReturnSignature;
+    returnToJS(signature) {
     
         if (signature == 'i8') {
             return 'info.GetReturnValue().Set(v8::BigInt::New(isolate, ret));';
@@ -157,7 +156,7 @@ struct ${valueTypeInfo.Signature}
         } else if (signature in PrimitiveSignatureCppTypeMap) {
             return 'info.GetReturnValue().Set(ret);';
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {
-            return 'info.GetReturnValue().Set(CopyValueType(isolate, context, typeInfos[0], &ret, sizeof(ret)));';
+            return 'info.GetReturnValue().Set(CopyValueType(isolate, context, TIret, &ret, sizeof(ret)));';
         } else if (signature == 'o') { // classes except System.Object
             return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
         } else if (signature == 'O') { // System.Object
@@ -295,7 +294,7 @@ ${parameterSignatures.map((x, i) => CODE_SNIPPETS.JSValToCSVal(x, `info[${i}]`, 
     `)}
     
     ${IF(wrapperInfo.ReturnSignature != "v")}
-    ${CODE_SNIPPETS.returnToJS(wrapperInfo)}
+    ${CODE_SNIPPETS.returnToJS(wrapperInfo.ReturnSignature)}
     ${ENDIF()}
     return true;
 }`;
@@ -357,23 +356,36 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
 }
 
 function genFieldWrapper(fieldWrapperInfo) {
-    return `
+    return t`
 static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIret) {
     PLog("Running ifg_${fieldWrapperInfo.Signature}");
-    
+
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    ${IF(needThis(fieldWrapperInfo))}
+
+    ${CODE_SNIPPETS.getThis(fieldWrapperInfo.ThisSignature)}
+
+    ${ENDIF()}
+    ${CODE_SNIPPETS.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
+
+    FieldGet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, &ret);
     
-    ${CODE_SNIPPETS.getThis(fieldWrapperInfo.ReturnSignature)}
+    ${CODE_SNIPPETS.returnToJS(fieldWrapperInfo.ReturnSignature)}
 }
 
-static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIret) {
+static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIp) {
     PLog("Running ifs_${fieldWrapperInfo.Signature}");
     
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
-    
-    ${CODE_SNIPPETS.getThis(fieldWrapperInfo.ReturnSignature)}
+    ${IF(needThis(fieldWrapperInfo))}
+
+    ${CODE_SNIPPETS.getThis(fieldWrapperInfo.ThisSignature)}
+
+    ${ENDIF()}    
+    ${CODE_SNIPPETS.JSValToCSVal(fieldWrapperInfo.ReturnSignature, "info[0]", "p")}
+    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${CODE_SNIPPETS.SToCPPType(fieldWrapperInfo.ReturnSignature).indexOf('*') != -1 ? 'p' : '&p'});
 }`;
 }
 

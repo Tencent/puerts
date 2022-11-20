@@ -4,6 +4,8 @@ const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
 var testHelper = TestHelper.GetInstance();
 
+Debug.Log("111" + (TestHelper.GetInstance() == TestHelper.instance));
+
 Debug.Log('start test ' + testHelper);
 const outRef = [null];
 
@@ -22,6 +24,10 @@ const rNum = testHelper.NumberTestPipeLine(oNum, outRef, function(num) {
 });
 assertAndPrint("JSGetNumberOutArgFromCS", outRef[0] == oNum + 3);
 assertAndPrint("JSGetNumberReturnFromCS", rNum == oNum + 4);
+assertAndPrint("JSGetNumberField", testHelper.numberField == 0);
+testHelper.numberField = rNum;
+Debug.Log(testHelper.numberField);
+assertAndPrint("JSSetNumberField", testHelper.numberField == rNum);
 
 // Date
 // const oDate = new Date("1998-11-11");
@@ -40,6 +46,9 @@ const rString = testHelper.StringTestPipeLine(oString, outRef, function(str) {
 });
 assertAndPrint("JSGetStringOutArgFromCS", outRef[0] == "abcdef");
 assertAndPrint("JSGetStringReturnFromCS", rString == "abcdefg");
+assertAndPrint("JSGetStringField", testHelper.stringField == "");
+testHelper.stringField = rString;
+assertAndPrint("JSSetStringField", testHelper.stringField == rString);
 
 // Bool
 const oBool = true;
@@ -49,6 +58,9 @@ const rBool = testHelper.BoolTestPipeLine(oBool, outRef, function(b) {
 });
 assertAndPrint("JSGetBoolOutArgFromCS", outRef[0] == false);
 assertAndPrint("JSGetBoolReturnFromCS", rBool == false);
+assertAndPrint("JSGetBoolField", testHelper.boolField == true);
+testHelper.boolField = rBool;
+assertAndPrint("JSSetBoolField", testHelper.boolField == rBool);
 
 // 2021+ only
 // // BigInt

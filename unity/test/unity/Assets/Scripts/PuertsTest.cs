@@ -105,6 +105,7 @@ namespace PuertsTest
             outArg = 4;
             return 5;
         }
+        public int numberField = 0;
         /**
         * 判断引用即可
         */
@@ -126,6 +127,7 @@ namespace PuertsTest
             outArg = "abcdef";
             return "abcdefg";
         }
+        public string stringField = "";
         /**
         * js到cs都是true，cs到js都是false
         */
@@ -136,6 +138,7 @@ namespace PuertsTest
             outArg = false;
             return false;
         }
+        public bool boolField = true;
         /**
         * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
         * 后续每次交互都+1
