@@ -6,7 +6,6 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Containers/Array.h"
 #include "DisplayDebugHelpers.h"
-#include "Matinee/MatineeActor.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/ActorChannel.h"
 #include "Engine/NetConnection.h"
