@@ -20,6 +20,11 @@ Javascript 调用 C# 时，PuerTS 会通过 Javascript 侧的类名/函数名，
 ```csharp
 //1、配置类必须打[Configure]标签
 //2、必须放Editor目录
+using System;
+using System.Collections.Generic;
+using Puerts;
+using UnityEngine;
+
 [Configure]
 public class ExamplesCfg
 {
@@ -32,7 +37,7 @@ public class ExamplesCfg
             {
                 typeof(UnityEngine.Debug),
                 typeof(UnityEngine.Vector3),
-            }
+            };
         }
     }
 }
