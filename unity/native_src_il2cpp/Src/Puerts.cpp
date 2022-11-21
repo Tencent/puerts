@@ -581,7 +581,7 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
 V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
 {
     puerts::FieldWrapFuncInfo* wrapFuncInfo = puerts::FindFieldWrapFuncInfo(signature);
-    if (!wrapFuncInfo) return nullptr;
+    if (!wrapFuncInfo) return false;
     puerts::FieldWrapData* data = new puerts::FieldWrapData();
     data->Getter = wrapFuncInfo->Getter;
     data->Setter = wrapFuncInfo->Setter;
