@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.tencent.puerts.core": {
-      "version": "file:/Volumes/DATA_/Code/puerts@stable/puerts/unity/Assets/core/upm",
+      "version": "file:../../../Assets/core/upm",
       "depth": 0,
       "source": "local",
       "dependencies": {}

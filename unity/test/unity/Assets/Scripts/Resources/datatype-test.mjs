@@ -4,8 +4,6 @@ const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
 var testHelper = TestHelper.GetInstance();
 
-Debug.Log("111" + (TestHelper.GetInstance() == TestHelper.instance));
-
 Debug.Log('start test ' + testHelper);
 const outRef = [null];
 
@@ -17,17 +15,14 @@ Debug.Log('1');
 // });
 
 // Number
-const oNum = 1;
+const oNum = testHelper.numberTestStartValue;
 const rNum = testHelper.NumberTestPipeLine(oNum, outRef, function(num) {
     assertAndPrint("JSGetNumberArgFromCS", num == oNum + 1);
-    return oNum + 2
+    testHelper.numberTestEndValue = oNum + 2;
+    return testHelper.numberTestEndValue;
 });
 assertAndPrint("JSGetNumberOutArgFromCS", outRef[0] == oNum + 3);
 assertAndPrint("JSGetNumberReturnFromCS", rNum == oNum + 4);
-assertAndPrint("JSGetNumberField", testHelper.numberField == 0);
-testHelper.numberField = rNum;
-Debug.Log(testHelper.numberField);
-assertAndPrint("JSSetNumberField", testHelper.numberField == rNum);
 
 // Date
 // const oDate = new Date("1998-11-11");
@@ -39,28 +34,24 @@ assertAndPrint("JSSetNumberField", testHelper.numberField == rNum);
 // assertAndPrint("JSGetDateReturnFromCS", rDate.getTime() == oDate.getTime());
 
 // String
-const oString = "abc";
+const oString = testHelper.stringTestStartValue;
 const rString = testHelper.StringTestPipeLine(oString, outRef, function(str) {
     assertAndPrint("JSGetStringArgFromCS", str == "abcd");
-    return "abcde"
+    testHelper.stringTestEndValue = "abcde";
+    return testHelper.stringTestEndValue
 });
 assertAndPrint("JSGetStringOutArgFromCS", outRef[0] == "abcdef");
 assertAndPrint("JSGetStringReturnFromCS", rString == "abcdefg");
-assertAndPrint("JSGetStringField", testHelper.stringField == "");
-testHelper.stringField = rString;
-assertAndPrint("JSSetStringField", testHelper.stringField == rString);
 
 // Bool
-const oBool = true;
+const oBool = testHelper.boolTestStartValue;
 const rBool = testHelper.BoolTestPipeLine(oBool, outRef, function(b) {
     assertAndPrint("JSGetBoolArgFromCS", b == false);
-    return true;
+    testHelper.boolTestEndValue = true;
+    return testHelper.boolTestEndValue;
 });
 assertAndPrint("JSGetBoolOutArgFromCS", outRef[0] == false);
 assertAndPrint("JSGetBoolReturnFromCS", rBool == false);
-assertAndPrint("JSGetBoolField", testHelper.boolField == true);
-testHelper.boolField = rBool;
-assertAndPrint("JSSetBoolField", testHelper.boolField == rBool);
 
 // 2021+ only
 // // BigInt

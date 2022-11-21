@@ -100,12 +100,15 @@ namespace PuertsTest
         */
         public int NumberTestPipeLine(int initialValue, out int outArg, Func<int, int> JSValueHandler) 
         {
+            AssertAndPrint("CSGetNumberFieldFromCS", initialValue, numberTestStartValue);
             AssertAndPrint("CSGetNumberArgFromJS", initialValue, 1);
             AssertAndPrint("CSGetNumberReturnFromJS", JSValueHandler(initialValue + 1), 3);
+            AssertAndPrint("CSSetNumberFieldFromJS", numberTestEndValue, 3);
             outArg = 4;
             return 5;
         }
-        public int numberField = 0;
+        public int numberTestStartValue = 1;
+        public int numberTestEndValue = 0;
         /**
         * 判断引用即可
         */
@@ -122,23 +125,29 @@ namespace PuertsTest
         */
         public string StringTestPipeLine(string initialValue, out string outArg, Func<string, string> JSValueHandler) 
         {
+            AssertAndPrint("CSGetStringFieldFromCS", initialValue, stringTestStartValue);
             AssertAndPrint("CSGetStringArgFromJS", initialValue, "abc");
             AssertAndPrint("CSGetStringReturnFromJS", JSValueHandler(initialValue + "d"), "abcde");
+            AssertAndPrint("CSSetStringFieldFromJS", stringTestEndValue, "abcde");
             outArg = "abcdef";
             return "abcdefg";
         }
-        public string stringField = "";
+        public string stringTestStartValue = "abc";
+        public string stringTestEndValue = "";
         /**
         * js到cs都是true，cs到js都是false
         */
         public bool BoolTestPipeLine(bool initialValue, out bool outArg, Func<bool, bool> JSValueHandler) 
         {
+            AssertAndPrint("CSGetBoolFieldFromCS", initialValue, boolTestStartValue);
             AssertAndPrint("CSGetBoolArgFromJS", initialValue);
             AssertAndPrint("CSGetBoolReturnFromJS", JSValueHandler(false));
+            AssertAndPrint("CSSetBoolFieldFromJS", boolTestEndValue);
             outArg = false;
             return false;
         }
-        public bool boolField = true;
+        public bool boolTestStartValue = true;
+        public bool boolTestEndValue = false;
         /**
         * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
         * 后续每次交互都+1

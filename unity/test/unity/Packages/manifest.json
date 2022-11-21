@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.tencent.puerts.core": "file:/Volumes/DATA_/Code/puerts@stable/puerts/unity/Assets/core/upm",
+    "com.tencent.puerts.core": "file:../../../Assets/core/upm",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",
     "com.unity.ads": "3.7.5",
