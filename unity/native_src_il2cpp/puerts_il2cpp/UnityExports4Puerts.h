@@ -37,6 +37,10 @@ typedef pesapi_value (*TryTranslatePrimitiveFunc)(v8::Context* env, const void* 
 
 typedef int (*GetTIDFunc)(void* obj);
 
+typedef const void* (*GetReturnTypeFunc)(const void* method);
+
+typedef const void* (*GetParameterTypeFunc)(const void* method, int index);
+
 #else
     
 #define MethodPointer Il2CppMethodPointer
@@ -72,6 +76,10 @@ typedef Il2CppString* (*CStringToCSharpStringFunc)(const char* str);
 typedef pesapi_value (*TryTranslatePrimitiveFunc)(pesapi_env env, Il2CppObject* obj);
 
 typedef int (*GetTIDFunc)(Il2CppObject* obj);
+
+typedef const Il2CppClass* (*GetReturnTypeFunc)(const MethodInfo* method);
+
+typedef const Il2CppClass* (*GetParameterTypeFunc)(const MethodInfo* method, int index);
 
 #endif
 
@@ -120,6 +128,8 @@ struct UnityExports
     TryTranslatePrimitiveFunc TryTranslatePrimitive = nullptr;
     GetTIDFunc GetTID = nullptr;
     ThrowInvalidOperationExceptionFunc ThrowInvalidOperationException = nullptr;
+    GetReturnTypeFunc GetReturnType = nullptr;
+    GetParameterTypeFunc GetParameterType = nullptr;
     int SizeOfRuntimeObject = 0;
     //plugin api
     

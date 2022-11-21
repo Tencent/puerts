@@ -60,8 +60,35 @@ static int32_t b_i4i4i4(void* object, int32_t p1, int32_t p2, void* method)
     return {};
 }
 
+static void b_vs_r4r4r4_(void* object, s_r4r4r4_ p1, void* method)
+{
+    PersistentObjectInfo* delegateInfo = GetObjectData(object, PersistentObjectInfo);
+    if (delegateInfo->JsEnvLifeCycleTracker.expired())
+    {
+        ThrowInvalidOperationException("JsEnv had been destroy");
+        return;
+    }
+    v8::Isolate* Isolate = delegateInfo->Isolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = delegateInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    v8::TryCatch TryCatch(Isolate);
+    auto Function = delegateInfo->JsObject.Get(Isolate).As<v8::Function>();
+    v8::Local<v8::Value> Argv[1]{CopyValueType(Isolate, Context, GetParameterType(method, 0), &p1, sizeof(p1))};
+    auto MaybeRet = Function->Call(Context, v8::Undefined(Isolate), 1, Argv);
+    
+    if (TryCatch.HasCaught())
+    {
+        auto msg = DataTransfer::ExceptionToString(Isolate, TryCatch.Exception());
+        ThrowInvalidOperationException(msg.c_str());
+    }
+}
+
 static BridgeFuncInfo g_bridgeFuncInfos[] = {
     {"i4i4i4", (MethodPointer)b_i4i4i4},
+    {"vs_r4r4r4_", (MethodPointer)b_vs_r4r4r4_},
     {nullptr, nullptr}    
 };
 
@@ -637,3 +664,4 @@ static FieldWrapFuncInfo g_fieldWrapFuncInfos[] = {
     {"to", ifg_to, ifs_to},
     {nullptr, nullptr, nullptr}    
 };
+

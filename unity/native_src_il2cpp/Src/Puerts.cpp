@@ -268,6 +268,16 @@ inline static void* CStringToCSharpString(const char* str)
     return GUnityExports.CStringToCSharpString(str);
 }
 
+inline static const void* GetReturnType(const void* method)
+{
+    return GUnityExports.GetReturnType(method);
+}
+
+inline const void* GetParameterType(const void* method, int index)
+{
+    return GUnityExports.GetParameterType(method, index);
+}
+
 static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
@@ -571,7 +581,7 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
 V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
 {
     puerts::FieldWrapFuncInfo* wrapFuncInfo = puerts::FindFieldWrapFuncInfo(signature);
-    if (!wrapFuncInfo) return false;
+    if (!wrapFuncInfo) return nullptr;
     puerts::FieldWrapData* data = new puerts::FieldWrapData();
     data->Getter = wrapFuncInfo->Getter;
     data->Setter = wrapFuncInfo->Setter;

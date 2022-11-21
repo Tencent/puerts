@@ -11,6 +11,7 @@
 #include "vm/Field.h"
 #include "vm/GenericClass.h"
 #include "vm/Thread.h"
+#include "vm/Method.h"
 #include "utils/StringUtils.h"
 #include "vm-utils/NativeDelegateMethodCache.h"
 #include "pesapi.h"
@@ -87,6 +88,25 @@ static void ValueTypeFree(void* ptr)
 
 static Il2CppClass *g_typeofPersistentObjectInfo;
 
+const Il2CppClass* GetReturnType(const MethodInfo* method) {
+    if (kInvalidIl2CppMethodSlot != method->slot) {
+        Class::Init(method->klass);
+    }
+    return Class::FromIl2CppType(Method::GetReturnType(method), false);
+}
+
+const Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
+    if (kInvalidIl2CppMethodSlot != method->slot) {
+        Class::Init(method->klass);
+    }
+    const Il2CppType* type = Method::GetParam(method, index);
+    if (type) {
+        return Class::FromIl2CppType(type, false);
+    } else {
+        return nullptr;
+    }
+}
+
 Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType)
 {
     Il2CppObject* delegate = il2cpp::vm::Object::New(delegateType);
@@ -98,7 +118,9 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
         MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
         newMethod->methodPointer = functionPtr;
         newMethod->invoker_method = NULL;
+        newMethod->return_type = invoke->return_type;
         newMethod->parameters_count = invoke->parameters_count;
+        newMethod->parameters = invoke->parameters;
         newMethod->slot = kInvalidIl2CppMethodSlot;
         newMethod->is_marshaled_from_native = true;
         il2cpp::utils::NativeDelegateMethodCache::AddNativeDelegate(functionPtr, newMethod);
@@ -657,6 +679,8 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.TryTranslatePrimitive = &TryTranslatePrimitive;
     g_unityExports.GetTID = &GetTID;
     g_unityExports.ThrowInvalidOperationException = &ThrowInvalidOperationException;
+    g_unityExports.GetReturnType = &GetReturnType;
+    g_unityExports.GetParameterType = &GetParameterType;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     return &g_unityExports;
 }
