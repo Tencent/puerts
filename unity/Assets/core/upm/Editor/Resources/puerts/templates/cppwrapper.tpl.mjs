@@ -306,14 +306,14 @@ function genBridge(bridgeInfo) {
 static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
     PLog("Running b_${bridgeInfo.Signature}");
 
-    // TODO 11.20 fill these var after typeinfo of bridge is done
-    void* TIp0;
-    void* TIp1;
-    void* TIp2;
-    void* TIp3;
-    void* TIp4;
-    void* TIp5;
-    void* TIret;
+    ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRef(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
+    auto TIret = GetReturnType(method);
+    ${ENDIF()}
+    ${FOR(listToJsArray(bridgeInfo.ParameterSignatures), (ps, index) => t`
+        ${IF(!(getSignatureWithoutRef(ps) in PrimitiveSignatureCppTypeMap))}
+    auto TIp${index} = GetParameterType(method, ${index});
+        ${ENDIF()}
+    `)}
 
     PersistentObjectInfo* delegateInfo = GetObjectData(target, PersistentObjectInfo);
     if (delegateInfo->JsEnvLifeCycleTracker.expired())

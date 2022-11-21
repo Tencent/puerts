@@ -5,6 +5,8 @@
  
      <assembly fullname="Assembly-CSharp">
          <type fullname="PuertsTest.TestHelper" preserve="all"/>
+         <type fullname="PuertsTest.TestStruct" preserve="all"/>
+         <type fullname="PuertsTest.TestObject" preserve="all"/>
      </assembly>
  
 </linker>

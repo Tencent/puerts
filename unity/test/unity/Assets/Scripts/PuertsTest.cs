@@ -53,7 +53,9 @@ namespace PuertsTest
 #else
                 UnityEngine.Debug.LogError($"<color=magenta>TestCase {name} expect {a} == {b} but failed!</color>");
 #endif
-            } else {
+            }
+            else
+            {
 #if !UNITY_EDITOR
                 UnityEngine.Debug.Log($"TestCase {name} success!");
 #else
@@ -89,16 +91,20 @@ namespace PuertsTest
         /**
         * 保证初始值返回3.后续每次交互用的都是同一个初始值
         */
-        public Func<int> JSFunctionTestPipeLine(Func<int> initialValue, Func<Func<int>, Func<int>> JSValueHandler) 
+        public Func<int> JSFunctionTestPipeLine(Func<int> initialValue, Func<Func<int>, Func<int>> JSValueHandler)
         {
+            AssertAndPrint("CSGetFunctionFieldFromCS", initialValue(), functionTestStartValue());
             AssertAndPrint("CSGetFunctionArgFromJS", initialValue(), 3);
-            AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue), initialValue);
-            return initialValue;
+            AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue)(), initialValue());
+            AssertAndPrint("CSSetFunctionFieldFromJS", functionTestEndValue(), 3);
+            return functionTestEndValue;
         }
+        public Func<int> functionTestStartValue = () => 3;
+        public Func<int> functionTestEndValue = null;
         /**
         * 初始值1，每次交互+1
         */
-        public int NumberTestPipeLine(int initialValue, out int outArg, Func<int, int> JSValueHandler) 
+        public int NumberTestPipeLine(int initialValue, out int outArg, Func<int, int> JSValueHandler)
         {
             AssertAndPrint("CSGetNumberFieldFromCS", initialValue, numberTestStartValue);
             AssertAndPrint("CSGetNumberArgFromJS", initialValue, 1);
@@ -112,7 +118,7 @@ namespace PuertsTest
         /**
         * 判断引用即可
         */
-        public DateTime DateTestPipeLine(DateTime initialValue, out DateTime outArg, Func<DateTime, DateTime> JSValueHandler) 
+        public DateTime DateTestPipeLine(DateTime initialValue, out DateTime outArg, Func<DateTime, DateTime> JSValueHandler)
         {
             AssertAndPrint("CSGetDateArgFromJS", initialValue.ToString(), "1998/11/11 0:00:00");
             AssertAndPrint("CSGetDateReturnFromJS", JSValueHandler(initialValue), initialValue);
@@ -123,7 +129,7 @@ namespace PuertsTest
         * 初始值 'abc'
         * 后续每次交互往后多加一个字母
         */
-        public string StringTestPipeLine(string initialValue, out string outArg, Func<string, string> JSValueHandler) 
+        public string StringTestPipeLine(string initialValue, out string outArg, Func<string, string> JSValueHandler)
         {
             AssertAndPrint("CSGetStringFieldFromCS", initialValue, stringTestStartValue);
             AssertAndPrint("CSGetStringArgFromJS", initialValue, "abc");
@@ -137,7 +143,7 @@ namespace PuertsTest
         /**
         * js到cs都是true，cs到js都是false
         */
-        public bool BoolTestPipeLine(bool initialValue, out bool outArg, Func<bool, bool> JSValueHandler) 
+        public bool BoolTestPipeLine(bool initialValue, out bool outArg, Func<bool, bool> JSValueHandler)
         {
             AssertAndPrint("CSGetBoolFieldFromCS", initialValue, boolTestStartValue);
             AssertAndPrint("CSGetBoolArgFromJS", initialValue);
@@ -152,16 +158,18 @@ namespace PuertsTest
         * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
         * 后续每次交互都+1
         */
-        public long BigIntTestPipeLine(long initialValue, out long outArg, Func<long, long> JSValueHandler) 
+        public long BigIntTestPipeLine(long initialValue, out long outArg, Func<long, long> JSValueHandler)
         {
+            AssertAndPrint("CSGetBigIntFieldFromCS", initialValue, bigIntTestStartValue);
             AssertAndPrint("CSGetBigIntArgFromJS", initialValue, 9007199254740992);
             AssertAndPrint("CSGetBigIntReturnFromJS", JSValueHandler(initialValue + 1), initialValue + 2);
+            AssertAndPrint("CSSetBigIntFieldFromJS", bigIntTestEndValue, initialValue + 2);
             outArg = initialValue + 3;
             return initialValue + 4;
         }
+        public long bigIntTestStartValue = 9007199254740992;
+        public long bigIntTestEndValue = 0;
         /**
-        * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
-        * 后续每次交互都+1
         */
         // public Puerts.ArrayBuffer ArrayBufferTestPipeLine(Puerts.ArrayBuffer initialValue, out Puerts.ArrayBuffer outArg, Func<Puerts.ArrayBuffer, Puerts.ArrayBuffer> JSValueHandler) 
         // {
@@ -176,23 +184,33 @@ namespace PuertsTest
         /**
         * 判断引用即可
         */
-        public TestObject NativeObjectTestPipeLine(TestObject initialValue, out TestObject outArg, Func<TestObject, TestObject> JSValueHandler) 
+        public TestObject NativeObjectTestPipeLine(TestObject initialValue, out TestObject outArg, Func<TestObject, TestObject> JSValueHandler)
         {
+            AssertAndPrint("CSGetNativeObjectFieldFromCS", initialValue, nativeObjectTestStartValue);
             AssertAndPrint("CSGetNativeObjectArgFromJS", initialValue != null && initialValue.value == 1);
             AssertAndPrint("CSGetNativeObjectReturnFromJS", JSValueHandler(initialValue), initialValue);
+            AssertAndPrint("CSSetNativeObjectFieldFromJS", nativeObjectTestEndValue, initialValue);
+
             outArg = initialValue;
             return initialValue;
         }
+        public TestObject nativeObjectTestStartValue = new TestObject(1);
+        public TestObject nativeObjectTestEndValue = null;
         /**
         * 结构体，判断值相等
         */
-        public TestStruct NativeObjectStructTestPipeLine(TestStruct initialValue, out TestStruct outArg, Func<TestStruct, TestStruct> JSValueHandler) 
+        public TestStruct NativeObjectStructTestPipeLine(TestStruct initialValue, out TestStruct outArg, Func<TestStruct, TestStruct> JSValueHandler)
         {
+            AssertAndPrint("CSGetNativeObjectStructFieldFromCS", initialValue.value, nativeObjectStructTestStartValue.value);
             AssertAndPrint("CSGetNativeObjectStructArgFromJS", initialValue.value, 1);
             AssertAndPrint("CSGetNativeObjectStructReturnFromJS", JSValueHandler(initialValue).value, initialValue.value);
+            AssertAndPrint("CSSetNativeObjectStructFieldFromJS", nativeObjectStructTestEndValue.value, initialValue.value);
+
             outArg = initialValue;
             return initialValue;
         }
+        public TestStruct nativeObjectStructTestStartValue = new TestStruct(1);
+        public TestStruct nativeObjectStructTestEndValue = default(TestStruct);
         /**
         * CS侧暂无法处理，判断引用即可
         */
@@ -205,7 +223,8 @@ namespace PuertsTest
 
         public Func<object> ReturnAnyTestFunc;
 
-        public void InvokeReturnAnyTestFunc(TestStruct srcValue){
+        public void InvokeReturnAnyTestFunc(TestStruct srcValue)
+        {
             var ret = (TestStruct)ReturnAnyTestFunc.Invoke();
             AssertAndPrint("InvokeReturnNativeObjectStructTestFunc", srcValue.value, ret.value);
         }

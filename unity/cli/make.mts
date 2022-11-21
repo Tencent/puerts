@@ -212,6 +212,9 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         //     sx.cp(filepath, '../general/vs2013/Bin')
         // }
     })
+    if (cmakeAddedLibraryName == 'puerts_il2cpp') {
+        cp('-r', join(cwd, 'puerts_il2cpp'), cwd + '/../test/unity/Assets/Plugins/');
+    }
 
     return copyConfig;
 }
