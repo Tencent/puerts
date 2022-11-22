@@ -11,36 +11,10 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace PuertsIl2cpp
 {
-    public sealed class PersistentObjectInfo
-    {
-        long placeHold0;
-        long placeHold1;
-        long placeHold2;
-        long placeHold3;
-        long placeHold4;
-        long placeHold5;
-        long placeHold6;
-        long placeHold7;
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        void releaseScriptObject()
-        {
-            throw new NotImplementedException();
-        }
-
-        ~PersistentObjectInfo()
-        {
-            //UnityEngine.Debug.Log("~DelegateInfo start..");
-            releaseScriptObject();
-            //UnityEngine.Debug.Log("~DelegateInfo end..");
-        }
-    }
-
 #pragma warning disable 414
     public class MonoPInvokeCallbackAttribute : System.Attribute
     {

@@ -42,7 +42,7 @@ namespace Puerts
             tryLoadTypeMethodInfo = typeof(PuertsIl2cpp.NativeAPI).GetMethod("RegisterNoThrow");
             PuertsIl2cpp.NativeAPI.SetTryLoadCallback(PuertsIl2cpp.NativeAPI.GetMethodInfoPointer(tryLoadTypeMethodInfo), PuertsIl2cpp.NativeAPI.GetMethodPointer(tryLoadTypeMethodInfo));
 
-            persistentObjectInfoType = typeof(PuertsIl2cpp.PersistentObjectInfo);
+            persistentObjectInfoType = typeof(Puerts.JSObject);
             PuertsIl2cpp.NativeAPI.SetPersistentObjectInfoType(persistentObjectInfoType);
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();

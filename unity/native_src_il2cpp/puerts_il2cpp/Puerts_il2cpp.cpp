@@ -757,7 +757,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
-    InternalCalls::Add("PuertsIl2cpp.PersistentObjectInfo::releaseScriptObject()", (Il2CppMethodPointer)puerts::ReleaseScriptObject);
+    InternalCalls::Add("Puerts.JSObject::releaseScriptObject()", (Il2CppMethodPointer)puerts::ReleaseScriptObject);
     pesapi_init(func_array);
 }
 
