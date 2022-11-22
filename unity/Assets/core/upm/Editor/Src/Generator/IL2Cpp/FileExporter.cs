@@ -165,6 +165,30 @@ namespace PuertsIl2cpp.Editor
                     }
                 }
             }
+
+            public static void GenLinkXml(string outDir)
+            {
+                var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
+                        "Puerts.BindingAttribute",
+                    });
+                var genTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                    .Where(o => o is Type)
+                    .Cast<Type>()
+                    .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
+                    .Distinct()
+                    .ToList();
+                using (var jsEnv = new Puerts.JsEnv())
+                {
+                    var wrapRender = jsEnv.ExecuteModule<Func<List<Type>, string>>("puerts/templates/linkxmlgen.tpl.mjs", "default");
+                    string fileContent = wrapRender(genTypes);
+                    var filePath = outDir + "link.xml";
+                    using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
+                    {
+                        textWriter.Write(fileContent);
+                        textWriter.Flush();
+                    }
+                }
+            }
         }
     }
 }

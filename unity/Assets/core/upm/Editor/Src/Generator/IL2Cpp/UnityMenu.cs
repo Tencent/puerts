@@ -34,6 +34,17 @@ namespace PuertsIl2cpp.Editor
                 AssetDatabase.Refresh();
             }
 
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate Link.xml", false, 1)]
+            public static void GenerateLinkXML()
+            {
+                var start = DateTime.Now;
+                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(saveTo);
+                FileExporter.GenLinkXml(saveTo);
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
+                AssetDatabase.Refresh();
+            }
+
 #endif
         }
     }
