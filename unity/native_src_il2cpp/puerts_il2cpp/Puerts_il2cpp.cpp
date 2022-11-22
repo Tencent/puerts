@@ -252,7 +252,7 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     {
         IL2CPP_ASSERT(ptr);
         dest = (char*)ptr + offset;
-        Field::SetValueRaw(field->type, dest, value, false);
+        Field::SetValueRaw(field->type, dest, value, true);
     }
     else
     {

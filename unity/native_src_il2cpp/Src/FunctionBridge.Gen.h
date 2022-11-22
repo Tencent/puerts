@@ -650,7 +650,7 @@ static void ifs_to(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldI
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     
     auto __this = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
-    auto __p1 = puerts::DataTransfer::GetPointerFast<void>(info[0]->ToObject(context).ToLocalChecked());
+    auto __p1 = JsValueToCSRef(context, info[0], typeInfo);
     //PLog("set float %p %d %f", __this, offset, __p1);
     FieldSet(__this, fieldInfo, offset, &__p1);
 }
