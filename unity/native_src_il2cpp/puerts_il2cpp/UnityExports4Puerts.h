@@ -33,13 +33,17 @@ typedef const void* (*CSharpTypeToTypeIdFunc)(const void *type);
 
 typedef void* (*CStringToCSharpStringFunc)(const char* str);
 
-typedef pesapi_value (*TryTranslatePrimitiveFunc)(v8::Context* env, const void* obj);
+typedef pesapi_value (*TryTranslateFunc)(v8::Context* env, const void* obj);
 
 typedef int (*GetTIDFunc)(void* obj);
 
 typedef const void* (*GetReturnTypeFunc)(const void* method);
 
 typedef const void* (*GetParameterTypeFunc)(const void* method, int index);
+
+typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo);
+
+typedef v8::Value* (*GetPersistentObjectFunc)(v8::Context* env, const PersistentObjectInfo* objectInfo);
 
 #else
     
@@ -73,13 +77,17 @@ typedef const void* (*CSharpTypeToTypeIdFunc)(Il2CppObject *type);
 
 typedef Il2CppString* (*CStringToCSharpStringFunc)(const char* str);
 
-typedef pesapi_value (*TryTranslatePrimitiveFunc)(pesapi_env env, Il2CppObject* obj);
+typedef pesapi_value (*TryTranslateFunc)(pesapi_env env, Il2CppObject* obj);
 
 typedef int (*GetTIDFunc)(Il2CppObject* obj);
 
 typedef const Il2CppClass* (*GetReturnTypeFunc)(const MethodInfo* method);
 
 typedef const Il2CppClass* (*GetParameterTypeFunc)(const MethodInfo* method, int index);
+
+typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo);
+
+typedef pesapi_value (*GetPersistentObjectFunc)(pesapi_env env, const PersistentObjectInfo* objectInfo);
 
 #endif
 
@@ -125,7 +133,8 @@ struct UnityExports
     JsValueToCSRefFunc JsValueToCSRef = nullptr;
     CSharpTypeToTypeIdFunc CSharpTypeToTypeId = nullptr;
     CStringToCSharpStringFunc CStringToCSharpString = nullptr;
-    TryTranslatePrimitiveFunc TryTranslatePrimitive = nullptr;
+    TryTranslateFunc TryTranslatePrimitive = nullptr;
+    TryTranslateFunc TryTranslateBuiltin = nullptr;
     GetTIDFunc GetTID = nullptr;
     ThrowInvalidOperationExceptionFunc ThrowInvalidOperationException = nullptr;
     GetReturnTypeFunc GetReturnType = nullptr;
@@ -136,6 +145,9 @@ struct UnityExports
     SetNativePtrFunc SetNativePtr = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
     FunctionToDelegateFunc FunctionToDelegate = nullptr;
+    
+    SetPersistentObjectFunc SetPersistentObject = nullptr;
+    GetPersistentObjectFunc GetPersistentObject = nullptr;
 };
 
 }

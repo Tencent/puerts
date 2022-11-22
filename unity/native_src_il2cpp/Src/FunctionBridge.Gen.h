@@ -218,6 +218,22 @@ static bool w_vto(void* method, MethodPointer methodPointer, const v8::FunctionC
     return true;
 }
 
+static bool w_oto(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& Info, bool checkArgument, void** typeInfos) {
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    
+    auto This = puerts::DataTransfer::GetPointerFast<void>(Info.Holder());
+    
+    auto p1 = JsValueToCSRef(Context, Info[0], typeInfos[0]);
+    
+    typedef void* (*NativeFuncPtr)(void* ___this, void* ___p1, const void* __method);
+    
+    auto obj = ((NativeFuncPtr)methodPointer)(This, p1, method);
+    
+    Info.GetReturnValue().Set(CSRefToJsValue(Isolate, Context, obj));
+    return true;
+}
+
 static bool w_vti4(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& Info, bool checkArgument, void** typeInfos) {
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
@@ -514,6 +530,7 @@ static WrapFuncInfo g_wrapFuncInfos[] = {
     {"vs_r4r4r4_", w_vs_r4r4r4_},
     {"vtr4r4r4", w_vtr4r4r4},
     {"vto", w_vto},
+    {"oto", w_oto},
     {"vti4", w_vti4},
     {"vr4", w_vr4},
     {"r4", w_r4},

@@ -188,6 +188,40 @@ static void* FunctionToDelegate_pesapi(pesapi_env env, pesapi_value pvalue, cons
     return FunctionToDelegate(Context, Func.As<v8::Object>(), TypeId, throwIfFail);
 }
 
+static void SetPersistentObject(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo)
+{
+    v8::Local<v8::Context> Context;
+    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
+    v8::Local<v8::Object> Obj;
+    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
+    
+    v8::Isolate* Isolate = Context->GetIsolate();
+    
+    objectInfo->Isolate = Isolate;
+    objectInfo->Context.Reset(Isolate, Context);
+    objectInfo->JsObject.Reset(Isolate, Obj);
+    objectInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
+}
+
+static v8::Value* GetPersistentObject(v8::Context* env, const PersistentObjectInfo* objectInfo)
+{    
+    if (objectInfo->JsEnvLifeCycleTracker.expired())
+    {
+        GUnityExports.ThrowInvalidOperationException("JsEnv had been destroy");
+        return nullptr;
+    }
+    
+    v8::Isolate* Isolate = env->GetIsolate();
+    
+    if (Isolate != objectInfo->Isolate)
+    {
+        GUnityExports.ThrowInvalidOperationException("js object from other JsEnv");
+        return nullptr;
+    }
+    
+    return *objectInfo->JsObject.Get(Isolate);
+}
+
 static void* JsValueToCSRef(v8::Local<v8::Context> context, v8::Local<v8::Value> val, const void *typeId)
 {
     return GUnityExports.JsValueToCSRef(typeId, *context, *val);
@@ -199,6 +233,15 @@ inline static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Loca
     if (!Obj)
     {
         return v8::Undefined(Isolate);
+    }
+    
+    pesapi_value jsVal = GUnityExports.TryTranslateBuiltin(*Context, Obj);
+    
+    if (jsVal)
+    {
+        v8::Local<v8::Value> Ret;
+        memcpy(static_cast<void*>(&Ret), &jsVal, sizeof(jsVal));
+        return Ret;
     }
     
     void* Class = *reinterpret_cast<void**>(Obj);
@@ -726,6 +769,8 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->SetNativePtr = &puerts::SetNativePtr;
     exports->UnrefJsObject = &puerts::UnrefJsObject;
     exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
+    exports->SetPersistentObject = &puerts::SetPersistentObject;
+    exports->GetPersistentObject = &puerts::GetPersistentObject;
     puerts::GUnityExports = *exports;
 }
 

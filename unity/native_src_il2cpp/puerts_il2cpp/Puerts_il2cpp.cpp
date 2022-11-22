@@ -334,6 +334,19 @@ int GetTID(Il2CppObject* obj)
     return -1;
 }
 
+pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
+{
+    if (obj)
+    {
+        if (obj->klass == g_typeofPersistentObjectInfo)
+        {
+            PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(obj + 1);
+            return g_unityExports.GetPersistentObject(env, objectInfo);
+        }
+    }
+    return nullptr;
+}
+
 pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
 {
     if (obj)
@@ -566,6 +579,20 @@ handle_underlying:
             auto ptr = pesapi_get_native_object_ptr(env, jsval);
             if (!ptr)
             {
+                if ((klass == g_typeofPersistentObjectInfo || klass == il2cpp_defaults.object_class) && pesapi_is_object(env, jsval))
+                {
+                    Il2CppClass* delegateInfoClass = g_typeofPersistentObjectInfo;
+                    
+                    RuntimeObject* ret = il2cpp::vm::Object::New(delegateInfoClass);
+
+                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(delegateInfoClass, ".ctor", 0);
+                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const Il2CppReflectionMethod* method);
+                    ((NativeCtorPtr)ctor->methodPointer)(ret, Reflection::GetMethodObject(ctor, delegateInfoClass));
+                    
+                    PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(ret + 1);
+                    g_unityExports.SetPersistentObject(env, jsval, objectInfo);
+                    return ret;
+                }
                 if (klass == il2cpp_defaults.object_class)
                 {
                     if (pesapi_is_string(env, jsval))
@@ -677,6 +704,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;
     g_unityExports.CStringToCSharpString = &String::NewWrapper;
     g_unityExports.TryTranslatePrimitive = &TryTranslatePrimitive;
+    g_unityExports.TryTranslateBuiltin = &TryTranslateBuiltin;
     g_unityExports.GetTID = &GetTID;
     g_unityExports.ThrowInvalidOperationException = &ThrowInvalidOperationException;
     g_unityExports.GetReturnType = &GetReturnType;
