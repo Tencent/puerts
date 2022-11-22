@@ -214,12 +214,12 @@ namespace PuertsTest
         /**
         * CS侧暂无法处理，判断引用即可
         */
-        // public JSObject JSObjectTestPipeLine(JSObject initialValue, Func<JSObject, JSObject> JSValueHandler) 
-        // {
-        //     AssertAndPrint("CSGetJSObjectArgFromJS", initialValue != null);
-        //     AssertAndPrint("CSGetJSObjectReturnFromJS", JSValueHandler(initialValue) == initialValue);
-        //     return initialValue;
-        // }
+        public JSObject JSObjectTestPipeLine(JSObject initialValue, Func<JSObject, JSObject> JSValueHandler) 
+        {
+            AssertAndPrint("CSGetJSObjectArgFromJS", initialValue != null);
+            AssertAndPrint("CSGetJSObjectReturnFromJS", JSValueHandler(initialValue) == initialValue);
+            return initialValue;
+        }
 
         public Func<object> ReturnAnyTestFunc;
 
