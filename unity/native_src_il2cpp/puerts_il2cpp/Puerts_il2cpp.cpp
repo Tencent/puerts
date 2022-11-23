@@ -1,4 +1,6 @@
-#include "pch-cpp.hpp"
+#include "il2cpp-config.h"
+#include "codegen/il2cpp-codegen.h"
+
 #include "il2cpp-api.h"
 #include "il2cpp-class-internals.h"
 #include "il2cpp-object-internals.h"
@@ -221,7 +223,7 @@ void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset)
 {
     if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
     {
-        IL2CPP_ASSERT(ptr);
+        IL2CPP_ASSERT(obj);
         return (char*)obj + offset;
     }
     else
@@ -553,7 +555,7 @@ handle_underlying:
                 return (Il2CppObject*)il2cpp::vm::String::NewWrapper(str);
             }
             std::vector<char> buff;
-            buff.reserve(bufsize + 1);
+            buff.resize(bufsize + 1);
             str = pesapi_get_value_string_utf8(env, jsval, buff.data(), &bufsize);
             if (str)
             {
