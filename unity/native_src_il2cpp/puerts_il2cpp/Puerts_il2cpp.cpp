@@ -110,11 +110,12 @@ const Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
 Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType)
 {
     Il2CppObject* delegate = il2cpp::vm::Object::New(delegateType);
+    const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(delegateType);
 
-    const MethodInfo* method = il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate(functionPtr);
+    // TODO: Using Custom Delegate Method Cache
+    const MethodInfo* method = il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate(reinterpret_cast<Il2CppMethodPointer>(invoke));
     if (method == NULL)
     {
-        const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(delegateType);
         MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
         newMethod->methodPointer = functionPtr;
         newMethod->invoker_method = NULL;
