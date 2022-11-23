@@ -337,6 +337,7 @@ static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Inf
     return FunctionToDelegate(Isolate, Context, Info[0]->ToObject(Context).ToLocalChecked(), ClassDefinition);
 }
 
+//TODO: Add Lock for Isolate ? Global::Reset is thread safe ?
 static void UnrefJsObject(PersistentObjectInfo* objectInfo)
 {
     if (!objectInfo->JsEnvLifeCycleTracker.expired())
