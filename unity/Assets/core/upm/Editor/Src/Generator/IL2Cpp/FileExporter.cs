@@ -67,6 +67,7 @@ namespace PuertsIl2cpp.Editor
             public static void GenCPPWrap(string saveTo)
             {
                 var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                            where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
                             where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                             from type in assembly.GetTypes()
                             where type.IsPublic

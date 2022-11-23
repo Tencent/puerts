@@ -331,10 +331,14 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
 
     v8::TryCatch TryCatch(isolate);
     auto Function = delegateInfo->JsObject.Get(isolate).As<v8::Function>();
+    ${IF(bridgeInfo.ParameterSignatures.Count != 0)}
     v8::Local<v8::Value> Argv[${bridgeInfo.ParameterSignatures.Count}]{
         ${listToJsArray(bridgeInfo.ParameterSignatures).map((ps, i)=> CODE_SNIPPETS.CSValToJSVal(ps, `p${i}`) || 'v8::Undefined(isolate)').join(`,
         `)}
     };
+    ${ELSE()}
+    v8::Local<v8::Value> *Argv = nullptr;
+    ${ENDIF()}
     auto MaybeRet = Function->Call(context, v8::Undefined(isolate), ${bridgeInfo.ParameterSignatures.Count}, Argv);
     
     if (TryCatch.HasCaught())
