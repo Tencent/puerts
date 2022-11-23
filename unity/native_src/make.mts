@@ -84,7 +84,7 @@ const platformCompileConfig = {
             outputPluginPath: 'macOS/x86_64',
             hook: function (CMAKE_BUILD_PATH: string, options: BuildOptions, cmakeDArgs: string) {
                 cd(CMAKE_BUILD_PATH);
-                assert.equal(0, exec(`cmake ${cmakeDArgs} -DTHREAD_SAFE=1 -DJS_ENGINE=${options.backend} -GXcode ..`).code)
+                assert.equal(0, exec(`cmake ${cmakeDArgs} -DJS_ENGINE=${options.backend} -GXcode ..`).code)
                 cd("..")
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
