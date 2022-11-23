@@ -113,7 +113,7 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
     const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(delegateType);
 
     // TODO: Using Custom Delegate Method Cache
-    const MethodInfo* method = il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate(reinterpret_cast<Il2CppMethodPointer>(invoke));
+    const MethodInfo* method = il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate((Il2CppMethodPointer)invoke);
     if (method == NULL)
     {
         MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
