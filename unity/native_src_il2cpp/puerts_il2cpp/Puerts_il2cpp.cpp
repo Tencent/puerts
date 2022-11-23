@@ -126,7 +126,7 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
         newMethod->parameters = invoke->parameters;
         newMethod->slot = kInvalidIl2CppMethodSlot;
         newMethod->is_marshaled_from_native = true;
-        il2cpp::utils::NativeDelegateMethodCache::AddNativeDelegate(functionPtr, newMethod);
+        il2cpp::utils::NativeDelegateMethodCache::AddNativeDelegate((Il2CppMethodPointer)invoke, newMethod);
         method = newMethod;
     }
 
