@@ -238,6 +238,7 @@ namespace PuertsTest
 
         void Start()
         {
+            UnityEngine.Debug.Log("start");
             var jsEnv = new JsEnv();
             var helper = new TestHelper(jsEnv);
             TestHelper.instance = helper;

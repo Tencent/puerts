@@ -10,7 +10,7 @@ const outRef = [null];
 Debug.Log('1');
 // JSFunction
 // const oFunc = testHelper.functionTestStartValue
-// const rFunc = testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
+// testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
 //     // assertAndPrint("JSGetFunctionFromCS", func() == 3);
 //     testHelper.functionTestEndValue = () => 3;
 //     return testHelper.functionTestEndValue;
@@ -57,15 +57,15 @@ assertAndPrint("JSGetBoolOutArgFromCS", outRef[0] == false);
 assertAndPrint("JSGetBoolReturnFromCS", rBool == false);
 
 // 2021+ only
-// // BigInt
-// const oBigInt = testHelper.bigIntTestStartValue;
-// const rBigInt = testHelper.BigIntTestPipeLine(oBigInt, outRef, function (bi) {
-//     assertAndPrint("JSGetBigIntArgFromCS", bi == oBigInt + 1n);
-//     testHelper.bigIntTestEndValue = oBigInt + 2n;
-//     return testHelper.bigIntTestEndValue;
-// });
-// assertAndPrint("JSGetBigIntOutArgFromCS", outRef[0] == oBigInt + 3n);
-// assertAndPrint("JSGetBigIntReturnFromCS", rBigInt == oBigInt + 4n);
+// BigInt
+const oBigInt = testHelper.bigIntTestStartValue;
+const rBigInt = testHelper.BigIntTestPipeLine(oBigInt, outRef, function (bi) {
+    assertAndPrint("JSGetBigIntArgFromCS", bi == oBigInt + 1n);
+    testHelper.bigIntTestEndValue = oBigInt + 2n;
+    return testHelper.bigIntTestEndValue;
+});
+assertAndPrint("JSGetBigIntOutArgFromCS", outRef[0] == oBigInt + 3n);
+assertAndPrint("JSGetBigIntReturnFromCS", rBigInt == oBigInt + 4n);
 
 // AB
 // const oAB = new Uint8Array([1]).buffer;

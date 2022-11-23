@@ -4,6 +4,7 @@
           or decryption has failed' errors when stripping is enabled -->
  
      <assembly fullname="Assembly-CSharp">
+         <type fullname="UnityEngine.Debug" preserve="all"/>
          <type fullname="PuertsTest.TestHelper" preserve="all"/>
          <type fullname="PuertsTest.TestStruct" preserve="all"/>
          <type fullname="PuertsTest.TestObject" preserve="all"/>
