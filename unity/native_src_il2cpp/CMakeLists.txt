@@ -114,6 +114,10 @@ endif ()
 
 if ( MSYS OR WIN32 )
     if ( WIN32 ) 
+        target_compile_options(puerts_il2cpp
+            PRIVATE 
+            $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
+        )
         target_link_libraries(puerts_il2cpp
             winmm.lib
             dbghelp.lib
