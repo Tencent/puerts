@@ -240,14 +240,14 @@ namespace PuertsTest
         {
             UnityEngine.Debug.Log("start");
             var jsEnv = new JsEnv();
+
+            jsEnv.ExecuteModule("main.mjs");
+
             var helper = new TestHelper(jsEnv);
             TestHelper.instance = helper;
-            var JSContent = Resources.Load<TextAsset>("datatype-test").text;
+            // var JSContent = System.IO.File.ReadAllText("/Volumes/DATA_/Code/puerts@beta/puerts/unity/test/unity/Assets/Scripts/Resources/datatype-test.mjs");
+            var JSContent = Resources.Load("datatype-test").text;
             jsEnv.Eval(JSContent);
-            // Action<TestHelper> doTest = jsEnv.Eval<Action<TestHelper>>(JSContent);
-            // UnityEngine.Debug.Log(doTest);
-            // doTest(helper);
-            // UnityEngine.Debug.Log(22222);
             jsEnv.Dispose();
         }
 

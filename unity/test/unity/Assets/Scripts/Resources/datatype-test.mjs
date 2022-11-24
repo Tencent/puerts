@@ -7,15 +7,12 @@ var testHelper = TestHelper.GetInstance();
 Debug.Log('start test ' + testHelper);
 const outRef = [null];
 
-Debug.Log('1');
 // JSFunction
-// const oFunc = testHelper.functionTestStartValue
-// testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
-//     // assertAndPrint("JSGetFunctionFromCS", func() == 3);
-//     testHelper.functionTestEndValue = () => 3;
-//     return testHelper.functionTestEndValue;
-// });
-// assertAndPrint("JSGetFunctionReturnFromCS", rFunc() == 3);
+const oFunc = testHelper.functionTestStartValue
+testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
+    testHelper.functionTestEndValue = () => 3;
+    return testHelper.functionTestEndValue;
+});
 
 // Number
 const oNum = testHelper.numberTestStartValue;

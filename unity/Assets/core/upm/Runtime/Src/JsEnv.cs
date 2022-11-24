@@ -42,6 +42,9 @@ namespace Puerts
 
         public Backend Backend;
 
+        private Func<string, JSObject> moduleExecuter;
+        private delegate T JSOGetter<T>(JSObject jso, string s);
+
 #if UNITY_EDITOR
         public delegate void JsEnvCreateCallback(JsEnv env, ILoader loader, int debugPort);
         public delegate void JsEnvDisposeCallback(JsEnv env);

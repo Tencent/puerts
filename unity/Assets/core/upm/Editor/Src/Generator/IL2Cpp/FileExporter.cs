@@ -74,18 +74,19 @@ namespace PuertsIl2cpp.Editor
                             select type;
 
                 const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+                const BindingFlags flagForPuer = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
                 var typeExcludeDelegate = types
                     .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t));
 
                 var ctorToWrapper = typeExcludeDelegate
-                    .SelectMany(t => t.GetConstructors(flag));
+                    .SelectMany(t => t.GetConstructors(t.FullName.Contains("Puer") ? flagForPuer : flag));
 
                 var methodToWrap = typeExcludeDelegate
-                    .SelectMany(t => t.GetMethods(flag));
+                    .SelectMany(t => t.GetMethods(t.FullName.Contains("Puer") ? flagForPuer : flag));
 
                 var fieldToWrapper = typeExcludeDelegate
-                    .SelectMany(t => t.GetFields(flag));
+                    .SelectMany(t => t.GetFields(t.FullName.Contains("Puer") ? flagForPuer : flag));
 
                 var wrapperUsedTypes = types
                     .Concat(ctorToWrapper.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
@@ -94,7 +95,9 @@ namespace PuertsIl2cpp.Editor
                     .Concat(fieldToWrapper.Select(f => f.FieldType))
                     .Distinct();
 
+                Type[] PuerDelegates = { typeof(Func<string, Puerts.JSObject>) };
                 var delegateToBridge = wrapperUsedTypes
+                    .Concat(PuerDelegates)
                     .Where(t => typeof(MulticastDelegate).IsAssignableFrom(t));
 
                 var delegateInvokes = delegateToBridge
