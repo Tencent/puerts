@@ -45,13 +45,16 @@ function getFileExtension(filepath) {
 
 
 function searchModuleInDir(dir, requiredModule) {
-    // Some modules and dirnames also contains "." char. For example: "fs.realpath".
-    // In extreme cases. Some dirs meybe named with ".js".
-    return searchModuleInDirWithExt(dir, requiredModule)
-        || searchModuleInDirWithExt(dir, requiredModule + ".js")
-        || searchModuleInDirWithExt(dir, requiredModule + ".cjs")
-        || searchModuleInDirWithExt(dir, requiredModule + "/index.js")
-        || searchModuleInDirWithExt(dir, requiredModule + "/package.json");
+    if (getFileExtension(requiredModule)) {
+        return searchModuleInDirWithExt(dir, requiredModule)
+            || searchModuleInDirWithExt(dir, requiredModule + "/index.js")
+            || searchModuleInDirWithExt(dir, requiredModule + "/package.json");
+    } else {
+        return searchModuleInDirWithExt(dir, requiredModule + ".js")
+            || searchModuleInDirWithExt(dir, requiredModule + ".cjs")
+            || searchModuleInDirWithExt(dir, requiredModule + "/index.js")
+            || searchModuleInDirWithExt(dir, requiredModule + "/package.json");
+    }
 }
 
 function searchModule(dir, requiredModule) {
