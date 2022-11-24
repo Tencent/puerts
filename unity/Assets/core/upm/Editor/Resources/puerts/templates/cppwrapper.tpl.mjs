@@ -110,17 +110,17 @@ struct ${valueTypeInfo.Signature}
     
     checkJSArg(signature, index) {
         if (signature in PrimitiveSignatureCppTypeMap) {
-            return `!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(context, info[${index}])`
+            return `if (!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(context, info[${index}])) return false;`
         } else if (signature[0] == 'P') {
-            return `!info[${index}]->IsObject()`
+            return `if (!info[${index}]->IsObject()) return false;`
         } else if (signature == 's') {
-            return `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()`
+            return `if (!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
-            return `!info[${index}]->IsObject() || !IsAssignableFrom(GetTypeId(info[${index}].As<v8::Object>()), TIp${index})`
+            return `if (!info[${index}]->IsObject() || !IsAssignableFrom(GetTypeId(info[${index}].As<v8::Object>()), TIp${index})) return false;`
         } else if (signature == 'O') {
-            return `false`;
+            return ``;
         } else { // TODO: 适配所有类型，根据!!true去查找没处理的
-            return '!!true';
+            return 'if (!!true) return false;';
         }
     },
     
@@ -281,7 +281,7 @@ static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer
     if (checkJSArgument) {
         if ( info.Length() != ${parameterSignatures.length}) return false;
         ${FOR(parameterSignatures, (x, i) => t`
-        if(${CODE_SNIPPETS.checkJSArg(x, i)}) return false;
+        ${CODE_SNIPPETS.checkJSArg(x, i)}
         `)}
     }
     ${CODE_SNIPPETS.getThis(wrapperInfo.ThisSignature)}
