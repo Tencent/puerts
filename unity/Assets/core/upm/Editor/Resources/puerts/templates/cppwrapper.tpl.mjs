@@ -115,8 +115,10 @@ struct ${valueTypeInfo.Signature}
             return `!info[${index}]->IsObject()`
         } else if (signature == 's') {
             return `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()`
-        } else if (signature == 'o' || signature == 'O') {
+        } else if (signature == 'o') {
             return `!info[${index}]->IsObject() || !IsAssignableFrom(GetTypeId(info[${index}].As<v8::Object>()), TIp${index})`
+        } else if (signature == 'O') {
+            return `false`;
         } else { // TODO: 适配所有类型，根据!!true去查找没处理的
             return '!!true';
         }
