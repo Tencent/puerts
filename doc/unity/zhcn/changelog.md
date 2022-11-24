@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0] - 2022-11-24
+1. 修复：commonjs 查找带.目录时的问题
+
 ## [1.4.0-rc.7] - 2022-11-15
 1. 修复：返回无泛型Task时typescript检查报错的问题 #1027
 2. 修复：泛型类内部类在wrapper报错的问题 #1030
@@ -55,6 +58,13 @@ you can get the english version change log at [Github Release](https://github.co
 2. 升级默认v8到9.4版本，nodejs到16版本
 3. 所有属性改为configurable #667
 4. 添加`require('puerts').getLastException`接口 #629
+
+## [1.3.9] - 2022-09-30
+1. 修复了一个多JsEnv同时运行时，报`undefined is not a function` 或者 `cannot read property of undefined`等错的问题
+10. 修复ESM加载时循环依赖会引起崩溃的问题
+11. 修复ESM使用相对路径加载依赖时报错的问题
+13. 修复生成可空类型时，dts报错的问题
+12. 添加了模块加载时的import.meta.url路径
 
 ## [1.3.8] - 2022-08-31
 1. fix: 优化JSObject的内存占用 #947

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.0] - 2022-11-24
+1. fix: requiring failed when searching directory named with `.`
+
 ## [1.4.0-rc.7] - 2022-11-15
 1. fix：ts error when some methods are returning Task without GenericType #1027
 2. fix：Nested class in Generic class will cause error in StaticWrapper #1030
