@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace Puerts
 {
-
+    [UnityEngine.Scripting.Preserve]
     public class JSObject
     {
         long placeHold0;

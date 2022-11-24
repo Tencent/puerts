@@ -165,8 +165,8 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const BuildConfig = (platformCompileConfig as any)[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
     const OUTPUT_PATH = cmakeAddedLibraryName == "puerts_il2cpp" ?
-        cwd + '/../test/unity/Assets/Plugins/' + BuildConfig.outputPluginPath :
-        cwd + '/../test/unity/Assets/Plugins/' + BuildConfig.outputPluginPath;
+        cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath :
+        cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
     const BackendConfig = JSON.parse(readFileSync(cwd + `/.backends/${options.backend}/puer-build.json`, 'utf-8'))
 
     if (BackendConfig.skip?.[options.platform]?.[options.arch]) {
@@ -203,14 +203,6 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
             throw new Error("copy failed:" + normalize(filepath));
         }
         cp(filepath, OUTPUT_PATH)
-        // if (options.config != 'Release') {
-        //     if (!fs.existsSync('../general/vs2013/Bin'))
-        //         sx.mkdir('-p', '../general/vs2013/Bin')
-        //     if (!fs.existsSync('../general/vs2022/Bin'))
-        //         sx.mkdir('-p', '../general/vs2022/Bin')
-        //     sx.cp(filepath, '../general/vs2022/Bin')
-        //     sx.cp(filepath, '../general/vs2013/Bin')
-        // }
     })
     if (cmakeAddedLibraryName == 'puerts_il2cpp') {
         cp('-r', join(cwd, 'puerts_il2cpp'), cwd + '/../test/unity/Assets/Plugins/');

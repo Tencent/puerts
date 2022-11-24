@@ -10,8 +10,10 @@
 using System;
 using System.Reflection;
 
+
 namespace Puerts
 {
+    [UnityEngine.Scripting.Preserve]
     public class JsEnv : IDisposable
     {
         IntPtr nativeJsEnv;
@@ -24,7 +26,11 @@ namespace Puerts
 
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
+        private Func<string, JSObject> moduleExecuter;
+        private delegate T JSOGetter<T>(JSObject jso, string s);
+
         ILoader loader;
+        [UnityEngine.Scripting.Preserve]
         public ILoader GetLoader(string bridge) 
         {
             return loader;
@@ -56,8 +62,27 @@ namespace Puerts
                 PuertsIl2cpp.NativeAPI.GetObjectPointer(objectPool));
 
             PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
+
+            Eval(@"
+                var global = this;
+                (function() {
+                    var loader = jsEnv.GetLoader('');
+                    global.__puerts_resolve_module_content__ = function(specifier, refer) {
+                        const debugpathRef = [], contentRef = [];
+                        const originSp = specifier;
+                        if (specifier = loader.Resolve(specifier, debugpathRef)) {
+                            loader.ReadFile(specifier, contentRef);
+                            return contentRef[0];
+                        } else {
+                            throw new Error('module not found in js:' + originSp);
+                        }
+                    }
+                })()
+            ");
+            moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
         }
 
+        [UnityEngine.Scripting.Preserve]
         public Type GetTypeByString(string className)
         {
             return PuertsIl2cpp.TypeUtils.GetType(className);
@@ -85,6 +110,20 @@ namespace Puerts
 #endif
         }
 
+        public T ExecuteModule<T>(string specifier, string exportee)
+        {
+            if (typeof(T) == typeof(JSObject)) {
+                throw new Exception("T must not be Puerts.JSObject. use ExecuteModule without generic please");
+            }
+            JSObject jso = moduleExecuter(specifier);
+            JSOGetter<T> getter = Eval<JSOGetter<T>>("(function (jso, str) { return jso[str]; });");
+            return getter(jso, exportee);
+        }
+        public JSObject ExecuteModule(string specifier)
+        {
+            return moduleExecuter(specifier);
+        }
+        
         ~JsEnv()
         {
 #if THREAD_SAFE

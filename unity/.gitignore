@@ -18,7 +18,9 @@
 /native_src/.backends
 /native_src/puerts-cpp-tester
 /native_src/build*
+/native_src/compile_commands.json
 /native_src_il2cpp/.backends
 /native_src_il2cpp/puerts-cpp-tester
 /native_src_il2cpp/build*
+/native_src_il2cpp/compile_commands.json
 /node_modules

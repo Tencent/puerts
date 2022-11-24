@@ -28,7 +28,7 @@ program
             .default("Release")
             .choices(["Release", "Debug"])
     )
-    .option("--backend <backend>", "the JS backend will be used", "v8")
+    .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
     .action(function (quickcommand, options) {
         let backend = options.backend;
         let config = options.config;

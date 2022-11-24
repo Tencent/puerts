@@ -5,7 +5,7 @@ namespace Puerts
 {
     public abstract class ILoader
     {
-        public abstract string Resolve(string identifier, out string localFilePath);
+        public abstract string Resolve(string identifier);
         public virtual void ReadFile(string identifier, out string content)
         {
             throw new Exception("ILoader.ReadFile(string, out string) is not implemented yet");
@@ -44,11 +44,10 @@ namespace Puerts
         * 判断文件是否存在，并返回调整后文件标识符，供ReadFile使用。
         * localFilePath为文件本地路径，调试器调试时会使用。
         */
-        public override string Resolve(string identifier, out string localFilePath)
+        [UnityEngine.Scripting.Preserve]
+        public override string Resolve(string identifier)
         {
             string fixedIdentifier = FixIdentifier(identifier);
-
-            localFilePath = System.IO.Path.Combine(root, identifier);
 
             if (UnityEngine.Resources.Load(fixedIdentifier) != null) {
                 return fixedIdentifier;
@@ -56,6 +55,7 @@ namespace Puerts
             return null;
         }
 
+        [UnityEngine.Scripting.Preserve]
         public override void ReadFile(string identifer, out string content)
         {
             if (identifer == null) {
