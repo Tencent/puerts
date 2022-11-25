@@ -38,6 +38,9 @@ namespace PuertsIl2cpp
         public static extern void InitialPuerts(IntPtr PesapiImpl);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetLibBackend();
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateNativeJSEnv();
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
