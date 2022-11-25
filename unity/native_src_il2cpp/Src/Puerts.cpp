@@ -699,7 +699,7 @@ V8_EXPORT void SetTypeInfo(puerts::WrapData* data, int index, void* typeInfo)
 
 V8_EXPORT bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
 {
-    //TODO: 加锁
+    std::lock_guard<std::recursive_mutex> guard(puerts::RegisterMutex());
     if (puerts::FindClassByID(classInfo->TypeId))
     {
         ReleaseCSharpTypeInfo(classInfo);

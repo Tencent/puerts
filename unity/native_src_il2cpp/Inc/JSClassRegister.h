@@ -26,6 +26,8 @@
 
 #include "TypeInfo.hpp"
 
+#include <mutex>
+
 namespace puerts
 {
 struct JSENV_API JSFunctionInfo
@@ -87,6 +89,8 @@ struct JSENV_API JSClassDefinition
     }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
+
+std::recursive_mutex& JSENV_API RegisterMutex();
 
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
