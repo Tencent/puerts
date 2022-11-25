@@ -1,9 +1,11 @@
-import { rm } from "@puerts/shell-util";
+import { rm, setWinCMDEncodingToUTF8 } from "@puerts/shell-util";
 import { Option, program } from "commander";
 import { join } from "path";
 import downloadBackend from "./backend.mjs";
-import dotnetTest from "./dotnet-test.mjs";
+import { dotnetTest, unityTest } from "./test.mjs";
 import runPuertsMake, { platformCompileConfig } from "./make.mjs";
+
+setWinCMDEncodingToUTF8();
 
 const nodePlatformToPuerPlatform = {
     "darwin": "osx",
@@ -127,8 +129,15 @@ backendProgram
 program
     .command("dotnet-test [backend]")
     // .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
-    .action((backend: string)=> {
+    .action((backend: string) => {
         dotnetTest(cwd, backend || "quickjs");
     });
+
+program
+    .command('unity-test')
+    .requiredOption("--unity <pathToUnity>")
+    .action((options) => {
+        unityTest(cwd, options.unity);
+    })
 
 program.parse(process.argv);

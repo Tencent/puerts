@@ -6,6 +6,12 @@
       "source": "local",
       "dependencies": {}
     },
+    "com.tencent.puerts.unittest": {
+      "version": "file:../../Src",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,

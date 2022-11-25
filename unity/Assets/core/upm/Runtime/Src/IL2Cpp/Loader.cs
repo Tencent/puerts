@@ -5,17 +5,18 @@ namespace Puerts
 {
     public abstract class ILoader
     {
-        public abstract string Resolve(string identifier);
-        public virtual void ReadFile(string identifier, out string content)
+        public abstract string Resolve(string specifier);
+        public virtual void ReadFile(string specifier, out string content)
         {
             throw new Exception("ILoader.ReadFile(string, out string) is not implemented yet");
         }
-        public virtual void ReadFile(string identifier, out byte[] content) 
+        public virtual void ReadFile(string specifier, out byte[] content) 
         {
             throw new Exception("ILoader.ReadFile(string, out byte[]) is not implemented yet");
         }
     }
 
+    [UnityEngine.Scripting.Preserve]
     public class DefaultLoader : ILoader
     {
         private string root = "";
@@ -29,15 +30,15 @@ namespace Puerts
             this.root = root;
         }
 
-        private string FixIdentifier(string identifier)
+        private string FixSpecifier(string specifier)
         {
             return 
             // .cjs/.mjs asset is only supported in unity2018+
 #if UNITY_2018_1_OR_NEWER
-            identifier.EndsWith(".cjs") || identifier.EndsWith(".mjs")  ? 
-                identifier.Substring(0, identifier.Length - 4) : 
+            specifier.EndsWith(".cjs") || specifier.EndsWith(".mjs")  ? 
+                specifier.Substring(0, specifier.Length - 4) : 
 #endif
-                identifier;
+                specifier;
         }
 
         /**
@@ -45,12 +46,12 @@ namespace Puerts
         * localFilePath为文件本地路径，调试器调试时会使用。
         */
         [UnityEngine.Scripting.Preserve]
-        public override string Resolve(string identifier)
+        public override string Resolve(string specifier)
         {
-            string fixedIdentifier = FixIdentifier(identifier);
+            string fixedSpecifier = FixSpecifier(specifier);
 
-            if (UnityEngine.Resources.Load(fixedIdentifier) != null) {
-                return fixedIdentifier;
+            if (UnityEngine.Resources.Load(fixedSpecifier) != null) {
+                return fixedSpecifier;
             }
             return null;
         }

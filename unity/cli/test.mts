@@ -1,12 +1,11 @@
-import { cp, exec, mkdir, rm, setWinCMDEncodingToUTF8 } from "@puerts/shell-util";
+import { cp, exec, mkdir, rm } from "@puerts/shell-util";
 import assert from "assert";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import glob from "glob";
 import { basename, extname, join, relative } from "path";
 import runPuertsMake from "./make.mjs";
 
-setWinCMDEncodingToUTF8();
-
+////////////// dotnet-test
 function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, excludeGenerator: boolean) {
 
     const definitions = `
@@ -41,7 +40,7 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
     return [definitions, linkPuerTS, linkUnitTests].join('\n');
 }
 
-export default async function dotnetTest(cwd: string, backend: string) {
+export async function dotnetTest(cwd: string, backend: string) {
     if (!existsSync(`${cwd}/Src/Helloworld.cs`)) {
         console.error("[Puer] Cannot find UnitTest Src");
         process.exit();
@@ -90,4 +89,18 @@ export default async function dotnetTest(cwd: string, backend: string) {
     );
     assert.equal(0, exec(`dotnet build vsauto.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code)
     assert.equal(0, exec(`dotnet test vsauto.csproj`, { cwd: workdir }).code)
+}
+
+
+export async function unityTest(cwd: string, unityPath: string) {
+    if (process.platform == 'win32') {
+        exec(`${unityPath} -buildWindows64Player "${cwd}/build/" -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`)
+
+
+    } else if (process.platform == 'darwin') {
+        if (unityPath.endsWith('.app')) unityPath += '/Contents/MacOS/Unity'
+        exec(`${unityPath} -buildOSXUniversalPlayer "${cwd}/build/mac.app" -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`)
+
+        exec(`${cwd}/build/mac.app/Contents/MacOS/unity -batchmode`)
+    }
 }

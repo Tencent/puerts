@@ -77,6 +77,7 @@ namespace Puerts
             return file == null ? null : file.text;
 #endif
         }
+        void ReadFileV2(string identifer, out string content) { content = ""; }
     }
 }
 

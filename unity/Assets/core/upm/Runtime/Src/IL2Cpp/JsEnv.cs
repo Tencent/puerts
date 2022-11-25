@@ -31,7 +31,7 @@ namespace Puerts
 
         ILoader loader;
         [UnityEngine.Scripting.Preserve]
-        public ILoader GetLoader(string bridge) 
+        public ILoader GetLoader() 
         {
             return loader;
         }
@@ -66,7 +66,7 @@ namespace Puerts
             Eval(@"
                 var global = this;
                 (function() {
-                    var loader = jsEnv.GetLoader('');
+                    var loader = jsEnv.GetLoader();
                     global.__puerts_resolve_module_content__ = function(specifier, refer) {
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
@@ -74,7 +74,7 @@ namespace Puerts
                             loader.ReadFile(specifier, contentRef);
                             return contentRef[0];
                         } else {
-                            throw new Error('module not found in js:' + originSp);
+                            throw new Error(`module not found in js: ${originSp}`);
                         }
                     }
                 })()

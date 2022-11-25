@@ -9,5 +9,10 @@
          <type fullname="PuertsTest.TestStruct" preserve="all"/>
          <type fullname="PuertsTest.TestObject" preserve="all"/>
      </assembly>
+     <assembly fullname="com.tencent.puerts.unittest">
+         <type fullname="Puerts.UnitTest.TestObject" preserve="all"/>
+         <type fullname="Puerts.UnitTest.TestStruct" preserve="all"/>
+         <type fullname="Puerts.UnitTest.TestHelper" preserve="all"/>
+     </assembly>
  
 </linker>

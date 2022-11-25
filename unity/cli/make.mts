@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "fs";
-import { cd, cp, exec, mkdir, mv, setWinCMDEncodingToUTF8 } from "@puerts/shell-util"
+import { cd, cp, exec, mkdir, mv } from "@puerts/shell-util"
 import { join, normalize } from "path";
 import assert from "assert";
 import downloadBackend from "./backend.mjs";
@@ -7,8 +7,6 @@ import { createRequire } from "module";
 import { fileURLToPath } from "url";
 
 const glob = createRequire(fileURLToPath(import.meta.url))('glob');
-
-setWinCMDEncodingToUTF8();
 
 interface BuildOptions {
     config: 'Debug' | 'Release' | "RelWithDebInfo",

@@ -38,8 +38,8 @@ namespace puerts_module
 
         if (maybeRet.IsEmpty()) 
         {
-            const std::string ErrorMessage = std::string("[Puer] module not found ") + Specifier_std;
-            Isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(Isolate, ErrorMessage.c_str()).ToLocalChecked()));
+            // const std::string ErrorMessage = std::string("[Puer] module not found ") + Specifier_std;
+            // Isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(Isolate, ErrorMessage.c_str()).ToLocalChecked()));
             return v8::MaybeLocal<v8::Module> {};
         }
         v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
