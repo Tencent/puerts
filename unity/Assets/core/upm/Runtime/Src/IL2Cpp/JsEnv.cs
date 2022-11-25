@@ -84,8 +84,6 @@ namespace Puerts
             ");
             moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
 
-            UnityEngine.Debug.Log("GetLibBackend result:" + PuertsIl2cpp.NativeAPI.GetLibBackend());
-
             if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 0) 
                 Backend = new BackendV8(this);
             else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 1)
