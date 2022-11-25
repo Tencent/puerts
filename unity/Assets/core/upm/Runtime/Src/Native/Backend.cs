@@ -5,7 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
 
 namespace Puerts
 {
@@ -18,9 +17,9 @@ namespace Puerts
         }
     }
 
-    public class BackendV8: Backend
+    public class BackendV8 : Backend
     {
-        public BackendV8(JsEnv env): base(env)
+        public BackendV8(JsEnv env) : base(env)
         {
         }
 
@@ -29,7 +28,11 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-                return PuertsDLL.IdleNotificationDeadline(env.isolate, DeadlineInSeconds);
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+            return PuertsDLL.IdleNotificationDeadline(env.isolate, DeadlineInSeconds);
+#else
+            return false;
+#endif
 #if THREAD_SAFE
             }
 #endif
@@ -40,7 +43,9 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
-                PuertsDLL.LowMemoryNotification(env.isolate);
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+            PuertsDLL.LowMemoryNotification(env.isolate);
+#endif
 #if THREAD_SAFE
             }
 #endif
@@ -51,7 +56,9 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
             PuertsDLL.RequestMinorGarbageCollectionForTesting(env.isolate);
+#endif
 #if THREAD_SAFE
             }
 #endif
@@ -62,7 +69,9 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
             PuertsDLL.RequestFullGarbageCollectionForTesting(env.isolate);
+#endif
 #if THREAD_SAFE
             }
 #endif
@@ -70,16 +79,16 @@ namespace Puerts
 
     }
 
-    public class BackendNodeJS: BackendV8
+    public class BackendNodeJS : BackendV8
     {
-        public BackendNodeJS(JsEnv env): base(env)
+        public BackendNodeJS(JsEnv env) : base(env)
         {
         }
     }
 
-    public class BackendQuickJS: Backend
+    public class BackendQuickJS : Backend
     {
-        public BackendQuickJS(JsEnv env): base(env)
+        public BackendQuickJS(JsEnv env) : base(env)
         {
         }
 
@@ -88,12 +97,12 @@ namespace Puerts
 #if THREAD_SAFE
             lock(this) {
 #endif
+#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
             PuertsDLL.LowMemoryNotification(env.isolate);
+#endif
 #if THREAD_SAFE
             }
 #endif
         }
     }
 }
-
-#endif

@@ -233,8 +233,6 @@ namespace Puerts.UnitTest
         // }
     }
 
-
-
     public class TestObject
     {
         public int value;

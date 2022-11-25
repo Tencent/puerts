@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@puerts/shell-util": "^2.0.0",
+    "@puerts/shell-util": "^2.0.1",
     "@types/glob": "^8.0.0",
     "@types/node": "^18.11.5",
     "commander": "^9.3.0",

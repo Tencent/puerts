@@ -271,11 +271,7 @@ function genFuncWrapper(wrapperInfo) {
     return t`
 // ${wrapperInfo.CsName}
 static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
-<<<<<<< HEAD
-    //PLog("Running w_${wrapperInfo.Signature}");
-=======
     // PLog("Running w_${wrapperInfo.Signature}");
->>>>>>> 1e6e36ef ([unity] 2.0.x - unittest framework)
     
     ${CODE_SNIPPETS.declareTypeInfo(wrapperInfo)}
 
@@ -310,11 +306,7 @@ function genBridge(bridgeInfo) {
     var parameterSignatures = listToJsArray(bridgeInfo.ParameterSignatures);
     return t`
 static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
-<<<<<<< HEAD
-    //PLog("Running b_${bridgeInfo.Signature}");
-=======
     // PLog("Running b_${bridgeInfo.Signature}");
->>>>>>> 1e6e36ef ([unity] 2.0.x - unittest framework)
 
     ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRef(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
     auto TIret = GetReturnType(method);
@@ -372,11 +364,7 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
 function genFieldWrapper(fieldWrapperInfo) {
     return t`
 static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIret) {
-<<<<<<< HEAD
-    //PLog("Running ifg_${fieldWrapperInfo.Signature}");
-=======
     // PLog("Running ifg_${fieldWrapperInfo.Signature}");
->>>>>>> 1e6e36ef ([unity] 2.0.x - unittest framework)
 
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();

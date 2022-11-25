@@ -1,6 +1,22 @@
 
 namespace puerts_module 
 {
+    void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+    {
+        // v8::Isolate* Isolate = Context->GetIsolate();
+        // auto* JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+
+        // auto iter = JsEngine->ScriptIdToPathMap.find(Module->ScriptId());
+        // if (iter != JsEngine->ScriptIdToPathMap.end()) 
+        // {
+        //     meta->CreateDataProperty(
+        //         Context, 
+        //         v8::String::NewFromUtf8(Isolate, "url").ToLocalChecked(),
+        //         v8::String::NewFromUtf8(Isolate, ("puer:" + iter->second).c_str()).ToLocalChecked()
+        //     ).ToChecked();
+        // }
+    }
+
     v8::MaybeLocal<v8::Module> _ResolveModule(
         v8::Local<v8::Context> Context,
         v8::Local<v8::String> Specifier,

@@ -30,6 +30,9 @@ namespace Puerts
         private delegate T JSOGetter<T>(JSObject jso, string s);
 
         ILoader loader;
+
+        public Backend Backend;
+        
         [UnityEngine.Scripting.Preserve]
         public ILoader GetLoader() 
         {
@@ -80,6 +83,15 @@ namespace Puerts
                 })()
             ");
             moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
+
+            UnityEngine.Debug.Log("GetLibBackend result:" + PuertsIl2cpp.NativeAPI.GetLibBackend());
+
+            if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 0) 
+                Backend = new BackendV8(this);
+            else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 1)
+                Backend = new BackendNodeJS(this);
+            else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 2)
+                Backend = new BackendQuickJS(this);
         }
 
         [UnityEngine.Scripting.Preserve]

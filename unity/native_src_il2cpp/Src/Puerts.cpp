@@ -5,6 +5,14 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#if defined(WITH_NODEJS)
+
+#pragma warning(push, 0)
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+
+#else // !WITH_NODEJS
 
 #if defined(PLATFORM_WINDOWS)
 
@@ -26,6 +34,9 @@
 #include "Blob/Linux/SnapshotBlob.h"
 #endif
 
+#endif // WITH_NODEJS
+
+
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
 #include "pesapi.h"
@@ -41,7 +52,18 @@
 
 namespace puerts
 {
+enum Backend
+{
+    V8          = 0,
+    Node        = 1,
+    QuickJS     = 2,
+};
 static std::unique_ptr<v8::Platform> GPlatform;
+#if defined(WITH_NODEJS)
+static std::vector<std::string>* Args;
+static std::vector<std::string>* ExecArgs;
+static std::vector<std::string>* Errors;
+#endif
 
 typedef void(*LogCallback)(const char* value);
 
@@ -425,9 +447,27 @@ struct JSEnv
     {
         if (!GPlatform)
         {
+#if defined(WITH_NODEJS)
+            int Argc = 2;
+            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
+            char ** Argv = uv_setup_args(Argc, ArgvIn);
+            Args = new std::vector<std::string>(Argv, Argv + Argc);
+            ExecArgs = new std::vector<std::string>();
+            Errors = new std::vector<std::string>();
+
+            GPlatform = node::MultiIsolatePlatform::Create(4);
+            v8::V8::InitializePlatform(GPlatform.get());
+            v8::V8::Initialize();
+            int ExitCode = node::InitializeNodeWithArgs(Args, ExecArgs, Errors);
+            for (const std::string& error : *Errors)
+            {
+                printf("InitializeNodeWithArgs failed\n");
+            }
+#else
             GPlatform = v8::platform::NewDefaultPlatform();
             v8::V8::InitializePlatform(GPlatform.get());
             v8::V8::Initialize();
+#endif
         }
         
         std::string Flags = "--no-harmony-top-level-await";
@@ -437,6 +477,24 @@ struct JSEnv
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
+#if defined(WITH_NODEJS)
+        NodeUVLoop = new uv_loop_t;
+        const int Ret = uv_loop_init(NodeUVLoop);
+        if (Ret != 0)
+        {
+            // TODO log
+            printf("uv_loop_init failed\n");
+            return;
+        }
+
+        NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
+        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
+
+        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+        MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
+            Platform);
+
+#else
         v8::StartupData SnapshotBlob;
         SnapshotBlob.data = (const char *)SnapshotBlobCode;
         SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
@@ -447,7 +505,7 @@ struct JSEnv
         CreateParams->array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
         
         MainIsolate = v8::Isolate::New(*CreateParams);
-        
+#endif
         auto Isolate = MainIsolate;
         
         v8::Isolate::Scope Isolatescope(Isolate);
@@ -457,7 +515,23 @@ struct JSEnv
         v8::Context::Scope ContextScope(Context);
         
         MainContext.Reset(Isolate, Context);
-        
+#if defined(WITH_NODEJS)
+        NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+    
+        NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+
+        v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
+            NodeEnv,
+            "const publicRequire ="
+            "  require('module').createRequire(process.cwd() + '/');"
+            "globalThis.require = publicRequire;"
+            "require('vm').runInThisContext(process.argv[1]);");
+
+        if (LoadenvRet.IsEmpty())  // There has been a JS exception.
+        {
+            return;
+        }
+#endif
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
         
@@ -555,10 +629,35 @@ struct JSEnv
     ~JSEnv()
     {
         CppObjectMapper.UnInitialize(MainIsolate);
+
+#if WITH_NODEJS
+        // node::EmitExit(NodeEnv);
+        node::Stop(NodeEnv);
+        node::FreeEnvironment(NodeEnv);
+        node::FreeIsolateData(NodeIsolateData);
+        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+        bool platform_finished = false;
+        Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
+            *static_cast<bool*>(data) = true;
+        }, &platform_finished);
+        Platform->UnregisterIsolate(MainIsolate);
+#endif
         MainContext.Reset();
         MainIsolate->Dispose();
+#if WITH_NODEJS
+        // Wait until the platform has cleaned up all relevant resources.
+        while (!platform_finished)
+        {
+            uv_run(NodeUVLoop, UV_RUN_ONCE);
+        }
+
+        int err = uv_loop_close(NodeUVLoop);
+        assert(err == 0);
+        delete NodeUVLoop;
+#else
         delete CreateParams->array_buffer_allocator;
         delete CreateParams;
+#endif
     }
     
     v8::Isolate* MainIsolate;
@@ -567,6 +666,15 @@ struct JSEnv
     v8::Isolate::CreateParams* CreateParams;
     
     puerts::FCppObjectMapper CppObjectMapper;
+
+#if defined(WITH_NODEJS)
+    uv_loop_t* NodeUVLoop;
+    std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
+    node::IsolateData* NodeIsolateData;
+    node::Environment* NodeEnv;
+
+    const float UV_LOOP_DELAY = 0.1;
+#endif
 };
 
 }
@@ -575,6 +683,17 @@ struct JSEnv
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+V8_EXPORT int GetLibBackend()
+{
+#if WITH_NODEJS
+    return puerts::Backend::Node;
+#elif WITH_QUICKJS
+    return puerts::Backend::QuickJS;
+#else
+    return puerts::Backend::V8;
+#endif
+}
 
 V8_EXPORT puerts::JSEnv* CreateNativeJSEnv()
 {

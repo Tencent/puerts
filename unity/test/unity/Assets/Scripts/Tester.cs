@@ -39,6 +39,7 @@ public class Tester : MonoBehaviour {
 
     private IEnumerator RunTest(Action<string> OnSuccess, Action<string, Exception> OnFail)
     {
+        UnityEngine.Debug.Log("Start RunTest");
         var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
                     // where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
                     from type in assembly.GetTypes()
