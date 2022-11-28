@@ -98,3 +98,6 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 到“项目设置/打包/Additional Not-Asset Directories to Package”，把Content下的“JavaScript”目录添加进去。
 
+## 有些结构体（UStruct）不生成
+
+考虑到全部生成会大大增加声明文件（ue.d.ts）的大小，默认仅对被UClass引用了的UStruct生成，如果有需要全部生成，可以到控制台输入执行`Puerts.Gen STRUCT`。
