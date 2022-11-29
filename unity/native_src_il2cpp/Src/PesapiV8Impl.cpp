@@ -625,7 +625,7 @@ pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, 
     v8::Local<v8::String> url =
         v8::String::NewFromUtf8(isolate, path == nullptr ? "" : path, v8::NewStringType::kNormal).ToLocalChecked();
     std::vector<char> buff;
-    buff.reserve(code_size + 1);
+    buff.resize(code_size + 1);
     memcpy(buff.data(), code, code_size);
     buff[code_size] = '\0';
     v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, buff.data(), v8::NewStringType::kNormal).ToLocalChecked();
