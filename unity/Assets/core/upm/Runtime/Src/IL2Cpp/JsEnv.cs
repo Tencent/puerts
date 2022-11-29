@@ -70,9 +70,10 @@ namespace Puerts
                 var global = this;
                 (function() {
                     var loader = jsEnv.GetLoader();
-                    global.__puerts_resolve_module_content__ = function(specifier, refer) {
+                    global.__puerts_resolve_module_content__ = function(specifier) {
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
+                        
                         if (specifier = loader.Resolve(specifier, debugpathRef)) {
                             loader.ReadFile(specifier, contentRef);
                             return contentRef[0];
@@ -80,7 +81,7 @@ namespace Puerts
                             throw new Error(`module not found in js: ${originSp}`);
                         }
                     }
-                })()
+                })();
             ");
             moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
 

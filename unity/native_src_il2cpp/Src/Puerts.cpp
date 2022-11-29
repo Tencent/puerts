@@ -534,6 +534,7 @@ struct JSEnv
 #endif
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
+        Isolate->SetData(1, &ModuleManager);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
@@ -597,19 +598,19 @@ struct JSEnv
             v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
                     .ToLocalChecked();
 
-            v8::MaybeLocal<v8::Module> mod = puerts_module::ResolveModule(Context, Specifier_v8, entryModule);
+            v8::MaybeLocal<v8::Module> mod = puerts::esmodule::ResolveModule(Context, Specifier_v8, entryModule);
             if (mod.IsEmpty())
             {
                 // TODO
                 return;
             }
             v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-            if (!puerts_module::LinkModule(Context, moduleChecked))
+            if (!puerts::esmodule::LinkModule(Context, moduleChecked))
             {
                 // TODO
                 return;
             }
-            v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts_module::ResolveModule);
+            v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
             if (ret.IsNothing() || !ret.ToChecked())
             {
                 // TODO
@@ -624,6 +625,7 @@ struct JSEnv
             info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
 
         })->GetFunction(Context).ToLocalChecked()).Check();
+        MainIsolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
     }
     
     ~JSEnv()
@@ -666,6 +668,7 @@ struct JSEnv
     v8::Isolate::CreateParams* CreateParams;
     
     puerts::FCppObjectMapper CppObjectMapper;
+    puerts::ModuleManager ModuleManager;
 
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;

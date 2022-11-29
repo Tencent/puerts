@@ -95,7 +95,19 @@ namespace PuertsIl2cpp.Editor
                     .Concat(fieldToWrapper.Select(f => f.FieldType))
                     .Distinct();
 
-                Type[] PuerDelegates = { typeof(Func<string, Puerts.JSObject>) };
+                Type[] PuerDelegates = { 
+                    typeof(Func<string, Puerts.JSObject>),
+                    typeof(Func<Puerts.JSObject, string, string>), 
+                    typeof(Func<Puerts.JSObject, string, int>), 
+                    typeof(Func<Puerts.JSObject, string, uint>),
+                    typeof(Func<Puerts.JSObject, string, long>),
+                    typeof(Func<Puerts.JSObject, string, ulong>),
+                    typeof(Func<Puerts.JSObject, string, short>),
+                    typeof(Func<Puerts.JSObject, string, ushort>),
+                    typeof(Func<Puerts.JSObject, string, float>),
+                    typeof(Func<Puerts.JSObject, string, double>),
+                    typeof(Func<Puerts.JSObject, string, Puerts.JSObject>)
+                };
                 var delegateToBridge = wrapperUsedTypes
                     .Concat(PuerDelegates)
                     .Where(t => typeof(MulticastDelegate).IsAssignableFrom(t));

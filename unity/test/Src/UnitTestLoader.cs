@@ -56,11 +56,13 @@ namespace Puerts.UnitTest
             if (specifier != null) {    
                 if (specifier.StartsWith("mock/")) {
                     content = mockFileContent[specifier.Substring(5)];
+                    return;
 
                 } else if (specifier.StartsWith("resources/")) {
                     content = UnityEngine.Resources.Load<UnityEngine.TextAsset>(specifier.Substring(9)).text;
+                    return;
                 }
-            }
+            } 
             content = "";
         }
 #else

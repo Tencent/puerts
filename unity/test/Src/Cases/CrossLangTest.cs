@@ -166,27 +166,27 @@ namespace Puerts.UnitTest
                 })()
             ");
         }
-        [Test]
-        public void JSObjectInstanceTest()
-        {
-            var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.Eval(@"
-                (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
-                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+        // [Test]
+        // public void JSObjectInstanceTest()
+        // {
+        //     var jsEnv = UnitTestEnv.GetEnv();
+        //     jsEnv.Eval(@"
+        //         (function() {
+        //             const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+        //             const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+        //             const testHelper = TestHelper.GetInstance(jsEnv);
 
-                    const oJSObject = { 'puerts': 'niubi' };
-                    const rJSObject = testHelper.JSObjectTestPipeLine(oJSObject, function(obj) {
-                        assertAndPrint('JSGetJSObjectArgFromCS', obj == oJSObject);
-                        return oJSObject
-                    });
-                    assertAndPrint('JSGetJSObjectReturnFromCS', rJSObject == oJSObject);
+        //             const oJSObject = { 'puerts': 'niubi' };
+        //             const rJSObject = testHelper.JSObjectTestPipeLine(oJSObject, function(obj) {
+        //                 assertAndPrint('JSGetJSObjectArgFromCS', obj == oJSObject);
+        //                 return oJSObject
+        //             });
+        //             assertAndPrint('JSGetJSObjectReturnFromCS', rJSObject == oJSObject);
 
-                })()
-            ");
-        }
+        //         })()
+        //     ");
+        // }
         // [Test]
         // public void DateTimeInstanceTest()
         // {
