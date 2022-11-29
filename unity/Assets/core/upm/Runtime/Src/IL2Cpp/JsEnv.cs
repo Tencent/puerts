@@ -90,6 +90,11 @@ namespace Puerts
                 Backend = new BackendNodeJS(this);
             else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 2)
                 Backend = new BackendQuickJS(this);
+
+            ExecuteModule("puerts/init_il2cpp.mjs");
+            ExecuteModule("puerts/log.mjs");
+            ExecuteModule("puerts/csharp.mjs");
+            ExecuteModule("puerts/events.mjs");
         }
 
         [UnityEngine.Scripting.Preserve]
