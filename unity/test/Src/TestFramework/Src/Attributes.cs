@@ -45,6 +45,17 @@ namespace NUnit {
                     }
                 }
             }
+            public static void Contains(string a, string b)
+            {
+                if (!b.Contains(a)) 
+                {
+                    throw new Exception($"expect {b} to contain {a} but failed");
+                }
+            }
+            // public static void Contains(object a, ICollection b)
+            // {
+
+            // }
             public static void AreEqual(object a, object b) 
             {
                 Type aType = a.GetType();
