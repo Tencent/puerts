@@ -45,7 +45,7 @@ namespace puerts_module
         // }
         v8::Local<v8::Function> ModuleResolveFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puerts_resolve_module_content__").ToLocalChecked()).ToLocalChecked());
         v8::Local<v8::Module> Module;
-        char* pathForDebug;
+        const char* pathForDebug = *Specifier_utf8;
 
         std::vector< v8::Local<v8::Value>> V8Args;
         V8Args.push_back(Specifier);
