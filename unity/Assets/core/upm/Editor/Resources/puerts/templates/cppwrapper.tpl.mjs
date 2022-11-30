@@ -116,9 +116,11 @@ struct ${valueTypeInfo.Signature}
         } else if (signature == 's') {
             return `if (!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
-            return `if (!info[${index}]->IsObject() || !IsAssignableFrom(GetTypeId(info[${index}].As<v8::Object>()), TIp${index})) return false;`
+            return `if (!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || !IsAssignableFrom(GetTypeId(info[${index}].As<v8::Object>()), TIp${index}))) return false;`
         } else if (signature == 'O') {
             return ``;
+        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+            return `if (!info[${index}]->IsObject() || !IsAssignableFrom(GetTypeId(info[${index}].As<v8::Object>()), TIp${index})) return false;`
         } else { // TODO: 适配所有类型，根据!!true去查找没处理的
             return 'if (!!true) return false;';
         }
