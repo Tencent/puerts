@@ -322,8 +322,8 @@ void UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBluep
         return;
     }
 
-    InBlueprint->bDeprecate = InClass->ClassFlags & CLASS_Deprecated;
-    InBlueprint->bGenerateAbstractClass = InClass->ClassFlags & CLASS_Abstract;
+    InBlueprint->bDeprecate = (bool) (InClass->ClassFlags & CLASS_Deprecated);
+    InBlueprint->bGenerateAbstractClass = (bool) (InClass->ClassFlags & CLASS_Abstract);
     InBlueprint->BlueprintDescription = InClass->HasMetaData(TEXT("Tooltip")) ? InClass->GetMetaData(TEXT("Tooltip")) : FString{};
     InBlueprint->BlueprintDisplayName =
         InClass->HasMetaData(TEXT("DisplayName")) ? InClass->GetMetaData(TEXT("DisplayName")) : FString{};
