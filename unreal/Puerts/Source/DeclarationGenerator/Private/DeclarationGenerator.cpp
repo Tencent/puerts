@@ -1,39 +1,37 @@
 ﻿/*
- * Tencent is pleased to support the open source community by making Puerts
- * available. Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights
- * reserved. Puerts is licensed under the BSD 3-Clause License, except for the
- * third-party components listed in the file 'LICENSE' which may be subject to
- * their corresponding license terms. This file is subject to the terms and
- * conditions defined in file 'LICENSE', which is part of this source code
- * package.
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
  */
 
-#include "Components/PanelSlot.h"
-#include "Components/Widget.h"
-#include "CoreUObject.h"
-#include "Features/IModularFeatures.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "IDeclarationGenerator.h"
+#include "Features/IModularFeatures.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "CoreUObject.h"
 #include "TypeScriptDeclarationGenerator.h"
+#include "Components/PanelSlot.h"
+#include "Components/Widget.h"
 #if WITH_EDITOR
 #include "AssetRegistryModule.h"
 #endif
-#include "Framework/Notifications/NotificationManager.h"
-#include "GenDTSCommands.h"
-#include "GenDTSStyle.h"
 #include "LevelEditor.h"
+#include "GenDTSStyle.h"
+#include "GenDTSCommands.h"
+#include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 //#include "Misc/MessageDialog.h"
-#include "CodeGenerator.h"
-#include "Engine/Blueprint.h"
-#include "Engine/CollisionProfile.h"
-#include "Engine/UserDefinedEnum.h"
-#include "Engine/UserDefinedStruct.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "JSClassRegister.h"
+#include "Engine/UserDefinedStruct.h"
+#include "Engine/UserDefinedEnum.h"
+#include "Engine/Blueprint.h"
 #include "TypeScriptObject.h"
+#include "CodeGenerator.h"
+#include "JSClassRegister.h"
+#include "Engine/CollisionProfile.h"
 #if (ENGINE_MAJOR_VERSION >= 5)
 #include "ToolMenus.h"
 #endif
@@ -1058,8 +1056,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     StringBuffer << " {\n";
 
-    StringBuffer << "    constructor(Outer?: Object, Name?: string, "
-                    "ObjectFlags?: number);\n";
+    StringBuffer << "    constructor(Outer?: Object, Name?: string, ObjectFlags?: number);\n";
 
     for (TFieldIterator<PropertyMacro> PropertyIt(Class, EFieldIteratorFlags::ExcludeSuper); PropertyIt; ++PropertyIt)
     {
@@ -1365,8 +1362,7 @@ private:
 public:
     void StartupModule() override
     {
-        // IModularFeatures::Get().RegisterModularFeature(TEXT("ScriptGenerator"),
-        // this);
+        // IModularFeatures::Get().RegisterModularFeature(TEXT("ScriptGenerator"), this);
         FGenDTSStyle::Initialize();
         FGenDTSStyle::ReloadTextures();
 
@@ -1426,8 +1422,7 @@ public:
 
     void ShutdownModule() override
     {
-        // IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"),
-        // this);
+        // IModularFeatures::Get().UnregisterModularFeature(TEXT("ScriptGenerator"), this);
 #if (ENGINE_MAJOR_VERSION >= 5)
         UToolMenus::UnRegisterStartupCallback(this);
 #endif
@@ -1458,28 +1453,25 @@ public:
         return true;
     }
 
-    virtual bool ShouldExportClassesForModule(const FString& ModuleName,
-  EBuildModuleType::Type ModuleType, const FString&
-  ModuleGeneratedIncludeDirectory) const override
+    virtual bool ShouldExportClassesForModule(const FString& ModuleName, EBuildModuleType::Type ModuleType, const FString&
+ModuleGeneratedIncludeDirectory) const override
     {
         return ModuleName != TEXT("JsEnv");
     }
 
-    virtual void Initialize(const FString& RootLocalPath, const FString&
-  RootBuildPath, const FString& OutputDirectory, const FString& IncludeBase)
-  override
+    virtual void Initialize(const FString& RootLocalPath, const FString& RootBuildPath, const FString& OutputDirectory, const
+FString& IncludeBase) override
     {
         TypeScriptDeclarationGenerator.Begin();
     }
 
-    virtual void ExportClass(class UClass* Class, const FString&
-  SourceHeaderFilename, const FString& GeneratedHeaderFilename, bool bHasChanged)
-  override
+    virtual void ExportClass(class UClass* Class, const FString& SourceHeaderFilename, const FString& GeneratedHeaderFilename, bool
+bHasChanged) override
     {
-  #if WITH_EDITOR || HACK_HEADER_GENERATOR
+#if WITH_EDITOR || HACK_HEADER_GENERATOR
         static FName MainObjectTag("TGameJSMainObject");
         if(Class->HasMetaData(MainObjectTag))
-  #endif
+#endif
         {
             TypeScriptDeclarationGenerator.Gen(Class);
         }
@@ -1491,8 +1483,7 @@ public:
         FString Path = ANSI_TO_TCHAR(STRINGIZE_VALUE_OF(DECL_OUTPUT_PATH));
         Path += TEXT("/ue.d.ts");
         //printf(">>>>>>>>>>>>save to %s\n\n", TCHAR_TO_ANSI(*Path));
-        FFileHelper::SaveStringToFile(TypeScriptDeclarationGenerator.ToString(),
-  *Path);
+        FFileHelper::SaveStringToFile(TypeScriptDeclarationGenerator.ToString(), *Path);
     }
 
     virtual FString GetGeneratorName() const override
