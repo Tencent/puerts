@@ -1404,16 +1404,37 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
         {
             if (UNLIKELY(IsCDO))
             {
-                // MakeSureInject(TypeScriptGeneratedClass, true, true);
-                TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
-                TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
-                if (IsInGameThread())
+                if (TypeScriptGeneratedClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
                 {
-                    // 其实目前在编辑器下Start后才启动虚拟机，这部分本来防止蓝图刷新的代码其实用不上了
-                    auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
-                    if (BindInfoPtr)
+                    TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+                    TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                    for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt;
+                         ++FuncIt)
                     {
-                        BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                        auto Function = *FuncIt;
+                        if (!Function->HasAllFunctionFlags(FUNC_Static) || Function->HasAnyFunctionFlags(FUNC_Native))
+                        {
+                            continue;
+                        }
+                        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
+                        Function->SetNativeFunc(&UTypeScriptGeneratedClass::execLazyLoadCallJS);
+                        TypeScriptGeneratedClass->AddNativeFunction(
+                            *Function->GetName(), &UTypeScriptGeneratedClass::execLazyLoadCallJS);
+                    }
+                }
+                else
+                {
+                    // MakeSureInject(TypeScriptGeneratedClass, true, true);
+                    TypeScriptGeneratedClass->DynamicInvoker = TsDynamicInvoker;
+                    TypeScriptGeneratedClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
+                    if (IsInGameThread())
+                    {
+                        // 其实目前在编辑器下Start后才启动虚拟机，这部分本来防止蓝图刷新的代码其实用不上了
+                        auto BindInfoPtr = BindInfoMap.Find(TypeScriptGeneratedClass);
+                        if (BindInfoPtr)
+                        {
+                            BindInfoPtr->InjectNotFinished = true;    // CDO construct meat first load or recompiled
+                        }
                     }
                 }
             }
@@ -1450,7 +1471,7 @@ void FJsEnvImpl::RebindJs()
                 if (!TsClass->NotSupportInject())
                 {
 #if WITH_EDITOR
-                    if (TsClass->FunctionToRedirectInitialized)
+                    if (TsClass->FunctionToRedirectInitialized && !TsClass->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
                     {
                         TsClass->DynamicInvoker = TsDynamicInvoker;
                         TsClass->ClassConstructor = &UTypeScriptGeneratedClass::StaticConstructor;
@@ -2121,6 +2142,12 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
 #endif
+    if (Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
+    {
+        MakeSureInject(Class, false, false);
+        FinishInjection(Class);
+        return;
+    }
 
 #if WITH_EDITOR
     MakeSureInject(Class, false, false);
