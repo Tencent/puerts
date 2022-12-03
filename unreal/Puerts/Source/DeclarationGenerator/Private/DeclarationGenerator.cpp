@@ -555,9 +555,15 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName SearchPath)
     BPFilter.PackagePaths.Add(PackagePath);
     BPFilter.bRecursivePaths = true;
     BPFilter.bRecursiveClasses = true;
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
+    BPFilter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
+    BPFilter.ClassPaths.Add(UUserDefinedEnum::StaticClass()->GetClassPathName());
+    BPFilter.ClassPaths.Add(UUserDefinedStruct::StaticClass()->GetClassPathName());
+#else
     BPFilter.ClassNames.Add(FName(TEXT("Blueprint")));
     BPFilter.ClassNames.Add(FName(TEXT("UserDefinedEnum")));
     BPFilter.ClassNames.Add(FName(TEXT("UserDefinedStruct")));
+#endif
 
     AssetRegistry.GetAssets(BPFilter, AssetList);
     for (FAssetData const& AssetData : AssetList)
