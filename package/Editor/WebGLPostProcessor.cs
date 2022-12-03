@@ -72,14 +72,14 @@ public class WebGLPuertsPostProcessor {
     [MenuItem("puerts-webgl/build puerts-js for minigame", false, 11)]
     static void minigame() 
     {
-        run("buildForMinigame", _lastBuiltPath != null ? _lastBuiltPath + "/../minigame" : null);
+        run("buildForMinigame", GetLastBuildPath() != null ? GetLastBuildPath() + "/../minigame" : null);
     }
 
     [MenuItem("puerts-webgl/build puerts-js for browser", false, 11)]
     static void browser() 
     {
-        run("buildForBrowser", _lastBuiltPath);
-    }
+        run("buildForBrowser", GetLastBuildPath());
+    } 
 
     [MenuItem("puerts-webgl/install", false, 0)]
     static void npmInstall() 
@@ -110,13 +110,16 @@ public class WebGLPuertsPostProcessor {
 
 
     
-    protected static string _lastBuiltPath = null;
+    protected static string GetLastBuildPath() {
+        return EditorPrefs.GetString("PUER_WEBGL_LAST_BUILDPATH");
+    }
+
     [PostProcessBuildAttribute(1)]
     public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject) 
     {
         if (target == BuildTarget.WebGL) 
         {
-            _lastBuiltPath = pathToBuiltProject;
+            EditorPrefs.SetString("PUER_WEBGL_LAST_BUILDPATH", pathToBuiltProject);
             UnityEngine.Debug.Log("构建成功，请用puerts-webgl/build js构建js资源");
         }
     }
