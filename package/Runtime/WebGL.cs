@@ -32,7 +32,8 @@ namespace Puerts
                     CallV8DestructorCallback
                 );    
             #endif
-                return new JsEnv(loader, debugPort);
+                jsEnvSingleton = new JsEnv(loader, debugPort);
+                return jsEnvSingleton;
             }
             catch(Exception e)
             {
