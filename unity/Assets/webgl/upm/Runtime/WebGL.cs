@@ -15,10 +15,10 @@ namespace Puerts
                 {
                     return jsEnvInstance;
                 }
-                return Get(new WebGL.DefaultLoader());
+                return Get(new Puerts.DefaultLoader());
             }
             
-            public static JsEnv Get(WebGL.ILoader loader, int debugPort = -1)
+            public static JsEnv Get(Puerts.ILoader loader, int debugPort = -1)
             {
                 if (jsEnvInstance != null) 
                 {

@@ -1,14 +1,10 @@
 {
-    "name": "com.tencent.puerts.webgl.Editor",
+    "name": "com.tencent.puerts.ts-loader",
     "rootNamespace": "",
     "references": [
-        "com.tencent.puerts.webgl",
-        "com.tencent.puerts.core.Editor",
         "com.tencent.puerts.core"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
