@@ -1,0 +1,16 @@
+{
+  "name": "@puerts/webgl",
+  "displayName": "Puerts WebGL Support",
+  "version": "1.1.0",
+  "description": "Use PuerTS in WebGL mode. Javascript code will run in browser's JS environment and get speed up by JIT.",
+  "keywords": [
+    "Script"
+  ],
+  "author": {
+    "name": "Tencent Puerts Group",
+    "email": "zombieyang@tencent.com",
+    "url": "https://github.com/puerts"
+  },
+  "dependencies": {
+  }
+}

@@ -1,11 +1,4 @@
 {
-  "name": "@puerts/webgl",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {},
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.16.7",
     "@babel/preset-env": "^7.16.7",
