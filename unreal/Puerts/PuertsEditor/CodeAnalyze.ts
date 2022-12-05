@@ -1525,7 +1525,7 @@ function watch(configFilePath:string) {
 
     console.log("start watch..", JSON.stringify({fileNames:fileNames, options: options}));
     const versionsFilePath = getDirectoryPath(configFilePath) + "/ts_file_versions_info.json";
-    const fileVersions: ts.MapLike<{ version: string, processed: boolean, isBP: boolean }> = {};
+    const fileVersions: ts.MapLike<{ version: string, processed: boolean, isBP?: boolean }> = {};
   
     let beginTime = new Date().getTime();
     fileNames.forEach(fileName => {
