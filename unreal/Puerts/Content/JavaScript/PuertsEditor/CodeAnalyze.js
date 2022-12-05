@@ -320,7 +320,8 @@ function watch(configFilePath) {
     let diagnostics = ts.getPreEmitDiagnostics(program);
     let restoredFileVersions = {};
     var changed = false;
-    if (customSystem.fileExists(versionsFilePath)) {
+    const versionsFileExisted = customSystem.fileExists(versionsFilePath);
+    if (versionsFileExisted) {
         try {
             restoredFileVersions = JSON.parse(customSystem.readFile(versionsFilePath));
             console.log("restore versions from ", versionsFilePath);
@@ -359,16 +360,16 @@ function watch(configFilePath) {
             }
         });
         fileNames.forEach(fileName => {
-            if (!(fileName in restoredFileVersions))
+            if (versionsFileExisted && (!(fileName in restoredFileVersions)))
                 return;
-            if (!restoredFileVersions[fileName].isBP)
+            if (versionsFileExisted && (!restoredFileVersions[fileName].isBP))
                 return;
             const { moduleFileName, modulePath } = getClassPathInfo(fileName);
             let BPExisted = false;
             if (moduleFileName) {
                 BPExisted = UE.PEBlueprintAsset.Existed(moduleFileName, modulePath);
             }
-            if (restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed || !BPExisted) {
+            if (!versionsFileExisted || restoredFileVersions[fileName].version != fileVersions[fileName].version || !restoredFileVersions[fileName].processed || !BPExisted) {
                 onSourceFileAddOrChange(fileName, false, program, false);
                 changed = true;
             }
