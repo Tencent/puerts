@@ -4,7 +4,7 @@
 [![unreal](https://img.shields.io/badge/unreal-v1.0.2-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.2)
 [![unity](https://img.shields.io/badge/unity-v1.4.0-blue.svg)](doc/unity/zhcn/install.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
-[PRs Welcome](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
+![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
 
 ## What？
  
