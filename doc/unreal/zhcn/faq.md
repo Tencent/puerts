@@ -101,3 +101,16 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 ## 有些结构体（UStruct）不生成
 
 考虑到全部生成会大大增加声明文件（ue.d.ts）的大小，默认仅对被UClass引用了的UStruct生成，如果有需要全部生成，可以到控制台输入执行`Puerts.Gen STRUCT`。
+
+## typesceript版本升级
+
+开启继承ue类功能后，puerts会调用typescript库编译ts。安装于`YourProject/Plugins/Puerts/Content/JavaScript/PuertsEditor`，该目录还会拷贝到`YourProject/Content/JavaScript/PuertsEditor`，版本号package.json配置文件（如上两个目录都有）。
+
+要升级版本号只需要修改package.json（两个都要改）、到该文件所在目录执行`npm install .`即可，但要注意并不是所有typescript版本都支持，而且随着puerts的修改版本支持情况可能会发生变动，版本支持情况我会更新到这条faq下
+
+有项目长期使用到版本：3.4.5、4.4.4、4.7.4
+
+有项目简单测试可以的版本：4.8.2
+
+不支持的版本：（高于）4.8.3
+
