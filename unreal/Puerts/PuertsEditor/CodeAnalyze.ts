@@ -3,6 +3,7 @@ import {$ref, $unref, $set} from 'puerts';
 import * as ts from "typescript";
 import * as tsi from "./TypeScriptInternal"
 import * as uemeta from "./UEMeta"
+import * as cpp from 'cpp'
 
 function getCustomSystem(): ts.System {
     const customSystem: ts.System = {
@@ -1027,6 +1028,27 @@ function watch(configFilePath:string) {
 
         return emitOutputFilePathWithoutExtension;
     }
+
+    function list(pattern: string):void {
+        var re = new RegExp(pattern ? pattern : '.*');
+        console.warn(`id\t\t\t\t\t\t\t\t\tprocessed\tisBP\tpath`);
+        for(var key in fileVersions) {
+            var value = fileVersions[key];
+            if (!pattern || re.test(key)) {
+                console.warn(`${value.version}\t${!!value.processed}\t\t${!!value.isBP}\t${key}`);
+            }
+        }
+    }
+
+    function dispatchCmd(cmd:string, args:string) {
+        if (cmd == 'ls') {
+            list(args);
+        } else {
+            console.error(`unknow command for Puerts ${cmd}`);
+        }
+    }
+
+    cpp.FPuertsEditorModule.SetCmdCallback(dispatchCmd);
 }
 
 watch(customSystem.getCurrentDirectory() + "tsconfig.json");

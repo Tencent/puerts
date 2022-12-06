@@ -5,6 +5,7 @@ const puerts_1 = require("puerts");
 const ts = require("typescript");
 const tsi = require("./TypeScriptInternal");
 const uemeta = require("./UEMeta");
+const cpp = require("cpp");
 function getCustomSystem() {
     const customSystem = {
         args: [],
@@ -968,6 +969,25 @@ function watch(configFilePath) {
         }
         return emitOutputFilePathWithoutExtension;
     }
+    function list(pattern) {
+        var re = new RegExp(pattern ? pattern : '.*');
+        console.warn(`id\t\t\t\t\t\t\t\t\tprocessed\tisBP\tpath`);
+        for (var key in fileVersions) {
+            var value = fileVersions[key];
+            if (!pattern || re.test(key)) {
+                console.warn(`${value.version}\t${!!value.processed}\t\t${!!value.isBP}\t${key}`);
+            }
+        }
+    }
+    function dispatchCmd(cmd, args) {
+        if (cmd == 'ls') {
+            list(args);
+        }
+        else {
+            console.error(`unknow command for Puerts ${cmd}`);
+        }
+    }
+    cpp.FPuertsEditorModule.SetCmdCallback(dispatchCmd);
 }
 watch(customSystem.getCurrentDirectory() + "tsconfig.json");
 //# sourceMappingURL=CodeAnalyze.js.map
