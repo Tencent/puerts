@@ -114,3 +114,13 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 蓝图声明文件默认增量生成（文件不发生变化不生成），有时其依赖的类型发生了变化，或者被版本管理工具修改，此时可以试试全量生成，控>制台执行`Puerts.Gen FULL`
 
+## ts继承ue类后不生成代理蓝图的定位
+
+* 在UE命令行界面输入`puerts ls`，如果报“Puerts command not initialized”，很可能是因为没安装好环境，或者插件该功能没启用，请按安装文档检查又没操作失误
+
+* 如果继承ue类功能正常启用`puerts ls`能看到所有被纳入增量编译的文件，如果想查找具体ts文件，比如TsTestActor，可以输入`puerts ls TsTestActor`进行查找，如果查找不到你的文件，表面该文件可能没被纳入到ts工程里，请检查“tsconfig.json”文件的配置，该配置是一个标准的ts工程配置，如何配置请查看typescript官方文档
+
+* 如果`puerts ls TsTestActor`找到了你的文件，看isBP栏，如果为false而且processed栏为true，表明格式不正确，请参考puerts的《继承引擎类功能》文档
+
+* 可以尝试在命令行单独编译该ts文件，输入编译命令`puerts compile e9050088932a23f720713a9a5073986e`触发该文件的编译（其中e9050088932a23f720713a9a5073986e是`puerts ls TsTestActor`返回的id），如果有编译错误就解决，没有编译错误正常能生成相应的代理蓝图。
+

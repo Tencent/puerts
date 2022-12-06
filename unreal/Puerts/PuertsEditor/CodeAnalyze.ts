@@ -1031,11 +1031,21 @@ function watch(configFilePath:string) {
 
     function list(pattern: string):void {
         var re = new RegExp(pattern ? pattern : '.*');
-        console.warn(`id\t\t\t\t\t\t\t\t\tprocessed\tisBP\tpath`);
+        console.log(`id\t\t\t\t\t\t\t\t\tprocessed\tisBP\tpath`);
         for(var key in fileVersions) {
             var value = fileVersions[key];
             if (!pattern || re.test(key)) {
-                console.warn(`${value.version}\t${!!value.processed}\t\t${!!value.isBP}\t${key}`);
+                console.log(`${value.version}\t${!!value.processed}\t\t${!!value.isBP}\t${key}`);
+            }
+        }
+    }
+
+    function compile(id: string): void {
+        for(var key in fileVersions) {
+            var value = fileVersions[key];
+            if (value.version === id.trim()) {
+                console.log(`compiling ${key} ...`);
+                onSourceFileAddOrChange(key, true);
             }
         }
     }
@@ -1043,6 +1053,8 @@ function watch(configFilePath:string) {
     function dispatchCmd(cmd:string, args:string) {
         if (cmd == 'ls') {
             list(args);
+        } else if (cmd == 'compile') {
+            compile(args);
         } else {
             console.error(`unknow command for Puerts ${cmd}`);
         }
