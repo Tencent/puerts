@@ -98,10 +98,6 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 到“项目设置/打包/Additional Not-Asset Directories to Package”，把Content下的“JavaScript”目录添加进去。
 
-## 有些结构体（UStruct）不生成
-
-考虑到全部生成会大大增加声明文件（ue.d.ts）的大小，默认仅对被UClass引用了的UStruct生成，如果有需要全部生成，可以到控制台输入执行`Puerts.Gen STRUCT`。
-
 ## typesceript版本升级
 
 开启继承ue类功能后，puerts会调用typescript库编译ts。安装于`YourProject/Plugins/Puerts/Content/JavaScript/PuertsEditor`，该目录还会拷贝到`YourProject/Content/JavaScript/PuertsEditor`，版本号package.json配置文件（如上两个目录都有）。

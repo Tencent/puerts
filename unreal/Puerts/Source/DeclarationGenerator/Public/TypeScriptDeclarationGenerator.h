@@ -84,13 +84,13 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     void RestoreBlueprintTypeDeclInfos(const FString& FileContent);
 
-    void LoadAllWidgetBlueprint(FName SearchPath, bool GenFull);
+    void LoadAllWidgetBlueprint(FName InSearchPath, bool InGenFull);
 
     void InitExtensionMethodsMap();
 
     virtual void Begin(FString Namespace = TEXT("ue"));
 
-    void GenTypeScriptDeclaration(bool GenStruct = false, bool GenEnum = false);
+    void GenTypeScriptDeclaration(bool InGenStruct, bool InGenEnum);
 
     virtual void Gen(UObject* ToGen);
 

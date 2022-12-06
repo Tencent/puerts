@@ -318,11 +318,11 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
     }
 }
 
-void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool GenStruct, bool GenEnum)
+void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct, bool InGenEnum)
 {
     Begin();
 
-    TArray<UObject*> SortedClasses(GetSortedClasses(GenStruct, GenEnum));
+    TArray<UObject*> SortedClasses(GetSortedClasses(InGenStruct, InGenEnum));
     for (int i = 0; i < SortedClasses.Num(); ++i)
     {
         UObject* Class = SortedClasses[i];
@@ -544,12 +544,12 @@ void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FStrin
     }
 }
 
-void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName SearchPath, bool GenFull)
+void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath, bool InGenFull)
 {
     FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(FName("AssetRegistry"));
     IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
-    FName PackagePath = (SearchPath == NAME_None) ? FName(TEXT("/Game")) : SearchPath;
+    FName PackagePath = (InSearchPath == NAME_None) ? FName(TEXT("/Game")) : InSearchPath;
 
     FARFilter BPFilter;
     BPFilter.PackagePaths.Add(PackagePath);
@@ -575,7 +575,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName SearchPath, b
         {
             auto FileVersion = PackageData->PackageGuid.ToString();
             BlueprintTypeDeclInfoPtr->IsExist = true;
-            BlueprintTypeDeclInfoPtr->Changed = GenFull || (FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString);
+            BlueprintTypeDeclInfoPtr->Changed = InGenFull || (FileVersion != BlueprintTypeDeclInfoPtr->FileVersionString);
             BlueprintTypeDeclInfoPtr->FileVersionString = FileVersion;
         }
         else
@@ -1325,9 +1325,9 @@ private:
     }
 #endif
 
-    void GenUeDts(bool InGenStruct, bool InGenFull, FName InSearchPath)
+    void GenUeDts(bool InGenFull, FName InSearchPath)
     {
-        GenTypeScriptDeclaration(InGenStruct, InGenFull, InSearchPath);
+        GenTypeScriptDeclaration(InGenFull, InSearchPath);
 
         TArray<UObject*> SortedClasses(GetSortedClasses());
         for (int i = 0; i < SortedClasses.Num(); ++i)
@@ -1341,12 +1341,8 @@ private:
 
         FName PackagePath = (InSearchPath == NAME_None) ? FName(TEXT("/Game")) : InSearchPath;
 
-        FString DialogMessage = FString::Printf(TEXT("genertate finish, %s store in %s, ([PATH=%s]"), TEXT("ue.d.ts"),
+        FString DialogMessage = FString::Printf(TEXT("genertate finish, %s store in %s, ([PATH=%s])"), TEXT("ue.d.ts"),
             TEXT("Content/Typing/ue"), *PackagePath.ToString());
-
-        if (InGenStruct)
-            DialogMessage += TEXT("|STRUCT");
-        DialogMessage += TEXT(")");
 
         FText DialogText = FText::Format(LOCTEXT("PluginButtonDialogText", "{0}"), FText::FromString(DialogMessage));
         // FMessageDialog::Open(EAppMsgType::Ok, DialogText);
@@ -1359,7 +1355,7 @@ private:
 
     void GenUeDtsCallback()
     {
-        GenUeDts(false, false, NAME_None);
+        GenUeDts(false, NAME_None);
     }
 
 public:
@@ -1395,17 +1391,12 @@ public:
             FConsoleCommandWithArgsDelegate::CreateLambda(
                 [this](const TArray<FString>& Args)
                 {
-                    bool GenStruct = false;
                     bool GenFull = false;
                     FName SearchPath = NAME_None;
 
                     for (auto& Arg : Args)
                     {
-                        if (Arg.ToUpper().Equals(TEXT("STRUCT")))
-                        {
-                            GenStruct = true;
-                        }
-                        else if (Arg.ToUpper().Equals(TEXT("FULL")))
+                        if (Arg.ToUpper().Equals(TEXT("FULL")))
                         {
                             GenFull = true;
                         }
@@ -1414,7 +1405,7 @@ public:
                             SearchPath = *Arg.Mid(5);
                         }
                     }
-                    this->GenUeDts(GenStruct, GenFull, SearchPath);
+                    this->GenUeDts(GenFull, SearchPath);
                 }));
     }
 
@@ -1428,12 +1419,12 @@ public:
         FGenDTSCommands::Unregister();
     }
 
-    void GenTypeScriptDeclaration(bool InGenStruct, bool InGenFull, FName InSearchPath) override
+    void GenTypeScriptDeclaration(bool InGenFull, FName InSearchPath) override
     {
         FTypeScriptDeclarationGenerator TypeScriptDeclarationGenerator;
         TypeScriptDeclarationGenerator.RestoreBlueprintTypeDeclInfos();
         TypeScriptDeclarationGenerator.LoadAllWidgetBlueprint(InSearchPath, InGenFull);
-        TypeScriptDeclarationGenerator.GenTypeScriptDeclaration(InGenStruct, true);
+        TypeScriptDeclarationGenerator.GenTypeScriptDeclaration(true, true);
     }
 
     void GenReactDeclaration() override
