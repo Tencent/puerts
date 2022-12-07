@@ -11,6 +11,17 @@ using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public class JSToCSCallTest
+    {
+        private static object _store;
+        public static void SetCSObjectStorage(object any) {
+            _store = any;
+        }
+        public static object GetCSObjectStorage() {
+            return _store;
+        }
+    }
+
     public class ParamsCallTest
     {
         public static string CombinePath(params object[] paths)
