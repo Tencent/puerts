@@ -191,7 +191,7 @@ namespace Puerts
 
                     return result;
                 case JsValueType.Number:
-                    return IntTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
+                    return DoubleTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.String:
                     return StringTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 default:
