@@ -349,7 +349,14 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
             auto Asset = AssetData.GetAsset();
             if (auto Blueprint = Cast<UBlueprint>(Asset))
             {
-                Gen(Blueprint->GeneratedClass);
+                if (Blueprint->GeneratedClass)
+                {
+                    Gen(Blueprint->GeneratedClass);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("invalid blueprint: %s"), *AssetData.PackageName.ToString());
+                }
             }
             else if (auto UserDefinedEnum = Cast<UUserDefinedEnum>(Asset))
             {
