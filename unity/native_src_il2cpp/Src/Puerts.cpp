@@ -534,7 +534,8 @@ struct JSEnv
 #endif
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
-        Isolate->SetData(1, &ModuleManager);
+        ModuleManager = new puerts::ModuleManager();
+        Isolate->SetData(1, ModuleManager);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
@@ -644,6 +645,7 @@ struct JSEnv
         }, &platform_finished);
         Platform->UnregisterIsolate(MainIsolate);
 #endif
+        delete ModuleManager;
         MainContext.Reset();
         MainIsolate->Dispose();
 #if WITH_NODEJS
@@ -668,7 +670,7 @@ struct JSEnv
     v8::Isolate::CreateParams* CreateParams;
     
     puerts::FCppObjectMapper CppObjectMapper;
-    puerts::ModuleManager ModuleManager;
+    puerts::ModuleManager* ModuleManager;
 
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;

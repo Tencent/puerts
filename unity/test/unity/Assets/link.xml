@@ -14,5 +14,9 @@
          <type fullname="Puerts.UnitTest.TestStruct" preserve="all"/>
          <type fullname="Puerts.UnitTest.TestHelper" preserve="all"/>
      </assembly>
+     <assembly fullname="mscorlib">
+         <type fullname="System.Type" preserve="all"/>
+         <type fullname="System.RuntimeType" preserve="all"/>
+     </assembly>
  
 </linker>

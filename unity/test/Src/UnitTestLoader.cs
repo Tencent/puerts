@@ -31,7 +31,7 @@ namespace Puerts.UnitTest
             } 
             else if (UnityEngine.Resources.Load(FixSpecifier(specifier)) != null) 
             {
-                return "resouces/" + FixSpecifier(specifier);
+                return "resources/" + FixSpecifier(specifier);
             }
             return null;
         }
@@ -59,7 +59,7 @@ namespace Puerts.UnitTest
                     return;
 
                 } else if (specifier.StartsWith("resources/")) {
-                    content = UnityEngine.Resources.Load<UnityEngine.TextAsset>(specifier.Substring(9)).text;
+                    content = UnityEngine.Resources.Load<UnityEngine.TextAsset>(specifier.Substring(10)).text;
                     return;
                 }
             } 

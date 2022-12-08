@@ -24,18 +24,26 @@ puer.loadType = function(nameOrCSType) {
     }
 }
 
-puer.getNestedTypes = function() {
-    // todo
+let typeof_System_RuntimeType = jsEnv.GetTypeByString("System.Type")
+let proto_System_Reflection_TypeInfo = typeof_System_RuntimeType.__proto__.__proto__
+let method_System_Type_GetNestedTypes = proto_System_Reflection_TypeInfo.GetNestedTypes
+puer.getNestedTypes = function(nameOrCSType) {
+    let csType = nameOrCSType
+    if (typeof nameOrCSType == "string") {
+        csType = jsEnv.GetTypeByString(nameOrCSType)
+    }
+    if (csType) {
+        return method_System_Type_GetNestedTypes.bind(csType)()
+    }
 }
+
 puer.getGenericMethod = function() {
     // todo
 }
 puer.getLastException = function() {
     // todo
 }
-puer.evalScript = global.jsEnv.Eval || function (script, debugPath) {
-    return eval(script);
-}
+puer.evalScript = eval
 
 let loader = jsEnv.GetLoader();
 function loadFile(path) {
@@ -50,3 +58,8 @@ function loadFile(path) {
 puer.loadFile = loadFile;
 
 puer.fileExists = loader.Resolve.bind(loader);
+
+// TODO: temporary polyfill Array.get_Item used in csharp.mjs
+let System_Array = puer.loadType("System.Array")
+let proto_System_Array = System_Array.prototype
+proto_System_Array.get_Item = proto_System_Array.GetValue
