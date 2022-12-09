@@ -34,10 +34,10 @@ static int32_t b_i4i4i4(void* object, int32_t p1, int32_t p2, void* method)
     }
     //PLog("p1=%d, p2=%d", p1, p2);
     //PLog("delegate invoke: a=%d, b=%d, c=%d, d=%d, e=%d, p1=%d, p2=%d", delegateInfo->a, delegateInfo->b, delegateInfo->c, delegateInfo->d, delegateInfo->e, p1, p2);
-    v8::Isolate* Isolate = delegateInfo->Isolate;
+    v8::Isolate* Isolate = delegateInfo->EnvInfo->Isolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
-    auto Context = delegateInfo->Context.Get(Isolate);
+    auto Context = delegateInfo->EnvInfo->Context.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
 
     v8::TryCatch TryCatch(Isolate);
@@ -68,10 +68,10 @@ static void b_vs_r4r4r4_(void* object, s_r4r4r4_ p1, void* method)
         ThrowInvalidOperationException("JsEnv had been destroy");
         return;
     }
-    v8::Isolate* Isolate = delegateInfo->Isolate;
+    v8::Isolate* Isolate = delegateInfo->EnvInfo->Isolate;
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
-    auto Context = delegateInfo->Context.Get(Isolate);
+    auto Context = delegateInfo->EnvInfo->Context.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
 
     v8::TryCatch TryCatch(Isolate);

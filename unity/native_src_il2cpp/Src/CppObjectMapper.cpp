@@ -87,6 +87,8 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
     PointerConstructor = v8::UniquePersistent<v8::Function>(InIsolate, LocalTemplate->GetFunction(InContext).ToLocalChecked());
+    PersistentObjectEnvInfo.Isolate = InIsolate;
+    PersistentObjectEnvInfo.Context.Reset(InIsolate, InContext);
 }
 
 v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
@@ -355,6 +357,7 @@ void FCppObjectMapper::UnBindCppObject(JSClassDefinition* ClassDefinition, void*
 
 void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
 {
+    Ref.reset();// let c# do not callback
     for (auto Iter = CDataFinalizeMap.begin(); Iter != CDataFinalizeMap.end(); Iter++)
     {
         if (Iter->second)
@@ -364,6 +367,9 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     CDataFinalizeMap.clear();
     TypeIdToTemplateMap.clear();
     PointerConstructor.Reset();
+    PersistentObjectEnvInfo.Context.Reset();
+    std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
+    PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
 
 }    // namespace puerts

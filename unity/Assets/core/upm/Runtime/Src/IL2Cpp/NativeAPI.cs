@@ -85,6 +85,9 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetObjectToGlobal(IntPtr jsEnv, string key, IntPtr objPtr);
 
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ReleasePendingJsObjects(IntPtr jsEnv);
+
         //call by native, do no throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {

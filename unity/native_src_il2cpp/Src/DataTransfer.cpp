@@ -53,6 +53,11 @@ std::weak_ptr<int> DataTransfer::GetJsEnvLifeCycleTracker(v8::Isolate* Isolate)
     return IsolateData<ICppObjectMapper>(Isolate)->GetJsEnvLifeCycleTracker();
 }
 
+struct FPersistentObjectEnvInfo* DataTransfer::GetPersistentObjectEnvInfo(v8::Isolate* Isolate)
+{
+    return IsolateData<ICppObjectMapper>(Isolate)->GetPersistentObjectEnvInfo();
+}
+
 #if USING_IN_UNREAL_ENGINE
 FString DataTransfer::ToFString(v8::Isolate* Isolate, v8::Local<v8::Value> Value)
 {

@@ -327,10 +327,10 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
         return {};
         ${ENDIF()}
     }
-    v8::Isolate* isolate = delegateInfo->Isolate;
+    v8::Isolate* isolate = delegateInfo->EnvInfo->Isolate;
     v8::Isolate::Scope isolateScope(isolate);
     v8::HandleScope HandleScope(isolate);
-    auto context = delegateInfo->Context.Get(isolate);
+    auto context = delegateInfo->EnvInfo->Context.Get(isolate);
     v8::Context::Scope ContextScope(context);
 
     v8::TryCatch TryCatch(isolate);

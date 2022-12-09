@@ -86,8 +86,7 @@ static void LazyLoad(const void* typeId)
 
 struct PersistentObjectInfo
 {
-    v8::Isolate* Isolate;
-    v8::Global<v8::Context> Context;
+    FPersistentObjectEnvInfo* EnvInfo;
     v8::Global<v8::Object> JsObject;
     std::weak_ptr<int> JsEnvLifeCycleTracker;
     //std::map<void*, void*> 
@@ -177,8 +176,7 @@ static void* FunctionToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context> Con
     PersistentObjectInfo* delegateInfo = nullptr;
     void* Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
     memset(delegateInfo, 0, sizeof(PersistentObjectInfo));
-    delegateInfo->Isolate = Isolate;
-    delegateInfo->Context.Reset(Isolate, Context);
+    delegateInfo->EnvInfo = DataTransfer::GetPersistentObjectEnvInfo(Isolate);;
     delegateInfo->JsObject.Reset(Isolate, Func);
     delegateInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     //Func->Set(Context, 0, v8::External::New(Context->GetIsolate(), delegateInfo));
@@ -220,8 +218,7 @@ static void SetPersistentObject(pesapi_env env, pesapi_value pvalue, PersistentO
     
     v8::Isolate* Isolate = Context->GetIsolate();
     
-    objectInfo->Isolate = Isolate;
-    objectInfo->Context.Reset(Isolate, Context);
+    objectInfo->EnvInfo = DataTransfer::GetPersistentObjectEnvInfo(Isolate);;
     objectInfo->JsObject.Reset(Isolate, Obj);
     objectInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
 }
@@ -236,7 +233,7 @@ static v8::Value* GetPersistentObject(v8::Context* env, const PersistentObjectIn
     
     v8::Isolate* Isolate = env->GetIsolate();
     
-    if (Isolate != objectInfo->Isolate)
+    if (Isolate != objectInfo->EnvInfo->Isolate)
     {
         GUnityExports.ThrowInvalidOperationException("js object from other JsEnv");
         return nullptr;
@@ -360,22 +357,15 @@ static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Inf
     return FunctionToDelegate(Isolate, Context, Info[0]->ToObject(Context).ToLocalChecked(), ClassDefinition);
 }
 
-//TODO: Add Lock for Isolate ? Global::Reset is thread safe ?
 static void UnrefJsObject(PersistentObjectInfo* objectInfo)
 {
     if (!objectInfo->JsEnvLifeCycleTracker.expired())
     {
-        objectInfo->JsObject.Reset();
-        objectInfo->Context.Reset();
-        objectInfo->Isolate = nullptr;
-        //PLog(">>>>>>>>>>>>>>>>> reset delegate normal...");
+        std::lock_guard<std::mutex> guard(objectInfo->EnvInfo->Mutex);
+        objectInfo->EnvInfo->PendingReleaseObjects.push_back(std::move(objectInfo->JsObject));
+        //PLog("add jsobject to pending release list");
     }
-    //else
-    //{
-    //    PLog(">>>>>>>>>>>>>>>>> delegate expired, skip reset...");
-    //}
-    
-    //PLog("delegate release: a=%d, b=%d, c=%d, d=%d, e=%d", objectInfo->a, objectInfo->b, objectInfo->c, objectInfo->d, objectInfo->e);
+    objectInfo->EnvInfo = nullptr;
 }
 
 struct BridgeFuncInfo
@@ -631,6 +621,8 @@ struct JSEnv
     ~JSEnv()
     {
         CppObjectMapper.UnInitialize(MainIsolate);
+        ModuleManager.PathToModuleMap.clear();
+        ModuleManager.ScriptIdToPathMap.clear();
 
 #if WITH_NODEJS
         // node::EmitExit(NodeEnv);
@@ -981,6 +973,15 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
         void* klass = *reinterpret_cast<void**>(obj);
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, key).ToLocalChecked(), puerts::DataTransfer::FindOrAddCData(Isolate, Context, klass, obj, true)).Check();
     }
+}
+
+V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
+{
+    v8::Isolate* Isolate = jsEnv->MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    std::lock_guard<std::mutex> guard(jsEnv->CppObjectMapper.PersistentObjectEnvInfo.Mutex);
+    //puerts::PLog("ReleasePendingJsObjects size: %d",  jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size());
+    jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
 
 #ifdef __cplusplus

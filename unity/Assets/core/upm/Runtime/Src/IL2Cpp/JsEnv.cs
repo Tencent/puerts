@@ -139,6 +139,11 @@ namespace Puerts
         {
             return moduleExecuter(specifier);
         }
+
+        public void Tick()
+        {
+            PuertsIl2cpp.NativeAPI.ReleasePendingJsObjects(nativeJsEnv);
+        }
         
         ~JsEnv()
         {
