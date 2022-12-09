@@ -97,7 +97,7 @@ public class JsBehaviour : MonoBehaviour
     {
         if (jsEnv == null) jsEnv = new JsEnv(new DefaultLoader(), 9229);
 
-        var init = jsEnv.Eval<ModuleInit>(@"const m = 
+        var init = jsEnv.Eval<Action<MonoBehaviour>>(@"const m = 
             class Rotate {
                 constructor(bindTo) {
                     this.bindTo = bindTo;
