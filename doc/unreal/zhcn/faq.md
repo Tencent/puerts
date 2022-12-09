@@ -92,6 +92,14 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 但即使改对象不会被gc释放，依然不能保证一个ue对象不被销毁，ue的gc和其它正经的gc不一样，诸如c#、java、lua、js等虚拟机的gc，一个对象还被持有就肯定不销毁，而ue下可以调用api强制删除一个对象（可能是用户自己调用，也可能是引擎调用，比较常见是切场景后，所有该场景挂的actor都会自动销毁）。
 
+## ue对象被“Puerts_UserObjectRetainer”引用
+
+这代表该ue对象的“js侧代理对象”未释放，任意gc，一个对象要释放得满足两个条件：1、没有指向该对象的引用；2、gc扫描到它，并完成释放；
+
+对于条件1，得看你的js代码逻辑，也可以通过cdt等工具查看内存，看看它被啥引用则；
+
+对于条件2，如果是v8虚拟机，由于是分代gc的原因，老生代内存扫描的触发需要一定的条件（比如内存分配得比较多，比较快等），如果希望加快gc进程，可以调用FJsEnv::LowMemoryNotification通知v8加速gc，也可以调用FJsEnv::RequestFullGarbageCollectionForTesting立即完成一趟全量gc（耗时较大，只建议在切场景之类的地方做）
+
 ## 手机/PC打包后脚本不执行/报找不到脚本错误
 
 生成的js脚本不是ue资产文件(*.asset)，需要手动设置打包。
