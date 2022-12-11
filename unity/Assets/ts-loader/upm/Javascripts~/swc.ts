@@ -2,6 +2,10 @@ import { readFileSync } from 'fs';
 import { transformSync } from '@swc/core';
 import PuerBuiltinTranspiler from './base';
 
+/**
+ * 因为用到了node-addon，初测只在mac下能用
+ */
+
 class PuerSWCTranspiler extends PuerBuiltinTranspiler {
     transpile(specifier: string): string {
         const content = readFileSync(specifier, 'utf-8');

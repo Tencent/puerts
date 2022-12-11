@@ -17,7 +17,7 @@ namespace Puerts
         {
             puerDefaultLoader = new Puerts.DefaultLoader();
 #if UNITY_EDITOR
-                tsCompiler = new TSCompiler();
+                tsCompiler = new TSCompiler(Application.dataPath + "/../Puer-Project");
 #endif
         }
 
@@ -59,7 +59,8 @@ namespace Puerts
                     string filepath = Resolve(specifier);
                     if (filepath.EndsWith("ts")) {
                         debugpath = "";
-                        return tsCompiler.EmitTSFile(filepath);
+                        var ret = tsCompiler.EmitTSFile(filepath);
+                        return ret;
                     }
                 }
 #endif

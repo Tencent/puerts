@@ -6,6 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = require("fs");
 const core_1 = require("@swc/core");
 const base_1 = __importDefault(require("./base"));
+/**
+ * 因为用到了node-addon，初测只在mac下能用
+ */
 class PuerSWCTranspiler extends base_1.default {
     transpile(specifier) {
         const content = (0, fs_1.readFileSync)(specifier, 'utf-8');

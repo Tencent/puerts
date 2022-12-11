@@ -8,19 +8,23 @@ namespace Puerts
     public class TSCompiler
     {
         Func<string, string> emitTSFile;
-        public TSCompiler()
+        public TSCompiler(string tsRootPath)
         {
             var env = new JsEnv();
             env.UsingFunc<string, string>();
-            env.UsingAction<string>();
-            env.Eval<Action<string>>(@"(function (requirePath) { 
+            env.UsingAction<string, string>();
+            env.Eval<Action<string, string>>(@"(function (tsRootPath, requirePath) { 
                 global.require = require('node:module').createRequire(requirePath + '/')
-            })")(Path.GetFullPath("Packages/com.tencent.puerts.ts-loader/Javascripts~"));
+                if (!require('node:fs').existsSync(requirePath + '/node_modules')) {
+                    throw new Error(`node_modules is not installed, please run 'npm install' in ${requirePath}`);
+                }
+                global.tsRootPath = tsRootPath
+            })")(tsRootPath, Path.GetFullPath("Packages/com.tencent.puerts.ts-loader/Javascripts~"));
 
             emitTSFile = env.Eval<Func<string, string>>(@"
                 (function() {
-                    const Transpiler = require('./swc').default;
-                    const transpiler = new Transpiler();
+                    const Transpiler = require('.').default;
+                    const transpiler = new Transpiler(global.tsRootPath);
 
                     return function(tsFilePath) {
                         return transpiler.transpile(tsFilePath);
