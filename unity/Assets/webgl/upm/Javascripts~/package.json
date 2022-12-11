@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "cd PuertsDLLMock && tsc -p tsconfig.json && webpack -c webpack.config.js"
+  },
   "dependencies": {
     "@puerts/build-util": "^1.0.1",
     "@types/node": "^18.11.10",
