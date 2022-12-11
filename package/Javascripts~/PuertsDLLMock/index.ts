@@ -102,22 +102,65 @@ global.PuertsWebGL = {
                             return 1024
     
                         } else {
-                            const result: any = { exports: {} };
-                            if (executeModuleCache[fileName]) {
-                                result.exports = executeModuleCache[fileName];
-
-                            } else {
-                                if (!PUERTS_JS_RESOURCES[fileName]) {
-                                    console.error('file not found' + fileName);
+                            function normalize(name: string, to: string) {
+                                if ('./' === to.substring(0, 2)) {
+                                    to = to.substring(2);
                                 }
-                                PUERTS_JS_RESOURCES[fileName](result.exports, global['require'], result)
-                                executeModuleCache[fileName] = result.exports;
+                                name = (name.endsWith('/') ? name : name.substring(0, name.lastIndexOf('/') + 1)) + to
+                                const pathSegs = name.replaceAll('//', '/').split('/');
+                                const retPath = [];
+                                for (let i = 0; i < pathSegs.length; i++) {
+                                    if (pathSegs[i] == '..')
+                                        retPath.pop();
+                                    else 
+                                        retPath.push(pathSegs[i]);
+
+                                }
+                                return retPath.join('/');
+                            }
+                            function mockRequire(specifier: string) {
+                                const result: any = { exports: {} };
+                                const foundCacheSpecifier = tryFindAndGetFindedSpecifier(specifier, executeModuleCache);
+                                if (foundCacheSpecifier) {
+                                    result.exports = executeModuleCache[foundCacheSpecifier];
+    
+                                } else {
+                                    const foundSpecifier = tryFindAndGetFindedSpecifier(specifier, PUERTS_JS_RESOURCES);
+                                    if (!foundSpecifier) {
+                                        console.error('file not found: ' + specifier);
+                                    }
+                                    specifier = foundSpecifier;
+
+                                    PUERTS_JS_RESOURCES[specifier](result.exports, (specifierTo: string)=> {
+                                        return mockRequire(normalize(specifier, specifierTo));
+                                    }, result)
+                                    executeModuleCache[specifier] = result.exports;
+                                }
+
+                                return result.exports;
+                                function tryFindAndGetFindedSpecifier(specifier: string, obj: any) {
+                                    let tryfind = [specifier];
+                                    if (specifier.indexOf('.') == -1) tryfind = tryfind.concat([specifier + '.js', specifier + '.ts', specifier + '.mjs', specifier + '.mts'])
+
+                                    let finded = -1;
+                                    tryfind.forEach((s, index)=> { 
+                                        finded = finded != -1 ? finded: (!!obj[s] ? index : -1); 
+                                    });
+
+                                    if (finded == -1) {
+                                        return null;
+                                    } else {
+                                        return tryfind[finded];
+                                    }
+                                }
                             }
 
+                            const requireRet = mockRequire(fileName)
+
                             if (exportee) {
-                                engine.lastReturnCSResult = result.exports[UTF8ToString(exportee)];
+                                engine.lastReturnCSResult = requireRet[UTF8ToString(exportee)];
                             } else {
-                                engine.lastReturnCSResult = result.exports;
+                                engine.lastReturnCSResult = requireRet;
                             }
                             return 1024
                         }

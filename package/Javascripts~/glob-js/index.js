@@ -88,7 +88,7 @@ function getAllJSFile (fileGlobbers) {
     const allJSFile = fileGlobbers
         .reduce((retArr, globber)=> {
             return retArr.concat(
-                glob.sync(path.normalize(globber))
+                glob.sync(path.normalize(globber).replace(/\\/g, '/'))
             )
         }, [])
         .filter(jsfile => {
