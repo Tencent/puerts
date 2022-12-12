@@ -787,6 +787,14 @@ FJsEnvImpl::~FJsEnvImpl()
         }
     }
 #endif
+
+#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
+    for (auto Iter = TypeReflectionMap.CreateIterator(); Iter; ++Iter)
+    {
+        Iter->Value->CachedFunctionTemplate.Reset();
+    }
+#endif
+
     DefaultContext.Reset();
     MainIsolate->Dispose();
     MainIsolate = nullptr;
@@ -2701,10 +2709,9 @@ void FJsEnvImpl::UnBindContainer(void* Ptr)
     ContainerCache.Remove(Ptr);
 }
 
-std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
+std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate)
 {
     const auto FullName = InStruct->GetFullName();
-
     auto TypeReflectionPtr = TypeReflectionMap.Find(FullName);
     if (!TypeReflectionPtr)
     {
@@ -2715,8 +2722,11 @@ std::shared_ptr<FStructWrapper> FJsEnvImpl::GetStructWrapper(UStruct* InStruct)
     }
     else
     {
+#if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
+        IsReuseTemplate = true;
+#endif
         // UE_LOG(LogTemp, Warning, TEXT("FJsEnvImpl::GetStructWrapper existed %s // %s"), *InStruct->GetName(), *FullName);
-        (*TypeReflectionPtr)->Init(InStruct);
+        (*TypeReflectionPtr)->Init(InStruct, IsReuseTemplate);
         return (*TypeReflectionPtr);
     }
 }
@@ -2734,7 +2744,8 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
         v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
-        auto StructWrapper = GetStructWrapper(InStruct);
+        bool IsReuseTemplate = false;
+        auto StructWrapper = GetStructWrapper(InStruct, IsReuseTemplate);
 
         auto ExtensionMethodsIter = ExtensionMethodsMap.find(InStruct);
         if (ExtensionMethodsIter != ExtensionMethodsMap.end())
@@ -2748,14 +2759,18 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
             // Logger->Warn(FString::Printf(TEXT("UScriptStruct: %s"), *InStruct->GetName()));
 
             Template = StructWrapper->ToFunctionTemplate(Isolate, FScriptStructWrapper::New);
+            if (!IsReuseTemplate)
+            {
 #if WITH_EDITOR
-            Template->SetClassName(
-                v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal)
-                    .ToLocalChecked());
+                Template->SetClassName(
+                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal)
+                        .ToLocalChecked());
 #elif !UE_SHIPPING
-            Template->SetClassName(
-                v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetName()), v8::NewStringType::kNormal).ToLocalChecked());
+                Template->SetClassName(
+                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetName()), v8::NewStringType::kNormal)
+                        .ToLocalChecked());
 #endif
+            }
             if (!ScriptStruct->IsNative())    //非原生的结构体，可能在实例没有的时候会释放
             {
                 SysObjectRetainer.Retain(ScriptStruct);
@@ -2765,7 +2780,10 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
             if (SuperStruct)
             {
                 bool Dummy;
-                Template->Inherit(GetTemplateOfClass(SuperStruct, Dummy));
+                if (IsReuseTemplate)
+                    __USE(GetTemplateOfClass(SuperStruct, Dummy));
+                else
+                    Template->Inherit(GetTemplateOfClass(SuperStruct, Dummy));
             }
         }
         else
@@ -2773,20 +2791,27 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
             auto Class = Cast<UClass>(InStruct);
             check(Class);
             Template = StructWrapper->ToFunctionTemplate(Isolate, FClassWrapper::New);
+            if (!IsReuseTemplate)
+            {
 #if WITH_EDITOR
-            Template->SetClassName(
-                v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal)
-                    .ToLocalChecked());
+                Template->SetClassName(
+                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetPathName()), v8::NewStringType::kNormal)
+                        .ToLocalChecked());
 #elif !UE_SHIPPING
-            Template->SetClassName(
-                v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetName()), v8::NewStringType::kNormal).ToLocalChecked());
+                Template->SetClassName(
+                    v8::String::NewFromUtf8(Isolate, TCHAR_TO_UTF8(*InStruct->GetName()), v8::NewStringType::kNormal)
+                        .ToLocalChecked());
 #endif
+            }
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)
             {
                 bool Dummy;
-                Template->Inherit(GetTemplateOfClass(SuperClass, Dummy));
+                if (IsReuseTemplate)
+                    __USE(GetTemplateOfClass(SuperClass, Dummy));
+                else
+                    Template->Inherit(GetTemplateOfClass(SuperClass, Dummy));
             }
         }
 
@@ -3991,7 +4016,8 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     else
     {
         To->ClearFunctionMapsCaches();
-        auto StructWrapper = GetStructWrapper(To);
+        bool IsReuseTemplate = false;
+        auto StructWrapper = GetStructWrapper(To, IsReuseTemplate);
         for (int i = 0; i < ReplaceMethodNames.Num(); i++)
         {
             StructWrapper->RefreshMethod(To->FindFunctionByName(ReplaceMethodNames[i]));

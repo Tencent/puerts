@@ -269,7 +269,7 @@ private:
 
     void NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-    std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct);
+    std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate);
 
     v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct* Class, bool& Existed);
 
