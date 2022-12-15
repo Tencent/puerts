@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Log.h"
 
 namespace puerts
