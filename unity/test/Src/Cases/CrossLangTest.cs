@@ -17,9 +17,9 @@ namespace Puerts.UnitTest
 
                     const testHelper = TestHelper.GetInstance(jsEnv);
 
-                    const oFunc = testHelper.functionTestStartValue
+                    const oFunc = testHelper.functionTestStartValue =  () => 3
                     testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
-                        testHelper.functionTestEndValue = () => 3;
+                        testHelper.functionTestEndValue = oFunc;
                         return testHelper.functionTestEndValue;
                     });
                 })()
@@ -166,27 +166,27 @@ namespace Puerts.UnitTest
                 })()
             ");
         }
-        // [Test]
-        // public void JSObjectInstanceTest()
-        // {
-        //     var jsEnv = UnitTestEnv.GetEnv();
-        //     jsEnv.Eval(@"
-        //         (function() {
-        //             const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
-        //             const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+        [Test]
+        public void JSObjectInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-        //             const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance(jsEnv);
 
-        //             const oJSObject = { 'puerts': 'niubi' };
-        //             const rJSObject = testHelper.JSObjectTestPipeLine(oJSObject, function(obj) {
-        //                 assertAndPrint('JSGetJSObjectArgFromCS', obj == oJSObject);
-        //                 return oJSObject
-        //             });
-        //             assertAndPrint('JSGetJSObjectReturnFromCS', rJSObject == oJSObject);
+                    const oJSObject = { 'puerts': 'niubi' };
+                    const rJSObject = testHelper.JSObjectTestPipeLine(oJSObject, function(obj) {
+                        assertAndPrint('JSGetJSObjectArgFromCS', obj == oJSObject);
+                        return oJSObject
+                    });
+                    assertAndPrint('JSGetJSObjectReturnFromCS', rJSObject == oJSObject);
 
-        //         })()
-        //     ");
-        // }
+                })()
+            ");
+        }
         // [Test]
         // public void DateTimeInstanceTest()
         // {
@@ -308,7 +308,7 @@ namespace Puerts.UnitTest
         {
             AssertAndPrint("CSGetFunctionFieldFromCS", initialValue(), functionTestStartValue());
             AssertAndPrint("CSGetFunctionArgFromJS", initialValue(), 3);
-            AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue)(), initialValue());
+            AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue), initialValue); // 这里判断一下引用
             AssertAndPrint("CSSetFunctionFieldFromJS", functionTestEndValue(), 3);
             return functionTestEndValue;
         }

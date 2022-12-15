@@ -89,6 +89,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
     PointerConstructor = v8::UniquePersistent<v8::Function>(InIsolate, LocalTemplate->GetFunction(InContext).ToLocalChecked());
     PersistentObjectEnvInfo.Isolate = InIsolate;
     PersistentObjectEnvInfo.Context.Reset(InIsolate, InContext);
+    PersistentObjectEnvInfo.SymbolCSPtr.Reset(InIsolate, v8::Symbol::New(InIsolate));
 }
 
 v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(

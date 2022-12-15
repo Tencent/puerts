@@ -161,6 +161,51 @@ static void SetNativePtr(v8::Object* obj, void* ptr, void* type_id)
     DataTransfer::SetPointer(obj, type_id, 1);
 }
 
+static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
+{
+    auto Isolate = Context->GetIsolate();
+    auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
+
+    v8::MaybeLocal<v8::Value> maybeValue = Obj->Get(Context, POEnv->SymbolCSPtr.Get(Isolate));
+    if (maybeValue.IsEmpty())
+    {
+        return nullptr;
+    }
+    v8::Local<v8::Value> maybeExternal = maybeValue.ToLocalChecked();
+    if (!maybeExternal->IsExternal())
+    {
+        return nullptr;
+    }
+
+    return v8::Local<v8::External>::Cast(maybeExternal)->Value();
+}
+static void* GetRuntimeObjectFromPersistentObject(pesapi_env env, pesapi_value pvalue)
+{
+    v8::Local<v8::Context> Context;
+    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
+    v8::Local<v8::Object> Obj;
+    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
+
+    return _GetRuntimeObjectFromPersistentObject(Context, Obj);
+}
+
+static void _SetRuntimeObjectToPersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj, void* runtimeObject)
+{
+    auto Isolate = Context->GetIsolate();
+    auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
+
+    Obj->Set(Context, POEnv->SymbolCSPtr.Get(Isolate), v8::External::New(Context->GetIsolate(), runtimeObject));
+}
+static void SetRuntimeObjectToPersistentObject(pesapi_env env, pesapi_value pvalue, void* runtimeObject)
+{
+    v8::Local<v8::Context> Context;
+    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
+    v8::Local<v8::Object> Obj;
+    memcpy(static_cast<void*>(&Obj), &pvalue, sizeof(pvalue));
+
+    _SetRuntimeObjectToPersistentObject(Context, Obj, runtimeObject);
+}
+
 static void* FunctionToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Func, const JSClassDefinition* ClassDefinition)
 {
     //auto MaybeDelegate = Func->Get(Context, 0);
@@ -170,16 +215,20 @@ static void* FunctionToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context> Con
     //{
     //    PersistentObjectInfo* delegateInfo = static_cast<PersistentObjectInfo*>((v8::Local<v8::External>::Cast(MaybeDelegate.ToLocalChecked()))->Value());
     //}
-    
-    JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(ClassDefinition->Data);
-    
-    PersistentObjectInfo* delegateInfo = nullptr;
-    void* Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
-    memset(delegateInfo, 0, sizeof(PersistentObjectInfo));
-    delegateInfo->EnvInfo = DataTransfer::GetPersistentObjectEnvInfo(Isolate);;
-    delegateInfo->JsObject.Reset(Isolate, Func);
-    delegateInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
-    //Func->Set(Context, 0, v8::External::New(Context->GetIsolate(), delegateInfo));
+    void* Ptr = _GetRuntimeObjectFromPersistentObject(Context, Func);
+    if (Ptr == nullptr)
+    {
+        JsClassInfo* classInfo = reinterpret_cast<JsClassInfo*>(ClassDefinition->Data);
+
+        PersistentObjectInfo* delegateInfo = nullptr;
+        Ptr = GUnityExports.DelegateAllocate(classInfo->Class, classInfo->DelegateBridge, &delegateInfo);
+        memset(delegateInfo, 0, sizeof(PersistentObjectInfo));
+        delegateInfo->EnvInfo = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
+        
+        delegateInfo->JsObject.Reset(Isolate, Func);
+        delegateInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
+        _SetRuntimeObjectToPersistentObject(Context, Func, Ptr);
+    }
     
     return Ptr;
 }
@@ -941,6 +990,8 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
     exports->SetPersistentObject = &puerts::SetPersistentObject;
     exports->GetPersistentObject = &puerts::GetPersistentObject;
+    exports->SetRuntimeObjectToPersistentObject = &puerts::SetRuntimeObjectToPersistentObject;
+    exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
     puerts::GUnityExports = *exports;
 }
 
@@ -981,6 +1032,16 @@ V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
     v8::Isolate::Scope IsolateScope(Isolate);
     std::lock_guard<std::mutex> guard(jsEnv->CppObjectMapper.PersistentObjectEnvInfo.Mutex);
     //puerts::PLog("ReleasePendingJsObjects size: %d",  jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size());
+    
+    v8::HandleScope HandleScope(Isolate);
+    auto csptrKey = jsEnv->CppObjectMapper.PersistentObjectEnvInfo.SymbolCSPtr.Get(Isolate);
+    for (int i = 0; i < jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size(); i++) {
+        jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects[i].Get(Isolate)->Delete(
+            Isolate->GetCurrentContext(), 
+            csptrKey
+        );
+    }
+
     jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
 

@@ -1,7 +1,8 @@
 # *.meta
 /test/dotnet/vsauto
 /test/dotnet/Src/StaticWrapper
-/test/unity/**/*.meta
+/test/unity/Assets/Resources/*.meta
+/test/unity/Assets/*.meta
 /test/unity/Assets/Gen
 /test/unity/Assets/Plugins
 /test/unity/build*
