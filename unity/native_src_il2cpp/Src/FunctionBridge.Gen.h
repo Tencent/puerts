@@ -86,9 +86,52 @@ static void b_vs_r4r4r4_(void* object, s_r4r4r4_ p1, void* method)
     }
 }
 
+static void* b_os(void* target, void* p0, void* method) {
+    // PLog("Running b_os");
+
+    auto TIret = GetReturnType(method);
+    auto TIp0 = GetParameterType(method, 0);
+
+    PersistentObjectInfo* delegateInfo = GetObjectData(target, PersistentObjectInfo);
+    if (delegateInfo->JsEnvLifeCycleTracker.expired())
+    {
+        ThrowInvalidOperationException("JsEnv had been destroy");
+        return {};
+    }
+    v8::Isolate* isolate = delegateInfo->EnvInfo->Isolate;
+    v8::Isolate::Scope isolateScope(isolate);
+    v8::HandleScope HandleScope(isolate);
+    auto context = delegateInfo->EnvInfo->Context.Get(isolate);
+    v8::Context::Scope ContextScope(context);
+
+    v8::TryCatch TryCatch(isolate);
+    auto Function = delegateInfo->JsObject.Get(isolate).As<v8::Function>();
+    v8::Local<v8::Value> Argv[1]{
+        CSAnyToJsValue(isolate, context, p0)
+    };
+    auto MaybeRet = Function->Call(context, v8::Undefined(isolate), 1, Argv);
+    
+    if (TryCatch.HasCaught())
+    {
+        auto msg = DataTransfer::ExceptionToString(isolate, TryCatch.Exception());
+        ThrowInvalidOperationException(msg.c_str());
+        return {};
+    }
+    if (MaybeRet.IsEmpty())
+    {
+        return {};
+    }
+    
+    // JSValToCSVal o/O
+    void* ret = JsValueToCSRef(context, MaybeRet.ToLocalChecked(), TIret);
+    return ret;
+        
+}
+
 static BridgeFuncInfo g_bridgeFuncInfos[] = {
     {"i4i4i4", (MethodPointer)b_i4i4i4},
     {"vs_r4r4r4_", (MethodPointer)b_vs_r4r4r4_},
+	{"os", (MethodPointer)b_os},
     {nullptr, nullptr}    
 };
 
@@ -522,6 +565,97 @@ static bool w_vO(void* method, MethodPointer methodPointer, const v8::FunctionCa
     return true;
 }
 
+static bool w_ot(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
+    // PLog("Running w_ot");
+    
+    auto TIret = typeInfos[0];
+
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+    if (checkJSArgument) {
+        if ( info.Length() != 0) return false;
+    }
+    auto self = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
+    
+
+    typedef void* (*FuncToCall)(void*,const void* method);
+    void* ret = ((FuncToCall)methodPointer)(self,  method);
+
+    
+    info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));
+    return true;
+}
+
+static bool w_sts(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
+    // PLog("Running w_sts");
+    
+    auto TIret = typeInfos[0];
+    auto TIp0 = typeInfos[1];
+
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+    if (checkJSArgument) {
+        if ( info.Length() != 1) return false;
+        if (!info[0]->IsString() && !info[0]->IsNullOrUndefined()) return false;
+    }
+    auto self = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
+    
+    // JSValToCSVal s
+    v8::String::Utf8Value tp0(isolate, info[0]);
+    void* p0 = CStringToCSharpString(*tp0);
+
+    typedef void* (*FuncToCall)(void*,void* p0, const void* method);
+    void* ret = ((FuncToCall)methodPointer)(self, p0,  method);
+
+    
+    info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));
+    return true;
+}
+
+// Void ReadFileV2(System.String, System.String ByRef)
+static bool w_vtsPs(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
+    // PLog("Running w_vtsPs");
+    
+    auto TIp0 = typeInfos[0];
+    auto TIp1 = typeInfos[1];
+
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+    if (checkJSArgument) {
+        if ( info.Length() != 2) return false;
+        if (!info[0]->IsString() && !info[0]->IsNullOrUndefined()) return false;
+        if (!info[1]->IsObject()) return false;
+    }
+    auto self = puerts::DataTransfer::GetPointerFast<void>(info.Holder());
+    
+    // JSValToCSVal s
+    v8::String::Utf8Value tp0(isolate, info[0]);
+    void* p0 = CStringToCSharpString(*tp0);
+    // JSValToCSVal Ps
+    void* up1 = nullptr; // string ref
+    void** p1 = &up1;
+    v8::Local<v8::Object> op1;
+    if (!info[1].IsEmpty() && info[1]->IsObject()) {
+        op1 = info[1]->ToObject(context).ToLocalChecked();
+        v8::String::Utf8Value tp1(isolate, op1->Get(context, 0).ToLocalChecked());
+        up1 = CStringToCSharpString(*tp1);
+    }
+        
+
+    typedef void (*FuncToCall)(void*,void* p0, void** p1, const void* method);
+    ((FuncToCall)methodPointer)(self, p0, p1,  method);
+
+    if (!op1.IsEmpty())
+    {
+        auto _unused = op1->Set(context, 0, CSAnyToJsValue(isolate, context, *p1));
+    }
+    
+    return true;
+}
+
 static WrapFuncInfo g_wrapFuncInfos[] = {
     {"i4i4i4", w_i4i4i4},
     {"vt", w_vt},
@@ -547,6 +681,9 @@ static WrapFuncInfo g_wrapFuncInfos[] = {
     {"sT", w_sT},
     {"st", w_st},
     {"vO", w_vO},
+	{"ot", w_ot},
+	{"sts", w_sts},
+	{"vtsPs", w_vtsPs},
     {nullptr, nullptr}
 };
 

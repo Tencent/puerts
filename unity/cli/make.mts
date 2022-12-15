@@ -203,7 +203,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         cp(filepath, OUTPUT_PATH)
     })
     if (cmakeAddedLibraryName == 'puerts_il2cpp') {
-        cp('-r', join(cwd, 'puerts_il2cpp'), cwd + '/../test/unity/Assets/Plugins/');
+        //cp('-r', join(cwd, 'puerts_il2cpp'), cwd + '/../test/unity/Assets/Plugins/');
     }
 
     return copyConfig;
