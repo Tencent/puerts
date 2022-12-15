@@ -37,8 +37,12 @@ namespace PuertsIl2cpp
         // Call By Gen Code
         public static void Add(Type type, Type extension)
         {
-            extensionMethodMap[type] = extension.GetMethods(BindingFlags.Static | BindingFlags.Public)
+            var extensionMethods = extension.GetMethods(BindingFlags.Static | BindingFlags.Public)
                 .Where(m => GetExtendedType(m) == type);
+            IEnumerable<MethodInfo> existed = null;
+            extensionMethodMap[type] = (extensionMethodMap.TryGetValue(type, out existed))
+                ? existed.Concat(extensionMethods)
+                : extensionMethods;
         }
 
         public static IEnumerable<MethodInfo> Get(Type type)
