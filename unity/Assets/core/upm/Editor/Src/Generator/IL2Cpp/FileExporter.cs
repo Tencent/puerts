@@ -133,7 +133,7 @@ namespace PuertsIl2cpp.Editor
                         CsName = m.ToString(),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = null,
-                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParamerterSignature(p)).ToList()
+                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
                     })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
@@ -145,7 +145,7 @@ namespace PuertsIl2cpp.Editor
                         CsName = m.ToString(),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m),
-                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParamerterSignature(p)).ToList()
+                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
                     })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())

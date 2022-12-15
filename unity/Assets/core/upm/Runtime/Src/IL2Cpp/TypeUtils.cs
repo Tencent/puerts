@@ -14,6 +14,41 @@ using System.Linq;
 
 namespace PuertsIl2cpp
 {
+	public static class ExtensionMethodInfo
+	{
+        private static Type GetExtendedType(MethodInfo method)
+        {
+            var type = method.GetParameters()[0].ParameterType;
+            if (!type.IsGenericParameter)
+                return type;
+            var parameterConstraints = type.GetGenericParameterConstraints();
+            if (parameterConstraints.Length == 0)
+                throw new InvalidOperationException();
+
+            var firstParameterConstraint = parameterConstraints[0];
+            if (!firstParameterConstraint.IsClass)
+                throw new InvalidOperationException();
+            return firstParameterConstraint;
+        }
+
+        private static volatile Dictionary<Type, IEnumerable<MethodInfo>> extensionMethodMap =
+            new Dictionary<Type, IEnumerable<MethodInfo>>(); 
+        
+        // Call By Gen Code
+        public static void Add(Type type, Type extension)
+        {
+            extensionMethodMap[type] = extension.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .Where(m => GetExtendedType(m) == type);
+        }
+
+        public static IEnumerable<MethodInfo> Get(Type type)
+        {
+            IEnumerable<MethodInfo> ret = null;
+            extensionMethodMap.TryGetValue(type, out ret);
+            return ret;
+        }
+	}
+	
     public static class TypeUtils
     {
         private static Type GetType(string className, bool isQualifiedName)
@@ -167,7 +202,7 @@ namespace PuertsIl2cpp
             throw new NotSupportedException("no support type: " + type);
         }
 
-        public static string GetParamerterSignature(ParameterInfo parameterInfo)
+        public static string GetParameterSignature(ParameterInfo parameterInfo)
         {
             return GetTypeSignature(parameterInfo.ParameterType);
         }
@@ -189,7 +224,7 @@ namespace PuertsIl2cpp
             }
             return "";
         }
-        public static string GetMethodSignature(MethodBase methodBase, bool isDelegateInvoke = false)
+        public static string GetMethodSignature(MethodBase methodBase, bool isDelegateInvoke = false, bool isExtensionMethod = false)
         {
             string signature = "";
             if (methodBase is ConstructorInfo)
@@ -198,18 +233,25 @@ namespace PuertsIl2cpp
                 var constructorInfo = methodBase as ConstructorInfo;
                 foreach (var p in constructorInfo.GetParameters())
                 {
-                    signature += GetParamerterSignature(p);
+                    signature += GetParameterSignature(p);
                 }
-
             }
             else if (methodBase is MethodInfo)
             {
                 var methodInfo = methodBase as MethodInfo;
                 signature += GetTypeSignature(methodInfo.ReturnType);
                 if (!methodInfo.IsStatic && !isDelegateInvoke) signature += methodBase.DeclaringType == typeof(object) ? "T" : "t";
-                foreach (var p in methodInfo.GetParameters())
+                var parameterInfos = methodInfo.GetParameters();
+                for (int i = 0; i < parameterInfos.Length; ++i)
                 {
-                    signature += GetParamerterSignature(p);
+                    if (i == 0 && isExtensionMethod)
+                    {
+                        signature += parameterInfos[0].ParameterType == typeof(object) ? "T" : "t";
+                    }
+                    else
+                    {
+                        signature += GetParameterSignature(parameterInfos[i]);
+                    }
                 }
 
             }
@@ -223,7 +265,7 @@ namespace PuertsIl2cpp
             return type != typeof(void) && !type.IsPrimitive;
         }
 
-        public static List<Type> GetUsedTypes(MethodBase methodBase)
+        public static List<Type> GetUsedTypes(MethodBase methodBase, bool isExtensionMethod = false)
         {
             List<Type> types = new List<Type>();
             if (methodBase is MethodInfo)
@@ -234,7 +276,7 @@ namespace PuertsIl2cpp
                     types.Add(returnType);
                 }
             }
-            types.AddRange(methodBase.GetParameters().Select(m => m.ParameterType.IsByRef ? m.ParameterType.GetElementType() : m.ParameterType).Where(TypeInfoPassToJsFilter));
+            types.AddRange(methodBase.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(m => m.ParameterType.IsByRef ? m.ParameterType.GetElementType() : m.ParameterType).Where(TypeInfoPassToJsFilter));
             return types;
         }
 
