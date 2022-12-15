@@ -26,8 +26,13 @@ namespace PuertsIl2cpp.Editor
             public static void GenerateCppWrappers()
             {
                 var start = DateTime.Now;
+#if CPP_OUTPUT_TO_NATIVE_SRC
+                var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+#else
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
-                //var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+#endif
+                
+                
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
