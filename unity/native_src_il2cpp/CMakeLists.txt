@@ -39,7 +39,7 @@ string (REPLACE ";" "$<SEMICOLON>" BACKEND_DEFINITIONS "${BACKEND_DEFINITIONS}")
 
 include_directories(
     Inc
-    puerts_il2cpp
+    ../Assets/core/upm/Plugins/puerts_il2cpp
     ${BACKEND_INC_NAMES}
 )
 
