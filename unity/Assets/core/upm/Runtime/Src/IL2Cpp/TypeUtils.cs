@@ -193,6 +193,10 @@ namespace PuertsIl2cpp
             {
                 return "P" + GetTypeSignature(type.GetElementType());
             }
+            else if (type.IsEnum)
+            {
+                return GetTypeSignature(Enum.GetUnderlyingType(type));
+            }
             //TODO: ArrayBuffer...
             else if (!type.IsValueType)
             {
