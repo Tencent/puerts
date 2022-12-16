@@ -270,7 +270,7 @@ namespace PuertsIl2cpp
 
         public static bool TypeInfoPassToJsFilter(Type type)
         {
-            return type != typeof(void) && !type.IsPrimitive;
+            return type != typeof(void) && !type.IsPrimitive && !type.IsEnum;
         }
 
         public static List<Type> GetUsedTypes(MethodBase methodBase, bool isExtensionMethod = false)

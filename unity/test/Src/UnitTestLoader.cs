@@ -25,20 +25,29 @@ namespace Puerts.UnitTest
 #if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
         public override string Resolve(string specifier)
         {
-            if (mockFileContent.ContainsKey(specifier)) 
+            string path = UnityEngine.Application.streamingAssetsPath + "/" + specifier;
+            if (System.IO.File.Exists(path)) {
+                return path;
+            }
+            else if (mockFileContent.ContainsKey(specifier)) 
             {
                 return "mock/" + specifier;
             } 
             else if (UnityEngine.Resources.Load(FixSpecifier(specifier)) != null) 
             {
-                return "resouces/" + FixSpecifier(specifier);
+                return "resources/" + FixSpecifier(specifier);
             }
             return null;
         }
 #else
         public bool FileExists(string specifier)
         {
-            if (mockFileContent.ContainsKey(specifier)) 
+            string path = UnityEngine.Application.streamingAssetsPath + "/" + specifier;
+            if (System.IO.File.Exists(path))
+            {
+                return true;
+            }
+            else if (mockFileContent.ContainsKey(specifier)) 
             {
                 return true;
             } 
@@ -54,12 +63,15 @@ namespace Puerts.UnitTest
         public override void ReadFile(string specifier, out string content)
         {
             if (specifier != null) {    
-                if (specifier.StartsWith("mock/")) {
+                if (specifier.StartsWith(UnityEngine.Application.streamingAssetsPath)) {
+                    content = System.IO.File.ReadAllText(specifier);
+                    return;
+                } else if (specifier.StartsWith("mock/")) {
                     content = mockFileContent[specifier.Substring(5)];
                     return;
 
                 } else if (specifier.StartsWith("resources/")) {
-                    content = UnityEngine.Resources.Load<UnityEngine.TextAsset>(specifier.Substring(9)).text;
+                    content = UnityEngine.Resources.Load<UnityEngine.TextAsset>(specifier.Substring(10)).text;
                     return;
                 }
             } 
@@ -70,11 +82,12 @@ namespace Puerts.UnitTest
         {
             debugpath = "";
             if (specifier != null) {
-                if (mockFileContent.ContainsKey(specifier)) {
+                if (specifier.StartsWith(UnityEngine.Application.streamingAssetsPath) || File.Exists(UnityEngine.Application.streamingAssetsPath + "/" + specifier)) {
+                    return System.IO.File.ReadAllText(UnityEngine.Application.streamingAssetsPath + "/" + specifier);
+                } else if (mockFileContent.ContainsKey(specifier)) {
                     return mockFileContent[specifier];
-
                 } else if (UnityEngine.Resources.Load(FixSpecifier(specifier)) != null) {
-                    return UnityEngine.Resources.Load<UnityEngine.TextAsset>(specifier).text;
+                    return UnityEngine.Resources.Load<UnityEngine.TextAsset>(FixSpecifier(specifier)).text;
                 }
             }
             return "";
