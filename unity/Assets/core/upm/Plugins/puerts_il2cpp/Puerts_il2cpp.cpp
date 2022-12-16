@@ -603,10 +603,15 @@ handle_underlying:
                         t = IL2CPP_TYPE_STRING;
                         klass = il2cpp_defaults.string_class;
                     }
-                    else if (pesapi_is_double(env, jsval))
+                    else if (pesapi_is_int32(env, jsval))
                     {
-                        t = IL2CPP_TYPE_R8;
-                        klass = il2cpp_defaults.double_class;
+                        t = IL2CPP_TYPE_I4;
+                        klass = il2cpp_defaults.int32_class;
+                    }
+                    else if (pesapi_is_uint32(env, jsval))
+                    {
+                        t = IL2CPP_TYPE_U4;
+                        klass = il2cpp_defaults.uint32_class;
                     }
                     else if (pesapi_is_int64(env, jsval))
                     {
@@ -618,15 +623,10 @@ handle_underlying:
                         t = IL2CPP_TYPE_U8;
                         klass = il2cpp_defaults.uint64_class;
                     }
-                    else if (pesapi_is_int32(env, jsval))
+                    else if (pesapi_is_double(env, jsval))
                     {
-                        t = IL2CPP_TYPE_I4;
-                        klass = il2cpp_defaults.int32_class;
-                    }
-                    else if (pesapi_is_uint32(env, jsval))
-                    {
-                        t = IL2CPP_TYPE_U4;
-                        klass = il2cpp_defaults.uint32_class;
+                        t = IL2CPP_TYPE_R8;
+                        klass = il2cpp_defaults.double_class;
                     }
                     else if (pesapi_is_boolean(env, jsval))
                     {
