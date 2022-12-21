@@ -166,6 +166,9 @@ static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Contex
     auto Isolate = Context->GetIsolate();
     auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
 
+    puerts::FCppObjectMapper* mapper = reinterpret_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
+    mapper->ClearPendingPersistentObject(Isolate);
+
     v8::MaybeLocal<v8::Value> maybeValue = Obj->Get(Context, POEnv->SymbolCSPtr.Get(Isolate));
     if (maybeValue.IsEmpty())
     {
@@ -1029,20 +1032,7 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
 V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
 {
     v8::Isolate* Isolate = jsEnv->MainIsolate;
-    v8::Isolate::Scope IsolateScope(Isolate);
-    std::lock_guard<std::mutex> guard(jsEnv->CppObjectMapper.PersistentObjectEnvInfo.Mutex);
-    //puerts::PLog("ReleasePendingJsObjects size: %d",  jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size());
-    
-    v8::HandleScope HandleScope(Isolate);
-    auto csptrKey = jsEnv->CppObjectMapper.PersistentObjectEnvInfo.SymbolCSPtr.Get(Isolate);
-    for (int i = 0; i < jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size(); i++) {
-        jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects[i].Get(Isolate)->Delete(
-            Isolate->GetCurrentContext(), 
-            csptrKey
-        );
-    }
-
-    jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.clear();
+    jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate);
 }
 
 #ifdef __cplusplus
