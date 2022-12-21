@@ -42,7 +42,7 @@ PuerTS 现已上传 OpenUPM: https://openupm.com/packages/com.tencent.puerts.cor
 
 <details>
 <summary>使用puerts命令行创建  | 全版本可用</summary>
-目前由@sbfkcel支持，参见
+目前由@sbfkcel支持，参见 https://github.com/sbfkcel/puerts_cli
 </details>
 
 -----------------------------------------------------
