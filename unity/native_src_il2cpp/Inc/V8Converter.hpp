@@ -218,6 +218,14 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+        if (value->IsBigInt())
+        {
+            return value.As<v8::BigInt>()->Int64Value();
+        }
+        else if (value->IsNumber())
+        {
+            return static_cast<T>(value->IntegerValue(context).ToChecked());
+        }
         return static_cast<T>(value->ToBigInt(context).ToLocalChecked()->Int64Value());
     }
 
@@ -237,6 +245,14 @@ struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+        if (value->IsBigInt())
+        {
+            return value.As<v8::BigInt>()->Uint64Value();
+        }
+        else if (value->IsNumber())
+        {
+            return static_cast<T>(value->IntegerValue(context).ToChecked());
+        }
         return static_cast<T>(value->ToBigInt(context).ToLocalChecked()->Uint64Value());
     }
 

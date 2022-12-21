@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using Puerts.Editor.Generator;
 
 namespace PuertsIl2cpp.Editor
 {
@@ -140,12 +142,15 @@ namespace PuertsIl2cpp.Editor
                     .ToList();
 
                 var wrapperInfos = methodToWrap
-                    .Select(m  => new SignatureInfo {
-                        Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m),
-                        CsName = m.ToString(),
-                        ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
-                        ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m),
-                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
+                    .Select(m  => { 
+                        var isExtensionMethod = m.IsDefined(typeof(ExtensionAttribute));
+                        return new SignatureInfo {
+                            Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
+                            CsName = m.ToString(),
+                            ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
+                            ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m, isExtensionMethod),
+                            ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
+                        };
                     })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
@@ -182,6 +187,41 @@ namespace PuertsIl2cpp.Editor
                 }
             }
 
+            public static void GenExtensionMethodInfos(string outDir)
+            {
+                var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
+                        "Puerts.BindingAttribute",
+                    });
+                    
+                var genTypes = new HashSet<Type>(configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                    .Where(o => o is Type)
+                    .Cast<Type>()
+                    .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
+                    .Distinct()
+                    .ToList());
+
+                genTypes.Add(typeof(PuertsIl2cpp.ArrayExtension));
+                var extendedType2extensionType = (from type in genTypes
+#if UNITY_EDITOR
+                    where !type.Assembly.Location.Contains("Editor")
+#endif
+                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                    where Utils.isDefined(method, typeof(ExtensionAttribute)) && Puerts.Utils.IsNotGenericOrValidGeneric(method)
+                    group type by Utils.getExtendedType(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
+
+                using (var jsEnv = new Puerts.JsEnv())
+                {
+                    var wrapRender = jsEnv.ExecuteModule<Func<List<KeyValuePair<Type, List<Type>>>, string>>(
+                        "puerts/templates/extension_methods_gen.tpl.mjs", "default");
+                    string fileContent = wrapRender(extendedType2extensionType);
+                    var filePath = outDir + "ExtensionMethodInfos_Gen.cs";
+                    using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
+                    {
+                        textWriter.Write(fileContent);
+                        textWriter.Flush();
+                    }
+                }
+            }
             public static void GenLinkXml(string outDir)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {

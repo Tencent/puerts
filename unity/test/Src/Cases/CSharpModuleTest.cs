@@ -32,8 +32,9 @@ namespace Puerts.UnitTest
 
     [UnityEngine.Scripting.Preserve]
     public class GenericMethodTest {
+        public int Boo<A>(short x) {return 4;}
         public int Foo<A>() {return 1;}
-        // public void Foo<A>(ref int x) { x = 2; } // ref not supported now
+        public void Foo<A>(ref int x) { x += 2; }
         public int Foo<A, B>() {return 3;}
         public void Foo<A, B>(int x) { }
         public C Foo<A, B, C>(out int x) { x = 5; return default; }
@@ -53,11 +54,19 @@ namespace Puerts.UnitTest
             [UnityEngine.Scripting.Preserve]
             public const int i = 3;
         }
+
         [Test]
         public void AccessInnerClass()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.ExecuteModule("CSharpModuleTest/access_innerclass_test.mjs");
+        }
+
+        [Test]
+        public void ArrayExtension()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.ExecuteModule("CSharpModuleTest/array_extension_test.mjs");
         }
 
 //         [Test]
@@ -91,6 +100,9 @@ namespace Puerts.UnitTest
             // preserve generic implementations
             var x = new GenericMethodTest();
             x.Foo<int>();
+            x.Boo<int>(0);
+            int z = 1;
+            x.Foo<int>(ref z);
             x.Foo<int, string>();
             x.Foo<int, string>(1);
             x.Foo<int, string, int>(out var y);
