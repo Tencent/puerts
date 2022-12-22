@@ -13,6 +13,9 @@
 | @jungog | https://github.com/jungog/UnityTs | Framework | |
 
 * 例子项目
+
+| Author | repo | type | star |
+| --- | --- | --- | --- |
 | @zombieyang | https://github.com/zombieyang/puerts_unity_webgl_demo | Samples | 60+ |
 | @throw-out | https://github.com/throw-out/PerformanceTesting | Samples | |
 | @DOSexample | https://github.com/DOSexample/puerts_unity_demo | Samples | |
