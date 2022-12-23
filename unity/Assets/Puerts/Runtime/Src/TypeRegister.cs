@@ -620,6 +620,11 @@ namespace Puerts
             int typeId = -1;
             if (registerInfo == null)
             {
+#if PUERTS_DISABLE_SLOWBINDING
+                if (!typeof(Puerts.ILoader).IsAssignableFrom(type)) {
+                    return -1;
+                }
+#endif
                 // registerInfo is null, then all the member use the SlowBinding
 
                 // constructors
