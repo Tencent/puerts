@@ -5,8 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,7 +42,7 @@ namespace Puerts
             }
         }
 
-
+        [UnityEngine.Scripting.Preserve]
         public ArrayBuffer(IntPtr ptr, int length)
         {
             if (ptr != IntPtr.Zero)
@@ -57,5 +55,3 @@ namespace Puerts
     }
 
 }
-
-#endif

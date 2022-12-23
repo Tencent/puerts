@@ -302,7 +302,7 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetPersistentObjectInfoType(Type type)
+        public static void StoreGlobalSpecialType(int specialSlot, Type type)
         {
             throw new NotImplementedException();
         }
