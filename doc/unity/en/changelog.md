@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.1] - 2022-12-23
+1. fix：when passing a JS number to C# `object`. the number will be cut to a Int.
+2. feature: add `PUERTS_DISABLE_SLOWBINDING`. It will be useful in somewhere need to do access control.
+
 ## [1.4.0] - 2022-11-24
 1. fix: requiring failed when searching directory named with `.`
 

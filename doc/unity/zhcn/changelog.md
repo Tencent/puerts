@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.1] - 2022-12-23
+1. 修复：将JS数字传递给C# object时，浮点数精度丢失的问题。
+2. 功能：添加PUERTS_DISABLE_SLOWBINDING，适用于需要做权限控制的地方。
+
 ## [1.4.0] - 2022-11-24
 1. 修复：commonjs 查找带.目录时的问题
 
