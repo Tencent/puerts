@@ -653,6 +653,11 @@ namespace Puerts
 
                 typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
 
+#if PUERTS_DISABLE_SLOWBINDING
+                if (!typeof(Puerts.ILoader).IsAssignableFrom(type)) {
+                    return typeId;
+                }
+#endif
                 // methods and properties
                 MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
 
