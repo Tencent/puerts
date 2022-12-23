@@ -620,11 +620,6 @@ namespace Puerts
             int typeId = -1;
             if (registerInfo == null)
             {
-#if PUERTS_DISABLE_SLOWBINDING
-                if (!typeof(Puerts.ILoader).IsAssignableFrom(type)) {
-                    return -1;
-                }
-#endif
                 // registerInfo is null, then all the member use the SlowBinding
 
                 // constructors
@@ -658,6 +653,11 @@ namespace Puerts
 
                 typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
 
+#if PUERTS_DISABLE_SLOWBINDING
+                if (!typeof(Puerts.ILoader).IsAssignableFrom(type)) {
+                    return typeId;
+                }
+#endif
                 // methods and properties
                 MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
 
