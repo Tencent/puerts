@@ -158,21 +158,21 @@ namespace PuertsIl2cpp
                         }
                     }
 
-                    Action<string, MethodInfo, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter) =>
+                    Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter, bool isExtensionMethod) =>
                     {
-                        List<Type> usedTypes = TypeUtils.GetUsedTypes(method);
+                        List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
                         //UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
-                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method), name, method.IsStatic, isGeter, isSetter, GetMethodInfoPointer(method), GetMethodPointer(method), usedTypes.Count);
+                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isGeter, isSetter, GetMethodInfoPointer(method), GetMethodPointer(method), usedTypes.Count);
                         if (wrapData == IntPtr.Zero)
                         {
                             if (throwIfMemberFail)
                             {
-                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method)));
+                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
                             }
                             else
                             {
 #if WARNING_IF_MEMBERFAIL
-                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method)));
+                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
 #endif
                                 return;
                             }
@@ -189,7 +189,16 @@ namespace PuertsIl2cpp
                     {
                         foreach (var method in methods)
                         {
-                            AddMethodToType(method.Name, method as MethodInfo, false, false);
+                            AddMethodToType(method.Name, method as MethodInfo, false, false, false);
+                        }
+                    }
+					
+					var extensionMethods = ExtensionMethodInfo.Get(type);
+					if (extensionMethods != null)
+                    {
+                        foreach (var method in extensionMethods)
+                        {
+                            AddMethodToType(method.Name, method as MethodInfo, false, false, true);
                         }
                     }
 
@@ -200,12 +209,12 @@ namespace PuertsIl2cpp
                             var getter = prop.GetGetMethod();
                             if (getter != null)
                             {
-                                AddMethodToType(prop.Name, getter, true, false);
+                                AddMethodToType(prop.Name, getter, true, false, false);
                             }
                             var setter = prop.GetSetMethod();
                             if (setter != null)
                             {
-                                AddMethodToType(prop.Name, setter, false, true);
+                                AddMethodToType(prop.Name, setter, false, true, false);
                             }
                         }
                     }
@@ -293,7 +302,7 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetPersistentObjectInfoType(Type type)
+        public static void StoreGlobalSpecialType(int specialSlot, Type type)
         {
             throw new NotImplementedException();
         }

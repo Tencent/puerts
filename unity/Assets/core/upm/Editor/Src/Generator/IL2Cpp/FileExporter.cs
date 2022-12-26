@@ -120,7 +120,7 @@ namespace PuertsIl2cpp.Editor
                     .Concat(delegateInvokes.Select(m => m.ReturnType));
 
                 var valueTypeInfos = wrapperUsedTypes.Concat(delegateUsedTypes)
-                    .Where(t => t.IsValueType && !t.IsPrimitive)
+                    .Where(t => t.IsValueType && !t.IsPrimitive && !t.IsEnum)
                     .Select(t => new ValueTypeInfo { Signature = PuertsIl2cpp.TypeUtils.GetTypeSignature(t), CsName = t.Name, FieldSignatures = GetValueTypeFieldSignatures(t) })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
@@ -133,7 +133,7 @@ namespace PuertsIl2cpp.Editor
                         CsName = m.ToString(),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = null,
-                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParamerterSignature(p)).ToList()
+                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
                     })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
@@ -145,7 +145,7 @@ namespace PuertsIl2cpp.Editor
                         CsName = m.ToString(),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m),
-                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParamerterSignature(p)).ToList()
+                        ParameterSignatures = m.GetParameters().Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
                     })
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
