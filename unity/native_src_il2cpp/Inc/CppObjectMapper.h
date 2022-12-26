@@ -28,6 +28,7 @@ struct FPersistentObjectEnvInfo
     v8::Isolate* Isolate;
     v8::Global<v8::Context> Context;
     std::vector<v8::Global<v8::Object>> PendingReleaseObjects;
+    v8::Global<v8::Symbol> SymbolCSPtr;
     std::mutex Mutex;
 };
 
@@ -74,6 +75,8 @@ public:
     void* ObjectPoolInstance = nullptr;
 
     FPersistentObjectEnvInfo PersistentObjectEnvInfo;
+
+    void ClearPendingPersistentObject(v8::Isolate* Isolate);
 
 private:
     std::unordered_map<void*, FObjectCacheNode> CDataCache;

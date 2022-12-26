@@ -618,14 +618,19 @@ handle_underlying:
                 {
                     Il2CppClass* delegateInfoClass = g_typeofPersistentObjectInfo;
                     
-                    RuntimeObject* ret = il2cpp::vm::Object::New(delegateInfoClass);
+                    RuntimeObject* ret = (RuntimeObject*)g_unityExports.GetRuntimeObjectFromPersistentObject(env, jsval);
+                    if (ret == nullptr) 
+                    {
+                        ret = il2cpp::vm::Object::New(delegateInfoClass);
 
-                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(delegateInfoClass, ".ctor", 0);
-                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const Il2CppReflectionMethod* method);
-                    ((NativeCtorPtr)ctor->methodPointer)(ret, Reflection::GetMethodObject(ctor, delegateInfoClass));
-                    
-                    PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(ret + 1);
-                    g_unityExports.SetPersistentObject(env, jsval, objectInfo);
+                        const MethodInfo* ctor = il2cpp_class_get_method_from_name(delegateInfoClass, ".ctor", 0);
+                        typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const Il2CppReflectionMethod* method);
+                        ((NativeCtorPtr)ctor->methodPointer)(ret, Reflection::GetMethodObject(ctor, delegateInfoClass));
+                        
+                        PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(ret + 1);
+                        g_unityExports.SetPersistentObject(env, jsval, objectInfo);
+                        g_unityExports.SetRuntimeObjectToPersistentObject(env, jsval, ret);
+                    }
                     return ret;
                 }
                 if (klass == il2cpp_defaults.object_class)

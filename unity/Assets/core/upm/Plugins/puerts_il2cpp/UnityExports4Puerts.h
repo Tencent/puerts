@@ -95,6 +95,10 @@ typedef void* (*FunctionToDelegateFunc)(pesapi_env env, pesapi_value pvalue, con
 
 typedef void (*ThrowInvalidOperationExceptionFunc)(const char* msg);
 
+typedef void* (*GetRuntimeObjectFromPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue);
+
+typedef void (*SetRuntimeObjectToPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, void* runtimeObject);
+
 struct WrapData 
 {
     WrapFuncPtr Wrap;
@@ -145,8 +149,12 @@ struct UnityExports
     SetNativePtrFunc SetNativePtr = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
     FunctionToDelegateFunc FunctionToDelegate = nullptr;
+    
     SetPersistentObjectFunc SetPersistentObject = nullptr;
     GetPersistentObjectFunc GetPersistentObject = nullptr;
+
+    GetRuntimeObjectFromPersistentObjectFunc GetRuntimeObjectFromPersistentObject = nullptr;
+    SetRuntimeObjectToPersistentObjectFunc SetRuntimeObjectToPersistentObject = nullptr;
 };
 
 }

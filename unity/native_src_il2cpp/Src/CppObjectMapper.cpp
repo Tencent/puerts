@@ -89,6 +89,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
     PointerConstructor = v8::UniquePersistent<v8::Function>(InIsolate, LocalTemplate->GetFunction(InContext).ToLocalChecked());
     PersistentObjectEnvInfo.Isolate = InIsolate;
     PersistentObjectEnvInfo.Context.Reset(InIsolate, InContext);
+    PersistentObjectEnvInfo.SymbolCSPtr.Reset(InIsolate, v8::Symbol::New(InIsolate));
 }
 
 v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
@@ -146,6 +147,7 @@ bool FCppObjectMapper::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::O
     return DataTransfer::GetPointerFast<const void>(JsObject, 1) == TypeId;
 }
 
+
 std::weak_ptr<int> FCppObjectMapper::GetJsEnvLifeCycleTracker()
 {
     return std::weak_ptr<int>(Ref);
@@ -184,6 +186,28 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         ThrowException(Isolate, "only call as Construct is supported!");
     }
+}
+
+void FCppObjectMapper::ClearPendingPersistentObject(v8::Isolate* Isolate) 
+{
+    v8::Isolate::Scope IsolateScope(Isolate);
+    std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
+    //puerts::PLog("ReleasePendingJsObjects size: %d",  jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size());
+    auto size = PersistentObjectEnvInfo.PendingReleaseObjects.size();
+    if (size == 0) {
+        return;
+    }
+
+    v8::HandleScope HandleScope(Isolate);
+    auto csptrKey = PersistentObjectEnvInfo.SymbolCSPtr.Get(Isolate);
+    for (int i = 0; i < size; i++) {
+        PersistentObjectEnvInfo.PendingReleaseObjects[i].Get(Isolate)->Delete(
+            Isolate->GetCurrentContext(), 
+            csptrKey
+        );
+    }
+
+    PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
 
 v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate* Isolate, const void* TypeId)
