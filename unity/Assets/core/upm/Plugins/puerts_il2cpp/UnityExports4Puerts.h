@@ -145,7 +145,6 @@ struct UnityExports
     SetNativePtrFunc SetNativePtr = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
     FunctionToDelegateFunc FunctionToDelegate = nullptr;
-    
     SetPersistentObjectFunc SetPersistentObject = nullptr;
     GetPersistentObjectFunc GetPersistentObject = nullptr;
 };

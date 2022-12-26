@@ -209,28 +209,27 @@ namespace Puerts.UnitTest
         //         })()
         //     ");
         // }
-        // [Test]
-        // public void ArrayBufferInstanceTest()
-        // {
-        //     var jsEnv = UnitTestEnv.GetEnv();
-        //     jsEnv.Eval(@"
-        //         (function() {
-        //             const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
-        //             const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+        [Test]
+        public void ArrayBufferInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+                    const testHelper = TestHelper.GetInstance(jsEnv);
 
-        //             const testHelper = TestHelper.GetInstance(jsEnv);
-
-        //             const outRef = [];
-        //             const oAB = new Uint8Array([1]).buffer;
-        //             const rAB = testHelper.ArrayBufferTestPipeLine(oAB, outRef, function(bi) {
-        //                 assertAndPrint('JSGetArrayBufferArgFromCS', new Uint8Array(bi), 2);
-        //                 return new Uint8Array([3]).buffer
-        //             });
-        //             assertAndPrint('JSGetArrayBufferOutArgFromCS', new Uint8Array(outRef[0]), 4);
-        //             assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB), 5);
-        //         })()
-        //     ");
-        // }
+                    const outRef = [];
+                    const oAB = new Uint8Array([1]).buffer;
+                    const rAB = testHelper.ArrayBufferTestPipeLine(oAB, outRef, function(bi) {
+                        assertAndPrint('JSGetArrayBufferArgFromCS', new Uint8Array(bi)[0], 2);
+                        return new Uint8Array([3]).buffer
+                    });
+                    assertAndPrint('JSGetArrayBufferOutArgFromCS', new Uint8Array(outRef[0])[0], 4);
+                    assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
+                })()
+            ");
+        }
     }
 
     public class TestObject
@@ -384,16 +383,16 @@ namespace Puerts.UnitTest
         public long bigIntTestEndValue = 0;
         /**
         */
-        // public Puerts.ArrayBuffer ArrayBufferTestPipeLine(Puerts.ArrayBuffer initialValue, out Puerts.ArrayBuffer outArg, Func<Puerts.ArrayBuffer, Puerts.ArrayBuffer> JSValueHandler) 
-        // {
-        //     AssertAndPrint("CSGetArrayBufferArgFromJS", initialValue.Bytes.Length == 1 && initialValue.Bytes[0] == 1);
-        //     initialValue.Bytes[0] = 2;
-        //     AssertAndPrint("CSGetArrayBufferReturnFromJS", JSValueHandler(initialValue).Bytes[0] == 3);
-        //     initialValue.Bytes[0] = 4;
-        //     outArg = initialValue;
-        //     byte[] bytes = new byte[1] { 5 };
-        //     return new Puerts.ArrayBuffer(bytes);
-        // }
+        public Puerts.ArrayBuffer ArrayBufferTestPipeLine(Puerts.ArrayBuffer initialValue, out Puerts.ArrayBuffer outArg, Func<Puerts.ArrayBuffer, Puerts.ArrayBuffer> JSValueHandler) 
+        {
+            AssertAndPrint("CSGetArrayBufferArgFromJS", initialValue.Bytes.Length == 1 && initialValue.Bytes[0] == 1);
+            initialValue.Bytes[0] = 2;
+            AssertAndPrint("CSGetArrayBufferReturnFromJS", JSValueHandler(initialValue).Bytes[0] == 3);
+            initialValue.Bytes[0] = 4;
+            outArg = initialValue;
+            byte[] bytes = new byte[1] { 5 };
+            return new Puerts.ArrayBuffer(bytes);
+        }
         /**
         * 判断引用即可
         */

@@ -52,7 +52,8 @@ namespace Puerts
             PuertsIl2cpp.NativeAPI.SetTryLoadCallback(PuertsIl2cpp.NativeAPI.GetMethodInfoPointer(tryLoadTypeMethodInfo), PuertsIl2cpp.NativeAPI.GetMethodPointer(tryLoadTypeMethodInfo));
 
             persistentObjectInfoType = typeof(Puerts.JSObject);
-            PuertsIl2cpp.NativeAPI.SetPersistentObjectInfoType(persistentObjectInfoType);
+            PuertsIl2cpp.NativeAPI.StoreGlobalSpecialType(0, persistentObjectInfoType);
+            PuertsIl2cpp.NativeAPI.StoreGlobalSpecialType(1, typeof(ArrayBuffer));
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
             nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPesapiEnvHolder(nativeJsEnv);

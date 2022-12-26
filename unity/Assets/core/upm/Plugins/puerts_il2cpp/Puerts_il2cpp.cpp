@@ -89,6 +89,7 @@ static void ValueTypeFree(void* ptr)
 }
 
 static Il2CppClass *g_typeofPersistentObjectInfo;
+static Il2CppClass *g_typeofArrayBuffer;
 
 const Il2CppClass* GetReturnType(const MethodInfo* method) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
@@ -159,13 +160,14 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     return delegate;
 }
 
-void SetPersistentObjectInfoType(Il2CppReflectionType *__type)
+void StoreGlobalSpecialType(int32_t SpecialTypeEnum, Il2CppReflectionType *__type)
 {
     if (!__type)
     {
         Exception::Raise(Exception::GetInvalidOperationException("type of PersistentObjectInfo is null"));
     }
-    g_typeofPersistentObjectInfo =  il2cpp_codegen_class_from_type(__type->type);
+    if (SpecialTypeEnum == 0) g_typeofPersistentObjectInfo =  il2cpp_codegen_class_from_type(__type->type);
+    else if (SpecialTypeEnum == 1) g_typeofArrayBuffer =  il2cpp_codegen_class_from_type(__type->type);
 }
 
 static void MethodCallback(pesapi_callback_info info) {
@@ -337,6 +339,8 @@ int GetTID(Il2CppObject* obj)
     return -1;
 }
 
+static FieldInfo* ArrayBufferCountField = nullptr;
+static FieldInfo* ArrayBufferBytesField = nullptr;
 pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
 {
     if (obj)
@@ -345,6 +349,21 @@ pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
         {
             PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(obj + 1);
             return g_unityExports.GetPersistentObject(env, objectInfo);
+        }
+        if (obj->klass == g_typeofArrayBuffer)
+        {
+            if (ArrayBufferBytesField == nullptr || ArrayBufferCountField == nullptr) {
+                ArrayBufferCountField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Count");
+                ArrayBufferBytesField = il2cpp_class_get_field_from_name(g_typeofArrayBuffer, "Bytes");
+            }
+
+            int32_t length = 0;
+            il2cpp_field_get_value(obj, ArrayBufferCountField, &length);
+
+            Il2CppArray* buffer;
+            il2cpp_field_get_value(obj, ArrayBufferBytesField, &buffer);
+
+            return pesapi_create_binary(env, Array::GetFirstElementAddress(buffer), (size_t) length);
         }
     }
     return nullptr;
@@ -582,6 +601,19 @@ handle_underlying:
             auto ptr = pesapi_get_native_object_ptr(env, jsval);
             if (!ptr)
             {
+                if ((klass == g_typeofArrayBuffer || klass == il2cpp_defaults.object_class) && pesapi_is_binary(env, jsval)) 
+                {
+                    RuntimeObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
+
+                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(g_typeofArrayBuffer, ".ctor", 2);
+                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, void*, int, const Il2CppReflectionMethod* method);
+                    
+                    void* data;
+                    size_t length;
+                    data = pesapi_get_value_binary(env, jsval, &length);
+                    ((NativeCtorPtr)ctor->methodPointer)(ret, data, length, Reflection::GetMethodObject(ctor, g_typeofArrayBuffer));   
+                    return ret;
+                }
                 if ((klass == g_typeofPersistentObjectInfo || klass == il2cpp_defaults.object_class) && pesapi_is_object(env, jsval))
                 {
                     Il2CppClass* delegateInfoClass = g_typeofPersistentObjectInfo;
@@ -784,7 +816,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetTypeId(System.Type)", (Il2CppMethodPointer)puerts::GetTypeId);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetFieldOffset(System.Reflection.FieldInfo,System.Boolean)", (Il2CppMethodPointer)puerts::GetFieldOffset);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetFieldInfoPointer(System.Reflection.FieldInfo)", (Il2CppMethodPointer)puerts::GetFieldInfoPointer);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetPersistentObjectInfoType(System.Type)", (Il2CppMethodPointer)puerts::SetPersistentObjectInfoType);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::StoreGlobalSpecialType(System.Int32,System.Type)", (Il2CppMethodPointer)puerts::StoreGlobalSpecialType);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
