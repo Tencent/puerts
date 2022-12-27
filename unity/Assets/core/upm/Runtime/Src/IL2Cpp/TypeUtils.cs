@@ -11,6 +11,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace PuertsIl2cpp
 {
@@ -23,11 +24,10 @@ namespace PuertsIl2cpp
                 return type;
             var parameterConstraints = type.GetGenericParameterConstraints();
             if (parameterConstraints.Length == 0)
-                throw new InvalidOperationException();
-
+                return null; // not supported
             var firstParameterConstraint = parameterConstraints[0];
             if (!firstParameterConstraint.IsClass)
-                throw new InvalidOperationException();
+                return null; // not supported
             return firstParameterConstraint;
         }
 
@@ -50,6 +50,41 @@ namespace PuertsIl2cpp
             IEnumerable<MethodInfo> ret = null;
             extensionMethodMap.TryGetValue(type, out ret);
             return ret;
+        }
+
+        public static void LoadExtensionMethod() {
+            if (LoadOfflineExtensionMethod())
+                return;
+
+            var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                from type in assembly.GetTypes()
+                where type.IsPublic
+                select type;
+
+            var extendedType2extensionType = (from type in types
+#if UNITY_EDITOR
+                where !type.Assembly.Location.Contains("Editor")
+#endif
+                from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                where method.IsDefined(typeof(ExtensionAttribute)) && GetExtendedType(method) != null
+                group type by GetExtendedType(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
+            foreach (var pair in extendedType2extensionType)
+            {
+                foreach(var extension in pair.Value)
+                {
+                    Add(pair.Key, extension);
+                }
+            }
+        }
+
+        private static bool LoadOfflineExtensionMethod() {
+            var ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen")).FirstOrDefault(x => x != null);
+            if (ExtensionMethodInfos_Gen == null) return false;
+            var TryLoadExtensionMethod = ExtensionMethodInfos_Gen.GetMethod("TryLoadExtensionMethod");
+            if (TryLoadExtensionMethod == null) return false;
+            TryLoadExtensionMethod.Invoke(null, null);
+            return true;
         }
 	}
 	
@@ -215,7 +250,7 @@ namespace PuertsIl2cpp
             return GetTypeSignature(parameterInfo.ParameterType);
         }
 
-        public static string GetThisSignature(MethodBase methodBase)
+        public static string GetThisSignature(MethodBase methodBase, bool isExtensionMethod = false)
         {
             if (methodBase is ConstructorInfo)
             {
@@ -225,7 +260,7 @@ namespace PuertsIl2cpp
             {
                 bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(methodBase.DeclaringType);
                 var methodInfo = methodBase as MethodInfo;
-                if (!isDelegate && !methodInfo.IsStatic)
+                if ((!isDelegate && !methodInfo.IsStatic) || isExtensionMethod)
                 {
                     return methodBase.DeclaringType == typeof(object) ? "T" : "t";
                 }

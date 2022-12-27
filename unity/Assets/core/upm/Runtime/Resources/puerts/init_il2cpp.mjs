@@ -11,8 +11,6 @@ global.global = global;
 
 let puer = global.puer = global.puerts = global.puer || global.puerts || {};
 
-const EXPERIMENTAL_IL2CPP_PUERTS = true;
-
 puer.loadType = function(nameOrCSType) {
     let csType = nameOrCSType
     if (typeof nameOrCSType == "string") {
@@ -39,12 +37,9 @@ puer.getNestedTypes = function(nameOrCSType) {
     }
 }
 
-
-let System_Array = puer.loadType("System.Array")
-let System_Array_CreateInstance = System_Array.CreateInstance
 function jsArrToCsArr(jsarr, type) {
     type = type || puer.$typeof(CS.System.Object)
-    let arr = System_Array_CreateInstance(type, jsarr.length)
+    let arr = CS.System.Array.CreateInstance(type, jsarr.length)
     for (let i = 0; i < arr.Length; i++) {
         arr.SetValue(jsarr[i], i)
     }
@@ -54,58 +49,85 @@ function jsArrToCsArr(jsarr, type) {
 let MemberTypes = puer.loadType("System.Reflection.MemberTypes")
 let MemberTypes_Method = MemberTypes.Method
 let GENERIC_INVOKE_ERR_ARG_CHECK_FAILED = {}
+let ARG_FLAG_OUT = 0x01
+let ARG_FLAG_REF = 0x02
+const EXPERIMENTAL_IL2CPP_PUERTS = true;
 puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
     let members = csType.GetMember(methodName, MemberTypes_Method, GET_MEMBER_FLAGS);
-    let typeof_System_RuntimeType = puer.$typeof(CS.System.Type)
-    let overloadfunctions = [];
+    let typeof_System_Type = puer.$typeof(CS.System.Type)
+    let overloadFunctions = [];
     for (let i = 0; i < members.Length; i++) {
         let method = members.GetValue(i)
         if (method.IsGenericMethodDefinition && method.GetGenericArguments().Length == genericArgs.length) {
             let methodImpl = EXPERIMENTAL_IL2CPP_PUERTS
-                ? method.MakeGenericMethod(jsArrToCsArr(genericArgs.map(x => puer.$typeof(x)), typeof_System_RuntimeType))
+                ? method.MakeGenericMethod(jsArrToCsArr(genericArgs.map(x => puer.$typeof(x)), typeof_System_Type))
                 : method.MakeGenericMethod(...genericArgs.map(x => puer.$typeof(x)))
-            overloadfunctions.push({method : methodImpl})
+            overloadFunctions.push(methodImpl)
         }
     }
-    if (overloadfunctions.length == 0) {
+    let overloadCount = overloadFunctions.length
+    if (overloadCount == 0) {
         console.error("puer.getGenericMethod not found", csType.Name, methodName, genericArgs.map(x => puer.$typeof(x).Name).join(","))
         return null
     }
-    let createOverloadFunctionWrap = function(o) {
-        let argIsOut = []
+    let createOverloadFunctionWrap = function(method) {
         let typeof_System_Object = puer.$typeof(CS.System.Object)
-        let paramsd = o.method.GetParameters();
-        let argCount = paramsd.Length
-        for (let i = 0; i < paramsd.Length; i++) {
-            // TODO ref support
-            if (paramsd.GetValue(i).IsOut || paramsd.GetValue(i).ParameterType.IsByRef)
-                argIsOut[i] = true
-        }
-        let argscs = System_Array_CreateInstance(typeof_System_Object, argCount) 
-        o.checkArgs = function (...args) {
-            // TODO check arg types
-            if (argCount != (args ? args.length : 0)) return GENERIC_INVOKE_ERR_ARG_CHECK_FAILED
-            if (argCount == 0) return null
-            for (let i = 0; i < argCount; i++) {
-                argscs.SetValue(argIsOut[i] ? null : args[i], i)
+        let paramDefs = method.GetParameters();
+        let needArgCount = paramDefs.Length
+        let argFlags = needArgCount > 0 ? [] : null;
+        let needArgTypeCode = needArgCount > 0 ? [] : null;
+        for (let i = 0; i < paramDefs.Length; i++) {
+            let paramDef = paramDefs.GetValue(i)
+            let paramType = paramDef.ParameterType
+            if (paramDef.IsOut) argFlags[i] = (argFlags[i] ?? 0) | ARG_FLAG_OUT
+            if (paramType.IsByRef) {
+                argFlags[i] = (argFlags[i] ?? 0) | ARG_FLAG_REF
+                needArgTypeCode[i] = CS.System.Type.GetTypeCode(paramType.GetElementType())
+            } else {
+                needArgTypeCode[i] = CS.System.Type.GetTypeCode(paramType)
             }
-            return argscs;
         }
-        o.invoke = function (...args) {
-            let argscs = o.checkArgs(...args)
+        let argsCsArr
+        let checkArgs = function (...args) {
+            if (needArgCount != (args ? args.length : 0)) return GENERIC_INVOKE_ERR_ARG_CHECK_FAILED
+            if (needArgCount == 0) return null
+            argsCsArr = argsCsArr ?? CS.System.Array.CreateInstance(typeof_System_Object, needArgCount)
+            // set args to c# array
+            for (let i = 0; i < needArgCount; i++) {
+                let val = (argFlags[i] & ARG_FLAG_REF) 
+                    ? (argFlags[i] & ARG_FLAG_OUT 
+                        ? null 
+                        : puer.$unref(args[i])) 
+                    : args[i]
+                let jsValType = typeof val
+                if (jsValType === "number") {
+                    argsCsArr.set_ItemNumber(i, val, needArgTypeCode[i])
+                } else if (jsValType === "bigint") {
+                    argsCsArr.set_ItemBigInt(i, val, needArgTypeCode[i])
+                } else {
+                    argsCsArr.set_Item(val, i)
+                }
+            }
+            return argsCsArr;
+        }
+        let invoke = function (...args) {
+            let argscs = checkArgs(...args)
             if (argscs === GENERIC_INVOKE_ERR_ARG_CHECK_FAILED)
-                return GENERIC_INVOKE_ERR_ARG_CHECK_FAILED
-            let ret = o.method.Invoke(this, 0, null, argscs, null)
-            for (let i = 0; i < argIsOut.length; i++) {
-                if (argIsOut[i])
-                    args[i].value = argscs.GetValue(i)
+                return overloadCount == 1 ? undefined : GENERIC_INVOKE_ERR_ARG_CHECK_FAILED
+            let ret = method.Invoke(this, 0, null, argscs, null)
+            // set args to js array for ref type
+            if (argFlags) {
+                for (let i = 0; i < argFlags.length; i++) {
+                    if (argFlags[i] & ARG_FLAG_REF)
+                        args[i].value = argscs.GetValue(i)
+                }
             }
             return ret
         }
-        return o.invoke
+        return invoke
     }
-    let invokes = overloadfunctions.map(x => createOverloadFunctionWrap(x))
-    if (invokes.length == 1) {
+    let invokes = overloadFunctions.map(x => createOverloadFunctionWrap(x))
+    if (overloadCount == 1) {
         return invokes[0];
     } else {
         return function(...args) {
@@ -138,10 +160,3 @@ function loadFile(path) {
 puer.loadFile = loadFile;
 
 puer.fileExists = loader.Resolve.bind(loader);
-
-// TODO: temporary polyfill Array.get_Item used in csharp.mjs
-let proto_System_Array = System_Array.prototype
-proto_System_Array.get_Item = proto_System_Array.GetValue
-
-
-

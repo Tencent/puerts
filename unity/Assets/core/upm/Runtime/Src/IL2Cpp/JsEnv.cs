@@ -93,6 +93,7 @@ namespace Puerts
             else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 2)
                 Backend = new BackendQuickJS(this);
 
+            PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethod();
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");

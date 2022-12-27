@@ -16,6 +16,7 @@
 /test/unity/unity.sln
 /test/unity/*.csproj
 /test/unity/log.txt
+/test/Src/**/*.meta
 /Assets/**/*.meta
 /native_src/.backends
 /native_src/puerts-cpp-tester
