@@ -79,6 +79,11 @@ var global = global || (function () { return this; }());
     function genRequire(requiringDir, isESM) {
         let localModuleCache = Object.create(null);
         function require(moduleName) {
+			if (org_require) {
+                try {
+                    return org_require(moduleName);
+                } catch (e) {}
+            }
             moduleName = normalize(moduleName);
             let forceReload = false;
             if ((moduleName in localModuleCache)) {
@@ -94,11 +99,6 @@ var global = global || (function () { return this; }());
             if (nativeModule) {
                 buildinModule[moduleName] = nativeModule;
                 return nativeModule;
-            }
-            if (org_require) {
-                try {
-                    return org_require(moduleName);
-                } catch (e) {}
             }
             let moduleInfo = searchModule(moduleName, requiringDir);
             if (!moduleInfo) {
