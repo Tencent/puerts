@@ -79,7 +79,7 @@ var global = global || (function () { return this; }());
     function genRequire(requiringDir, isESM) {
         let localModuleCache = Object.create(null);
         function require(moduleName) {
-			if (org_require) {
+            if (org_require) {
                 try {
                     return org_require(moduleName);
                 } catch (e) {}
