@@ -45,6 +45,14 @@ typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, Per
 
 typedef v8::Value* (*GetPersistentObjectFunc)(v8::Context* env, const PersistentObjectInfo* objectInfo);
 
+typedef void* (*NewArrayFunc)(const void *typeId, uint32_t length);
+
+typedef void* (*GetArrayFirstElementAddressFunc)(void *array);
+
+typedef void (*ArraySetRefFunc)(void *array, uint32_t index, void* value);
+
+typedef const void* (*GetArrayElementTypeIdFunc)(const void *typeId);
+
 #else
     
 #define MethodPointer Il2CppMethodPointer
@@ -88,6 +96,14 @@ typedef const Il2CppClass* (*GetParameterTypeFunc)(const MethodInfo* method, int
 typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, PersistentObjectInfo* objectInfo);
 
 typedef pesapi_value (*GetPersistentObjectFunc)(pesapi_env env, const PersistentObjectInfo* objectInfo);
+
+typedef Il2CppArray* (*NewArrayFunc)(Il2CppClass *typeId, uint32_t length);
+
+typedef char* (*GetArrayFirstElementAddressFunc)(Il2CppArray *array);
+
+typedef void (*ArraySetRefFunc)(Il2CppArray *array, uint32_t index, void* value);
+
+typedef Il2CppClass* (*GetArrayElementTypeIdFunc)(Il2CppClass *typeId);
 
 #endif
 
@@ -143,6 +159,10 @@ struct UnityExports
     ThrowInvalidOperationExceptionFunc ThrowInvalidOperationException = nullptr;
     GetReturnTypeFunc GetReturnType = nullptr;
     GetParameterTypeFunc GetParameterType = nullptr;
+    NewArrayFunc NewArray = nullptr;
+    GetArrayFirstElementAddressFunc GetArrayFirstElementAddress = nullptr;
+    ArraySetRefFunc ArraySetRef = nullptr;
+    GetArrayElementTypeIdFunc GetArrayElementTypeId = nullptr;
     int SizeOfRuntimeObject = 0;
     //plugin api
     

@@ -725,6 +725,16 @@ static void ThrowInvalidOperationException(const char* msg)
     Exception::Raise(Exception::GetInvalidOperationException(msg));
 }
 
+Il2CppArray* NewArray(Il2CppClass *typeId, uint32_t length)
+{
+    return Array::NewSpecific(typeId, length);
+}
+
+void ArraySetRef(Il2CppArray *array, uint32_t index, void* value)
+{
+    il2cpp_array_setref(array, index, value);
+}
+
 puerts::UnityExports* GetUnityExports()
 {
     g_unityExports.ObjectAllocate = &ObjectAllocate;
@@ -749,6 +759,10 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.ThrowInvalidOperationException = &ThrowInvalidOperationException;
     g_unityExports.GetReturnType = &GetReturnType;
     g_unityExports.GetParameterType = &GetParameterType;
+    g_unityExports.NewArray = NewArray;
+    g_unityExports.GetArrayFirstElementAddress = Array::GetFirstElementAddress;
+    g_unityExports.ArraySetRef = ArraySetRef;
+    g_unityExports.GetArrayElementTypeId = Class::GetElementClass;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     return &g_unityExports;
 }

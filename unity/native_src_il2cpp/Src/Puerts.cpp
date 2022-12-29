@@ -299,6 +299,79 @@ static void* JsValueToCSRef(v8::Local<v8::Context> context, v8::Local<v8::Value>
     return GUnityExports.JsValueToCSRef(typeId, *context, *val);
 }
 
+static void* NewArray(const void *typeId, uint32_t length)
+{
+    return GUnityExports.NewArray(typeId, length);
+}
+
+static void* GetArrayFirstElementAddress(void *array)
+{
+    return GUnityExports.GetArrayFirstElementAddress(array);
+}
+
+static void ArraySetRef(void *array, uint32_t index, void* value)
+{
+    GUnityExports.ArraySetRef(array, index, value);
+}
+
+static const void* GetArrayElementTypeId(const void *typeId)
+{
+    return GUnityExports.GetArrayElementTypeId(typeId);
+}
+
+template <typename T>
+struct RestArguments
+{
+    static void* PackPrimitive(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
+    {
+        void* ret = NewArray(typeId, info.Length() - start);
+        T* arr = static_cast<T*>(GetArrayFirstElementAddress(ret));
+        for(int i = start; i < info.Length();++i)
+        {
+            arr[i - start] = converter::Converter<T>::toCpp(context, info[i]);
+        }
+        return ret;
+    }
+    
+    static void* PackString(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
+    {
+        auto isolate = context->GetIsolate();
+        void* ret = NewArray(typeId, info.Length() - start);
+        for(int i = start; i < info.Length();++i)
+        {
+            v8::String::Utf8Value t(isolate, info[i]);
+            ArraySetRef(ret, i - start, CStringToCSharpString(*t));
+        }
+        return ret;
+    }
+    
+    static void* PackRef(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
+    {
+        auto isolate = context->GetIsolate();
+        void* ret = NewArray(typeId, info.Length() - start);
+        auto elemTypeId = GetArrayElementTypeId(typeId);
+        for(int i = start; i < info.Length();++i)
+        {
+            ArraySetRef(ret, i - start, JsValueToCSRef(context, info[i], elemTypeId));
+        }
+        return ret;
+    }
+    
+    static void* PackValueType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
+    {
+        auto isolate = context->GetIsolate();
+        void* ret = NewArray(typeId, info.Length() - start);
+        T* arr = static_cast<T*>(GetArrayFirstElementAddress(ret));
+        auto elemTypeId = GetArrayElementTypeId(typeId);
+        for(int i = start; i < info.Length();++i)
+        {
+            T* e = DataTransfer::GetPointer<T>(context, info[i]);
+            arr[i - start] = *e;
+        }
+        return ret;
+    }
+};
+
 //type != typeof(object) && !type.IsValueType 
 inline static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
 {

@@ -232,7 +232,6 @@ namespace PuertsIl2cpp
             {
                 return GetTypeSignature(Enum.GetUnderlyingType(type));
             }
-            //TODO: ArrayBuffer...
             else if (!type.IsValueType)
             {
                 return "o";
@@ -247,7 +246,8 @@ namespace PuertsIl2cpp
 
         public static string GetParameterSignature(ParameterInfo parameterInfo)
         {
-            return GetTypeSignature(parameterInfo.ParameterType);
+            bool isParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false) && parameterInfo.ParameterType.IsArray;
+            return isParams ? ("V" + GetTypeSignature(parameterInfo.ParameterType.GetElementType())) : GetTypeSignature(parameterInfo.ParameterType);
         }
 
         public static string GetThisSignature(MethodBase methodBase, bool isExtensionMethod = false)

@@ -117,7 +117,7 @@ struct ${valueTypeInfo.Signature}
             return `if (!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
             return `if (!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
-        } else if (signature == 'O') {
+        } else if (signature == 'O' || signature[0] == 'V') {
             return ``;
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {
             return `if (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))) return false;`
@@ -247,6 +247,30 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
                 return `    // JSValToCSVal P not primitive
     ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(S, JSName, true)};`
             }
+        } else if (signature[0] == 'V') {
+            const si = signature.substring(1);
+            const start = parseInt(JSName.match(/info\[(\d+)]/)[1]);
+            if (si in PrimitiveSignatureCppTypeMap) { 
+                return `    // JSValToCSVal primitive params
+    void* ${CSName} = RestArguments<${PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(context, info, TI${CSName}, ${start});
+                `
+            } else if (si == 's') {
+                return `    // JSValToCSVal string params
+    void* ${CSName} = RestArguments<void*>::PackString(context, info, TI${CSName}, ${start});
+                `
+            } else if (si == 'o' || si == 'O') {
+                return `    // JSValToCSVal ref params
+    void* ${CSName} = RestArguments<void*>::PackRef(context, info, TI${CSName}, ${start});
+                `
+            } else if (si.startsWith('s_') && si.endsWith('_')) { 
+                return `    // JSValToCSVal valuetype params
+    void* ${CSName} = RestArguments<${si}>::PackValueType(context, info, TI${CSName}, ${start});
+                `
+            } else {
+                return `    // JSValToCSVal unknow params type
+    void* ${CSName} = nullptr;
+                `
+            }
         } else {
             return `    // JSValToCSVal P any
     ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(signature, JSName)};`
@@ -266,6 +290,13 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
     }
 }
 
+function genArgsLenCheck(parameterSignatures) {
+    if (parameterSignatures.length == 0) {
+        return `info.Length() != 0`;
+    }
+    const lastSignature = parameterSignatures[parameterSignatures.length - 1];
+    return (lastSignature[0] == 'V') ? `info.Length() < ${parameterSignatures.length - 1}` : `info.Length() != ${parameterSignatures.length}`;
+}
 
 function genFuncWrapper(wrapperInfo) {
     var parameterSignatures = listToJsArray(wrapperInfo.ParameterSignatures);
@@ -281,7 +312,7 @@ static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
     if (checkJSArgument) {
-        if ( info.Length() != ${parameterSignatures.length}) return false;
+        if ( ${genArgsLenCheck(parameterSignatures)}) return false;
         ${FOR(parameterSignatures, (x, i) => t`
         ${CODE_SNIPPETS.checkJSArg(x, i)}
         `)}
