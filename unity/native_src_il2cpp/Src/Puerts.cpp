@@ -366,6 +366,7 @@ struct RestArguments
         for(int i = start; i < info.Length();++i)
         {
             T* e = DataTransfer::GetPointer<T>(context, info[i]);
+            if (!e) continue;
             arr[i - start] = *e;
         }
         return ret;
