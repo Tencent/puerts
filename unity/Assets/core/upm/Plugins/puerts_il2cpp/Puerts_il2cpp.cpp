@@ -32,7 +32,12 @@ namespace puerts
 intptr_t GetMethodPointer(Il2CppReflectionMethod* method)
 {
     auto methodInfo = method->method;
-    return (intptr_t)MetadataCache::GetMethodPointer(methodInfo->klass->image, methodInfo->token);
+    auto ret = MetadataCache::GetMethodPointer(methodInfo->klass->image, methodInfo->token);
+    if (!ret)
+    {
+        ret = methodInfo->methodPointer;
+    }
+    return (intptr_t)ret;
 }
 
 intptr_t GetMethodInfoPointer(Il2CppReflectionMethod* method)
