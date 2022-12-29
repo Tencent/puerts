@@ -139,6 +139,8 @@ struct CSharpFieldInfo
 
 struct JsClassInfo : public JsClassInfoHeader
 {
+    std::string Name;
+    std::vector<WrapData*> Ctors;
     std::vector<CSharpMethodInfo> Methods;
     std::vector<CSharpFieldInfo> Fields;
 };
@@ -954,6 +956,9 @@ V8_EXPORT bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
     ClassDef.Initialize = classInfo->DelegateBridge ? puerts::DelegateCtorCallback : puerts::GUnityExports.ConstructorCallback;
     ClassDef.Finalize = classInfo->IsValueType ? puerts::GUnityExports.ValueTypeDeallocate : (puerts::FinalizeFunc)nullptr;
     ClassDef.Data = classInfo;
+    
+    classInfo->Ctors.push_back(nullptr);
+    classInfo->CtorWrapDatas = classInfo->Ctors.data();
     
     std::vector<puerts::JSFunctionInfo> functions{};
 

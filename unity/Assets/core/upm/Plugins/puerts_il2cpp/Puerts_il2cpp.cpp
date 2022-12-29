@@ -279,15 +279,17 @@ static void* CtorCallback(pesapi_callback_info info)
     
     try
     {
-        bool checkArgument = classInfo->Ctors.size() > 1;
-        for(int i = 0; i < classInfo->Ctors.size(); ++i)
+        WrapData** wrapDatas = classInfo->CtorWrapDatas;
+        bool checkArgument = *wrapDatas && *(wrapDatas + 1);
+        while(*wrapDatas)
         {
-            WrapData* wrapData = classInfo->Ctors[i];
-            if (wrapData->Wrap(wrapData->Method, wrapData->MethodPointer, info, checkArgument, wrapData->TypeInfos))
+            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, (*wrapDatas)->TypeInfos))
             {
                 return Ptr;
             }
+            ++wrapDatas;
         }
+        
         pesapi_throw_by_string(info, "invalid arguments");
         
     } 

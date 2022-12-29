@@ -127,11 +127,10 @@ struct JsClassInfoHeader
 {
     const void* TypeId;
     const void* SuperTypeId;
-    std::string Name;
     TypeIdType* Class;
     bool IsValueType;
     MethodPointer DelegateBridge;
-    std::vector<WrapData*> Ctors;
+    WrapData** CtorWrapDatas;
 };
 
 struct UnityExports
