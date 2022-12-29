@@ -392,6 +392,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     TypeIdToTemplateMap.clear();
     PointerConstructor.Reset();
     PersistentObjectEnvInfo.Context.Reset();
+    PersistentObjectEnvInfo.SymbolCSPtr.Reset();
     std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
     PersistentObjectEnvInfo.PendingReleaseObjects.clear();
 }
