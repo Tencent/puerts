@@ -87,10 +87,10 @@ for (let i = 0; i < types.length; i++) {
     arr2.set_ItemNumber(0, TEST_NUMBER, CS.System.TypeCode.Double)
     Assert_AreEqual(arr2.get_Item(0), TEST_NUMBER)
 
-    // set_ItemNumber test, will truncate
+    // set_ItemNumber test
     let arr3 = CS.System.Array.CreateInstance(puer.$typeof(CS.System.Object), 1)
     arr3.set_ItemNumber(0, 0.123, CS.System.TypeCode.Int32)
     Assert_AreEqual(arr3.get_Item(0), 0)
-    arr3.set_ItemNumber(0, 123456, CS.System.TypeCode.Byte) 
+    arr3.set_ItemNumber(0, 123456 & 0xff, CS.System.TypeCode.Byte) 
     Assert_AreEqual(arr3.get_Item(0), 64)
 }

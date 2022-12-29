@@ -56,6 +56,19 @@ namespace PuertsIl2cpp
         }
     }
 
+    public static class ArrayExtension2
+    {
+        // used by object[], to specify type of element
+        [UnityEngine.Scripting.Preserve] public static void set_ItemBigInt(this System.Array arr, int idx, long val, TypeCode toTypeCode) 
+        { 
+            arr.SetValue(ArrayExtensionUtils.castLongToObject(val, toTypeCode), idx);
+        }
+        [UnityEngine.Scripting.Preserve] public static void set_ItemNumber(this System.Array arr, int idx, double val, TypeCode toTypeCode) 
+        { 
+            arr.SetValue(ArrayExtensionUtils.castDoubleToObject(val, toTypeCode), idx);
+        }
+    }
+
     public static class ArrayExtension
     {
         [UnityEngine.Scripting.Preserve] public static int get_Item(this int[] arr, int idx) { return arr[idx]; }
@@ -86,15 +99,5 @@ namespace PuertsIl2cpp
         [UnityEngine.Scripting.Preserve] public static void set_Item(this uint[] arr, int idx, uint val) { arr[idx] = val; }
         [UnityEngine.Scripting.Preserve] public static void set_Item(this string[] arr, int idx, string val) { arr[idx] = val; }
         [UnityEngine.Scripting.Preserve] public static void set_Item(this System.Array arr, int idx, object val) { arr.SetValue(val, idx); }
-
-        // used by object[], to specify type of element
-        [UnityEngine.Scripting.Preserve] public static void set_ItemBigInt(this System.Array arr, int idx, long val, TypeCode toTypeCode) 
-        { 
-            arr.SetValue(ArrayExtensionUtils.castLongToObject(val, toTypeCode), idx);
-        }
-        [UnityEngine.Scripting.Preserve] public static void set_ItemNumber(this System.Array arr, int idx, double val, TypeCode toTypeCode) 
-        { 
-            arr.SetValue(ArrayExtensionUtils.castDoubleToObject(val, toTypeCode), idx);
-        }
     }
 }
