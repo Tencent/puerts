@@ -131,13 +131,26 @@ namespace PuertsIl2cpp
                 }
                 if (!isDelegate)
                 {
-                    if (ctors != null && ctors.Length > 0)
+                    if (ctors != null && ctors.Length > 0 && (!type.IsArray || type == typeof(System.Array)))
                     {
                         foreach (var ctor in ctors)
                         {
+                            if (ctor.IsGenericMethodDefinition) continue;
                             List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
                             //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
-                            var wrapData = AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), GetMethodInfoPointer(ctor), GetMethodPointer(ctor), usedTypes.Count);
+                            var methodInfoPointer = GetMethodInfoPointer(ctor);
+                            var methodPointer = GetMethodPointer(ctor);
+                            if (methodInfoPointer == IntPtr.Zero)
+                            {
+                                UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
+                                continue;
+                            }
+                            if (methodPointer == IntPtr.Zero)
+                            {
+                                UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
+                                continue;
+                            }
+                            var wrapData = AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), methodInfoPointer, methodPointer, usedTypes.Count);
                             if (wrapData == IntPtr.Zero)
                             {
                                 if (!throwIfMemberFail)
@@ -162,7 +175,19 @@ namespace PuertsIl2cpp
                     {
                         List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
                         //UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
-                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isGeter, isSetter, GetMethodInfoPointer(method), GetMethodPointer(method), usedTypes.Count);
+                        var methodInfoPointer = GetMethodInfoPointer(method);
+                        var methodPointer = GetMethodPointer(method);
+                        if (methodInfoPointer == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            return;
+                        }
+                        if (methodPointer == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            return;
+                        }
+                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
                         if (wrapData == IntPtr.Zero)
                         {
                             if (throwIfMemberFail)
@@ -185,10 +210,11 @@ namespace PuertsIl2cpp
                         }
                     };
 
-                    if (methods != null)
+                    if (methods != null && (!type.IsArray || type == typeof(System.Array)))
                     {
                         foreach (var method in methods)
                         {
+                            if (method.IsGenericMethodDefinition || method.IsAbstract) continue;
                             AddMethodToType(method.Name, method as MethodInfo, false, false, false);
                         }
                     }
@@ -207,12 +233,12 @@ namespace PuertsIl2cpp
                         foreach (var prop in properties)
                         {
                             var getter = prop.GetGetMethod();
-                            if (getter != null)
+                            if (getter != null && !getter.IsGenericMethodDefinition && !getter.IsAbstract)
                             {
                                 AddMethodToType(prop.Name, getter, true, false, false);
                             }
                             var setter = prop.GetSetMethod();
-                            if (setter != null)
+                            if (setter != null && !setter.IsGenericMethodDefinition && !setter.IsAbstract)
                             {
                                 AddMethodToType(prop.Name, setter, false, true, false);
                             }
