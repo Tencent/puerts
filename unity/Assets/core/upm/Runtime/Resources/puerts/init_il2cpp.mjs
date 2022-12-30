@@ -11,12 +11,16 @@ global.global = global;
 
 let puer = global.puer = global.puerts = global.puer || global.puerts || {};
 
-puer.loadType = function(nameOrCSType) {
+puer.loadType = function(nameOrCSType, ...genericArgs) {
     let csType = nameOrCSType
-    if (typeof nameOrCSType == "string") {
+    if (typeof nameOrCSType == "string") { // convert string to csType
         csType = jsEnv.GetTypeByString(nameOrCSType)
     }
     if (csType) {
+        if (genericArgs && csType.IsGenericTypeDefinition) {
+            genericArgs = genericArgs.map(g => puer.$typeof(g));
+            csType = csType.MakeGenericType(...genericArgs);
+        }
         let cls = loadType(csType)
         cls.__p_innerType = csType
         // todo
@@ -52,13 +56,22 @@ let GENERIC_INVOKE_ERR_ARG_CHECK_FAILED = {}
 let ARG_FLAG_OUT = 0x01
 let ARG_FLAG_REF = 0x02
 puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
+    if (typeof csType.GetMember != 'function') {
+        throw new Error('the class must be a constructor');
+    }
     let members = csType.GetMember(methodName, MemberTypes_Method, GET_MEMBER_FLAGS);
     let typeof_System_Type = puer.$typeof(CS.System.Type)
     let overloadFunctions = [];
     for (let i = 0; i < members.Length; i++) {
         let method = members.GetValue(i)
         if (method.IsGenericMethodDefinition && method.GetGenericArguments().Length == genericArgs.length) {
-            let methodImpl = method.MakeGenericMethod(...genericArgs.map(x => puer.$typeof(x)))
+            let methodImpl = method.MakeGenericMethod(...genericArgs.map((x, index) => {
+                const ret = puer.$typeof(x);
+                if (!ret) {
+                    throw new Error("invalid Type for generic arguments " + index);
+                }
+                return ret;
+            }))
             overloadFunctions.push(methodImpl)
         }
     }

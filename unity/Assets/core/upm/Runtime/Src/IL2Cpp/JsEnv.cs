@@ -32,6 +32,12 @@ namespace Puerts
         ILoader loader;
 
         public Backend Backend;
+
+        [UnityEngine.Scripting.Preserve]
+        private void Preserver() 
+        {
+            var p1 = typeof(Type).GetNestedTypes();
+        }
         
         [UnityEngine.Scripting.Preserve]
         public ILoader GetLoader() 
