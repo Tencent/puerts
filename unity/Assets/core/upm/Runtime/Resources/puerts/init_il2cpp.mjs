@@ -51,7 +51,6 @@ let MemberTypes_Method = MemberTypes.Method
 let GENERIC_INVOKE_ERR_ARG_CHECK_FAILED = {}
 let ARG_FLAG_OUT = 0x01
 let ARG_FLAG_REF = 0x02
-const EXPERIMENTAL_IL2CPP_PUERTS = true;
 puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
     let members = csType.GetMember(methodName, MemberTypes_Method, GET_MEMBER_FLAGS);
     let typeof_System_Type = puer.$typeof(CS.System.Type)
@@ -59,9 +58,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
     for (let i = 0; i < members.Length; i++) {
         let method = members.GetValue(i)
         if (method.IsGenericMethodDefinition && method.GetGenericArguments().Length == genericArgs.length) {
-            let methodImpl = EXPERIMENTAL_IL2CPP_PUERTS
-                ? method.MakeGenericMethod(jsArrToCsArr(genericArgs.map(x => puer.$typeof(x)), typeof_System_Type))
-                : method.MakeGenericMethod(...genericArgs.map(x => puer.$typeof(x)))
+            let methodImpl = method.MakeGenericMethod(...genericArgs.map(x => puer.$typeof(x)))
             overloadFunctions.push(methodImpl)
         }
     }

@@ -3,26 +3,27 @@ import { FOR } from './tte.mjs'
 export default function TypingTemplate(rawInfo) {
     return `
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 namespace PuertsIl2cpp
 {
 public static class ExtensionMethodInfos_Gen
 {
     [UnityEngine.Scripting.Preserve]
-    public static void TryLoadExtensionMethod()
-    {${FOR(getExtendedTypeToExtensionTypeInfo(rawInfo), e => `${FOR(e.extensionTypes, extensionType => `
-        PuertsIl2cpp.ExtensionMethodInfo.Add(typeof(${e.extendedType}), typeof(${extensionType}));
-    `)}`)}
+    public static IEnumerable<MethodInfo> TryLoadExtensionMethod(Type type)
+    {
+        if (false) {}${FOR(getExtendedTypeToExtensionTypeInfo(rawInfo), e => `
+        else if (type == typeof(${e.extendedType}))
+        {
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(${e.extendedType})${FOR(e.extensionTypes, extensionType => `, typeof(${extensionType})`)});
+        }`)}
+        return null;
     }
 }
 }`.trim();
 }
 
-// if (false) {}${FOR(getExtendedTypeToExtensionTypeInfo(rawInfo), e => `
-// else if (type == typeof(${e.extendedType}))
-// {${FOR(e.extensionTypes, extensionType => `
-//     PuertsIl2cpp.ExtensionMethodInfo.Add(typeof(${e.extendedType}), typeof(${extensionType}));
-// `)}
-// }
+
 
 function toJsArray(csArr) {
     if (!csArr) return [];

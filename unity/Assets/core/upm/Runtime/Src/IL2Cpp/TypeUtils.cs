@@ -24,66 +24,39 @@ namespace PuertsIl2cpp
                 return type;
             var parameterConstraints = type.GetGenericParameterConstraints();
             if (parameterConstraints.Length == 0)
-                return null; // not supported
+                throw new InvalidOperationException();
             var firstParameterConstraint = parameterConstraints[0];
             if (!firstParameterConstraint.IsClass)
-                return null; // not supported
+                throw new InvalidOperationException();
             return firstParameterConstraint;
         }
-
-        private static volatile Dictionary<Type, IEnumerable<MethodInfo>> extensionMethodMap =
-            new Dictionary<Type, IEnumerable<MethodInfo>>(); 
         
         // Call By Gen Code
-        public static void Add(Type type, Type extension)
+        public static IEnumerable<MethodInfo> GetExtensionMethods(Type type, params Type[] extensions)
         {
-            var extensionMethods = extension.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                .Where(m => GetExtendedType(m) == type);
-            IEnumerable<MethodInfo> existed = null;
-            extensionMethodMap[type] = (extensionMethodMap.TryGetValue(type, out existed))
-                ? existed.Concat(extensionMethods)
-                : extensionMethods;
+            return from e in extensions from m in e.GetMethods(BindingFlags.Static | BindingFlags.Public) 
+                where GetExtendedType(m) == type select m;
         }
 
         public static IEnumerable<MethodInfo> Get(Type type)
         {
-            IEnumerable<MethodInfo> ret = null;
-            extensionMethodMap.TryGetValue(type, out ret);
-            return ret;
+            if (LoadExtensionMethod != null)
+                return LoadExtensionMethod(type);
+            return null;
         }
 
-        public static void LoadExtensionMethod() {
-            if (LoadOfflineExtensionMethod())
-                return;
+        public static Func<Type, IEnumerable<MethodInfo>> LoadExtensionMethod;
 
-            var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                from type in assembly.GetTypes()
-                where type.IsPublic
-                select type;
-
-            var extendedType2extensionType = (from type in types
-#if UNITY_EDITOR
-                where !type.Assembly.Location.Contains("Editor")
-#endif
-                from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                where method.IsDefined(typeof(ExtensionAttribute)) && GetExtendedType(method) != null
-                group type by GetExtendedType(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
-            foreach (var pair in extendedType2extensionType)
-            {
-                foreach(var extension in pair.Value)
-                {
-                    Add(pair.Key, extension);
-                }
-            }
-        }
-
-        private static bool LoadOfflineExtensionMethod() {
+        public static bool LoadExtensionMethodInfo() {
             var ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
                 select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen")).FirstOrDefault(x => x != null);
-            if (ExtensionMethodInfos_Gen == null) return false;
+            if (ExtensionMethodInfos_Gen == null)
+                ExtensionMethodInfos_Gen = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                select assembly.GetType("PuertsIl2cpp.ExtensionMethodInfos_Gen_Internal")).FirstOrDefault(x => x != null);
             var TryLoadExtensionMethod = ExtensionMethodInfos_Gen.GetMethod("TryLoadExtensionMethod");
             if (TryLoadExtensionMethod == null) return false;
-            TryLoadExtensionMethod.Invoke(null, null);
+            LoadExtensionMethod = (Func<Type, IEnumerable<MethodInfo>>)Delegate.CreateDelegate(
+                typeof(Func<Type, IEnumerable<MethodInfo>>), null, TryLoadExtensionMethod);
             return true;
         }
 	}
