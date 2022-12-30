@@ -12,10 +12,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const oFunc = testHelper.functionTestStartValue =  () => 3
                     testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
@@ -31,10 +31,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oNum = outRef[0] = testHelper.numberTestStartValue;
@@ -54,10 +54,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oNum = outRef[0] = testHelper.numberTestStartValue;
@@ -77,10 +77,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oBool = outRef[0] = testHelper.boolTestStartValue;
@@ -102,10 +102,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oBigInt = outRef[0] = testHelper.bigIntTestStartValue;
@@ -125,10 +125,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oNativeObjectStruct = outRef[0] = testHelper.nativeObjectStructTestStartValue;
@@ -149,10 +149,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oNativeObject = outRef[0] = testHelper.nativeObjectTestStartValue;;
@@ -172,10 +172,10 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const oJSObject = { 'puerts': 'niubi' };
                     const rJSObject = testHelper.JSObjectTestPipeLine(oJSObject, function(obj) {
@@ -196,7 +196,7 @@ namespace Puerts.UnitTest
         //             const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
         //             const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
 
-        //             const testHelper = TestHelper.GetInstance(jsEnv);
+        //             const testHelper = TestHelper.GetInstance();
 
         //             const outRef = [];
         //             const oDate = outRef[0] = new Date('1998-11-11');
@@ -215,9 +215,9 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
-                    const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
-                    const testHelper = TestHelper.GetInstance(jsEnv);
+                    const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
                     const oAB = new Uint8Array([1]).buffer;
@@ -251,11 +251,11 @@ namespace Puerts.UnitTest
     public class TestHelper
     {
         protected static TestHelper instance;
-        public static TestHelper GetInstance(JsEnv env) 
+        public static TestHelper GetInstance() 
         { 
             if (instance == null) 
             {
-                instance = new TestHelper(env);
+                instance = new TestHelper();
             }
             return instance; 
         }
@@ -296,7 +296,7 @@ namespace Puerts.UnitTest
             }
         }
 
-        public TestHelper(JsEnv env)
+        public TestHelper()
         {
         }
 
