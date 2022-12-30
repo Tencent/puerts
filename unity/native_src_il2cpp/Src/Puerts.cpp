@@ -321,6 +321,11 @@ static const void* GetArrayElementTypeId(const void *typeId)
     return GUnityExports.GetArrayElementTypeId(typeId);
 }
 
+static uint32_t GetArrayLength(void *array)
+{
+    return GUnityExports.GetArrayLength(array);
+}
+
 template <typename T>
 struct RestArguments
 {
@@ -372,6 +377,36 @@ struct RestArguments
             arr[i - start] = *e;
         }
         return ret;
+    }
+    
+    static void UnPackPrimitive(v8::Local<v8::Context> context, void* array, uint32_t arrayLength, const void* typeId, v8::Local<v8::Value> *Argv)
+    {
+        T* arr = static_cast<T*>(GetArrayFirstElementAddress(array));
+        for (int i = 0; i < arrayLength; ++i)
+        {
+            Argv[i] = converter::Converter<T>::toScript(context, arr[i]);
+        }
+    }
+    
+    static void UnPackRefOrBoxedValueType(v8::Local<v8::Context> context, void* array, uint32_t arrayLength, const void* typeId, v8::Local<v8::Value> *Argv)
+    {
+        auto isolate = context->GetIsolate();
+        void** arr = static_cast<void**>(GetArrayFirstElementAddress(array));
+        for (int i = 0; i < arrayLength; ++i)
+        {
+            Argv[i] = CSAnyToJsValue(isolate, context, arr[i]);
+        }
+    }
+    
+    static void UnPackValueType(v8::Local<v8::Context> context, void* array, uint32_t arrayLength, const void* typeId, v8::Local<v8::Value> *Argv)
+    {
+        auto isolate = context->GetIsolate();
+        T* arr = static_cast<T*>(GetArrayFirstElementAddress(array));
+        auto elemTypeId = GetArrayElementTypeId(typeId);
+        for (int i = 0; i < arrayLength; ++i)
+        {
+            Argv[i] = CopyValueType(isolate, context, elemTypeId, &arr[i], sizeof(T));
+        }
     }
 };
 

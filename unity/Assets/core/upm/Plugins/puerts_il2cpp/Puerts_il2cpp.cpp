@@ -770,6 +770,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.GetArrayFirstElementAddress = Array::GetFirstElementAddress;
     g_unityExports.ArraySetRef = ArraySetRef;
     g_unityExports.GetArrayElementTypeId = Class::GetElementClass;
+    g_unityExports.GetArrayLength = Array::GetLength;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     return &g_unityExports;
 }

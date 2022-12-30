@@ -335,8 +335,36 @@ ${parameterSignatures.map((x, i) => CODE_SNIPPETS.JSValToCSVal(x, `info[${i}]`, 
 }`;
 }
 
+function genBridgeArgs(parameterSignatures) {
+    if (parameterSignatures.length != 0) {
+        if (parameterSignatures[parameterSignatures.length -1][0] != 'V') {
+            return `v8::Local<v8::Value> Argv[${parameterSignatures.length}]{
+        ${parameterSignatures.map((ps, i)=> CODE_SNIPPETS.CSValToJSVal(ps, `p${i}`) || 'v8::Undefined(isolate)').join(`,
+        `)}
+    };`
+        } else {
+            const si = parameterSignatures[parameterSignatures.length -1].substring(1);
+            let unpackMethod = 'RestArguments<void*>::UnPackRefOrBoxedValueType';
+            if (si in PrimitiveSignatureCppTypeMap) {
+                unpackMethod = `RestArguments<${PrimitiveSignatureCppTypeMap[si]}>::UnPackPrimitive`;
+            } else if (si.startsWith('s_') && si.endsWith('_')) {
+                unpackMethod = `RestArguments<${si}>::UnPackValueType`;
+            } 
+            return `auto arrayLength = GetArrayLength(p${parameterSignatures.length - 1});
+    v8::Local<v8::Value> *Argv = (v8::Local<v8::Value> *)alloca(sizeof(v8::Local<v8::Value>) * (${parameterSignatures.length  - 1} + arrayLength));
+    memset(Argv, 0, sizeof(v8::Local<v8::Value>) * (${parameterSignatures.length  - 1} + arrayLength));
+    ${parameterSignatures.slice(0, -1).map((ps, i)=> `Argv[${i}] = ${(CODE_SNIPPETS.CSValToJSVal(ps, `p${i}`) || 'v8::Undefined(isolate)')};`).join(`
+    `)}
+    ${unpackMethod}(context, p${parameterSignatures.length-1}, arrayLength, TIp${parameterSignatures.length-1}, Argv + ${parameterSignatures.length  - 1});`;
+        }
+    } else {
+        return 'v8::Local<v8::Value> *Argv = nullptr;';
+    }
+}
+
 function genBridge(bridgeInfo) {
     var parameterSignatures = listToJsArray(bridgeInfo.ParameterSignatures);
+    let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
 static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
     // PLog("Running b_${bridgeInfo.Signature}");
@@ -344,7 +372,7 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
     ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRef(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
     auto TIret = GetReturnType(method);
     ${ENDIF()}
-    ${FOR(listToJsArray(bridgeInfo.ParameterSignatures), (ps, index) => t`
+    ${FOR(parameterSignatures, (ps, index) => t`
         ${IF(!(getSignatureWithoutRef(ps) in PrimitiveSignatureCppTypeMap))}
     auto TIp${index} = GetParameterType(method, ${index});
         ${ENDIF()}
@@ -366,15 +394,8 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
 
     v8::TryCatch TryCatch(isolate);
     auto Function = delegateInfo->JsObject.Get(isolate).As<v8::Function>();
-    ${IF(bridgeInfo.ParameterSignatures.Count != 0)}
-    v8::Local<v8::Value> Argv[${bridgeInfo.ParameterSignatures.Count}]{
-        ${listToJsArray(bridgeInfo.ParameterSignatures).map((ps, i)=> CODE_SNIPPETS.CSValToJSVal(ps, `p${i}`) || 'v8::Undefined(isolate)').join(`,
-        `)}
-    };
-    ${ELSE()}
-    v8::Local<v8::Value> *Argv = nullptr;
-    ${ENDIF()}
-    auto MaybeRet = Function->Call(context, v8::Undefined(isolate), ${bridgeInfo.ParameterSignatures.Count}, Argv);
+    ${genBridgeArgs(parameterSignatures)}
+    auto MaybeRet = Function->Call(context, v8::Undefined(isolate), ${parameterSignatures.length}${hasVarArgs ? ' + arrayLength - 1' : ''}, Argv);
     
     if (TryCatch.HasCaught())
     {
