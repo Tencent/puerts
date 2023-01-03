@@ -114,24 +114,12 @@ namespace Puerts
 
         public void Eval(string chunk, string chunkName = "chunk")
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             PuertsIl2cpp.NativeAPI.EvalInternal(nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, null);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public T Eval<T>(string chunk, string chunkName = "chunk")
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             return (T)PuertsIl2cpp.NativeAPI.EvalInternal(nativePesapiEnv, System.Text.Encoding.UTF8.GetBytes(chunk), chunkName, typeof(T));
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public T ExecuteModule<T>(string specifier, string exportee)
@@ -155,24 +143,12 @@ namespace Puerts
         
         ~JsEnv()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             Dispose(true);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         public void Dispose()
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
             Dispose(true);
-#if THREAD_SAFE
-            }
-#endif
         }
 
         private bool disposed = false;
