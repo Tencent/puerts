@@ -111,6 +111,8 @@ struct ${valueTypeInfo.Signature}
     checkJSArg(signature, index) {
         if (signature in PrimitiveSignatureCppTypeMap) {
             return `if (!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(context, info[${index}])) return false;`
+        } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
+            return `if (!info[${index}]->IsArrayBuffer()) return false;`
         } else if (signature[0] == 'P') {
             return `if (!info[${index}]->IsObject()) return false;`
         } else if (signature == 's') {
