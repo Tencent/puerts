@@ -48,7 +48,6 @@ namespace Puerts
         [UnityEngine.Scripting.Preserve]
         public override string Resolve(string specifier)
         {
-            UnityEngine.Debug.Log(specifier);
             string fixedSpecifier = FixSpecifier(specifier);
 
             if (UnityEngine.Resources.Load(fixedSpecifier) != null) {

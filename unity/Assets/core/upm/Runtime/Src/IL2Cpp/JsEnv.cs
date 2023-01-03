@@ -73,11 +73,11 @@ namespace Puerts
 
             PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
 
-            Eval(@"
+            moduleExecuter = Eval<Func<string, JSObject>>(@"
                 var global = this;
                 (function() {
                     var loader = jsEnv.GetLoader();
-                    global.__puerts_resolve_module_content__ = function(specifier) {
+                    return function(specifier) {
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
                         
@@ -90,7 +90,6 @@ namespace Puerts
                     }
                 })();
             ");
-            moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
 
             if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 0) 
                 Backend = new BackendV8(this);
