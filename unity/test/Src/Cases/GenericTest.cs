@@ -78,7 +78,7 @@ namespace Puerts.UnitTest
                         let res = CS.Puerts.UnitTest.GenericTestHelper.testListRange(ls,2);
                     })()
                 ");
-            });
+            }, "");
         }
 
         [Test]

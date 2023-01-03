@@ -31,7 +31,7 @@ namespace NUnit {
         }
         
         public class Assert {
-            public static void Catch(Action action, string message = "") 
+            public static void Catch(Action action, string message) 
             {
                 try 
                 {

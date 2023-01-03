@@ -20,7 +20,7 @@ namespace Puerts.UnitTest
                 jsEnv.Eval(@"
                     var obj = {}; obj.func();
                 ");
-            });
+            }, "");
         }
         [Test]
         public void ESModuleNotFound()

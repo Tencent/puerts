@@ -17,6 +17,44 @@ namespace PuertsIl2cpp.Editor
 {
     namespace Generator {
         public class FileExporter {
+            // private static string[] excludeAssemblys = {
+            //     "ExCSS.Unity.dll",
+            //     "SyntaxTree.VisualStudio.Unity.Messaging.dll",
+            //     "SyntaxTree.VisualStudio.Unity.Bridge.dll",
+            //     "Mono.Security.dll",
+            //     "UnityEngine.TestRunner.dll",
+            //     "Unity.Analytics.StandardEvents.dll",
+            //     "Unity.Timeline.Editor.dll",
+            //     "Unity.Analytics.Tracker.dll",
+            //     "Unity.Analytics.Editor.dll",
+            //     "System.Numerics.dll",
+            //     "nunit.framework.dll",
+            //     "Newtonsoft.Json.dll",
+            //     "Unity.2D.Sprite.Editor.dll"
+            // };
+            // private static bool IsAssemblyExcluded(string assemblyLocation, bool excludePuerts = false) {
+            //     bool ret = excludeAssemblys.Contains(assemblyLocation) || assemblyLocation.Contains("UnityEditor");
+            //     // UnityEngine.Debug.Log(assemblyLocation + " => " + ret);
+            //     if (excludePuerts) 
+            //     {
+            //         ret = ret || (assemblyLocation.Contains("com.tencent.puerts.core.dll") || assemblyLocation.Contains("com.tencent.puerts.core.Editor.dll"));
+            //     }   
+            //     return ret;
+            // }
+            // private static bool IsTypeExcluded(Type type) {
+            //     string Namespace = type.Namespace != null ? type.Namespace : "";
+            //     return type == typeof(System.IO.Stream) || 
+            //         type == typeof(System.IO.Compression.GZipStream) || 
+            //         type == typeof(System.AppDomain) ||
+            //         type.FullName.Contains("System.Memory") || 
+            //         type.FullName.Contains("System.ReadOnlyMemory") ||
+            //         Namespace.Contains("System.CodeDom") ||
+            //         Namespace == "System.Reflection.Emit" ||
+            //         Namespace == "System.Diagnostics" || 
+            //         (Namespace.Contains("System") && type.FullName.Contains("Internal")) || 
+            //         Namespace.Contains("System.Configuration");
+            // }
+
             public static List<string> GetValueTypeFieldSignatures(Type type)
             {
                 List<string> ret = (type.BaseType != null && type.BaseType.IsValueType) ? GetValueTypeFieldSignatures(type.BaseType) : new List<string>();
@@ -61,9 +99,62 @@ namespace PuertsIl2cpp.Editor
                 public List<SignatureInfo> FieldWrapperInfos;
             }
 
+            class MethodWrapInfo
+            {
+                public MethodInfo MethodInfo;
+                public ConstructorInfo ConstructorInfo;
+                public bool IsConstructor;
+                public ParameterInfo[] ParameterInfos;
+            }
+
             public static Type GetUnrefParameterType(ParameterInfo parameterInfo)
             {
                 return (parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer) ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
+            }
+
+            public static void GenMethodWithDefaultValue(string saveTo)
+            {
+                var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
+                        "Puerts.BindingAttribute",
+                    });
+                    
+                var types = new HashSet<Type>(configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                    .Where(o => o is Type)
+                    .Cast<Type>()
+                    .Distinct()
+                    .ToList());
+
+                const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+                const BindingFlags flagForPuer = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                
+                var typeExcludeDelegate = types
+                    .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t));
+
+                var ctorToWrap = typeExcludeDelegate
+                    .SelectMany(t => t.GetConstructors(t.FullName.Contains("Puer") ? flagForPuer : flag))
+                    .Where(m=> !Utils.IsNotSupportedMember(m))
+                    .ToArray();
+
+                var methodToWrap = typeExcludeDelegate
+                    .SelectMany(t => t.GetMethods(t.FullName.Contains("Puer") ? flagForPuer : flag))
+                    .Where(m=> !Utils.IsNotSupportedMember(m))
+                    .Where(m=> !m.IsGenericMethod)
+                    .ToArray();
+
+                using (var jsEnv = new Puerts.JsEnv())
+                {
+                    jsEnv.UsingFunc<MethodInfo[], ConstructorInfo[], Dictionary<string, string>>();
+                    Dictionary<string, string> wrapperContents = jsEnv.ExecuteModule<Func<MethodInfo[], ConstructorInfo[], Dictionary<string, string>>>("puerts/templates/methodwrapper.tpl.mjs", "GenByMethodInfoAndConstructorInfo")(methodToWrap, ctorToWrap);
+
+                    foreach (KeyValuePair<string, string> wrapper in wrapperContents)
+                    {
+                        using (StreamWriter textWriter = new StreamWriter(Path.Combine(saveTo, wrapper.Key), false, Encoding.UTF8))
+                        {
+                            textWriter.Write(wrapper.Value);
+                            textWriter.Flush();
+                        }
+                    }
+                }
             }
 
             public static void GenCPPWrap(string saveTo)
@@ -71,6 +162,7 @@ namespace PuertsIl2cpp.Editor
                 var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
                             // where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
                             where !(assembly.ManifestModule is System.Reflection.Emit.ModuleBuilder)
+                            // where !IsAssemblyExcluded(Path.GetFileName(assembly.Location))
                             from type in assembly.GetTypes()
                             where type.IsPublic
                             select type;
@@ -131,7 +223,7 @@ namespace PuertsIl2cpp.Editor
                 var bridgeInfos = delegateInvokes
                     .Select(m => new SignatureInfo
                     {
-                        Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, true),
+                        Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, null, true),
                         CsName = m.ToString(),
                         ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                         ThisSignature = null,
@@ -145,7 +237,7 @@ namespace PuertsIl2cpp.Editor
                     .Select(m  => { 
                         var isExtensionMethod = m.IsDefined(typeof(ExtensionAttribute));
                         return new SignatureInfo {
-                            Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
+                            Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, null, false, isExtensionMethod),
                             CsName = m.ToString(),
                             ReturnSignature = PuertsIl2cpp.TypeUtils.GetTypeSignature(m.ReturnType),
                             ThisSignature = PuertsIl2cpp.TypeUtils.GetThisSignature(m, isExtensionMethod),

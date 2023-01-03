@@ -8,6 +8,7 @@
 #if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection;
@@ -88,6 +89,8 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleasePendingJsObjects(IntPtr jsEnv);
 
+        private static Dictionary<Type, Type> DefaultValueAdaptors;
+
         //call by native, do no throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {
@@ -118,17 +121,73 @@ namespace PuertsIl2cpp
         public static void Register(Type type, MethodBase[] ctors = null, MethodBase[] methods = null, PropertyInfo[] properties = null, FieldInfo[] fields = null, bool throwIfMemberFail = false)
         {
             IntPtr typeInfo = IntPtr.Zero;
+            if (DefaultValueAdaptors == null) 
+            {
+                const string DefaultValueAdaptorsClassName = "PuertsStaticWrap.DefaultValueAdaptors";
+                var AdaptorsType = Type.GetType(DefaultValueAdaptorsClassName, false);
+                if (AdaptorsType == null)
+                {
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        AdaptorsType = assembly.GetType(DefaultValueAdaptorsClassName, false);
+                        if (AdaptorsType != null) break;
+                    }
+                }
+                if (AdaptorsType == null) 
+                    DefaultValueAdaptors = new Dictionary<Type, Type>();
+                else 
+                {
+                    FieldInfo fi = AdaptorsType.GetField("AdaptorsDict");
+                    DefaultValueAdaptors = (Dictionary<Type, Type>)fi.GetValue(AdaptorsType);
+                }
+
+            }
             try
             {
                 bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(type);
                 var typeId = GetTypeId(type);
                 //UnityEngine.Debug.Log(string.Format("{0} typeId is {1}", type, typeId));
                 var superTypeId = (isDelegate || type == typeof(object) || type.BaseType == null) ? IntPtr.Zero : GetTypeId(type.BaseType);
-                typeInfo = CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
+                typeInfo = CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), null, true) : "");
                 if (typeInfo == IntPtr.Zero)
                 {
                     throw new Exception(string.Format("create TypeInfo for {0} fail", type));
                 }
+                Action<ConstructorInfo, ParameterInfo[], MethodBase> AddConstructorToType = (ConstructorInfo ctor, ParameterInfo[] pinfos, MethodBase ctorBridge) => {
+                    List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
+                    //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
+                    if (ctorBridge == null) ctorBridge = ctor;
+                    var methodInfoPointer = GetMethodInfoPointer(ctorBridge);
+                    var methodPointer = GetMethodPointer(ctorBridge);
+                    if (methodInfoPointer == IntPtr.Zero)
+                    {
+                        UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor, pinfos)));
+                        return;
+                    }
+                    if (methodPointer == IntPtr.Zero)
+                    {
+                        UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor, pinfos)));
+                        return;
+                    }
+                    var wrapData = AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor, pinfos), methodInfoPointer, methodPointer, usedTypes.Count);
+                    if (wrapData == IntPtr.Zero)
+                    {
+                        if (!throwIfMemberFail)
+                        {
+#if WARNING_IF_MEMBERFAIL
+                            UnityEngine.Debug.LogWarning(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor, pinfos)));
+#endif
+                            return;
+                        }
+                        throw new Exception(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor, pinfos)));
+                    }
+                    for (int i = 0; i < usedTypes.Count; ++i)
+                    {
+                        var usedTypeId = GetTypeId(usedTypes[i]);
+                        //UnityEngine.Debug.Log(string.Format("set used type for ctor {0}: {1}={2}, typeId:{3}", ctor, i, usedTypes[i], usedTypeId));
+                        SetTypeInfo(wrapData, i, usedTypeId);
+                    }
+                };
                 if (!isDelegate)
                 {
                     if (ctors != null && ctors.Length > 0 && (!type.IsArray || type == typeof(System.Array)))
@@ -136,37 +195,22 @@ namespace PuertsIl2cpp
                         foreach (var ctor in ctors)
                         {
                             if (ctor.IsGenericMethodDefinition) continue;
-                            List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
-                            //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
-                            var methodInfoPointer = GetMethodInfoPointer(ctor);
-                            var methodPointer = GetMethodPointer(ctor);
-                            if (methodInfoPointer == IntPtr.Zero)
+                            AddConstructorToType(ctor as ConstructorInfo, null, null);
+
+                            ParameterInfo[] pis = ctor.GetParameters();
+                            Type DVAdaptorType = null;
+                            for (var i = pis.Length - 1; i >= 0; i--)
                             {
-                                UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
-                                continue;
-                            }
-                            if (methodPointer == IntPtr.Zero)
-                            {
-                                UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
-                                continue;
-                            }
-                            var wrapData = AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), methodInfoPointer, methodPointer, usedTypes.Count);
-                            if (wrapData == IntPtr.Zero)
-                            {
-                                if (!throwIfMemberFail)
-                                {
-#if WARNING_IF_MEMBERFAIL
-                                    UnityEngine.Debug.LogWarning(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor)));
-#endif
-                                    continue;
-                                }
-                                throw new Exception(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor)));
-                            }
-                            for (int i = 0; i < usedTypes.Count; ++i)
-                            {
-                                var usedTypeId = GetTypeId(usedTypes[i]);
-                                //UnityEngine.Debug.Log(string.Format("set used type for ctor {0}: {1}={2}, typeId:{3}", ctor, i, usedTypes[i], usedTypeId));
-                                SetTypeInfo(wrapData, i, usedTypeId);
+                                var pi = pis[i];
+                                if (!pi.IsOptional && !pi.IsDefined(typeof(ParamArrayAttribute), false)) break;
+                                if (DVAdaptorType == null && !DefaultValueAdaptors.TryGetValue(ctor.DeclaringType, out DVAdaptorType)) break;
+                                List<Type> types = new List<Type> { };
+                                var newPis = pis.Take(i);
+                                types.AddRange(newPis.Select(pi=> pi.ParameterType));
+
+                                var ci = DVAdaptorType.GetConstructor(types.ToArray());
+                                if (ci == null) continue;
+                                AddConstructorToType(ctor as ConstructorInfo, newPis.ToArray(), ci);
                             }
                         }
                     }
@@ -179,25 +223,63 @@ namespace PuertsIl2cpp
                         var methodPointer = GetMethodPointer(method);
                         if (methodInfoPointer == IntPtr.Zero)
                         {
-                            UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, null, false, isExtensionMethod)));
                             return;
                         }
                         if (methodPointer == IntPtr.Zero)
                         {
-                            UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, null, false, isExtensionMethod)));
                             return;
                         }
-                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
+                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, null, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
                         if (wrapData == IntPtr.Zero)
                         {
                             if (throwIfMemberFail)
                             {
-                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, null, false, isExtensionMethod)));
                             }
                             else
                             {
 #if WARNING_IF_MEMBERFAIL
-                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, null, false, isExtensionMethod)));
+#endif
+                                return;
+                            }
+                        }
+                        for (int i = 0; i < usedTypes.Count; ++i)
+                        {
+                            var usedTypeId = GetTypeId(usedTypes[i]);
+                            //UnityEngine.Debug.Log(string.Format("set used type for method {0}: {1}={2}, typeId:{3}", method, i, usedTypes[i], usedTypeId));
+                            SetTypeInfo(wrapData, i, usedTypeId);
+                        }
+                    };
+                    Action<string, MethodInfo, ParameterInfo[], MethodInfo, bool> AddMethodWithDefaultValueToType = (string name, MethodInfo method, ParameterInfo[] pinfos, MethodInfo bridgeMethod, bool isExtensionMethod) =>
+                    {
+                        List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
+                        //UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
+                        var methodInfoPointer = GetMethodInfoPointer(bridgeMethod);
+                        var methodPointer = GetMethodPointer(bridgeMethod);
+                        if (methodInfoPointer == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, pinfos, false, isExtensionMethod)));
+                            return;
+                        }
+                        if (methodPointer == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, pinfos, false, isExtensionMethod)));
+                            return;
+                        }
+                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, pinfos, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, false, false, methodInfoPointer, methodPointer, usedTypes.Count);
+                        if (wrapData == IntPtr.Zero)
+                        {
+                            if (throwIfMemberFail)
+                            {
+                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, pinfos, false, isExtensionMethod)));
+                            }
+                            else
+                            {
+#if WARNING_IF_MEMBERFAIL
+                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, pinfos, false, isExtensionMethod)));
 #endif
                                 return;
                             }
@@ -216,6 +298,23 @@ namespace PuertsIl2cpp
                         {
                             if (method.IsGenericMethodDefinition || method.IsAbstract) continue;
                             AddMethodToType(method.Name, method as MethodInfo, false, false, false);
+
+                            ParameterInfo[] pis = method.GetParameters();
+                            Type DVAdaptorType = null;
+                            for (var i = pis.Length - 1; i >= 0; i--)
+                            {
+                                var pi = pis[i];
+                                if (!pi.IsOptional && !pi.IsDefined(typeof(ParamArrayAttribute), false)) break;
+                                if (DVAdaptorType == null && !DefaultValueAdaptors.TryGetValue(method.DeclaringType, out DVAdaptorType)) break;
+                                List<Type> types = new List<Type> { };
+                                if (!method.IsStatic) types.Add(method.DeclaringType);
+                                var newPis = pis.Take(i);
+                                types.AddRange(newPis.Select(pi=> pi.ParameterType));
+                                var mi = DVAdaptorType.GetMethod(method.Name, types.ToArray());
+
+                                if (mi == null) continue; // 拥有二义性时会null
+                                AddMethodWithDefaultValueToType(method.Name, method as MethodInfo, newPis.ToArray(), mi, false);
+                            }
                         }
                     }
 					
@@ -225,6 +324,23 @@ namespace PuertsIl2cpp
                         foreach (var method in extensionMethods)
                         {
                             AddMethodToType(method.Name, method as MethodInfo, false, false, true);
+
+                            ParameterInfo[] pis = method.GetParameters();
+                            Type DVAdaptorType = null;
+                            for (var i = pis.Length - 1; i >= 0; i--)
+                            {
+                                var pi = pis[i];
+                                if (!pi.IsOptional && !pi.IsDefined(typeof(ParamArrayAttribute), false)) break;
+                                if (DVAdaptorType == null && !DefaultValueAdaptors.TryGetValue(method.DeclaringType, out DVAdaptorType)) break;
+                                List<Type> types = new List<Type> { };
+                                if (!method.IsStatic) types.Add(method.DeclaringType);
+                                var newPis = pis.Take(i);
+                                types.AddRange(newPis.Select(pi=> pi.ParameterType));
+                                var mi = DVAdaptorType.GetMethod(method.Name, types.ToArray());
+
+                                if (mi == null) continue; // 拥有二义性时会null
+                                AddMethodWithDefaultValueToType(method.Name, method as MethodInfo, newPis.ToArray(), mi, true);
+                            }
                         }
                     }
 

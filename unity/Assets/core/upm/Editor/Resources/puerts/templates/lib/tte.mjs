@@ -196,10 +196,17 @@ export function ENDIF() {
     return TTEndif
 }
 export function FOR(arr, fn, joiner = '') {
-    if (!arr || !(arr instanceof Array)) return '';
+    if (!arr || !(arr instanceof Array || typeof arr[Symbol.iterator] === 'function')) return '';
 
     let scope = enterScope();
-    let ret = arr.map(fn);
+    let ret;
+    if (arr.map) ret = arr.map(fn);
+    else {
+        ret = [];
+        for (let item of arr) {
+            ret.push(fn(item));
+        }
+    }
     var resultInScope = exitScope(scope);
 
     if (ret.filter(item => item !== void 0) == 0) {

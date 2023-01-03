@@ -1,4 +1,4 @@
-import { FOR } from './tte.mjs'
+import { FOR } from './lib/tte.mjs'
 
 export default function TypingTemplate(genTypes) {
     return `

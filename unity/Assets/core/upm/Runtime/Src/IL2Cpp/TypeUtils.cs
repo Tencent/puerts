@@ -240,7 +240,7 @@ namespace PuertsIl2cpp
             }
             return "";
         }
-        public static string GetMethodSignature(MethodBase methodBase, bool isDelegateInvoke = false, bool isExtensionMethod = false)
+        public static string GetMethodSignature(MethodBase methodBase, ParameterInfo[] parameterInfos = null, bool isDelegateInvoke = false, bool isExtensionMethod = false)
         {
             string signature = "";
             if (methodBase is ConstructorInfo)
@@ -257,7 +257,7 @@ namespace PuertsIl2cpp
                 var methodInfo = methodBase as MethodInfo;
                 signature += GetTypeSignature(methodInfo.ReturnType);
                 if (!methodInfo.IsStatic && !isDelegateInvoke) signature += methodBase.DeclaringType == typeof(object) ? "T" : "t";
-                var parameterInfos = methodInfo.GetParameters();
+                if (parameterInfos == null) parameterInfos = methodInfo.GetParameters();
                 for (int i = 0; i < parameterInfos.Length; ++i)
                 {
                     if (i == 0 && isExtensionMethod)

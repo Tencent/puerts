@@ -188,7 +188,7 @@ static void MethodCallback(pesapi_callback_info info) {
             }
             ++wrapDatas;
         }
-        pesapi_throw_by_string(info, "invalid arguments"); 
+        pesapi_throw_by_string(info, "invalid arguments for method"); 
     } 
     catch (Il2CppExceptionWrapper& exception)
     {
@@ -295,7 +295,7 @@ static void* CtorCallback(pesapi_callback_info info)
             ++wrapDatas;
         }
         
-        pesapi_throw_by_string(info, "invalid arguments");
+        pesapi_throw_by_string(info, "invalid arguments for constructor");
         
     } 
     catch (Il2CppExceptionWrapper& exception)

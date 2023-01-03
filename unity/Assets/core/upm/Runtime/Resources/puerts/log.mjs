@@ -16,7 +16,8 @@ if (UnityEngine_Debug) {
     function toString(args) {
         return Array.prototype.map.call(args, x => {
             try {
-                return x instanceof Error ? x.stack : x + '';
+                const ret = x instanceof Error ? x.stack : x + '';
+                return ret;
             } catch (err) {
                 return err;
             }

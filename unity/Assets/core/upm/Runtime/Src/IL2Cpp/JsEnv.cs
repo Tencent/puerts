@@ -81,7 +81,7 @@ namespace Puerts
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
                         
-                        if (specifier = loader.Resolve(specifier, debugpathRef)) {
+                        if (specifier = loader.Resolve(specifier)) {
                             loader.ReadFile(specifier, contentRef);
                             return contentRef[0];
                         } else {

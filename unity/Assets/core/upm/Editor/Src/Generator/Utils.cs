@@ -60,6 +60,7 @@ namespace Puerts.Editor
 
             public static bool isBlittableType(Type type)
             {
+                
                 if (type.IsValueType)
                 {
                     bool ret;

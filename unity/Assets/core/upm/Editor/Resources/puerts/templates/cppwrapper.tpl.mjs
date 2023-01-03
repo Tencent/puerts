@@ -1,4 +1,4 @@
-import { FOR, default as t, IF, ENDIF, ELSE } from "./tte.mjs"
+import { FOR, default as t, IF, ENDIF, ELSE } from "./lib/tte.mjs"
 
 function listToJsArray(csArr) {
     let arr = [];

@@ -39,6 +39,19 @@ namespace PuertsIl2cpp.Editor
                 AssetDatabase.Refresh();
             }
 
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate MethodWrapper.cs", false, 1)]
+            public static void GenerateMethodWrappers()
+            {
+                var start = DateTime.Now;
+                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                
+                
+                Directory.CreateDirectory(saveTo);
+                FileExporter.GenMethodWithDefaultValue(saveTo);
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
+                AssetDatabase.Refresh();
+            }
+
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate ExtensionMethodInfos_Gen.cs", false, 1)]
             public static void GenerateExtensionMethodInfos()
             {
