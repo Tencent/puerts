@@ -154,8 +154,8 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     auto target = il2cpp::vm::Object::New(delegateInfoClass);
 
     const MethodInfo* ctor = il2cpp_class_get_method_from_name(delegateInfoClass, ".ctor", 0);
-    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const Il2CppReflectionMethod* method);
-    ((NativeCtorPtr)ctor->methodPointer)(target, Reflection::GetMethodObject(ctor, delegateInfoClass));
+    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const MethodInfo* method);
+    ((NativeCtorPtr)ctor->methodPointer)(target, ctor);
 
     IL2CPP_OBJECT_SETREF(delegate, target, target);
 
