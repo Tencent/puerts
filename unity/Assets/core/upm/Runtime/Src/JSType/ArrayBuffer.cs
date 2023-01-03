@@ -42,7 +42,9 @@ namespace Puerts
             }
         }
 
+#if ENABLE_IL2CPP
         [UnityEngine.Scripting.Preserve]
+#endif
         public ArrayBuffer(IntPtr ptr, int length)
         {
             if (ptr != IntPtr.Zero)
