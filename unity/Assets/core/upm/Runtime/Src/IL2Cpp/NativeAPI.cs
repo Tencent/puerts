@@ -332,6 +332,12 @@ namespace PuertsIl2cpp
         {
             throw new NotImplementedException();
         }
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetTypedValueType(Type type)
+        {
+            throw new NotImplementedException();
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static void PesapiCallTest(Type type)

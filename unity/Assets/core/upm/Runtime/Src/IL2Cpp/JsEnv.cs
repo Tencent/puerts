@@ -60,6 +60,7 @@ namespace Puerts
             persistentObjectInfoType = typeof(Puerts.JSObject);
             PuertsIl2cpp.NativeAPI.StoreGlobalSpecialType(0, persistentObjectInfoType);
             PuertsIl2cpp.NativeAPI.StoreGlobalSpecialType(1, typeof(ArrayBuffer));
+            PuertsIl2cpp.NativeAPI.SetTypedValueType(typeof(TypedValue));
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
             nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPesapiEnvHolder(nativeJsEnv);

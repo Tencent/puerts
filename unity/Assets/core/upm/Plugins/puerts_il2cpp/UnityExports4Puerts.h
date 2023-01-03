@@ -64,7 +64,7 @@ typedef void PersistentObjectInfo;
 typedef void* (*DelegateAllocateFunc)(Il2CppClass* klass, MethodPointer methodPointer, PersistentObjectInfo** outDelegateInfo);
 typedef void (*FieldOperationFunc)(void *obj, FieldInfo *fieldInfo, size_t offset, void *value);
 typedef void* (*GetValueTypeFieldPtrFunc)(void *obj, FieldInfo *field, size_t offset);
-typedef RuntimeMethod MethodType;
+typedef MethodInfo MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, void** typeInfos);
 typedef pesapi_callback FunctionCallbackFunc;
 typedef pesapi_constructor InitializeFunc;
