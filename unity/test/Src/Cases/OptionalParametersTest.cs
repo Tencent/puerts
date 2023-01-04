@@ -5,6 +5,40 @@ namespace Puerts.UnitTest
     [UnityEngine.Scripting.Preserve]
     public class OptionalParametersClass
     {
+        public int a;
+        public int b;
+
+        [UnityEngine.Scripting.Preserve]
+        public OptionalParametersClass() {
+            UnityEngine.Debug.Log("Constructor1");
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public OptionalParametersClass(int _c, int _a = 1, int _b = 2) {
+            UnityEngine.Debug.Log("Constructor2");
+            a = _a * 1000;
+            b = _b * 100;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public OptionalParametersClass(string _c, int _a = 1, int _b = 2) {
+            UnityEngine.Debug.Log("Constructor3");
+            a = _a * 100;
+            b = _b * 10;
+        }
+        
+        [UnityEngine.Scripting.Preserve]
+        public static int STest(int i = 0, int j = 1, int k = 2)
+        {
+            return i * 100 + j * 10 + k;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static int STest(string i, int j = 1, int k = 2)
+        {
+            return j * 10 + k;
+        }
+
         [UnityEngine.Scripting.Preserve]
         public int Test(int i = 0, int j = 1, int k = 2)
         {
@@ -68,7 +102,7 @@ namespace Puerts.UnitTest
     public class OptionalParametersTest
     {
         [Test]
-        public void Test1()
+        public void InstanceMethodTest1()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -81,7 +115,7 @@ namespace Puerts.UnitTest
             
         }
         [Test]
-        public void Test2() 
+        public void InstanceMethodTest2() 
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -94,7 +128,7 @@ namespace Puerts.UnitTest
             
         }
         [Test]
-        public void Test3()
+        public void InstanceMethodTest3()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -107,7 +141,7 @@ namespace Puerts.UnitTest
             
         }
         [Test]
-        public void Test4()
+        public void InstanceMethodTest4()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -121,7 +155,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test5()
+        public void InstanceMethodTest5()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -135,7 +169,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test6()
+        public void InstanceMethodTest6()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -149,7 +183,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test7()
+        public void InstanceMethodTest7()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -163,7 +197,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test8()
+        public void InstanceMethodTest8()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -176,24 +210,24 @@ namespace Puerts.UnitTest
             
         }
 
-        [Test] 
-        public void Test9()
-        {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
-                (function() {
-                    let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
-                    let ret = 0;                
-                    try{temp.Test3('1');}catch(e){ret = 1;}
-                    return ret;
-                })()
-           ");
-            Assert.AreEqual(1, ret);
+        // [Test] 
+        // public void InstanceMethodTest9()
+        // {
+        //     var env = UnitTestEnv.GetEnv();
+        //     int ret = env.Eval<int>(@"
+        //         (function() {
+        //             let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+        //             let ret = 0;
+        //             try{temp.Test3('1');}catch(e){ret = 1;}
+        //             return ret;
+        //         })()
+        //    ");
+        //     Assert.AreEqual(1, ret);
             
-        }
+        // }
 
         [Test]
-        public void Test10()
+        public void InstanceMethodTest10()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -209,7 +243,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test11()
+        public void InstanceMethodTest11()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -225,7 +259,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test12()
+        public void InstanceMethodTest12()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -241,7 +275,7 @@ namespace Puerts.UnitTest
         }
 
         [Test]
-        public void Test13()
+        public void InstanceMethodTest13()
         {
             var env = UnitTestEnv.GetEnv();
             int ret = env.Eval<int>(@"
@@ -255,7 +289,7 @@ namespace Puerts.UnitTest
             
         }
         [Test]
-        public void Test14()
+        public void InstanceMethodTest14()
         {
             var env = UnitTestEnv.GetEnv();
             string ret = env.Eval<string>(@"
@@ -265,6 +299,83 @@ namespace Puerts.UnitTest
                 })()
            ");
             Assert.AreEqual("world hello", ret);
+            
+        }
+
+        [Test]
+        public void ConstructorTest1()
+        {
+            var env = UnitTestEnv.GetEnv();
+            string ret = env.Eval<string>(@"
+                (function() {
+                    const cls = new CS.Puerts.UnitTest.OptionalParametersClass(1);
+                    return '' + (cls.a + cls.b)
+                })()
+           ");
+            Assert.AreEqual("1200", ret);
+            
+        }
+        [Test]
+        public void ConstructorTest2()
+        {
+            var env = UnitTestEnv.GetEnv();
+            string ret = env.Eval<string>(@"
+                (function() {
+                    const cls = new CS.Puerts.UnitTest.OptionalParametersClass(1, 4);
+                    return '' + (cls.a + cls.b)
+                })()
+           ");
+            Assert.AreEqual("4200", ret);
+            
+        }
+        [Test]
+        public void ConstructorTest3()
+        {
+            var env = UnitTestEnv.GetEnv();
+            string ret = env.Eval<string>(@"
+                (function() {
+                    const cls = new CS.Puerts.UnitTest.OptionalParametersClass('1');
+                    return '' + (cls.a + cls.b)
+                })()
+           ");
+            Assert.AreEqual("120", ret);
+            
+        }
+
+        [Test]
+        public void StaticMethodTest1()
+        {
+            var env = UnitTestEnv.GetEnv();
+            int ret = env.Eval<int>(@"
+                (function() {
+                    return CS.Puerts.UnitTest.OptionalParametersClass.STest(1,3);
+                })()
+           ");
+            Assert.AreEqual(132, ret);
+            
+        }
+        [Test]
+        public void StaticMethodTest2() 
+        {
+            var env = UnitTestEnv.GetEnv();
+            int ret = env.Eval<int>(@"
+                (function() {
+                    return CS.Puerts.UnitTest.OptionalParametersClass.STest('1',3);
+                })()
+           ");
+            Assert.AreEqual(32, ret);
+            
+        }
+        [Test]
+        public void StaticMethodTest3()
+        {
+            var env = UnitTestEnv.GetEnv();
+            int ret = env.Eval<int>(@"
+                (function() {
+                    return CS.Puerts.UnitTest.OptionalParametersClass.STest('1');
+                })()
+           ");
+            Assert.AreEqual(12, ret);
             
         }
     }

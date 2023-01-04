@@ -28,8 +28,8 @@ const PrimitiveSignatureCppTypeMap = {
 function needThis(wrapperInfo) {
     return wrapperInfo.ThisSignature == 't' || wrapperInfo.ThisSignature == 'T'
 }
-function getSignatureWithoutRef(signature) {
-    if (signature[0] == 'P') {
+function getSignatureWithoutRefAndPrefix(signature) {
+    if (signature[0] == 'P' || signature[0] == 'D') {
         return signature.substring(1);
     } else {
         return signature
@@ -97,14 +97,14 @@ struct ${valueTypeInfo.Signature}
     },
 
     declareTypeInfo(wrapperInfo) {   
-        const returnHasTypeInfo = wrapperInfo.ReturnSignature && !(getSignatureWithoutRef(wrapperInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap)
+        const returnHasTypeInfo = wrapperInfo.ReturnSignature && !(getSignatureWithoutRefAndPrefix(wrapperInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap)
         const ret = [];
         let i = 0;
         if (returnHasTypeInfo) {
             ret.push(`auto TIret = typeInfos[${i++}];`);
         }
         listToJsArray(wrapperInfo.ParameterSignatures).forEach((ps, index) => {
-            if (!(getSignatureWithoutRef(ps) in PrimitiveSignatureCppTypeMap)) {
+            if (!(getSignatureWithoutRefAndPrefix(ps) in PrimitiveSignatureCppTypeMap)) {
                 ret.push(`auto TIp${index} = typeInfos[${i++}];`);
             }
         })
@@ -112,23 +112,32 @@ struct ${valueTypeInfo.Signature}
     },
     
     checkJSArg(signature, index) {
-        if (signature in PrimitiveSignatureCppTypeMap) {
-            return `if (!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(context, info[${index}])) return false;`
-        } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
-            return `if (!info[${index}]->IsArrayBuffer()) return false;`
-        } else if (signature[0] == 'P') {
-            return `if (!info[${index}]->IsObject()) return false;`
-        } else if (signature == 's') {
-            return `if (!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
-        } else if (signature == 'o') {
-            return `if (!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
-        } else if (signature == 'O' || signature[0] == 'V' || signature[0] == 'D') {
-            return ``;
-        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
-            return `if (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))) return false;`
-        } else { // TODO: 适配所有类型，根据!!true去查找没处理的
-            return 'if (!!true) return false;';
+        let ret = ''
+        if (signature[0] == "D") {
+            ret += `if (length > ${index} && `
+            signature = signature.substring(1);
+        } else {
+            ret += `if (`
         }
+
+        if (signature in PrimitiveSignatureCppTypeMap) {
+            ret += `!converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::accept(context, info[${index}])) return false;`
+        } else if (signature == 'p' || signature == 'Pv') { // IntPtr, void*
+            ret += `!info[${index}]->IsArrayBuffer()) return false;`
+        } else if (signature[0] == 'P') {
+            ret += `!info[${index}]->IsObject()) return false;`
+        } else if (signature == 's') {
+            ret += `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
+        } else if (signature == 'o') {
+            ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
+        } else if (signature == 'O' || signature[0] == 'V') {
+            return '';
+        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+            ret += `!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))) return false;`
+        } else { // TODO: 适配所有类型，根据!!true去查找没处理的
+            ret += '!!true) return false;';
+        }
+        return ret;
     },
     
     refSetback(signature, index) {
@@ -254,7 +263,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
             }
         } else if (signature[0] == 'V') {
             const si = signature.substring(1);
-            const start = parseInt(JSName.match(/info\[(\d+)]/)[1]);
+            const start = parseInt(JSName.match(/info\[(\d+)\]/)[1]);
             if (si in PrimitiveSignatureCppTypeMap) { 
                 return `    // JSValToCSVal primitive params
     void* ${CSName} = RestArguments<${PrimitiveSignatureCppTypeMap[si]}>::PackPrimitive(context, info, TI${CSName}, ${start});
@@ -278,7 +287,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
             }
         } else if (signature[0] == 'D') {
             const si = signature.substring(1);
-            const start = parseInt(JSName.match(/info\[(\d+)]/)[1]);
+            const start = parseInt(JSName.match(/info\[(\d+)\]/)[1]);
             if (si in PrimitiveSignatureCppTypeMap) { 
                 return `    // JSValToCSVal primitive with default
     ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(context, info, method, ${start});
@@ -321,8 +330,8 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
 
 function genArgsLenCheck(parameterSignatures) {
     var requireNum = 0;
-    for(;requireNum < parameterSignatures.length && parameterSignatures[requireNum][0] != 'V' && parameterSignatures[requireNum][0] != 'D';++requireNum) { }
-    return requireNum != parameterSignatures.length ? `info.Length() < ${requireNum}` : `info.Length() != ${parameterSignatures.length}`;
+    for (; requireNum < parameterSignatures.length && parameterSignatures[requireNum][0] != 'V' && parameterSignatures[requireNum][0] != 'D'; ++requireNum) { }
+    return requireNum != parameterSignatures.length ? `length < ${requireNum}` : `length != ${parameterSignatures.length}`;
 }
 
 function genFuncWrapper(wrapperInfo) {
@@ -338,8 +347,9 @@ static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-    if (checkJSArgument) {
-        if ( ${genArgsLenCheck(parameterSignatures)}) return false;
+    if (${parameterSignatures.filter(s => s[0] == 'D').length ? 'true' : 'checkJSArgument'}) {
+        auto length = info.Length();
+        if (${genArgsLenCheck(parameterSignatures)}) return false;
         ${FOR(parameterSignatures, (x, i) => t`
         ${CODE_SNIPPETS.checkJSArg(x, i)}
         `)}
@@ -396,11 +406,11 @@ function genBridge(bridgeInfo) {
 static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
     // PLog("Running b_${bridgeInfo.Signature}");
 
-    ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRef(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
+    ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRefAndPrefix(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
     auto TIret = GetReturnType(method);
     ${ENDIF()}
     ${FOR(parameterSignatures, (ps, index) => t`
-        ${IF(!(getSignatureWithoutRef(ps) in PrimitiveSignatureCppTypeMap))}
+        ${IF(!(getSignatureWithoutRefAndPrefix(ps) in PrimitiveSignatureCppTypeMap))}
     auto TIp${index} = GetParameterType(method, ${index});
         ${ENDIF()}
     `)}
