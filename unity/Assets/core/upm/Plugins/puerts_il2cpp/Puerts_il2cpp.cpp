@@ -80,7 +80,7 @@ static void* ObjectAllocate(Il2CppClass *klass)
 {
     if (klass->valuetype)
     {
-        return (void*)(new uint8_t[klass->native_size]);
+        return (void*)(new uint8_t[klass->native_size > 0 ? klass->native_size : klass->instance_size]);
     } else {
         auto obj = il2cpp::vm::Object::New(klass);
         return obj;

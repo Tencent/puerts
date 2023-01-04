@@ -185,10 +185,10 @@ namespace PuertsIl2cpp
             {
                 return "p";
             }
-            else if (type == typeof(DateTime)) //是否要支持？
-            {
-                return "d";
-            }
+            //else if (type == typeof(DateTime)) //是否要支持？
+            //{
+            //    return "d";
+            //}
             else if (type == typeof(string))
             {
                 return "s";
