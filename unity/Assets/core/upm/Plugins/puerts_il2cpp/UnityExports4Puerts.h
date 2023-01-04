@@ -55,6 +55,8 @@ typedef const void* (*GetArrayElementTypeIdFunc)(const void *typeId);
 
 typedef uint32_t (*GetArrayLengthFunc)(void *array);
 
+typedef void* (*GetDefaultValuePtrFunc)(const void* methodInfo, uint32_t index);
+
 #else
     
 #define MethodPointer Il2CppMethodPointer
@@ -108,6 +110,8 @@ typedef void (*ArraySetRefFunc)(Il2CppArray *array, uint32_t index, void* value)
 typedef Il2CppClass* (*GetArrayElementTypeIdFunc)(Il2CppClass *typeId);
 
 typedef uint32_t (*GetArrayLengthFunc)(Il2CppArray *array);
+
+typedef void* (*GetDefaultValuePtrFunc)(const MethodInfo* methodInfo, uint32_t index);
 
 #endif
 
@@ -167,6 +171,7 @@ struct UnityExports
     ArraySetRefFunc ArraySetRef = nullptr;
     GetArrayElementTypeIdFunc GetArrayElementTypeId = nullptr;
     GetArrayLengthFunc GetArrayLength = nullptr;
+    GetDefaultValuePtrFunc GetDefaultValuePtr = nullptr;
     int SizeOfRuntimeObject = 0;
     //plugin api
     

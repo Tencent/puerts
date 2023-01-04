@@ -326,6 +326,11 @@ static uint32_t GetArrayLength(void *array)
     return GUnityExports.GetArrayLength(array);
 }
 
+static void* GetDefaultValuePtr(const void* methodInfo, uint32_t index)
+{
+    return GUnityExports.GetDefaultValuePtr(methodInfo, index);
+}
+
 template <typename T>
 struct RestArguments
 {
@@ -369,7 +374,7 @@ struct RestArguments
         auto isolate = context->GetIsolate();
         void* ret = NewArray(typeId, info.Length() - start);
         T* arr = static_cast<T*>(GetArrayFirstElementAddress(ret));
-        auto elemTypeId = GetArrayElementTypeId(typeId);
+        //auto elemTypeId = GetArrayElementTypeId(typeId);
         for(int i = start; i < info.Length();++i)
         {
             T* e = DataTransfer::GetPointer<T>(context, info[i]);
@@ -406,6 +411,66 @@ struct RestArguments
         for (int i = 0; i < arrayLength; ++i)
         {
             Argv[i] = CopyValueType(isolate, context, elemTypeId, &arr[i], sizeof(T));
+        }
+    }
+};
+
+template <typename T>
+struct OptionalParameter
+{
+    static T GetPrimitive(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index)
+    {
+        if (index < info.Length())
+        {
+            return converter::Converter<T>::toCpp(context, info[index]);
+        }
+        else
+        {
+            return *((T*)GetDefaultValuePtr(methodInfo, index));
+        }
+    }
+    
+    static T GetValueType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index)
+    {
+        if (index < info.Length())
+        {
+            return (*DataTransfer::GetPointer<T>(context, info[index]));
+        }
+        else
+        {
+            auto pret = (T*)GetDefaultValuePtr(methodInfo, index);
+            if (pret) 
+            {
+                return *pret;
+            }
+            T ret;
+            memset(&ret, 0, sizeof(T));
+            return ret;
+        }
+    }
+    
+    static void* GetString(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index)
+    {
+        if (index < info.Length())
+        {
+            v8::String::Utf8Value t(context->GetIsolate(), info[index]);
+            return CStringToCSharpString(*t);
+        }
+        else
+        {
+            return GetDefaultValuePtr(methodInfo, index);
+        }
+    }
+    
+    static void* GetRefType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* methodInfo, int index, const void* typeId)
+    {
+        if (index < info.Length())
+        {
+            return JsValueToCSRef(context, info[index], typeId);
+        }
+        else
+        {
+            return GetDefaultValuePtr(methodInfo, index);
         }
     }
 };

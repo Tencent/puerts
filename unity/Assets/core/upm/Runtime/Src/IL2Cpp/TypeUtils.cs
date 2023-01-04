@@ -220,7 +220,17 @@ namespace PuertsIl2cpp
         public static string GetParameterSignature(ParameterInfo parameterInfo)
         {
             bool isParams = parameterInfo.IsDefined(typeof(ParamArrayAttribute), false) && parameterInfo.ParameterType.IsArray;
-            return isParams ? ("V" + GetTypeSignature(parameterInfo.ParameterType.GetElementType())) : GetTypeSignature(parameterInfo.ParameterType);
+            if (isParams)
+            {
+                return "V" + GetTypeSignature(parameterInfo.ParameterType.GetElementType());
+            }
+
+            if (parameterInfo.IsOptional)
+            {
+                return "D" + GetTypeSignature(parameterInfo.ParameterType);
+            }
+            
+            return GetTypeSignature(parameterInfo.ParameterType);
         }
 
         public static string GetThisSignature(MethodBase methodBase, bool isExtensionMethod = false)

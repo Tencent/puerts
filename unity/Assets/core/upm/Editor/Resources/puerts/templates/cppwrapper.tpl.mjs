@@ -39,6 +39,9 @@ function getSignatureWithoutRef(signature) {
 const CODE_SNIPPETS = {
 
     SToCPPType(signature) {
+        if (signature[0] == 'D') {
+            signature = signature.substring(1);
+        }
         var t = (signature in PrimitiveSignatureCppTypeMap) ? PrimitiveSignatureCppTypeMap[signature] : "void*";
         if (signature.startsWith('s_') && signature.endsWith('_')) {
             t = `struct ${signature}`;
@@ -119,7 +122,7 @@ struct ${valueTypeInfo.Signature}
             return `if (!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
             return `if (!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
-        } else if (signature == 'O' || signature[0] == 'V') {
+        } else if (signature == 'O' || signature[0] == 'V' || signature[0] == 'D') {
             return ``;
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {
             return `if (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))) return false;`
@@ -273,6 +276,30 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
     void* ${CSName} = nullptr;
                 `
             }
+        } else if (signature[0] == 'D') {
+            const si = signature.substring(1);
+            const start = parseInt(JSName.match(/info\[(\d+)]/)[1]);
+            if (si in PrimitiveSignatureCppTypeMap) { 
+                return `    // JSValToCSVal primitive with default
+    ${PrimitiveSignatureCppTypeMap[si]} ${CSName} = OptionalParameter<${PrimitiveSignatureCppTypeMap[si]}>::GetPrimitive(context, info, method, ${start});
+                `
+            } else if (si == 's') {
+                return `    // JSValToCSVal string  with default
+    void* ${CSName} = OptionalParameter<void*>::GetString(context, info, method, ${start});
+                `
+            } else if (si == 'o' || si == 'O') {
+                return `    // JSValToCSVal ref  with default
+    void* ${CSName} = OptionalParameter<void*>::GetRefType(context, info, method, ${start}, TI${CSName});
+                `
+            } else if (si.startsWith('s_') && si.endsWith('_')) { 
+                return `    // JSValToCSVal valuetype  with default
+    ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(context, info, method, ${start});
+                `
+            } else {
+                return `    // JSValToCSVal unknow type with default
+    void* ${CSName} = nullptr;
+                `
+            }
         } else {
             return `    // JSValToCSVal P any
     ${CODE_SNIPPETS.SToCPPType(signature)} ${CSName} = ${CODE_SNIPPETS.getArgValue(signature, JSName)};`
@@ -293,11 +320,9 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
 }
 
 function genArgsLenCheck(parameterSignatures) {
-    if (parameterSignatures.length == 0) {
-        return `info.Length() != 0`;
-    }
-    const lastSignature = parameterSignatures[parameterSignatures.length - 1];
-    return (lastSignature[0] == 'V') ? `info.Length() < ${parameterSignatures.length - 1}` : `info.Length() != ${parameterSignatures.length}`;
+    var requireNum = 0;
+    for(;requireNum < parameterSignatures.length && parameterSignatures[requireNum][0] != 'V' && parameterSignatures[requireNum][0] != 'D';++requireNum) { }
+    return requireNum != parameterSignatures.length ? `info.Length() < ${requireNum}` : `info.Length() != ${parameterSignatures.length}`;
 }
 
 function genFuncWrapper(wrapperInfo) {

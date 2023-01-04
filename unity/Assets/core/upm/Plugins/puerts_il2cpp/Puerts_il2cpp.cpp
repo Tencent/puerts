@@ -14,6 +14,8 @@
 #include "vm/GenericClass.h"
 #include "vm/Thread.h"
 #include "vm/Method.h"
+#include "vm/Parameter.h"
+#include "vm/Image.h"
 #include "utils/StringUtils.h"
 #include "vm-utils/NativeDelegateMethodCache.h"
 #include "pesapi.h"
@@ -278,6 +280,13 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
     {
         Field::StaticSetValue(field, value);
     }
+}
+
+void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
+{
+    bool isExplicitySetNullDefaultValue = false;
+    Il2CppObject* defaultValue = Parameter::GetDefaultParameterValueObject(method, &method->parameters[index], &isExplicitySetNullDefaultValue);
+    return (defaultValue && (Class::FromIl2CppType(method->parameters[index].parameter_type, false)->valuetype)) ? Object::Unbox(defaultValue) : defaultValue;
 }
 
 static void* CtorCallback(pesapi_callback_info info);
@@ -790,6 +799,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.ArraySetRef = ArraySetRef;
     g_unityExports.GetArrayElementTypeId = Class::GetElementClass;
     g_unityExports.GetArrayLength = Array::GetLength;
+    g_unityExports.GetDefaultValuePtr = GetDefaultValuePtr;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     return &g_unityExports;
 }
