@@ -126,7 +126,7 @@ namespace Puerts
         private object JSObjectTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             var jsValueType = getValueApi.GetJsValueType(isolate, value, isByRef);
-            if (jsValueType == JsValueType.JsObject)
+            if (jsValueType == JsValueType.JsObject || jsValueType == JsValueType.Function)
             {
                 var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
                 IntPtr DLLJSObjectPtr = getValueApi.GetJSObject(isolate, value, isByRef);
