@@ -335,7 +335,7 @@ struct RestArguments
 {
     static void* PackPrimitive(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
     {
-        void* ret = NewArray(typeId, info.Length() - start);
+        void* ret = NewArray(typeId, info.Length() - start > 0 ? info.Length() - start : 0);
         T* arr = static_cast<T*>(GetArrayFirstElementAddress(ret));
         for(int i = start; i < info.Length();++i)
         {
@@ -359,7 +359,7 @@ struct RestArguments
     static void* PackRef(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
     {
         auto isolate = context->GetIsolate();
-        void* ret = NewArray(typeId, info.Length() - start);
+        void* ret = NewArray(typeId, info.Length() - start > 0 ? info.Length() - start : 0);
         auto elemTypeId = GetArrayElementTypeId(typeId);
         for(int i = start; i < info.Length();++i)
         {
@@ -371,7 +371,7 @@ struct RestArguments
     static void* PackValueType(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
     {
         auto isolate = context->GetIsolate();
-        void* ret = NewArray(typeId, info.Length() - start);
+        void* ret = NewArray(typeId, info.Length() - start > 0 ? info.Length() - start : 0);
         T* arr = static_cast<T*>(GetArrayFirstElementAddress(ret));
         //auto elemTypeId = GetArrayElementTypeId(typeId);
         for(int i = start; i < info.Length();++i)
