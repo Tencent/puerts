@@ -307,13 +307,19 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                         if (DescriptorVal->IsObject())
                         {
                             auto Descriptor = DescriptorVal.As<v8::Object>();
-                            Proto->SetAccessorProperty(Property,
-                                Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "get"))
-                                    .ToLocalChecked()
-                                    .As<v8::Function>(),
-                                Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "set"))
-                                    .ToLocalChecked()
-                                    .As<v8::Function>());
+                            auto Getter = Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "get")).ToLocalChecked();
+                            if (!Getter->IsFunction())
+                            {
+                                auto Value = Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "value")).ToLocalChecked();
+                                Proto->Set(Context, Property, Value);
+                            }
+                            else
+                            {
+                                Proto->SetAccessorProperty(Property, Getter.As<v8::Function>(),
+                                    Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "set"))
+                                        .ToLocalChecked()
+                                        .As<v8::Function>());
+                            }
                         }
                     }
                 }
