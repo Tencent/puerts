@@ -133,7 +133,7 @@ struct ${valueTypeInfo.Signature}
         } else if (signature == 'O' || signature[0] == 'V') {
             return '';
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {
-            ret += `!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))) return false;`
+            ret += `(!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
         } else { // TODO: 适配所有类型，根据!!true去查找没处理的
             ret += '!!true) return false;';
         }
