@@ -140,6 +140,7 @@ namespace PuertsIl2cpp.Editor
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
                     .ToList();
+                bridgeInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                 var wrapperInfos = methodToWrap
                     .Select(m  => { 
@@ -168,6 +169,7 @@ namespace PuertsIl2cpp.Editor
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
                     .ToList();
+                wrapperInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                 var fieldWrapperInfos = fieldToWrapper
                     .Select(f => new SignatureInfo
@@ -181,6 +183,7 @@ namespace PuertsIl2cpp.Editor
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
                     .ToList();
+                fieldWrapperInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
                 using (var jsEnv = new Puerts.JsEnv())
                 {

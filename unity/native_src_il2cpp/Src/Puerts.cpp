@@ -618,42 +618,33 @@ struct FieldWrapFuncInfo
 
 MethodPointer FindBridgeFunc(const char* signature)
 {
-    BridgeFuncInfo* ptr = &g_bridgeFuncInfos[0];
-    while(ptr->Signature && ptr->Method)
-    {
-        if (strcmp(ptr->Signature, signature) == 0)
-        {
-            return ptr->Method;
-        }
-        ++ptr;
+    auto begin = &g_bridgeFuncInfos[0];
+    auto end = &g_bridgeFuncInfos[sizeof(g_bridgeFuncInfos) / sizeof(BridgeFuncInfo) - 1];
+    auto first = std::lower_bound(begin, end, signature, [](const BridgeFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
+    if (first != end && strcmp(first->Signature, signature) == 0) {
+        return first->Method;
     }
     return nullptr;
 }
 
 V8WrapFuncPtr FindWrapFunc(const char* signature)
 {
-    WrapFuncInfo* ptr = &g_wrapFuncInfos[0];
-    while(ptr->Signature && ptr->Method)
-    {
-        if (strcmp(ptr->Signature, signature) == 0)
-        {
-            return ptr->Method;
-        }
-        ++ptr;
+    auto begin = &g_wrapFuncInfos[0];
+    auto end = &g_wrapFuncInfos[sizeof(g_wrapFuncInfos) / sizeof(WrapFuncInfo) - 1];
+    auto first = std::lower_bound(begin, end, signature, [](const WrapFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
+    if (first != end && strcmp(first->Signature, signature) == 0) {
+        return first->Method;
     }
     return nullptr;
 }
 
 FieldWrapFuncInfo * FindFieldWrapFuncInfo(const char* signature)
 {
-    FieldWrapFuncInfo* ptr = &g_fieldWrapFuncInfos[0];
-    while(ptr->Signature)
-    {
-        if (strcmp(ptr->Signature, signature) == 0)
-        {
-            return ptr;
-        }
-        ++ptr;
+    auto begin = &g_fieldWrapFuncInfos[0];
+    auto end = &g_fieldWrapFuncInfos[sizeof(g_fieldWrapFuncInfos) / sizeof(FieldWrapFuncInfo) - 1];
+    auto first = std::lower_bound(begin, end, signature, [](const FieldWrapFuncInfo& x, const char* signature) {return strcmp(x.Signature, signature) < 0;});
+    if (first != end && strcmp(first->Signature, signature) == 0) {
+        return first;
     }
     return nullptr;
 }
