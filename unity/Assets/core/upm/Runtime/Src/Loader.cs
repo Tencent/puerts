@@ -5,8 +5,6 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
-
 using System.Net.Mime;
 #if PUERTS_GENERAL || UNITY_EDITOR
 using System.IO;
@@ -14,20 +12,32 @@ using System.IO;
 
 namespace Puerts
 {
+#if !PUERTS_GENERAL
+    [UnityEngine.Scripting.Preserve]
+#endif
     public interface ILoader
     {
         bool FileExists(string filepath);
         string ReadFile(string filepath, out string debugpath);
     }
 
+#if !PUERTS_GENERAL
+    [UnityEngine.Scripting.Preserve]
+#endif
     public class DefaultLoader : ILoader
     {
         private string root = "";
 
+#if !PUERTS_GENERAL
+        [UnityEngine.Scripting.Preserve]
+#endif
         public DefaultLoader()
         {
         }
 
+#if !PUERTS_GENERAL
+        [UnityEngine.Scripting.Preserve]
+#endif
         public DefaultLoader(string root)
         {
             this.root = root;
@@ -44,6 +54,9 @@ namespace Puerts
                 filepath;
         }
 
+#if !PUERTS_GENERAL
+        [UnityEngine.Scripting.Preserve]
+#endif
         public bool FileExists(string filepath)
         {
 #if PUERTS_GENERAL
@@ -61,6 +74,9 @@ namespace Puerts
 #endif
         }
 
+#if !PUERTS_GENERAL
+        [UnityEngine.Scripting.Preserve]
+#endif
         public string ReadFile(string filepath, out string debugpath)
         {
 #if PUERTS_GENERAL
@@ -77,8 +93,5 @@ namespace Puerts
             return file == null ? null : file.text;
 #endif
         }
-        void ReadFileV2(string identifer, out string content) { content = ""; }
     }
 }
-
-#endif

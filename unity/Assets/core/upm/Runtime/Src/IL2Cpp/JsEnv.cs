@@ -82,9 +82,8 @@ namespace Puerts
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
                         
-                        if (specifier = loader.Resolve(specifier, debugpathRef)) {
-                            loader.ReadFile(specifier, contentRef);
-                            return contentRef[0];
+                        if (loader.FileExists(specifier)) {
+                            return loader.ReadFile(specifier, debugpathRef);
                         } else {
                             throw new Error(`module not found in js: ${originSp}`);
                         }

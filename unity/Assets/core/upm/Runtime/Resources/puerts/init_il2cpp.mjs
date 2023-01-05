@@ -157,15 +157,23 @@ puer.getLastException = function() {
 puer.evalScript = eval
 
 let loader = jsEnv.GetLoader();
+// function loadFile(path) {
+//     let resolved, content
+//     if (resolved = loader.Resolve(path)) {
+//         let contents = []
+//         loader.ReadFile(resolved, contents);
+//         content = contents[0]
+//     }
+//     return { content: content, debugPath: resolved };
+// }
+// puer.loadFile = loadFile;
+
+// puer.fileExists = loader.Resolve.bind(loader);
 function loadFile(path) {
-    let resolved, content
-    if (resolved = loader.Resolve(path)) {
-        let contents = []
-        loader.ReadFile(resolved, contents);
-        content = contents[0]
-    }
-    return { content: content, debugPath: resolved };
+    let debugPath = {};
+    var content = loader.ReadFile(path, debugPath);
+    return { content: content, debugPath: debugPath.value };
 }
 puer.loadFile = loadFile;
 
-puer.fileExists = loader.Resolve.bind(loader);
+puer.fileExists = loader.FileExists.bind(loader);
