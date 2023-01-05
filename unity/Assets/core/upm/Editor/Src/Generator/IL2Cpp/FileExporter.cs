@@ -152,6 +152,19 @@ namespace PuertsIl2cpp.Editor
                             ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
                         };
                     })
+                    .Concat(
+                        ctorToWrapper
+                            .Select(m  => { 
+                                var isExtensionMethod = false;
+                                return new SignatureInfo {
+                                    Signature = PuertsIl2cpp.TypeUtils.GetMethodSignature(m, false, isExtensionMethod),
+                                    CsName = m.ToString(),
+                                    ReturnSignature = "v",
+                                    ThisSignature = "t",
+                                    ParameterSignatures = m.GetParameters().Skip(isExtensionMethod ? 1 : 0).Select(p => PuertsIl2cpp.TypeUtils.GetParameterSignature(p)).ToList()
+                                };
+                            })
+                    )
                     .GroupBy(s => s.Signature)
                     .Select(s => s.FirstOrDefault())
                     .ToList();
