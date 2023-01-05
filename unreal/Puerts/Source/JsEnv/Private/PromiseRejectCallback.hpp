@@ -64,7 +64,7 @@ void SetPromiseRejectCallback(const v8::FunctionCallbackInfo<v8::Value>& Args)
 
 // TODO: rename this file
 #ifndef WITH_QUICKJS
-std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
+static std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace> InStack)
 {
     std::ostringstream stm;
     for (int i = 0; i < InStack->GetFrameCount(); i++)
