@@ -347,7 +347,7 @@ struct RestArguments
     static void* PackString(v8::Local<v8::Context> context, const v8::FunctionCallbackInfo<v8::Value>& info, const void* typeId, int start)
     {
         auto isolate = context->GetIsolate();
-        void* ret = NewArray(typeId, info.Length() - start);
+        void* ret = NewArray(typeId, info.Length() - start > 0 ? info.Length() - start : 0);
         for(int i = start; i < info.Length();++i)
         {
             v8::String::Utf8Value t(isolate, info[i]);

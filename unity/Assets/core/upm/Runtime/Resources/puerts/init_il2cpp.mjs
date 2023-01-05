@@ -60,7 +60,6 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
         throw new Error('the class must be a constructor');
     }
     let members = csType.GetMember(methodName, MemberTypes_Method, GET_MEMBER_FLAGS);
-    let typeof_System_Type = puer.$typeof(CS.System.Type)
     let overloadFunctions = [];
     for (let i = 0; i < members.Length; i++) {
         let method = members.GetValue(i)
@@ -115,7 +114,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
                 } else if (jsValType === "bigint") {
                     argsCsArr.set_ItemBigInt(i, val, needArgTypeCode[i])
                 } else {
-                    argsCsArr.set_Item(val, i)
+                    argsCsArr.set_Item(i, val)
                 }
             }
             return argsCsArr;

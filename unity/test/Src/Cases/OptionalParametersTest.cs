@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace Puerts.UnitTest
@@ -10,19 +12,16 @@ namespace Puerts.UnitTest
 
         [UnityEngine.Scripting.Preserve]
         public OptionalParametersClass() {
-            UnityEngine.Debug.Log("Constructor1");
         }
 
         [UnityEngine.Scripting.Preserve]
         public OptionalParametersClass(int _c, int _a = 1, int _b = 2) {
-            UnityEngine.Debug.Log("Constructor2");
             a = _a * 1000;
             b = _b * 100;
         }
 
         [UnityEngine.Scripting.Preserve]
         public OptionalParametersClass(string _c, int _a = 1, int _b = 2) {
-            UnityEngine.Debug.Log("Constructor3");
             a = _a * 100;
             b = _b * 10;
         }
@@ -90,6 +89,16 @@ namespace Puerts.UnitTest
         public int Test6(int d, int i = 1, params string[] strs)
         {
             return i + d;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public bool TestOptClass(List<string> list = default(List<string>))
+        {
+            return list == null;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public double TestOptStruct(TimeSpan ts = default(TimeSpan))
+        {
+            return ts.TotalSeconds;
         }
         [UnityEngine.Scripting.Preserve]
         public string TestFilter(string str)
@@ -300,6 +309,31 @@ namespace Puerts.UnitTest
            ");
             Assert.AreEqual("world hello", ret);
             
+        }
+        [Test]
+        public void InstanceMethodTest15()
+        {
+            var env = UnitTestEnv.GetEnv();
+            bool ret = env.Eval<bool>(@"
+                (function() {
+                    let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                    return temp.TestOptClass();
+                })()
+           ");
+            Assert.True(ret);
+            
+        }
+        [Test]
+        public void InstanceMethodTest16()
+        {
+            var env = UnitTestEnv.GetEnv();
+            double ret = env.Eval<double>(@"
+                (function() {
+                    let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
+                    return temp.TestOptStruct();
+                })()
+           ");
+            Assert.AreEqual(0, ret);            
         }
 
         [Test]

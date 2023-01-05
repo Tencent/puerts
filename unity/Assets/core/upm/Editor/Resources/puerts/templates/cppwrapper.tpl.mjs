@@ -340,7 +340,7 @@ function genFuncWrapper(wrapperInfo) {
     return t`
 // ${wrapperInfo.CsName}
 static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
-    // PLog("Running w_${wrapperInfo.Signature}");
+    //PLog("Running w_${wrapperInfo.Signature}");
     
     ${CODE_SNIPPETS.declareTypeInfo(wrapperInfo)}
 

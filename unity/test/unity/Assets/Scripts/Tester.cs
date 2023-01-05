@@ -58,6 +58,7 @@ public class Tester : MonoBehaviour {
                     yield return null;
                     if (IsTesting && ca.GetType() == typeof(TestAttribute)) 
                     {
+                        // if (method.Name != "StaticGenericMethodInvalidCallArguments") continue;
                         try 
                         {
                             method.Invoke(testInstance, null);

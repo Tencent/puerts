@@ -41,9 +41,11 @@ namespace NUnit {
                 {
                     if (message.Length > 0 && !e.Message.Contains(message))
                     {
-                        throw new Exception($"expect a error with {message} but got {e.Message}");
+                        throw new Exception($"expect an error with {message} but got {e.Message}");
                     }
+                    return;
                 }
+                throw new Exception($"expect an error but tbe code did not thrown any");
             }
             public static void Contains(string a, string b)
             {
