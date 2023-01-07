@@ -330,6 +330,127 @@ static void* GetDefaultValuePtr(const void* methodInfo, uint32_t index)
     return GUnityExports.GetDefaultValuePtr(methodInfo, index);
 }
 
+//type != typeof(object) && !type.IsValueType 
+inline static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
+{
+    if (!Obj)
+    {
+        return v8::Undefined(Isolate);
+    }
+    
+    pesapi_value jsVal = GUnityExports.TryTranslateBuiltin(*Context, Obj);
+    
+    if (jsVal)
+    {
+        v8::Local<v8::Value> Ret;
+        memcpy(static_cast<void*>(&Ret), &jsVal, sizeof(jsVal));
+        return Ret;
+    }
+    
+    void* Class = *reinterpret_cast<void**>(Obj);
+    
+    return DataTransfer::FindOrAddCData(Isolate, Context, Class, Obj, true);
+}
+
+//type == typeof(object)
+inline static v8::Local<v8::Value> CSAnyToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
+{
+    pesapi_value jsVal = GUnityExports.TryTranslatePrimitive(*Context, Obj);
+    
+    if (jsVal)
+    {
+        v8::Local<v8::Value> Ret;
+        memcpy(static_cast<void*>(&Ret), &jsVal, sizeof(jsVal));
+        return Ret;
+    }
+    
+    return CSRefToJsValue(Isolate, Context, Obj);
+}
+
+inline static v8::Local<v8::Value> CopyValueType(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, size_t SizeOfValueType)
+{
+    void* buff =  GUnityExports.ObjectAllocate(TypeId); //TODO: allc by jsenv
+    memcpy(buff, Ptr, SizeOfValueType);
+    return DataTransfer::FindOrAddCData(Isolate, Context, TypeId, buff, false);
+}
+
+inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
+{
+    return puerts::DataTransfer::GetPointerFast<void>(Obj, 1);
+}
+
+inline static bool IsAssignableFrom(const void* typeId, const void* typeId2)
+{
+    return GUnityExports.IsAssignableFrom(typeId, typeId2);
+}
+
+inline static void* IsInst(void * obj, void* typeId)
+{
+    return GUnityExports.IsInst(obj, typeId);
+}
+
+inline static void FieldGet(void *obj, void *fieldInfo, size_t offset, void *value)
+{
+    GUnityExports.FieldGet(obj, fieldInfo, offset, value);
+}
+
+inline static void FieldSet(void *obj, void *fieldInfo, size_t offset, void *value)
+{
+    GUnityExports.FieldSet(obj, fieldInfo, offset, value);
+}
+
+inline static void* GetValueTypeFieldPtr(void *obj, void *fieldInfo, size_t offset)
+{
+    return GUnityExports.GetValueTypeFieldPtr(obj, fieldInfo, offset);
+}
+
+inline static void ThrowInvalidOperationException(const char* msg)
+{
+    GUnityExports.ThrowInvalidOperationException(msg);
+}
+
+inline static void* CStringToCSharpString(const char* str)
+{
+    return GUnityExports.CStringToCSharpString(str);
+}
+
+inline static const void* GetReturnType(const void* method)
+{
+    return GUnityExports.GetReturnType(method);
+}
+
+inline const void* GetParameterType(const void* method, int index)
+{
+    return GUnityExports.GetParameterType(method, index);
+}
+
+static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    if (!Info[0]->IsFunction()) 
+    {
+        DataTransfer::ThrowException(Context->GetIsolate(), "expect a function");
+        return nullptr;
+    }
+    
+    JSClassDefinition* ClassDefinition =
+        reinterpret_cast<JSClassDefinition*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
+        
+    return FunctionToDelegate(Isolate, Context, Info[0]->ToObject(Context).ToLocalChecked(), ClassDefinition);
+}
+
+static void UnrefJsObject(PersistentObjectInfo* objectInfo)
+{
+    if (!objectInfo->JsEnvLifeCycleTracker.expired())
+    {
+        std::lock_guard<std::mutex> guard(objectInfo->EnvInfo->Mutex);
+        objectInfo->EnvInfo->PendingReleaseObjects.push_back(std::move(objectInfo->JsObject));
+        //PLog("add jsobject to pending release list");
+    }
+    objectInfo->EnvInfo = nullptr;
+}
+
 template <typename T>
 struct RestArguments
 {
@@ -473,127 +594,6 @@ struct OptionalParameter
         }
     }
 };
-
-//type != typeof(object) && !type.IsValueType 
-inline static v8::Local<v8::Value> CSRefToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
-{
-    if (!Obj)
-    {
-        return v8::Undefined(Isolate);
-    }
-    
-    pesapi_value jsVal = GUnityExports.TryTranslateBuiltin(*Context, Obj);
-    
-    if (jsVal)
-    {
-        v8::Local<v8::Value> Ret;
-        memcpy(static_cast<void*>(&Ret), &jsVal, sizeof(jsVal));
-        return Ret;
-    }
-    
-    void* Class = *reinterpret_cast<void**>(Obj);
-    
-    return DataTransfer::FindOrAddCData(Isolate, Context, Class, Obj, true);
-}
-
-//type == typeof(object)
-inline static v8::Local<v8::Value> CSAnyToJsValue(v8::Isolate* Isolate, v8::Local<v8::Context> Context, void* Obj)
-{
-    pesapi_value jsVal = GUnityExports.TryTranslatePrimitive(*Context, Obj);
-    
-    if (jsVal)
-    {
-        v8::Local<v8::Value> Ret;
-        memcpy(static_cast<void*>(&Ret), &jsVal, sizeof(jsVal));
-        return Ret;
-    }
-    
-    return CSRefToJsValue(Isolate, Context, Obj);
-}
-
-inline static v8::Local<v8::Value> CopyValueType(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, size_t SizeOfValueType)
-{
-    void* buff =  GUnityExports.ObjectAllocate(TypeId); //TODO: allc by jsenv
-    memcpy(buff, Ptr, SizeOfValueType);
-    return DataTransfer::FindOrAddCData(Isolate, Context, TypeId, buff, false);
-}
-
-inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
-{
-    return puerts::DataTransfer::GetPointerFast<void>(Obj, 1);
-}
-
-inline static bool IsAssignableFrom(const void* typeId, const void* typeId2)
-{
-    return GUnityExports.IsAssignableFrom(typeId, typeId2);
-}
-
-inline static void* IsInst(void * obj, void* typeId)
-{
-    return GUnityExports.IsInst(obj, typeId);
-}
-
-inline static void FieldGet(void *obj, void *fieldInfo, size_t offset, void *value)
-{
-    GUnityExports.FieldGet(obj, fieldInfo, offset, value);
-}
-
-inline static void FieldSet(void *obj, void *fieldInfo, size_t offset, void *value)
-{
-    GUnityExports.FieldSet(obj, fieldInfo, offset, value);
-}
-
-inline static void* GetValueTypeFieldPtr(void *obj, void *fieldInfo, size_t offset)
-{
-    return GUnityExports.GetValueTypeFieldPtr(obj, fieldInfo, offset);
-}
-
-inline static void ThrowInvalidOperationException(const char* msg)
-{
-    GUnityExports.ThrowInvalidOperationException(msg);
-}
-
-inline static void* CStringToCSharpString(const char* str)
-{
-    return GUnityExports.CStringToCSharpString(str);
-}
-
-inline static const void* GetReturnType(const void* method)
-{
-    return GUnityExports.GetReturnType(method);
-}
-
-inline const void* GetParameterType(const void* method, int index)
-{
-    return GUnityExports.GetParameterType(method, index);
-}
-
-static void* DelegateCtorCallback(const v8::FunctionCallbackInfo<v8::Value>& Info)
-{
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    if (!Info[0]->IsFunction()) 
-    {
-        DataTransfer::ThrowException(Context->GetIsolate(), "expect a function");
-        return nullptr;
-    }
-    
-    JSClassDefinition* ClassDefinition =
-        reinterpret_cast<JSClassDefinition*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
-        
-    return FunctionToDelegate(Isolate, Context, Info[0]->ToObject(Context).ToLocalChecked(), ClassDefinition);
-}
-
-static void UnrefJsObject(PersistentObjectInfo* objectInfo)
-{
-    if (!objectInfo->JsEnvLifeCycleTracker.expired())
-    {
-        std::lock_guard<std::mutex> guard(objectInfo->EnvInfo->Mutex);
-        objectInfo->EnvInfo->PendingReleaseObjects.push_back(std::move(objectInfo->JsObject));
-        //PLog("add jsobject to pending release list");
-    }
-    objectInfo->EnvInfo = nullptr;
-}
 
 struct BridgeFuncInfo
 {
