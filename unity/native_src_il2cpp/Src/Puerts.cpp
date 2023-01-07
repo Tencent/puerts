@@ -168,7 +168,7 @@ static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Contex
     auto POEnv = DataTransfer::GetPersistentObjectEnvInfo(Isolate);
 
     puerts::FCppObjectMapper* mapper = reinterpret_cast<puerts::FCppObjectMapper*>(Isolate->GetData(MAPPER_ISOLATE_DATA_POS));
-    mapper->ClearPendingPersistentObject(Isolate);
+    mapper->ClearPendingPersistentObject(Isolate, Context);
 
     v8::MaybeLocal<v8::Value> maybeValue = Obj->Get(Context, POEnv->SymbolCSPtr.Get(Isolate));
     if (maybeValue.IsEmpty())
@@ -381,6 +381,9 @@ inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
 
 inline static bool IsAssignableFrom(const void* typeId, const void* typeId2)
 {
+    if (typeId == nullptr || typeId2 == nullptr) {
+        return false;
+    }
     return GUnityExports.IsAssignableFrom(typeId, typeId2);
 }
 
@@ -1201,6 +1204,9 @@ V8_EXPORT void SetObjectToGlobal(puerts::JSEnv* jsEnv, const char* key, void *ob
 V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
 {
     v8::Isolate* Isolate = jsEnv->MainIsolate;
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    
     jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate);
 }
 

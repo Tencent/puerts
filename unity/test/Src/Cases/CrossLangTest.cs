@@ -24,6 +24,7 @@ namespace Puerts.UnitTest
                     });
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void NumberInstanceTest()
@@ -47,6 +48,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void StringInstanceTest()
@@ -70,6 +72,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void BoolInstanceTest()
@@ -93,6 +96,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBoolReturnFromCS', rBool, false);
                 })()
             ");
+            jsEnv.Tick();
         }
         //
 
@@ -118,6 +122,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBigIntReturnFromCS', rBigInt == oBigInt + 4n);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void NativeStructInstanceTest()
@@ -142,6 +147,7 @@ namespace Puerts.UnitTest
 
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void NativeObjectInstanceTest()
@@ -165,6 +171,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetNativeObjectReturnFromCS', rNativeObject, oNativeObject);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void JSObjectInstanceTest()
@@ -186,6 +193,7 @@ namespace Puerts.UnitTest
 
                 })()
             ");
+            jsEnv.Tick();
         }
         // [Test]
         // public void DateTimeInstanceTest()
@@ -229,6 +237,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
                 })()
             ");
+            jsEnv.Tick();
         }
     }
 

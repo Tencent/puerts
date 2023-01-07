@@ -76,7 +76,7 @@ public:
 
     FPersistentObjectEnvInfo PersistentObjectEnvInfo;
 
-    void ClearPendingPersistentObject(v8::Isolate* Isolate);
+    void ClearPendingPersistentObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
 
 private:
     std::unordered_map<void*, FObjectCacheNode> CDataCache;

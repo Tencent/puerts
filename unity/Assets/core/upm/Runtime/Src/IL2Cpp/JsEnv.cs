@@ -104,7 +104,10 @@ namespace Puerts
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");
+
             ExecuteModule("puerts/events.mjs");
+            ExecuteModule("puerts/timer.mjs");
+            // ExecuteModule("puerts/promises.mjs");
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -137,9 +140,11 @@ namespace Puerts
             return moduleExecuter(specifier);
         }
 
+        public Action TickHandler;
         public void Tick()
         {
             PuertsIl2cpp.NativeAPI.ReleasePendingJsObjects(nativeJsEnv);
+            if (TickHandler != null) TickHandler();
         }
         
         ~JsEnv()

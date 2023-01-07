@@ -28,7 +28,7 @@ public class Tester : MonoBehaviour {
                     m_ContentText.text = MockConsoleContent;
                 },
                 (string name, Exception e) => {
-                    MockConsoleContent += $"Failed: TestCase {name} msg: {e.Message}\n";
+                    MockConsoleContent += $"Failed: TestCase {name}\n";
                     UnityEngine.Debug.LogError($"Failed: TestCase {name}\n");
                     UnityEngine.Debug.LogError(e);
                     m_ContentText.text = MockConsoleContent;
@@ -58,11 +58,18 @@ public class Tester : MonoBehaviour {
                     yield return null;
                     if (IsTesting && ca.GetType() == typeof(TestAttribute)) 
                     {
-                        // if (method.Name != "StaticGenericMethodInvalidCallArguments") continue;
+                        // if (method.Name != "TimerTest2") continue;
+                        // if (!method.DeclaringType.Name.Contains("TimerTest")) continue;
+                        UnityEngine.Debug.Log($"Started: TestCase {method.Name}\n");
                         try 
                         {
                             method.Invoke(testInstance, null);
                         } 
+                        catch (TargetInvocationException e) 
+                        {
+                            OnFail(method.Name, e.GetBaseException());
+                            continue;
+                        }
                         catch (Exception e) 
                         {
                             OnFail(method.Name, e);

@@ -44,6 +44,7 @@ namespace PuertsIl2cpp.Editor
             {
                 var start = DateTime.Now;
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenExtensionMethodInfos(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");

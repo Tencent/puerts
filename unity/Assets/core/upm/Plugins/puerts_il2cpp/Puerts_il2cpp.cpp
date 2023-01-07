@@ -172,10 +172,11 @@ void StoreGlobalSpecialType(int32_t SpecialTypeEnum, Il2CppReflectionType *__typ
 {
     if (!__type)
     {
-        Exception::Raise(Exception::GetInvalidOperationException("type of PersistentObjectInfo is null"));
+        Exception::Raise(Exception::GetInvalidOperationException("type of special type is null"));
     }
     if (SpecialTypeEnum == 0) g_typeofPersistentObjectInfo =  il2cpp_codegen_class_from_type(__type->type);
     else if (SpecialTypeEnum == 1) g_typeofArrayBuffer =  il2cpp_codegen_class_from_type(__type->type);
+    else if (SpecialTypeEnum == 2) g_typeofTypedValue =  il2cpp_codegen_class_from_type(__type->type);
 }
 
 void SetTypedValueType(Il2CppReflectionType *type)
@@ -200,7 +201,7 @@ static void MethodCallback(pesapi_callback_info info) {
             }
             ++wrapDatas;
         }
-        pesapi_throw_by_string(info, "invalid arguments"); 
+        pesapi_throw_by_string(info, "invalid arguments for method"); 
     } 
     catch (Il2CppExceptionWrapper& exception)
     {
@@ -314,7 +315,7 @@ static void* CtorCallback(pesapi_callback_info info)
             ++wrapDatas;
         }
         
-        pesapi_throw_by_string(info, "invalid arguments");
+        pesapi_throw_by_string(info, "invalid arguments for constructor");
         
     } 
     catch (Il2CppExceptionWrapper& exception)
