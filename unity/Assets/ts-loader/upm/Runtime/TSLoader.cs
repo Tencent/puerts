@@ -13,11 +13,12 @@ namespace Puerts
 #if UNITY_EDITOR
             protected TSCompiler tsCompiler;
 #endif
-        public TSLoader()
+        public TSLoader(string basePath = null)
         {
             puerDefaultLoader = new Puerts.DefaultLoader();
 #if UNITY_EDITOR
-                tsCompiler = new TSCompiler(Application.dataPath + "/../Puer-Project");
+            if (basePath == null) basePath = Application.dataPath + "/../Puer-Project"
+            tsCompiler = new TSCompiler(basePath);
 #endif
         }
 
