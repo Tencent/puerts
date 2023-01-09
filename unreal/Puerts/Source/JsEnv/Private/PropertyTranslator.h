@@ -107,9 +107,16 @@ public:
         Property = InProperty;
         PropertyWeakPtr = InProperty;
         OwnerIsClass = InProperty->GetOwnerClass() != nullptr;
-        NeedLinkOuter = !OwnerIsClass && InProperty->IsA<StructPropertyMacro>() &&
-                        StructProperty->Struct != FArrayBuffer::StaticStruct() &&
-                        StructProperty->Struct != FJsObject::StaticStruct();
+        NeedLinkOuter = false;
+        if (!OwnerIsClass)
+        {
+            if ((InProperty->IsA<StructPropertyMacro>() && StructProperty->Struct != FArrayBuffer::StaticStruct() &&
+                    StructProperty->Struct != FJsObject::StaticStruct()) ||
+                InProperty->IsA<MapPropertyMacro>() || InProperty->IsA<ArrayPropertyMacro>() || InProperty->IsA<SetPropertyMacro>())
+            {
+                NeedLinkOuter = true;
+            }
+        }
     }
 
     virtual ~FPropertyTranslator()
