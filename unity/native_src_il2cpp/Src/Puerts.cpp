@@ -300,6 +300,11 @@ static void* JsValueToCSRef(v8::Local<v8::Context> context, v8::Local<v8::Value>
     return GUnityExports.JsValueToCSRef(typeId, *context, *val);
 }
 
+static bool IsDelegate(const void* typeId)
+{
+    return GUnityExports.IsDelegate(typeId);
+}
+
 static void* NewArray(const void *typeId, uint32_t length)
 {
     return GUnityExports.NewArray(typeId, length);

@@ -120,7 +120,7 @@ namespace PuertsIl2cpp
             IntPtr typeInfo = IntPtr.Zero;
             try
             {
-                bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(type);
+                bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(type) && type != typeof(MulticastDelegate);
                 var typeId = GetTypeId(type);
                 //UnityEngine.Debug.Log(string.Format("{0} typeId is {1}", type, typeId));
                 var superTypeId = (isDelegate || type == typeof(object) || type.BaseType == null) ? IntPtr.Zero : GetTypeId(type.BaseType);

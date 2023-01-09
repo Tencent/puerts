@@ -25,6 +25,8 @@ typedef void* (*IsInstFunc)(void * obj, void* typeId);
 
 typedef bool (*IsValueTypeFunc)(void* typeId); 
 
+typedef bool (*IsDelegateFunc)(const void* typeId); 
+
 typedef bool (*IsAssignableFromFunc)(const void* typeId, const void* typeId2); 
 
 typedef void* (*JsValueToCSRefFunc)(const void *typeId, v8::Context* env, v8::Value* jsval);
@@ -80,6 +82,8 @@ typedef void (*UnrefJsObjectFunc)(PersistentObjectInfo* delegateInfo);
 typedef Il2CppObject* (*IsInstFunc)(Il2CppObject* obj, Il2CppClass* typeId); 
 
 typedef bool (*IsValueTypeFunc)(Il2CppClass *klass); 
+
+typedef bool (*IsDelegateFunc)(Il2CppClass *klass); 
 
 typedef bool (*IsAssignableFromFunc)(Il2CppClass *klass, Il2CppClass *oklass); 
 
@@ -156,6 +160,7 @@ struct UnityExports
     IsInstFunc IsInstClass = nullptr; // faster, just for class, can not apply to interface and array type
     IsInstFunc IsInstSealed = nullptr; // fastest, only for sealed class, delegate
     IsValueTypeFunc IsValueType = nullptr;
+    IsDelegateFunc IsDelegate = nullptr;
     IsAssignableFromFunc IsAssignableFrom = nullptr;
     JsValueToCSRefFunc JsValueToCSRef = nullptr;
     CSharpTypeToTypeIdFunc CSharpTypeToTypeId = nullptr;

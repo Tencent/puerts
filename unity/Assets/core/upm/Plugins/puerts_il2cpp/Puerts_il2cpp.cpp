@@ -363,6 +363,11 @@ bool IsValueType(Il2CppClass *klass)
     return klass->valuetype;
 }
 
+bool IsDelegate(Il2CppClass *klass)
+{
+    return Class::IsAssignableFrom(il2cpp_defaults.delegate_class, klass) && klass != il2cpp_defaults.delegate_class && klass != il2cpp_defaults.multicastdelegate_class;
+}
+
 int GetTID(Il2CppObject* obj)
 {
     if (obj)
@@ -626,7 +631,7 @@ handle_underlying:
         {
             if (pesapi_is_function(env, jsval))
             {
-                if (Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, klass))
+                if (IsDelegate(klass))
                 {
                     return (Il2CppObject*)g_unityExports.FunctionToDelegate(env, jsval, klass, true);
                 }
@@ -792,6 +797,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.IsInstClass = &IsInstClass;
     g_unityExports.IsInstSealed = &IsInstSealed;
     g_unityExports.IsValueType = &IsValueType;
+    g_unityExports.IsDelegate = &IsDelegate;
     g_unityExports.IsAssignableFrom = &Class::IsAssignableFrom;
     g_unityExports.JsValueToCSRef = &JsValueToCSRef;
     g_unityExports.CSharpTypeToTypeId = &CSharpTypeToTypeId;

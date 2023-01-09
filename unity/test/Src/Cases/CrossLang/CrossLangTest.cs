@@ -62,14 +62,14 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oNum = outRef[0] = testHelper.numberTestStartValue;
-                    const rNum = testHelper.NumberTestPipeLine(oNum, outRef, function (num) {
-                        assertAndPrint('JSGetNumberArgFromCS', num, oNum + 1);
-                        testHelper.numberTestEndValue = oNum + 2;
-                        return testHelper.numberTestEndValue;
+                    const oStr = outRef[0] = testHelper.stringTestStartValue;
+                    const rStr = testHelper.StringTestPipeLine(oStr, outRef, function (str) {
+                        assertAndPrint('JSGetStringArgFromCS', str, 'abcd');
+                        testHelper.stringTestEndValue = oStr + 'de';
+                        return testHelper.stringTestEndValue;
                     });
-                    assertAndPrint('JSGetNumberOutArgFromCS', outRef[0], oNum + 3);
-                    assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
+                    assertAndPrint('JSGetStringOutArgFromCS', outRef[0], oStr + 'def');
+                    assertAndPrint('JSGetStringReturnFromCS', rStr, oStr + 'defg');
                 })()
             ");
             jsEnv.Tick();
@@ -307,6 +307,16 @@ namespace Puerts.UnitTest
 
         public TestHelper()
         {
+#if UNITY_EDITOR || !EXPERIMENTAL_IL2CPP_PUERTS
+            var env = UnitTestEnv.GetEnv();
+            env.UsingFunc<int>();
+            env.UsingFunc<int, int>();
+            env.UsingFunc<DateTime, DateTime>();
+            env.UsingFunc<string, string>();
+            env.UsingFunc<bool, bool>();
+            env.UsingFunc<long, long>();
+            env.UsingFunc<TestStruct, TestStruct>();
+#endif
         }
 
         /**
