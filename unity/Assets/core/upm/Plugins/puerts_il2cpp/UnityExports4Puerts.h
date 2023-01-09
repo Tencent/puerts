@@ -172,6 +172,7 @@ struct UnityExports
     GetArrayElementTypeIdFunc GetArrayElementTypeId = nullptr;
     GetArrayLengthFunc GetArrayLength = nullptr;
     GetDefaultValuePtrFunc GetDefaultValuePtr = nullptr;
+    WrapFuncPtr ReflectionWrapper = nullptr;
     int SizeOfRuntimeObject = 0;
     //plugin api
     

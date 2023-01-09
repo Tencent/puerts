@@ -82,7 +82,7 @@ static void* ObjectAllocate(Il2CppClass *klass)
 {
     if (klass->valuetype)
     {
-        return (void*)(new uint8_t[klass->native_size > 0 ? klass->native_size : klass->instance_size]);
+        return (void*)(new uint8_t[klass->native_size > 0 ? klass->native_size : (klass->instance_size - sizeof(Il2CppObject))]);
     } else {
         auto obj = il2cpp::vm::Object::New(klass);
         return obj;
@@ -395,11 +395,11 @@ pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
     return nullptr;
 }
 
-pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
+static pesapi_value TryTranslatePrimitiveWithClass(pesapi_env env, Il2CppObject* obj, Il2CppClass *klass = nullptr)
 {
     if (obj)
     {
-        const Il2CppType *type = Class::GetType(obj->klass);
+        const Il2CppType *type = Class::GetType(klass ? klass : obj->klass);
         int t = type->type;
         if (t == IL2CPP_TYPE_STRING)
         {
@@ -408,14 +408,6 @@ pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
             return pesapi_create_string_utf8(env, str.c_str(), str.size());
         }
         void* ptr = Object::Unbox(obj);
-        if (obj->klass == il2cpp_defaults.int32_class)
-        {
-            return pesapi_create_int32(env, (int32_t)(*((int16_t*)ptr)));
-        }
-        if (obj->klass == il2cpp_defaults.int_class)
-        {
-            return pesapi_create_int32(env, (int32_t)(*((int16_t*)ptr)) + 1);
-        } 
         switch (t)
         {
             case IL2CPP_TYPE_I1:
@@ -487,6 +479,26 @@ pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
     return nullptr;
 }
 
+pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
+{
+    return TryTranslatePrimitiveWithClass(env, obj);
+}
+
+union PrimitiveValueType
+{
+    int8_t i1;
+    uint8_t u1;
+    int16_t i2;
+    uint16_t u2;
+    int32_t i4;
+    uint32_t u4;
+    int64_t i8;
+    uint64_t u8;
+    Il2CppChar c;
+    float r4;
+    double r8;
+};
+
 Il2CppObject* JsValueToCSRef(Il2CppClass *klass, pesapi_env env, pesapi_value jsval)
 {
     if (klass == il2cpp_defaults.void_class) return nullptr;
@@ -499,19 +511,7 @@ Il2CppObject* JsValueToCSRef(Il2CppClass *klass, pesapi_env env, pesapi_value js
     const Il2CppType *type = Class::GetType(klass);
     int t = type->type;
     
-    union Data{
-        int8_t i1;
-        uint8_t u1;
-        int16_t i2;
-        uint16_t u2;
-        int32_t i4;
-        uint32_t u4;
-        int64_t i8;
-        uint64_t u8;
-        Il2CppChar c;
-        float r4;
-        double r8;
-    } data;
+    PrimitiveValueType data;
     
     void* toBox = &data;
     
@@ -755,6 +755,361 @@ handle_underlying:
     return Object::Box(klass, toBox);
 }
 
+pesapi_value CSRefToJsValue(pesapi_env env,  Il2CppClass *klass, Il2CppObject* obj)
+{
+    if (klass == il2cpp_defaults.void_class || !obj) return pesapi_create_undefined(env);
+    
+    if (!klass)
+    {
+        klass = il2cpp_defaults.object_class;
+    }        
+    
+    pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, klass);
+    
+    if (jsVal) 
+    {
+        return jsVal;
+    }
+    
+    jsVal = TryTranslateBuiltin(env, obj);
+    
+    if (jsVal) 
+    {
+        return jsVal;
+    }
+    
+    if (klass->valuetype)
+    {
+        auto len = klass->native_size;
+        if (len < 0)
+        {
+            len = klass->instance_size - sizeof(Il2CppObject);
+        }
+        
+        auto buff = new uint8_t[len];
+        memcpy(buff, Object::Unbox(obj), len);
+        return pesapi_create_native_object(env, klass, buff, true);
+    }
+    return pesapi_create_native_object(env, klass, obj, false);
+}
+
+static bool GetValueTypeFromJs(pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
+{
+    bool hasValue = false;
+    uint32_t valueSize = klass->instance_size - sizeof(Il2CppObject);
+    if (!jsValue) return false;
+    if (pesapi_is_object(env, jsValue))
+    {
+        auto ptr = pesapi_get_native_object_ptr(env, jsValue);
+        if (ptr)
+        {
+            auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
+            if (Class::IsAssignableFrom(klass, objClass))
+            {
+                hasValue = true;
+                memcpy(storage, ptr, valueSize);
+            }
+        }
+    } else {
+        const Il2CppType *type = Class::GetType(klass);
+        PrimitiveValueType data;
+        data.i8 = 0;
+        switch (type->type)
+        {
+            case IL2CPP_TYPE_I1:
+            {
+                if (pesapi_is_int32(env, jsValue))
+                {
+                    data.i1 = (int8_t)pesapi_get_value_int32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+            case IL2CPP_TYPE_BOOLEAN:
+            {
+                if (pesapi_is_boolean(env, jsValue))
+                {
+                    data.u1 = (uint8_t)pesapi_get_value_bool(env, jsValue);
+                    hasValue = true;
+                }
+            }
+            case IL2CPP_TYPE_U1:
+            {
+                if (pesapi_is_uint32(env, jsValue))
+                {
+                    data.u1 = (uint8_t)pesapi_get_value_uint32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+            case IL2CPP_TYPE_I2:
+            {
+                if (pesapi_is_int32(env, jsValue))
+                {
+                    data.i2 = (int16_t)pesapi_get_value_int32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+            case IL2CPP_TYPE_U2:
+            {
+                if (pesapi_is_uint32(env, jsValue))
+                {
+                    data.u2 = (uint16_t)pesapi_get_value_uint32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+            case IL2CPP_TYPE_CHAR:
+            {
+                if (pesapi_is_uint32(env, jsValue))
+                {
+                    data.c = (Il2CppChar)pesapi_get_value_uint32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+    #if IL2CPP_SIZEOF_VOID_P == 4
+            case IL2CPP_TYPE_I:
+    #endif
+            case IL2CPP_TYPE_I4:
+            {
+                if (pesapi_is_int32(env, jsValue))
+                {
+                    data.i4 = (int32_t)pesapi_get_value_int32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+    #if IL2CPP_SIZEOF_VOID_P == 4
+            case IL2CPP_TYPE_U:
+    #endif
+            case IL2CPP_TYPE_U4:
+            {
+                if (pesapi_is_uint32(env, jsValue))
+                {
+                    data.u4 = (uint32_t)pesapi_get_value_uint32(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+    #if IL2CPP_SIZEOF_VOID_P == 8
+            case IL2CPP_TYPE_I:
+    #endif
+            case IL2CPP_TYPE_I8:
+            {
+                if (pesapi_is_int64(env, jsValue))
+                {
+                    data.i8 = pesapi_get_value_int64(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+    #if IL2CPP_SIZEOF_VOID_P == 8
+            case IL2CPP_TYPE_U:
+    #endif
+            case IL2CPP_TYPE_U8:
+            {
+                if (pesapi_is_uint64(env, jsValue))
+                {
+                    data.u8 = pesapi_get_value_uint64(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+            case IL2CPP_TYPE_R4:
+            {
+                if (pesapi_is_double(env, jsValue))
+                {
+                    data.r4 = (float)pesapi_get_value_double(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+            case IL2CPP_TYPE_R8:
+            {
+                if (pesapi_is_double(env, jsValue))
+                {
+                    data.r8 = pesapi_get_value_double(env, jsValue);
+                    hasValue = true;
+                }
+                break;
+            }
+        }
+    
+        memcpy(storage, &data, valueSize);
+    }
+    return hasValue;
+}
+
+static pesapi_value JsObjectUnRef(pesapi_env env, pesapi_value jsValue)
+{
+    return (pesapi_is_object(env, jsValue)) ?  pesapi_get_property_uint32(env, jsValue, 0) : nullptr;
+}
+
+static void JsObjectSetRef(pesapi_env env, pesapi_value outer, pesapi_value val)
+{
+    if (outer && val && pesapi_is_object(env, outer))
+    {
+        pesapi_set_property_uint32(env, outer, 0, val);
+    }
+}
+
+static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, void** typeInfos)
+{
+    void** args = method->parameters_count > 0 ? (void**)alloca(sizeof(void*) * method->parameters_count) : nullptr;
+    int js_args_len = pesapi_get_args_len(info);
+    pesapi_env env = pesapi_get_env(info);
+    pesapi_value jsThis = pesapi_get_holder(info);
+    void* csThis = pesapi_get_native_object_ptr(env, jsThis); // TODO: NULL if static 
+    
+    /*for (int i = 0; i < method->parameters_count; ++i)
+    {
+        //Class::FromIl2CppType(method->parameters[index].parameter_type, false)
+        Il2CppClass *parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
+        Class::Init(parameterType);
+        pesapi_value val = pesapi_get_arg(info, i);
+        if (method->parameters[i].parameter_type->byref)
+        {
+            parameterType = Class::FromIl2CppType(&parameterType->byval_arg);
+            if (pesapi_is_object(env, val))
+            {
+                val = pesapi_get_property_uint32(env, val, 0);
+            }
+            else
+            {
+                val = pesapi_create_undefined(env);
+            }
+            //parameterType = il2cpp_defaults.int32_class;
+            //val = pesapi_create_int32(env, 42);
+            //if (method->method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_OUT)
+            //{
+            //}
+        }
+        else if (parameterType->byval_arg.type == IL2CPP_TYPE_PTR)
+        {
+            if (pesapi_is_object(env, jsval))
+            {
+                jsval = pesapi_get_property_uint32(env, jsval, 0);
+                //args[i] = reinterpret_cast<void*>(*static_cast<intptr_t*>(Object::Unbox(parameters[i])));
+            }
+            else
+            {
+                args[i] = NULL;
+            }
+        }
+        
+        args[i] = JsValueToCSRef(klass, env, val);
+    }
+    
+    Il2CppException* exception = NULL;
+    Il2CppObject* ret = Runtime::InvokeConvertArgs(method, csThis, (Il2CppObject**)args, method->parameters_count, &exception);
+    if (exception)
+    {
+        Exception::Raise(exception);
+    }*/
+    
+    for (int i = 0; i < method->parameters_count; ++i)
+    {
+        //Class::FromIl2CppType(method->parameters[index].parameter_type, false)
+        bool passedByReference = method->parameters[i].parameter_type->byref;
+        Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
+        Class::Init(parameterType);
+        
+        pesapi_value jsValue = pesapi_get_arg(info, i);
+        
+        if (parameterType->valuetype)
+        {
+            if (Class::IsNullable(parameterType))
+            {
+                void* storage = alloca(parameterType->instance_size - sizeof(Il2CppObject));
+                auto underlyClass = Class::GetNullableArgument(parameterType);
+                uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
+                bool hasValue = GetValueTypeFromJs(env, jsValue, underlyClass, storage);
+                *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
+                args[i] = storage;
+            }
+            else if (passedByReference)
+            {
+                auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
+                void* storage = alloca(underlyClass->instance_size - sizeof(Il2CppObject));
+                jsValue = JsObjectUnRef(env, jsValue);
+                GetValueTypeFromJs(env, jsValue, underlyClass, storage);
+                args[i] = storage;
+            }
+            else
+            {
+                void* storage = alloca(parameterType->instance_size - sizeof(Il2CppObject));
+                GetValueTypeFromJs(env, jsValue, parameterType, storage);
+                args[i] = storage;
+            }
+        }
+        else if (passedByReference)
+        {
+            //convertedParameters[i] = &parameters[i]; // Reference type passed by reference
+            void** arg = (void**)alloca(sizeof(void*));
+            *arg = nullptr;
+            auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
+            jsValue = JsObjectUnRef(env, jsValue);
+            auto ptr = pesapi_get_native_object_ptr(env, jsValue);
+            if (ptr)
+            {
+                auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
+                if (Class::IsAssignableFrom(underlyClass, objClass))
+                {
+                    *arg = ptr;
+                }
+            }
+            args[i] = arg;
+        }
+        else if (parameterType->byval_arg.type == IL2CPP_TYPE_PTR)
+        {
+            auto underlyClass = Class::FromIl2CppType(&parameterType->element_class->byval_arg);
+            void* storage = alloca(underlyClass->instance_size - sizeof(Il2CppObject));
+            jsValue = JsObjectUnRef(env, jsValue);
+            args[i] = GetValueTypeFromJs(env, jsValue, underlyClass, storage) ? storage : nullptr;
+        }
+        else
+        {
+            args[i] = JsValueToCSRef(parameterType, env, jsValue);
+        }
+    }
+    
+    Il2CppObject* ret = Runtime::InvokeWithThrow(method, csThis, args); //返回ValueType有gc么? 还是直接(char*)ptr - sizeof(Il2CppObject)？
+    
+    for (int i = 0; i < method->parameters_count; ++i)
+    {
+        bool passedByReference = method->parameters[i].parameter_type->byref;
+        Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
+        
+        pesapi_value jsValue = pesapi_get_arg(info, i);
+        
+        if (parameterType->valuetype)
+        {
+            if (passedByReference && !Class::IsNullable(parameterType))
+            {
+                auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
+                JsObjectSetRef(env, jsValue, CSRefToJsValue(env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
+            }
+        }
+        else if (passedByReference)
+        {
+            Il2CppObject** arg = (Il2CppObject**)args[i];
+            auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
+            JsObjectSetRef(env, jsValue, CSRefToJsValue(env, underlyClass, *arg));
+        }
+        else if (parameterType->byval_arg.type == IL2CPP_TYPE_PTR)
+        {
+            auto underlyClass = Class::FromIl2CppType(&parameterType->element_class->byval_arg);
+            JsObjectSetRef(env, jsValue, CSRefToJsValue(env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
+        }
+    }
+    
+    pesapi_add_return(info, CSRefToJsValue(env, Class::FromIl2CppType(method->return_type), ret));
+    
+    return true;
+}
+
 static void ThrowInvalidOperationException(const char* msg)
 {
     Exception::Raise(Exception::GetInvalidOperationException(msg));
@@ -800,6 +1155,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.GetArrayElementTypeId = Class::GetElementClass;
     g_unityExports.GetArrayLength = Array::GetLength;
     g_unityExports.GetDefaultValuePtr = GetDefaultValuePtr;
+    g_unityExports.ReflectionWrapper = ReflectionWrapper;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     return &g_unityExports;
 }
