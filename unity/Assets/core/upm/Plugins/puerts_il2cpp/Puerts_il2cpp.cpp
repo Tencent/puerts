@@ -961,53 +961,7 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
     int js_args_len = pesapi_get_args_len(info);
     pesapi_env env = pesapi_get_env(info);
     pesapi_value jsThis = pesapi_get_holder(info);
-    void* csThis = pesapi_get_native_object_ptr(env, jsThis); // TODO: NULL if static 
-    
-    /*for (int i = 0; i < method->parameters_count; ++i)
-    {
-        //Class::FromIl2CppType(method->parameters[index].parameter_type, false)
-        Il2CppClass *parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
-        Class::Init(parameterType);
-        pesapi_value val = pesapi_get_arg(info, i);
-        if (method->parameters[i].parameter_type->byref)
-        {
-            parameterType = Class::FromIl2CppType(&parameterType->byval_arg);
-            if (pesapi_is_object(env, val))
-            {
-                val = pesapi_get_property_uint32(env, val, 0);
-            }
-            else
-            {
-                val = pesapi_create_undefined(env);
-            }
-            //parameterType = il2cpp_defaults.int32_class;
-            //val = pesapi_create_int32(env, 42);
-            //if (method->method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_OUT)
-            //{
-            //}
-        }
-        else if (parameterType->byval_arg.type == IL2CPP_TYPE_PTR)
-        {
-            if (pesapi_is_object(env, jsval))
-            {
-                jsval = pesapi_get_property_uint32(env, jsval, 0);
-                //args[i] = reinterpret_cast<void*>(*static_cast<intptr_t*>(Object::Unbox(parameters[i])));
-            }
-            else
-            {
-                args[i] = NULL;
-            }
-        }
-        
-        args[i] = JsValueToCSRef(klass, env, val);
-    }
-    
-    Il2CppException* exception = NULL;
-    Il2CppObject* ret = Runtime::InvokeConvertArgs(method, csThis, (Il2CppObject**)args, method->parameters_count, &exception);
-    if (exception)
-    {
-        Exception::Raise(exception);
-    }*/
+    void* csThis = Method::IsInstance(method) ? pesapi_get_native_object_ptr(env, jsThis) : nullptr;
     
     for (int i = 0; i < method->parameters_count; ++i)
     {
@@ -1084,13 +1038,10 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
         
         pesapi_value jsValue = pesapi_get_arg(info, i);
         
-        if (parameterType->valuetype)
+        if (parameterType->valuetype && passedByReference && !Class::IsNullable(parameterType))
         {
-            if (passedByReference && !Class::IsNullable(parameterType))
-            {
-                auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
-                JsObjectSetRef(env, jsValue, CSRefToJsValue(env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
-            }
+            auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
+            JsObjectSetRef(env, jsValue, CSRefToJsValue(env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
         }
         else if (passedByReference)
         {
