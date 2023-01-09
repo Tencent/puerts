@@ -9,7 +9,6 @@
 #include "StructWrapper.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
-#include "PromiseRejectCallback.hpp"
 
 namespace puerts
 {
@@ -312,7 +311,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                             if (!Getter->IsFunction())
                             {
                                 auto Value = Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "value")).ToLocalChecked();
-                                __USE(Proto->Set(Context, Property, Value));
+                                (void) (Proto->Set(Context, Property, Value));
                             }
                             else
                             {
