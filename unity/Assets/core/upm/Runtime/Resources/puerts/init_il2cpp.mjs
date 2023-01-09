@@ -179,6 +179,6 @@ puer.loadFile = loadFile;
 puer.fileExists = loader.FileExists.bind(loader);
 
 global.__tgjsRegisterTickHandler = function(fn) {
-    // jsEnv.TickHandler = CS.System.Delegate.Combine(jsEnv.TickHandler, fn);
-    jsEnv.TickHandler = fn;
+    fn = new CS.System.Action(fn);
+    jsEnv.TickHandler = CS.System.Delegate.Combine(jsEnv.TickHandler, fn)
 }

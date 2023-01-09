@@ -168,18 +168,25 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     return delegate;
 }
 
-void StoreGlobalSpecialType(int32_t SpecialTypeEnum, Il2CppReflectionType *__type)
+void SetGlobalType_ArrayBuffer(Il2CppReflectionType *type)
 {
-    if (!__type)
+    if (!type)
     {
-        Exception::Raise(Exception::GetInvalidOperationException("type of special type is null"));
+        Exception::Raise(Exception::GetInvalidOperationException("type of ArrayBuffer is null"));
     }
-    if (SpecialTypeEnum == 0) g_typeofPersistentObjectInfo =  il2cpp_codegen_class_from_type(__type->type);
-    else if (SpecialTypeEnum == 1) g_typeofArrayBuffer =  il2cpp_codegen_class_from_type(__type->type);
-    else if (SpecialTypeEnum == 2) g_typeofTypedValue =  il2cpp_codegen_class_from_type(__type->type);
+    g_typeofArrayBuffer =  il2cpp_codegen_class_from_type(type->type);
 }
 
-void SetTypedValueType(Il2CppReflectionType *type)
+void SetGlobalType_JSObject(Il2CppReflectionType *type)
+{
+    if (!type)
+    {
+        Exception::Raise(Exception::GetInvalidOperationException("type of JSObject is null"));
+    }
+    g_typeofPersistentObjectInfo =  il2cpp_codegen_class_from_type(type->type);
+}
+
+void SetGlobalType_TypedValue(Il2CppReflectionType *type)
 {
     if (!type)
     {
@@ -873,8 +880,9 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetTypeId(System.Type)", (Il2CppMethodPointer)puerts::GetTypeId);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetFieldOffset(System.Reflection.FieldInfo,System.Boolean)", (Il2CppMethodPointer)puerts::GetFieldOffset);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetFieldInfoPointer(System.Reflection.FieldInfo)", (Il2CppMethodPointer)puerts::GetFieldInfoPointer);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::StoreGlobalSpecialType(System.Int32,System.Type)", (Il2CppMethodPointer)puerts::StoreGlobalSpecialType);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetTypedValueType(System.Type)", (Il2CppMethodPointer)puerts::SetTypedValueType);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);

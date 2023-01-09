@@ -381,9 +381,6 @@ inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
 
 inline static bool IsAssignableFrom(const void* typeId, const void* typeId2)
 {
-    if (typeId == nullptr || typeId2 == nullptr) {
-        return false;
-    }
     return GUnityExports.IsAssignableFrom(typeId, typeId2);
 }
 
@@ -1207,7 +1204,7 @@ V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
     v8::Isolate::Scope IsolateScope(Isolate);
     v8::HandleScope HandleScope(Isolate);
     
-    jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate);
+    jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate, jsEnv->MainContext.Get(Isolate));
 }
 
 #ifdef __cplusplus

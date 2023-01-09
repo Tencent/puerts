@@ -328,13 +328,19 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void StoreGlobalSpecialType(int specialSlot, Type type)
+        public static void SetGlobalType_JSObject(Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetGlobalType_ArrayBuffer(Type type)
         {
             throw new NotImplementedException();
         }
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetTypedValueType(Type type)
+        public static void SetGlobalType_TypedValue(Type type)
         {
             throw new NotImplementedException();
         }
