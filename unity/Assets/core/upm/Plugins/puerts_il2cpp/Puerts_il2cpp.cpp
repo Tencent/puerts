@@ -961,7 +961,16 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
     int js_args_len = pesapi_get_args_len(info);
     pesapi_env env = pesapi_get_env(info);
     pesapi_value jsThis = pesapi_get_holder(info);
-    void* csThis = Method::IsInstance(method) ? pesapi_get_native_object_ptr(env, jsThis) : nullptr;
+    void* csThis = nullptr;
+    if (Method::IsInstance(method))
+    {
+        csThis = pesapi_get_native_object_ptr(env, jsThis);
+        Il2CppClass* thisType = method->klass;
+        if (thisType->valuetype)
+        {
+            csThis = ((uint8_t*)csThis) - sizeof(Il2CppObject);
+        }
+    }
     
     for (int i = 0; i < method->parameters_count; ++i)
     {
