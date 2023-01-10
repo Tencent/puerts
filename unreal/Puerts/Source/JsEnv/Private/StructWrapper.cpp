@@ -292,6 +292,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
         Result->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             [](v8::Local<v8::Name> Property, const v8::PropertyCallbackInfo<v8::Value>& Info)
             {
+                if (Property->IsSymbol())
+                    return;
                 auto InnerIsolate = Info.GetIsolate();
                 auto Context = InnerIsolate->GetCurrentContext();
                 auto This = Info.This();
@@ -326,6 +328,8 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             },
             [](v8::Local<v8::Name> Property, v8::Local<v8::Value> Value, const v8::PropertyCallbackInfo<v8::Value>& Info)
             {
+                if (Property->IsSymbol())
+                    return;
                 auto InnerIsolate = Info.GetIsolate();
                 auto Context = InnerIsolate->GetCurrentContext();
                 auto This = Info.This();
