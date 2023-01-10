@@ -311,7 +311,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                             if (!Getter->IsFunction())
                             {
                                 auto Value = Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "value")).ToLocalChecked();
-                                Proto->Set(Context, Property, Value);
+                                (void) (Proto->Set(Context, Property, Value));
                             }
                             else
                             {
