@@ -964,6 +964,10 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
 {
     //puerts::PLog("ctor %s -> %s", classInfo->Name.c_str(), signature);
     puerts::V8WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
+    if (!WrapFunc)
+    {
+        WrapFunc = puerts::GUnityExports.ReflectionWrapper;
+    }
     if (!WrapFunc) return nullptr;
     int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
     puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
@@ -979,6 +983,10 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
 V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool isStatic, bool isGetter, bool isSetter, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
     puerts::V8WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
+    if (!WrapFunc)
+    {
+        WrapFunc = puerts::GUnityExports.ReflectionWrapper;
+    }
     if (!WrapFunc) return nullptr;
     int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
     puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);

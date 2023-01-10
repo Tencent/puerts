@@ -937,7 +937,10 @@ static bool GetValueTypeFromJs(pesapi_env env, pesapi_value jsValue, Il2CppClass
             }
         }
     
-        memcpy(storage, &data, valueSize);
+        if(hasValue)
+        {
+            memcpy(storage, &data, valueSize);
+        }
     }
     return hasValue;
 }
@@ -959,17 +962,27 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
 {
     pesapi_env env = pesapi_get_env(info);
     int js_args_len = pesapi_get_args_len(info);
+    static Il2CppClass* sParamArrayAttributeClass = nullptr;
+    
+    if (!sParamArrayAttributeClass)
+    {
+        sParamArrayAttributeClass = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
+    }
+    
+    bool hasParamArray = (method->parameters_count > 0) && MetadataCache::HasAttribute(method->klass->image, method->parameters[method->parameters_count - 1].token, sParamArrayAttributeClass);
+    
     if (checkJSArgument)
     {
         for (int i = 0; i < method->parameters_count; ++i)
         {
             bool passedByReference = method->parameters[i].parameter_type->byref;
             bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
+            bool isLastArgument = i == (method->parameters_count - 1);
             Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
             Class::Init(parameterType);
             pesapi_value jsValue = pesapi_get_arg(info, i);
             
-            if (hasDefault && pesapi_is_undefined(env, jsValue))
+            if ((hasDefault && pesapi_is_undefined(env, jsValue)) || (isLastArgument && hasParamArray))
             {
                 continue;
             }
@@ -1126,12 +1139,39 @@ handle_underlying:
         }
     }
     
-    for (int i = 0; i < method->parameters_count; ++i) //TODO: default value, parameters
+    for (int i = 0; i < method->parameters_count; ++i) 
     {
         bool passedByReference = method->parameters[i].parameter_type->byref;
         bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
+        bool isLastArgument = i == (method->parameters_count - 1);
         Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
         Class::Init(parameterType);
+        
+        if (isLastArgument && hasParamArray)
+        {
+            auto elementType = Class::FromIl2CppType(&parameterType->element_class->byval_arg);
+            auto arrayLen = js_args_len - i > 0 ? js_args_len - i : 0;
+            auto array = Array::NewSpecific(parameterType, arrayLen);
+            if (elementType->valuetype)
+            {
+                auto valueSize = elementType->instance_size - sizeof(Il2CppObject);
+                char* addr = Array::GetFirstElementAddress(array);
+                for(int j = i; j < js_args_len; ++j)
+                {
+                    GetValueTypeFromJs(env, pesapi_get_arg(info, j), elementType, addr + valueSize * (j - i));
+                }
+            }
+            else
+            {
+                for(int j = i; j < js_args_len; ++j)
+                {
+                    il2cpp_array_setref(array, j - i, JsValueToCSRef(elementType, env, pesapi_get_arg(info, j)));
+                }
+            }
+            args[i] = array;
+            continue;
+        }
+        
         pesapi_value jsValue = pesapi_get_arg(info, i);
         
         if (parameterType->valuetype)
