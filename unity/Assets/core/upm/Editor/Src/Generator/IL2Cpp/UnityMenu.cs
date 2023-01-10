@@ -36,7 +36,22 @@ namespace PuertsIl2cpp.Editor
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo);
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
-                AssetDatabase.Refresh();
+            }
+            
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate FunctionBridge.Gen.h(Configure)", false, 1)]
+            public static void GenerateCppWrappersInConfigure()
+            {
+                var start = DateTime.Now;
+#if CPP_OUTPUT_TO_NATIVE_SRC
+                var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+#else
+                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+#endif
+                
+                
+                Directory.CreateDirectory(saveTo);
+                FileExporter.GenCPPWrap(saveTo, true);
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
             }
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate ExtensionMethodInfos_Gen.cs", false, 1)]

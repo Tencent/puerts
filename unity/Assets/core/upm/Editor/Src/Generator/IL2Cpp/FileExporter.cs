@@ -66,7 +66,7 @@ namespace PuertsIl2cpp.Editor
                 return (parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer) ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
             }
 
-            public static void GenCPPWrap(string saveTo)
+            public static void GenCPPWrap(string saveTo, bool onlyConfigure = false)
             {
                 var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
                             // where assembly.FullName.Contains("puerts") || assembly.FullName.Contains("Assembly-CSharp") || assembly.FullName.Contains("Unity")
@@ -142,7 +142,39 @@ namespace PuertsIl2cpp.Editor
                     .ToList();
                 bridgeInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
-                var wrapperInfos = methodToWrap
+                var genWrapperCtor = ctorToWrapper;
+                var genWrapperMethod = methodToWrap;
+
+                if (onlyConfigure)
+                {
+                    var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
+                        "Puerts.BindingAttribute",
+                    });
+                    
+                    var configureTypes = new HashSet<Type>(configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
+                        .Where(o => o is Type)
+                        .Cast<Type>()
+                        .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t))
+                        .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
+                        .Distinct()
+                        .ToList());
+                    
+                    Utils.filters = Puerts.Configure.GetFilters();
+                    
+                    genWrapperCtor = configureTypes
+                        .SelectMany(t => t.GetConstructors(flag))
+                        .Where(m => !Utils.IsNotSupportedMember(m, true))
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                    
+                    genWrapperMethod = configureTypes
+                        .SelectMany(t => t.GetMethods(flag))
+                        .Where(m => !Utils.IsNotSupportedMember(m, true))
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+
+                    Utils.filters = null;
+                }
+
+                var wrapperInfos = genWrapperMethod
                     .Select(m  => { 
                         var isExtensionMethod = m.IsDefined(typeof(ExtensionAttribute));
                         return new SignatureInfo {
@@ -154,7 +186,7 @@ namespace PuertsIl2cpp.Editor
                         };
                     })
                     .Concat(
-                        ctorToWrapper
+                        genWrapperCtor
                             .Select(m  => { 
                                 var isExtensionMethod = false;
                                 return new SignatureInfo {
