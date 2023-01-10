@@ -170,6 +170,20 @@ namespace PuertsIl2cpp.Editor
                         .SelectMany(t => t.GetMethods(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
                         .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                    
+                    var configureUsedTypes = configureTypes
+                        .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
+                        .Concat(genWrapperMethod.SelectMany(m => m.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
+                        .Concat(genWrapperMethod.Select(m => m.ReturnType))
+                        .Concat(fieldToWrapper.Select(f => f.FieldType))
+                        .Distinct();
+                    
+                    valueTypeInfos = configureUsedTypes.Concat(delegateUsedTypes)
+                        .Where(t => t.IsValueType && !t.IsPrimitive && !t.IsEnum)
+                        .Select(t => new ValueTypeInfo { Signature = PuertsIl2cpp.TypeUtils.GetTypeSignature(t), CsName = t.Name, FieldSignatures = GetValueTypeFieldSignatures(t) })
+                        .GroupBy(s => s.Signature)
+                        .Select(s => s.FirstOrDefault())
+                        .ToList();
 
                     Utils.filters = null;
                 }
