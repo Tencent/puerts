@@ -43,8 +43,7 @@
 #include "JSClassRegister.h"
 #include "Binding.hpp"   
 #include <stdarg.h>
-#include "Puerts_Module.h"
-#include "Puerts_Promise.h"
+#include "BackendEnv.h"
 
 #define USE_OUTSIZE_UNITY 1
 
@@ -749,8 +748,7 @@ struct JSEnv
 #endif
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
-        Isolate->SetData(1, &ModuleManager);
-        Isolate->SetData(2, &PromiseHandler);
+        Isolate->SetData(1, &BackendEnv);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
@@ -843,21 +841,20 @@ struct JSEnv
         })->GetFunction(Context).ToLocalChecked()).Check();
         MainIsolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
 
-        MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::PromiseHandler>);
-        Context->Global()->Set(Context, v8::String::NewFromUtf8(MainIsolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::PromiseHandler>)->GetFunction(Context).ToLocalChecked()).Check();
+        MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::BackendEnv>);
+        Context->Global()->Set(Context, v8::String::NewFromUtf8(MainIsolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     }
     
     ~JSEnv()
     {
         CppObjectMapper.UnInitialize(MainIsolate);
-        ModuleManager.PathToModuleMap.clear();
-        ModuleManager.ScriptIdToPathMap.clear();
-        PromiseHandler.JsPromiseRejectCallback.Reset();
-        
-        if (PromiseHandler.Inspector)
+        BackendEnv.PathToModuleMap.clear();
+        BackendEnv.ScriptIdToPathMap.clear();
+        BackendEnv.JsPromiseRejectCallback.Reset();
+        if (BackendEnv.Inspector)
         {
-            delete PromiseHandler.Inspector;
-            PromiseHandler.Inspector = nullptr;
+            delete BackendEnv.Inspector;
+            BackendEnv.Inspector = nullptr;
         }
 
 #if WITH_NODEJS
@@ -896,8 +893,7 @@ struct JSEnv
     v8::Isolate::CreateParams* CreateParams;
     
     puerts::FCppObjectMapper CppObjectMapper;
-    puerts::ModuleManager ModuleManager;
-    puerts::PromiseHandler PromiseHandler;
+    puerts::BackendEnv BackendEnv;
 
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;
@@ -1236,17 +1232,17 @@ V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
 
 V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)
 {
-    jsEnv->PromiseHandler.CreateInspector(jsEnv->MainIsolate, &jsEnv->MainContext, Port);
+    jsEnv->BackendEnv.CreateInspector(jsEnv->MainIsolate, &jsEnv->MainContext, Port);
 }
 
 V8_EXPORT void DestroyInspector(puerts::JSEnv* jsEnv)
 {
-    jsEnv->PromiseHandler.DestroyInspector(jsEnv->MainIsolate, &jsEnv->MainContext);
+    jsEnv->BackendEnv.DestroyInspector(jsEnv->MainIsolate, &jsEnv->MainContext);
 }
 
 V8_EXPORT int InspectorTick(puerts::JSEnv* jsEnv)
 {
-    return jsEnv->PromiseHandler.InspectorTick() ? 1 : 0;
+    return jsEnv->BackendEnv.InspectorTick() ? 1 : 0;
 }
 
 #ifdef __cplusplus

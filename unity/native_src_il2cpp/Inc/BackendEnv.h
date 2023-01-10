@@ -1,19 +1,81 @@
 #include <algorithm>
 #include "Log.h"
+#include "V8InspectorImpl.h"
 
 namespace puerts
 {
-    class ModuleManager 
+    class BackendEnv 
     {
     public:
-        std::map<std::string, v8::UniquePersistent<v8::Module>> PathToModuleMap;
-        std::map<int, std::string> ScriptIdToPathMap;
-
-        ~ModuleManager() {
+        ~BackendEnv() {
             PathToModuleMap.clear();
             ScriptIdToPathMap.clear();
         }
+        BackendEnv()
+        {
+            Inspector = nullptr;
+        } 
+
+        // Module
+        std::map<std::string, v8::UniquePersistent<v8::Module>> PathToModuleMap;
+        std::map<int, std::string> ScriptIdToPathMap;
+
+        // PromiseCallback
+        v8::UniquePersistent<v8::Function> JsPromiseRejectCallback;
+        
+        // Inspector
+        V8Inspector* Inspector;
+
+        V8_INLINE static BackendEnv* Get(v8::Isolate* Isolate)
+        {
+            return (BackendEnv*)Isolate->GetData(1);
+        }
+        
+        void CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port)
+        {
+    #ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+    #endif
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            v8::Local<v8::Context> Context = ContextGlobal->Get(Isolate);
+            v8::Context::Scope ContextScope(Context);
+
+            if (Inspector == nullptr)
+            {
+                Inspector = CreateV8Inspector(Port, &Context);
+            }
+        }
+
+        void DestroyInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal)
+        {
+    #ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+    #endif
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            v8::Local<v8::Context> Context = ContextGlobal->Get(Isolate);
+            v8::Context::Scope ContextScope(Context);
+
+            if (Inspector != nullptr)
+            {
+                delete Inspector;
+                Inspector = nullptr;
+            }
+        }
+
+        bool InspectorTick()
+        {
+            if (Inspector != nullptr)
+            {
+                return Inspector->Tick();
+            }
+            return true;
+        }
     };
+
+
+
     namespace esmodule 
     {
         bool IsAbsolutePath(const std::string& path) {
@@ -80,7 +142,7 @@ namespace puerts
         )
         {
             v8::Isolate* Isolate = Context->GetIsolate();
-            ModuleManager* mm = (ModuleManager*)Isolate->GetData(1);
+            BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
 
             v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
             std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
@@ -183,7 +245,7 @@ namespace puerts
         void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
         {
             v8::Isolate* Isolate = Context->GetIsolate();
-            ModuleManager* mm = (ModuleManager*)Isolate->GetData(1);
+            BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
 
             auto iter = mm->ScriptIdToPathMap.find(Module->ScriptId());
             if (iter != mm->ScriptIdToPathMap.end()) 
