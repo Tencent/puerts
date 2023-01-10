@@ -964,9 +964,15 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
         for (int i = 0; i < method->parameters_count; ++i)
         {
             bool passedByReference = method->parameters[i].parameter_type->byref;
+            bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
             Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
             Class::Init(parameterType);
             pesapi_value jsValue = pesapi_get_arg(info, i);
+            
+            if (hasDefault && pesapi_is_undefined(env, jsValue))
+            {
+                continue;
+            }
             
             if (passedByReference)
             {
@@ -1123,6 +1129,7 @@ handle_underlying:
     for (int i = 0; i < method->parameters_count; ++i) //TODO: default value, parameters
     {
         bool passedByReference = method->parameters[i].parameter_type->byref;
+        bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
         Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
         Class::Init(parameterType);
         pesapi_value jsValue = pesapi_get_arg(info, i);
@@ -1144,6 +1151,17 @@ handle_underlying:
                 void* storage = alloca(underlyClass->instance_size - sizeof(Il2CppObject));
                 jsValue = JsObjectUnRef(env, jsValue);
                 GetValueTypeFromJs(env, jsValue, underlyClass, storage);
+                args[i] = storage;
+            }
+            else if (hasDefault && pesapi_is_undefined(env, jsValue))
+            {
+                void* storage = GetDefaultValuePtr(method, i);
+                if (!storage)
+                {
+                    auto valueSize = parameterType->instance_size - sizeof(Il2CppObject);
+                    storage = alloca(valueSize);
+                    memset(storage, 0, valueSize);
+                }
                 args[i] = storage;
             }
             else
@@ -1180,7 +1198,7 @@ handle_underlying:
         }
         else
         {
-            args[i] = JsValueToCSRef(parameterType, env, jsValue);
+            args[i] = (hasDefault && pesapi_is_undefined(env, jsValue)) ? GetDefaultValuePtr(method, i): JsValueToCSRef(parameterType, env, jsValue);
         }
     }
     
