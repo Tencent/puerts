@@ -853,6 +853,12 @@ struct JSEnv
         ModuleManager.PathToModuleMap.clear();
         ModuleManager.ScriptIdToPathMap.clear();
         PromiseHandler.JsPromiseRejectCallback.Reset();
+        
+        if (PromiseHandler.Inspector)
+        {
+            delete PromiseHandler.Inspector;
+            PromiseHandler.Inspector = nullptr;
+        }
 
 #if WITH_NODEJS
         // node::EmitExit(NodeEnv);
@@ -1226,6 +1232,21 @@ V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
     v8::HandleScope HandleScope(Isolate);
     
     jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate, jsEnv->MainContext.Get(Isolate));
+}
+
+V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)
+{
+    jsEnv->PromiseHandler.CreateInspector(jsEnv->MainIsolate, &jsEnv->MainContext, Port);
+}
+
+V8_EXPORT void DestroyInspector(puerts::JSEnv* jsEnv)
+{
+    jsEnv->PromiseHandler.DestroyInspector(jsEnv->MainIsolate, &jsEnv->MainContext);
+}
+
+V8_EXPORT int InspectorTick(puerts::JSEnv* jsEnv)
+{
+    return jsEnv->PromiseHandler.InspectorTick() ? 1 : 0;
 }
 
 #ifdef __cplusplus

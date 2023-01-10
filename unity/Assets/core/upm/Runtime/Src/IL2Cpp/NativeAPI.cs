@@ -88,6 +88,15 @@ namespace PuertsIl2cpp
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleasePendingJsObjects(IntPtr jsEnv);
 
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void CreateInspector(IntPtr jsEnv, int port);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void DestroyInspector(IntPtr jsEnv);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool InspectorTick(IntPtr jsEnv);
+        
         //call by native, do no throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {
