@@ -957,9 +957,157 @@ static void JsObjectSetRef(pesapi_env env, pesapi_value outer, pesapi_value val)
 
 static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, void** typeInfos)
 {
-    void** args = method->parameters_count > 0 ? (void**)alloca(sizeof(void*) * method->parameters_count) : nullptr;
-    int js_args_len = pesapi_get_args_len(info);
     pesapi_env env = pesapi_get_env(info);
+    int js_args_len = pesapi_get_args_len(info);
+    if (checkJSArgument)
+    {
+        for (int i = 0; i < method->parameters_count; ++i)
+        {
+            bool passedByReference = method->parameters[i].parameter_type->byref;
+            Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
+            Class::Init(parameterType);
+            pesapi_value jsValue = pesapi_get_arg(info, i);
+            
+            if (passedByReference)
+            {
+                if (pesapi_is_object(env, jsValue))
+                {
+                    continue;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            int t = method->parameters[i].parameter_type->type;
+handle_underlying:
+            switch (t)
+            {
+                case IL2CPP_TYPE_I1:
+                case IL2CPP_TYPE_I2:
+#if IL2CPP_SIZEOF_VOID_P == 4
+                case IL2CPP_TYPE_I:
+#endif
+                case IL2CPP_TYPE_I4:
+                {
+                    if (!pesapi_is_int32(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                case IL2CPP_TYPE_BOOLEAN:
+                {
+                    if (!pesapi_is_boolean(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                case IL2CPP_TYPE_U1:
+                case IL2CPP_TYPE_U2:
+                case IL2CPP_TYPE_CHAR:
+#if IL2CPP_SIZEOF_VOID_P == 4
+                case IL2CPP_TYPE_U:
+#endif
+                case IL2CPP_TYPE_U4:
+                {
+                    if (!pesapi_is_uint32(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+        #if IL2CPP_SIZEOF_VOID_P == 8
+                case IL2CPP_TYPE_I:
+        #endif
+                case IL2CPP_TYPE_I8:
+                {
+                    if (!pesapi_is_int64(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+        #if IL2CPP_SIZEOF_VOID_P == 8
+                case IL2CPP_TYPE_U:
+        #endif
+                case IL2CPP_TYPE_U8:
+                {
+                    if (!pesapi_is_uint64(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                case IL2CPP_TYPE_R4:
+                case IL2CPP_TYPE_R8:
+                {
+                    if (!pesapi_is_double(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                case IL2CPP_TYPE_STRING:
+                {
+                    if (!pesapi_is_string(env, jsValue))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                case IL2CPP_TYPE_SZARRAY:
+                case IL2CPP_TYPE_CLASS:
+                case IL2CPP_TYPE_OBJECT:
+                case IL2CPP_TYPE_ARRAY:
+                case IL2CPP_TYPE_FNPTR:
+                case IL2CPP_TYPE_PTR:
+                {
+                    if (pesapi_is_function(env, jsValue) && !Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, parameterType))
+                    {
+                        return false;
+                    }
+                    if (parameterType == il2cpp_defaults.object_class)
+                    {
+                        continue;
+                    }
+                    auto ptr = pesapi_get_native_object_ptr(env, jsValue);
+                    if (ptr)
+                    {
+                        auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
+                        if (!Class::IsAssignableFrom(parameterType, objClass))
+                        {
+                            return false;
+                        }
+                    }
+                    //nullptr will match ref type
+                }
+                case IL2CPP_TYPE_VALUETYPE:
+                    /* note that 't' and 'type->type' can be different */
+                    if (method->parameters[i].parameter_type->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(method->parameters[i].parameter_type))
+                    {
+                        t = Class::GetEnumBaseType(Type::GetClass(method->parameters[i].parameter_type))->type;
+                        goto handle_underlying;
+                    }
+                    else
+                    {
+                        auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
+                        if (!objClass || !Class::IsAssignableFrom(parameterType, objClass))
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                case IL2CPP_TYPE_GENERICINST:
+                    t = GenericClass::GetTypeDefinition(method->parameters[i].parameter_type->data.generic_class)->byval_arg.type;
+                    goto handle_underlying;
+                default:
+                    IL2CPP_ASSERT(0);
+            }
+        }
+    }
+    void** args = method->parameters_count > 0 ? (void**)alloca(sizeof(void*) * method->parameters_count) : nullptr;
     pesapi_value jsThis = pesapi_get_holder(info);
     void* csThis = nullptr;
     if (Method::IsInstance(method))
@@ -972,13 +1120,11 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
         }
     }
     
-    for (int i = 0; i < method->parameters_count; ++i)
+    for (int i = 0; i < method->parameters_count; ++i) //TODO: default value, parameters
     {
-        //Class::FromIl2CppType(method->parameters[index].parameter_type, false)
         bool passedByReference = method->parameters[i].parameter_type->byref;
         Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
         Class::Init(parameterType);
-        
         pesapi_value jsValue = pesapi_get_arg(info, i);
         
         if (parameterType->valuetype)
@@ -1038,7 +1184,7 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
         }
     }
     
-    Il2CppObject* ret = Runtime::InvokeWithThrow(method, csThis, args); //返回ValueType有gc么? 还是直接(char*)ptr - sizeof(Il2CppObject)？
+    Il2CppObject* ret = Runtime::InvokeWithThrow(method, csThis, args); //返回ValueType有boxing
     
     for (int i = 0; i < method->parameters_count; ++i)
     {
