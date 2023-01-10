@@ -768,7 +768,7 @@ handle_underlying:
     return Object::Box(klass, toBox);
 }
 
-pesapi_value CSRefToJsValue(pesapi_env env,  Il2CppClass *klass, Il2CppObject* obj)
+pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *klass, Il2CppObject* obj)
 {
     if (klass == il2cpp_defaults.void_class || !obj) return pesapi_create_undefined(env);
     
@@ -803,7 +803,8 @@ pesapi_value CSRefToJsValue(pesapi_env env,  Il2CppClass *klass, Il2CppObject* o
         memcpy(buff, Object::Unbox(obj), len);
         return pesapi_create_native_object(env, klass, buff, true);
     }
-    return pesapi_create_native_object(env, klass, obj, false);
+    auto objClass = obj && obj->klass ? obj->klass : klass;
+    return pesapi_create_native_object(env, objClass, obj, false);
 }
 
 static bool GetValueTypeFromJs(pesapi_env env, pesapi_value jsValue, Il2CppClass* klass, void* storage)
