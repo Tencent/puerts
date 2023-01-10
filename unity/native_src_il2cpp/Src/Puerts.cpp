@@ -44,10 +44,12 @@
 #include "Binding.hpp"   
 #include <stdarg.h>
 #include "Puerts_Module.h"
+#include "Puerts_Promise.h"
 
 #define USE_OUTSIZE_UNITY 1
 
 #include "UnityExports4Puerts.h"
+#include "PromiseRejectCallback.hpp"
 
 namespace puerts
 {
@@ -93,7 +95,7 @@ struct PersistentObjectInfo
 
 static_assert(sizeof(PersistentObjectInfo) <= sizeof(int64_t) * 8, "PersistentObjectInfo Size invalid");
 
-void PLog(const std::string Fmt, ...)
+void PLog(LogLevel Level, const std::string Fmt, ...)
 {
     static char SLogBuffer[1024];
     va_list list;
@@ -748,6 +750,7 @@ struct JSEnv
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
         Isolate->SetData(1, &ModuleManager);
+        Isolate->SetData(2, &PromiseHandler);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
@@ -839,6 +842,9 @@ struct JSEnv
 
         })->GetFunction(Context).ToLocalChecked()).Check();
         MainIsolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
+
+        MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::PromiseHandler>);
+        Context->Global()->Set(Context, v8::String::NewFromUtf8(MainIsolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::PromiseHandler>)->GetFunction(Context).ToLocalChecked()).Check();
     }
     
     ~JSEnv()
@@ -846,6 +852,7 @@ struct JSEnv
         CppObjectMapper.UnInitialize(MainIsolate);
         ModuleManager.PathToModuleMap.clear();
         ModuleManager.ScriptIdToPathMap.clear();
+        PromiseHandler.JsPromiseRejectCallback.Reset();
 
 #if WITH_NODEJS
         // node::EmitExit(NodeEnv);
@@ -884,6 +891,7 @@ struct JSEnv
     
     puerts::FCppObjectMapper CppObjectMapper;
     puerts::ModuleManager ModuleManager;
+    puerts::PromiseHandler PromiseHandler;
 
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;

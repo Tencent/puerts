@@ -104,10 +104,10 @@ namespace Puerts
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");
-
+            
             ExecuteModule("puerts/events.mjs");
             ExecuteModule("puerts/timer.mjs");
-            // ExecuteModule("puerts/promises.mjs");
+            ExecuteModule("puerts/promises.mjs");
         }
 
         [UnityEngine.Scripting.Preserve]

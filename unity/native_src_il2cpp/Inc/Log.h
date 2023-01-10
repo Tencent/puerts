@@ -11,7 +11,13 @@
 
 namespace puerts
 {
+enum LogLevel
+{
+    Log = 0,
+    Warning = 1,
+    Error = 2
+};
 
-void PLog(const std::string Fmt, ...);
+void PLog(LogLevel Level, const std::string Fmt, ...);
 
 }
