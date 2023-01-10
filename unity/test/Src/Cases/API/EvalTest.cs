@@ -21,6 +21,7 @@ namespace Puerts.UnitTest
                     var obj = {}; obj.func();
                 ");
             });
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleNotFound()
@@ -36,6 +37,7 @@ namespace Puerts.UnitTest
                 return;
             }
             Assert.AreEqual("unexpected to reach here", true);
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleCompileError()
@@ -70,6 +72,7 @@ namespace Puerts.UnitTest
                 return;
             }
             Assert.AreEqual("unexpected to reach here", true);
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleImportNotFound()
@@ -87,6 +90,7 @@ namespace Puerts.UnitTest
                 return;
             }
             Assert.AreEqual("unexpected to reach here", true);
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleImportCompileError()
@@ -105,6 +109,7 @@ namespace Puerts.UnitTest
                 return;
             }
             Assert.AreEqual("unexpected to reach here", true);
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleImportEvaluateError()
@@ -123,6 +128,7 @@ namespace Puerts.UnitTest
                 return;
             }
             Assert.AreEqual("unexpected to reach here", true);
+            jsEnv.Tick();
         }
         // [Test]
         // public void ESModuleExecuteCJS()
@@ -154,6 +160,7 @@ namespace Puerts.UnitTest
             string ret = jsEnv.ExecuteModule<string>("import-relative/a/entry.mjs", "str");
 
             Assert.AreEqual(ret, "hello");
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleImportCircular()
@@ -202,6 +209,7 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
 
             jsEnv.ExecuteModule("import-circular/main.mjs");
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleImportNotRelative()
@@ -227,6 +235,7 @@ namespace Puerts.UnitTest
 
             string res = jsEnv.ExecuteModule<string>("import-not-relative/main.mjs", "default");
             Assert.AreEqual(res, "M2Test M2");
+            jsEnv.Tick();
         }
         [Test]
         public void ESModuleImportMeta()
@@ -239,6 +248,7 @@ namespace Puerts.UnitTest
 
             string res = jsEnv.ExecuteModule<string>("import-meta/entry.mjs", "default");
             Assert.AreEqual(res, "import-meta/entry.mjs");
+            jsEnv.Tick();
         }
     }
 }

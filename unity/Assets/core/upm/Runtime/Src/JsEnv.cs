@@ -433,8 +433,7 @@ namespace Puerts
             }
         }
 
-        private List<IntPtr> tickHandler = new List<IntPtr>(); 
-        
+        private List<IntPtr> tickHandler = new List<IntPtr>();
         void RegisterTickHandler(IntPtr isolate, IntPtr info, IntPtr self, int paramLen)
         {
             try

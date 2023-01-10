@@ -12,7 +12,7 @@ using System.IO;
 
 namespace Puerts
 {
-#if !PUERTS_GENERAL
+#if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]
 #endif
     public interface ILoader
@@ -21,21 +21,21 @@ namespace Puerts
         string ReadFile(string filepath, out string debugpath);
     }
 
-#if !PUERTS_GENERAL
+#if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]
 #endif
     public class DefaultLoader : ILoader
     {
         private string root = "";
 
-#if !PUERTS_GENERAL
+#if ENABLE_IL2CPP
         [UnityEngine.Scripting.Preserve]
 #endif
         public DefaultLoader()
         {
         }
 
-#if !PUERTS_GENERAL
+#if ENABLE_IL2CPP
         [UnityEngine.Scripting.Preserve]
 #endif
         public DefaultLoader(string root)
@@ -54,7 +54,7 @@ namespace Puerts
                 filepath;
         }
 
-#if !PUERTS_GENERAL
+#if ENABLE_IL2CPP
         [UnityEngine.Scripting.Preserve]
 #endif
         public bool FileExists(string filepath)
@@ -74,7 +74,7 @@ namespace Puerts
 #endif
         }
 
-#if !PUERTS_GENERAL
+#if ENABLE_IL2CPP
         [UnityEngine.Scripting.Preserve]
 #endif
         public string ReadFile(string filepath, out string debugpath)

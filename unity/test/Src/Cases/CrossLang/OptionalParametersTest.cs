@@ -113,117 +113,125 @@ namespace Puerts.UnitTest
         [Test]
         public void InstanceMethodTest1()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test(1,3);
                 })()
            ");
             Assert.AreEqual(132, ret);
+            jsEnv.Tick();
             
         }
         [Test]
         public void InstanceMethodTest2() 
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test('1',3);
                 })()
            ");
             Assert.AreEqual(32, ret);
+            jsEnv.Tick();
             
         }
         [Test]
         public void InstanceMethodTest3()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test('1');
                 })()
            ");
             Assert.AreEqual(12, ret);
+            jsEnv.Tick();
             
         }
         [Test]
         public void InstanceMethodTest4()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test(6,6,6);
                 })()
            ");
             Assert.AreEqual(666, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest5()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test2('1',100);
                 })()
            ");
             Assert.AreEqual(100, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest6()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test2('1');
                 })()
            ");
             Assert.AreEqual(0, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest7()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test5('1', 1, false,false,false);
                 })()
            ");
             Assert.AreEqual(-1, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest8()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.Test5('1', 1, false);
                 })()
            ");
             Assert.AreEqual(-1, ret);
+            jsEnv.Tick();
             
         }
 
         // [Test] 
         // public void InstanceMethodTest9()
         // {
-        //     var env = UnitTestEnv.GetEnv();
-        //     int ret = env.Eval<int>(@"
+        //     var jsEnv = UnitTestEnv.GetEnv();
+        //     int ret = jsEnv.Eval<int>(@"
         //         (function() {
         //             let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
         //             let ret = 0;
@@ -238,8 +246,8 @@ namespace Puerts.UnitTest
         [Test]
         public void InstanceMethodTest10()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     let ret = 0;                
@@ -248,14 +256,15 @@ namespace Puerts.UnitTest
                 })()
            ");
             Assert.AreEqual(0, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest11()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     let ret = 0;                
@@ -264,14 +273,15 @@ namespace Puerts.UnitTest
                 })()
            ");
             Assert.AreEqual(1, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest12()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     let ret = 0;                
@@ -280,14 +290,15 @@ namespace Puerts.UnitTest
                 })()
            ");
             Assert.AreEqual(0, ret);
+            jsEnv.Tick();
             
         }
 
         [Test]
         public void InstanceMethodTest13()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();            
                     let ret = temp.Test6(1);
@@ -295,52 +306,56 @@ namespace Puerts.UnitTest
                 })()
            ");
             Assert.AreEqual(2, ret);
+            jsEnv.Tick();
             
         }
         [Test]
         public void InstanceMethodTest14()
         {
-            var env = UnitTestEnv.GetEnv();
-            string ret = env.Eval<string>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            string ret = jsEnv.Eval<string>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.TestFilter('world');
                 })()
            ");
             Assert.AreEqual("world hello", ret);
+            jsEnv.Tick();
             
         }
         [Test]
         public void InstanceMethodTest15()
         {
-            var env = UnitTestEnv.GetEnv();
-            bool ret = env.Eval<bool>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            bool ret = jsEnv.Eval<bool>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.TestOptClass();
                 })()
            ");
             Assert.True(ret);
+            jsEnv.Tick();
             
         }
         [Test]
         public void InstanceMethodTest16()
         {
-            var env = UnitTestEnv.GetEnv();
-            double ret = env.Eval<double>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            double ret = jsEnv.Eval<double>(@"
                 (function() {
                     let temp = new CS.Puerts.UnitTest.OptionalParametersClass();
                     return temp.TestOptStruct();
                 })()
            ");
             Assert.AreEqual(0, ret);            
+            jsEnv.Tick();
         }
 
         [Test]
         public void ConstructorTest1()
         {
-            var env = UnitTestEnv.GetEnv();
-            string ret = env.Eval<string>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            string ret = jsEnv.Eval<string>(@"
                 (function() {
                     const cls = new CS.Puerts.UnitTest.OptionalParametersClass(1);
                     return '' + (cls.a + cls.b)
@@ -348,12 +363,13 @@ namespace Puerts.UnitTest
            ");
             Assert.AreEqual("1200", ret);
             
+            jsEnv.Tick();
         }
         [Test]
         public void ConstructorTest2()
         {
-            var env = UnitTestEnv.GetEnv();
-            string ret = env.Eval<string>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            string ret = jsEnv.Eval<string>(@"
                 (function() {
                     const cls = new CS.Puerts.UnitTest.OptionalParametersClass(1, 4);
                     return '' + (cls.a + cls.b)
@@ -361,12 +377,13 @@ namespace Puerts.UnitTest
            ");
             Assert.AreEqual("4200", ret);
             
+            jsEnv.Tick();
         }
         [Test]
         public void ConstructorTest3()
         {
-            var env = UnitTestEnv.GetEnv();
-            string ret = env.Eval<string>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            string ret = jsEnv.Eval<string>(@"
                 (function() {
                     const cls = new CS.Puerts.UnitTest.OptionalParametersClass('1');
                     return '' + (cls.a + cls.b)
@@ -374,43 +391,47 @@ namespace Puerts.UnitTest
            ");
             Assert.AreEqual("120", ret);
             
+            jsEnv.Tick();
         }
 
         [Test]
         public void StaticMethodTest1()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     return CS.Puerts.UnitTest.OptionalParametersClass.STest(1,3);
                 })()
            ");
             Assert.AreEqual(132, ret);
             
+            jsEnv.Tick();
         }
         [Test]
         public void StaticMethodTest2() 
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     return CS.Puerts.UnitTest.OptionalParametersClass.STest('1',3);
                 })()
            ");
             Assert.AreEqual(32, ret);
             
+            jsEnv.Tick();
         }
         [Test]
         public void StaticMethodTest3()
         {
-            var env = UnitTestEnv.GetEnv();
-            int ret = env.Eval<int>(@"
+            var jsEnv = UnitTestEnv.GetEnv();
+            int ret = jsEnv.Eval<int>(@"
                 (function() {
                     return CS.Puerts.UnitTest.OptionalParametersClass.STest('1');
                 })()
            ");
             Assert.AreEqual(12, ret);
             
+            jsEnv.Tick();
         }
     }
 }

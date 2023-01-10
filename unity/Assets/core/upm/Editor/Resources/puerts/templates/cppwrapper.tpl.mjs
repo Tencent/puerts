@@ -129,7 +129,7 @@ struct ${valueTypeInfo.Signature}
         } else if (signature == 's') {
             ret += `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
-            ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
+            ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || (info[${index}]->IsFunction() ? !IsDelegate(TIp${index}) : !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))))) return false;`
         } else if (signature == 'O' || signature[0] == 'V') {
             return '';
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {

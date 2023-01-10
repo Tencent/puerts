@@ -61,14 +61,15 @@ namespace Puerts.UnitTest
                 })()
             ");
             Assert.AreEqual(res, 6);
+            jsEnv.Tick();
         }
         
         [Test]
         public void ListRangeTest()
         {
+            var jsEnv = UnitTestEnv.GetEnv();
             Assert.Catch(() =>
             {
-                var jsEnv = UnitTestEnv.GetEnv();
                 jsEnv.Eval(@"
                     (function() {
                         let List = puerts.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
@@ -79,6 +80,7 @@ namespace Puerts.UnitTest
                     })()
                 ");
             });
+            jsEnv.Tick();
         }
 
         [Test]
@@ -99,6 +101,7 @@ namespace Puerts.UnitTest
             {
                 Assert.True(e.Message.Contains("the class must be a constructor"));
             }
+            jsEnv.Tick();
             
         }
 
@@ -121,25 +124,27 @@ namespace Puerts.UnitTest
                 Assert.True(e.Message.Contains("invalid Type for generic arguments 0"));
             }
             
+            jsEnv.Tick();
         }
 
         [Test]
         public void StaticGenericMethodInvalidCallArguments()
         {
+            var jsEnv = UnitTestEnv.GetEnv();
             Assert.Catch(() =>
             {
-                var jsEnv = UnitTestEnv.GetEnv();
                 string genericTypeName1 = jsEnv.Eval<string>(@"
                     (function() {
                         const func = puerts.$genericMethod(CS.Puerts.UnitTest.GenericTestClass, 'StaticGenericMethod', CS.System.Int32);
                         return func('hello');
                     })();
                 ");
-#if EXPERIMENTAL_IL2CPP_PUERTS
+#if EXPERIMENTAL_IL2CPP_PUERTS && !UNITY_EDITOR
             }, "'System.String' cannot be converted to type 'System.Int32'");
 #else 
             }, "invalid arguments to StaticGenericMethod");
 #endif
+            jsEnv.Tick();
         }
 
         [Test]
@@ -155,6 +160,7 @@ namespace Puerts.UnitTest
             ");
             Assert.AreEqual(genericTypeName1, "Int32");
             
+            jsEnv.Tick();
         }
 
         [Test]
@@ -170,6 +176,7 @@ namespace Puerts.UnitTest
             ");
             Assert.AreEqual(genericTypeName1, "3");
             
+            jsEnv.Tick();
         }
 
         [Test]
@@ -190,6 +197,7 @@ namespace Puerts.UnitTest
             ");
             Assert.AreEqual(genericTypeName1, "world_Int32");
             
+            jsEnv.Tick();
         }
     }
 }

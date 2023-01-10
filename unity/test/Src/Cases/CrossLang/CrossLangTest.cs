@@ -24,6 +24,7 @@ namespace Puerts.UnitTest
                     });
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void NumberInstanceTest()
@@ -47,6 +48,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void StringInstanceTest()
@@ -60,16 +62,17 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oNum = outRef[0] = testHelper.numberTestStartValue;
-                    const rNum = testHelper.NumberTestPipeLine(oNum, outRef, function (num) {
-                        assertAndPrint('JSGetNumberArgFromCS', num, oNum + 1);
-                        testHelper.numberTestEndValue = oNum + 2;
-                        return testHelper.numberTestEndValue;
+                    const oStr = outRef[0] = testHelper.stringTestStartValue;
+                    const rStr = testHelper.StringTestPipeLine(oStr, outRef, function (str) {
+                        assertAndPrint('JSGetStringArgFromCS', str, 'abcd');
+                        testHelper.stringTestEndValue = oStr + 'de';
+                        return testHelper.stringTestEndValue;
                     });
-                    assertAndPrint('JSGetNumberOutArgFromCS', outRef[0], oNum + 3);
-                    assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
+                    assertAndPrint('JSGetStringOutArgFromCS', outRef[0], oStr + 'def');
+                    assertAndPrint('JSGetStringReturnFromCS', rStr, oStr + 'defg');
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void BoolInstanceTest()
@@ -93,6 +96,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBoolReturnFromCS', rBool, false);
                 })()
             ");
+            jsEnv.Tick();
         }
         //
 
@@ -118,6 +122,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBigIntReturnFromCS', rBigInt == oBigInt + 4n);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void NativeStructInstanceTest()
@@ -142,6 +147,7 @@ namespace Puerts.UnitTest
 
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void NativeObjectInstanceTest()
@@ -165,6 +171,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetNativeObjectReturnFromCS', rNativeObject, oNativeObject);
                 })()
             ");
+            jsEnv.Tick();
         }
         [Test]
         public void JSObjectInstanceTest()
@@ -186,6 +193,7 @@ namespace Puerts.UnitTest
 
                 })()
             ");
+            jsEnv.Tick();
         }
         // [Test]
         // public void DateTimeInstanceTest()
@@ -229,6 +237,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
                 })()
             ");
+            jsEnv.Tick();
         }
     }
 
@@ -298,6 +307,16 @@ namespace Puerts.UnitTest
 
         public TestHelper()
         {
+#if UNITY_EDITOR || !EXPERIMENTAL_IL2CPP_PUERTS
+            var env = UnitTestEnv.GetEnv();
+            env.UsingFunc<int>();
+            env.UsingFunc<int, int>();
+            env.UsingFunc<DateTime, DateTime>();
+            env.UsingFunc<string, string>();
+            env.UsingFunc<bool, bool>();
+            env.UsingFunc<long, long>();
+            env.UsingFunc<TestStruct, TestStruct>();
+#endif
         }
 
         /**

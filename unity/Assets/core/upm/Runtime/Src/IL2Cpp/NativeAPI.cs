@@ -120,7 +120,7 @@ namespace PuertsIl2cpp
             IntPtr typeInfo = IntPtr.Zero;
             try
             {
-                bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(type);
+                bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(type) && type != typeof(MulticastDelegate);
                 var typeId = GetTypeId(type);
                 //UnityEngine.Debug.Log(string.Format("{0} typeId is {1}", type, typeId));
                 var superTypeId = (isDelegate || type == typeof(object) || type.BaseType == null) ? IntPtr.Zero : GetTypeId(type.BaseType);
@@ -328,13 +328,19 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void StoreGlobalSpecialType(int specialSlot, Type type)
+        public static void SetGlobalType_JSObject(Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static void SetGlobalType_ArrayBuffer(Type type)
         {
             throw new NotImplementedException();
         }
         
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetTypedValueType(Type type)
+        public static void SetGlobalType_TypedValue(Type type)
         {
             throw new NotImplementedException();
         }

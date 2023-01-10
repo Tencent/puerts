@@ -8,6 +8,7 @@
 
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
+#include "Log.h"
 
 namespace puerts
 {
@@ -188,9 +189,8 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
 }
 
-void FCppObjectMapper::ClearPendingPersistentObject(v8::Isolate* Isolate) 
+void FCppObjectMapper::ClearPendingPersistentObject(v8::Isolate* Isolate, v8::Local<v8::Context> Context) 
 {
-    v8::Isolate::Scope IsolateScope(Isolate);
     std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
     //puerts::PLog("ReleasePendingJsObjects size: %d",  jsEnv->CppObjectMapper.PersistentObjectEnvInfo.PendingReleaseObjects.size());
     auto size = PersistentObjectEnvInfo.PendingReleaseObjects.size();
@@ -198,11 +198,10 @@ void FCppObjectMapper::ClearPendingPersistentObject(v8::Isolate* Isolate)
         return;
     }
 
-    v8::HandleScope HandleScope(Isolate);
     auto csptrKey = PersistentObjectEnvInfo.SymbolCSPtr.Get(Isolate);
     for (int i = 0; i < size; i++) {
         PersistentObjectEnvInfo.PendingReleaseObjects[i].Get(Isolate)->Delete(
-            Isolate->GetCurrentContext(), 
+            Context, 
             csptrKey
         );
     }
