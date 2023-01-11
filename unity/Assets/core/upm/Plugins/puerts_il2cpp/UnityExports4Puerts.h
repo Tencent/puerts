@@ -132,6 +132,9 @@ struct WrapData
     WrapFuncPtr Wrap;
     MethodType* Method;
     MethodPointer MethodPointer;
+    bool IsStatic;
+    bool HasParamArray;
+    int OptionalNum;
     void* TypeInfos[0];
 };
 

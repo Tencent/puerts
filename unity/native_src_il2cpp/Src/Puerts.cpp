@@ -978,6 +978,23 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
     data->Method = method;
     data->MethodPointer = methodPointer;
     data->Wrap = WrapFunc;
+    data->IsStatic = false;
+    data->HasParamArray = false;
+    data->OptionalNum = 0;
+    
+    const char* p = signature;
+    while(*p)
+    {
+        if (*p == 'V')
+        {
+            data->HasParamArray = true;
+        }
+        if (*p == 'D')
+        {
+            ++data->OptionalNum;
+        }
+        ++p;
+    }
     
     classInfo->Ctors.push_back(data);
     return data;
@@ -997,6 +1014,23 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
     data->Method = method;
     data->MethodPointer = methodPointer;
     data->Wrap = WrapFunc;
+    data->IsStatic = isStatic;
+    data->HasParamArray = false;
+    data->OptionalNum = 0;
+    
+    const char* p = signature;
+    while(*p)
+    {
+        if (*p == 'V')
+        {
+            data->HasParamArray = true;
+        }
+        if (*p == 'D')
+        {
+            ++data->OptionalNum;
+        }
+        ++p;
+    }
     
     for(int i = 0; i < classInfo->Methods.size(); ++i)
     {

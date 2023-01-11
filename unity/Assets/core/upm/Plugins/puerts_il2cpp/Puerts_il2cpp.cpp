@@ -976,17 +976,25 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
 {
     pesapi_env env = pesapi_get_env(info);
     int js_args_len = pesapi_get_args_len(info);
-    static Il2CppClass* sParamArrayAttributeClass = nullptr;
-    
-    if (!sParamArrayAttributeClass)
-    {
-        sParamArrayAttributeClass = Class::FromName(il2cpp_defaults.corlib, "System", "ParamArrayAttribute");
-    }
-    
-    bool hasParamArray = (method->parameters_count > 0) && MetadataCache::HasAttribute(method->klass->image, method->parameters[method->parameters_count - 1].token, sParamArrayAttributeClass);
+    bool hasParamArray = wrapData->HasParamArray;
     
     if (checkJSArgument)
     {
+        if (!hasParamArray && wrapData->OptionalNum == 0)
+        {
+            if (js_args_len != method->parameters_count)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            auto requireNum = method->parameters_count - wrapData->OptionalNum - (hasParamArray ? 1 : 0);
+            if (js_args_len < requireNum)
+            {
+                return false;
+            }
+        }
         for (int i = 0; i < method->parameters_count; ++i)
         {
             bool passedByReference = method->parameters[i].parameter_type->byref;
