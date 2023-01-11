@@ -828,7 +828,9 @@ static bool GetValueTypeFromJs(pesapi_env env, pesapi_value jsValue, Il2CppClass
         const Il2CppType *type = Class::GetType(klass);
         PrimitiveValueType data;
         data.i8 = 0;
-        switch (type->type)
+        int t = type->type;
+handle_underlying:
+        switch (t)
         {
             case IL2CPP_TYPE_I1:
             {
@@ -948,6 +950,13 @@ static bool GetValueTypeFromJs(pesapi_env env, pesapi_value jsValue, Il2CppClass
                     hasValue = true;
                 }
                 break;
+            }
+            case IL2CPP_TYPE_VALUETYPE:
+            /* note that 't' and 'type->type' can be different */
+            if (type->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(type))
+            {
+                t = Class::GetEnumBaseType(Type::GetClass(type))->type;
+                goto handle_underlying;
             }
         }
     
