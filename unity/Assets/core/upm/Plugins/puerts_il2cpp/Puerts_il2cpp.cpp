@@ -986,32 +986,34 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
     pesapi_env env = pesapi_get_env(info);
     int js_args_len = pesapi_get_args_len(info);
     bool hasParamArray = wrapData->HasParamArray;
+    bool isExtensionMethod = wrapData->IsExtensionMethod;
+    auto csArgStart = isExtensionMethod ? 1 : 0;
     
     if (checkJSArgument)
     {
         if (!hasParamArray && wrapData->OptionalNum == 0)
         {
-            if (js_args_len != method->parameters_count)
+            if (js_args_len != method->parameters_count - csArgStart)
             {
                 return false;
             }
         }
         else
         {
-            auto requireNum = method->parameters_count - wrapData->OptionalNum - (hasParamArray ? 1 : 0);
+            auto requireNum = method->parameters_count - csArgStart - wrapData->OptionalNum - (hasParamArray ? 1 : 0);
             if (js_args_len < requireNum)
             {
                 return false;
             }
         }
-        for (int i = 0; i < method->parameters_count; ++i)
+        for (int i = csArgStart; i < method->parameters_count; ++i)
         {
             bool passedByReference = method->parameters[i].parameter_type->byref;
             bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
             bool isLastArgument = i == (method->parameters_count - 1);
             Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
             Class::Init(parameterType);
-            pesapi_value jsValue = pesapi_get_arg(info, i);
+            pesapi_value jsValue = pesapi_get_arg(info, i - csArgStart);
             
             if ((hasDefault && pesapi_is_undefined(env, jsValue)) || (isLastArgument && hasParamArray))
             {
@@ -1169,8 +1171,12 @@ handle_underlying:
             csThis = ((uint8_t*)csThis) - sizeof(Il2CppObject);
         }
     }
+    if (isExtensionMethod)
+    {
+        args[0] = pesapi_get_native_object_ptr(env, jsThis);
+    }
     
-    for (int i = 0; i < method->parameters_count; ++i) 
+    for (int i = csArgStart; i < method->parameters_count; ++i) 
     {
         bool passedByReference = method->parameters[i].parameter_type->byref;
         bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
@@ -1180,30 +1186,31 @@ handle_underlying:
         
         if (isLastArgument && hasParamArray)
         {
+            int jsParamStart = i - csArgStart;
             auto elementType = Class::FromIl2CppType(&parameterType->element_class->byval_arg);
-            auto arrayLen = js_args_len - i > 0 ? js_args_len - i : 0;
+            auto arrayLen = js_args_len - jsParamStart > 0 ? js_args_len - jsParamStart : 0;
             auto array = Array::NewSpecific(parameterType, arrayLen);
             if (elementType->valuetype)
             {
                 auto valueSize = elementType->instance_size - sizeof(Il2CppObject);
                 char* addr = Array::GetFirstElementAddress(array);
-                for(int j = i; j < js_args_len; ++j)
+                for(int j = jsParamStart; j < js_args_len; ++j)
                 {
-                    GetValueTypeFromJs(env, pesapi_get_arg(info, j), elementType, addr + valueSize * (j - i));
+                    GetValueTypeFromJs(env, pesapi_get_arg(info, j), elementType, addr + valueSize * (j - i + csArgStart));
                 }
             }
             else
             {
-                for(int j = i; j < js_args_len; ++j)
+                for(int j = jsParamStart; j < js_args_len; ++j)
                 {
-                    il2cpp_array_setref(array, j - i, JsValueToCSRef(elementType, env, pesapi_get_arg(info, j)));
+                    il2cpp_array_setref(array, j - i + csArgStart, JsValueToCSRef(elementType, env, pesapi_get_arg(info, j)));
                 }
             }
             args[i] = array;
             continue;
         }
         
-        pesapi_value jsValue = pesapi_get_arg(info, i);
+        pesapi_value jsValue = pesapi_get_arg(info, i - csArgStart);
         
         if (parameterType->valuetype)
         {
@@ -1282,12 +1289,12 @@ handle_underlying:
     
     Il2CppObject* ret = Runtime::InvokeWithThrow(method, csThis, args); //返回ValueType有boxing
     
-    for (int i = 0; i < method->parameters_count; ++i)
+    for (int i = csArgStart; i < method->parameters_count; ++i)
     {
         bool passedByReference = method->parameters[i].parameter_type->byref;
         Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
         
-        pesapi_value jsValue = pesapi_get_arg(info, i);
+        pesapi_value jsValue = pesapi_get_arg(info, i - csArgStart);
         
         if (parameterType->valuetype && passedByReference && !Class::IsNullable(parameterType))
         {

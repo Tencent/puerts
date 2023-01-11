@@ -999,13 +999,14 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
     data->MethodPointer = methodPointer;
     data->Wrap = WrapFunc;
     data->IsStatic = false;
+    data->IsExtensionMethod = false;
     SetParamArrayFlagAndOptionalNum(data, signature);
     
     classInfo->Ctors.push_back(data);
     return data;
 }
 
-V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool isStatic, bool isGetter, bool isSetter, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
+V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool isStatic, bool isExtensionMethod, bool isGetter, bool isSetter, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
     puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
     if (!WrapFunc)
@@ -1020,6 +1021,7 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
     data->MethodPointer = methodPointer;
     data->Wrap = WrapFunc;
     data->IsStatic = isStatic;
+    data->IsExtensionMethod = isExtensionMethod;
     SetParamArrayFlagAndOptionalNum(data, signature);
     
     for(int i = 0; i < classInfo->Methods.size(); ++i)

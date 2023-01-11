@@ -62,13 +62,13 @@ namespace PuertsIl2cpp
         public static extern IntPtr AddConstructor(IntPtr classInfo, string signature, IntPtr method, IntPtr methodPointer, int typeInfoNum);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr AddMethod(IntPtr classInfo, string signature, string name, bool is_static, bool isGetter, bool isSetter, IntPtr method, IntPtr methodPointer, int typeInfoNum);
+        public static extern IntPtr AddMethod(IntPtr classInfo, string signature, string name, bool isStatic, bool isExtensionethod, bool isGetter, bool isSetter, IntPtr method, IntPtr methodPointer, int typeInfoNum);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool AddField(IntPtr classInfo, string signature, string name, bool is_static, IntPtr fieldInfo, int offset, IntPtr fieldTypeInfo);
+        public static extern bool AddField(IntPtr classInfo, string signature, string name, bool isStatic, IntPtr fieldInfo, int offset, IntPtr fieldTypeInfo);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetTypeInfo(IntPtr wrapData, int index, IntPtr type_id);
+        public static extern void SetTypeInfo(IntPtr wrapData, int index, IntPtr typeId);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ExchangeAPI(IntPtr exports);
@@ -187,7 +187,7 @@ namespace PuertsIl2cpp
                             UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
                             return;
                         }
-                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
+                        var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isExtensionMethod, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
                         if (wrapData == IntPtr.Zero)
                         {
                             if (throwIfMemberFail)

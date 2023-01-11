@@ -133,6 +133,7 @@ struct WrapData
     MethodType* Method;
     MethodPointer MethodPointer;
     bool IsStatic;
+    bool IsExtensionMethod;
     bool HasParamArray;
     int OptionalNum;
     void* TypeInfos[0];
