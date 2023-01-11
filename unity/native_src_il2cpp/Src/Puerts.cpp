@@ -963,22 +963,8 @@ V8_EXPORT void ReleaseCSharpTypeInfo(puerts::JsClassInfo* classInfo)
     delete classInfo;
 }
 
-V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
+static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* signature)
 {
-    //puerts::PLog("ctor %s -> %s", classInfo->Name.c_str(), signature);
-    puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
-    if (!WrapFunc)
-    {
-        WrapFunc = puerts::GUnityExports.ReflectionWrapper;
-    }
-    if (!WrapFunc) return nullptr;
-    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
-    puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
-    memset(data, 0, allocSize);
-    data->Method = method;
-    data->MethodPointer = methodPointer;
-    data->Wrap = WrapFunc;
-    data->IsStatic = false;
     data->HasParamArray = false;
     data->OptionalNum = 0;
     
@@ -995,6 +981,25 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
         }
         ++p;
     }
+}
+
+V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
+{
+    //puerts::PLog("ctor %s -> %s", classInfo->Name.c_str(), signature);
+    puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
+    if (!WrapFunc)
+    {
+        WrapFunc = puerts::GUnityExports.ReflectionWrapper;
+    }
+    if (!WrapFunc) return nullptr;
+    int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
+    puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
+    memset(data, 0, allocSize);
+    data->Method = method;
+    data->MethodPointer = methodPointer;
+    data->Wrap = WrapFunc;
+    data->IsStatic = false;
+    SetParamArrayFlagAndOptionalNum(data, signature);
     
     classInfo->Ctors.push_back(data);
     return data;
@@ -1015,22 +1020,7 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
     data->MethodPointer = methodPointer;
     data->Wrap = WrapFunc;
     data->IsStatic = isStatic;
-    data->HasParamArray = false;
-    data->OptionalNum = 0;
-    
-    const char* p = signature;
-    while(*p)
-    {
-        if (*p == 'V')
-        {
-            data->HasParamArray = true;
-        }
-        if (*p == 'D')
-        {
-            ++data->OptionalNum;
-        }
-        ++p;
-    }
+    SetParamArrayFlagAndOptionalNum(data, signature);
     
     for(int i = 0; i < classInfo->Methods.size(); ++i)
     {
