@@ -306,6 +306,14 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                     {
                         Info.GetReturnValue().Set(This->Get(Context, FixedPropertyName).ToLocalChecked());
                         auto DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
+                        while (!DescriptorVal->IsObject())
+                        {
+                            auto Parent = Proto->GetPrototype();
+                            if (!Parent->IsObject())
+                                break;
+                            Proto = Parent.As<v8::Object>();
+                            DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
+                        }
                         if (DescriptorVal->IsObject())
                         {
                             auto Descriptor = DescriptorVal.As<v8::Object>();
@@ -341,12 +349,21 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                     if (Proto->Has(Context, FixedPropertyName).FromMaybe(false))
                     {
                         auto _UnUsed = This->Set(Context, FixedPropertyName, Value);
+                        Info.GetReturnValue().Set(Value);
                         auto DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
+                        while (!DescriptorVal->IsObject())
+                        {
+                            auto Parent = Proto->GetPrototype();
+                            if (!Parent->IsObject())
+                                break;
+                            Proto = Parent.As<v8::Object>();
+                            DescriptorVal = Proto->GetOwnPropertyDescriptor(Context, FixedPropertyName).ToLocalChecked();
+                        }
                         if (DescriptorVal->IsObject())
                         {
                             auto Descriptor = DescriptorVal.As<v8::Object>();
                             // set first, mush set accessor of object
-                            This->SetAccessorProperty(Property,
+                            Proto->SetAccessorProperty(Property,
                                 Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "get"))
                                     .ToLocalChecked()
                                     .As<v8::Function>(),
