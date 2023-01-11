@@ -37,13 +37,19 @@ string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_INC_NAMES "${BACKEND_R
 string (REPLACE ";" "$<SEMICOLON>${BACKEND_ROOT}" BACKEND_LIB_NAMES "${BACKEND_ROOT}${BACKEND_LIB_NAMES}")
 string (REPLACE ";" "$<SEMICOLON>" BACKEND_DEFINITIONS "${BACKEND_DEFINITIONS}")
 
+set(ThirdParty ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/ThirdParty)
 include_directories(
     Inc
     ../Assets/core/upm/Plugins/puerts_il2cpp
     ${BACKEND_INC_NAMES}
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
+    ${ThirdParty}/Include/websocketpp
+    ${ThirdParty}/Include/asio
 )
 
 set ( PUERTS_INC
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
 )
 
 set ( PUERTS_SRC
@@ -53,6 +59,7 @@ set ( PUERTS_SRC
     Src/CppObjectMapper.cpp
     Src/DataTransfer.cpp
     Src/JSClassRegister.cpp
+    ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
 

@@ -43,11 +43,12 @@
 #include "JSClassRegister.h"
 #include "Binding.hpp"   
 #include <stdarg.h>
-#include "Puerts_Module.h"
+#include "BackendEnv.h"
 
 #define USE_OUTSIZE_UNITY 1
 
 #include "UnityExports4Puerts.h"
+#include "PromiseRejectCallback.hpp"
 
 namespace puerts
 {
@@ -93,7 +94,7 @@ struct PersistentObjectInfo
 
 static_assert(sizeof(PersistentObjectInfo) <= sizeof(int64_t) * 8, "PersistentObjectInfo Size invalid");
 
-void PLog(const std::string Fmt, ...)
+void PLog(LogLevel Level, const std::string Fmt, ...)
 {
     static char SLogBuffer[1024];
     va_list list;
@@ -745,7 +746,7 @@ struct JSEnv
 #endif
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
-        Isolate->SetData(1, &ModuleManager);
+        Isolate->SetData(1, &BackendEnv);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
@@ -837,13 +838,22 @@ struct JSEnv
 
         })->GetFunction(Context).ToLocalChecked()).Check();
         MainIsolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
+
+        MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::BackendEnv>);
+        Context->Global()->Set(Context, v8::String::NewFromUtf8(MainIsolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     }
     
     ~JSEnv()
     {
         CppObjectMapper.UnInitialize(MainIsolate);
-        ModuleManager.PathToModuleMap.clear();
-        ModuleManager.ScriptIdToPathMap.clear();
+        BackendEnv.PathToModuleMap.clear();
+        BackendEnv.ScriptIdToPathMap.clear();
+        BackendEnv.JsPromiseRejectCallback.Reset();
+        if (BackendEnv.Inspector)
+        {
+            delete BackendEnv.Inspector;
+            BackendEnv.Inspector = nullptr;
+        }
 
 #if WITH_NODEJS
         // node::EmitExit(NodeEnv);
@@ -881,7 +891,7 @@ struct JSEnv
     v8::Isolate::CreateParams* CreateParams;
     
     puerts::FCppObjectMapper CppObjectMapper;
-    puerts::ModuleManager ModuleManager;
+    puerts::BackendEnv BackendEnv;
 
 #if defined(WITH_NODEJS)
     uv_loop_t* NodeUVLoop;
@@ -1242,6 +1252,21 @@ V8_EXPORT void ReleasePendingJsObjects(puerts::JSEnv* jsEnv)
     v8::HandleScope HandleScope(Isolate);
     
     jsEnv->CppObjectMapper.ClearPendingPersistentObject(Isolate, jsEnv->MainContext.Get(Isolate));
+}
+
+V8_EXPORT void CreateInspector(puerts::JSEnv* jsEnv, int32_t Port)
+{
+    jsEnv->BackendEnv.CreateInspector(jsEnv->MainIsolate, &jsEnv->MainContext, Port);
+}
+
+V8_EXPORT void DestroyInspector(puerts::JSEnv* jsEnv)
+{
+    jsEnv->BackendEnv.DestroyInspector(jsEnv->MainIsolate, &jsEnv->MainContext);
+}
+
+V8_EXPORT int InspectorTick(puerts::JSEnv* jsEnv)
+{
+    return jsEnv->BackendEnv.InspectorTick() ? 1 : 0;
 }
 
 #ifdef __cplusplus

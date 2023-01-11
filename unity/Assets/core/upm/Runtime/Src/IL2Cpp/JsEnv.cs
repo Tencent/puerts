@@ -45,9 +45,9 @@ namespace Puerts
             return loader;
         }
 
-        public JsEnv(): this(new DefaultLoader()){}
+        public JsEnv(): this(new DefaultLoader(), -1) {}
 
-        public JsEnv(ILoader loader)
+        public JsEnv(ILoader loader, int debugPort = -1)
         {
             this.loader = loader;
             //only once is enough
@@ -101,13 +101,18 @@ namespace Puerts
                 Backend = new BackendQuickJS(this);
 
             PuertsIl2cpp.ExtensionMethodInfo.LoadExtensionMethodInfo();
+
+            if (debugPort != -1) {
+                PuertsIl2cpp.NativeAPI.CreateInspector(nativeJsEnv, debugPort);    
+            }
             ExecuteModule("puerts/init_il2cpp.mjs");
             ExecuteModule("puerts/log.mjs");
             ExecuteModule("puerts/csharp.mjs");
-
+            
             ExecuteModule("puerts/events.mjs");
             ExecuteModule("puerts/timer.mjs");
-            // ExecuteModule("puerts/promises.mjs");
+            ExecuteModule("puerts/promises.mjs");
+
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -144,7 +149,19 @@ namespace Puerts
         public void Tick()
         {
             PuertsIl2cpp.NativeAPI.ReleasePendingJsObjects(nativeJsEnv);
+            PuertsIl2cpp.NativeAPI.InspectorTick(nativeJsEnv);
             if (TickHandler != null) TickHandler();
+        }
+
+        public void WaitDebugger()
+        {
+#if THREAD_SAFE
+            lock(this) {
+#endif
+            while (!PuertsIl2cpp.NativeAPI.InspectorTick(nativeJsEnv)) { }
+#if THREAD_SAFE
+            }
+#endif
         }
         
         ~JsEnv()
