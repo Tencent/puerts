@@ -275,9 +275,13 @@ bool pesapi_is_int64(pesapi_env env, pesapi_value pvalue)
     if (value->IsBigInt())
     {
         // js bigint is always signed, try best to convert to a int64 lossless value.
-        bool lossless;
-        value.As<v8::BigInt>()->Int64Value(&lossless);
-        if (lossless)
+        // 
+        // keep as same as V8Converter, just return true
+        // TODO: make pesapi and V8Converter match the DRY principle.
+        // 
+        // bool lossless;
+        // value.As<v8::BigInt>()->Int64Value(&lossless);
+        // if (lossless)
         {
             return true;
         }

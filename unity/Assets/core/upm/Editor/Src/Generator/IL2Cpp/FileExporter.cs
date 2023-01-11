@@ -96,6 +96,8 @@ namespace PuertsIl2cpp.Editor
                     .Concat(methodToWrap.Select(m => m.ReturnType))
                     .Concat(fieldToWrapper.Select(f => f.FieldType))
                     .Distinct();
+                // methodToWrap = methodToWrap.Where(t=> false);
+                // ctorToWrapper = ctorToWrapper.Where(t=> false);
 
                 Type[] PuerDelegates = { 
                     typeof(Func<string, Puerts.JSObject>),

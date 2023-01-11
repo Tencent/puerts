@@ -47,17 +47,24 @@ namespace Puerts.UnitTest
         public void PassObjectToLong()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            Assert.Catch(()=> {
+            var catched = false;
+            try {
                 jsEnv.Eval(@"
                     (function() {
                         CS.Puerts.UnitTest.CrossLangTest2Helper.ArgLong({})
                     })()
                 ");
-#if EXPERIMENTAL_IL2CPP_PUERTS && !UNITY_EDITOR
-            }, "Cannot convert [object Object] to a BigInt");
-#else 
-            }, "invalid arguments to ArgLong");
-#endif
+
+            } 
+            catch(Exception e) 
+            {
+                Assert.True(
+                    e.Message.Contains("Cannot convert [object Object] to a BigInt") ||
+                    e.Message.Contains("invalid arguments")
+                );
+                catched = true;
+            }
+            Assert.True(catched);
             jsEnv.Tick();
         }
     }

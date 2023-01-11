@@ -914,19 +914,29 @@ handle_underlying:
     #endif
             case IL2CPP_TYPE_I8:
             {
-                if (pesapi_is_int64(env, jsValue))
+                if (pesapi_is_int32(env, jsValue))
+                {
+                    data.i8 = (uint32_t) pesapi_get_value_uint32(env, jsValue);
+                    hasValue = true;
+                }
+                if (pesapi_is_int64(env, jsValue) || pesapi_is_string(env, jsValue))
                 {
                     data.i8 = pesapi_get_value_int64(env, jsValue);
                     hasValue = true;
                 }
                 break;
-            }
+            }   
     #if IL2CPP_SIZEOF_VOID_P == 8
             case IL2CPP_TYPE_U:
     #endif
             case IL2CPP_TYPE_U8:
             {
-                if (pesapi_is_uint64(env, jsValue))
+                if (pesapi_is_uint32(env, jsValue))
+                {
+                    data.u8 = (uint64_t) pesapi_get_value_uint32(env, jsValue);
+                    hasValue = true;
+                }
+                if (pesapi_is_uint64(env, jsValue) || pesapi_is_string(env, jsValue))
                 {
                     data.u8 = pesapi_get_value_uint64(env, jsValue);
                     hasValue = true;
@@ -1116,7 +1126,7 @@ handle_underlying:
                 case IL2CPP_TYPE_FNPTR:
                 case IL2CPP_TYPE_PTR:
                 {
-                    if (pesapi_is_function(env, jsValue) && !Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, parameterType))
+                    if (pesapi_is_function(env, jsValue) && !(Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, parameterType) && parameterType != il2cpp_defaults.multicastdelegate_class))
                     {
                         return false;
                     }
@@ -1134,6 +1144,7 @@ handle_underlying:
                         }
                     }
                     //nullptr will match ref type
+                    break;
                 }
                 case IL2CPP_TYPE_VALUETYPE:
                     /* note that 't' and 'type->type' can be different */
@@ -1245,7 +1256,8 @@ handle_underlying:
             else
             {
                 void* storage = alloca(parameterType->instance_size - sizeof(Il2CppObject));
-                GetValueTypeFromJs(env, jsValue, parameterType, storage);
+                bool hasValue = GetValueTypeFromJs(env, jsValue, parameterType, storage);
+                if (!hasValue) return false;
                 args[i] = storage;
             }
         }
