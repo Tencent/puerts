@@ -19,6 +19,7 @@
 #pragma warning(pop)
 
 #include "DataTransfer.h"
+#include "NameTypes.h"
 
 namespace puerts
 {
@@ -120,7 +121,23 @@ public:
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const FName& String)
     {
-        return ToV8String(Isolate, String.ToString());
+        const FNameEntry* Entry = String.GetComparisonNameEntry();
+        FString Out;
+        if (String.GetNumber() == NAME_NO_NUMBER_INTERNAL)
+        {
+            Out.Empty(Entry->GetNameLength());
+            Entry->AppendNameToString(Out);
+        }
+        else
+        {
+            Out.Empty(Entry->GetNameLength() + 6);
+            Entry->AppendNameToString(Out);
+
+            Out += TEXT('_');
+            Out.AppendInt(NAME_INTERNAL_TO_EXTERNAL(String.GetNumber()));
+        }
+
+        return ToV8String(Isolate, Out);
     }
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const FText& String)
