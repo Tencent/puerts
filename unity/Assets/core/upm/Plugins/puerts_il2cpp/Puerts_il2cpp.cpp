@@ -777,7 +777,7 @@ pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *klass, Il2CppObject* ob
         klass = il2cpp_defaults.object_class;
     }        
     
-    pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, klass);
+    pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, klass != il2cpp_defaults.object_class ? klass : nullptr);
     
     if (jsVal) 
     {
@@ -1240,13 +1240,20 @@ handle_underlying:
             *arg = nullptr;
             auto underlyClass = Class::FromIl2CppType(&parameterType->byval_arg);
             jsValue = JsObjectUnRef(env, jsValue);
-            auto ptr = pesapi_get_native_object_ptr(env, jsValue);
-            if (ptr)
+            if (jsValue)
             {
-                auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
-                if (Class::IsAssignableFrom(underlyClass, objClass))
+                auto ptr = pesapi_get_native_object_ptr(env, jsValue);
+                if (ptr)
                 {
-                    *arg = ptr;
+                    auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
+                    if (Class::IsAssignableFrom(underlyClass, objClass))
+                    {
+                        *arg = ptr;
+                    }
+                }
+                else if (underlyClass == il2cpp_defaults.object_class) // any type
+                {
+                    *arg = JsValueToCSRef(underlyClass, env, jsValue);
                 }
             }
             args[i] = arg;
