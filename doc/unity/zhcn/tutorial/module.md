@@ -81,6 +81,20 @@ class MyLoader: ILoader, IModuleChecker {
 var loader = new MyLoader();
 var env = new JsEnv(loader);
 ```
+刚接触ts的同学肯定会问 怎么编译可以让ts编译成.mjs文件呢？
+请看 TypeScript 4.7 的发布文档
+Node.js 支持两种扩展名支持这种情况：.mjs 和 .cjs。
+无论 type 字段如何设置，.mjs文件始终被视为 ESM，而 .cjs 文件始终被视为 CommonJS。
+
+相应的，TypeScript 支持两种新的源文件扩展名：.mts 和 .cts。
+TypeScript 会将 .mts 文件转换为 .mjs，.cts 转换为 .cjs。
+
+另外 TypeScript 也支持两种新的声明文件扩展名：.d.mts 和 .d.cts。
+TypeScript 会为 .mts 文件生成 .d.mts 文件，为 .cts 文件生成 .d.cts。 
+
+也就是说 .ts 后缀改成 .mts 后缀就可以了
+这时候再编译你会发现
+导入会自动添加 .mjs 后缀了
 
 -------------------
 
