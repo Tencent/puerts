@@ -363,7 +363,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                         {
                             auto Descriptor = DescriptorVal.As<v8::Object>();
                             // set first, mush set accessor of object
-                            This->SetAccessorProperty(Property,
+                            Proto->SetAccessorProperty(Property,
                                 Descriptor->Get(Context, FV8Utils::ToV8String(InnerIsolate, "get"))
                                     .ToLocalChecked()
                                     .As<v8::Function>(),
