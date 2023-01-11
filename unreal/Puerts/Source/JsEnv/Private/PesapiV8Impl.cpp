@@ -315,7 +315,7 @@ pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, v
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     return v8impl::PesapiValueFromV8LocalValue(
-        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, copy));
+        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, !copy));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
