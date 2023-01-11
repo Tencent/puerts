@@ -202,7 +202,7 @@ static void MethodCallback(pesapi_callback_info info) {
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, (*wrapDatas)->TypeInfos))
+            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, *wrapDatas))
             {
                 return;
             }
@@ -315,7 +315,7 @@ static void* CtorCallback(pesapi_callback_info info)
         bool checkArgument = *wrapDatas && *(wrapDatas + 1);
         while(*wrapDatas)
         {
-            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, (*wrapDatas)->TypeInfos))
+            if ((*wrapDatas)->Wrap((*wrapDatas)->Method, (*wrapDatas)->MethodPointer, info, checkArgument, *wrapDatas))
             {
                 return Ptr;
             }
@@ -972,7 +972,7 @@ static void JsObjectSetRef(pesapi_env env, pesapi_value outer, pesapi_value val)
     }
 }
 
-static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, void** typeInfos)
+static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkJSArgument, WrapData* wrapData)
 {
     pesapi_env env = pesapi_get_env(info);
     int js_args_len = pesapi_get_args_len(info);

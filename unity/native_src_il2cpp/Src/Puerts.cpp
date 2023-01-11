@@ -107,8 +107,6 @@ void PLog(const std::string Fmt, ...)
     }
 }
 
-typedef bool (*V8WrapFuncPtr)(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, void** typeInfos);
-
 struct CSharpMethodInfo
 {
     std::string Name;
@@ -609,7 +607,7 @@ struct BridgeFuncInfo
 struct WrapFuncInfo
 {
     const char* Signature;
-    V8WrapFuncPtr Method;
+    WrapFuncPtr Method;
 };
 
 struct FieldWrapFuncInfo
@@ -632,7 +630,7 @@ MethodPointer FindBridgeFunc(const char* signature)
     return nullptr;
 }
 
-V8WrapFuncPtr FindWrapFunc(const char* signature)
+WrapFuncPtr FindWrapFunc(const char* signature)
 {
     auto begin = &g_wrapFuncInfos[0];
     auto end = &g_wrapFuncInfos[sizeof(g_wrapFuncInfos) / sizeof(WrapFuncInfo) - 1];
@@ -968,7 +966,7 @@ V8_EXPORT void ReleaseCSharpTypeInfo(puerts::JsClassInfo* classInfo)
 V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
     //puerts::PLog("ctor %s -> %s", classInfo->Name.c_str(), signature);
-    puerts::V8WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
+    puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
     if (!WrapFunc)
     {
         WrapFunc = puerts::GUnityExports.ReflectionWrapper;
@@ -987,7 +985,7 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
 
 V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool isStatic, bool isGetter, bool isSetter, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
-    puerts::V8WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
+    puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
     if (!WrapFunc)
     {
         WrapFunc = puerts::GUnityExports.ReflectionWrapper;

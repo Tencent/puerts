@@ -12,7 +12,7 @@ typedef void* (*DelegateAllocateFunc)(const void* type, MethodPointer methodPoin
 typedef void (*FieldOperationFunc)(void *obj, void *fieldInfo, size_t offset, void *value);
 typedef void* (*GetValueTypeFieldPtrFunc)(void *obj, void *field, size_t offset);
 typedef void MethodType;
-typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, void** typeInfos);
+typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, struct WrapData* wrapData);
 typedef v8::FunctionCallback FunctionCallbackFunc;
 
 typedef void TypeIdType;
@@ -69,7 +69,7 @@ typedef void* (*DelegateAllocateFunc)(Il2CppClass* klass, MethodPointer methodPo
 typedef void (*FieldOperationFunc)(void *obj, FieldInfo *fieldInfo, size_t offset, void *value);
 typedef void* (*GetValueTypeFieldPtrFunc)(void *obj, FieldInfo *field, size_t offset);
 typedef MethodInfo MethodType;
-typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, void** typeInfos);
+typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, struct WrapData* wrapData);
 typedef pesapi_callback FunctionCallbackFunc;
 typedef pesapi_constructor InitializeFunc;
 

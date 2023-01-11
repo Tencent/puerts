@@ -101,11 +101,11 @@ struct ${valueTypeInfo.Signature}
         const ret = [];
         let i = 0;
         if (returnHasTypeInfo) {
-            ret.push(`auto TIret = typeInfos[${i++}];`);
+            ret.push(`auto TIret = wrapData->TypeInfos[${i++}];`);
         }
         listToJsArray(wrapperInfo.ParameterSignatures).forEach((ps, index) => {
             if (!(getSignatureWithoutRefAndPrefix(ps) in PrimitiveSignatureCppTypeMap)) {
-                ret.push(`auto TIp${index} = typeInfos[${i++}];`);
+                ret.push(`auto TIp${index} = wrapData->TypeInfos[${i++}];`);
             }
         })
         return ret.join('\n    ')
@@ -339,7 +339,7 @@ function genFuncWrapper(wrapperInfo) {
 
     return t`
 // ${wrapperInfo.CsName}
-static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, void** typeInfos) {
+static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, WrapData* wrapData) {
     //PLog("Running w_${wrapperInfo.Signature}");
     
     ${CODE_SNIPPETS.declareTypeInfo(wrapperInfo)}
