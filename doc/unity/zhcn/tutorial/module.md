@@ -65,15 +65,15 @@ void Start() {
 -------------------
 ### 指定 ESM 模块的后缀名
 
-默认情况下，PuerTS只会将`.mjs`后缀名的文件当作模块JS处理，其它则不会。
+默认情况下，PuerTS只会将`.mjs`后缀名的文件当作ESM模块处理，其它则不会。
 
-但你可以为你传入JsEnv的`ILoader`再实现一个interface`Puerts.IModuleChecker`。通过`IsESM()`方法指定哪些路径的文件会被当作模块JS处理。
+但你可以为你传入JsEnv的`ILoader`再实现一个interface`Puerts.IModuleChecker`。通过`IsESM()`方法指定哪些路径的文件会被当作ESM模块处理。
 ```
 class MyLoader: ILoader, IModuleChecker {
     // ...
     public IsESM(string specifier) 
     {
-        return !specifier.EndsWith(".cjs"); // 只要不是cjs结尾都认为是模块js
+        return !specifier.EndsWith(".cjs"); // 只要不是cjs结尾都认为是ESM模块
     }
 }
 
