@@ -992,7 +992,7 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
     bool isExtensionMethod = wrapData->IsExtensionMethod;
     auto csArgStart = isExtensionMethod ? 1 : 0;
     
-    if (checkJSArgument)
+    if (checkJSArgument || wrapData->OptionalNum > 0)
     {
         if (!hasParamArray && wrapData->OptionalNum == 0)
         {
