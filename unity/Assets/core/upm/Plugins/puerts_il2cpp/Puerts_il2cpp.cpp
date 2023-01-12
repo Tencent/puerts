@@ -958,10 +958,10 @@ handle_underlying:
             }
         }
     
-        // if(hasValue)
-        // {
+        if(hasValue)
+        {
             memcpy(storage, &data, valueSize);
-        // }
+        }
     }
     return hasValue;
 }
@@ -1004,31 +1004,19 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
                 return false;
             }
         }
-        for (
-            int i = csArgStart, count = method->parameters_count, isCheckingParams = 0; 
-            i < count; 
-            ++i
-        )
+        for (int i = csArgStart; i < method->parameters_count; ++i)
         {
-            auto parameter_type = isCheckingParams ? method->parameters[method->parameters_count - 1].parameter_type->data.type : method->parameters[i].parameter_type;
-            bool passedByReference = parameter_type->byref;
-            bool hasDefault = parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
+            bool passedByReference = method->parameters[i].parameter_type->byref;
+            bool hasDefault = method->parameters[i].parameter_type->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT;
             bool isLastArgument = i == (method->parameters_count - 1);
+            Il2CppClass* parameterType = Class::FromIl2CppType(method->parameters[i].parameter_type);
+            Class::Init(parameterType);
             pesapi_value jsValue = pesapi_get_arg(info, i - csArgStart);
             
-            if (hasDefault && pesapi_is_undefined(env, jsValue))
+            if ((hasDefault || (isLastArgument && hasParamArray)) && pesapi_is_undefined(env, jsValue))
             {
                 continue;
             }
-            if (!isCheckingParams && isLastArgument && hasParamArray)
-            {
-                isCheckingParams = 1;
-                count = js_args_len + csArgStart;
-                parameter_type = parameter_type->data.type;
-            }
-            Il2CppClass* parameterKlass = Class::FromIl2CppType(parameter_type);
-            Class::Init(parameterKlass);
-            
             if (passedByReference)
             {
                 if (pesapi_is_object(env, jsValue))
@@ -1040,7 +1028,11 @@ static bool ReflectionWrapper(MethodInfo* method, Il2CppMethodPointer methodPoin
                     return false;
                 }
             }
-            int t = parameter_type->type;
+            int t;
+            if (isLastArgument && hasParamArray)
+                t = (int) parameterType->element_class->byval_arg.type;
+            else
+                t = method->parameters[i].parameter_type->type; 
 handle_underlying:
             switch (t)
             {
@@ -1125,11 +1117,11 @@ handle_underlying:
                 case IL2CPP_TYPE_FNPTR:
                 case IL2CPP_TYPE_PTR:
                 {
-                    if (pesapi_is_function(env, jsValue) && !(Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, parameterKlass) && parameterKlass != il2cpp_defaults.multicastdelegate_class))
+                    if (pesapi_is_function(env, jsValue) && (!Class::IsAssignableFrom(il2cpp_defaults.multicastdelegate_class, parameterType) || parameterType == il2cpp_defaults.multicastdelegate_class))
                     {
                         return false;
                     }
-                    if (parameterKlass == il2cpp_defaults.object_class)
+                    if (parameterType == il2cpp_defaults.object_class)
                     {
                         continue;
                     }
@@ -1137,7 +1129,7 @@ handle_underlying:
                     if (ptr)
                     {
                         auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
-                        if (!Class::IsAssignableFrom(parameterKlass, objClass))
+                        if (!Class::IsAssignableFrom(parameterType, objClass))
                         {
                             return false;
                         }
@@ -1147,22 +1139,22 @@ handle_underlying:
                 }
                 case IL2CPP_TYPE_VALUETYPE:
                     /* note that 't' and 'type->type' can be different */
-                    if (parameter_type->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(parameter_type))
+                    if (method->parameters[i].parameter_type->type == IL2CPP_TYPE_VALUETYPE && Type::IsEnum(method->parameters[i].parameter_type))
                     {
-                        t = Class::GetEnumBaseType(Type::GetClass(parameter_type))->type;
+                        t = Class::GetEnumBaseType(Type::GetClass(method->parameters[i].parameter_type))->type;
                         goto handle_underlying;
                     }
                     else
                     {
                         auto objClass = (Il2CppClass *)pesapi_get_native_object_typeid(env, jsValue);
-                        if (!objClass || !Class::IsAssignableFrom(parameterKlass, objClass))
+                        if (!objClass || !Class::IsAssignableFrom(parameterType, objClass))
                         {
                             return false;
                         }
                     }
                     break;
                 case IL2CPP_TYPE_GENERICINST:
-                    t = GenericClass::GetTypeDefinition(parameter_type->data.generic_class)->byval_arg.type;
+                    t = GenericClass::GetTypeDefinition(method->parameters[i].parameter_type->data.generic_class)->byval_arg.type;
                     goto handle_underlying;
                 default:
                     IL2CPP_ASSERT(0);
@@ -1254,8 +1246,13 @@ handle_underlying:
             }
             else
             {
-                void* storage = alloca(parameterType->instance_size - sizeof(Il2CppObject));
-                GetValueTypeFromJs(env, jsValue, parameterType, storage);
+                auto valueSize = parameterType->instance_size - sizeof(Il2CppObject);
+                void* storage = alloca(valueSize);
+                bool hasValue = GetValueTypeFromJs(env, jsValue, parameterType, storage);
+                if (!hasValue)
+                {
+                    memset(storage, 0, valueSize);
+                }
                 args[i] = storage;
             }
         }
