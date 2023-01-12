@@ -183,7 +183,7 @@ namespace PuertsIl2cpp
                     Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter, bool isExtensionMethod) =>
                     {
                         List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
-                        //UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
+                        // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
                         var methodInfoPointer = GetMethodInfoPointer(method);
                         var methodPointer = GetMethodPointer(method);
                         if (methodInfoPointer == IntPtr.Zero)

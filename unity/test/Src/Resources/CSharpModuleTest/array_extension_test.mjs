@@ -3,17 +3,17 @@ let Assert_AreEqual = CS.NUnit.Framework.Assert.AreEqual
 let types = [
     // puer.$typeof(CS.System.Object),
     // puer.$typeof(CS.System.Boolean),
-    puer.$typeof(CS.System.Char),
     puer.$typeof(CS.System.SByte),
+    puer.$typeof(CS.System.Char),
     puer.$typeof(CS.System.Byte),
     puer.$typeof(CS.System.Int16),
     puer.$typeof(CS.System.UInt16),
     puer.$typeof(CS.System.Int32),
     puer.$typeof(CS.System.UInt32),
-    puer.$typeof(CS.System.Int64),
-    puer.$typeof(CS.System.UInt64),
     puer.$typeof(CS.System.Single),
     puer.$typeof(CS.System.Double),
+    puer.$typeof(CS.System.Int64),
+    puer.$typeof(CS.System.UInt64),
     // puer.$typeof(CS.System.String),
     // puer.$typeof(CS.System.Array),
 ]
@@ -22,6 +22,9 @@ let types = [
 let TEST_VAL = 7
 for (let i = 0; i < types.length; i++) {
     const type = types[i];
+    if (type == puer.$typeof(CS.System.Int64) || type == puer.$typeof(CS.System.UInt64)) {
+        TEST_VAL = 7n;
+    }
     let arr = CS.System.Array.CreateInstance(type, 1)
     arr.set_Item(0, TEST_VAL)
     let val = arr.get_Item(0)

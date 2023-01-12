@@ -47,16 +47,18 @@ namespace Puerts.UnitTest
         public void PassObjectToLong()
         {
             var jsEnv = UnitTestEnv.GetEnv();
+#if !EXPERIMENTAL_IL2CPP_PUERTS
             Assert.Catch(()=> {
-                jsEnv.Eval(@"
+#endif
+                long ret = jsEnv.Eval<long>(@"
                     (function() {
-                        CS.Puerts.UnitTest.CrossLangTest2Helper.ArgLong({})
+                        return CS.Puerts.UnitTest.CrossLangTest2Helper.ArgLong({})
                     })()
                 ");
-#if EXPERIMENTAL_IL2CPP_PUERTS && !UNITY_EDITOR
-            }, "Cannot convert [object Object] to a BigInt");
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+            }, "invalid arguments");
 #else 
-            }, "invalid arguments to ArgLong");
+            Assert.AreEqual(ret, 0);
 #endif
             jsEnv.Tick();
         }
@@ -90,8 +92,9 @@ namespace Puerts.UnitTest
         }
 
         [UnityEngine.Scripting.Preserve]
-        public static void ArgLong(long l) {
+        public static long ArgLong(long l) {
             // no checkJSArguments
+            return l;
         }
     }
 }

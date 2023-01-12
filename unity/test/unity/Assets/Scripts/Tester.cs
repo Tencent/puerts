@@ -58,7 +58,7 @@ public class Tester : MonoBehaviour {
                     yield return null;
                     if (IsTesting && ca.GetType() == typeof(TestAttribute)) 
                     {
-                        // if (method.Name != "TimerTest2") continue;
+                        // if (method.Name != "InstanceMethodTest11") continue;
                         // if (!method.DeclaringType.Name.Contains("TimerTest")) continue;
                         UnityEngine.Debug.Log($"Started: TestCase {method.Name}\n");
                         try 
