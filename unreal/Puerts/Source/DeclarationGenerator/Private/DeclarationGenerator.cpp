@@ -599,6 +599,12 @@ void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
     {
         return;
     }
+#if ENGINE_MAJOR_VERSION >= 5
+    if (GetNamespace(ToGen).Equals(TEXT("Engine.Transient")))
+    {
+        return;
+    }
+#endif
     if (Processed.Contains(ToGen))
         return;
     if (ToGen->IsNative() && ProcessedByName.Contains(SafeName(ToGen->GetName())))
