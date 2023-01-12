@@ -452,6 +452,27 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
 }`;
 }
 
+function genGetField(fieldWrapperInfo) {
+    const signature = fieldWrapperInfo.ReturnSignature;
+    if (signature.startsWith('s_') && signature.endsWith('_')) { //valuetype
+        if (needThis(fieldWrapperInfo)) {
+            return `auto ret = (char*)self + offset;
+    
+    info.GetReturnValue().Set(DataTransfer::FindOrAddCData(isolate, context, TIret, ret, true));`
+        } else {
+            return `auto ret = GetValueTypeFieldPtr(nullptr, fieldInfo, offset);
+    
+    info.GetReturnValue().Set(DataTransfer::FindOrAddCData(isolate, context, TIret, ret, true));`
+        }
+    } else {
+        return `${CODE_SNIPPETS.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
+
+    FieldGet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, &ret);
+    
+    ${CODE_SNIPPETS.returnToJS(fieldWrapperInfo.ReturnSignature)}`
+    }
+}
+
 function genFieldWrapper(fieldWrapperInfo) {
     return t`
 static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIret) {
@@ -464,11 +485,7 @@ static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8:
     ${CODE_SNIPPETS.getThis(fieldWrapperInfo.ThisSignature)}
 
     ${ENDIF()}
-    ${CODE_SNIPPETS.SToCPPType(fieldWrapperInfo.ReturnSignature)} ret;
-
-    FieldGet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, &ret);
-    
-    ${CODE_SNIPPETS.returnToJS(fieldWrapperInfo.ReturnSignature)}
+    ${genGetField(fieldWrapperInfo)}
 }
 
 static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIp) {
