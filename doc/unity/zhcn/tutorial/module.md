@@ -65,15 +65,15 @@ void Start() {
 -------------------
 ### 指定 ESM 模块的后缀名
 
-默认情况下，PuerTS只会将`.mjs`后缀名的文件当作模块JS处理，其它则不会。
+默认情况下，PuerTS只会将`.mjs`后缀名的文件当作ESM模块处理，其它则不会。
 
-但你可以为你传入JsEnv的`ILoader`再实现一个interface`Puerts.IModuleChecker`。通过`IsESM()`方法指定哪些路径的文件会被当作模块JS处理。
+但你可以为你传入JsEnv的`ILoader`再实现一个interface`Puerts.IModuleChecker`。通过`IsESM()`方法指定哪些路径的文件会被当作ESM模块处理。
 ```
 class MyLoader: ILoader, IModuleChecker {
     // ...
     public IsESM(string specifier) 
     {
-        return !specifier.EndsWith(".cjs"); // 只要不是cjs结尾都认为是模块js
+        return !specifier.EndsWith(".cjs"); // 只要不是cjs结尾都认为是ESM模块
     }
 }
 
@@ -81,20 +81,6 @@ class MyLoader: ILoader, IModuleChecker {
 var loader = new MyLoader();
 var env = new JsEnv(loader);
 ```
-刚接触ts的同学肯定会问 怎么编译可以让ts编译成.mjs文件呢？
-请看 TypeScript 4.7 的发布文档
-Node.js 支持两种扩展名支持这种情况：.mjs 和 .cjs。
-无论 type 字段如何设置，.mjs文件始终被视为 ESM，而 .cjs 文件始终被视为 CommonJS。
-
-相应的，TypeScript 支持两种新的源文件扩展名：.mts 和 .cts。
-TypeScript 会将 .mts 文件转换为 .mjs，.cts 转换为 .cjs。
-
-另外 TypeScript 也支持两种新的声明文件扩展名：.d.mts 和 .d.cts。
-TypeScript 会为 .mts 文件生成 .d.mts 文件，为 .cts 文件生成 .d.cts。 
-
-也就是说 .ts 后缀改成 .mts 后缀就可以了
-这时候再编译你会发现
-导入会自动添加 .mjs 后缀了
 
 -------------------
 
