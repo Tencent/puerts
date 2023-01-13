@@ -1326,6 +1326,120 @@ handle_underlying:
     return true;
 }
 
+static void ReflectionGetFieldWrapper(pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
+{
+    pesapi_env env = pesapi_get_env(info);
+    pesapi_value jsThis = pesapi_get_holder(info);
+    void* csThis = nullptr;
+    if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+    {
+        csThis = pesapi_get_native_object_ptr(env, jsThis);
+    }
+    
+    if (fieldType->valuetype)
+    {
+        void* storage = nullptr;
+        bool isFieldPtr = true;
+        auto expectType = fieldType;
+        if (Class::IsNullable(fieldType))
+        {
+            expectType = Class::GetNullableArgument(fieldType);
+        }
+        if (Class::IsEnum(fieldType))
+        {
+            expectType = Class::GetElementClass(fieldType);
+        }
+        
+        if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+        {
+            int t = Class::GetType(fieldType)->type;
+            //il2cpp-blob.h
+            if (t >= IL2CPP_TYPE_BOOLEAN && t <= IL2CPP_TYPE_R8 || t == IL2CPP_TYPE_I || t == IL2CPP_TYPE_U)
+            {
+                storage = alloca(expectType->instance_size - sizeof(Il2CppObject));
+                GetFieldValue(csThis, field, offset, storage);
+                isFieldPtr = false;
+            }
+            else
+            {
+                storage = GetValueTypeFieldPtr(csThis, field, offset);
+            }
+        }
+        else if (csThis)
+        {
+            storage = (char*)csThis + offset;
+        }
+        if (!storage)
+        {
+            storage = alloca(expectType->instance_size - sizeof(Il2CppObject));
+            GetFieldValue(csThis, field, offset, storage);
+            isFieldPtr = false;
+        }
+
+        Il2CppObject* obj = (Il2CppObject*) storage - 1;
+        pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, expectType);
+    
+        if (!jsVal) 
+        {
+            if (isFieldPtr)
+            {
+                jsVal = pesapi_create_native_object(env, expectType, storage, false);
+            }
+            else
+            {
+                auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
+                auto buff = new uint8_t[valueSize];
+                memcpy(buff, storage, valueSize);
+                jsVal = pesapi_create_native_object(env, expectType, buff, true);
+            }
+        }
+        
+        if (jsVal)
+        {
+            pesapi_add_return(info, jsVal);
+        }
+    }
+    else
+    {
+        Il2CppObject** storage = (Il2CppObject**)GetValueTypeFieldPtr(csThis, field, offset);
+        pesapi_add_return(info, CSRefToJsValue(env, fieldType, *storage));
+    }
+}
+
+static void ReflectionSetFieldWrapper(pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType)
+{
+    pesapi_env env = pesapi_get_env(info);
+    pesapi_value jsThis = pesapi_get_holder(info);
+    void* csThis = nullptr;
+    if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+    {
+        csThis = pesapi_get_native_object_ptr(env, jsThis);
+    }
+    pesapi_value jsValue = pesapi_get_arg(info, 0);
+    if (fieldType->valuetype)
+    {
+        if (Class::IsNullable(fieldType))
+        {
+            void* storage = GetValueTypeFieldPtr(csThis, field, offset);
+            auto underlyClass = Class::GetNullableArgument(fieldType);
+            uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
+            bool hasValue = GetValueTypeFromJs(env, jsValue, underlyClass, storage);
+            *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
+        }
+        else
+        {
+            void* storage = GetValueTypeFieldPtr(csThis, field, offset);
+            GetValueTypeFromJs(env, jsValue, fieldType, storage);
+        }
+    }
+    else
+    {
+        void** storage = (void**)GetValueTypeFieldPtr(csThis, field, offset);
+        *storage = JsValueToCSRef(fieldType, env, jsValue);
+    }
+}
+
+
 static void ThrowInvalidOperationException(const char* msg)
 {
     Exception::Raise(Exception::GetInvalidOperationException(msg));
@@ -1373,6 +1487,8 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.GetArrayLength = Array::GetLength;
     g_unityExports.GetDefaultValuePtr = GetDefaultValuePtr;
     g_unityExports.ReflectionWrapper = ReflectionWrapper;
+    g_unityExports.ReflectionGetFieldWrapper = ReflectionGetFieldWrapper;
+    g_unityExports.ReflectionSetFieldWrapper = ReflectionSetFieldWrapper;
     g_unityExports.SizeOfRuntimeObject = sizeof(RuntimeObject);
     return &g_unityExports;
 }

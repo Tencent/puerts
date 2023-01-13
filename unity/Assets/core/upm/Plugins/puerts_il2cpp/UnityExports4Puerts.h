@@ -15,6 +15,8 @@ typedef void MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkArgument, struct WrapData* wrapData);
 typedef v8::FunctionCallback FunctionCallbackFunc;
 
+typedef void (*FieldWrapFuncPtr)(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo);
+
 typedef void TypeIdType;
 
 typedef void (*SetNativePtrFunc)(v8::Object* obj, void* ptr, void* type_id);
@@ -72,6 +74,7 @@ typedef MethodInfo MethodType;
 typedef bool (*WrapFuncPtr)(MethodType* method, Il2CppMethodPointer methodPointer, pesapi_callback_info info, bool checkArgument, struct WrapData* wrapData);
 typedef pesapi_callback FunctionCallbackFunc;
 typedef pesapi_constructor InitializeFunc;
+typedef void (*FieldWrapFuncPtr)(pesapi_callback_info info, FieldInfo* field, size_t offset, Il2CppClass* fieldType);
 
 typedef Il2CppClass TypeIdType;
 
@@ -182,6 +185,8 @@ struct UnityExports
     GetArrayLengthFunc GetArrayLength = nullptr;
     GetDefaultValuePtrFunc GetDefaultValuePtr = nullptr;
     WrapFuncPtr ReflectionWrapper = nullptr;
+    FieldWrapFuncPtr ReflectionGetFieldWrapper = nullptr;
+    FieldWrapFuncPtr ReflectionSetFieldWrapper = nullptr;
     int SizeOfRuntimeObject = 0;
     //plugin api
     

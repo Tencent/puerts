@@ -117,12 +117,10 @@ struct CSharpMethodInfo
     std::vector<WrapData*> OverloadDatas;
 };
 
-typedef void (*V8FieldWrapFuncPtr)(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* typeInfo);
-
 struct FieldWrapData
 {
-    V8FieldWrapFuncPtr Getter;
-    V8FieldWrapFuncPtr Setter;
+    FieldWrapFuncPtr Getter;
+    FieldWrapFuncPtr Setter;
     void *FieldInfo;
     size_t Offset;
     void* TypeInfo;
@@ -614,8 +612,8 @@ struct WrapFuncInfo
 struct FieldWrapFuncInfo
 {
     const char* Signature;
-    V8FieldWrapFuncPtr Getter;
-    V8FieldWrapFuncPtr Setter;
+    FieldWrapFuncPtr Getter;
+    FieldWrapFuncPtr Setter;
 };
 
 #include "FunctionBridge.Gen.h"
@@ -1059,10 +1057,25 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
 V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
 {
     puerts::FieldWrapFuncInfo* wrapFuncInfo = puerts::FindFieldWrapFuncInfo(signature);
-    if (!wrapFuncInfo) return false;
+    puerts::FieldWrapFuncPtr Getter = nullptr;
+    puerts::FieldWrapFuncPtr Setter = nullptr;
+    if (wrapFuncInfo) 
+    {
+        Getter = wrapFuncInfo->Getter;
+        Setter = wrapFuncInfo->Setter;
+    }
+    else
+    {
+        Getter = puerts::GUnityExports.ReflectionGetFieldWrapper;
+        Setter = puerts::GUnityExports.ReflectionSetFieldWrapper;
+    }
+    if (!Getter && !Setter)
+    {
+        return false;
+    }
     puerts::FieldWrapData* data = new puerts::FieldWrapData();
-    data->Getter = wrapFuncInfo->Getter;
-    data->Setter = wrapFuncInfo->Setter;
+    data->Getter = Getter;
+    data->Setter = Setter;
     data->FieldInfo = fieldInfo;
     data->Offset = offset;
     data->TypeInfo = fieldTypeInfo;
