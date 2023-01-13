@@ -1401,8 +1401,9 @@ static void ReflectionGetFieldWrapper(pesapi_callback_info info, FieldInfo* fiel
     }
     else
     {
-        Il2CppObject** storage = (Il2CppObject**)GetValueTypeFieldPtr(csThis, field, offset);
-        pesapi_add_return(info, CSRefToJsValue(env, fieldType, *storage));
+        void* storage = nullptr;
+        GetFieldValue(csThis, field, offset, &storage);
+        pesapi_add_return(info, CSRefToJsValue(env, fieldType, (Il2CppObject*)storage));
     }
 }
 
@@ -1420,22 +1421,29 @@ static void ReflectionSetFieldWrapper(pesapi_callback_info info, FieldInfo* fiel
     {
         if (Class::IsNullable(fieldType))
         {
-            void* storage = GetValueTypeFieldPtr(csThis, field, offset);
+            void* storage = alloca(fieldType->instance_size - sizeof(Il2CppObject));
             auto underlyClass = Class::GetNullableArgument(fieldType);
             uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
             bool hasValue = GetValueTypeFromJs(env, jsValue, underlyClass, storage);
             *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
+            SetFieldValue(csThis, field, offset, storage);
         }
         else
         {
-            void* storage = GetValueTypeFieldPtr(csThis, field, offset);
-            GetValueTypeFromJs(env, jsValue, fieldType, storage);
+            auto valueSize = fieldType->instance_size - sizeof(Il2CppObject);
+            void* storage = alloca(valueSize);
+            bool hasValue = GetValueTypeFromJs(env, jsValue, fieldType, storage);
+            if (!hasValue)
+            {
+                memset(storage, 0, valueSize);
+            }
+            SetFieldValue(csThis, field, offset, storage);
         }
     }
     else
     {
-        void** storage = (void**)GetValueTypeFieldPtr(csThis, field, offset);
-        *storage = JsValueToCSRef(fieldType, env, jsValue);
+        void* val = JsValueToCSRef(fieldType, env, jsValue);
+        SetFieldValue(csThis, field, offset, &val);
     }
 }
 
