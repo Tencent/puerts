@@ -176,14 +176,14 @@ int64_t pesapi_get_value_int64(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->ToBigInt(context).ToLocalChecked()->Int64Value();
+    return value->IsBigInt() ? value->ToBigInt(context).ToLocalChecked()->Int64Value() : 0;
 }
 
 uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->ToBigInt(context).ToLocalChecked()->Uint64Value();
+    return value->IsBigInt() ? value->ToBigInt(context).ToLocalChecked()->Uint64Value() : 0;
 }
 
 double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
