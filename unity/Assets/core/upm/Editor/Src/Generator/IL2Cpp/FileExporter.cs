@@ -144,6 +144,7 @@ namespace PuertsIl2cpp.Editor
 
                 var genWrapperCtor = ctorToWrapper;
                 var genWrapperMethod = methodToWrap;
+                var genWrapperField = fieldToWrapper;
 
                 if (onlyConfigure)
                 {
@@ -171,11 +172,16 @@ namespace PuertsIl2cpp.Editor
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
                         .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
                     
+                    genWrapperField = configureTypes
+                        .SelectMany(t => t.GetFields(flag))
+                        .Where(m => !Utils.IsNotSupportedMember(m, true))
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                    
                     var configureUsedTypes = configureTypes
                         .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
                         .Concat(genWrapperMethod.SelectMany(m => m.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
                         .Concat(genWrapperMethod.Select(m => m.ReturnType))
-                        .Concat(fieldToWrapper.Select(f => f.FieldType))
+                        .Concat(genWrapperField.Select(f => f.FieldType))
                         .Distinct();
                     
                     valueTypeInfos = configureUsedTypes.Concat(delegateUsedTypes)
@@ -217,7 +223,7 @@ namespace PuertsIl2cpp.Editor
                     .ToList();
                 wrapperInfos.Sort((x, y) => string.CompareOrdinal(x.Signature, y.Signature));
 
-                var fieldWrapperInfos = fieldToWrapper
+                var fieldWrapperInfos = genWrapperField
                     .Select(f => new SignatureInfo
                     {
                         Signature = (f.IsStatic ? "" : "t") + PuertsIl2cpp.TypeUtils.GetTypeSignature(f.FieldType),
