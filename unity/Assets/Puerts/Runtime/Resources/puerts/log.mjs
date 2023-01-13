@@ -64,6 +64,20 @@ if (UnityEngine_Debug) {
         else
             UnityEngine_Debug.Assert(false, "Assertion failed: console.assert\n" + getStack(new Error()) + "\n");
     }
+
+    const timeRecorder = new Map();
+    console.time = function(name){
+        timeRecorder.set(name,+new Date);
+    }
+    console.timeEnd = function(name){
+        const startTime = timeRecorder.get(name);
+        if(startTime){
+            console.log(String(name)+": "+(+new Date - startTime)+" ms");
+            timeRecorder.delete(name);
+        }else{
+            console.warn("Timer '" + String(name)+ "' does not exist");
+        };
+    }
     
     global.console = console;
     puer.console = console;
