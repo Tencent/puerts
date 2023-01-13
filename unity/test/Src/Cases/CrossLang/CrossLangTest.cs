@@ -68,6 +68,7 @@ namespace Puerts.UnitTest
                         testHelper.stringTestEndValue = oStr + 'de';
                         return testHelper.stringTestEndValue;
                     });
+                    
                     assertAndPrint('JSGetStringOutArgFromCS', outRef[0], oStr + 'def');
                     assertAndPrint('JSGetStringReturnFromCS', rStr, oStr + 'defg');
                 })()

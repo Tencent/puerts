@@ -109,10 +109,8 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
                         : puer.$unref(args[i])) 
                     : args[i]
                 let jsValType = typeof val
-                if (jsValType === "number") {
-                    argsCsArr.set_ItemNumber(i, val, needArgTypeCode[i])
-                } else if (jsValType === "bigint") {
-                    argsCsArr.set_ItemBigInt(i, val, needArgTypeCode[i])
+                if (jsValType === "number" || jsValType == 'bigint') {
+                    argsCsArr.set_Item(i, createTypedValueByTypeCode(val, needArgTypeCode[i]))
                 } else {
                     argsCsArr.set_Item(i, val)
                 }
@@ -128,7 +126,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
             if (argFlags) {
                 for (let i = 0; i < argFlags.length; i++) {
                     if (argFlags[i] & ARG_FLAG_REF)
-                        args[i].value = argscs.GetValue(i)
+                        args[i][0] = argscs.GetValue(i)
                 }
             }
             return ret
@@ -181,4 +179,21 @@ puer.fileExists = loader.FileExists.bind(loader);
 global.__tgjsRegisterTickHandler = function(fn) {
     fn = new CS.System.Action(fn);
     jsEnv.TickHandler = CS.System.Delegate.Combine(jsEnv.TickHandler, fn)
+}
+
+function createTypedValueByTypeCode(value, typecode) {
+    switch (typecode) {
+        case CS.System.TypeCode.Char: return new CS.Puerts.CharValue(value);
+        case CS.System.TypeCode.SByte: return new CS.Puerts.SByteValue(value);
+        case CS.System.TypeCode.Byte: return new CS.Puerts.ByteValue(value);
+        case CS.System.TypeCode.Int16: return new CS.Puerts.Int16Value(value);
+        case CS.System.TypeCode.UInt16: return new CS.Puerts.UInt16Value(value);
+        case CS.System.TypeCode.Int32: return new CS.Puerts.Int32Value(value);
+        case CS.System.TypeCode.UInt32: return new CS.Puerts.UInt32Value(value);
+        case CS.System.TypeCode.Int64: return new CS.Puerts.Int64Value(value);
+        case CS.System.TypeCode.UInt64: return new CS.Puerts.UInt64Value(value);
+        case CS.System.TypeCode.Single: return new CS.Puerts.FloatValue(value);
+        case CS.System.TypeCode.Double: return new CS.Puerts.DoubleValue(value);
+        default: return value;
+    }
 }

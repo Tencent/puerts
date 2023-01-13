@@ -63,7 +63,7 @@ public static class ExtensionMethodInfos_Gen_Internal
         }
         else if (type == typeof(System.Array))
         {
-            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Array), typeof(PuertsIl2cpp.ArrayExtension), typeof(PuertsIl2cpp.ArrayExtension2));
+            return ExtensionMethodInfo.GetExtensionMethods(typeof(System.Array), typeof(PuertsIl2cpp.ArrayExtension));
         }
         return null;
     }
