@@ -1321,7 +1321,11 @@ handle_underlying:
         }
     }
     
-    pesapi_add_return(info, CSRefToJsValue(env, Class::FromIl2CppType(method->return_type), ret));
+    auto returnType = Class::FromIl2CppType(method->return_type);
+    if (returnType != il2cpp_defaults.void_class)
+    {
+        pesapi_add_return(info, CSRefToJsValue(env, returnType, ret));
+    }
     
     return true;
 }
