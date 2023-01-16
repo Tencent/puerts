@@ -246,10 +246,28 @@ namespace Puerts.UnitTest
         {
             var jsEnv = UnitTestEnv.GetEnv();
             var ret = jsEnv.Eval<string>(@"
-                const val = CS.Puerts.UnitTest.CrossLangTestHelper.GetDateTime();
-                '' + (val instanceof CS.System.DateTime) + (val instanceof Date)
+                (function() {
+                    const val = CS.Puerts.UnitTest.CrossLangTestHelper.GetDateTime();
+                    return '' + (val instanceof CS.System.DateTime) + (val instanceof Date)
+                })()
             ");
             Assert.AreEqual("truefalse", ret);
+            jsEnv.Tick();
+        }
+        [Test]
+        public void EnumTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var ret = jsEnv.Eval<string>(@"
+                (function() {
+                    const fstart = CS.Puerts.UnitTest.CrossLangTestHelper.EnumField;
+                    CS.Puerts.UnitTest.CrossLangTestHelper.EnumField = CS.Puerts.UnitTest.TestEnum.A;
+                    const fend = CS.Puerts.UnitTest.CrossLangTestHelper.EnumField;
+                    const ret = CS.Puerts.UnitTest.CrossLangTestHelper.GetEnum();
+                    return `${fstart} ${fend} ${ret}`
+                })()
+            ");
+            Assert.AreEqual("213 1 213", ret);
             jsEnv.Tick();
         }
     }
@@ -270,6 +288,12 @@ namespace Puerts.UnitTest
             value = val;
         }
     }
+
+    public enum TestEnum
+    {
+        A = 1,
+        B = 213
+    }
    
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
@@ -278,6 +302,14 @@ namespace Puerts.UnitTest
         public static DateTime GetDateTime()
         {
             return DateTime.Now;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static TestEnum EnumField = TestEnum.B;
+        [UnityEngine.Scripting.Preserve]
+        public static TestEnum GetEnum()
+        {
+            return TestEnum.B;
         }
     }
     public class TestHelper
