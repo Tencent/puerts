@@ -1,7 +1,7 @@
 {
     "name": "com.tencent.puerts.core",
     "displayName": "Puerts",
-    "version": "1.4.0-rc.3.1",
+    "version": "2.0.0-pre.0",
     "description": "Write your game with TypeScript in UE4 or Unity. Puerts can be pronounced as pu-erh TS（普洱TS）",
     "keywords": [
         "Script"

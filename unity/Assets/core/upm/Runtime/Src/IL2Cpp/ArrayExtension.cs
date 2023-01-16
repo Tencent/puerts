@@ -1,74 +1,15 @@
+/*
+* Tencent is pleased to support the open source community by making Puerts available.
+* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
+* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
+*/
+
+#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
 using System;
 
 namespace PuertsIl2cpp
 {
-    // public static class ArrayExtensionUtils
-    // {
-    //     public static object castDoubleToObject(double val, TypeCode toType)
-    //     {
-    //         switch (toType)
-    //         {
-    //             case TypeCode.Empty: throw new InvalidCastException("Object cannot be cast to Empty.");
-    //             case TypeCode.Object: return val;
-    //             case TypeCode.DBNull: throw new InvalidCastException("Object cannot be cast to DBNull.");
-    //             case TypeCode.Boolean: return Convert.ToBoolean(val);
-    //             case TypeCode.Char: return Convert.ToChar(val);
-    //             case TypeCode.SByte: return Convert.ToSByte(val);
-    //             case TypeCode.Byte: return Convert.ToByte(val);
-    //             case TypeCode.Int16: return Convert.ToInt16(val);
-    //             case TypeCode.UInt16: return Convert.ToUInt16(val);
-    //             case TypeCode.Int32: return Convert.ToInt32(val);
-    //             case TypeCode.UInt32: return Convert.ToUInt32(val);
-    //             case TypeCode.Int64: return Convert.ToInt64(val);
-    //             case TypeCode.UInt64: return Convert.ToUInt64(val);
-    //             case TypeCode.Single: return Convert.ToSingle(val);
-    //             case TypeCode.Double: return val;
-    //             case TypeCode.Decimal: return Convert.ToDecimal(val);
-    //             case TypeCode.DateTime: return Convert.ToDateTime(val);
-    //             case TypeCode.String: return Convert.ToString(val);
-    //             default: throw new InvalidCastException($"Object cannot be cast to invalid type code ${toType}.");
-    //         }
-    //     }
-    //     public static object castLongToObject(long val, TypeCode toType)
-    //     {
-    //         switch (toType)
-    //         {
-    //             case TypeCode.Empty: throw new InvalidCastException("Object cannot be cast to Empty.");
-    //             case TypeCode.Object: return val;
-    //             case TypeCode.DBNull: throw new InvalidCastException("Object cannot be cast to DBNull.");
-    //             case TypeCode.Boolean: return Convert.ToBoolean(val);
-    //             case TypeCode.Char: return Convert.ToChar(val);
-    //             case TypeCode.SByte: return Convert.ToSByte(val);
-    //             case TypeCode.Byte: return Convert.ToByte(val);
-    //             case TypeCode.Int16: return Convert.ToInt16(val);
-    //             case TypeCode.UInt16: return Convert.ToUInt16(val);
-    //             case TypeCode.Int32: return Convert.ToInt32(val);
-    //             case TypeCode.UInt32: return Convert.ToUInt32(val);
-    //             case TypeCode.Int64: return val;
-    //             case TypeCode.UInt64: return Convert.ToUInt64(val);
-    //             case TypeCode.Single: return Convert.ToSingle(val);
-    //             case TypeCode.Double: return Convert.ToDouble(val);;
-    //             case TypeCode.Decimal: return Convert.ToDecimal(val);
-    //             case TypeCode.DateTime: return Convert.ToDateTime(val);
-    //             case TypeCode.String: return Convert.ToString(val);
-    //             default: throw new InvalidCastException($"Object cannot be cast to invalid type code ${toType}.");
-    //         }
-    //     }
-    // }
-
-    // public static class ArrayExtension2
-    // {
-    //     // used by object[], to specify type of element
-    //     [UnityEngine.Scripting.Preserve] public static void set_ItemBigInt(this System.Array arr, int idx, long val, TypeCode toTypeCode) 
-    //     { 
-    //         arr.SetValue(ArrayExtensionUtils.castLongToObject(val, toTypeCode), idx);
-    //     }
-    //     [UnityEngine.Scripting.Preserve] public static void set_ItemNumber(this System.Array arr, int idx, double val, TypeCode toTypeCode) 
-    //     { 
-    //         arr.SetValue(ArrayExtensionUtils.castDoubleToObject(val, toTypeCode), idx);
-    //     }
-    // }
-
     public static class ArrayExtension
     {
         [UnityEngine.Scripting.Preserve] public static int get_Item(this int[] arr, int idx) { return arr[idx]; }
@@ -108,3 +49,12 @@ namespace PuertsIl2cpp
         }
     }
 }
+#else 
+
+namespace PuertsIl2cpp
+{
+    public static class ArrayExtension
+    {
+    }
+}
+#endif
