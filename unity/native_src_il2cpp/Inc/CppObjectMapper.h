@@ -83,7 +83,7 @@ private:
 
     std::unordered_map<const void*, v8::UniquePersistent<v8::FunctionTemplate>> TypeIdToTemplateMap;
 
-    v8::UniquePersistent<v8::Function> PointerConstructor;
+    v8::UniquePersistent<v8::FunctionTemplate> PointerTemplate;
 
     std::unordered_map<void*, FinalizeFunc> CDataFinalizeMap;
 

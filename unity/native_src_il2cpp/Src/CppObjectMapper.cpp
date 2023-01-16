@@ -87,7 +87,7 @@ void FCppObjectMapper::Initialize(v8::Isolate* InIsolate, v8::Local<v8::Context>
 {
     auto LocalTemplate = v8::FunctionTemplate::New(InIsolate, PointerNew);
     LocalTemplate->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1, CDataName
-    PointerConstructor = v8::UniquePersistent<v8::Function>(InIsolate, LocalTemplate->GetFunction(InContext).ToLocalChecked());
+    PointerTemplate = v8::UniquePersistent<v8::FunctionTemplate>(InIsolate, LocalTemplate);
     PersistentObjectEnvInfo.Isolate = InIsolate;
     PersistentObjectEnvInfo.Context.Reset(InIsolate, InContext);
     PersistentObjectEnvInfo.SymbolCSPtr.Reset(InIsolate, v8::Symbol::New(InIsolate));
@@ -116,7 +116,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     
     if (!TypeId)
     {
-        auto Result = PointerConstructor.Get(Isolate)->NewInstance(Context, 0, nullptr).ToLocalChecked();
+        auto Result = PointerTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
         DataTransfer::SetPointer(Isolate, Result, TypeId, 1);
         return Result;
@@ -126,17 +126,14 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     auto Template = GetTemplateOfClass(Isolate, TypeId);
     if (!Template.IsEmpty())
     {
-        auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-        v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
-        return Template
-            ->GetFunction(Context)
-            .ToLocalChecked()
-            ->NewInstance(Context, 2, Args)
-            .ToLocalChecked();
+        auto Result = Template->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+        DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
+        DataTransfer::SetPointer(Isolate, Result, TypeId, 1);
+        return Result;
     }
     else
     {
-        auto Result = PointerConstructor.Get(Isolate)->NewInstance(Context, 0, nullptr).ToLocalChecked();
+        auto Result = PointerTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
         DataTransfer::SetPointer(Isolate, Result, TypeId, 1);
         return Result;
@@ -389,7 +386,7 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     CDataCache.clear();
     CDataFinalizeMap.clear();
     TypeIdToTemplateMap.clear();
-    PointerConstructor.Reset();
+    PointerTemplate.Reset();
     PersistentObjectEnvInfo.Context.Reset();
     PersistentObjectEnvInfo.SymbolCSPtr.Reset();
     std::lock_guard<std::mutex> guard(PersistentObjectEnvInfo.Mutex);
