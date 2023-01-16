@@ -264,20 +264,14 @@ namespace Puerts.UnitTest
         public void InstanceMethodTest11()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-#if !EXPERIMENTAL_IL2CPP_PUERTS
             Assert.Catch(()=> {
-#endif
                 int ret = jsEnv.Eval<int>(@"
                     (function() {
                         let temp = new CS.Puerts.UnitTest.OptionalParametersClass();     
                         return temp.Test4('1');
                     })()
                 ");
-#if !EXPERIMENTAL_IL2CPP_PUERTS
             }, "invalid");
-#else 
-            Assert.AreEqual(ret, 0);
-#endif
             jsEnv.Tick();
             
         }

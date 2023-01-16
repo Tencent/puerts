@@ -253,7 +253,7 @@ namespace puerts
                 meta->CreateDataProperty(
                     Context, 
                     v8::String::NewFromUtf8(Isolate, "url").ToLocalChecked(),
-                    v8::String::NewFromUtf8(Isolate, iter->second.c_str()).ToLocalChecked()
+                    v8::String::NewFromUtf8(Isolate, ("puer:" + iter->second).c_str()).ToLocalChecked()
                 ).ToChecked();
             }
         }

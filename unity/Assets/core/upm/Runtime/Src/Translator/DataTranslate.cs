@@ -37,7 +37,7 @@ namespace Puerts
             //translatorMap[typeof(decimal)] = decimalTranslator;
             generalGetterMap[typeof(bool)] = BooleanTranslator;
             generalGetterMap[typeof(string)] = StringTranslator;
-            generalGetterMap[typeof(DateTime)] = DateTranslator;
+            // generalGetterMap[typeof(DateTime)] = DateTranslator;
             generalGetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
             generalGetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
             generalGetterMap[typeof(JSObject)] = JSObjectTranslator;
@@ -113,10 +113,10 @@ namespace Puerts
             return PrimitiveTypeTranslate.GetString(jsEnvIdx, isolate, getValueApi, value, isByRef);
         }
 
-        private static object DateTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
-        {
-            return PrimitiveTypeTranslate.GetDateTime(jsEnvIdx, isolate, getValueApi, value, isByRef);
-        }
+        // private static object DateTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        // {
+        //     return PrimitiveTypeTranslate.GetDateTime(jsEnvIdx, isolate, getValueApi, value, isByRef);
+        // }
 
         private static object ArrayBufferTranslator(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
@@ -162,8 +162,8 @@ namespace Puerts
                     return LongTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.Boolean:
                     return BooleanTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
-                case JsValueType.Date:
-                    return DateTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
+                // case JsValueType.Date:
+                //     return DateTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.ArrayBuffer:
                     return ArrayBufferTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.Function:
@@ -348,10 +348,10 @@ namespace Puerts
             {
                 mask = JsValueType.NativeObject | JsValueType.NullOrUndefined;
             }
-            else if (type == typeof(DateTime))
-            {
-                mask = JsValueType.Date;
-            }
+            // else if (type == typeof(DateTime))
+            // {
+            //     mask = JsValueType.Date;
+            // }
             else if (type == typeof(ArrayBuffer))
             {
                 mask = JsValueType.ArrayBuffer;
@@ -407,7 +407,7 @@ namespace Puerts
             //translatorMap[typeof(decimal)] = decimalTranslator;
             generalSetterMap[typeof(bool)] = BooleanTranslator;
             generalSetterMap[typeof(string)] = StringTranslator;
-            generalSetterMap[typeof(DateTime)] = DateTranslator;
+            // generalSetterMap[typeof(DateTime)] = DateTranslator;
             generalSetterMap[typeof(ArrayBuffer)] = ArrayBufferTranslator;
             generalSetterMap[typeof(GenericDelegate)] = GenericDelegateTranslator;
             generalSetterMap[typeof(JSObject)] = JSObjectTranslator;
@@ -484,10 +484,10 @@ namespace Puerts
             PrimitiveTypeTranslate.PushString(jsEnvIdx, isolate, setValueApi, holder, obj as string);
         }
 
-        private static void DateTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
-        {
-            PrimitiveTypeTranslate.PushDateTime(jsEnvIdx, isolate, setValueApi, holder, (DateTime)obj);
-        }
+        // private static void DateTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
+        // {
+        //     PrimitiveTypeTranslate.PushDateTime(jsEnvIdx, isolate, setValueApi, holder, (DateTime)obj);
+        // }
 
         private static void ArrayBufferTranslator(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, object obj)
         {

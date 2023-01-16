@@ -186,6 +186,16 @@ namespace Puerts
                 disposed = true;
             }
         }
+        
+        public void UsingAction<T1>() { }
+        public void UsingAction<T1, T2>() { }
+        public void UsingAction<T1, T2, T3>() { }
+        public void UsingAction<T1, T2, T3, T4>() { }
+        public void UsingFunc<TResult>() { }
+        public void UsingFunc<T1, TResult>() { }
+        public void UsingFunc<T1, T2, TResult>() { }
+        public void UsingFunc<T1, T2, T3, TResult>() { }
+        public void UsingFunc<T1, T2, T3, T4, TResult>() { }
     }
 }
 

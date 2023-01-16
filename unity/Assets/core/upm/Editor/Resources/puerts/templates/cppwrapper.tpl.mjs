@@ -116,6 +116,9 @@ struct ${valueTypeInfo.Signature}
         if (signature[0] == "D") {
             ret += `if (length > ${index} && `
             signature = signature.substring(1);
+        } else if (signature[0] == 'V') {
+            ret += `if (!info[${index}]->IsNullOrUndefined() && `
+            signature = signature.substring(1)
         } else {
             ret += `if (`
         }
@@ -130,7 +133,7 @@ struct ${valueTypeInfo.Signature}
             ret += `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
             ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || (info[${index}]->IsFunction() ? !IsDelegate(TIp${index}) : !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))))) return false;`
-        } else if (signature == 'O' || signature[0] == 'V') {
+        } else if (signature == 'O') {
             return '';
         } else if (signature.startsWith('s_') && signature.endsWith('_')) {
             ret += `(!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`

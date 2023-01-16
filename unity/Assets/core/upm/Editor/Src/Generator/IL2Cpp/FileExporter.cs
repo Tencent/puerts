@@ -269,7 +269,7 @@ namespace PuertsIl2cpp.Editor
                     .ToList());
 
                 genTypes.Add(typeof(PuertsIl2cpp.ArrayExtension));
-                genTypes.Add(typeof(PuertsIl2cpp.ArrayExtension2));
+                // genTypes.Add(typeof(PuertsIl2cpp.ArrayExtension2));
                 var extendedType2extensionType = (from type in genTypes
 #if UNITY_EDITOR
                     where !type.Assembly.Location.Contains("Editor")
