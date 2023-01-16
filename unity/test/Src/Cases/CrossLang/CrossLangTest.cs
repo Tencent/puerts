@@ -196,6 +196,29 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Tick();
         }
+        [Test]
+        public void ArrayBufferInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oAB = new Uint8Array([1]).buffer;
+                    const rAB = testHelper.ArrayBufferTestPipeLine(oAB, outRef, function(bi) {
+                        assertAndPrint('JSGetArrayBufferArgFromCS', new Uint8Array(bi)[0], 2);
+                        return new Uint8Array([3]).buffer
+                    });
+                    assertAndPrint('JSGetArrayBufferOutArgFromCS', new Uint8Array(outRef[0])[0], 4);
+                    assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
+                })()
+            ");
+            jsEnv.Tick();
+        }
+
         // [Test]
         // public void DateTimeInstanceTest()
         // {
@@ -219,25 +242,14 @@ namespace Puerts.UnitTest
         //     ");
         // }
         [Test]
-        public void ArrayBufferInstanceTest()
+        public void DateTimeTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.Eval(@"
-                (function() {
-                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
-                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
-                    const testHelper = TestHelper.GetInstance();
-
-                    const outRef = [];
-                    const oAB = new Uint8Array([1]).buffer;
-                    const rAB = testHelper.ArrayBufferTestPipeLine(oAB, outRef, function(bi) {
-                        assertAndPrint('JSGetArrayBufferArgFromCS', new Uint8Array(bi)[0], 2);
-                        return new Uint8Array([3]).buffer
-                    });
-                    assertAndPrint('JSGetArrayBufferOutArgFromCS', new Uint8Array(outRef[0])[0], 4);
-                    assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
-                })()
+            var ret = jsEnv.Eval<string>(@"
+                const val = CS.Puerts.UnitTest.CrossLangTestHelper.GetDateTime();
+                '' + (val instanceof CS.System.DateTime) + (val instanceof Date)
             ");
+            Assert.AreEqual("truefalse", ret);
             jsEnv.Tick();
         }
     }
@@ -256,6 +268,16 @@ namespace Puerts.UnitTest
         public TestStruct(int val)
         {
             value = val;
+        }
+    }
+   
+    [UnityEngine.Scripting.Preserve]
+    public class CrossLangTestHelper
+    {
+        [UnityEngine.Scripting.Preserve]
+        public static DateTime GetDateTime()
+        {
+            return DateTime.Now;
         }
     }
     public class TestHelper

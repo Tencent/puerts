@@ -95,6 +95,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
             } else {
                 needArgTypeCode[i] = CS.System.Type.GetTypeCode(paramType)
             }
+            console.log(paramType, needArgTypeCode[i])
         }
         let argsCsArr
         let checkArgs = function (...args) {
@@ -103,7 +104,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
             argsCsArr = argsCsArr ?? CS.System.Array.CreateInstance(typeof_System_Object, needArgCount)
             // set args to c# array
             for (let i = 0; i < needArgCount; i++) {
-                let val = (argFlags[i] & ARG_FLAG_REF) 
+                let val = (argFlags[i] & ARG_FLAG_REF)
                     ? (argFlags[i] & ARG_FLAG_OUT 
                         ? null 
                         : puer.$unref(args[i])) 

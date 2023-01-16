@@ -203,16 +203,16 @@ namespace Puerts
             return getValueApi.GetString(isolate, holder, isByRef);
         }
 
-        public static void PushDateTime(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, DateTime date)
-        {
-            setValueApi.SetDate(isolate, holder, (date - new DateTime(1970, 1, 1)).TotalMilliseconds);
-        }
+        // public static void PushDateTime(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, DateTime date)
+        // {
+        //     setValueApi.SetDate(isolate, holder, (date - new DateTime(1970, 1, 1)).TotalMilliseconds);
+        // }
 
-        public static DateTime GetDateTime(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr holder, bool isByRef)
-        {
-            var ticks = getValueApi.GetDate(isolate, holder, isByRef);
-            return (new DateTime(1970, 1, 1)).AddMilliseconds(ticks);
-        }
+        // public static DateTime GetDateTime(int jsEnvIdx, IntPtr isolate, IGetValueFromJs getValueApi, IntPtr holder, bool isByRef)
+        // {
+        //     var ticks = getValueApi.GetDate(isolate, holder, isByRef);
+        //     return (new DateTime(1970, 1, 1)).AddMilliseconds(ticks);
+        // }
 
         public static void PushArrayBuffer(int jsEnvIdx, IntPtr isolate, ISetValueToJs setValueApi, IntPtr holder, ArrayBuffer arrayBuffer)
         {
@@ -239,7 +239,7 @@ namespace Puerts
             StaticTranslate<double>.ReplaceDefault(PushDouble, GetDouble);
             StaticTranslate<float>.ReplaceDefault(PushFloat, GetFloat);
             StaticTranslate<string>.ReplaceDefault(PushString, GetString);
-            StaticTranslate<DateTime>.ReplaceDefault(PushDateTime, GetDateTime);
+            // StaticTranslate<DateTime>.ReplaceDefault(PushDateTime, GetDateTime);
             StaticTranslate<ArrayBuffer>.ReplaceDefault(PushArrayBuffer, GetArrayBuffer);
         }
     }
