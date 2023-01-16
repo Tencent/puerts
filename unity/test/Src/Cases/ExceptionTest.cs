@@ -3,137 +3,247 @@ using System;
 
 namespace Puerts.UnitTest
 {
+    [UnityEngine.Scripting.Preserve]
+    public class ExceptionTestHelper
+    {
+        [UnityEngine.Scripting.Preserve]
+        public struct TestStruct { 
+            public int Age; 
+            public TestStruct(int a) { Age = a; } 
+            public TestStruct(bool a) { 
+                // testing checkJSArguments
+                Age = 0;
+            } 
+        }
+        [UnityEngine.Scripting.Preserve]
+        public class TestBaseClass { 
+        }
+        [UnityEngine.Scripting.Preserve]
+        public class TestDerivedClass: TestBaseClass { 
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgAction(Action d) {
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgAction() {
+            // just testing checkJSArguments
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgDelegate(Delegate d) {
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgDelegate() {
+            // just testing checkJSArguments
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgMulticastDelegate(MulticastDelegate d) {
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgMulticastDelegate() {
+            // just testing checkJSArguments
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static long ArgLong(long l) {
+            // no checkJSArguments
+            return l;
+        }
+
+        
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgInt(int i) {
+            
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgInt() {
+            // testing checkJSArguments
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgStruct(TestStruct s) {
+            
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgStruct() {
+            // testing checkJSArguments
+        }
+        
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgRefStruct(ref TestStruct s) {
+            
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static void ArgRefStruct() {
+            // testing checkJSArguments
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public string ArgDerivedClass(TestDerivedClass obj, int a, string b)
+        {
+            return b;
+        }
+    }
+
     [TestFixture]
     public class ExceptionTest
     {
-        // [Test]
-        // public void FunctionNotExistsException()
-        // {
-        //     var jsEnv = new JsEnv(new TxtLoader());
-        //     var res = jsEnv.Eval<int>(@"
-        //         let obj = new CS.Puerts.UnitTest.DerivedClass();
-        //         let res;
-        //         try{obj.adds(i,j);}catch(e){res = -1;}
-        //         res;
-        //     ");
-        //     jsEnv.Dispose();
-        //     Assert.AreEqual(res, -1);
-        // }
+        [Test]
+        public void PassJSFunctionToAction()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    CS.Puerts.UnitTest.ExceptionTestHelper.ArgAction(() => {})
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void PassJSFunctionToDelegate()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(()=> {
+                jsEnv.Eval(@"
+                    (function() {
+                        CS.Puerts.UnitTest.ExceptionTestHelper.ArgDelegate(() => {})
+                    })()
+                ");
+            }, "invalid arguments");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void PassJSFunctionToMulticastDelegate()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(()=> {
+                jsEnv.Eval(@"
+                    (function() {
+                        CS.Puerts.UnitTest.ExceptionTestHelper.ArgMulticastDelegate(() => {})
+                    })()
+                ");
+            }, "invalid arguments");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void PassObjectToLong()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+            Assert.Catch(()=> {
+#endif
+                long ret = jsEnv.Eval<long>(@"
+                    (function() {
+                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgLong({})
+                    })()
+                ");
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+            }, "invalid arguments");
+#else 
+            Assert.AreEqual(ret, 0);
+#endif
+            jsEnv.Tick();
+        }
+        [Test]
+        public void FunctionNotExistsException()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(()=> {
+                jsEnv.Eval(@"
+                    (function() {
+                        let obj = new CS.Puerts.UnitTest.ExceptionTestHelper();
+                        obj.adds(1, 2);
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
 
-        // [Test]
-        // public void InvalidArgumentsException()
-        // {
-        //     var jsEnv = new JsEnv(new TxtLoader());
-        //     int res = jsEnv.Eval<int>(@"
-        //         let obj = new CS.Puerts.UnitTest.DerivedClass();
-        //         let res;
-        //         try { res = obj.TestErrorParam('1');} catch(e){res = -1};
-        //         res;
-        //     ");
-        //     jsEnv.Dispose();
-        //     Assert.AreEqual(res, -1);
-        // }
+        [Test]
+        public void InvalidArgumentsException()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(()=> {
+                jsEnv.Eval(@"
+                    (function() {
+                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgInt('gloria')
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
 
-        // [Test]
-        // public void InvalidStructArgumentsException()
-        // {
-        //     var jsEnv = new JsEnv(new TxtLoader());
-        //     int res = jsEnv.Eval<int>(@"
-        //         let obj = new CS.Puerts.UnitTest.DerivedClass();
-        //         let s = new CS.Puerts.UnitTest.S(1,'anna');
-        //         let res;
-        //         try { res = obj.TestErrorParamStruct(1);} catch(e){res = -1};
-        //         res;
-        //     ");
-        //     jsEnv.Dispose();
-        //     Assert.AreEqual(res, -1);
-        // }
+        [Test]
+        public void InvalidStructArgumentsException()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(()=> {
+                jsEnv.Eval(@"
+                    (function() {
+                        let s = new CS.Puerts.UnitTest.ExceptionTestHelper.TestStruct(1);
 
-        // [Test]
-        // public void InvalidClassArgumentsException()
-        // {
-        //     Assert.Catch(() =>
-        //     {
-        //         var jsEnv = new JsEnv(new TxtLoader());
-        //         jsEnv.Eval(@"
-        //             let obj = new CS.Puerts.UnitTest.DerivedClass();
-        //             let iobj = new CS.Puerts.UnitTest.ISubA();
-        //             obj.TestErrorParamClass(undefined);"
-        //         );
-        //         jsEnv.Dispose();
-        //     });
-        // }
+                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgStruct('gloria')
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
+        [Test]
+        public void PolymorphismMismatchedArgumentsException()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(()=> {
+                jsEnv.Eval(@"
+                    (function() {
+                        let tbc = new CS.Puerts.UnitTest.ExceptionTestHelper.TestBaseClass();
+                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgDerivedClass(tbc, 1, 'gloria')
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
+        [Test]
+        public void InvalidRefStructArgumentsException()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                jsEnv.Eval(@"
+                    (function() {
+                        let tbc = new CS.Puerts.UnitTest.ExceptionTestHelper.TestStruct(1);
+                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgRefStruct(ts)
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
 
-        // [Test]
-        // public void PolymorphismMismatchedArgumentsException()
-        // {
-
-        //     var jsEnv = new JsEnv(new TxtLoader());
-        //     var res = jsEnv.Eval<int>(@"
-        //         let obj = new CS.Puerts.UnitTest.BaseClass();
-        //         let iobj = new CS.Puerts.UnitTest.ISubA();
-        //         let res;
-        //         try {res = iobj.TestDerivedObj(obj,1,'gyx');} catch(e){res = -1;}
-        //         res;
-        //     ");
-        //     jsEnv.Dispose();
-        //     Assert.AreEqual(res, -1);
-        // }
-        // [Test]
-        // public void InvalidRefStructArgumentsException()
-        // {
-        //     Assert.Catch(() =>
-        //     {
-        //         var jsEnv = new JsEnv(new TxtLoader());
-        //         jsEnv.Eval(@"
-        //             let obj = new CS.Puerts.UnitTest.DerivedClass();
-        //             let s = new CS.Puerts.UnitTest.S(1,'gyx');
-        //             obj.PrintStructRef(s);"
-        //         );
-        //         jsEnv.Dispose();
-        //     });
-        // }
-
-        // [Test]
-        // public void ArgumentsTypeMismatchedException()
-        // {
-        //     var jsEnv = new JsEnv(new TxtLoader());
-        //     int res = jsEnv.Eval<int>(@"
-        //         let obj = new CS.Puerts.UnitTest.ISubA();
-        //         let arrayString = CS.System.Array.CreateInstance(puerts.$typeof(CS.System.String), 3);
-        //         arrayString.set_Item(0, '111');
-        //         arrayString.set_Item(1, '222');
-        //         arrayString.set_Item(2, '333');
-        //         let res;
-        //         try {res = obj.TestArrInt(arrayString); } catch(e){res = -1;}
-        //         res;
-        //     ");
-        //     jsEnv.Dispose();
-        //     Assert.AreEqual(res, -1);
-        // }
-
-        // [Test]
-        // public void ConstructorArgumentsTypeMismatchedException()
-        // {
-        //     var jsEnv = new JsEnv(new TxtLoader());
-        //     int res = jsEnv.Eval<int>(@"
-        //         try {
-        //             const timer = new CS.Puerts.UnitTest.Timer('expected to be a int');
-        //         } catch(e){res = -1;}
-        //         res;
-        //     ");
-        //     jsEnv.Dispose();
-        //     Assert.AreEqual(res, -1);
-        // }
+        [Test]
+        public void ConstructorArgumentsTypeMismatchedException()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            Assert.Catch(() =>
+            {
+                jsEnv.Eval(@"
+                    (function() {
+                        new CS.Puerts.UnitTest.ExceptionTestHelper.TestStruct('expect to be a int');
+                    })()
+                ");
+            });
+            jsEnv.Tick();
+        }
 
         // [Test]
         // public void JsEnvCreateFailedException()
         // {
-        //     var loader = new TxtLoader();
+        //     var loader = new UnitTestLoader();
         //     loader.AddMockFileContent("puerts/events.mjs", @" throw new Error('expected exception') ");
+
         //     JsEnv env = null;
         //     var oldEnvList = JsEnv.jsEnvs;
         //     JsEnv.jsEnvs = new System.Collections.Generic.List<JsEnv>();
+
         //     try
         //     {
         //         env = new JsEnv(loader);

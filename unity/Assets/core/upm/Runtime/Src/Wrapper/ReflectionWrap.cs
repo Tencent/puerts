@@ -50,7 +50,7 @@ namespace Puerts
 
     public class Parameters
     {
-        private readonly int paramLength;
+        internal readonly int paramLength;
 
         private readonly JsEnv jsEnv;
 
@@ -58,7 +58,7 @@ namespace Puerts
 
         private JsValueType[] paramJSTypeMasks = null;
 
-        private int optionalParamPos = 0;
+        internal int optionalParamPos = 0;
         
         private Type[] paramTypes = null;
 
@@ -259,7 +259,7 @@ namespace Puerts
     {
         JsEnv jsEnv;
 
-        Parameters parameters = null;
+        internal Parameters parameters = null;
 
         MethodInfo methodInfo = null;
 
@@ -395,13 +395,20 @@ namespace Puerts
             try
             {
                 JSCallInfo callInfo = new JSCallInfo(isolate, info, self, argumentsLen);
-                for (int i = 0; i < overloads.Count; ++i)
+                if (overloads.Count == 1 && overloads[0].parameters.optionalParamPos == overloads[0].parameters.paramLength) {
+                    overloads[0].Invoke(callInfo);
+                    return;
+                } 
+                else 
                 {
-                    var overload = overloads[i];
-                    if (overload.IsMatch(callInfo))
+                    for (int i = 0; i < overloads.Count; ++i)
                     {
-                        overload.Invoke(callInfo);
-                        return;
+                        var overload = overloads[i];
+                        if (overload.IsMatch(callInfo))
+                        {
+                            overload.Invoke(callInfo);
+                            return;
+                        }
                     }
                 }
                 PuertsDLL.ThrowException(isolate, "invalid arguments to " + name);

@@ -24,10 +24,12 @@ namespace PuertsIl2cpp.Editor
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate FunctionBridge.Gen.h", false, 1)]
             public static void GenerateCppWrappers()
-            {
+            {   
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+#elif CPP_OUTPUT_TO_NATIVE_SRC_UPM
+                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "../../../", "native_src_il2cpp", "Src");
 #else
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
 #endif
@@ -35,7 +37,7 @@ namespace PuertsIl2cpp.Editor
                 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate FunctionBridge.Gen.h(Configure)", false, 1)]
@@ -44,6 +46,8 @@ namespace PuertsIl2cpp.Editor
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
+#elif CPP_OUTPUT_TO_NATIVE_SRC_UPM
+                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "../../../", "native_src_il2cpp", "Src");
 #else
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
 #endif
@@ -51,7 +55,7 @@ namespace PuertsIl2cpp.Editor
                 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenCPPWrap(saveTo, true);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate ExtensionMethodInfos_Gen.cs", false, 1)]
@@ -62,7 +66,7 @@ namespace PuertsIl2cpp.Editor
 
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenExtensionMethodInfos(saveTo);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }
 
@@ -73,7 +77,7 @@ namespace PuertsIl2cpp.Editor
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenLinkXml(saveTo);
-                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }
 

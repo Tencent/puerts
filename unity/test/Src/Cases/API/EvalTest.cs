@@ -247,7 +247,7 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
 
             string res = jsEnv.ExecuteModule<string>("import-meta/entry.mjs", "default");
-            Assert.AreEqual(res, "import-meta/entry.mjs");
+            Assert.AreEqual(res, "puer:import-meta/entry.mjs");
             jsEnv.Tick();
         }
     }

@@ -14,8 +14,8 @@
  export default function AutoRegTemplate(types, wrapperInfos) {
     types = toJsArray(types);
     wrapperInfos = toJsArray(wrapperInfos);
-    return `using System;
-
+    return `#if !(EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP)
+using System;
 namespace PuertsStaticWrap
 {
     public static class AutoStaticCodeRegister
@@ -38,6 +38,7 @@ ${
         }
     }
 }
+#endif
 
     `.trim();
 };

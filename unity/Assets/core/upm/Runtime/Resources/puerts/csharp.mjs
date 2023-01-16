@@ -109,15 +109,15 @@ global.CS = csharpModule;
 csharpModule.System.Object.prototype.toString = csharpModule.System.Object.prototype.ToString;
 
 function ref(x) {
-    return {value:x};
+    return [x];
 }
 
 function unref(r) {
-    return r.value;
+    return r[0];
 }
 
 function setref(x, val) {
-    x.value = val;
+    x[0] = val;
 }
 
 function taskToPromise(task) {
@@ -214,4 +214,3 @@ puer.$extension = (cls, extension) => {
     typeof console != 'undefined' && console.warn(`deprecated! if you already generate static wrap for ${cls} and ${extension}, you are no need to invoke $extension`); 
     return doExtension(cls, extension)
 };
-puer.$reflectExtension = doExtension;

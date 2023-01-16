@@ -171,6 +171,7 @@ export default function TypingTemplate(data) {
 
     return $
         `${FOR(toJsArray(data.Namespaces), name => `
+#if !(EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP)
 using ${name};`
         )}
 using Puerts;
@@ -597,6 +598,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
         })}
     }
 }
+#endif
 `
 }
 
