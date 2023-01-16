@@ -775,7 +775,12 @@ pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *klass, Il2CppObject* ob
     if (!klass)
     {
         klass = il2cpp_defaults.object_class;
-    }        
+    }
+    
+    if (Class::IsEnum(klass))
+    {
+        klass = Class::GetElementClass(klass);
+    }
     
     pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, klass != il2cpp_defaults.object_class ? klass : nullptr);
     
