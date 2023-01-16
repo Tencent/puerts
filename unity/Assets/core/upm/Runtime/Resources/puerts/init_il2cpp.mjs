@@ -95,7 +95,6 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
             } else {
                 needArgTypeCode[i] = CS.System.Type.GetTypeCode(paramType)
             }
-            console.log(paramType, needArgTypeCode[i])
         }
         let argsCsArr
         let checkArgs = function (...args) {
