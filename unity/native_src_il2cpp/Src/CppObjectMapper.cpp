@@ -127,8 +127,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     if (!Template.IsEmpty())
     {
         auto Result = Template->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        DataTransfer::SetPointer(Isolate, Result, Ptr, 0);
-        DataTransfer::SetPointer(Isolate, Result, TypeId, 1);
+        BindCppObject(Isolate, const_cast<JSClassDefinition*>(FindClassByID(TypeId, true)), Ptr, Result, PassByPointer);
         return Result;
     }
     else
