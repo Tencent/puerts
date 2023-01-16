@@ -247,7 +247,8 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             var ret = jsEnv.Eval<string>(@"
                 (function() {
-                    const val = CS.Puerts.UnitTest.CrossLangTestHelper.GetDateTime();
+                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
+                    const val = helper.GetDateTime();
                     return '' + (val instanceof CS.System.DateTime) + (val instanceof Date)
                 })()
             ");
@@ -260,10 +261,11 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             var ret = jsEnv.Eval<string>(@"
                 (function() {
-                    const fstart = CS.Puerts.UnitTest.CrossLangTestHelper.EnumField;
-                    CS.Puerts.UnitTest.CrossLangTestHelper.EnumField = CS.Puerts.UnitTest.TestEnum.A;
-                    const fend = CS.Puerts.UnitTest.CrossLangTestHelper.EnumField;
-                    const ret = CS.Puerts.UnitTest.CrossLangTestHelper.GetEnum();
+                    const helper = new CS.Puerts.UnitTest.CrossLangTestHelper();
+                    const fstart = helper.EnumField;
+                    helper.EnumField = CS.Puerts.UnitTest.TestEnum.A;
+                    const fend = helper.EnumField;
+                    const ret = helper.GetEnum();
                     return `${fstart} ${fend} ${ret}`
                 })()
             ");
@@ -291,23 +293,23 @@ namespace Puerts.UnitTest
 
     public enum TestEnum
     {
-        A = 1,
-        B = 213
+        [UnityEngine.Scripting.Preserve] A = 1,
+        [UnityEngine.Scripting.Preserve] B = 213
     }
    
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
     {
         [UnityEngine.Scripting.Preserve]
-        public static DateTime GetDateTime()
+        public DateTime GetDateTime()
         {
             return DateTime.Now;
         }
 
         [UnityEngine.Scripting.Preserve]
-        public static TestEnum EnumField = TestEnum.B;
+        public TestEnum EnumField = TestEnum.B;
         [UnityEngine.Scripting.Preserve]
-        public static TestEnum GetEnum()
+        public TestEnum GetEnum()
         {
             return TestEnum.B;
         }
