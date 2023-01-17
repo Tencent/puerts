@@ -44,7 +44,7 @@ program
                     promiseChain = promiseChain.then(function () {
                         //@ts-ignore
                         options.arch = arch;
-                        runPuertsMake(cwd, options)
+                        return runPuertsMake(cwd, options)
                     })
                 });
 

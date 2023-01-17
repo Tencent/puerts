@@ -154,7 +154,6 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         process.exit();
     }
     if (!existsSync(`${cwd}/.backends/${options.backend}`)) {
-        console.trace('downloadBackend');
         await downloadBackend(cwd, options.backend);
     }
     if (options.platform == "win" && options.config != "Release") {
