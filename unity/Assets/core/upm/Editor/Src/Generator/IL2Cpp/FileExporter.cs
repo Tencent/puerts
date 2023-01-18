@@ -195,6 +195,7 @@ namespace PuertsIl2cpp.Editor
                 }
 
                 var wrapperInfos = genWrapperMethod
+                    .Where(m => !m.IsGenericMethodDefinition && !m.IsAbstract)
                     .Select(m  => { 
                         var isExtensionMethod = m.IsDefined(typeof(ExtensionAttribute));
                         return new SignatureInfo {
