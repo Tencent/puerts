@@ -133,11 +133,15 @@ namespace Puerts.Editor
                 return strictestMode;
             }
 
+            protected static bool IsObsolete(MemberInfo mbi)
+            {
+                return (mbi.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute) != null;
+            }
+
             public static bool IsNotSupportedMember(MemberInfo mbi, bool notFiltEII = false)
             {
                 if (mbi == null) return false;
-                ObsoleteAttribute oa = mbi.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute;
-                if (oa != null/* && oa.IsError*/) //希望只过滤掉Error类别过时方法可以把oa.IsError加上
+                if (IsObsolete(mbi)/* && oa.IsError*/) //希望只过滤掉Error类别过时方法可以把oa.IsError加上
                 {
                     return true;
                 }
@@ -175,9 +179,12 @@ namespace Puerts.Editor
                     {
                         return true;
                     }
+
+                    var getMethod = pi.GetGetMethod();
+                    var setMethod = pi.GetSetMethod();
                     if (!(
-                        (pi.GetGetMethod() != null && pi.GetGetMethod().IsPublic) ||
-                        (pi.GetSetMethod() != null && pi.GetSetMethod().IsPublic)
+                        (getMethod != null && getMethod.IsPublic && !IsObsolete(getMethod)) ||
+                        (setMethod != null && setMethod.IsPublic && !IsObsolete(setMethod))
                     ))
                     {
                         if (notFiltEII)
