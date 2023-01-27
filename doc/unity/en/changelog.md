@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.1] - 2022-12-23
+## [1.4.1-pre.1] - 2022-01-27
+1. fix: did not filt a obsoleted property setter/getter. #1152
+2. feature: add console.time. #1170
+3. feature: now you can use JSObject to store a JS function. #1143 #1144
+
+## [1.4.1-pre.0] - 2022-12-23
 1. fix：when passing a JS number to C# `object`. the number will be cut to a Int.
 2. feature: add `PUERTS_DISABLE_SLOWBINDING`. It will be useful in somewhere need to do access control.
 
