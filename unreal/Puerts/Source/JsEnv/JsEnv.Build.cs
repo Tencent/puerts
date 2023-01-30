@@ -511,9 +511,17 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
             // PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
-            PublicFrameworks.AddRange(new string[] { "WebKit" });
-            string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
-            PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
+            //PublicFrameworks.AddRange(new string[] { "WebKit" });
+            if (!Target.bBuildEditor || ForceStaticLibInEditor)
+            {
+                string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.a"));
+            }
+            else
+            {
+                string V8LibraryPath = Path.Combine(LibraryPath, "macOSdylib");
+                PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libquickjs.dylib"));
+            }
         }
         else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
