@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.1-pre.1] - 2022-01-27
+## [1.4.1-pre.1] - 2023-01-27
 1. fix: did not filt a obsoleted property setter/getter. #1152
 2. feature: add console.time. #1170
 3. feature: now you can use JSObject to store a JS function. #1143 #1144

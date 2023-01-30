@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [1.4.1-pre.1] - 2022-01-27
+## [1.4.1-pre.1] - 2023-01-27
 1. 修复：生成时Obsolete字段未被过滤的问题。 #1152
 2. 功能：添加console.time。#1170
 3. 功能：JSObject现在可以接收一个JS函数。#1143 #1144
