@@ -19,7 +19,6 @@
 #pragma warning(pop)
 
 #include "DataTransfer.h"
-#include "NameTypes.h"
 
 namespace puerts
 {
