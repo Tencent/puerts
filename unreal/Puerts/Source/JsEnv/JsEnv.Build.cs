@@ -488,12 +488,17 @@ public class JsEnv : ModuleRules
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
 
+            if (Target.bBuildEditor && !ForceStaticLibInEditor)
+            {
+                V8LibraryPath = Path.Combine(LibraryPath, "Win64DLL");
+                AddRuntimeDependencies(new string[] { "v8qjs.dll" }, V8LibraryPath, false);
+            }
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "quickjs.dll.lib"));
+            AddRuntimeDependencies(new string[] { "msys-quickjs.dll" }, V8LibraryPath, false);
             AddRuntimeDependencies(new string[]
             {
                 "libgcc_s_seh-1.dll",
-                "libwinpthread-1.dll",
-                "msys-quickjs.dll"
+                "libwinpthread-1.dll"
             }, V8LibraryPath, true);
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
