@@ -470,7 +470,6 @@ namespace puerts
 
     void JSEngine::ReleaseJSFunction(JSFunction* InFunction)
     {
-        std::lock_guard<std::mutex> guard(JSFunctionsMutex);
         JSFunctions[InFunction->Index] = nullptr;
         delete InFunction;
     }
