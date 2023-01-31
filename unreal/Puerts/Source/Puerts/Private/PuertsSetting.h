@@ -17,6 +17,9 @@ class UPuertsSetting : public UObject
 {
     GENERATED_BODY()
 public:
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (Tooltip = "JavaScript Source Code Root Path", DisplayName = "JavaScript Root"))
+    FDirectoryPath RootPath;
+
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = false))
     bool AutoModeEnable = false;
 
@@ -33,15 +36,15 @@ public:
     bool WaitDebugger = false;
 
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
-        meta = (DisplayName = "Wait Debugger Timeout", defaultValue = 0))
+              meta = (DisplayName = "Wait Debugger Timeout", defaultValue = 0))
     double WaitDebuggerTimeout = 0;
 
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
-        meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
+              meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
     int32 NumberOfJsEnv = 1;
 
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
-        meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
+              meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
     bool WatchDisable = false;
 
     UPROPERTY(config, EditAnywhere, Category = "Declaration Generator", meta = (DisplayName = "D.ts Ignore Class Name List"))
@@ -49,4 +52,7 @@ public:
 
     UPROPERTY(config, EditAnywhere, Category = "Declaration Generator", meta = (DisplayName = "D.ts Ignore Struct Name List"))
     TArray<FString> IgnoreStructListOnDTS;
+
+public: 
+    UPuertsSetting();
 };

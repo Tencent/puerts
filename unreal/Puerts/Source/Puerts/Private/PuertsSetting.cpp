@@ -7,3 +7,8 @@
  */
 
 #include "PuertsSetting.h"
+
+UPuertsSetting::UPuertsSetting()
+{
+    RootPath.Path = TEXT("../../Content/JavaScript");
+}
