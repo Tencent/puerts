@@ -104,6 +104,26 @@ V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char*
     }
 }
 
+V8_EXPORT bool ClearModuleCache(v8::Isolate *Isolate, const char* Path)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    std::string key(Path);
+    if (key.size() == 0) 
+    {
+        JsEngine->PathToModuleMap.clear();
+        return true;
+    } 
+    else 
+    {
+        if (JsEngine->PathToModuleMap.find(key) != JsEngine->PathToModuleMap.end()) 
+        {
+            JsEngine->PathToModuleMap.erase(std::string(Path));
+            return true;
+        }
+    }
+    return false;
+}   
+
 V8_EXPORT int _RegisterClass(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
