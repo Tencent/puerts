@@ -17,6 +17,9 @@ class UPuertsSetting : public UObject
 {
     GENERATED_BODY()
 public:
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (defaultValue = "JavaScript", Tooltip = "JavaScript Source Code Root Path", DisplayName = "JavaScript Root"))
+    FString RootPath;
+    
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = false))
     bool AutoModeEnable = false;
 

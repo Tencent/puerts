@@ -192,12 +192,12 @@ public:
             if (Settings.DebugEnable)
             {
                 JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv,
-                    std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(),
+                    std::make_shared<puerts::DefaultJSModuleLoader>(Settings.RootPath), std::make_shared<puerts::FDefaultLogger>(),
                     DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
-                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv);
+                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, Settings.RootPath);
             }
 
             if (Selector)
@@ -218,13 +218,13 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
+                JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(Settings.RootPath),
                     std::make_shared<puerts::FDefaultLogger>(),
                     DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
-                JsEnv = MakeShared<puerts::FJsEnv>();
+                JsEnv = MakeShared<puerts::FJsEnv>(Settings.RootPath);
             }
 
             if (Settings.WaitDebugger)
