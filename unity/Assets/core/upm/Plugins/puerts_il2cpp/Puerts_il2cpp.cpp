@@ -17,11 +17,12 @@
 #include "vm/Parameter.h"
 #include "vm/Image.h"
 #include "utils/StringUtils.h"
-#include "vm-utils/NativeDelegateMethodCache.h"
 #include "pesapi.h"
 #include "UnityExports4Puerts.h"
 
 #include <vector>
+#include <mutex>
+#include <map>
 
 static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
 
@@ -118,25 +119,37 @@ const Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
     }
 }
 
+static std::map<Il2CppMethodPointer, const MethodInfo*> WrapFuncPtrToMethodInfo;
+static std::recursive_mutex WrapFuncPtrToMethodInfoMutex;
+
 Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType)
 {
     Il2CppObject* delegate = il2cpp::vm::Object::New(delegateType);
     const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(delegateType);
 
-    // TODO: Using Custom Delegate Method Cache
-    const MethodInfo* method = il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate((Il2CppMethodPointer)invoke);
-    if (method == NULL)
+    const MethodInfo* method = NULL;
     {
-        MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
-        newMethod->methodPointer = functionPtr;
-        newMethod->invoker_method = NULL;
-        newMethod->return_type = invoke->return_type;
-        newMethod->parameters_count = invoke->parameters_count;
-        newMethod->parameters = invoke->parameters;
-        newMethod->slot = kInvalidIl2CppMethodSlot;
-        newMethod->is_marshaled_from_native = true;
-        il2cpp::utils::NativeDelegateMethodCache::AddNativeDelegate((Il2CppMethodPointer)invoke, newMethod);
-        method = newMethod;
+        std::lock_guard<std::recursive_mutex> lock(WrapFuncPtrToMethodInfoMutex);
+        //il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate((Il2CppMethodPointer)invoke);
+        auto iter = WrapFuncPtrToMethodInfo.find(functionPtr);
+        if (iter == WrapFuncPtrToMethodInfo.end())
+        {
+            MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
+            newMethod->methodPointer = functionPtr;
+            newMethod->invoker_method = NULL;
+            newMethod->return_type = invoke->return_type;
+            newMethod->parameters_count = invoke->parameters_count;
+            newMethod->parameters = invoke->parameters;
+            newMethod->slot = kInvalidIl2CppMethodSlot;
+            //newMethod->is_marshaled_from_native = true;
+            //il2cpp::utils::NativeDelegateMethodCache::AddNativeDelegate((Il2CppMethodPointer)invoke, newMethod);
+            WrapFuncPtrToMethodInfo.insert(std::make_pair(functionPtr, newMethod));
+            method = newMethod;
+        }
+        else
+        {
+            method = iter->second;
+        }
     }
 
     Type::ConstructDelegate((Il2CppDelegate*)delegate, delegate, functionPtr, method);
