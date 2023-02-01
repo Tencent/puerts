@@ -327,9 +327,15 @@ namespace Puerts
 #endif
         }
 
-        public void ClearModuleCache ()
+        public bool ClearModuleCache(string path)
+        {
+            return PuertsDLL.ClearModuleCache(isolate, path);
+        }
+
+        public void ClearModuleCache()
         {
             Eval("global.clearModuleCache()");
+            PuertsDLL.ClearModuleCache(isolate, "");
         }
 
         public static void ClearAllModuleCaches () 
