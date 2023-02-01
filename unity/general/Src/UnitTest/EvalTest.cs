@@ -310,5 +310,30 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "esm export");
             jsEnv.Dispose();
         }
+
+        [Test]
+        public void ClearModuleCacheTest()
+        {
+            var loader = new TxtLoader();
+            loader.AddMockFileContent("lib/b.mjs", @"
+                globalThis.a = (globalThis.a || 0) + 1;
+                export default a;
+            ");
+            loader.AddMockFileContent("main.mjs", @"
+                import a from './lib/b.mjs';
+                export default a;
+            ");
+
+            var jsEnv = new JsEnv(loader);
+
+            int res = jsEnv.ExecuteModule<int>("main.mjs", "default");
+            Assert.AreEqual(1, res);
+            jsEnv.ClearModuleCache("lib/b.mjs");
+            jsEnv.ClearModuleCache("main.mjs");
+            res = jsEnv.ExecuteModule<int>("main.mjs", "default");
+            Assert.AreEqual(2, res);
+            
+            jsEnv.Dispose();
+        }
     }
 }

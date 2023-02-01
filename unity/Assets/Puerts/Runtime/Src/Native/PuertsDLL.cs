@@ -203,6 +203,9 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ExecuteModule(IntPtr isolate, string path, string exportee);
 
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool ClearModuleCache(IntPtr isolate, string path);
+
 #if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr Eval(IntPtr isolate, byte[] code, string path);
