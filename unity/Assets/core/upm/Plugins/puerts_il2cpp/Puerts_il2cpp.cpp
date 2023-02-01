@@ -29,6 +29,7 @@ static_assert(IL2CPP_GC_BOEHM, "Only BOEHM GC supported!");
 
 using namespace il2cpp::vm;
 
+//#define UNITY_2021_1_OR_NEWER
 
 namespace puerts
 {
@@ -123,7 +124,7 @@ const Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
 static std::map<Il2CppMethodPointer, const MethodInfo*> WrapFuncPtrToMethodInfo;
 static std::recursive_mutex WrapFuncPtrToMethodInfoMutex;
 
-Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType)
+Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType, Il2CppObject* target)
 {
     Il2CppObject* delegate = il2cpp::vm::Object::New(delegateType);
     const MethodInfo* invoke = il2cpp::vm::Runtime::GetDelegateInvoke(delegateType);
@@ -137,7 +138,7 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
         {
             MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
             newMethod->methodPointer = functionPtr;
-            newMethod->invoker_method = NULL;
+            newMethod->invoker_method = invoke->invoker_method;
             newMethod->return_type = invoke->return_type;
             newMethod->parameters_count = invoke->parameters_count;
             newMethod->parameters = invoke->parameters;
@@ -153,7 +154,11 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
         }
     }
 
-    Type::ConstructDelegate((Il2CppDelegate*)delegate, delegate, functionPtr, method);
+#ifdef UNITY_2021_1_OR_NEWER
+    Type::ConstructClosedDelegate((Il2CppDelegate*)delegate, target, functionPtr, method);
+#else
+    Type::ConstructDelegate((Il2CppDelegate*)delegate, target, functionPtr, method);
+#endif
 
     return (Il2CppDelegate*)delegate;
 }
@@ -162,18 +167,20 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
 {
     Il2CppClass *delegateInfoClass = g_typeofPersistentObjectInfo;
     if (!delegateInfoClass) return nullptr;
+    
+    auto target = il2cpp::vm::Object::New(delegateInfoClass);
 
-    Il2CppDelegate* delegate = FunctionPointerToDelegate(functionPtr, klass);
+    Il2CppDelegate* delegate = FunctionPointerToDelegate(functionPtr, klass, target);
 
     if (MethodIsStatic(delegate->method)) return nullptr;
 
-    auto target = il2cpp::vm::Object::New(delegateInfoClass);
-
+#ifndef UNITY_2021_1_OR_NEWER
     const MethodInfo* ctor = il2cpp_class_get_method_from_name(delegateInfoClass, ".ctor", 0);
     typedef void (*NativeCtorPtr)(Il2CppObject* ___this, const MethodInfo* method);
     ((NativeCtorPtr)ctor->methodPointer)(target, ctor);
 
     IL2CPP_OBJECT_SETREF(delegate, target, target);
+#endif
 
     *outTargetData = target + 1;
 
@@ -307,7 +314,11 @@ void SetFieldValue(void *ptr, FieldInfo *field, size_t offset, void *value)
 void* GetDefaultValuePtr(const MethodInfo* method, uint32_t index)
 {
     bool isExplicitySetNullDefaultValue = false;
+#ifdef UNITY_2021_1_OR_NEWER
+    Il2CppObject* defaultValue = Parameter::GetDefaultParameterValueObject(method, index, &isExplicitySetNullDefaultValue);
+#else
     Il2CppObject* defaultValue = Parameter::GetDefaultParameterValueObject(method, &method->parameters[index], &isExplicitySetNullDefaultValue);
+#endif
     return (defaultValue && Class::IsValuetype(Class::FromIl2CppType(Method::GetParam(method, index), false))) ? Object::Unbox(defaultValue) : defaultValue;
 }
 
