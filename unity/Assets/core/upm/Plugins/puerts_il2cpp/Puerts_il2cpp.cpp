@@ -669,13 +669,13 @@ handle_underlying:
                 {
                     RuntimeObject* ret = il2cpp::vm::Object::New(g_typeofArrayBuffer);
 
-                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(g_typeofArrayBuffer, ".ctor", 2);
-                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, void*, int, const MethodInfo* method);
+                    const MethodInfo* ctor = il2cpp_class_get_method_from_name(g_typeofArrayBuffer, ".ctor", 3);
+                    typedef void (*NativeCtorPtr)(Il2CppObject* ___this, void*, int, int, const MethodInfo* method);
                     
                     void* data;
                     size_t length;
                     data = pesapi_get_value_binary(env, jsval, &length);
-                    ((NativeCtorPtr)ctor->methodPointer)(ret, data, length, ctor);   
+                    ((NativeCtorPtr)ctor->methodPointer)(ret, data, length, 0, ctor);   
                     return ret;
                 }
                 if ((klass == g_typeofPersistentObjectInfo || klass == il2cpp_defaults.object_class) && pesapi_is_object(env, jsval))

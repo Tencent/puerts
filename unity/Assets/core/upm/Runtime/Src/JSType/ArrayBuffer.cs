@@ -54,6 +54,13 @@ namespace Puerts
                 System.Runtime.InteropServices.Marshal.Copy(ptr, Bytes, 0, length);
             }
         }
+        
+#if ENABLE_IL2CPP
+        [UnityEngine.Scripting.Preserve]
+#endif
+        public ArrayBuffer(IntPtr ptr, int length, int notuse) : this(ptr, length) // call by il2cpp
+        {
+        }
     }
 
 }
