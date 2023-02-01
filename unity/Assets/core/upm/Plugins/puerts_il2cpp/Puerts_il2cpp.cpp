@@ -121,7 +121,7 @@ const Il2CppClass* GetParameterType(const MethodInfo* method, int index) {
     }
 }
 
-static std::map<Il2CppMethodPointer, const MethodInfo*> WrapFuncPtrToMethodInfo;
+static std::map<const MethodInfo*, const MethodInfo*> WrapFuncPtrToMethodInfo;
 static std::recursive_mutex WrapFuncPtrToMethodInfoMutex;
 
 Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2CppClass* delegateType, Il2CppObject* target)
@@ -133,7 +133,7 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
     {
         std::lock_guard<std::recursive_mutex> lock(WrapFuncPtrToMethodInfoMutex);
         //il2cpp::utils::NativeDelegateMethodCache::GetNativeDelegate((Il2CppMethodPointer)invoke);
-        auto iter = WrapFuncPtrToMethodInfo.find(functionPtr);
+        auto iter = WrapFuncPtrToMethodInfo.find(invoke);
         if (iter == WrapFuncPtrToMethodInfo.end())
         {
             MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
@@ -145,7 +145,7 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
             newMethod->slot = kInvalidIl2CppMethodSlot;
             //newMethod->is_marshaled_from_native = true;
             //il2cpp::utils::NativeDelegateMethodCache::AddNativeDelegate((Il2CppMethodPointer)invoke, newMethod);
-            WrapFuncPtrToMethodInfo.insert(std::make_pair(functionPtr, newMethod));
+            WrapFuncPtrToMethodInfo.insert(std::make_pair(invoke, newMethod));
             method = newMethod;
         }
         else
