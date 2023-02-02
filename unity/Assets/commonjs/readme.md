@@ -11,7 +11,7 @@ PuerTS新版本中默认不带有CommonJS的支持，如果你项目中只有少
 2. 使用
     ```
     env = new JsEnv();
-    Puerts.CommonJS.InjectSupportForCJS(env);
+    Puerts.ThirdParty.CommonJS.InjectSupportForCJS(env);
     env.Eval("console.log(require('test.cjs'))");
     ```
 
