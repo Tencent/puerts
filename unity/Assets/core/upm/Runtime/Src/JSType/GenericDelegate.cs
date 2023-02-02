@@ -189,15 +189,17 @@ namespace Puerts
 
                 if (genericDelegateCreator == null)
                 {
+#if UNITY_EDITOR && !EXPERIMENTAL_IL2CPP_PUERTS
                     if ((delegateMethod.ReturnType.IsValueType && delegateMethod.ReturnType != typeof(void))
                         || parameters.Length > 4
                         || typeArgs.Any(paramType => paramType.IsValueType || paramType.IsByRef)
                         )
                     {
-                        //如果不在支持的范围，则生成一个永远返回空的构造器
+                        // 如果不在支持的范围，则生成一个永远返回空的构造器
                         genericDelegateCreator = (dt, x) => null;
                     }
                     else
+#endif
                     {
                         //根据参数个数，返回值找到泛型实现
                         MethodInfo genericMethodInfo = null;

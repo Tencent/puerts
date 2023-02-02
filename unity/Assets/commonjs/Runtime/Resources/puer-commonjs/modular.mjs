@@ -6,7 +6,7 @@
  */
 
 var global = global || globalThis || (function () { return this; }());
-
+    
 let moduleCache = Object.create(null); // key to sid
 let tmpModuleStorage = []; // sid to module
 
@@ -22,7 +22,7 @@ function addModule(m) {
 
 function getModuleBySID(id) {
     return tmpModuleStorage[id];
-}
+}``
 
 let buildinModule = Object.create(null);
 function executeModule(fullPath, script, debugPath, sid) {
@@ -30,35 +30,31 @@ function executeModule(fullPath, script, debugPath, sid) {
     let fullPathInJs = fullPath.replace(/\\/g, '\\\\');
     let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
     let exports = {};
-    let module = puerts.getModuleBySID(sid);
+    let module = puer.getModuleBySID(sid);
     module.exports = exports;
-    let wrapped = puerts.evalScript(
+    let wrapped = puer.evalScript(
         // Wrap the script in the same way NodeJS does it. It is important since IDEs (VSCode) will use this wrapper pattern
         // to enable stepping through original source in-place.
-        "(function (exports, require, module, __filename, __dirname) { " + script + "\n});",
+        "(function (exports, require, module, __filename, __dirname) { " + script + "\n});", 
         debugPath
     )
-    wrapped(exports, puerts.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
+    wrapped(exports, puer.genRequire(fullDirInJs), module, fullPathInJs, fullDirInJs)
     return module.exports;
 }
 
 function genRequire(requiringDir) {
-    if (requiringDir.indexOf(":") != -1) {
-        if (requiringDir.startsWith("puer:")) requiringDir = requiringDir.substr(5)
-        else { throw new Error("puer's genRequire can only support prefix with puer:"); }
-    }
     let localModuleCache = Object.create(null);
     function require(moduleName) {
         moduleName = moduleName.startsWith('./') ? moduleName.substr(2) : moduleName;
         if (moduleName in localModuleCache) return localModuleCache[moduleName].exports;
         if (moduleName in buildinModule) return buildinModule[moduleName];
-
-        let fullPath = puerts.searchModule(requiringDir, moduleName);
+        
+        let fullPath = puer.searchModule(requiringDir, moduleName);
         if (!fullPath) {
             try {
                 return nodeRequire(moduleName);
-
-            } catch (e) {
+                
+            } catch(e) {
                 throw new Error("can not find " + moduleName);
             }
         }
@@ -68,11 +64,11 @@ function genRequire(requiringDir) {
             localModuleCache[moduleName] = moduleCache[key];
             return localModuleCache[moduleName].exports;
         }
-
-        let { content, debugPath } = puerts.loadFile(fullPath);
+        
+        let {content, debugPath} = puer.loadFile(fullPath);
         const script = content;
 
-        let m = { "exports": {} };
+        let m = {"exports":{}};
         localModuleCache[moduleName] = m;
         moduleCache[key] = m;
         let sid = addModule(m);
@@ -107,25 +103,24 @@ function registerBuildinModule(name, module) {
     buildinModule[name] = module;
 }
 
-registerBuildinModule("puerts", puerts)
-registerBuildinModule('csharp', CS);
+registerBuildinModule("puerts", puer)
 
-puerts.genRequire = genRequire;
+puer.genRequire = genRequire;
 
-puerts.getModuleBySID = getModuleBySID;
+puer.getModuleBySID = getModuleBySID;
 
-puerts.registerBuildinModule = registerBuildinModule;
+puer.registerBuildinModule = registerBuildinModule;
 
-let nodeRequire = global.require;
-if (nodeRequire) {
-    global.nodeRequire = nodeRequire;
-}
+global.nodeRequire = global.nodeRequire || global.require;
+global.require = genRequire("");
 
-global.require = puerts.require = genRequire("");
-
-function clearModuleCache() {
+function clearModuleCache () {
     tmpModuleStorage = [];
     moduleCache = Object.create(null);
     global.require.clearModuleCache();
 }
 global.clearModuleCache = clearModuleCache;
+
+registerBuildinModule("csharp", CS);
+registerBuildinModule("puer", puer);
+registerBuildinModule("puerts", puer);

@@ -45,7 +45,9 @@ function getFileExtension(filepath) {
 
 function searchModuleInDir(dir, requiredModule) {
     if (getFileExtension(requiredModule)) {
-        return searchModuleInDirWithExt(dir, requiredModule);
+        return searchModuleInDirWithExt(dir, requiredModule)
+            || searchModuleInDirWithExt(dir, requiredModule + "/index.js")
+            || searchModuleInDirWithExt(dir, requiredModule + "/package.json");
     } else {
         return searchModuleInDirWithExt(dir, requiredModule + ".js")
             || searchModuleInDirWithExt(dir, requiredModule + ".cjs")
@@ -71,4 +73,4 @@ function searchModule(dir, requiredModule) {
     }
 }
 
-puerts.searchModule = searchModule;
+puer.searchModule = searchModule;

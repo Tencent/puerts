@@ -30,9 +30,9 @@ let loader = global.__tgjsGetLoader();
 delete global.__tgjsGetLoader;
 
 function loadFile(path) {
-    let debugPath = {};
+    let debugPath = [];
     var content = loader.ReadFile(path, debugPath);
-    return { content: content, debugPath: debugPath.value };
+    return { content: content, debugPath: debugPath[0] };
 }
 puer.loadFile = loadFile;
 
