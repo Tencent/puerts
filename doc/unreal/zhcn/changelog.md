@@ -1,3 +1,74 @@
+### v1.0.3 2022年2月2日
+
+#### 新增特性
+
+* ue类型对应的js类型增加类型名称（编辑器全路径），以便于打印堆栈dump的时候分析
+
+* 静态绑定void*参数支持任意原生对象传入
+
+* 添加常用方法UDataTableFunctionLibrary::Generic_GetDataTableRowFromName的静态绑定
+
+* 手动删除蓝图，重启后自动生成
+
+* puerts::Object、puerts::Funcion加入对JsEnv的生命周期跟踪，降低使用的难度
+
+* cjs和mjs配合优化，支持package.json中通过"type": "module"指定为esm模块，支持在esm中加载.cjs（cjs模块）。
+
+* 添加Puerts.Gen FULL，蓝图全量生成功能
+
+* 默认生成所有struct的声明
+
+* 添加控制台命令（puerts ls，puerts compile）
+
+* 生成代码时，如果加载的蓝图GeneratedClass为空报错
+
+* nodejs版本下，优先调用nodejs的require，加载不成功再使用puerts的加载逻辑
+
+* 编辑器下，quickjs后端默认用dll版本，去掉该后端下不能在业务模块静态声明的问题
+
+* 增加运行时 JavaScript 路径配置
+
+
+#### 优化
+
+* 反射性能优化
+
+* 蓝图结构体都生成到ue_bp.d.ts
+
+* 优化大量代理蓝图以及ts代码的启动速度
+
+
+#### 变更
+
+#### bug修复
+
+* 解决刚创建蓝图但未保存，生成d.ts的崩溃
+
+* mixin对输出值设置无效的问题
+
+* 解决带Out参数蓝图调用另一个重定向到ts的Out参数方法，ts中设置Out参数无效的问题
+
+* DefaultJSModuleLoader加载名字带点号的模块
+
+* react-umg声明，对于struct改为Partial来自动处理成可选字段，可以避免引用UE模块时产生的名字空间问题
+
+* 解决如果一个package含超过一个类型，只生成一个类型的bug
+
+* 解决ts继承BlueprintFunctionLibrary在Editor下只跑一次，打包后不跑的问题
+
+* 结构体两次Init的修正
+
+* FName大小写的问题导致函数为空的问题
+
+* json文件加载失败的问题
+
+* 解决继承链上有同名类导致的tid冲突
+
+* ue5生成声明忽略Engine.Transient包，解决ue5改包下类的.d.ts报错问题
+
+* 静态绑定和pesapi的int64、uint64参数，不传bigint都统一用默认值
+
+
 ### v1.0.2 2022年9月8日
 
 #### 新增特性
