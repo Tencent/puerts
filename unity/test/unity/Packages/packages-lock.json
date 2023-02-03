@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.tencent.puerts.commonjs": {
-      "version": "file:../../../Assets/commonjs",
+      "version": "file:../../../Assets/commonjs/upm",
       "depth": 0,
       "source": "local",
       "dependencies": {}
