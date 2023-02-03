@@ -13,15 +13,13 @@
 #include "StructWrapper.h"
 #include "CppObjectMapper.h"
 #include "V8Utils.h"
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "Engine/Engine.h"
-#endif
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "TypeScriptGeneratedClass.h"
 #endif
+#include "UECompatible.h"
 #include "ContainerMeta.h"
 #include "ObjectCacheNode.h"
 #include <unordered_map>
@@ -284,7 +282,7 @@ private:
     void ReportExecutionException(
         v8::Isolate* Isolate, v8::TryCatch* TryCatch, std::function<void(const JSError*)> CompletionHandler);
 
-    void RemoveFTickerDelegateHandle(FDelegateHandle* Handle);
+    void RemoveFTickerDelegateHandle(FUETickDelegateHandle* Handle);
 
     void SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -356,7 +354,7 @@ private:
             if (auto Class = Cast<UClass>(Struct))
             {
                 UObject* Object = reinterpret_cast<UObject*>(Ptr);
-                if (!Object->IsValidLowLevel() || Object->IsPendingKill() || Object->GetClass() != Class ||
+                if (!Object->IsValidLowLevel() || UEObjectIsPendingKill(Object) || Object->GetClass() != Class ||
                     FV8Utils::GetPointer(JsObject))
                 {
                     return;
@@ -636,9 +634,9 @@ private:
 
     bool ExtensionMethodsMapInited = false;
 
-    std::map<FDelegateHandle*, FTickerDelegateWrapper*> TickerDelegateHandleMap;
+    std::map<FUETickDelegateHandle*, FTickerDelegateWrapper*> TickerDelegateHandleMap;
 
-    FDelegateHandle DelegateProxiesCheckerHandler;
+    FUETickDelegateHandle DelegateProxiesCheckerHandler;
 
     V8Inspector* Inspector;
 

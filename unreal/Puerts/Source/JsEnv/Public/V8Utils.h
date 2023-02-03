@@ -19,6 +19,7 @@
 #pragma warning(pop)
 
 #include "DataTransfer.h"
+#include "UECompatible.h"
 
 namespace puerts
 {
@@ -74,7 +75,7 @@ public:
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
         auto UEObject = reinterpret_cast<UObject*>(GetPointer(Context, Value, Index));
-        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill()))
+        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
                    ? UEObject
                    : RELEASED_UOBJECT;
     }
@@ -82,7 +83,7 @@ public:
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Object> Object, int Index = 0)
     {
         auto UEObject = reinterpret_cast<UObject*>(GetPointer(Object, Index));
-        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill()))
+        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
                    ? UEObject
                    : RELEASED_UOBJECT;
     }

@@ -78,7 +78,11 @@ struct FScriptArrayEx
     FORCEINLINE static void Empty(FScriptArray* ScriptArray, PropertyMacro* Property)
     {
         Destruct(ScriptArray, Property, 0, ScriptArray->Num());
+#if ENGINE_MAJOR_VERSION > 4
+        ScriptArray->Empty(0, GetSizeWithAlignment(Property), __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+#else
         ScriptArray->Empty(0, GetSizeWithAlignment(Property));
+#endif
     }
 };
 

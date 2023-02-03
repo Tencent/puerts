@@ -16,13 +16,9 @@
 #include "ContainerWrapper.h"
 #include "SoftObjectWrapper.h"
 #include "V8Utils.h"
-#if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "Engine/Engine.h"
-#endif
 #include "ObjectMapper.h"
 #include "JSLogger.h"
 #include "TickerDelegateWrapper.h"
-#include "Async/Async.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JSGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
@@ -32,7 +28,6 @@
 #include "JSClassRegister.h"
 #include "PromiseRejectCallback.hpp"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-#include "TypeScriptObject.h"
 #include "TypeScriptGeneratedClass.h"
 #include "Engine/UserDefinedEnum.h"
 #endif
@@ -613,7 +608,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
 
     DelegateProxiesCheckerHandler =
-        FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
+        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
 
     ManualReleaseCallbackMap.Reset(Isolate, v8::Map::New(Isolate));
 
@@ -658,7 +653,7 @@ FJsEnvImpl::~FJsEnvImpl()
     ReloadJs.Reset();
     JsPromiseRejectCallback.Reset();
 
-    FTicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
+    FUETicker::GetCoreTicker().RemoveTicker(DelegateProxiesCheckerHandler);
 
     {
         auto Isolate = MainIsolate;
@@ -711,7 +706,7 @@ FJsEnvImpl::~FJsEnvImpl()
 
         for (auto& Pair : TickerDelegateHandleMap)
         {
-            FTicker::GetCoreTicker().RemoveTicker(*(Pair.first));
+            FUETicker::GetCoreTicker().RemoveTicker(*(Pair.first));
             delete Pair.first;
             delete Pair.second;
         }
@@ -722,21 +717,21 @@ FJsEnvImpl::~FJsEnvImpl()
         {
             if (auto JSGeneratedClass = Cast<UJSGeneratedClass>(GeneratedClass))
             {
-                if (JSGeneratedClass->IsValidLowLevelFast() && !JSGeneratedClass->IsPendingKill())
+                if (JSGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSGeneratedClass))
                 {
                     JSGeneratedClass->Release();
                 }
             }
             else if (auto JSWidgetGeneratedClass = Cast<UJSWidgetGeneratedClass>(GeneratedClass))
             {
-                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !JSWidgetGeneratedClass->IsPendingKill())
+                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSWidgetGeneratedClass))
                 {
                     JSWidgetGeneratedClass->Release();
                 }
             }
             else if (auto JSAnimGeneratedClass = Cast<UJSAnimGeneratedClass>(GeneratedClass))
             {
-                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !JSWidgetGeneratedClass->IsPendingKill())
+                if (JSWidgetGeneratedClass->IsValidLowLevelFast() && !UEObjectIsPendingKill(JSWidgetGeneratedClass))
                 {
                     JSAnimGeneratedClass->Release();
                 }
@@ -986,10 +981,6 @@ void FJsEnvImpl::NewStructByScriptStruct(const v8::FunctionCallbackInfo<v8::Valu
     v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     v8::Context::Scope ContextScope(Context);
-
-    UObject* Outer = GetTransientPackage();
-    FName Name = NAME_None;
-    EObjectFlags ObjectFlags = RF_NoFlags;
 
     UScriptStruct* ScriptStruct = nullptr;
     if (UObject* Object = FV8Utils::GetUObject(Context, Info[0]))
@@ -1277,7 +1268,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
 
                         if (RebindObject)
                         {
-                            for (FObjectIterator It(TypeScriptGeneratedClass); It; ++It)
+                            for (FUEObjectIterator It(TypeScriptGeneratedClass); It; ++It)
                             {
                                 auto Object = *It;
                                 if (GeneratedObjectMap.Find(Object))
@@ -1337,7 +1328,7 @@ void FJsEnvImpl::JsHotReload(FName ModuleName, const FString& JsSource)
         v8::Handle<v8::Value> Args[] = {FV8Utils::ToV8String(Isolate, ModuleName), FV8Utils::ToV8String(Isolate, OutPath),
             FV8Utils::ToV8String(Isolate, JsSource)};
 
-        auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args);
+        (void) (LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args));
 
         if (TryCatch.HasCaught())
         {
@@ -1383,7 +1374,7 @@ void FJsEnvImpl::ReloadSource(const FString& Path, const std::string& JsSource)
     v8::Handle<v8::Value> Args[] = {
         v8::Undefined(Isolate), FV8Utils::ToV8String(Isolate, Path), FV8Utils::ToV8String(Isolate, JsSource.c_str())};
 
-    auto MaybeRet = LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args);
+    (void) (LocalReloadJs->Call(Context, v8::Undefined(Isolate), 3, Args));
 
     if (TryCatch.HasCaught())
     {
@@ -1405,8 +1396,6 @@ void FJsEnvImpl::TryBindJs(const class UObjectBase* InObject)
 
     // if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
     {
-        check(!Object->IsPendingKill());
-
         UClass* Class = InObject->GetClass();
 
         auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class);
@@ -1699,7 +1688,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddDelegate(v8::Isolate* Isolate, v8::Loc
                                .ToLocalChecked();
         auto JSObject = Constructor->NewInstance(Context).ToLocalChecked();
         DataTransfer::SetPointer(Isolate, JSObject, DelegatePtr, 0);
-        auto ReturnVal = JSObject->Set(Context, 0, v8::Map::New(Isolate));
+        (void) (JSObject->Set(Context, 0, v8::Map::New(Isolate)));
         UFunction* Function = nullptr;
         DelegatePropertyMacro* DelegateProperty = CastFieldMacro<DelegatePropertyMacro>(Property);
         MulticastDelegatePropertyMacro* MulticastDelegateProperty = CastFieldMacro<MulticastDelegatePropertyMacro>(Property);
@@ -1797,12 +1786,12 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePer
 
     if (!Prototype.IsEmpty())
     {
-        auto ReturnVal1 = JSObject->SetPrototype(Context, Prototype.Get(Isolate));
+        (void) (JSObject->SetPrototype(Context, Prototype.Get(Isolate)));
     }
 
     if (!Constructor.IsEmpty())
     {
-        auto ReturnVal2 = Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr);
+        (void) (Constructor.Get(Isolate)->Call(Context, JSObject, 0, nullptr));
     }
 
     if (TryCatch.HasCaught())
@@ -2261,7 +2250,7 @@ bool FJsEnvImpl::AddToDelegate(
         DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
 
         SysObjectRetainer.Retain(DelegateProxy);
-        auto ReturnVal = Map->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy));
+        (void) (Map->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy)));
     }
     else
     {
@@ -2425,7 +2414,7 @@ bool FJsEnvImpl::RemoveFromDelegate(
             static_cast<FMulticastScriptDelegate*>(DelegatePtr)->Remove(Delegate);
         }
 
-        auto ReturnVal = Map->Delete(Context, JsFunction);
+        (void) (Map->Delete(Context, JsFunction));
 
         Iter->second.Proxys.Remove(DelegateProxy);
         SysObjectRetainer.Release(DelegateProxy);
@@ -2684,7 +2673,7 @@ void FJsEnvImpl::UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* P
     auto CacheNodePtr = StructCache.Find(Ptr);
     if (CacheNodePtr)
     {
-        auto Removed = CacheNodePtr->Remove(ScriptStructWrapper->Struct.Get(), true);
+        (void) (CacheNodePtr->Remove(ScriptStructWrapper->Struct.Get(), true));
         if (!CacheNodePtr->TypeId)    // last one
         {
             StructCache.Remove(Ptr);
@@ -3118,7 +3107,6 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         case 0:    // Array
             ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property1));
-            ;
             // Logger->Info(FString::Printf(TEXT("Array %s"), *Property1->GetClass()->GetName()));
             Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property1, ScriptArray, false));
             break;
@@ -3198,7 +3186,7 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
         auto Object = Arguments[i].Value;
         v8::Local<v8::Value> Args[2] = {
             FV8Utils::ToV8String(Isolate, Arguments[i].Key), FindOrAdd(Isolate, Context, Object->GetClass(), Object)};
-        auto Result = ArgvAdd->Call(Context, Argv, 2, Args);
+        (void) (ArgvAdd->Call(Context, Argv, 2, Args));
     }
 
     if (IsScript)
@@ -3213,7 +3201,7 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
             return;
         }
-        auto ReturnVal = CompiledScript.ToLocalChecked()->Run(Context);
+        (void) (CompiledScript.ToLocalChecked()->Run(Context));
         if (TryCatch.HasCaught())
         {
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
@@ -3538,7 +3526,7 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
             return;
         }
-        auto ReturnVal = CompiledScript.ToLocalChecked()->Run(Context);
+        (void) (CompiledScript.ToLocalChecked()->Run(Context));
         if (TryCatch.HasCaught())
         {
             Logger->Error(FV8Utils::TryCatchToString(Isolate, &TryCatch));
@@ -3711,7 +3699,8 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
     std::function<void(const JSError*)> ExceptionLogWrapper = std::bind(ExceptionLog, _1, Logger);
     std::function<void(v8::Isolate*, v8::TryCatch*)> ExecutionExceptionHandler =
         std::bind(&FJsEnvImpl::ReportExecutionException, this, _1, _2, ExceptionLogWrapper);
-    std::function<void(FDelegateHandle*)> DelegateHandleCleaner = std::bind(&FJsEnvImpl::RemoveFTickerDelegateHandle, this, _1);
+    std::function<void(FUETickDelegateHandle*)> DelegateHandleCleaner =
+        std::bind(&FJsEnvImpl::RemoveFTickerDelegateHandle, this, _1);
 
     FTickerDelegateWrapper* DelegateWrapper = new FTickerDelegateWrapper(Continue);
     DelegateWrapper->Init(Info, ExecutionExceptionHandler, DelegateHandleCleaner);
@@ -3728,7 +3717,7 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
     float Delay = Millisecond / 1000.f;
 
     // TODO - 如果实现多线程，这里应该加锁阻止定时回调的执行，直到DelegateWrapper设置好handle
-    FDelegateHandle* DelegateHandle = new FDelegateHandle(FTicker::GetCoreTicker().AddTicker(Delegate, Delay));
+    FUETickDelegateHandle* DelegateHandle = new FUETickDelegateHandle(FUETicker::GetCoreTicker().AddTicker(Delegate, Delay));
     DelegateWrapper->SetDelegateHandle(DelegateHandle);
     TickerDelegateHandleMap[DelegateHandle] = DelegateWrapper;
 
@@ -3745,7 +3734,7 @@ void FJsEnvImpl::ReportExecutionException(
     }
 }
 
-void FJsEnvImpl::RemoveFTickerDelegateHandle(FDelegateHandle* Handle)
+void FJsEnvImpl::RemoveFTickerDelegateHandle(FUETickDelegateHandle* Handle)
 {
     // TODO - 如果实现多线程，FTicker所在主线程和当前线程释放handle可能有竞争
     auto Iterator = std::find_if(
@@ -3758,7 +3747,7 @@ void FJsEnvImpl::RemoveFTickerDelegateHandle(FDelegateHandle* Handle)
             Iterator->second->FunctionContinue = false;
             return;
         }
-        FTicker::GetCoreTicker().RemoveTicker(*(Iterator->first));
+        FUETicker::GetCoreTicker().RemoveTicker(*(Iterator->first));
         delete Iterator->first;
         delete Iterator->second;
         TickerDelegateHandleMap.erase(Iterator);
@@ -3787,7 +3776,7 @@ void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         CHECK_V8_ARGS(EArgExternal);
         v8::Local<v8::External> Arg = v8::Local<v8::External>::Cast(Info[0]);
-        FDelegateHandle* Handle = static_cast<FDelegateHandle*>(Arg->Value());
+        FUETickDelegateHandle* Handle = static_cast<FUETickDelegateHandle*>(Arg->Value());
         RemoveFTickerDelegateHandle(Handle);
     }
 }
@@ -3877,7 +3866,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
     Class->StaticLink(true);
 
     // Make sure CDO is ready for use
-    Class->GetDefaultObject();
+    (void) (Class->GetDefaultObject());
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 12
     // Assemble reference token stream for garbage collection/ RTGC.
@@ -3994,7 +3983,7 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         New->Bind();
         New->StaticLink(true);
 
-        auto CDO = New->GetDefaultObject();
+        (void) (New->GetDefaultObject());
         if (auto AnimClass = Cast<UAnimBlueprintGeneratedClass>(New))
         {
             AnimClass->UpdateCustomPropertyListForPostConstruction();
@@ -4142,10 +4131,12 @@ void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value>& In
                                                  "number_of_detached_contexts: %u\n"
                                                  "does_zap_garbage: %u\n"
                                                  "------------------------\n"),
-        Statistics.total_heap_size(), Statistics.total_heap_size_executable(), Statistics.total_physical_size(),
-        Statistics.total_available_size(), Statistics.used_heap_size(), Statistics.heap_size_limit(), Statistics.malloced_memory(),
-        Statistics.external_memory(), Statistics.peak_malloced_memory(), Statistics.number_of_native_contexts(),
-        Statistics.number_of_detached_contexts(), Statistics.does_zap_garbage());
+        static_cast<uint32_t>(Statistics.total_heap_size()), static_cast<uint32_t>(Statistics.total_heap_size_executable()),
+        static_cast<uint32_t>(Statistics.total_physical_size()), static_cast<uint32_t>(Statistics.total_available_size()),
+        static_cast<uint32_t>(Statistics.used_heap_size()), static_cast<uint32_t>(Statistics.heap_size_limit()),
+        static_cast<uint32_t>(Statistics.malloced_memory()), static_cast<uint32_t>(Statistics.external_memory()),
+        static_cast<uint32_t>(Statistics.peak_malloced_memory()), static_cast<uint32_t>(Statistics.number_of_native_contexts()),
+        static_cast<uint32_t>(Statistics.number_of_detached_contexts()), static_cast<uint32_t>(Statistics.does_zap_garbage()));
 
     Logger->Info(StatisticsLog);
 #endif    // !WITH_QUICKJS

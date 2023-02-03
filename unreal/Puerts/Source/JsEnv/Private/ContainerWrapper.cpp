@@ -162,7 +162,11 @@ void FScriptArrayWrapper::RemoveAt(const v8::FunctionCallbackInfo<v8::Value>& In
     else
     {
         FScriptArrayEx::Destruct(Self, Inner->Property, Index, 1);
+#if ENGINE_MAJOR_VERSION > 4
+        Self->Remove(Index, 1, GetSizeWithAlignment(Inner->Property), __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+#else
         Self->Remove(Index, 1, GetSizeWithAlignment(Inner->Property));
+#endif
     }
 }
 
@@ -198,7 +202,11 @@ void FScriptArrayWrapper::Empty(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 FORCEINLINE int32 FScriptArrayWrapper::AddUninitialized(FScriptArray* ScriptArray, int32 ElementSize, int32 Count)
 {
+#if ENGINE_MAJOR_VERSION > 4
+    return ScriptArray->Add(Count, ElementSize, __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+#else
     return ScriptArray->Add(Count, ElementSize);
+#endif
 }
 
 FORCEINLINE uint8* FScriptArrayWrapper::GetData(FScriptArray* ScriptArray, int32 ElementSize, int32 Index)
