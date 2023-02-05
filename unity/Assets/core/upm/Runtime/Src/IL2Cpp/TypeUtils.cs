@@ -306,6 +306,108 @@ namespace PuertsIl2cpp
             return types;
         }
 
+        public static MethodInfo HandleMaybeGenericMethod(MethodInfo method, ParameterInfo[] pinfos = null)
+        {
+            if (method.IsGenericMethodDefinition)
+            {
+                if (!IsNonGenericOrValidGeneric(method, pinfos))
+                {
+                    return null;
+                }
+                var genericArguments = method.GetGenericArguments();
+                var constraintedArgumentTypes = new Type[genericArguments.Length];
+                for (var j = 0; j < genericArguments.Length; j++)
+                {
+                    constraintedArgumentTypes[j] = genericArguments[j].BaseType;
+                }
+                method = method.MakeGenericMethod(constraintedArgumentTypes);
+            }
+            return method;
+        }
+
+        internal static bool IsNonGenericOrValidGeneric(MethodInfo method, ParameterInfo[] pinfos = null)
+        {
+            // 不包含泛型参数，肯定支持
+            if (!method.ContainsGenericParameters)
+                return true;
+
+            List<Type> validGenericParameter = new List<Type>();
+
+            if (pinfos == null) pinfos = method.GetParameters(); 
+            foreach (var parameters in pinfos)
+            {
+                Type parameterType = parameters.ParameterType;
+
+                if (!HasValidContraint(parameterType, validGenericParameter)) { 
+                    return false; 
+                }
+            }
+
+            return validGenericParameter.Count > 0 && (
+                // 返回值也需要判断，必须是非泛型，或者是可用泛型参数里正好也包括返回类型
+                !method.ReturnType.IsGenericParameter ||
+                validGenericParameter.Contains(method.ReturnType)
+            );
+        }
+
+        internal static bool HasValidContraint(Type type, List<Type> validTypes)
+        {
+            if (type.IsGenericType)
+            {
+                Type[] genericArguments = type.GetGenericArguments();
+                foreach (Type argument in genericArguments)
+                {
+                    if (!HasValidContraint(argument, validTypes))
+                    {
+                        return false;
+                    }
+                }
+
+                // validTypes.Add(type);
+                return true;
+            }
+            else if (type.IsGenericParameter)
+            {
+                if (
+                    type.BaseType != null && type.BaseType.IsValueType
+                ) return false;
+
+                var parameterConstraints = type.GetGenericParameterConstraints();
+
+                if (parameterConstraints.Length == 0) return false;
+                foreach (var parameterConstraint in parameterConstraints)
+                {
+                    // the constraint could not be another genericType #533
+                    if (
+                        !IsClass(parameterConstraint) ||
+                        parameterConstraint == typeof(ValueType) ||
+                        (
+                            parameterConstraint.IsGenericType &&
+                            !parameterConstraint.IsGenericTypeDefinition
+                        )
+                    )
+                    {
+                        return false;
+                    }
+                }
+
+                validTypes.Add(type);
+                return true;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        internal static bool IsClass(Type type)
+        {
+#if !UNITY_WSA || UNITY_EDITOR
+            return type.IsClass;
+#else
+            return type.GetTypeInfo().IsClass;
+#endif
+        }
     }
 }
 

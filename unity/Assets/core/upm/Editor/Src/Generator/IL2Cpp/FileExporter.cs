@@ -275,8 +275,8 @@ namespace PuertsIl2cpp.Editor
 #if UNITY_EDITOR
                     where !type.Assembly.Location.Contains("Editor")
 #endif
-                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                    where Utils.isDefined(method, typeof(ExtensionAttribute)) && Puerts.Utils.IsNotGenericOrValidGeneric(method)
+                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public).Select(method => TypeUtils.HandleMaybeGenericMethod(method)).Where(method => method != null)
+                    where Utils.isDefined(method, typeof(ExtensionAttribute))
                     group type by Utils.getExtendedType(method)).ToDictionary(g => g.Key, g => (g as IEnumerable<Type>).Distinct().ToList()).ToList();
 
                 using (var jsEnv = new Puerts.JsEnv())

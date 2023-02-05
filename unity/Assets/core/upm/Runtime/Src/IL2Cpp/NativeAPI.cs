@@ -182,6 +182,9 @@ namespace PuertsIl2cpp
 
                     Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter, bool isExtensionMethod) =>
                     {
+                        method = TypeUtils.HandleMaybeGenericMethod(method);
+                        if (method == null) return;
+                        
                         List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
                         // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
                         var methodInfoPointer = GetMethodInfoPointer(method);
@@ -223,7 +226,7 @@ namespace PuertsIl2cpp
                     {
                         foreach (var method in methods)
                         {
-                            if (method.IsGenericMethodDefinition || method.IsAbstract) continue;
+                            if (method.IsAbstract) continue;
                             AddMethodToType(method.Name, method as MethodInfo, false, false, false);
                         }
                     }
@@ -286,7 +289,6 @@ namespace PuertsIl2cpp
                 throw e;
             }
         }
-
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static IntPtr GetMethodPointer(MethodBase methodInfo)
