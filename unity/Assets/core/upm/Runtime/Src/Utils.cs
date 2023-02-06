@@ -301,9 +301,9 @@ namespace Puerts
                 enumerator.Dispose();
 
                 Utils_Internal.extensionMethodMap = (from type in type_def_extention_method.Distinct()
-#if UNITY_EDITOR
-                                      where !type.Assembly.Location.Contains("Editor")
-#endif
+// #if UNITY_EDITOR
+//                                       where !type.Assembly.Location.Contains("Editor")
+// #endif
                                                      from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
                                                      where method.IsDefined(typeof(ExtensionAttribute), false) && IsSupportedMethod(method)
                                                      group method by GetExtendedType(method)).ToDictionary(g => g.Key, g => g as IEnumerable<MethodInfo>);
