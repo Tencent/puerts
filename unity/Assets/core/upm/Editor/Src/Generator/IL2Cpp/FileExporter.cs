@@ -12,6 +12,7 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Puerts.Editor.Generator;
+using Mono.Reflection;
 
 namespace PuertsIl2cpp.Editor
 {
@@ -65,6 +66,31 @@ namespace PuertsIl2cpp.Editor
             {
                 return (parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer) ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
             }
+            
+            public static void GenericArgumentInInstructions(MethodBase node, HashSet<Type> result, HashSet<MethodBase> proceed, HashSet<string> skipAssembles, Func<MethodBase, IEnumerable<MethodBase>> callingMethodsGetter)
+            {
+                var declaringType = node.DeclaringType;
+                if (declaringType != null && skipAssembles.Contains(declaringType.Assembly.GetName().Name)) return;
+                if (proceed.Contains(node)) return;
+                if (node.IsGenericMethod && !node.IsGenericMethodDefinition)
+                {
+                    foreach (var t in node.GetGenericArguments())
+                    {
+                        if (!t.IsDefined(typeof(CompilerGeneratedAttribute)))
+                        {
+                            result.Add(t);
+                        }
+                    }
+                }
+
+                proceed.Add(node);
+
+                var callingMethods = callingMethodsGetter(node);
+                foreach (var callingMethod in callingMethods)
+                {
+                    GenericArgumentInInstructions(callingMethod, result, proceed, skipAssembles, callingMethodsGetter);
+                }
+            }
 
             public static void GenCPPWrap(string saveTo, bool onlyConfigure = false)
             {
@@ -110,8 +136,49 @@ namespace PuertsIl2cpp.Editor
                     typeof(Func<Puerts.JSObject, string, double>),
                     typeof(Func<Puerts.JSObject, string, Puerts.JSObject>)
                 };
+
+                HashSet<Type> typeInGenericArgument = new HashSet<Type>();
+                HashSet<MethodBase> processed = new HashSet<MethodBase>();
+                HashSet<string> skipAssembles = new HashSet<string>()
+                {
+                    "mscorlib",
+                    "System.Core",
+                    "System.Xml",
+                    "System.Data",
+                    "System.Windows.Forms",
+                    "System.ComponentModel.DataAnnotations",
+                    "UnityEngine.CoreModule",
+                    "UnityEditor.CoreModule",
+                    "UnityEditor.Graphs",
+                    "Unity.Plastic.Newtonsoft.Json",
+                    "nunit.framework",
+                    "UnityEditor.GraphViewModule",
+                };
+
+                foreach (var method in methodToWrap)
+                {
+                    GenericArgumentInInstructions(method, typeInGenericArgument, processed, skipAssembles, mb =>
+                    {
+                        if (mb.GetMethodBody() == null || mb.IsGenericMethodDefinition || mb.IsAbstract) return new MethodBase[] { };
+                        try
+                        {
+                            return mb.GetInstructions()
+                                .Select(i => i.Operand)
+                                .Where(o => o is MethodBase)
+                                .Cast<MethodBase>();
+                        }
+                        catch (Exception e)
+                        {
+                            
+                            //UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.GetName().Name, mb.DeclaringType));
+                            return new MethodBase[] { };
+                        }
+                    });
+                }
+
                 var delegateToBridge = wrapperUsedTypes
                     .Concat(PuerDelegates)
+                    .Concat(typeInGenericArgument)
                     .Where(t => typeof(MulticastDelegate).IsAssignableFrom(t));
 
                 var delegateInvokes = delegateToBridge
