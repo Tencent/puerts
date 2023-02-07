@@ -259,8 +259,8 @@ namespace PuertsIl2cpp.Editor
             public static void GenExtensionMethodInfos(string outDir)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
-                        "Puerts.BindingAttribute",
-                    });
+                    "Puerts.BindingAttribute",
+                });
                     
                 var genTypes = new HashSet<Type>(configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
                     .Where(o => o is Type)
@@ -273,7 +273,7 @@ namespace PuertsIl2cpp.Editor
                 // genTypes.Add(typeof(PuertsIl2cpp.ArrayExtension2));
                 var extendedType2extensionType = (from type in genTypes
 #if UNITY_EDITOR
-                    where !type.Assembly.Location.Contains("Editor")
+                    where !System.IO.Path.GetFileName(type.Assembly.Location).Contains("Editor")
 #endif
                     from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public).Select(method => TypeUtils.HandleMaybeGenericMethod(method)).Where(method => method != null)
                     where Utils.isDefined(method, typeof(ExtensionAttribute))
