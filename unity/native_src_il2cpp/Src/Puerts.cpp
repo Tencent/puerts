@@ -548,7 +548,12 @@ struct OptionalParameter
         }
         else
         {
-            return *((T*)GetDefaultValuePtr(methodInfo, index));
+            auto pret = (T*)GetDefaultValuePtr(methodInfo, index);
+            if (pret) 
+            {
+                return *pret;
+            }
+            return {};
         }
     }
     
