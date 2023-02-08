@@ -137,6 +137,8 @@ Il2CppDelegate* FunctionPointerToDelegate(Il2CppMethodPointer functionPtr, Il2Cp
         if (iter == WrapFuncPtrToMethodInfo.end())
         {
             MethodInfo* newMethod = (MethodInfo*)IL2CPP_CALLOC(1, sizeof(MethodInfo));
+            newMethod->name = invoke->name;
+            newMethod->klass = invoke->klass;
             newMethod->methodPointer = functionPtr;
             newMethod->invoker_method = invoke->invoker_method;
             newMethod->return_type = invoke->return_type;
