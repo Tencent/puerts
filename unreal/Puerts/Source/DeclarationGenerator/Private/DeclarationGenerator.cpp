@@ -1115,6 +1115,11 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 
     auto Super = Class->GetSuperStruct();
 
+    while (Super && !PathIsValid(Super))
+    {
+        Super = Super->GetSuperStruct();
+    }
+
     if (Super)
     {
         Gen(Super);
