@@ -49,6 +49,7 @@ static FString SafeName(const FString& Name)
 {
     auto Ret = Name.Replace(TEXT(" "), TEXT(""))
                    .Replace(TEXT("-"), TEXT("_"))
+                   .Replace(TEXT("+"), TEXT("_"))
                    .Replace(TEXT("/"), TEXT("_"))
                    .Replace(TEXT("("), TEXT("_"))
                    .Replace(TEXT(")"), TEXT("_"))
