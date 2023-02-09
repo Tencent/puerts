@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.1-pre.2] - 2023-02-09
+1. 修复：Node.js版本连接inspector时打不出Log #1201
+2. 修复：ESM模块报错时报错信息包含换行符会导致报错信息不正确。#1188
+3. 优化：销毁JSFunction时不加锁
+4. 功能：JsEnv.ClearModuleCache现在可以清理ESM模块缓存
+
 ## [1.4.1-pre.1] - 2023-01-27
 1. 修复：生成时Obsolete字段未被过滤的问题。 #1152
 2. 功能：添加console.time。#1170

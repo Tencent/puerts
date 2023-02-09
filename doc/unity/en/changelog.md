@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.1-pre.2] - 2023-02-09
+1. fix: could not get any log in inspector with Node.js backend. #1201
+2. fix: if a error is thrown in ESM and the message contains line ends, the error message could be incorrect. #1188
+3. optimize: do not lock the mutex when destroying a JSFunction.
+4. feature: JsEnv.ClearModuleCache can clear ESM module cache now.
+
 ## [1.4.1-pre.1] - 2023-01-27
 1. fix: did not filt a obsoleted property setter/getter. #1152
 2. feature: add console.time. #1170
