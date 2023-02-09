@@ -83,7 +83,12 @@ void FScriptArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>&
         return;
     }
     uint8* DataPtr = GetData(Self, GetSizeWithAlignment(Inner->Property), Index);
-    Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, DataPtr, PassByPointer));
+    auto Ret = Inner->UEToJs(Isolate, Context, DataPtr, PassByPointer);
+    if (Inner->NeedLinkOuter && PassByPointer)
+    {
+        LinkOuterImpl(Context, Info.Holder(), Ret);
+    }
+    Info.GetReturnValue().Set(Ret);
 }
 
 void FScriptArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -344,7 +349,12 @@ void FScriptSetWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& I
     {
         auto ScriptLayout = FScriptSet::GetScriptLayout(Property->GetSize(), Property->GetMinAlignment());
         void* Data = Self->GetData(Index, ScriptLayout);
-        Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Data, PassByPointer));
+        auto Ret = Inner->UEToJs(Isolate, Context, Data, PassByPointer);
+        if (Inner->NeedLinkOuter && PassByPointer)
+        {
+            LinkOuterImpl(Context, Info.Holder(), Ret);
+        }
+        Info.GetReturnValue().Set(Ret);
     }
 }
 
@@ -581,7 +591,12 @@ void FScriptMapWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>& I
 
     if (ValuePtr)
     {
-        Info.GetReturnValue().Set(ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, PassByPointer));
+        auto Ret = ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, PassByPointer);
+        if (ValuePropertyTranslator->NeedLinkOuter && PassByPointer)
+        {
+            LinkOuterImpl(Context, Info.Holder(), Ret);
+        }
+        Info.GetReturnValue().Set(Ret);
     }
     KeyProperty->DestroyValue(KeyPtr);
 }
@@ -786,7 +801,12 @@ void FFixSizeArrayWrapper::InternalGet(const v8::FunctionCallbackInfo<v8::Value>
 
     auto Ptr = Self + Property->ElementSize * Index;
 
-    Info.GetReturnValue().Set(Inner->UEToJs(Isolate, Context, Ptr, false));
+    auto Ret = Inner->UEToJs(Isolate, Context, Ptr, PassByPointer);
+    if (Inner->NeedLinkOuter && PassByPointer)
+    {
+        LinkOuterImpl(Context, Info.Holder(), Ret);
+    }
+    Info.GetReturnValue().Set(Ret);
 }
 
 void FFixSizeArrayWrapper::Get(const v8::FunctionCallbackInfo<v8::Value>& Info)
