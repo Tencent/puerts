@@ -56,6 +56,8 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     std::map<UObject*, FString> NamespaceMap;
 
+    std::map<UObject*, bool> PathIsValidMap;
+
     struct BlueprintTypeDeclInfo
     {
         TMap<FName, FString> NameToDecl;
@@ -71,6 +73,8 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
     bool RefFromOuter = false;
 
     const FString& GetNamespace(UObject* Obj);
+
+    bool PathIsValid(UObject* Obj);
 
     FString GetNameWithNamespace(UObject* Obj);
 
