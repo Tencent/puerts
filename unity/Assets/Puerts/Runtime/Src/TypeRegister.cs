@@ -654,51 +654,51 @@ namespace Puerts
                 typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
 
 #if PUERTS_DISABLE_SLOWBINDING
-                if (!typeof(Puerts.ILoader).IsAssignableFrom(type)) {
-                    return typeId;
-                }
+                if (typeof(Puerts.ILoader).IsAssignableFrom(type))
 #endif
-                // methods and properties
-                MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
-
-                for (int i = 0; i < methods.Length; ++i)
                 {
-                    MethodInfo method = methods[i];
+                    // methods and properties
+                    MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
 
-                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
-
-                    if (!method.IsConstructor)
+                    for (int i = 0; i < methods.Length; ++i)
                     {
-                        AddMethodToSlowBindingGroup(methodKey, method);
+                        MethodInfo method = methods[i];
+
+                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+
+                        if (!method.IsConstructor)
+                        {
+                            AddMethodToSlowBindingGroup(methodKey, method);
+                        }
                     }
-                }
 
-                // extensionMethods
-                // 因为内存问题与crash问题移入宏中
-#if PUERTS_REFLECT_ALL_EXTENSION
-                IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
-                if (extensionMethods != null)
-                {
-                    var enumerator = extensionMethods.GetEnumerator();
-                    while (enumerator.MoveNext())
+                    // extensionMethods
+                    // 因为内存问题与crash问题移入宏中
+    #if PUERTS_REFLECT_ALL_EXTENSION
+                    IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
+                    if (extensionMethods != null)
                     {
-                        MethodInfo method = enumerator.Current;
-                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
+                        var enumerator = extensionMethods.GetEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            MethodInfo method = enumerator.Current;
+                            MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = false, IsExtension = true };
 
-                        AddMethodToSlowBindingGroup(methodKey, method);
+                            AddMethodToSlowBindingGroup(methodKey, method);
+                        }
                     }
-                }
-#endif
+    #endif
 
-                // fields
-                var fields = type.GetFields(flag);
+                    // fields
+                    var fields = type.GetFields(flag);
 
-                foreach (var field in fields)
-                {
-                    slowBindingFields.Add(field);
-                    if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                    foreach (var field in fields)
                     {
-                        readonlyStaticFields.Add(field.Name);
+                        slowBindingFields.Add(field);
+                        if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                        {
+                            readonlyStaticFields.Add(field.Name);
+                        }
                     }
                 }
             }
