@@ -39,7 +39,7 @@ function buildForMinigame(allJSFile, outputpath) {
         const resourceFilePath = path.join(outputdir, resourceName);
         mkdirp.sync(path.dirname(resourceFilePath));
         fs.writeFileSync(
-            resourceFilePath.replace('.mjs', '.js').replace('.cjs', '.js'),
+            !resourceFilePath.endsWith('.js') ? resourceFilePath + ".js" : resourceFilePath,
             fs.readFileSync(jsfile, 'utf-8')
         );
     })

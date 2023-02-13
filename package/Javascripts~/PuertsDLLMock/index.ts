@@ -93,7 +93,7 @@ global.PuertsWebGL = {
                             return 1024;
                         }
                         if (typeof wx != 'undefined') {
-                            const result = wxRequire('puerts_minigame_js_resources/' + fileName.replace('.mjs', '.js').replace('.cjs', '.js'));
+                            const result = wxRequire('puerts_minigame_js_resources/' + fileName);
                             if (exportee) {
                                 engine.lastReturnCSResult = result[UTF8ToString(exportee)];
                             } else {
