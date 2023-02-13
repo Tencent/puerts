@@ -7,6 +7,7 @@
 | Author | repo | type | star |
 | --- | --- | --- | --- |
 | @sbfkcel | https://github.com/sbfkcel/puerts_cli | Cli |  |
+| @throw-out | https://github.com/throw-out/puerts-unity-kit | Framework | |
 | @Justin-sky | https://github.com/Justin-sky/Nice-TS | Framework | 280+ |
 | @Geequlim | https://github.com/Geequlim/puerts-starter-kit | Framework | 100+ |
 | @zgz682000 | https://github.com/zgz682000/puerts-component | Framework | 20+ |
@@ -16,7 +17,7 @@
 
 | Author | repo | type | star |
 | --- | --- | --- | --- |
-| @zombieyang | https://github.com/zombieyang/puerts_unity_webgl_demo | Samples | 60+ |
+| @zombieyang | https://github.com/zombieyang/puerts_unity_webgl_demo | Samples | 70+ |
 | @throw-out | https://github.com/throw-out/PerformanceTesting | Samples | |
 | @DOSexample | https://github.com/DOSexample/puerts_unity_demo | Samples | |
 
