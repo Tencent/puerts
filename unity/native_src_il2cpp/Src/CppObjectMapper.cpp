@@ -317,11 +317,21 @@ void FCppObjectMapper::BindCppObject(
     DataTransfer::SetPointer(Isolate, JSObject, ClassDefinition->TypeId, 1);
 
     FObjectCacheNode* CacheNodePtr = nullptr;
-    if (!PassByPointer)
+    auto Iter = CDataCache.find(Ptr);
+        
+    if (Iter != CDataCache.end())
+    {
+        CacheNodePtr = Iter->second.Add(ClassDefinition->TypeId);
+    }
+    else
     {
         auto Ret = CDataCache.insert({Ptr, FObjectCacheNode(ClassDefinition->TypeId)});
         CacheNodePtr = &Ret.first->second;
-        CacheNodePtr->Value.Reset(Isolate, JSObject);
+    }
+    CacheNodePtr->Value.Reset(Isolate, JSObject);
+    
+    if (!PassByPointer)
+    {
         if (ClassDefinition->Finalize)
         {
             CDataFinalizeMap[Ptr] = ClassDefinition->Finalize;
@@ -331,18 +341,7 @@ void FCppObjectMapper::BindCppObject(
     }
     else
     {
-        auto Iter = CDataCache.find(Ptr);
         
-        if (Iter != CDataCache.end())
-        {
-            CacheNodePtr = Iter->second.Add(ClassDefinition->TypeId);
-        }
-        else
-        {
-            auto Ret = CDataCache.insert({Ptr, FObjectCacheNode(ClassDefinition->TypeId)});
-            CacheNodePtr = &Ret.first->second;
-        }
-        CacheNodePtr->Value.Reset(Isolate, JSObject);
         CacheNodePtr->Value.SetWeak<JSClassDefinition>(
             ClassDefinition, CDataGarbageCollectedWithoutFree, v8::WeakCallbackType::kInternalFields);
     }
