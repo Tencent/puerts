@@ -2635,7 +2635,15 @@ void FJsEnvImpl::BindStruct(
         auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
         __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
 #else
-        auto CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
+        auto CacheNodePtr = StructCache.Find(Ptr);
+        if (CacheNodePtr)
+        {
+            CacheNodePtr = CacheNodePtr->Add(ScriptStructWrapper->Struct.Get());
+        }
+        else
+        {
+            CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
+        }
         CacheNodePtr->Value.Reset(MainIsolate, JSObject);
         ScriptStructFinalizeInfoMap.Add(Ptr, {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize});
         CacheNodePtr->Value.SetWeak<FScriptStructWrapper>(
