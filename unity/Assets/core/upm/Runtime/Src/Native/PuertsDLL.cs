@@ -87,7 +87,7 @@ namespace Puerts
             {
                 return _GetApiLevel();
             } 
-            catch(Exception e) 
+            catch(Exception) 
             {
                 return GetLibVersion();
             }

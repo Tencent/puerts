@@ -63,7 +63,7 @@ namespace Puerts.Editor
                     }})().catch(console.error);
                 ", ProjectPath.Replace("\\", "/"), Code));
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }
@@ -94,7 +94,7 @@ namespace Puerts.Editor
                     }})().catch(console.error);
                 ", ProjectPath.Replace("\\", "/"), Code));
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }
