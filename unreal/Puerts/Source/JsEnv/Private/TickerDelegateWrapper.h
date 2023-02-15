@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include "UECompatible.h"
 
 #if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
 
@@ -30,12 +31,12 @@ public:
 
     // 记录callback info传递过来的函数、上下文，以及处理JS异常的handler
     void Init(const v8::FunctionCallbackInfo<v8::Value>& Info, std::function<void(v8::Isolate*, v8::TryCatch*)> InExceptionHandler,
-        std::function<void(FDelegateHandle*)> InDelegateHandleCleaner);
+        std::function<void(FUETickDelegateHandle*)> InDelegateHandleCleaner);
 
     // 调用JS函数
     bool CallFunction(float);
 
-    void SetDelegateHandle(FDelegateHandle* Handle);
+    void SetDelegateHandle(FUETickDelegateHandle* Handle);
 
     bool IsCalling = false;
 
@@ -54,7 +55,7 @@ private:
 
     std::function<void(v8::Isolate*, v8::TryCatch*)> ExceptionHandler;
 
-    std::function<void(FDelegateHandle*)> DelegateHandleCleaner;
+    std::function<void(FUETickDelegateHandle*)> DelegateHandleCleaner;
 
 private:
     v8::Isolate* GetIsolate();
@@ -63,7 +64,7 @@ private:
 
     v8::Global<v8::Function>& GetFunction();
 
-    FDelegateHandle* DelegateHandle;
+    FUETickDelegateHandle* DelegateHandle;
 };
 
 #endif    // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX

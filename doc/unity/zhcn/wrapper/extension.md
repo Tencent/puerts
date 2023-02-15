@@ -11,4 +11,4 @@ puer.$extension(CS.PuertsTest.BaseClass, CS.PuertsTest.BaseClassExtension);
 ```
 
 3. 打开PUERTS_REFLECT_ALL_EXTENSION宏
-打开这个宏后，puerts会在首次产生反射调用时帮你遍历整个assembly。这样就不需要你生成它或者手动调用扩展函数，但副作用是首次反射调用的等待时长会变长，且内存占用会变多
+打开这个宏后，puerts会在首次产生反射调用时帮你遍历所有assembly。这样就不需要你生成它或者手动调用扩展函数，但副作用是首次反射调用的等待时长会变长，且内存占用会变多

@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.1-pre.2] - 2023-02-09
+1. 修复：Node.js版本连接inspector时打不出Log #1201
+2. 修复：ESM模块报错时报错信息包含换行符会导致报错信息不正确。#1188
+3. 优化：销毁JSFunction时不加锁
+4. 功能：JsEnv.ClearModuleCache现在可以清理ESM模块缓存
+
+## [1.4.1-pre.1] - 2023-01-27
+1. 修复：生成时Obsolete字段未被过滤的问题。 #1152
+2. 功能：添加console.time。#1170
+3. 功能：JSObject现在可以接收一个JS函数。#1143 #1144
+
+## [1.4.1-pre.0] - 2022-12-23
+1. 修复：将JS数字传递给C# object时，浮点数精度丢失的问题。
+2. 功能：添加PUERTS_DISABLE_SLOWBINDING，适用于需要做权限控制的地方。
+
+## [1.4.0] - 2022-11-24
+1. 修复：commonjs 查找带.目录时的问题
+
+## [1.4.0-rc.7] - 2022-11-15
+1. 修复：返回无泛型Task时typescript检查报错的问题 #1027
+2. 修复：泛型类内部类在wrapper报错的问题 #1030
+3. 修复：子线程创建JsEnv报跨线程访问Unity API的错#1049
+4. 修复：Unity2021.1下报`IsByRefLike`缺失的错 #1050
+5. 功能：添加v8和quickjs的Android x86_64支持
+6. 功能：新增Puerts.IModuleChecker。传入的ILoader如果实现了该接口，则可以自定义哪些文件后缀会被识别为ESM模块
+
 ## [1.4.0-rc.6] - 2022-10-20
 1. 支持了staticwrapper生成后，歧义方法的调用 #1020
 2. 修复BlittableCopy模式下，同时为JS函数传递两个结构体时的错误 #1018
@@ -47,6 +73,13 @@ you can get the english version change log at [Github Release](https://github.co
 2. 升级默认v8到9.4版本，nodejs到16版本
 3. 所有属性改为configurable #667
 4. 添加`require('puerts').getLastException`接口 #629
+
+## [1.3.9] - 2022-09-30
+1. 修复了一个多JsEnv同时运行时，报`undefined is not a function` 或者 `cannot read property of undefined`等错的问题
+10. 修复ESM加载时循环依赖会引起崩溃的问题
+11. 修复ESM使用相对路径加载依赖时报错的问题
+13. 修复生成可空类型时，dts报错的问题
+12. 添加了模块加载时的import.meta.url路径
 
 ## [1.3.8] - 2022-08-31
 1. fix: 优化JSObject的内存占用 #947

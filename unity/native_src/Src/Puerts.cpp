@@ -104,6 +104,42 @@ V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char*
     }
 }
 
+V8_EXPORT bool ClearModuleCache(v8::Isolate *Isolate, const char* Path)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    std::string key(Path);
+    if (key.size() == 0) 
+    {
+#if !WITH_QUICKJS
+        for (auto Iter = JsEngine->PathToModuleMap.begin(); Iter != JsEngine->PathToModuleMap.end(); ++Iter)
+        {
+            Iter->second.Reset();
+        }
+#else
+#endif
+        JsEngine->PathToModuleMap.clear();
+        return true;
+    } 
+    else 
+    {
+        auto finder = JsEngine->PathToModuleMap.find(key);
+        if (finder != JsEngine->PathToModuleMap.end()) 
+        {
+            JsEngine->PathToModuleMap.erase(key);
+#if !WITH_QUICKJS
+            finder->second.Reset();
+            return true;
+#else
+            v8::Isolate::Scope IsolateScope(Isolate);
+            v8::HandleScope HandleScope(Isolate);
+            JSContext* ctx = JsEngine->ResultInfo.Context.Get(Isolate)->context_;
+            return JS_ReleaseLoadedModule(ctx, Path);
+#endif
+        }
+    }
+    return false;
+}   
+
 V8_EXPORT int _RegisterClass(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);

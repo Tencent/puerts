@@ -47,9 +47,9 @@ public:
     bool FunctionToRedirectInitialized = false;
     static void NotifyRebind(UClass* Class);
     void LazyLoadRedirect();
+#endif
 
     DECLARE_FUNCTION(execLazyLoadCallJS);
-#endif
 
     void ProcessPendingConstructJob();
 

@@ -496,7 +496,7 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
 {
     static pesapi_value toScript(pesapi_env env, T value)
     {
-        return pesapi_create_native_object(env, puerts::DynamicTypeId<T>::get(&value), new T(value), false);
+        return pesapi_create_native_object(env, puerts::DynamicTypeId<T>::get(&value), new T(value), true);
     }
     static T toCpp(pesapi_env env, pesapi_value value)
     {

@@ -25,8 +25,7 @@ namespace Puerts
             catch (Exception e)
             {
                 // 因为只是C++到C#的通信，此处C++侧没有加v8::TryCatch。不能用PuertsDLL.ThrowException
-                // PuertsDLL.ThrowException(env.isolate, "ModuleResolverWrap c# exception:" + e.Message + ",stack:" + e.StackTrace);
-                return "throw new Error('resolve module " + identifer + " error: " + e.Message + "')";
+                return "throw new Error(`resolve module " + identifer + " error: " + e.Message + "`)";
             }
         }
 

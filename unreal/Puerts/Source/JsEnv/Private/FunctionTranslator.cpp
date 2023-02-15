@@ -182,7 +182,11 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
                                 }
                             }
 
+#if ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+                            Property->ImportText_Direct(**DefaultValuePtr, PropValuePtr, nullptr, PPF_None);
+#else
                             Property->ImportText(**DefaultValuePtr, PropValuePtr, PPF_None, nullptr);
+#endif
                         }
                     }
                 }

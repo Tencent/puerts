@@ -38,5 +38,17 @@ namespace Puerts.UnitTest.JSTypeTest
             ");
             Assert.AreEqual("truetrue", ret);
         }
+
+        [Test]
+        public void StoreJSClassWithJSObject()
+        {
+            var jsEnv = new JsEnv(new TxtLoader());
+            var ret = jsEnv.Eval<JSObject>(@"
+                class A {}
+
+                A;
+            ");
+            Assert.True(ret is JSObject);
+        }
     }
 }

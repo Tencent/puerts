@@ -133,11 +133,15 @@ namespace Puerts.Editor
                 return strictestMode;
             }
 
+            protected static bool IsObsolete(MemberInfo mbi)
+            {
+                return (mbi.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute) != null;
+            }
+
             public static bool IsNotSupportedMember(MemberInfo mbi, bool notFiltEII = false)
             {
                 if (mbi == null) return false;
-                ObsoleteAttribute oa = mbi.GetCustomAttributes(typeof(ObsoleteAttribute), false).FirstOrDefault() as ObsoleteAttribute;
-                if (oa != null/* && oa.IsError*/) //希望只过滤掉Error类别过时方法可以把oa.IsError加上
+                if (IsObsolete(mbi)/* && oa.IsError*/) //希望只过滤掉Error类别过时方法可以把oa.IsError加上
                 {
                     return true;
                 }
@@ -147,7 +151,7 @@ namespace Puerts.Editor
                     FieldInfo fi = (mbi as FieldInfo);
                     if (
                         fi.FieldType.IsPointer
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
                         || fi.FieldType.IsByRefLike
 #endif
                     )
@@ -168,16 +172,19 @@ namespace Puerts.Editor
                     PropertyInfo pi = (mbi as PropertyInfo);
                     if (
                         pi.PropertyType.IsPointer
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
                         || pi.PropertyType.IsByRefLike
 #endif
                     )
                     {
                         return true;
                     }
+
+                    var getMethod = pi.GetGetMethod();
+                    var setMethod = pi.GetSetMethod();
                     if (!(
-                        (pi.GetGetMethod() != null && pi.GetGetMethod().IsPublic) ||
-                        (pi.GetSetMethod() != null && pi.GetSetMethod().IsPublic)
+                        (getMethod != null && getMethod.IsPublic && !IsObsolete(getMethod)) ||
+                        (setMethod != null && setMethod.IsPublic && !IsObsolete(setMethod))
                     ))
                     {
                         if (notFiltEII)
@@ -197,7 +204,7 @@ namespace Puerts.Editor
                         return true;
                     }
                     if (mi.ReturnType.IsPointer
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
                         || mi.ReturnType.IsByRefLike
 #endif
                     )
@@ -219,7 +226,7 @@ namespace Puerts.Editor
                     MethodBase mb = mbi as MethodBase;
                     if (
                         mb.GetParameters().Any(pInfo => pInfo.ParameterType.IsPointer
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
                         || pInfo.ParameterType.IsByRefLike
 #endif
                     ))
