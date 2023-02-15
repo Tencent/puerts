@@ -470,7 +470,7 @@ public:
     {
         UObject* UEObject = ObjectBaseProperty->GetObjectPropertyValue(ValuePtr);
 
-        if (!UEObject || !UEObject->IsValidLowLevelFast() || UEObject->IsPendingKill())
+        if (!UEObject || !UEObject->IsValidLowLevelFast() || UEObjectIsPendingKill(UEObject))
         {
             return v8::Undefined(Isolate);
         }
@@ -572,7 +572,7 @@ public:
         const FScriptInterface& Interface = InterfaceProperty->GetPropertyValue(ValuePtr);
 
         UObject* Object = Interface.GetObject();
-        if (!Object || !Object->IsValidLowLevelFast() || Object->IsPendingKill())
+        if (!Object || !Object->IsValidLowLevelFast() || UEObjectIsPendingKill(Object))
         {
             return v8::Undefined(Isolate);
         }
@@ -1004,7 +1004,7 @@ public:
         if (DelegatePtr)
         {
             UObject* UEObject = DelegatePtr->GetUObject();
-            if (UEObject && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill())
+            if (UEObject && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject))
             {
                 return FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAddDelegate(
                     Isolate, Context, UEObject, DelegateProperty, DelegatePtr, PassByPointer);

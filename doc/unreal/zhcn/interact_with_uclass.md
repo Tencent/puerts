@@ -14,13 +14,8 @@
 
 * 或者，也可以通过控制台命令生成声明文件：`Puerts.Gen`
 
-   - Puerts.Gen默认仅生成UCLASS及被UCLASS引用的USTRUCT，UENUM
+* 蓝图声明文件默认增量生成（文件不发生变化不生成），有时其依赖的类型发生了变化，或者被版本管理工具修改，此时可以试试全量生成，控制台执行`Puerts.Gen FULL`
    
-   - 如果希望增加未引用的USTRUCT，执行`Puerts.Gen STRUCT`
-   
-   - 如果希望增加未引用的UENUM，执行`Puerts.Gen ENUM`
-   
-   - 如果希望增加未引用的USTRUCT、UENUM，执行`Puerts.Gen ALL`
 
 ## 成员及函数
 

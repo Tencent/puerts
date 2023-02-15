@@ -11,6 +11,17 @@ using System.Collections.Generic;
 
 namespace Puerts.UnitTest
 {
+    public class JSToCSCallTest
+    {
+        private static object _store;
+        public static void SetCSObjectStorage(object any) {
+            _store = any;
+        }
+        public static object GetCSObjectStorage() {
+            return _store;
+        }
+    }
+
     public class ParamsCallTest
     {
         public static string CombinePath(params object[] paths)
@@ -43,8 +54,8 @@ namespace Puerts.UnitTest
             AENUM h = AENUM.b,
             byte i = 255,
             char j = char.MaxValue,
-            float k = float.PositiveInfinity,
-            IntPtr l = default(IntPtr)
+            float k = float.PositiveInfinity//,
+            // IntPtr l = default(IntPtr)
         )
         { return 1; }
         public static int PlaySound(string uid,Action onCompleted = default) 

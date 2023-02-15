@@ -679,5 +679,17 @@ namespace Puerts.UnitTest.TranslatorTest
             jsEnv.Dispose();
             Assert.AreEqual(res, "a/b/c");
         }
+
+        [Test]
+        public void CSReturnObjectButIsNumberTest() {
+            var jsEnv = new JsEnv(new TxtLoader());
+            string res = jsEnv.Eval<string>(@"
+                CS.Puerts.UnitTest.JSToCSCallTest.SetCSObjectStorage(0.99);
+
+                CS.Puerts.UnitTest.JSToCSCallTest.GetCSObjectStorage().toString();
+            ");
+            jsEnv.Dispose();
+            Assert.AreEqual(res, "0.99");
+        }
     }
 }

@@ -12,14 +12,15 @@ PuerTS 现已上传 OpenUPM: https://openupm.com/packages/com.tencent.puerts.cor
 -----------------------------------------------------
 
 <details>
-<summary>用 Unity UPM 从 Github 安装 | Unity 2019.4+ 可用</summary>
+<summary>GitHub Clone 并用 Unity UPM 安装</summary>
 
-You can add it directly from GitHub on Unity 2019.4+. Note that you won't be able to receive updates through Package Manager this way, you'll have to update manually.
+带有upm的unity版本，可以使用这种方式安装
 
+- git clone `https://github.com/chexiongsheng/puerts_unity_demo.git`
 - open Package Manager
 - click <kbd>+</kbd>
-- select <kbd>Add from Git URL</kbd>
-- paste `https://github.com/chexiongsheng/puerts_unity_demo.git?path=/package`
+- select <kbd>Add from File</kbd>
+- select [your cloned path]/package/package.json 
 - click <kbd>Add</kbd>
 </details>
 
@@ -38,5 +39,6 @@ You can add it directly from GitHub on Unity 2019.4+. Note that you won't be abl
 </details>
 
 -----------------------------------------------------
+
 
 当然还有一种最傻瓜的办法：从官方Demo中拷贝出来用。

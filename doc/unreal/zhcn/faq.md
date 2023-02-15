@@ -92,9 +92,43 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 但即使改对象不会被gc释放，依然不能保证一个ue对象不被销毁，ue的gc和其它正经的gc不一样，诸如c#、java、lua、js等虚拟机的gc，一个对象还被持有就肯定不销毁，而ue下可以调用api强制删除一个对象（可能是用户自己调用，也可能是引擎调用，比较常见是切场景后，所有该场景挂的actor都会自动销毁）。
 
+## ue对象被“Puerts_UserObjectRetainer”引用
+
+这代表该ue对象的“js侧代理对象”未释放，任意gc，一个对象要释放得满足两个条件：1、没有指向该对象的引用；2、gc扫描到它，并完成释放；
+
+对于条件1，得看你的js代码逻辑，也可以通过cdt等工具查看内存，看看它被啥引用则；
+
+对于条件2，如果是v8虚拟机，由于是分代gc的原因，老生代内存扫描的触发需要一定的条件（比如内存分配得比较多，比较快等），如果希望加快gc进程，可以调用FJsEnv::LowMemoryNotification通知v8加速gc，也可以调用FJsEnv::RequestFullGarbageCollectionForTesting立即完成一趟全量gc（耗时较大，只建议在切场景之类的地方做）
+
 ## 手机/PC打包后脚本不执行/报找不到脚本错误
 
 生成的js脚本不是ue资产文件(*.asset)，需要手动设置打包。
 
 到“项目设置/打包/Additional Not-Asset Directories to Package”，把Content下的“JavaScript”目录添加进去。
+
+## typesceript版本升级
+
+开启继承ue类功能后，puerts会调用typescript库编译ts。安装于`YourProject/Plugins/Puerts/Content/JavaScript/PuertsEditor`，该目录还会拷贝到`YourProject/Content/JavaScript/PuertsEditor`，版本号package.json配置文件（如上两个目录都有）。
+
+要升级版本号只需要修改package.json（两个都要改）、到该文件所在目录执行`npm install .`即可，但要注意并不是所有typescript版本都支持，而且随着puerts的修改版本支持情况可能会发生变动，版本支持情况我会更新到这条faq下
+
+有项目长期使用到版本：3.4.5、4.4.4、4.7.4
+
+有项目简单测试可以的版本：4.8.2
+
+不支持的版本：（高于）4.8.3
+
+## ue_bp.d.ts报错，重新生成无效
+
+蓝图声明文件默认增量生成（文件不发生变化不生成），有时其依赖的类型发生了变化，或者被版本管理工具修改，此时可以试试全量生成，控>制台执行`Puerts.Gen FULL`
+
+## ts继承ue类后不生成代理蓝图的定位
+
+* 在UE命令行界面输入`puerts ls`，如果报“Puerts command not initialized”，很可能是因为没安装好环境，或者插件该功能没启用，请按安装文档检查又没操作失误
+
+* 如果继承ue类功能正常启用`puerts ls`能看到所有被纳入增量编译的文件，如果想查找具体ts文件，比如TsTestActor，可以输入`puerts ls TsTestActor`进行查找，如果查找不到你的文件，表面该文件可能没被纳入到ts工程里，请检查“tsconfig.json”文件的配置，该配置是一个标准的ts工程配置，如何配置请查看typescript官方文档
+
+* 如果`puerts ls TsTestActor`找到了你的文件，看isBP栏，如果为false而且processed栏为true，表明格式不正确，请参考puerts的《继承引擎类功能》文档
+
+* 可以尝试在命令行单独编译该ts文件，输入编译命令`puerts compile e9050088932a23f720713a9a5073986e`触发该文件的编译（其中e9050088932a23f720713a9a5073986e是`puerts ls TsTestActor`返回的id），如果有编译错误就解决，没有编译错误正常能生成相应的代理蓝图。
 

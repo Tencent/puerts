@@ -37,16 +37,31 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
     }
 }
 
-#if WITH_EDITOR
 DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
 {
     UFunction* Function = Stack.CurrentNativeFunction ? Stack.CurrentNativeFunction : Stack.Node;
     check(Function);
 
-    NotifyRebind(Function->GetOuterUClassUnchecked());
-    execCallJS(Context, Stack, RESULT_PARAM);
+    auto Class = Cast<UTypeScriptGeneratedClass>(Function->GetOuterUClassUnchecked());
+    if (Class && Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
+    {
+        auto PinedDynamicInvoker = Class->DynamicInvoker.Pin();
+        if (PinedDynamicInvoker)
+        {
+            PinedDynamicInvoker->NotifyReBind(Class);
+            execCallJS(Context, Stack, RESULT_PARAM);
+        }
+    }
+#if WITH_EDITOR
+    else
+    {
+        NotifyRebind(Class);
+        execCallJS(Context, Stack, RESULT_PARAM);
+    }
+#endif
 }
 
+#if WITH_EDITOR
 void UTypeScriptGeneratedClass::NotifyRebind(UClass* Class)
 {
     if (Class->ClassConstructor == &UTypeScriptGeneratedClass::StaticConstructor)

@@ -653,28 +653,28 @@ namespace Puerts
 
                 typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
 
-                // methods and properties
-                MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
-
-                for (int i = 0; i < methods.Length; ++i)
+#if PUERTS_DISABLE_SLOWBINDING
+                if (typeof(Puerts.ILoader).IsAssignableFrom(type))
+#endif
                 {
-                    MethodInfo method = methods[i];
+                    // methods and properties
+                    MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
 
-                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
-
-                    if (!method.IsConstructor)
+                    for (int i = 0; i < methods.Length; ++i)
                     {
-                        AddMethodToSlowBindingGroup(methodKey, method);
-                    }
-                }
+                        MethodInfo method = methods[i];
 
-                // extensionMethods
-                // 因为内存问题与crash问题移入宏中
-#if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
-    #if UNITY_EDITOR && !PUERTS_REFLECT_ALL_EXTENSION && !EXPERIMENTAL_IL2CPP_PUERTS
-                if (!UnityEditor.EditorApplication.isPlaying) 
-    #endif
-                { 
+                        MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+
+                        if (!method.IsConstructor)
+                        {
+                            AddMethodToSlowBindingGroup(methodKey, method);
+                        }
+                    }
+
+                    // extensionMethods
+                    // 因为内存问题与crash问题移入宏中
+#if PUERTS_REFLECT_ALL_EXTENSION
                     IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                     if (extensionMethods != null)
                     {
@@ -687,18 +687,18 @@ namespace Puerts
                             AddMethodToSlowBindingGroup(methodKey, method);
                         }
                     }
-                }
 #endif
 
-                // fields
-                var fields = type.GetFields(flag);
+                    // fields
+                    var fields = type.GetFields(flag);
 
-                foreach (var field in fields)
-                {
-                    slowBindingFields.Add(field);
-                    if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                    foreach (var field in fields)
                     {
-                        readonlyStaticFields.Add(field.Name);
+                        slowBindingFields.Add(field);
+                        if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+                        {
+                            readonlyStaticFields.Add(field.Name);
+                        }
                     }
                 }
             }

@@ -82,6 +82,39 @@ PropertyMacro* FContainerMeta::GetBuiltinProperty(BuiltinType type)
                 Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
                     UTextProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash);
                 break;
+#elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+            case puerts::TBool:
+                Ret = new FBoolProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                static_cast<FBoolProperty*>(Ret)->SetBoolSize(1, true, 0xFF);
+                break;
+            case puerts::TByte:
+                Ret = new FByteProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case puerts::TInt:
+                Ret = new FIntProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case puerts::TFloat:
+                Ret = new FFloatProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case puerts::TInt64:
+                Ret = new FInt64Property(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case puerts::TString:
+                Ret = new FStrProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case puerts::TText:
+                Ret = new FTextProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
+            case puerts::TName:
+                Ret = new FNameProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+                Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
+                break;
 #else
             case puerts::TBool:
                 Ret = new FBoolProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, (EPropertyFlags) 0, 0xFF, 1, true);
@@ -140,6 +173,10 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
             UObjectProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, Class);
+#elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+        Ret = new FObjectProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+        static_cast<FObjectProperty*>(Ret)->PropertyClass = Class;
+        Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
 #else
         Ret = new FObjectProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, Class);
 #endif
@@ -149,6 +186,11 @@ PropertyMacro* FContainerMeta::GetObjectProperty(UField* Field)
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5
         Ret = new (EC_InternalUseOnlyConstructor, PropertyMetaRoot, NAME_None, RF_Transient)
             UStructProperty(FObjectInitializer(), EC_CppProperty, 0, CPF_HasGetValueTypeHash, ScriptStruct);
+#elif ENGINE_MINOR_VERSION > 0 && ENGINE_MAJOR_VERSION > 4
+        Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient);
+        static_cast<FStructProperty*>(Ret)->Struct = ScriptStruct;
+        Ret->ElementSize = ScriptStruct->PropertiesSize;
+        Ret->PropertyFlags |= CPF_HasGetValueTypeHash;
 #else
         Ret = new FStructProperty(PropertyMetaRoot, NAME_None, RF_Transient, 0, CPF_HasGetValueTypeHash, ScriptStruct);
 #endif

@@ -43,6 +43,7 @@ function getFileExtension(filepath) {
     }
 }
 
+
 function searchModuleInDir(dir, requiredModule) {
     if (getFileExtension(requiredModule)) {
         return searchModuleInDirWithExt(dir, requiredModule)
