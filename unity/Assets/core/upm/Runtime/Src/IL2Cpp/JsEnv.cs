@@ -9,6 +9,9 @@
 
 using System;
 using System.Reflection;
+#if CSHARP_7_3_OR_NEWER
+using System.Threading.Tasks;
+#endif
 
 
 namespace Puerts
@@ -163,6 +166,15 @@ namespace Puerts
             }
 #endif
         }
+
+#if CSHARP_7_3_OR_NEWER
+        TaskCompletionSource<bool> waitDebugerTaskSource;
+        public Task WaitDebuggerAsync()
+        {
+            waitDebugerTaskSource = new TaskCompletionSource<bool>();
+            return waitDebugerTaskSource.Task;
+        }
+#endif
         
         ~JsEnv()
         {
