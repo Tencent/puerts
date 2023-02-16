@@ -170,8 +170,8 @@ export default function TypingTemplate(data) {
     }
 
     return $
-        `${FOR(toJsArray(data.Namespaces), name => `
-#if !(EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP)
+        `#if !(EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP)
+        ${FOR(toJsArray(data.Namespaces), name => `
 using ${name};`
         )}
 using Puerts;

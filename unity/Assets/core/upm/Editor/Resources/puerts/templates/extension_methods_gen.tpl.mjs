@@ -2,6 +2,7 @@ import { FOR } from './tte.mjs'
 
 export default function TypingTemplate(rawInfo) {
     return `
+#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -20,7 +21,8 @@ public static class ExtensionMethodInfos_Gen
         return null;
     }
 }
-}`.trim();
+}
+#endif`.trim();
 }
 
 
