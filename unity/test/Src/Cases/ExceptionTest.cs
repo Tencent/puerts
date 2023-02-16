@@ -130,19 +130,12 @@ namespace Puerts.UnitTest
         public void PassObjectToLong()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-#if !EXPERIMENTAL_IL2CPP_PUERTS
-            Assert.Catch(()=> {
-#endif
-                long ret = jsEnv.Eval<long>(@"
-                    (function() {
-                        return CS.Puerts.UnitTest.ExceptionTestHelper.ArgLong({})
-                    })()
-                ");
-#if !EXPERIMENTAL_IL2CPP_PUERTS
-            }, "invalid arguments");
-#else 
+            long ret = jsEnv.Eval<long>(@"
+                (function() {
+                    return CS.Puerts.UnitTest.ExceptionTestHelper.ArgLong({})
+                })()
+            ");
             Assert.AreEqual(ret, 0);
-#endif
             jsEnv.Tick();
         }
         [Test]

@@ -20,6 +20,8 @@ public class Tester : MonoBehaviour {
         string MockConsoleContent = "";
         IsTesting = true;
 
+        bool hasFail = false;
+
         StartCoroutine(
             RunTest(
                 (string name) => {
@@ -32,12 +34,22 @@ public class Tester : MonoBehaviour {
                     UnityEngine.Debug.LogError($"Failed: TestCase {name}\n");
                     UnityEngine.Debug.LogError(e);
                     m_ContentText.text = MockConsoleContent;
+                    hasFail = true;
+                },
+                () => {
+#if !UNITY_EDITOR
+                    UnityEngine.Application.Quit(hasFail ? 1 : 0);
+#endif
                 }
             )
         );
     }
 
-    private IEnumerator RunTest(Action<string> OnSuccess, Action<string, Exception> OnFail)
+    private IEnumerator RunTest(
+        Action<string> OnSuccess, 
+        Action<string, Exception> OnFail,
+        Action OnEnd
+    )
     {
         UnityEngine.Debug.Log("Start RunTest");
         var types = from assembly in AppDomain.CurrentDomain.GetAssemblies()
@@ -78,7 +90,8 @@ public class Tester : MonoBehaviour {
                         OnSuccess(method.Name);
                     }
                 }
-            }            
+            }        
         }
+        OnEnd();    
     }
 }

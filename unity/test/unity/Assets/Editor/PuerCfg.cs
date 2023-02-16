@@ -8,7 +8,11 @@ public class PuerCfg {
     public static List<Type> binding {
         get {
             return new List<Type>{
-                typeof(UnityEngine.UIElements.UQueryExtensions)
+                typeof(Puerts.UnitTest.HelperExtension),
+                typeof(Puerts.UnitTest.ExtensionTestHelper),
+                typeof(Puerts.UnitTest.ExtensionTestHelperDerived),
+                typeof(Puerts.UnitTest.ExtensionTestHelper1),
+                typeof(Puerts.UnitTest.ExtensionTestHelperDerived1)
             };
         }
     }

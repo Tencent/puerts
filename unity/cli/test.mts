@@ -93,14 +93,57 @@ export async function dotnetTest(cwd: string, backend: string) {
 
 
 export async function unityTest(cwd: string, unityPath: string) {
+    function execUnityEditor(args: string) {
+        const unityBatchModeBase = `${unityPath} -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`
+        const code = exec(`${unityBatchModeBase} ${args}`).code;
+        if (code != 0) {
+            throw new Error(`ExecUnity failed: ${readFileSync(cwd + "/log.txt", 'utf-8')}`);
+        }
+        return;
+    }
     if (process.platform == 'win32') {
-        exec(`${unityPath} -buildWindows64Player "${cwd}/build/" -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`)
+        rm("-rf", `${cwd}/Assets/Gen`);
+        rm("-rf", `${cwd}/build`);
+        rm("-rf", `${cwd}/Assets/Gen.meta`);
+        console.log("[Puer] Building puerts v1");
+        await runPuertsMake(join(cwd, '../../native_src'), {
+            backend: 'v8_9.4',
+            platform: 'win',
+            config: 'Debug',
+            arch: 'x64'
+        });
 
+        console.log("[Puer] Generating wrapper");
+        execUnityEditor(`-executeMethod TestBuilder.GenV1`);
+        rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+        cp(`${cwd}/Assets/Gen/unityenv_for_puerts.h`, `${cwd}/../../Assets/core/upm/Plugins/puerts_il2cpp/`);
+        
+        console.log("[Puer] Building testplayer for v1");
+        mkdir("-p", `${cwd}/build/v1`)
+        execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV1`);
 
-    } else if (process.platform == 'darwin') {
-        if (unityPath.endsWith('.app')) unityPath += '/Contents/MacOS/Unity'
-        exec(`${unityPath} -buildOSXUniversalPlayer "${cwd}/build/mac.app" -batchMode -quit -projectPath "${cwd}" -logFile "${cwd}/log.txt"`)
+        console.log("[Puer] Running test in v1");
+        const v1code = exec(`${cwd}/build/v1/Tester.exe -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
 
-        exec(`${cwd}/build/mac.app/Contents/MacOS/unity -batchmode`)
+        console.log("[Puer] Generating FunctionBridge");
+        execUnityEditor(`-executeMethod TestBuilder.GenV2`);
+        rm("-rf", `${cwd}/Library/ScriptAssemblies`);
+        cp(`${cwd}/Assets/Gen/FunctionBridge.Gen.h`, `${cwd}/../../native_src_il2cpp/Src/`);
+        cp(`${cwd}/Assets/Gen/unityenv_for_puerts.h`, `${cwd}/../../Assets/core/upm/Plugins/puerts_il2cpp/`);
+    
+        await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
+            backend: 'v8_9.4',
+            platform: 'win',
+            config: 'Debug',
+            arch: 'x64'
+        });
+
+        console.log("[Puer] Building testplayer for v2");
+        mkdir("-p", `${cwd}/build/v2`)
+        execUnityEditor(`-executeMethod TestBuilder.BuildWindowsV2`);
+        console.log("[Puer] Running test in v2");
+        const v2code = exec(`${cwd}/build/v2/Tester.exe -batchmode -nographics -logFile ${cwd}/log2.txt`).code;
+
+        assert.equal(0, v1code + v2code)
     }
 }
