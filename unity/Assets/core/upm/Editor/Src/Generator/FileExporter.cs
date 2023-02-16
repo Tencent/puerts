@@ -149,6 +149,24 @@ namespace Puerts.Editor
 
                 Utils.filters = null;
             }
+            
+            public static void GenMarcoHeader(string outDir, bool forceIl2Cpp) 
+            {
+                var filePath = outDir + "unityenv_for_puerts.h";
+                string fileContent = "";
+#if UNITY_2021_1_OR_NEWER
+                fileContent += "\n#define UNITY_2021_1_OR_NEWER";
+#endif
+                if (forceIl2Cpp) fileContent += @"
+#ifndef EXPERIMENTAL_IL2CPP_PUERTS
+    #define EXPERIMENTAL_IL2CPP_PUERTS
+#endif";
+                using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    textWriter.Write(fileContent);
+                    textWriter.Flush();
+                }
+            }
         }
     }
 }

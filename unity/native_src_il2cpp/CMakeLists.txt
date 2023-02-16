@@ -111,6 +111,7 @@ else ()
 endif ()
 
 # target_compile_definitions (puerts_il2cpp PRIVATE THREAD_SAFE)
+target_compile_definitions (puerts_il2cpp PRIVATE EXPERIMENTAL_IL2CPP_PUERTS)
 
 if ( WIN32 AND NOT CYGWIN )
     target_compile_definitions (puerts_il2cpp PRIVATE BUILDING_V8_SHARED)

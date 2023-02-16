@@ -6,6 +6,9 @@
  * which is part of this source code package.
  */
 
+#include "unityenv_for_puerts.h"
+#ifdef EXPERIMENTAL_IL2CPP_PUERTS
+
 #ifndef PS_API_H_
 #define PS_API_H_
 
@@ -215,4 +218,5 @@ PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_ty
 
 EXTERN_C_END
 
+#endif
 #endif

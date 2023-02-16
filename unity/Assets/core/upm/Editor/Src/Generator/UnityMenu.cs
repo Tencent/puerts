@@ -65,6 +65,12 @@ namespace Puerts.Editor
                 Utils.filters = null;
             }
 
+            public static void GenerateMacroHeader(bool forceIl2Cpp)
+            {
+                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                FileExporter.GenMarcoHeader(saveTo, forceIl2Cpp);
+            }
+
             [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 2)]
             public static void ClearAll()
             {
