@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#include "unityenv_for_puerts.h"
-#ifdef EXPERIMENTAL_IL2CPP_PUERTS
 #pragma once
 namespace puerts
 {
@@ -210,4 +208,3 @@ struct UnityExports
 };
 
 }
-#endif //EXPERIMENTAL_IL2CPP_PUERTS

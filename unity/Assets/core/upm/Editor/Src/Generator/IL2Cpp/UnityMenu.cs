@@ -21,8 +21,15 @@ namespace PuertsIl2cpp.Editor
             public const string PUERTS_MENU_PREFIX = "PuerTS";
 
 #if !PUERTS_GENERAL
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate For V2 (all in one)", false, 2)]
+            public static void GenV2() {
+                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
+                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
+                PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
+                Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(true);
+            }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate FunctionBridge.Gen.h", false, 1)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/FunctionBridge.Gen.h", false, 6)]
             public static void GenerateCppWrappers()
             {   
                 var start = DateTime.Now;
@@ -40,7 +47,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
             
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate FunctionBridge.Gen.h(Configure)", false, 1)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/FunctionBridge.Gen.h(Configure)", false, 6)]
             public static void GenerateCppWrappersInConfigure()
             {
                 var start = DateTime.Now;
@@ -58,7 +65,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate ExtensionMethodInfos_Gen.cs", false, 1)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/ExtensionMethodInfos_Gen.cs", false, 6)]
             public static void GenerateExtensionMethodInfos()
             {
                 var start = DateTime.Now;
@@ -70,7 +77,7 @@ namespace PuertsIl2cpp.Editor
                 AssetDatabase.Refresh();
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate Link.xml", false, 1)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/Link.xml", false, 6)]
             public static void GenerateLinkXML()
             {
                 var start = DateTime.Now;
