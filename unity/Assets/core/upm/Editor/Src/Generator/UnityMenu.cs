@@ -70,7 +70,14 @@ namespace Puerts.Editor
                 Utils.filters = null;
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/il2cpp plugin header)", false, 6)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/il2cpp macro .h", false, 6)]
+            public static void GenerateMacroHeader() {
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+                GenerateMacroHeader(false);
+#else
+                GenerateMacroHeader(true);
+#endif
+            }
             public static void GenerateMacroHeader(bool forceIl2Cpp)
             {
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
