@@ -81,6 +81,7 @@ namespace Puerts.Editor
             public static void GenerateMacroHeader(bool forceIl2Cpp)
             {
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(saveTo);
                 FileExporter.GenMarcoHeader(saveTo, forceIl2Cpp);
             }
 
