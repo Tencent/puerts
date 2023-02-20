@@ -184,7 +184,7 @@ namespace puerts
             v8::V8::Initialize();
         }
 
-        std::string Flags = "--no-harmony-top-level-await";
+        std::string Flags = "--no-harmony-top-level-await --stack_size=856";
 #if PUERTS_DEBUG
         Flags += " --expose-gc";
 #if PLATFORM_MAC
