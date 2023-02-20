@@ -75,7 +75,7 @@ namespace puerts
         {
             // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
             int Argc = 2;
-            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
+            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await --stack_size=856"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
@@ -90,9 +90,9 @@ namespace puerts
                 printf("InitializeNodeWithArgs failed\n");
             }
         }
-        std::string Flags = "";
+        std::string Flags = "--stack_size=856";
 #if PUERTS_DEBUG
-        Flags += "--expose-gc";
+        Flags += " --expose-gc";
 #if PLATFORM_MAC
         Flags += " --jitless --no-expose-wasm";
 #endif
