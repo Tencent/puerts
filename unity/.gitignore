@@ -32,6 +32,8 @@
 /Assets/core/upm/puerts/**/*.meta
 /Assets/core/upm/Typing/**/*.meta
 /Assets/core/upm/Plugins/Android/**/*.so
+/Assets/core/upm/Plugins/Android/**/*.so~
+/Assets/core/upm/Plugins/Android/**/*.a
 /Assets/core/upm/Plugins/iOS/**/*.a
 /Assets/core/upm/Plugins/macOS/**/*.bundle
 /Assets/core/upm/Plugins/macOS/**/*.dylib

@@ -80,7 +80,11 @@ namespace Puerts.Editor
             }
             public static void GenerateMacroHeader(bool forceIl2Cpp)
             {
+#if PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
+                var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
+#else
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+#endif
                 Directory.CreateDirectory(saveTo);
                 FileExporter.GenMarcoHeader(saveTo, forceIl2Cpp);
             }

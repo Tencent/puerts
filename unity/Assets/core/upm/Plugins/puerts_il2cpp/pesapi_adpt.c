@@ -13,7 +13,7 @@
 
 #include "pesapi.h"
 
-#if !IL2CPP_TARGET_IOS
+#ifdef PUERTS_SHARED
 
 EXTERN_C_START
 
@@ -453,7 +453,7 @@ void pesapi_define_class (const void* type_id, const void* super_type_id, const 
 #endif
 
 void pesapi_init(pesapi_func_ptr* func_array){
-#if !IL2CPP_TARGET_IOS
+#ifdef PUERTS_SHARED
     pesapi_create_null_ptr = (pesapi_create_nullType)func_array[0];
     pesapi_create_undefined_ptr = (pesapi_create_undefinedType)func_array[1];
     pesapi_create_boolean_ptr = (pesapi_create_booleanType)func_array[2];

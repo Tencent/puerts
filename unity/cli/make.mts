@@ -29,7 +29,10 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`)) 
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
+                else 
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
             }
         },
         'arm64': {
@@ -43,7 +46,10 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`)) 
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
+                else 
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
             }
         },
         'x64': {
@@ -57,7 +63,10 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`)) 
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
+                else 
+                    return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
             }
         }
     },
@@ -165,9 +174,9 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     const OUTPUT_PATH = cmakeAddedLibraryName == "puerts_il2cpp" ?
         cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath :
         cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
-    const BackendConfig = JSON.parse(readFileSync(cwd + `/.backends/${options.backend}/puer-build.json`, 'utf-8'))
+    const BackendConfig = JSON.parse(readFileSync(cwd + `/cmake/backends.json`, 'utf-8'))[options.backend]?.config;
 
-    if (BackendConfig.skip?.[options.platform]?.[options.arch]) {
+    if (BackendConfig?.skip?.[options.platform]?.[options.arch]) {
         console.log("=== Puer ===");
         console.log(`not supported yet: ${options.backend} in ${options.platform} ${options.arch}`);
         console.log("=== Puer ===");
@@ -202,9 +211,6 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
         }
         cp(filepath, OUTPUT_PATH)
     })
-    if (cmakeAddedLibraryName == 'puerts_il2cpp') {
-        //cp('-r', join(cwd, 'puerts_il2cpp'), cwd + '/../test/unity/Assets/Plugins/');
-    }
 
     return copyConfig;
 }

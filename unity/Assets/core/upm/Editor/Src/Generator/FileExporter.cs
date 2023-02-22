@@ -154,9 +154,27 @@ namespace Puerts.Editor
             {
                 var filePath = outDir + "unityenv_for_puerts.h";
                 string fileContent = "";
-#if UNITY_2021_1_OR_NEWER
-                fileContent += "\n#define UNITY_2021_1_OR_NEWER";
+                
+#if !UNITY_2021_1_OR_NEWER
+            if (false)
 #endif
+            {
+                fileContent += @"
+#ifndef UNITY_2021_1_OR_NEWER
+    #define UNITY_2021_1_OR_NEWER
+#endif";
+            }
+
+#if UNITY_ANDROID || UNITY_IPHONE
+            if (false)
+#endif
+            {
+                fileContent += @"
+#ifndef PUERTS_SHARED
+    #define PUERTS_SHARED
+#endif";
+            }
+
                 if (forceIl2Cpp) fileContent += @"
 #ifndef EXPERIMENTAL_IL2CPP_PUERTS
     #define EXPERIMENTAL_IL2CPP_PUERTS

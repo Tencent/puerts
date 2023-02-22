@@ -104,6 +104,10 @@ if ( APPLE )
             ${PUERTS_SRC} ${PUERTS_INC}
         )
     endif ()
+elseif ( ANDROID )
+    add_library(puerts_il2cpp STATIC
+        ${PUERTS_SRC} ${PUERTS_INC}
+    )
 else ()
     add_library(puerts_il2cpp SHARED
         ${PUERTS_SRC} ${PUERTS_INC}
@@ -161,11 +165,11 @@ elseif ( ANDROID )
     #set_target_properties( puerts_il2cpp PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/android_version.script)
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/android_version.script")
     #set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
-    add_custom_command(TARGET puerts_il2cpp POST_BUILD
-            COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -s --verbose
-            "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so" -o
-            "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.stripped.so~"
-            COMMENT "Strip debug symbols done on final binary.")
+    # add_custom_command(TARGET puerts_il2cpp POST_BUILD
+    #         COMMAND "${ANDROID_TOOLCHAIN_PREFIX}strip" -s --verbose
+    #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so" -o
+    #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.stripped.so~"
+    #         COMMENT "Strip debug symbols done on final binary.")
 
 elseif ( APPLE )
 

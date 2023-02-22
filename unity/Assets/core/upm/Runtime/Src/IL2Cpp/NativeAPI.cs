@@ -28,7 +28,7 @@ namespace PuertsIl2cpp
 
     public class NativeAPI
     {
-#if (UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
+#if (UNITY_ANDROID || UNITY_IPHONE || UNITY_TVOS || UNITY_WEBGL || UNITY_SWITCH) && !UNITY_EDITOR
         const string DLLNAME = "__Internal";
 #else
         const string DLLNAME = "puerts_il2cpp";

@@ -53,7 +53,7 @@ namespace PuertsIl2cpp.Editor
                 var start = DateTime.Now;
 #if CPP_OUTPUT_TO_NATIVE_SRC
                 var saveTo = Path.Combine(Application.dataPath, "..", "native_src_il2cpp", "Src");
-#elif CPP_OUTPUT_TO_NATIVE_SRC_UPM
+#elif PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
                 var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "../../../", "native_src_il2cpp", "Src");
 #else
                 var saveTo = Puerts.Configure.GetCodeOutputDirectory();

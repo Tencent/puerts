@@ -20,7 +20,7 @@ export default async function downloadBackend(cwd: string, name: string, url: st
         const down = download(url, join(cwd, '.backends'), { extract: true });
         await down;
 
-    } else if (url = readBackendsJSON(cwd)[name]) {
+    } else if (url = readBackendsJSON(cwd)[name].url) {
         console.log(`[Puer] downloading ${name} from ${url}`);
         const down = download(url, join(cwd, '.backends'), { extract: true });
         await down;
