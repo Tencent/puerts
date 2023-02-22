@@ -157,7 +157,7 @@
 
 * 静态绑定支持const char*、const TCHAR*参数
 
-* 静态绑定支持数组类型及std::string的指针，映射到ts的$Ref<T>
+* 静态绑定支持数组类型及std::string的指针，映射到ts的`$Ref<T>`
 
 * 静态绑定引用类型的性能优化
 

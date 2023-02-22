@@ -85,7 +85,7 @@ console.log(Calc.Add(12, 34));
 
 * 使用到的C++类用UsingCppType前置声明
 
-* 注册类的成员信息，基本模式是：puerts::DefineClass<YouClass>().Function/Method/Property().Register();
+* 注册类的成员信息，基本模式是：`puerts::DefineClass<YouClass>().Function/Method/Property().Register();`
 
 * 静态AutoRegisterForCPP类型变量，只是为了利用C++的机制完成自动注册，实际上注册语句可放在脚本调用前执行的任意合法C++代码中。
 
@@ -369,13 +369,13 @@ obj.StdFunctionTest((x:number, y:number) => {
 
 ### TArray
 
-* 声明：UsingContainer(TArray<FVector>)
-* 注册：RegisterTArray(FVector);
+* 声明：`UsingContainer(TArray<FVector>);`
+* 注册：`RegisterTArray(FVector);`
 
 ### TSharedPtr
 
-* 声明：UsingTSharedPtr(FVector);
-* 注册：RegisterTSharedPtr(FVector);
+* 声明：`UsingTSharedPtr(FVector);`
+* 注册：`RegisterTSharedPtr(FVector);`
 
 ## UE类补充声明
 
