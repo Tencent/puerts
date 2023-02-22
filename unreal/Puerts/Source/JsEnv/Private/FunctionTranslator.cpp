@@ -265,7 +265,8 @@ void FFunctionTranslator::SlowCall(v8::Isolate* Isolate, v8::Local<v8::Context>&
     if (Params)
         FMemory::Memzero(Params, ParamsBufferSize);
 
-    Call_ProcessParams(Isolate, Context, Info, Params, 0);
+    if (!Call_ProcessParams(Isolate, Context, Info, Params, 0))
+        return;
 
     CallObject->UObject::ProcessEvent(CallFunction, Params);
 
