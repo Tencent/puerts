@@ -359,8 +359,8 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::V8::SetFlagsFromString(Flags, sizeof(Flags));
 #endif
 
-    // char GCFlags[] = "--expose-gc";
-    // v8::V8::SetFlagsFromString(GCFlags, sizeof(GCFlags));
+    char GCFlags[] = "--expose-gc";
+    v8::V8::SetFlagsFromString(GCFlags, sizeof(GCFlags));
 
     Started = false;
     Inspector = nullptr;
@@ -668,8 +668,6 @@ FJsEnvImpl::~FJsEnvImpl()
         CppObjectMapper.UnInitialize(Isolate);
 
         ObjectMap.Empty();
-
-        GeneratedObjectMap.Empty();
 
         StructCache.Empty();
 
@@ -1271,7 +1269,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                             for (FUEObjectIterator It(TypeScriptGeneratedClass); It; ++It)
                             {
                                 auto Object = *It;
-                                if (GeneratedObjectMap.Find(Object))
+                                if (ObjectMap.Find(Object))
                                     continue;
                                 if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                                     continue;    //跳过父类重新编译后临时状态的对象
@@ -1279,10 +1277,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
                                 //后面看是否能参照蓝图的组件初始化进行改造
                                 // TsConstruct(TypeScriptGeneratedClass, Object);
-                                auto JSObject =
-                                    FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
-                                GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
-                                UnBind(TypeScriptGeneratedClass, Object);
+                                FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
                             }
                         }
 
@@ -1559,14 +1554,37 @@ FString FJsEnvImpl::CurrentStackTrace()
 #endif
 }
 
-void FJsEnvImpl::Bind(
-    UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject)    // Just call in FClassReflection::Call, new a Object
+bool FJsEnvImpl::IsNativeTakeJsRef(UClass* Class)
 {
-    UserObjectRetainer.Retain(UEObject);
+    while (Class)
+    {
+        if (Class->GetClass() == UTypeScriptGeneratedClass::StaticClass())
+        {
+            return true;
+        }
+
+        Class = Class->GetSuperClass();
+    }
+    return false;
+}
+
+void FJsEnvImpl::Bind(FClassWrapper* ClassWrapper, UObject* UEObject,
+    v8::Local<v8::Object> JSObject)    // Just call in FClassReflection::Call, new a Object
+{
+    if (!ClassWrapper->IsNativeTakeJsRef)
+    {
+        UserObjectRetainer.Retain(UEObject);
+    }
+
     DataTransfer::SetPointer(MainIsolate, JSObject, UEObject, 0);
     DataTransfer::SetPointer(MainIsolate, JSObject, nullptr, 1);
     ObjectMap.Emplace(UEObject, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
-    ObjectMap[UEObject].SetWeak<UClass>(Class, FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+
+    if (!ClassWrapper->IsNativeTakeJsRef)
+    {
+        ObjectMap[UEObject].SetWeak<UClass>(
+            (UClass*) ClassWrapper->Struct.Get(), FClassWrapper::OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+    }
 }
 
 void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
@@ -1582,7 +1600,9 @@ void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject, bool ResetPointer)
             auto Context = DefaultContext.Get(Isolate);
             v8::Context::Scope ContextScope(Context);
 
-            DataTransfer::SetPointer(MainIsolate, PersistentValuePtr->Get(Isolate).As<v8::Object>(), RELEASED_UOBJECT, 0);
+            auto JsObject = PersistentValuePtr->Get(Isolate).As<v8::Object>();
+            DataTransfer::SetPointer(MainIsolate, JsObject, RELEASED_UOBJECT, 0);
+            DataTransfer::SetPointer(Isolate, JsObject, nullptr, 1);
         }
         ObjectMap.Remove(UEObject);
         UserObjectRetainer.Release(UEObject);
@@ -1604,11 +1624,6 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
     auto PersistentValuePtr = ObjectMap.Find(UEObject);
     if (!PersistentValuePtr)    // create and link
     {
-        auto PersistentValuePtr2 = GeneratedObjectMap.Find(UEObject);
-        if (PersistentValuePtr2)    // TODO: 后续尝试改为新建一个对象，这个对象持有UObject的引用，并且把调用转发到Iter2->second
-        {
-            return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr2);
-        }
         auto BindTo = v8::External::New(Context->GetIsolate(), UEObject);
         v8::Handle<v8::Value> Args[] = {BindTo};
         return GetJsClass(Class, Context)->NewInstance(Context, 1, Args).ToLocalChecked();
@@ -1781,8 +1796,9 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePer
     v8::TryCatch TryCatch(Isolate);
 
     auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
-    GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
+    // 不动态识别类型
     UnBind(Class, Object);
+    ObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
 
     if (!Prototype.IsEmpty())
     {
@@ -1856,12 +1872,10 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         v8::TryCatch TryCatch(Isolate);
 
         v8::Local<v8::Object> JSObject;
-        auto PersistentValuePtr = GeneratedObjectMap.Find(Object);
+        auto PersistentValuePtr = ObjectMap.Find(Object);
         if (!PersistentValuePtr)
         {
             JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
-            GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
-            UnBind(Class, Object);
 
             // FindOrAdd may change BindInfoMap, cause a rehash
             BindInfoPtr = BindInfoMap.Find(Class);
@@ -1901,21 +1915,6 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
 #ifdef THREAD_SAFE
     v8::Locker Locker(MainIsolate);
 #endif
-    auto PersistentValuePtr = GeneratedObjectMap.Find(ObjectBase);
-    if (PersistentValuePtr)
-    {
-        // UE_LOG(LogTemp, Warning, TEXT("NotifyUObjectDeleted: %s(%p)"), *ObjectBase->GetClass()->GetName(), Object);
-        auto Isolate = MainIsolate;
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        auto Context = v8::Local<v8::Context>::New(Isolate, DefaultContext);
-        v8::Context::Scope ContextScope(Context);
-
-        auto JSObject = PersistentValuePtr->Get(Isolate)->ToObject(Context).ToLocalChecked();
-        DataTransfer::SetPointer(Isolate, JSObject, RELEASED_UOBJECT, 0);
-        DataTransfer::SetPointer(Isolate, JSObject, nullptr, 1);
-        GeneratedObjectMap.Remove(ObjectBase);
-    }
 
     TryReleaseType((UStruct*) ObjectBase);
 
@@ -2003,7 +2002,7 @@ void FJsEnvImpl::InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Fu
     v8::Context::Scope ContextScope(Context);
 
     v8::Local<v8::Value> Self;
-    auto GeneratedObjectPtr = GeneratedObjectMap.Find(ContextObject);
+    auto GeneratedObjectPtr = ObjectMap.Find(ContextObject);
     if (GeneratedObjectPtr)
     {
         Self = GeneratedObjectPtr->Get(Isolate);
@@ -2043,26 +2042,7 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
     auto Context = DefaultContext.Get(Isolate);
     v8::Context::Scope ContextScope(Context);
 
-    v8::Local<v8::Value> Self;
-
-    if (Function->TakeJsObjectRef)
-    {
-        auto GeneratedObjectPtr = GeneratedObjectMap.Find(ContextObject);
-        if (GeneratedObjectPtr)
-        {
-            Self = GeneratedObjectPtr->Get(Isolate);
-        }
-        else
-        {
-            Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject)->ToObject(Context).ToLocalChecked();
-            GeneratedObjectMap.Emplace(ContextObject, v8::UniquePersistent<v8::Value>(MainIsolate, Self));
-            UnBind(ContextObject->GetClass(), ContextObject);
-        }
-    }
-    else
-    {
-        Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
-    }
+    v8::Local<v8::Value> Self = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
 
     auto JsFuncPtr = MixinFunctionMap.Find(Function);
     if (!JsFuncPtr)
@@ -2112,7 +2092,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
         if (!Function->HasAnyFunctionFlags(FUNC_Static))
         {
-            const auto PersistentValuePtr = GeneratedObjectMap.Find(ContextObject);
+            const auto PersistentValuePtr = ObjectMap.Find(ContextObject);
             if (!PersistentValuePtr)
             {
                 Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
@@ -2166,13 +2146,11 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
         for (TWeakObjectPtr<UObject>& Iter : Class->GeneratedObjects)
         {
             auto Object = Iter.Get();
-            if (!Object || GeneratedObjectMap.Find(Object))
+            if (!Object || ObjectMap.Find(Object))
                 continue;
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
-            auto JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
-            GeneratedObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
-            UnBind(Class, Object);
+            FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
         }
     }
 #endif
@@ -2800,6 +2778,8 @@ v8::Local<v8::FunctionTemplate> FJsEnvImpl::GetTemplateOfClass(UStruct* InStruct
                         .ToLocalChecked());
 #endif
             }
+
+            StructWrapper->IsNativeTakeJsRef = IsNativeTakeJsRef(Class);
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)
@@ -4021,6 +4001,12 @@ void FJsEnvImpl::Mixin(const v8::FunctionCallbackInfo<v8::Value>& Info)
         }
     }
     MixinClasses.Add(New);
+
+    bool Existed = false;
+    GetTemplateOfClass(New, Existed);
+    bool IsReuseTemplate = false;
+    auto StructWrapper = GetStructWrapper(New, IsReuseTemplate);
+    StructWrapper->IsNativeTakeJsRef = TakeJsObjectRef;
     Info.GetReturnValue().Set(FindOrAdd(Isolate, Context, New->GetClass(), New));
 }
 #endif
