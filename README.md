@@ -64,7 +64,7 @@ PuerTS is a TypeScript programming solution within game engines. | PuerTS是游�
 ### Changelog
 
 * [unreal](doc/unreal/zhcn/changelog.md)
-* [unity](doc/unity/zhcn/changelog.md)
+* [unity](unity/Assets/core/upm/changelog-hans.md)
 
 ### Known issues | 已知问题与解决办法
 

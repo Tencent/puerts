@@ -21,7 +21,7 @@ namespace PuertsIl2cpp.Editor
             public const string PUERTS_MENU_PREFIX = "PuerTS";
 
 #if !PUERTS_GENERAL
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate For V2 (all in one)", false, 2)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate For il2cpp Binding (all in one)", false, 2)]
             public static void GenV2() {
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();

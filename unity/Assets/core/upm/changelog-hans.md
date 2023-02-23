@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-pre.0] - 2023-02-27
+1. 添加了新的il2cpp binding方式，性能有飞跃式提升。详见官方文档`Il2cpp绑定`章节
+2. 本仓库的Unity代码变为了UPM目录结构。
+3. 将[commonjs-support](https://github.com/puerts/puerts-commonjs)包移入了本仓库。
+
+***与1.x版本不兼容的地方***
+1. DateTime不再映射到js Date对象 #1145
+2. TypedValue只能传给object类型，不再具备选择重载的作用。
+3. 反射模式下，如果一个函数无重载也无默认参数，不会进行参数检查
+4. Ref所使用的下标由['value']变为[0]（如果你代码使用的是puer.$ref和puer.$unref，而不是直接使用下标的话，不受影响）
+5. 1.4版本中预告过的：2.0版本不自带require
+
 ## [1.4.1-pre.2] - 2023-02-09
 1. 修复：Node.js版本连接inspector时打不出Log #1201
 2. 修复：ESM模块报错时报错信息包含换行符会导致报错信息不正确。#1188
