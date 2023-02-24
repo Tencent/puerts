@@ -34,6 +34,8 @@ namespace Puerts
 
         ILoader loader;
 
+        protected int debugPort;
+
         public Backend Backend;
 
         [UnityEngine.Scripting.Preserve]
@@ -116,6 +118,7 @@ namespace Puerts
             ExecuteModule("puerts/timer.mjs");
             ExecuteModule("puerts/promises.mjs");
 
+            this.debugPort = debugPort;
         }
 
         [UnityEngine.Scripting.Preserve]
@@ -158,6 +161,7 @@ namespace Puerts
 
         public void WaitDebugger()
         {
+            if (debugPort == -1) return;
 #if THREAD_SAFE
             lock(this) {
 #endif
@@ -171,6 +175,7 @@ namespace Puerts
         TaskCompletionSource<bool> waitDebugerTaskSource;
         public Task WaitDebuggerAsync()
         {
+            if (debugPort == -1) return null;
             waitDebugerTaskSource = new TaskCompletionSource<bool>();
             return waitDebugerTaskSource.Task;
         }
