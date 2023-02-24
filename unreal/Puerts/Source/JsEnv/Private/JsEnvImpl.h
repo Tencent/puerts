@@ -126,7 +126,9 @@ public:
     virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) override;
 
 public:
-    virtual void Bind(UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject) override;
+    bool IsNativeTakeJsRef(UClass* Class);
+
+    virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) override;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) override;
 
@@ -503,7 +505,6 @@ private:
     TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
 
     TMap<UObject*, v8::UniquePersistent<v8::Value>> ObjectMap;
-    TMap<const class UObjectBase*, v8::UniquePersistent<v8::Value>> GeneratedObjectMap;
 
     TMap<void*, FObjectCacheNode> StructCache;
 

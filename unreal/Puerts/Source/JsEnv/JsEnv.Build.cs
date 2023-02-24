@@ -474,6 +474,7 @@ public class JsEnv : ModuleRules
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.so"));
+            RuntimeDependencies.Add("$(TargetOutputDir)/libnode.so.93", Path.Combine(V8LibraryPath, "libnode.so.93"));
         }
     }
 

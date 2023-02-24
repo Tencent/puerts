@@ -10,7 +10,7 @@
 
 * 点击如下按钮进行声明文件的生成
 
-![puerts_gen_dts.png](../../../doc/pic/puerts_gen_dts.png)
+![puerts_gen_dts.png](../..//pic/puerts_gen_dts.png)
 
 * 或者，也可以通过控制台命令生成声明文件：`Puerts.Gen`
 

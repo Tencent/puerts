@@ -47,7 +47,7 @@ public:
 class IObjectMapper : public ICppObjectMapper
 {
 public:
-    virtual void Bind(UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
+    virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) = 0;
 

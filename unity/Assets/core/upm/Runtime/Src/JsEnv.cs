@@ -53,6 +53,8 @@ namespace Puerts
         public static JsEnvDisposeCallback OnJsEnvDispose;
 
         public int debugPort;
+#else 
+        protected int debugPort;
 #endif
 
         internal Action OnDispose;
@@ -207,8 +209,8 @@ namespace Puerts
                         OnJsEnvDispose(this);
                     }
                 };
-                this.debugPort = debugPort;
 #endif
+                this.debugPort = debugPort;
             } 
             catch (Exception ex)
             {
@@ -716,10 +718,11 @@ namespace Puerts
 
         public void WaitDebugger()
         {
+            if (debugPort == -1) return;
 #if THREAD_SAFE
             lock(this) {
 #endif
-            while (!PuertsDLL.InspectorTick(isolate)) { }
+                while (!PuertsDLL.InspectorTick(isolate)) { }
 #if THREAD_SAFE
             }
 #endif
@@ -729,6 +732,7 @@ namespace Puerts
         TaskCompletionSource<bool> waitDebugerTaskSource;
         public Task WaitDebuggerAsync()
         {
+            if (debugPort == -1) return;
             waitDebugerTaskSource = new TaskCompletionSource<bool>();
             return waitDebugerTaskSource.Task;
         }
