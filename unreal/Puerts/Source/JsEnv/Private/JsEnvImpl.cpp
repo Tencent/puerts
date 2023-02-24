@@ -1277,7 +1277,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
                                 //后面看是否能参照蓝图的组件初始化进行改造
                                 // TsConstruct(TypeScriptGeneratedClass, Object);
-                                FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
+                                __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object));
                             }
                         }
 
@@ -1796,7 +1796,7 @@ void FJsEnvImpl::JsConstruct(UClass* Class, UObject* Object, const v8::UniquePer
     v8::TryCatch TryCatch(Isolate);
 
     auto JSObject = FindOrAdd(Isolate, Context, Class, Object)->ToObject(Context).ToLocalChecked();
-    // 不动态识别类型
+    // 过时功能(makeUClass)用不影响现有功能的方式修改
     UnBind(Class, Object);
     ObjectMap.Emplace(Object, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
 
@@ -2150,7 +2150,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
                 continue;
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
-            FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
+            __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object));
         }
     }
 #endif
