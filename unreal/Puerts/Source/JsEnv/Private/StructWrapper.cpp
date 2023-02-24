@@ -615,7 +615,7 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
             Object = NewObject<UObject>(Outer, Class, Name, ObjectFlags);
         }
 
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->Bind(Class, Object, Self);
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->Bind(this, Object, Self);
     }
     else
     {
