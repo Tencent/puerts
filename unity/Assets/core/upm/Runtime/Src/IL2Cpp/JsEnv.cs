@@ -156,6 +156,7 @@ namespace Puerts
         {
             PuertsIl2cpp.NativeAPI.ReleasePendingJsObjects(nativeJsEnv);
             PuertsIl2cpp.NativeAPI.InspectorTick(nativeJsEnv);
+            PuertsIl2cpp.NativeAPI.LogicTick(nativeJsEnv);
             if (TickHandler != null) TickHandler();
         }
 

@@ -687,7 +687,11 @@ struct JSEnv
 #endif
         }
         
-        std::string Flags = "--no-harmony-top-level-await";
+#if defined(WITH_NODEJS)
+        std::string Flags = "--stack_size=856";
+#else
+        std::string Flags = "--no-harmony-top-level-await --stack_size=856";
+#endif
         Flags += " --expose-gc";
 #if PLATFORM_IOS
         Flags += " --jitless --no-expose-wasm";
@@ -711,6 +715,7 @@ struct JSEnv
         MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
             Platform);
 
+        MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
 #else
         v8::StartupData SnapshotBlob;
         SnapshotBlob.data = (const char *)SnapshotBlobCode;
@@ -733,16 +738,21 @@ struct JSEnv
         
         MainContext.Reset(Isolate, Context);
 #if defined(WITH_NODEJS)
+        v8::Local<v8::Object> Global = Context->Global();
+        auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
+        v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
+
         NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
     
         NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+
+        Global->Set(Context, strConsole, Console).Check();
 
         v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
             NodeEnv,
             "const publicRequire ="
             "  require('module').createRequire(process.cwd() + '/');"
-            "globalThis.require = publicRequire;"
-            "require('vm').runInThisContext(process.argv[1]);");
+            "globalThis.require = publicRequire;");
 
         if (LoadenvRet.IsEmpty())  // There has been a JS exception.
         {
@@ -860,7 +870,7 @@ struct JSEnv
             BackendEnv.Inspector = nullptr;
         }
 
-#if WITH_NODEJS
+#if defined(WITH_NODEJS)
         // node::EmitExit(NodeEnv);
         node::Stop(NodeEnv);
         node::FreeEnvironment(NodeEnv);
@@ -1287,6 +1297,22 @@ V8_EXPORT void DestroyInspector(puerts::JSEnv* jsEnv)
 V8_EXPORT int InspectorTick(puerts::JSEnv* jsEnv)
 {
     return jsEnv->BackendEnv.InspectorTick() ? 1 : 0;
+}
+
+V8_EXPORT void LogicTick(puerts::JSEnv* jsEnv)
+{
+#ifdef WITH_NODEJS
+    v8::Isolate* Isolate = jsEnv->MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = jsEnv->MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+    uv_run(jsEnv->NodeUVLoop, UV_RUN_NOWAIT);
+    static_cast<node::MultiIsolatePlatform*>(puerts::GPlatform.get())->DrainTasks(Isolate);
+#endif
 }
 
 #ifdef __cplusplus

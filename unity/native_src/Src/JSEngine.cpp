@@ -90,7 +90,7 @@ namespace puerts
                 printf("InitializeNodeWithArgs failed\n");
             }
         }
-        std::string Flags = "";
+        std::string Flags = "--stack_size=856";
 #if PUERTS_DEBUG
         Flags += "--expose-gc";
 #if PLATFORM_MAC
@@ -804,7 +804,6 @@ namespace puerts
     void JSEngine::LogicTick()
     {
 #if WITH_NODEJS
-
         v8::Isolate* Isolate = MainIsolate;
 #ifdef THREAD_SAFE
         v8::Locker Locker(Isolate);
