@@ -271,7 +271,13 @@ private:
 
     std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate);
 
-    v8::Local<v8::FunctionTemplate> GetTemplateOfClass(UStruct* Class, bool& Existed);
+    struct FTemplateInfo
+    {
+        v8::UniquePersistent<v8::FunctionTemplate> Template;
+        std::shared_ptr<FStructWrapper> StructWrapper;
+    };
+
+    FTemplateInfo* GetTemplateInfoOfType(UStruct* Class, bool& Existed);
 
     v8::Local<v8::Function> GetJsClass(UStruct* Class, v8::Local<v8::Context> Context);
 
@@ -500,7 +506,7 @@ private:
 
     v8::Global<v8::Function> ReloadJs;
 
-    TMap<UStruct*, v8::UniquePersistent<v8::FunctionTemplate>> ClassToTemplateMap;
+    TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
     TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
 
