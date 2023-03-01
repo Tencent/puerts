@@ -67,20 +67,16 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
 bool DefaultJSModuleLoader::SearchModuleInDir(
     const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath)
 {
-    FString Extension = FPaths::GetExtension(RequiredModule);
-    bool IsJs = Extension == TEXT("js") || Extension == TEXT("mjs") || Extension == TEXT("cjs") || Extension == TEXT("json");
-    if (Extension == TEXT("") || !IsJs)
-    {
-        return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule + ".cjs", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath);
-    }
-    else
-    {
-        return SearchModuleWithExtInDir(Dir, RequiredModule, Path, AbsolutePath);
-    }
+    /*
+    * This function searches for a JavaScript module in the specified directory and prioritizes index.js if
+    * both index.js and package.json exist in the same directory, in accordance with JavaScript convention.
+    */
+    return SearchModuleWithExtInDir(Dir, RequiredModule, Path, AbsolutePath) ||
+        SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
+        SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
+        SearchModuleWithExtInDir(Dir, RequiredModule + ".cjs", Path, AbsolutePath) ||
+        SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath) ||
+        SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath);
 }
 
 bool DefaultJSModuleLoader::SearchModuleWithExtInDir(
