@@ -72,11 +72,11 @@ bool DefaultJSModuleLoader::SearchModuleInDir(
     * both index.js and package.json exist in the same directory, in accordance with JavaScript convention.
     */
     return SearchModuleWithExtInDir(Dir, RequiredModule, Path, AbsolutePath) ||
-        SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
-        SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
-        SearchModuleWithExtInDir(Dir, RequiredModule + ".cjs", Path, AbsolutePath) ||
-        SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath) ||
-        SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath);
+           SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
+           SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
+           SearchModuleWithExtInDir(Dir, RequiredModule + ".cjs", Path, AbsolutePath) ||
+           SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath) ||
+           SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath);
 }
 
 bool DefaultJSModuleLoader::SearchModuleWithExtInDir(
