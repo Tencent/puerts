@@ -484,14 +484,6 @@ void FScriptStructWrapper::New(
         auto Self = Info.This();
         void* Memory = nullptr;
 
-        bool PassByPointer = false;
-
-        if (Info.Length() == 2 && Info[0]->IsExternal())    // Call by Native
-        {
-            Memory = v8::Local<v8::External>::Cast(Info[0])->Value();
-            PassByPointer = Info[1]->BooleanValue(Isolate);
-        }
-        else
         {
             if (ExternalInitialize)
             {
@@ -511,7 +503,7 @@ void FScriptStructWrapper::New(
                 }
             }
         }
-        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, PassByPointer);
+        FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindStruct(this, Memory, Self, false);
     }
     else
     {
@@ -582,15 +574,6 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
         UObject* Object = nullptr;
         auto Class = static_cast<UClass*>(Struct.Get());
 
-        if (Info.Length() == 1 && Info[0]->IsExternal())    // Call by Native
-        {
-            Object = reinterpret_cast<UObject*>(v8::Local<v8::External>::Cast(Info[0])->Value());
-            if (!Object->IsValidLowLevel())
-            {
-                Object = nullptr;
-            }
-        }
-        else    // Call by js new
         {
             UObject* Outer = GetTransientPackage();
             FName Name = NAME_None;
