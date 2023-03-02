@@ -732,7 +732,7 @@ namespace Puerts
         TaskCompletionSource<bool> waitDebugerTaskSource;
         public Task WaitDebuggerAsync()
         {
-            if (debugPort == -1) return;
+            if (debugPort == -1) return null;
             waitDebugerTaskSource = new TaskCompletionSource<bool>();
             return waitDebugerTaskSource.Task;
         }
