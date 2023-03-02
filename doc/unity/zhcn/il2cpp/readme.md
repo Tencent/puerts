@@ -1,9 +1,9 @@
 # PuerTS il2cpp绑定模式
-顾名思义，优化仅针对Unity Il2cpp模式。
+这个模式是Puer2.0版本新加的模式。顾名思义，优化仅针对Unity Il2cpp模式。
 
-简单粗浅地说，新的方式是让il2cpp能尽量直接与v8交互，而非原来的，经由C#调用native plugin的方式，减少跨语言的消耗。最终使得性能表现反超xlua，详见[il2cpp绑定性能数据](./performance.md)
+简单粗浅地说，新的方式是让il2cpp直接与v8交互，而非经由C# PInvoke调用native plugin的方式，减少跨语言的消耗。最终使得性能表现大幅提升，反超xlua，详见[il2cpp绑定性能数据](./performance.md)
 
-因此，使用方式上会有较大的变化（比如需要自己编译Plugin与wrapper生成的步骤不同），API和使用机制上改动不大。
+il2cpp绑定模式在使用方式上会有较大的变化，比如需要自己编译Plugin与wrapper生成的步骤不同，API和使用机制上无需做任何改动。
 
 ## 安装
 如果决定采用il2cpp绑定模式，目前只建议使用[安装指南](../install.md)中提到的`GitHub Clone 并用 Unity UPM 安装`。且仓库地址需要改为`https://github.com/Tencent/puerts.git`，添加的路径为`[puerts]/unity/Assets/core/upm/package.json`
