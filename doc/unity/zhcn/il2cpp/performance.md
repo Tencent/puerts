@@ -1,11 +1,14 @@
 # il2cpp绑定的性能表现
 il2cpp绑定主要优化的是**跨语言性能**，从我们的测试结果上看，在安卓上，普洱的跨语言性能已经是xlua的10倍，ios上稍弱，但也与xlua持平，比普洱v1版本要好不少。
 
-测试基准项目由社区大佬的 [throw-out/PerformanceTesting](https://github.com/throw-out/PerformanceTesting) 修改而成。
+测试基准项目由社区大佬[throw-out](https://github.com/throw-out)的项目修改而成，参见[该fork](https://github.com/puerts/PerformanceTesting)。
 
 
 > 受环境影响以下数据可能会有略微误差。
+
 > 关注跨语言数据时，尤其对于结构体的case，可减去C#的耗时（即API本身耗时）来考虑。
+
+> 此处v1的数据，会比@throw-out的原项目展示的数据好，是由于这个PR优化导致的：https://github.com/throw-out/PerformanceTesting/pull/2
 
 ### 安卓所有数据 (Vivo Neo6SE)
 | Method                                                | Static  | Call         | csharp(ms)   | xLua(ms)  | puerts v1 with wrapper(ms) | puerts v2 reflection (ms) | puerts v2 with wrapper (ms)
