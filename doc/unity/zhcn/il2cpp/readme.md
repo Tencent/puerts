@@ -6,7 +6,9 @@
 因此，使用方式上会有较大的变化（比如需要自己编译Plugin与wrapper生成的步骤不同），API和使用机制上改动不大。
 
 ## 安装
-如果决定采用il2cpp绑定模式，目前只建议使用[安装指南](../install.md)中提到的`GitHub Clone 并用 Unity UPM 安装`。且仓库地址需要改为`https://github.com/Tencent/puerts.git`，因为需要自行编译Puer Native Plugin且编译过程需要许多经由Unity生成的代码。
+如果决定采用il2cpp绑定模式，目前只建议使用[安装指南](../install.md)中提到的`GitHub Clone 并用 Unity UPM 安装`。且仓库地址需要改为`https://github.com/Tencent/puerts.git`，添加的路径为`[puerts]/unity/Assets/core/upm/package.json`
+
+之所以需要你把源码clone下来，是因为需要自行编译Puer的二进制Plugin。
 
 随后，你需要先了解一下[编译指南](../other/building.md)的内容，il2cpp绑定版本的编译稍有不同但大致类似（比如不再需要自行下载backend）。
 
