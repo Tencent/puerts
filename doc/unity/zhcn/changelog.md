@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.1] - 2023-03-02
+> 以下为相比1.4.0的内容
+1. 修复：出现stack overflow错误后JsEnv析构产生crash的问题 #1208
+2. 修复：Node.js版本连接inspector时打不出Log #1201
+3. 修复：ESM模块报错时报错信息包含换行符会导致报错信息不正确。#1188
+4. 修复：生成时Obsolete字段未被过滤的问题。 #1152
+5. 修复：将JS数字传递给C# object时，浮点数精度丢失的问题。
+6. 功能：JsEnv.ClearModuleCache现在可以清理ESM模块缓存
+7. 功能：JSObject现在可以接收一个JS函数。#1143 #1144
+8. 功能：添加PUERTS_DISABLE_SLOWBINDING，适用于需要做权限控制的地方。
+9. 功能：添加EXPERIMENTAL_PUERTS_DISABLE_SLOWBINDING，适用于需要做权限控制的地方。该功能为试验功能，还可能改动。
+10. 优化：销毁JSFunction、JSObject时不加锁
+
 ## [1.4.1-pre.2] - 2023-02-09
 1. 修复：Node.js版本连接inspector时打不出Log #1201
 2. 修复：ESM模块报错时报错信息包含换行符会导致报错信息不正确。#1188
