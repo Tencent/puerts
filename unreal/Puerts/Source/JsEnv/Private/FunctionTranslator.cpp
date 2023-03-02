@@ -107,9 +107,17 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
         IsStatic = InFunction->HasAnyFunctionFlags(FUNC_Static);
     }
     Arguments.clear();
+
+    SkipWorldContextInArg0 = false;
     for (TFieldIterator<PropertyMacro> It(InFunction); It && (It->PropertyFlags & CPF_Parm); ++It)
     {
         PropertyMacro* Property = *It;
+        static const FName WorldContextPinName(TEXT("__WorldContext"));
+        if (IsStatic && !InFunction->IsNative() && Property->GetFName() == WorldContextPinName && Arguments.size() == 0)
+        {
+            SkipWorldContextInArg0 = true;
+            ;
+        }
         if (Property->HasAnyPropertyFlags(CPF_ReturnParm))
         {
             Return = FPropertyTranslator::Create(Property);
@@ -431,7 +439,16 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     {
         Args[i] = Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false);
     }
-    auto Result = JsFunction->Call(Context, This, Arguments.size(), Args);
+
+    v8::MaybeLocal<v8::Value> Result;
+    if (UNLIKELY(SkipWorldContextInArg0))
+    {
+        Result = JsFunction->Call(Context, This, Arguments.size() - 1, &Args[0] + 1);
+    }
+    else
+    {
+        Result = JsFunction->Call(Context, This, Arguments.size(), Args);
+    }
 
     if (!Result.IsEmpty())    // empty mean exception
     {
@@ -545,7 +562,16 @@ void FFunctionTranslator::CallJs(v8::Isolate* Isolate, v8::Local<v8::Context>& C
     {
         Args[i] = Arguments[i]->UEToJsInContainer(Isolate, Context, Params, false);
     }
-    auto Result = JsFunction->Call(Context, This, Arguments.size(), Args);
+
+    v8::MaybeLocal<v8::Value> Result;
+    if (UNLIKELY(SkipWorldContextInArg0))
+    {
+        Result = JsFunction->Call(Context, This, Arguments.size() - 1, &Args[0] + 1);
+    }
+    else
+    {
+        Result = JsFunction->Call(Context, This, Arguments.size(), Args);
+    }
 
     if (!Result.IsEmpty())    // empty mean exception
     {

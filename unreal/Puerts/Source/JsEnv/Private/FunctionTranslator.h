@@ -105,6 +105,8 @@ protected:
 
     bool IsStatic;
 
+    bool SkipWorldContextInArg0;
+
     uint32 ParamsBufferSize;
 
     void* ArgumentDefaultValues;
