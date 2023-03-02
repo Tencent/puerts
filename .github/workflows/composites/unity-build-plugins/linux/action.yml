@@ -23,20 +23,20 @@ runs:
         sudo apt-get install clang
         sudo apt-get install libc++-dev
         sudo apt-get install libc++abi-dev
-    - name: Get backend artifact
-      uses: ./.github/workflows/composites/unity-download-backend/
-      with:
-        github_token: ${{ inputs.GITHUB_TOKEN }}
-        backend: ${{ inputs.backend }}
+    # - name: Get backend artifact
+    #   uses: ./.github/workflows/composites/unity-download-backend/
+    #   with:
+    #     github_token: ${{ inputs.GITHUB_TOKEN }}
+    #     backend: ${{ inputs.backend }}
     - name: Build
       shell: bash
       run: |
         cd unity
         npm i
         cd native_src
-        npx ts-node --esm make.mts --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+        node ../cli make --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        path: ./unity/Assets/Puerts/Plugins/**/*
+        path: ./unity/packages/core/upm/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

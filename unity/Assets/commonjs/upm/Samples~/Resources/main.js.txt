@@ -1,0 +1,3 @@
+const module1 = require('module1');
+
+module1.callMe('from john');
