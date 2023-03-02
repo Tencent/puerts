@@ -12,7 +12,11 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "AssetToolsModule.h"
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
 #include "FileHelpers.h"
 #include "Misc/PackageName.h"
 #include "UObject/MetaData.h"

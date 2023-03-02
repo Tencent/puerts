@@ -411,9 +411,14 @@ void FPuertsModule::StartupModule()
 #endif
 
 #if WITH_HOT_RELOAD
+#if ENGINE_MAJOR_VERSION >= 5
+    FCoreUObjectDelegates::ReloadCompleteDelegate.AddLambda(
+        [&](EReloadCompleteReason)
+#else
     IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
     HotReloadSupport.OnHotReload().AddLambda(
         [&](bool)
+#endif
         {
             if (Enabled)
             {

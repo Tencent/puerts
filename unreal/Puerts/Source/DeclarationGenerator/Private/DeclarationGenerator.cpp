@@ -16,7 +16,11 @@
 #include "Components/PanelSlot.h"
 #include "Components/Widget.h"
 #if WITH_EDITOR
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
 #endif
 #include "LevelEditor.h"
 #include "GenDTSStyle.h"
@@ -578,7 +582,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     BPFilter.PackagePaths.Add(PackagePath);
     BPFilter.bRecursivePaths = true;
     BPFilter.bRecursiveClasses = true;
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
+#if ENGINE_MAJOR_VERSION >= 5
     BPFilter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
     BPFilter.ClassPaths.Add(UUserDefinedEnum::StaticClass()->GetClassPathName());
     BPFilter.ClassPaths.Add(UUserDefinedStruct::StaticClass()->GetClassPathName());
@@ -591,7 +595,16 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     AssetRegistry.GetAssets(BPFilter, AssetList);
     for (FAssetData const& AssetData : AssetList)
     {
+#if ENGINE_MAJOR_VERSION >= 5
+        const FAssetPackageData* PackageData = nullptr;
+        auto OptionalPackageData = AssetRegistry.GetAssetPackageDataCopy(AssetData.PackageName);
+        if (OptionalPackageData.IsSet())
+        {
+            PackageData = &OptionalPackageData.GetValue();
+        }
+#else
         const FAssetPackageData* PackageData = AssetRegistry.GetAssetPackageData(AssetData.PackageName);
+#endif
         auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
 
         if (PackageData && BlueprintTypeDeclInfoPtr)
