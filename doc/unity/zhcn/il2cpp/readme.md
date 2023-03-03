@@ -31,5 +31,5 @@ il2cpp绑定模式在使用方式上会有较大的变化，比如需要自己�
 ### FAQ
 1. ios构建时报hash_map头找不到。
     Unity构建时，一部分头文件不会自动打包到产物xcode项目里。你可以在`你的Unity.app/Contents/il2cpp/external/`下找到缺失的内容，复制到`iosbuild目录/Libraries/external/`即可。
-3. 2.0不自带require后，我应该如何处理CommonJS格式的模块？
+2. 2.0不自带require后，我应该如何处理CommonJS格式的模块？
     2.0版本虽然不自带require，但在packages中自带了CommonJS补丁upm包，参见：https://github.com/Tencent/puerts/tree/unity-2.0.x/unity/Assets/commonjs/upm
