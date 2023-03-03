@@ -1,25 +1,24 @@
-# 生成StaticWrapper
+# StaticWrapper Generation
+### What is StaticWrapper?
+When calling C# from JavaScript, PuerTS uses the class name or function name on the JavaScript side to find the corresponding C# function.
 
-### 何为StaticWrapper？
-Javascript 调用 C# 时，PuerTS 会通过 Javascript 侧的类名/函数名，找到你要调用的对应C#函数。
+This searching for `classes/functions` by string functionality is implemented using **reflection** by default.
 
-这个`通过字符串查找类/函数`的职能，在默认情况下是由**反射**实现的。
+After finding the function, the corresponding function is called through the Invoke method, which also falls within the scope of **reflection**.
 
-其次，在查找到后，也要通过 Invoke 方法调用对应函数，这个也属于**反射**的范畴。
+Obviously, using a lot of reflection can lead to performance degradation.
 
-显而易见的是，大量的使用反射会导致效率的低下。
+Therefore, PuerTS provides the ability to generate a version of the class/function that can be called directly by V8 for those classes/functions that you want to use.
 
-因此，PuerTS 提供了一个能力，对于那些要使用的类/函数，你可以提前为其生成一个能被v8直接调用的版本。
+In this way, the generated function can be directly called through C++ and C# communication without going through reflection in the future, greatly improving the call performance. We call it the `StaticWrapper` function.
 
-这样，这个生成出来的函数，后续就可以直接通过C++和C#的通信直接调用而不需要走反射。大大提高了调用性能。我们将它称为`StaticWrapper`函数。
+----------
+### How to use it?
+You must define the classes/functions you will use in the future in advance, so that PuerTs can generate StaticWrapper for you. You can configure it in your project like this:
 
-------------
-### 如何使用？
-
-你必须提前定义好你未来要用到的类/函数，这样PuerTs才能为你生成`StaticWrapper`，你可以在你的项目中如下配置：
 ```csharp
-//1、配置类必须打[Configure]标签
-//2、必须放Editor目录
+//1. Configure class must have [Configure] attribute
+//2. It must be placed in the Editor directory
 using System;
 using System.Collections.Generic;
 using Puerts;
@@ -42,15 +41,16 @@ public class ExamplesCfg
     }
 }
 ```
-然后使用unity菜单中的`Generate Code`，即可为`Debug`和`Vector3`生成可快速调用的版本。
-> 提示：这个列表的配置写法其实很灵活，你可以通过动态分析的方式产生自己的生成列表，参见官方 Demo 中的 StartTemplate 例子
+Then use the Generate Code command in the Unity menu to generate the quick-callable versions for Debug and Vector3.
+
+Note: The configuration of this list is actually very flexible. You can generate your own list by dynamically analyzing it. See the StartTemplate example in the official Demo for reference.
+
 ----------
-### 生成StaticWrapper的其他必要性
+### Other reasons for generating StaticWrapper
+In addition to improving performance, there are two other major benefits to generating them:
 
-生成它们除了提高性能之外，还有两个大好处：
-1. 防止裁剪 
-2. 有了生成列表后，Puerts可以为这些接口生成dts声明文件。
+1. Preventing stripping
+2. After generating the list, Puerts can generate dts declaration files for these interfaces.
+In general, we recommend that you check the interfaces you use and generate `static-wrapper code` during game release or regression testing.
 
-一般情况下，我们建议你在游戏发布或者回归测试的时候，对你用到的接口进行排查，并生成`static-wrapper`代码。
-
-在开发阶段，或者你希望你的游戏的`代码内存`能尽可能小的时候，则可以略过生成代码这一步，直接经由反射调用。
+During the development phase or when you want your game's `code memory` to be as small as possible, you can skip the code generation step and call them via reflection.

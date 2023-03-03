@@ -1,9 +1,8 @@
-# 开始PuerTS之旅
-首先，请跟随[安装指引](../install.md)将PuerTS装入你的Unity项目
+# Getting Started with PuerTS
+First, please follow the [installation guide](../install.md) to install PuerTS into your Unity project.
 
-------------
+Then, prepare a scene and a MonoBehaviour component in Unity, and write the following code in the MonoBehaviour:
 
-然后，在Unity里准备好一个场景及一个MonoBehaviour组件，在MonoBehaviour里编写如下代码：
 ```csharp
 //1. Hello World
 void Start() {
@@ -13,16 +12,16 @@ void Start() {
     ")
 }
 ```
-执行后，你能看见Unity控制台中打印出了`Hello world`。
+After execution, you will see `Hello world` in the Unity console.
 
 ![throttle cpu](../../..//pic/1.png)
 
-成功了！
+Success!
 
-这就意味着，我们在Unity里执行了一段真正的Javascript！
+This means that we have executed real JavaScript in Unity!
 
-PuerTS就是这么容易！
+That's how easy it is with PuerTS!
 
 ------------
 
-在PuerTS的帮助下，Javascript和C#的打通还可以更精彩，请往下看
+With the help of PuerTS, the integration between JavaScript and C# can be even more exciting. Keep reading.
