@@ -34,4 +34,10 @@ typedef FThreadSafeObjectIterator FUEObjectIterator;
 #else
 typedef FObjectIterator FUEObjectIterator;
 #endif
+
+#if (ENGINE_MAJOR_VERSION == 5 &&  ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#define PUERTS_ANY_PACKAGE ((UPackage*)-1)
+#else
+#define PUERTS_ANY_PACKAGE ANY_PACKAGE
+#endif
 }    // namespace puerts

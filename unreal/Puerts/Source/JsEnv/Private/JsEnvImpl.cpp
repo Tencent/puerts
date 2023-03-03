@@ -2956,7 +2956,7 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     const FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
 
-    UObject* ClassPackage = ANY_PACKAGE;
+    UObject* ClassPackage = PUERTS_ANY_PACKAGE;
     UField* Type = FindObject<UClass>(ClassPackage, *TypeName);
 
     if (!Type)
@@ -3812,7 +3812,7 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
 
-    UObject* ClassPackage = ANY_PACKAGE;
+    UObject* ClassPackage = PUERTS_ANY_PACKAGE;
 
     FString GenClassName;
     int i = 0;

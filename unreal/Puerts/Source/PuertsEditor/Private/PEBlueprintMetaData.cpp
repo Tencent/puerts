@@ -5,6 +5,7 @@
 #include "UObject/MetaData.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
+#include "UECompatible.h"
 
 const TCHAR* UPEClassMetaData::NAME_HideCategories{TEXT("HideCategories")};
 const TCHAR* UPEClassMetaData::NAME_ShowCategories{TEXT("ShowCategories")};
@@ -340,7 +341,7 @@ void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
     UClass* ExpectedWithinClass = InClass->GetSuperClass() ? InClass->GetSuperClass()->ClassWithin : UObject::StaticClass();
     if (ClassWithIn.IsEmpty() == false)
     {
-        UClass* WithinClass = FindObject<UClass>(ANY_PACKAGE, *ClassWithIn);
+        UClass* WithinClass = FindObject<UClass>(PUERTS_ANY_PACKAGE, *ClassWithIn);
         if (WithinClass == nullptr)
         {
             UE_LOG(LogTemp, Error, TEXT("the with in class of %s: %s is not found"), *InClass->GetName(), *ClassWithIn);

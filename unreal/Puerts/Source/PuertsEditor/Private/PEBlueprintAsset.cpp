@@ -40,21 +40,6 @@
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
-UClass* FindClass(const TCHAR* ClassName)
-{
-    check(ClassName);
-
-    UObject* ClassPackage = ANY_PACKAGE;
-
-    if (UClass* Result = FindObject<UClass>(ClassPackage, ClassName))
-        return Result;
-
-    if (UObjectRedirector* RenamedClassRedirector = FindObject<UObjectRedirector>(ClassPackage, ClassName))
-        return CastChecked<UClass>(RenamedClassRedirector->DestinationObject);
-
-    return nullptr;
-}
-
 DEFINE_LOG_CATEGORY_STATIC(PuertsEditorModule, Log, All);
 
 static bool IsPlaying()

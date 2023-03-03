@@ -409,7 +409,7 @@ void FStructWrapper::Find(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (Class && Info.Length() >= 1 && Info[0]->IsString())
     {
-        UObject* Outer = ANY_PACKAGE;
+        UObject* Outer = PUERTS_ANY_PACKAGE;
 
         if (Info.Length() > 1)
         {
