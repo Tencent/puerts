@@ -87,6 +87,8 @@ protected:
 
     bool IsNativeTakeJsRef = false;
 
+    bool IsTypeScriptGeneratedClass = false;
+
     static void StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     static void Find(const v8::FunctionCallbackInfo<v8::Value>& Info);
