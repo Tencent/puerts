@@ -52,7 +52,7 @@ sudo xattr -r -d com.apple.quarantine puerts.bundle
 
 ## 生成代码打包手机版本时报方法（runInEditMode等等）找不到
 
-因为这些方法是编辑器独有的，可以通过filter过滤掉，filter使用参考[使用手册](wrapper/all_attribute.md)
+因为这些方法是编辑器独有的，可以通过filter过滤掉，filter使用参考[使用手册](wrapper/filter.md)
 
 ## 编辑器下运行正常，il2cpp打包后调用函数/访问属性失败
 

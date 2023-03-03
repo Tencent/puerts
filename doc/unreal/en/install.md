@@ -10,7 +10,7 @@
     
     - UE4.24及以下版本：[V8 for ue 4.24 or below](https://github.com/puerts/backend-v8/releases/tag/v8_for_ue424_or_below)
     
-* 解压到[YouProject/Plugins/Puerts/ThirdParty](unreal/Puerts/ThirdParty)
+* 解压到`YouProject/Plugins/Puerts/ThirdParty`
 
 ### 发布包安装方式
 
@@ -41,10 +41,10 @@ puerts支持多种脚本后端：V8，quickjs，nodejs
 * 对于包大小苛刻的场景，可以选用quickjs
 * nodejs相比v8版本，可以使用更多的npm模块，但包体比v8还要大些
 
-quickjs后端[下载](https://github.com/puerts/backend-quickjs)
+quickjs后端[下载](https://github.com/puerts/backend-quickjs/releases/tag/QJS_230130)
 
-nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases/tag/NodeJS_220726_2)
+nodejs后端[下载](https://github.com/puerts/backend-nodejs/releases/tag/NodeJS_0329)
 
-解压到[YouProject/Plugins/Puerts/ThirdParty](unreal/Puerts/ThirdParty)
+解压到`YouProject/Plugins/Puerts/ThirdParty`
 
-修改[JsEnv.Build.cs](../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)，UseQuickjs为true表示用quickjs后端，UseNodejs表示用nodejs后端。
+修改[JsEnv.Build.cs](https://github.com/Tencent/puerts/blob/master/unreal/Puerts/Source/JsEnv/JsEnv.Build.cs)，UseQuickjs为true表示用quickjs后端，UseNodejs表示用nodejs后端。

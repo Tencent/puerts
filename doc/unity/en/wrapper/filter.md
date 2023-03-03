@@ -1,19 +1,19 @@
-# 生成过滤器 - Filter
+# the Filter of Generator
+### What is a Filter?
+When generating a StaticWrapper, you will find that the generation list is specified by **class**. However, in actual development, there is always a need to **exclude certain functions from being generated as wrappers**. This is where filters come in.
 
-### Filter是干嘛的
-在生成StaticWrappe  r时，你会发现生成列表的指定是以`类`为维度的。但实际开发中总是会遇到`某些函数不需要被生成wrapper`的需求，这时候Filter就派上了用场
+You can write a filter as follows:
 
-你可以如下编写一个Filter
 ```csharp
-//1、配置类必须打[Configure]标签
-//2、必须放Editor目录
+//1. The configuration class must be tagged with [Configure].
+//2. It must be placed in the Editor directory.
 [Configure]
 public class ExamplesCfg
 {
     [Filter]
     static bool FilterMethods(System.Reflection.MemberInfo mb)
     {
-        // 排除 MonoBehaviour.runInEditMode, 在 Editor 环境下可用发布后不存在
+        // Exclude MonoBehaviour.runInEditMode, which is only available in the Editor environment and does not exist after publication.
         if (mb.DeclaringType == typeof(MonoBehaviour) && mb.Name == "runInEditMode") {
             return true;
         }
@@ -21,9 +21,8 @@ public class ExamplesCfg
     }
 }
 ```
---------
-### 经典使用场景
+------
+### Classic Use Case
+Since the program that generates the `StaticWrapper` runs in the Editor, PuerTS will generate Editor-specific interfaces in the `StaticWrapper` when executing reflection, which will result in errors when the game is packaged later.
 
-由于生成`StaticWrapper`的程序是运行在Editor的，因此PuerTS在执行的反射时候，会把Editor专有的接口生成到`StaticWrapper`里，并在后续游戏打包时报错。
-
-这时候就需要用Filter对这些接口进行处理。
+This is where filters come in to handle these interfaces.

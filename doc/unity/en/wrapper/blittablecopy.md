@@ -1,10 +1,11 @@
-# BlittableCopy 内存优化
-PuerTS提供一种 C# 和 C++ 共享结构体内存的方式，让你从 C# 往 Javascript 传递结构体时能减少GC，它就是`BlittableCopy`标签。
+# BlittableCopy Memory Optimization
+PuerTS provides a way to share struct memory between C# and C++ using the `BlittableCopy` attribute, which reduces GC when passing structs from C# to JavaScript.
 
-**注意你需要打开unsafe开关才能用这个功能。**
+**Note that you need to enable the unsafe switch to use this feature.**
+
 ```csharp
-//1、配置类必须打[Configure]标签
-//2、必须放Editor目录
+//1. The configuration class must have the [Configure] tag
+//2. It must be placed in the Editor directory
 [Configure]
 public class ExamplesCfg
 {
@@ -15,7 +16,7 @@ public class ExamplesCfg
         {
             return new List<Type>()
             {
-                //打开这个可以优化Vector3的GC，但需要开启unsafe编译
+                //Enabling this will optimize the GC for Vector3, but you need to enable unsafe compilation
                 //typeof(Vector3),
             };
         }

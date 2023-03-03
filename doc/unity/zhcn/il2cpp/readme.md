@@ -1,16 +1,16 @@
 # PuerTS il2cpp绑定模式
 这个模式是Puer2.0版本新加的模式。顾名思义，优化仅针对Unity Il2cpp模式。
 
-简单粗浅地说，新的方式是让il2cpp直接与v8交互，而非经由C# PInvoke调用native plugin的方式，减少跨语言的消耗。最终使得性能表现大幅提升，反超xlua，详见[il2cpp绑定性能数据](./performance.md)
+简单粗浅地说，新的方式是让il2cpp直接与v8交互，而非经由C# PInvoke调用native plugin的方式，减少跨语言的消耗。最终使得性能表现大幅提升，反超xlua，详见[il2cpp绑定性能数据](./performance)
 
 il2cpp绑定模式在使用方式上会有较大的变化，比如需要自己编译Plugin与wrapper生成的步骤不同，API和使用机制上无需做任何改动。
 
 ## 安装
-如果决定采用il2cpp绑定模式，目前只建议使用[安装指南](../install.md)中提到的`GitHub Clone 并用 Unity UPM 安装`。且仓库地址需要改为`https://github.com/Tencent/puerts.git`，添加的路径为`[puerts]/unity/Assets/core/upm/package.json`
+如果决定采用il2cpp绑定模式，目前只建议使用[安装指南](../install)中提到的`GitHub Clone 并用 Unity UPM 安装`。且仓库地址需要改为`https://github.com/Tencent/puerts.git`，添加的路径为`[puerts]/unity/Assets/core/upm/package.json`
 
 之所以需要你把源码clone下来，是因为需要自行编译Puer的二进制Plugin。
 
-随后，你需要先了解一下[编译指南](../other/building.md)的内容，il2cpp绑定版本的编译稍有不同但大致类似（比如不再需要自行下载backend）。
+随后，你需要先了解一下[编译指南](../other/building)的内容，il2cpp绑定版本的编译稍有不同但大致类似（比如不再需要自行下载backend）。
 
 ## 使用步骤
 1. 按照上述步骤安装好PuerTS的upm包。
@@ -31,5 +31,5 @@ il2cpp绑定模式在使用方式上会有较大的变化，比如需要自己�
 ### FAQ
 1. ios构建时报hash_map头找不到。
     Unity构建时，一部分头文件不会自动打包到产物xcode项目里。你可以在`你的Unity.app/Contents/il2cpp/external/`下找到缺失的内容，复制到`iosbuild目录/Libraries/external/`即可。
-3. 2.0不自带require后，我应该如何处理CommonJS格式的模块？
+2. 2.0不自带require后，我应该如何处理CommonJS格式的模块？
     2.0版本虽然不自带require，但在packages中自带了CommonJS补丁upm包，参见：https://github.com/Tencent/puerts/tree/unity-2.0.x/unity/Assets/commonjs/upm

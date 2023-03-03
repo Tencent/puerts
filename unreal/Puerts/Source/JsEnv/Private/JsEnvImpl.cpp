@@ -1236,6 +1236,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 }
                             }
                         }
+                        TypeScriptGeneratedClass->RedirectedToTypeScript = true;
 #if WITH_EDITOR
                         TypeScriptGeneratedClass->FunctionToRedirectInitialized = true;
 #endif
@@ -1277,7 +1278,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 //执行的话，对CreateDefaultSubobject这类UE逻辑又不允许执行多次（会崩溃），两者相较取其轻
                                 //后面看是否能参照蓝图的组件初始化进行改造
                                 // TsConstruct(TypeScriptGeneratedClass, Object);
-                                __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object));
+                                __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object, true));
                             }
                         }
 
@@ -1554,7 +1555,7 @@ FString FJsEnvImpl::CurrentStackTrace()
 #endif
 }
 
-bool FJsEnvImpl::IsNativeTakeJsRef(UClass* Class)
+bool FJsEnvImpl::IsTypeScriptGeneratedClass(UClass* Class)
 {
     while (Class)
     {
@@ -1614,7 +1615,8 @@ void FJsEnvImpl::UnBind(UClass* Class, UObject* UEObject)
     UnBind(Class, UEObject, false);
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject)
+v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
+    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial)
 {
     if (!UEObject)
     {
@@ -1627,13 +1629,23 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::C
         bool Existed;
         auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
         auto Result = TemplateInfoPtr->Template.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-        Bind(static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get()), UEObject, Result);
+        auto ClassWrapper = static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get());
+        Bind(ClassWrapper, UEObject, Result);
+        if (!SkipTypeScriptInitial && ClassWrapper->IsTypeScriptGeneratedClass)
+        {
+            TypeScriptInitial(Class, UEObject);
+        }
         return Result;
     }
     else
     {
         return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
     }
+}
+
+v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject)
+{
+    return FindOrAdd(Isolate, Context, Class, UEObject, false);
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddStruct(
@@ -1879,7 +1891,7 @@ void FJsEnvImpl::TsConstruct(UTypeScriptGeneratedClass* Class, UObject* Object)
         auto PersistentValuePtr = ObjectMap.Find(Object);
         if (!PersistentValuePtr)
         {
-            JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object)->ToObject(Context).ToLocalChecked();
+            JSObject = FindOrAdd(Isolate, Context, Object->GetClass(), Object, true)->ToObject(Context).ToLocalChecked();
 
             // FindOrAdd may change BindInfoMap, cause a rehash
             BindInfoPtr = BindInfoMap.Find(Class);
@@ -2063,6 +2075,15 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
     }
 }
 
+void FJsEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object)
+{
+    if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
+    {
+        TypeScriptInitial(Class->GetSuperClass(), Object);
+        TsConstruct(TypeScriptGeneratedClass, Object);
+    }
+}
+
 void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM)
 {
 #ifdef SINGLE_THREAD_VERIFY
@@ -2074,12 +2095,19 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
     auto FuncInfo = TsFunctionMap.Find(Function);
     if (!FuncInfo)
     {
-        Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
-            *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-        SkipFunction(Stack, RESULT_PARAM, Function);
-        return;
+        auto Class = Cast<UTypeScriptGeneratedClass>(Function->GetOuterUClassUnchecked());
+        MakeSureInject(Class, false, false);
+        FinishInjection(Class);
+        FuncInfo = TsFunctionMap.Find(Function);
+        if (!FuncInfo)
+        {
+            Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Function"),
+                *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
+            SkipFunction(Stack, RESULT_PARAM, Function);
+            return;
+        }
     }
-    else
+
     {
         auto Isolate = MainIsolate;
         v8::Isolate::Scope IsolateScope(Isolate);
@@ -2091,15 +2119,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
 
         if (!Function->HasAnyFunctionFlags(FUNC_Static))
         {
-            const auto PersistentValuePtr = ObjectMap.Find(ContextObject);
-            if (!PersistentValuePtr)
-            {
-                Logger->Error(FString::Printf(TEXT("call %s::%s of %p fail: can not find Binded JavaScript Object"),
-                    *ContextObject->GetClass()->GetName(), *Function->GetName(), ContextObject));
-                SkipFunction(Stack, RESULT_PARAM, Function);
-                return;
-            }
-            ThisObj = PersistentValuePtr->Get(Isolate);
+            ThisObj = FindOrAdd(Isolate, Context, ContextObject->GetClass(), ContextObject);
         }
 
         v8::TryCatch TryCatch(Isolate);
@@ -2121,17 +2141,10 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
 #ifdef THREAD_SAFE
     v8::Locker Locker(Isolate);
 #endif
-    if (Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
-    {
-        MakeSureInject(Class, false, false);
-        FinishInjection(Class);
-        return;
-    }
-
-#if WITH_EDITOR
     MakeSureInject(Class, false, false);
     FinishInjection(Class);
 
+#if WITH_EDITOR
     while (UTypeScriptGeneratedClass* SuperCls = Cast<UTypeScriptGeneratedClass>(Class->GetSuperClass()))
     {
         Class = SuperCls;
@@ -2149,7 +2162,7 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
                 continue;
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
-            __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object));
+            __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object, true));
         }
     }
 #endif
@@ -2778,7 +2791,7 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
 #endif
             }
 
-            StructWrapper->IsNativeTakeJsRef = IsNativeTakeJsRef(Class);
+            StructWrapper->IsNativeTakeJsRef = StructWrapper->IsTypeScriptGeneratedClass = IsTypeScriptGeneratedClass(Class);
 
             auto SuperClass = Class->GetSuperClass();
             if (SuperClass)

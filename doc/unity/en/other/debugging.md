@@ -1,11 +1,10 @@
-# VSCode Debug 指引
+# VSCode Debug Guide
+Here, we recommend using VSCode for debugging. But if you are debugging on mobile, we recommend that you refer to the [development blog](https://zhuanlan.zhihu.com/p/359598262).
 
-这里推荐你使用vscode进行debug。但如果是手机debug的时候，推荐你参考[开发blog](https://zhuanlan.zhihu.com/p/359598262)
-
-* new JsEnv的时候，需要按如下示例输入端口及vscode工程的js输出目录，并且在合适的地方调用jsEnv的Tick函数
-
+* When creating a new JsEnv, you need to enter the port and the output directory of the VSCode project's JavaScript as shown below, and call the Tick function of JsEnv at an appropriate location.
 ```csharp
-//8080是连接的端口，和vscode工程目录下的.vscode\launch.json保持一致
+
+// 8080 is the port used for connection, which should match the setting in .vscode\launch.json under the VSCode project directory.
 void Start()
 {
     jsEnv = new JsEnv(new DefaultLoader("F:/puerts/unity/TsProj/output/"), 8080);
@@ -16,15 +15,11 @@ void Update()
     jsEnv.Tick();
 }
 ```
-
-* 等待调试器链接
-  - 调试器通过websocket连接，期间有TCP的握手，websocket握手，建立连接后，调试器和V8还会交换些信息，整个过程大概几百毫秒
-  - 在这几百毫秒内执行的脚本将无法断点，如果你想断点这些代码，可以用puerts的等待调试器连接功能
-  - 如果c#版本高于7.2（支持async），建议用异步等待，否则用同步阻塞等待
-  
-  
-## 异步等待例子 
-
+* Waiting for the debugger to connect
+- The debugger connects through WebSocket, during which there are TCP handshake, WebSocket handshake, and exchange of some information between the debugger and V8. The whole process takes a few hundred milliseconds.
+- Scripts executed during these few hundred milliseconds cannot have breakpoints. If you want to set breakpoints for these codes, you can use the "wait for debugger" feature of Puerts.
+- If the C# version is higher than 7.2 (supporting async), it is recommended to use asynchronous waiting. Otherwise, use synchronous blocking waiting.
+## Example of asynchronous waiting
 ```csharp
 async void RunScript()
 {
@@ -43,8 +38,7 @@ void Update()
     jsEnv.Tick();
 }
 ```
-
-** 同步阻塞例子
+** Example of synchronous blocking waiting
 
 ```csharp
 void Start()
@@ -59,10 +53,6 @@ void Update()
     jsEnv.Tick();
 }
 ```
+* In VSCode, open the setting, search for "auto attach", and set "Debug>Node:Auto Attach" to "on" (this option may not exist in higher versions of VSCode and can be left unset).
 
-* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”（高版本vscode没有该选项，可以不设置）
-
-
-* 打开“ProjectSetting/Player”页面，把“Run In Background”勾选上
-
-![throttle cpu](../../pic/unity_run_in_background.png)
+* Open the "ProjectSetting/Player" page and check "Run In Background".

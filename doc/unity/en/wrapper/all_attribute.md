@@ -1,42 +1,39 @@
-# 所有 C# attribute 介绍
-
-这些配置须放在Editor目录下；
+# All C# Attribute Introduction
+These configurations should be placed under the Editor directory;
 
 - ##### Configure
+  - **Purpose**
 
-  - **用途**
+    Configuration class.
 
-    配置类。
+  - **Usage**
 
-  - **用法**
+    This attribute can only be used on classes and must be placed under the Editor folder.
 
-    该标签只能用在类上，且须在Editor文件夹下。
-
-  - **举例**
-
-    ```c#
+  - **Example**
+```c#
     [Configure]
     public class ExamplesCfg
     {
     }
-    ```
+```
 
 - ##### Binding
 
-  - **用途**
+  - **Purpose**
 
-    在js/ts调用时，可以找到该类；
+    When called in js/ts, the class can be load correctly;
 
-    - 会生成一个静态类（wrap），在js调用时，直接静态调用，加快调用速度，否则是通过反射调用。
-    - 在index.d.ts中生成函数的声明，在ts调用时，import时，可以找到。
+    - It generates a static class (wrap), which can be called statically in js to speed up the call, otherwise it is called through reflection.
+    - It generates a function declaration in index.d.ts, which can be found when imported in ts.
 
-  - **用法**
+  - **Usage**
 
-    该标签只能用在属性上，须放在标记了Configure的类里。
+    This tag can only be used on properties and must be placed in a class marked with Configure.
 
-  - **举例**
+  - **Example**
 
-    静态列表
+    return a list
     
     ```c#
     [Configure]
@@ -57,7 +54,7 @@
     }
     ```
     
-    动态列表
+    return a dynamic list
     
     ```c#
     [Configure]
@@ -78,15 +75,15 @@
 
 - ##### Typing
 
-  - **用途**
+  - **Purpose**
 
-    该标签只是针对ts调用，相比Binding，该标签仅生成ts声明（即不会生成静态类，只会在index.d.ts中生成函数的声明给ts调用）。
+    This tag is only for ts calls. Compared with Binding, this tag only generates ts declarations (that is, it does not generate a static class, but only generates function declarations in index.d.ts for ts calls).
 
-  - **用法**
+  - **Usage**
 
-    该标签只能用在属性上，须放在标记了Configure的类里。
+    This tag can only be used on properties and must be placed in a class marked with Configure.
 
-  - **举例**
+  - **Example**
 
     ```c#
     [Configure]
@@ -107,15 +104,15 @@
 
 - ##### BlittableCopy
 
-  - **用途**
+  - **Purpose**
 
-    对Blittable值类型通过内存拷贝传递，可避免值类型传递产生的GC，需要开启unsafe编译选项。
+    Pass Blittable value types by memory copy to avoid GC caused by value type passing. The unsafe compilation option needs to be enabled.
 
-  - **用法**
+  - **Usage**
 
-    该标签只能用在属性上，须放在标记了Configure的类里。
+    This tag can only be used on properties and must be placed in a class marked with Configure.
 
-  - **举例**
+  - **Example**
 
     ```c#
     [Configure]
@@ -150,15 +147,15 @@
 
 - ##### Filter
 
-  - **用途**
+  - **Purpose**
 
-    过滤函数。
+    Filt a function.
 
-  - **用法**
+  - **Usage**
 
-    该标签只能用在函数上，须放在标记了Configure的类里。
+    This tag can only be used on functions and must be placed in a class marked with Configure.
 
-  - **举例**
+  - **Example**
 
     ```c#
     public class TestFilter

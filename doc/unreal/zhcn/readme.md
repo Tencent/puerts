@@ -30,7 +30,7 @@ PuerTS是游戏引擎下的TypeScript编程解决方案
 
 * [UsingMixin.ts](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/TsProj/UsingMixin.ts)：演示mixin功能的使用
 
-* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[继承引擎类功能](uclass_extends.md)
+* [FPS demo](https://github.com/chexiongsheng/puerts_fps_demo) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[继承引擎类功能](./uclass_extends)
 
 ## 可用环境
 

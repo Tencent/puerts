@@ -126,13 +126,16 @@ public:
     virtual void OnSourceLoaded(std::function<void(const FString&)> Callback) override;
 
 public:
-    bool IsNativeTakeJsRef(UClass* Class);
+    bool IsTypeScriptGeneratedClass(UClass* Class);
 
     virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) override;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) override;
 
     virtual void UnBind(UClass* Class, UObject* UEObject, bool ResetPointer);
+
+    v8::Local<v8::Value> FindOrAdd(
+        v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject, bool SkipTypeScriptInitial);
 
     virtual v8::Local<v8::Value> FindOrAdd(
         v8::Isolate* InIsolate, v8::Local<v8::Context>& Context, UClass* Class, UObject* UEObject) override;
@@ -219,6 +222,8 @@ public:
     void InvokeJsMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
     void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
+
+    void TypeScriptInitial(UClass* Class, UObject* Object);
 
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
