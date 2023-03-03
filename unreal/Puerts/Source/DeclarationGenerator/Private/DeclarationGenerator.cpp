@@ -36,8 +36,10 @@
 #include "ToolMenus.h"
 #endif
 #include "Internationalization/Regex.h"
-
 #include "PuertsModule.h"
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+#include "FileSystemOperation.h"
+#endif
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -372,9 +374,13 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 
     End();
 
-    FFileHelper::SaveStringToFile(ToString(),
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")),
-        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    const FString UEDeclarationFilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts");
+
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
+#endif
+    
+    FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
     Begin();
     for (auto& KV : BlueprintTypeDeclInfoCache)
@@ -390,10 +396,14 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
         }
     }
     End();
+    
+    const FString BPDeclarationFilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts");
+    
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
+#endif
 
-    FFileHelper::SaveStringToFile(ToString(),
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts")),
-        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    FFileHelper::SaveStringToFile(ToString(), *BPDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
 static UPackage* GetPackage(UObject* Obj)

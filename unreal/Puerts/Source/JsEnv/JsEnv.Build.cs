@@ -31,7 +31,9 @@ public class JsEnv : ModuleRules
     private bool ThreadSafe = false;
 
     private bool FTextAsString = true;
-
+    
+    public static bool WithSourceControl = false;
+    
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
