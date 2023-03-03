@@ -15,9 +15,9 @@ namespace puerts
 FORCEINLINE bool UEObjectIsPendingKill(const UObject* Test)
 {
 #if ENGINE_MAJOR_VERSION > 4
-    return !IsValid(Test);
+    return !IsValid(Test) || Test->IsUnreachable();
 #else
-    return Test->IsPendingKill();
+    return Test->IsPendingKillOrUnreachable();
 #endif
 }
 
