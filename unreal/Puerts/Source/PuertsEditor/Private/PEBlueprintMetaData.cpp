@@ -341,7 +341,7 @@ void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
     UClass* ExpectedWithinClass = InClass->GetSuperClass() ? InClass->GetSuperClass()->ClassWithin : UObject::StaticClass();
     if (ClassWithIn.IsEmpty() == false)
     {
-        UClass* WithinClass = FindObject<UClass>(PUERTS_ANY_PACKAGE, *ClassWithIn);
+        UClass* WithinClass = puerts::FindAnyType<UClass>(ClassWithIn);
         if (WithinClass == nullptr)
         {
             UE_LOG(LogTemp, Error, TEXT("the with in class of %s: %s is not found"), *InClass->GetName(), *ClassWithIn);

@@ -34,10 +34,14 @@ typedef FThreadSafeObjectIterator FUEObjectIterator;
 #else
 typedef FObjectIterator FUEObjectIterator;
 #endif
-
+    
+template <typename T>
+T* FindAnyType(const FString& InShortNameOrPathName)
+{
 #if (ENGINE_MAJOR_VERSION == 5 &&  ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
-#define PUERTS_ANY_PACKAGE ((UPackage*)-1)
+    return UClass::TryFindTypeSlow<T>(InShortNameOrPathName);
 #else
-#define PUERTS_ANY_PACKAGE ANY_PACKAGE
+    return FindObject<T>(ANY_PACKAGE, *InShortNameOrPathName);
 #endif
+}
 }    // namespace puerts

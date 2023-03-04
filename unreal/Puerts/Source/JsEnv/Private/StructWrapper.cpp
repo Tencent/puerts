@@ -409,14 +409,21 @@ void FStructWrapper::Find(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     if (Class && Info.Length() >= 1 && Info[0]->IsString())
     {
-        UObject* Outer = PUERTS_ANY_PACKAGE;
-
+        UObject* Object = nullptr;
         if (Info.Length() > 1)
         {
-            Outer = FV8Utils::GetUObject(Context, Info[1]);
+            UObject* Outer = FV8Utils::GetUObject(Context, Info[1]);
+            Object = StaticFindObject(Class, Outer, *FV8Utils::ToFString(Isolate, Info[0]), false);
+        }
+        else
+        {
+#if (ENGINE_MAJOR_VERSION == 5 &&  ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+            Object = StaticFindFirstObject(Class, *FV8Utils::ToFString(Isolate, Info[0]));
+#else
+            Object = StaticFindObject(Class, ANY_PACKAGE, *FV8Utils::ToFString(Isolate, Info[0]), false);
+#endif
         }
 
-        auto Object = StaticFindObject(Class, Outer, *FV8Utils::ToFString(Isolate, Info[0]), false);
         if (Object)
         {
             auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);

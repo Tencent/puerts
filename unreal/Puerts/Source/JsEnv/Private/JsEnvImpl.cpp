@@ -3812,14 +3812,12 @@ void FJsEnvImpl::MakeUClass(const v8::FunctionCallbackInfo<v8::Value>& Info)
         return;
     }
 
-    UObject* ClassPackage = PUERTS_ANY_PACKAGE;
-
     FString GenClassName;
     int i = 0;
     while (true)
     {
         GenClassName = FString::Printf(TEXT("%s%d"), *ClassName, i);
-        if (!FindObject<UClass>(ClassPackage, *GenClassName))
+        if (!FindAnyType<UClass>(GenClassName))
             break;
         i++;
     }
