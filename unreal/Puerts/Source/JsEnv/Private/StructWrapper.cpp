@@ -12,7 +12,7 @@
 
 namespace puerts
 {
-void FStructWrapper::AddExtensionMethods(std::vector<UFunction*> InExtensionMethods)
+void FStructWrapper::AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods)
 {
     ExtensionMethods.insert(ExtensionMethods.end(), InExtensionMethods.begin(), InExtensionMethods.end());
 }
@@ -417,7 +417,7 @@ void FStructWrapper::Find(const v8::FunctionCallbackInfo<v8::Value>& Info)
         }
         else
         {
-#if (ENGINE_MAJOR_VERSION == 5 &&  ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
             Object = StaticFindFirstObject(Class, *FV8Utils::ToFString(Isolate, Info[0]));
 #else
             Object = StaticFindObject(Class, ANY_PACKAGE, *FV8Utils::ToFString(Isolate, Info[0]), false);

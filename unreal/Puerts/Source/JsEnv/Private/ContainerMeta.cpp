@@ -9,7 +9,7 @@ FContainerMeta::FContainerMeta()
 {
     ::memset(&BuiltinProperty, 0, sizeof(BuiltinProperty));
 
-#if (ENGINE_MAJOR_VERSION == 5 &&  ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
     PropertyMetaRoot = FindObject<UScriptStruct>(nullptr, TEXT("/Script/JsEnv.PropertyMetaRoot"));
 #else
     PropertyMetaRoot = FindObject<UScriptStruct>(ANY_PACKAGE, TEXT("PropertyMetaRoot"));

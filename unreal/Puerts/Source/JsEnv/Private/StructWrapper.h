@@ -49,7 +49,7 @@ public:
         }
     }
 
-    void AddExtensionMethods(std::vector<UFunction*> InExtensionMethods);
+    void AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods);
 
 #if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
     v8::UniquePersistent<v8::FunctionTemplate> CachedFunctionTemplate;
