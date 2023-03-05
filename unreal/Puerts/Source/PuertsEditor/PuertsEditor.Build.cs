@@ -9,8 +9,10 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class PuertsEditor : ModuleRules {
-    public PuertsEditor(ReadOnlyTargetRules target) : base(target) {
+public class PuertsEditor : ModuleRules 
+{
+    public PuertsEditor(ReadOnlyTargetRules Target) : base(Target) 
+    {
         PublicDependencyModuleNames.AddRange(
             new string[]
             {

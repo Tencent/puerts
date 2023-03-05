@@ -9,8 +9,10 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class DeclarationGenerator : ModuleRules {
-    public DeclarationGenerator(ReadOnlyTargetRules target) : base(target) {
+public class DeclarationGenerator : ModuleRules 
+{
+    public DeclarationGenerator(ReadOnlyTargetRules Target) : base(Target) 
+    {
         PublicIncludePaths.AddRange(
             new string[] {
                 "Programs/UnrealHeaderTool/Public",
