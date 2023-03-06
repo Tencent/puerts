@@ -108,30 +108,29 @@ FString UFileSystemOperation::FileMD5Hash(FString Path)
 //
 //}
 
-
 #ifdef PUERTS_WITH_SOURCE_CONTROL
 namespace PuertsSourceControlUtils
 {
-    bool MakeSourceControlFileWritable(const FString& InFileToMakeWritable)
+bool MakeSourceControlFileWritable(const FString& InFileToMakeWritable)
+{
+    if (SourceControlHelpers::IsAvailable() && FPlatformFileManager::Get().GetPlatformFile().FileExists(*InFileToMakeWritable))
     {
-        if(SourceControlHelpers::IsAvailable() && FPlatformFileManager::Get().GetPlatformFile().FileExists(*InFileToMakeWritable))
-        {
-            return FPlatformFileManager::Get().GetPlatformFile().SetReadOnly(*InFileToMakeWritable, false);
-        }
-        return true;
+        return FPlatformFileManager::Get().GetPlatformFile().SetReadOnly(*InFileToMakeWritable, false);
     }
-    
-    bool CheckoutSourceControlFile(const FString& InFileToCheckout)
-    {
-        if(SourceControlHelpers::IsAvailable())
-        {
-            const FSourceControlState FileState = SourceControlHelpers::QueryFileState(InFileToCheckout);
-            if(FileState.bIsValid && FileState.bIsSourceControlled && !FileState.bCanEdit)
-            {
-                return SourceControlHelpers::CheckOutFile(InFileToCheckout);
-            }
-        }
-        return true;
-    }
+    return true;
 }
+
+bool CheckoutSourceControlFile(const FString& InFileToCheckout)
+{
+    if (SourceControlHelpers::IsAvailable())
+    {
+        const FSourceControlState FileState = SourceControlHelpers::QueryFileState(InFileToCheckout);
+        if (FileState.bIsValid && FileState.bIsSourceControlled && !FileState.bCanEdit)
+        {
+            return SourceControlHelpers::CheckOutFile(InFileToCheckout);
+        }
+    }
+    return true;
+}
+}    // namespace PuertsSourceControlUtils
 #endif

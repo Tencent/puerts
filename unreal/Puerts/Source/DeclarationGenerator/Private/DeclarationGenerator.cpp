@@ -379,7 +379,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
 #ifdef PUERTS_WITH_SOURCE_CONTROL
     PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
 #endif
-    
+
     FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
     Begin();
@@ -396,9 +396,9 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
         }
     }
     End();
-    
+
     const FString BPDeclarationFilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts");
-    
+
 #ifdef PUERTS_WITH_SOURCE_CONTROL
     PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
 #endif

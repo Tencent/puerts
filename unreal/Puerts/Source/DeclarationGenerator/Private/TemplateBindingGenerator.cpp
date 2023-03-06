@@ -203,6 +203,6 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 #ifdef PUERTS_WITH_SOURCE_CONTROL
     PuertsSourceControlUtils::MakeSourceControlFileWritable(FilePath);
 #endif
-    
+
     FFileHelper::SaveStringToFile(Gen.Output.Buffer, *FilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }

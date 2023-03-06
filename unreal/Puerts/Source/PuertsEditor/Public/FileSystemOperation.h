@@ -54,7 +54,7 @@ class PUERTSEDITOR_API UFileSystemOperation : public UBlueprintFunctionLibrary
 #ifdef PUERTS_WITH_SOURCE_CONTROL
 namespace PuertsSourceControlUtils
 {
-    PUERTSEDITOR_API bool MakeSourceControlFileWritable(const FString& InFileToMakeWritable);
-    PUERTSEDITOR_API bool CheckoutSourceControlFile(const FString& InFileToCheckout);
-}
+PUERTSEDITOR_API bool MakeSourceControlFileWritable(const FString& InFileToMakeWritable);
+PUERTSEDITOR_API bool CheckoutSourceControlFile(const FString& InFileToCheckout);
+}    // namespace PuertsSourceControlUtils
 #endif
