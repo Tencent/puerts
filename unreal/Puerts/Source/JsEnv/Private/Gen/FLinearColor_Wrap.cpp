@@ -1181,9 +1181,6 @@ struct AutoRegisterForFLinearColor
             {"GetClamped", FLinearColorM_GetClamped}, {"op_Equality", FLinearColorM_op_Equality},
             {"op_Inequality", FLinearColorM_op_Inequality}, {"Equals", FLinearColorM_Equals},
             {"CopyWithNewOpacity", FLinearColorM_CopyWithNewOpacity}, {"LinearRGBToHSV", FLinearColorM_LinearRGBToHSV},
-#if ENGINE_MAJOR_VERSION >= 5
-            {"QuantizeFloor", FLinearColorM_QuantizeFloor},
-#endif
             {"HSVToLinearRGB", FLinearColorM_HSVToLinearRGB}, {"Quantize", FLinearColorM_Quantize},
             {"QuantizeRound", FLinearColorM_QuantizeRound}, {"ToFColor", FLinearColorM_ToFColor},
             {"Desaturate", FLinearColorM_Desaturate}, {"ComputeLuminance", FLinearColorM_ComputeLuminance},

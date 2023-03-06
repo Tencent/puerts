@@ -69,7 +69,7 @@ static int LoadAddon(const char* path, const char* module_name)
         FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(___magic_module_name_xx___)));
         EntryName = EntryName.Replace(TEXT("___magic_module_name_xx___"), UTF8_TO_TCHAR(module_name));
 
-        auto Init = (void (*)(pesapi_func_ptr*)) (uintptr_t) FPlatformProcess::GetDllExport(Handle, *EntryName);
+        auto Init = (void (*)(pesapi_func_ptr*))(uintptr_t) FPlatformProcess::GetDllExport(Handle, *EntryName);
         if (Init)
         {
             Init(funcs);

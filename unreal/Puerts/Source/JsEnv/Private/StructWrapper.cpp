@@ -91,7 +91,7 @@ void FStructWrapper::InitTemplateProperties(
             {
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
-                    PropertyAttribute = (v8::PropertyAttribute) (PropertyAttribute | v8::ReadOnly);
+                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
                 auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
                                                : v8::Local<v8::Value>();
 
@@ -109,7 +109,7 @@ void FStructWrapper::InitTemplateProperties(
             {
                 v8::PropertyAttribute PropertyAttribute = v8::DontDelete;
                 if (!PropertyInfo->Setter)
-                    PropertyAttribute = (v8::PropertyAttribute) (PropertyAttribute | v8::ReadOnly);
+                    PropertyAttribute = (v8::PropertyAttribute)(PropertyAttribute | v8::ReadOnly);
                 auto Data = PropertyInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, PropertyInfo->Data))
                                                : v8::Local<v8::Value>();
 
