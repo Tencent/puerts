@@ -21,23 +21,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  android_qjs:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildAndroidQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-          
-  android_nodejs:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildAndroidNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -54,23 +42,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  ios_qjs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildiOSQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-          
-  ios_nodejs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildiOSNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -87,23 +63,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  osx_nodejs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildOSXNodejs
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
-          
-  osx_qjs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildOSXQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -120,23 +84,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  windows_qjs:
-    runs-on: windows-2019
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-
-  windows_nodejs:
-    runs-on: windows-2019
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildWindowsNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
@@ -155,37 +107,37 @@ jobs:
           backend: v8_9.4
   publish:
     runs-on: ubuntu-latest
-    needs: [windows,osx,ios,android,windows_qjs,osx_qjs,ios_qjs,android_qjs,windows_nodejs,osx_nodejs,android_nodejs,ios_nodejs,linux64]
+    needs: [windows,osx,ios,android,linux64]
     steps:
       - uses: actions/checkout@v3
       
       - name: Retrieve version
         run: |
           echo "API_LEVEL=$(cat unity/native_src/Src/Puerts.cpp | grep -Po '(?<=API_LEVEL\s)(\d+)')" >> $GITHUB_ENV
-          node -e "const pjson = JSON.parse(fs.readFileSync('$GITHUB_WORKSPACE/unity/packages/core/upm/package.json', 'utf-8')); pjson.version = '${{ github.event.inputs.tag_name }}' ; fs.writeFileSync('$GITHUB_WORKSPACE/unity/packages/core/upm/package.json', JSON.stringify(pjson))"
+          node -e "const pjson = JSON.parse(fs.readFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', 'utf-8')); pjson.version = '${{ github.event.inputs.tag_name }}' ; fs.writeFileSync('$GITHUB_WORKSPACE/unity/Assets/core/upm/package.json', JSON.stringify(pjson))"
             
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins (v8_9.4_Release)
-          path: V8/Puerts/Plugins/
+          path: V8/upm/Plugins/
           
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins (quickjs_Release)
-          path: Quickjs/Puerts/Plugins/
+          path: Quickjs/upm/Plugins/
 
       - uses: actions/download-artifact@v1
         with:
           name: Unity_Plugins (nodejs_16_Release)
-          path: Nodejs/Puerts/Plugins/
+          path: Nodejs/upm/Plugins/
           
       - name: Create Release Asset
         run: |
-          cp $GITHUB_WORKSPACE/doc/unity/zhcn/changelog.md $GITHUB_WORKSPACE/unity/packages/core/upm
-          cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/packages/core/upm
-          cd V8/ && cp -r $GITHUB_WORKSPACE/unity/packages/core/upm . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/packages/core/upm . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
-          cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/packages/core/upm . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz Puerts && cd -
+          cp $GITHUB_WORKSPACE/LICENSE $GITHUB_WORKSPACE/unity/Assets/core/upm
+          ls -l $GITHUB_WORKSPACE/unity/Assets/core/upm
+          cd V8/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_V8_${{ github.event.inputs.tag_name }}.tgz upm && cd -
+          cd Quickjs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Quickjs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
+          cd Nodejs/ && cp -r $GITHUB_WORKSPACE/unity/Assets/core/upm . && tar cvfz ../PuerTS_Nodejs_${{ github.event.inputs.tag_name }}.tgz upm && cd -
           
       - name: Create Release
         id: create_release
