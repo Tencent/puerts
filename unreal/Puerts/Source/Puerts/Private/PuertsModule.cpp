@@ -360,7 +360,8 @@ void FPuertsModule::RegisterSettings()
     UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
     const TCHAR* SectionName = TEXT("/Script/Puerts.PuertsSetting");
 #if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
-    const FString PuertsConfigIniPath = FConfigCacheIni::NormalizeConfigIniPath(FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini")));
+    const FString PuertsConfigIniPath =
+        FConfigCacheIni::NormalizeConfigIniPath(FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini")));
 #else
     const FString PuertsConfigIniPath = FFPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
 #endif
