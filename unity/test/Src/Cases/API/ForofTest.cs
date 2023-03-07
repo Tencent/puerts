@@ -5,6 +5,18 @@ using Puerts;
 
 namespace Puerts.UnitTest
 {
+    public class ForofTestHelper 
+    {
+        public static List<string> GetAStringList() 
+        {
+            return new List<string>()
+            {
+                "puerts",
+                "really",
+                "good"
+            };
+        }
+    }
     [TestFixture]
     public class ForofTest
     {

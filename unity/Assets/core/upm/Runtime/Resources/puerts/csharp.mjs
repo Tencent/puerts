@@ -141,12 +141,10 @@ function taskToPromise(task) {
         });
     });
 }
-function genIterator(obj)
-{
+function genIterator(obj) {
     let it = obj.GetEnumerator();
     return {
-        next()
-        {
+        next() {
             if (it.MoveNext())
             {
                 return {value: it.Current, done: false}
@@ -170,10 +168,8 @@ function makeGeneric(genericTypeInfo, ...genericArgs) {
 
         let typName = genericTypeInfo.get('$name')
         let typ = puer.loadType(typName, ...genericArgs)
-        if (getType(csharpModule.System.Collections.IEnumerable).IsAssignableFrom(getType(typ)))
-        {
-            typ.prototype[Symbol.iterator] = function ()
-            {
+        if (getType(csharpModule.System.Collections.IEnumerable).IsAssignableFrom(getType(typ))) {
+            typ.prototype[Symbol.iterator] = function () {
                 return genIterator(this);
             }
         }
