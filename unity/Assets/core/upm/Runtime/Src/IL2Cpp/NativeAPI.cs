@@ -395,7 +395,15 @@ namespace PuertsIl2cpp
 #endif
             IntPtr fn1 = log == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(log);
 
-            SetLogCallback(fn1);
+            try 
+            {
+                SetLogCallback(fn1);                
+            }
+            catch(DllNotFoundException)
+            {
+                UnityEngine.Debug.LogError("[Puer001] PuerTS's Native Plugin(s) is missing. You can solve this problem following the FAQ.");
+                throw;
+            }
         }
     }
 }
