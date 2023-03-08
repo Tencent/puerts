@@ -1,5 +1,19 @@
 # FAQ
 
+## [Puer001]DllNotFoundException: puerts
+
+This means that Unity is unable to load PuerTS's native plugin, such as `.dll` files on Windows, `.dylib` or `.bundle` files on macOS, or `.a` and `.so` files on other platforms.
+
+There are several possible reasons why this issue may occur:
+
+1. You may have not placed PuerTS's native plugin in the Assets directory.
+
+2. The import setting of the native plugin, i.e., platform setting, may not be configured correctly. Please click on the corresponding file in Unity and set the platform correctly. Alternatively, you can use the corresponding meta file from the [official demo project](https://github.com/chexiongsheng/puerts_unity_demo).
+
+3. The system library that the native plugin depends on may not exist. On macOS, you can use `otool`, on Linux, you can use `objdump`, and on Windows, you can use [Dependencies](https://github.com/lucasg/Dependencies) to view the dependencies of the native plugin file. After identifying the missing libraries, you can install them manually.
+
+Related issue: https://github.com/Tencent/puerts/issues/941
+
 ## invalid arguments to XXX
 
 If you're using JS, it may be because you have typed the arguments incorrectly.
