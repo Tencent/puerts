@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [2.0.0-pre.0] - 2023-02-27
+## [2.0.0-pre.1] - 2023-02-27
 1. Add a new language binding directly based on il2cpp and there will be huge performance benifit. see our docsite for more information.
 2. The package layout of unity code in this repository is changed to UPM layout.
 3. Move the [commonjs-support](https://github.com/puerts/puerts-commonjs) package into this package.

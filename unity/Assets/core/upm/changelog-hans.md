@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [2.0.0-pre.0] - 2023-02-27
+## [2.0.0-pre.1] - 2023-02-27
 1. 添加了新的il2cpp binding方式，性能有飞跃式提升。详见官方文档`Il2cpp绑定`章节
 2. 本仓库的Unity代码变为了UPM目录结构。
 3. 将[commonjs-support](https://github.com/puerts/puerts-commonjs)包移入了本仓库。
