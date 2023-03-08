@@ -2956,17 +2956,16 @@ void FJsEnvImpl::LoadUEType(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     const FString TypeName = FV8Utils::ToFString(Isolate, Info[0]);
 
-    UObject* ClassPackage = PUERTS_ANY_PACKAGE;
-    UField* Type = FindObject<UClass>(ClassPackage, *TypeName);
+    UField* Type = FindAnyType<UClass>(TypeName);
 
     if (!Type)
     {
-        Type = FindObject<UScriptStruct>(ClassPackage, *TypeName);
+        Type = FindAnyType<UScriptStruct>(TypeName);
     }
 
     if (!Type)
     {
-        Type = FindObject<UEnum>(ClassPackage, *TypeName);
+        Type = FindAnyType<UEnum>(TypeName);
     }
 
     if (!Type)
