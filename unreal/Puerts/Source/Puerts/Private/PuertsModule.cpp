@@ -205,7 +205,7 @@ public:
                 JsEnvGroup->SetJsEnvSelector(Selector);
             }
 
-            //这种不支持等待
+            // 这种不支持等待
             if (Settings.WaitDebugger)
             {
                 UE_LOG(PuertsModule, Warning, TEXT("Do not support WaitDebugger in Group Mode!"));
@@ -363,7 +363,7 @@ void FPuertsModule::RegisterSettings()
     const FString PuertsConfigIniPath =
         FConfigCacheIni::NormalizeConfigIniPath(FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini")));
 #else
-    const FString PuertsConfigIniPath = FFPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
+    const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
 #endif
     if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
