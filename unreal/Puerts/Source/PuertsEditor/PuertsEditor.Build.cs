@@ -36,6 +36,13 @@ public class PuertsEditor : ModuleRules
                 "AssetTools"
             }
         );
+        
+        if (JsEnv.WithSourceControl)
+        {
+            PrivateDependencyModuleNames.Add("SourceControl");
+            PublicDefinitions.Add("PUERTS_WITH_SOURCE_CONTROL");
+        }
+        
         bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
     }
 }
