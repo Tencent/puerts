@@ -149,6 +149,12 @@
                         t`
                         `
                     });
+                    if (type.IteratorReturnName?.length > 0)
+                    {
+                        !type.IsInterface && t`public `;
+                        t`[Symbol.iterator]() : IterableIterator<${type.IteratorReturnName}>
+                         `
+                    }
                     // methods end
                     t.indent = 8 + baseIndent;
                     t`

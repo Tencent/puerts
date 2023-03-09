@@ -4,6 +4,9 @@
 #include "JSClassRegister.h"
 #include "Interfaces/IPluginManager.h"
 #include "CoreUObject.h"
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+#include "FileSystemOperation.h"
+#endif
 
 struct FGenImp
 {
@@ -195,7 +198,11 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
     Gen.End();
 
-    FFileHelper::SaveStringToFile(Gen.Output.Buffer,
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts")),
-        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    const FString FilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts");
+
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(FilePath);
+#endif
+
+    FFileHelper::SaveStringToFile(Gen.Output.Buffer, *FilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }

@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define API_LEVEL 19
+#define API_LEVEL 30
 
 using puerts::JSEngine;
 using puerts::FValue;

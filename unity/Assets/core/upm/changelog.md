@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
-## [2.0.0-pre.0] - 2023-02-27
+## [2.0.0-pre.1] - 2023-02-27
 1. Add a new language binding directly based on il2cpp and there will be huge performance benifit. see our docsite for more information.
 2. The package layout of unity code in this repository is changed to UPM layout.
 3. Move the [commonjs-support](https://github.com/puerts/puerts-commonjs) package into this package.
@@ -18,6 +18,19 @@ you can get the english version change log at [Github Release](https://github.co
 4. The accessor key of ref object change to `[0]` instead of `['value']`. (If all your code was using `puer.$ref` or `puer.$unref`, it will take no effect)
 5. As what we mentioned in changelog of 1.4: there will be no `require` by default in 2.0.
 
+## [1.4.1] - 2023-03-02
+
+> changelog since 1.4.0
+
+1. fix: the crashed after getting a StackOverflowException #1208
+2. fix: could not get any log in inspector with Node.js backend. #1201
+3. fix: if a error is thrown in ESM and the message contains line ends, the error message could be incorrect. #1188
+4. fix: did not filt a obsoleted property setter/getter. #1152
+5. fix：when passing a JS number to C# `object`. the number would be cut to a Int.
+6. feature: JsEnv.ClearModuleCache can clear ESM module cache now.
+7. feature: now you can use JSObject to store a JS function. #1143 #1144
+8. feature: add `EXPERIMENTAL_PUERTS_DISABLE_SLOWBINDING`. It will be useful in somewhere need to do access control. This feature is still experimental and will be changed in the future.
+9. optimize: do not lock the mutex when destroying a JSFunction or JSObject.
 
 ## [1.4.1-pre.2] - 2023-02-09
 1. fix: could not get any log in inspector with Node.js backend. #1201

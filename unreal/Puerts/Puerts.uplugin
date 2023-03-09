@@ -25,9 +25,9 @@
       "LoadingPhase": "Default"
     },
     {
-        "Name" : "ParamDefaultValueMetas",
-        "Type" : "Program",
-        "LoadingPhase" : "PostConfigInit"
+      "Name" : "ParamDefaultValueMetas",
+      "Type" : "Program",
+      "LoadingPhase" : "PostConfigInit"
     },
     {
       "Name": "Puerts",

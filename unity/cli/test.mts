@@ -114,6 +114,7 @@ export async function unityTest(cwd: string, unityPath: string) {
         });
 
         console.log("[Puer] Generating wrapper");
+        writeFileSync(`${cwd}/Assets/csc.rsp`, '-define:PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM;')
         execUnityEditor(`-executeMethod TestBuilder.GenV1`);
         rm("-rf", `${cwd}/Library/ScriptAssemblies`);
         cp(`${cwd}/Assets/Gen/unityenv_for_puerts.h`, `${cwd}/../../Assets/core/upm/Plugins/puerts_il2cpp/`);
@@ -126,10 +127,12 @@ export async function unityTest(cwd: string, unityPath: string) {
         const v1code = exec(`${cwd}/build/v1/Tester.exe -batchmode -nographics -logFile ${cwd}/log1.txt`).code;
 
         console.log("[Puer] Generating FunctionBridge");
+        writeFileSync(`${cwd}/Assets/csc.rsp`, `
+            -define:PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
+            -define:EXPERIMENTAL_IL2CPP_PUERTS
+        `)
         execUnityEditor(`-executeMethod TestBuilder.GenV2`);
         rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-        cp(`${cwd}/Assets/Gen/FunctionBridge.Gen.h`, `${cwd}/../../native_src_il2cpp/Src/`);
-        cp(`${cwd}/Assets/Gen/unityenv_for_puerts.h`, `${cwd}/../../Assets/core/upm/Plugins/puerts_il2cpp/`);
     
         await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
             backend: 'v8_9.4',

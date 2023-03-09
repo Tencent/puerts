@@ -9,13 +9,11 @@ public class TestBuilder
 {
     public static void GenV1() 
     {
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone, "");
         Puerts.Editor.Generator.UnityMenu.GenerateCode();
         Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(false);
     }
     public static void GenV2() 
     {
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone, "EXPERIMENTAL_IL2CPP_PUERTS");
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
@@ -29,7 +27,6 @@ public class TestBuilder
 
     public static void BuildWindows(bool withV2) 
     {
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone, withV2 ? "EXPERIMENTAL_IL2CPP_PUERTS" : "");
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.IL2CPP);
 
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();

@@ -87,6 +87,11 @@ namespace Puerts
             {
                 return _GetApiLevel();
             } 
+            catch(DllNotFoundException)
+            {
+                UnityEngine.Debug.LogError("[Puer001] DllNotFoundException detected. You can solve this problem following the FAQ.");
+                throw;
+            }
             catch(Exception) 
             {
                 return GetLibVersion();
