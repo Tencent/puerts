@@ -27,7 +27,7 @@
 #include "GenDTSCommands.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-//#include "Misc/MessageDialog.h"
+// #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
 #include "Engine/UserDefinedEnum.h"
@@ -592,7 +592,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     BPFilter.PackagePaths.Add(PackagePath);
     BPFilter.bRecursivePaths = true;
     BPFilter.bRecursiveClasses = true;
-#if ENGINE_MAJOR_VERSION >= 5
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
     BPFilter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
     BPFilter.ClassPaths.Add(UUserDefinedEnum::StaticClass()->GetClassPathName());
     BPFilter.ClassPaths.Add(UUserDefinedStruct::StaticClass()->GetClassPathName());
