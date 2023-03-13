@@ -20,7 +20,7 @@ namespace PuertsIl2cpp.Editor
         public class UnityMenu {
             public const string PUERTS_MENU_PREFIX = "PuerTS";
 
-#if !PUERTS_GENERAL
+#if !PUERTS_GENERAL && !UNITY_WEBGL
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate For il2cpp Binding (all in one)", false, 2)]
             public static void GenV2() {
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();

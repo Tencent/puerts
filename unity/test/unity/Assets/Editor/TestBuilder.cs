@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using System;
 using System.IO;
 using UnityEngine;
@@ -49,3 +50,4 @@ public class TestBuilder
         }
     }
 }
+#endif
