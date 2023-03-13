@@ -629,7 +629,6 @@ var global = global || (function () { return this; }());
         "ArrayParm": MetaDataInst,
         "ArrayTypeDependentParams": MetaDataInst,
         "AutoCreateRefTerm": MetaDataInst,
-        "BlueprintInternalUseOnly": MetaDataInst,
         "BlueprintProtected": MetaDataInst,
         "CallableWithoutWorldContext": MetaDataInst,
         "CommutativeAssociativeBinaryOperator": MetaDataInst,
