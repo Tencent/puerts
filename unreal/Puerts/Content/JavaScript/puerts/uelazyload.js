@@ -567,7 +567,7 @@ var global = global || (function () { return this; }());
         "CustomThunkTemplates": MetaDataInst,
         //  decorator to add class specifier
         "uclass": dummyDecorator,
-        //  meta data of class
+        //  metadata of class
         "ToolTip": MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
@@ -588,7 +588,7 @@ var global = global || (function () { return this; }());
         "ExposedAsyncProxy": MetaDataInst,
         "BlueprintThreadSafe": MetaDataInst,
         "UsesHierarchy": MetaDataInst,
-        //  decorator to add class meta data
+        //  decorator to add class metadata
         "umeta": dummyDecorator
     }
 
@@ -621,7 +621,7 @@ var global = global || (function () { return this; }());
         "InternalUseParam": MetaDataInst,
         //  decorator to add function specifier
         "ufunction": dummyDecorator,
-        //  type of meta data specifier
+        //  type of metadata specifier
         "ToolTip": MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
@@ -668,7 +668,7 @@ var global = global || (function () { return this; }());
         "MapValueParam": MetaDataInst,
         "AnimBlueprintFunction": MetaDataInst,
         "ArrayParam": MetaDataInst,
-        //  decorator to add function meta data
+        //  decorator to add function metadata
         "umeta": dummyDecorator
     }
 
