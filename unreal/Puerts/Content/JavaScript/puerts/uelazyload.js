@@ -25,6 +25,7 @@ var global = global || (function () { return this; }());
             return classWrapers[name];
         }
     });
+    Object.defineProperty(UE, "__esModule", {value: true});
     
     const TNAMESPACE = 0;
     const TENUM = 1
@@ -83,6 +84,7 @@ var global = global || (function () { return this; }());
             return classWrapers[name];
         }
     });
+    Object.defineProperty(CPP, "__esModule", {value: true});
     
     puerts.registerBuildinModule('cpp', CPP);
     
