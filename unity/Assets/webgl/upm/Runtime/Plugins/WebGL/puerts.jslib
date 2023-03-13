@@ -42,6 +42,7 @@ var exportDLL = {
     "SetModuleResolver",
     "ExecuteModule",
     "Eval",
+    "ClearModuleCache",
     "_RegisterClass",
     "RegisterStruct",
     "RegisterFunction",

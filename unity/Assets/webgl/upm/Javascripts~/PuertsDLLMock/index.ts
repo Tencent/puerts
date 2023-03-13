@@ -56,10 +56,10 @@ global.PuertsWebGL = {
                     engine.callV8Destructor = callV8Destructor;
                 },
                 GetLibVersion: function () {
-                    return 19;
+                    return 30;
                 },
                 GetApiLevel: function () {
-                    return 19;
+                    return 30;
                 },
                 GetLibBackend: function () {
                     return 0;
