@@ -54,9 +54,9 @@ export default function WebGLBackendSetToInvokeJSArgumentApi(engine: PuertsJSEng
             func.args.push(jsFunctionOrObjectFactory.getJSObjectById(JSObject).getObject());
 
         },
-        PushArrayBufferForJSFunction: function (_function: MockIntPtr, /*byte[] */bytes: number, length: int) {
+        PushArrayBufferForJSFunction: function (_function: MockIntPtr, /*byte[] */index: number, length: int) {
             const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
-            func.args.push(new Uint8Array(engine.unityApi.HEAP8.buffer, bytes, length));
+            func.args.push(engine.unityApi.HEAP8.buffer.slice(index, index + length));
         }
 
     }

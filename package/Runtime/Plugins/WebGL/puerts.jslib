@@ -110,6 +110,7 @@ var exportDLL = {
     "GetJSObjectFromResult",
     "GetArrayBufferFromResult",
     "ResetResult",
+    "ClearModuleCache",
     "CreateInspector",
     "DestroyInspector",
     "InspectorTick",

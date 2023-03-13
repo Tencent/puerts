@@ -223,7 +223,7 @@ global.PuertsWebGL = {
                 ResetResult: function (resultInfo: IntPtr) {
                     engine.lastReturnCSResult = null;
                 },
-
+                ClearModuleCache: function() {},
                 CreateInspector: function (isolate: IntPtr, port: int) { },
                 DestroyInspector: function (isolate: IntPtr) { },
                 InspectorTick: function (isolate: IntPtr) { },

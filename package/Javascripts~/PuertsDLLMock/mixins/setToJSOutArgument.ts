@@ -37,9 +37,9 @@ export default function WebGLBackendSetToJSOutArgumentAPI(engine: PuertsJSEngine
             var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
             obj.value = null; // 传过来的是1和0
         },
-        SetArrayBufferToOutValue: function (isolate: IntPtr, value: MockIntPtr, /*Byte[] */bytes: any, Length: int) {
+        SetArrayBufferToOutValue: function (isolate: IntPtr, value: MockIntPtr, /*Byte[] */index: any, length: int) {
             var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
-            obj.value = new Uint8Array(engine.unityApi.HEAP8.buffer, bytes, Length);
+            obj.value = engine.unityApi.HEAP8.buffer.slice(index, index + length);
 
         },
     }
