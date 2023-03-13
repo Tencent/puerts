@@ -2845,8 +2845,21 @@ v8::Local<v8::Function> FJsEnvImpl::GetJsClass(UStruct* InStruct, v8::Local<v8::
 
 bool FJsEnvImpl::IsInstanceOf(UStruct* Struct, v8::Local<v8::Object> JsObject)
 {
-    bool Dummy;
-    return GetTemplateInfoOfType(Struct, Dummy)->Template.Get(MainIsolate)->HasInstance(JsObject);
+    //这里如果外面传一个非uobject或者ustructsrcipt的object,可能会有问题
+    if (Cast<UScriptStruct>(Struct))
+    {
+        UScriptStruct* ObjectStruct = (UScriptStruct*) FV8Utils::GetPointer(JsObject, 1);
+        return ObjectStruct && ObjectStruct->IsChildOf(Struct);
+    }
+    else
+    {
+        UObject* Object = FV8Utils::GetUObject(JsObject);
+        if (!Object || Object == RELEASED_UOBJECT)
+        {
+            return false;
+        }
+        return Object->GetClass()->IsChildOf(Struct);
+    }
 }
 
 bool FJsEnvImpl::IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject)
