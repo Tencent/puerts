@@ -16,14 +16,18 @@
 #include "Components/PanelSlot.h"
 #include "Components/Widget.h"
 #if WITH_EDITOR
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
 #endif
 #include "LevelEditor.h"
 #include "GenDTSStyle.h"
 #include "GenDTSCommands.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-//#include "Misc/MessageDialog.h"
+// #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Engine/UserDefinedStruct.h"
 #include "Engine/UserDefinedEnum.h"
@@ -36,14 +40,17 @@
 #include "ToolMenus.h"
 #endif
 #include "Internationalization/Regex.h"
-
 #include "PuertsModule.h"
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+#include "FileSystemOperation.h"
+#endif
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
 
 #define TYPE_DECL_START "// __TYPE_DECL_START: "
 #define TYPE_DECL_END "// __TYPE_DECL_END"
+#define TYPE_ASSOCIATION "ASSOCIATION"
 
 static FString SafeName(const FString& Name)
 {
@@ -322,7 +329,7 @@ void FTypeScriptDeclarationGenerator::InitExtensionMethodsMap()
 void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct, bool InGenEnum)
 {
     Begin();
-
+    BeginGenAssetData = false;
     TArray<UObject*> SortedClasses(GetSortedClasses(InGenStruct, InGenEnum));
     for (int i = 0; i < SortedClasses.Num(); ++i)
     {
@@ -341,7 +348,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
         }
         Gen(Class);
     }
-
+    BeginGenAssetData = true;
     for (FAssetData const& AssetData : AssetList)
     {
         auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
@@ -369,12 +376,16 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
             }
         }
     }
-
+    BeginGenAssetData = false;
     End();
 
-    FFileHelper::SaveStringToFile(ToString(),
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts")),
-        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    const FString UEDeclarationFilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue.d.ts");
+
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
+#endif
+
+    FFileHelper::SaveStringToFile(ToString(), *UEDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
     Begin();
     for (auto& KV : BlueprintTypeDeclInfoCache)
@@ -383,7 +394,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
         {
             for (auto& NameToDecl : KV.Value.NameToDecl)
             {
-                Output << TYPE_DECL_START << KV.Value.FileVersionString << "\n";
+                Output << TYPE_DECL_START << (KV.Value.IsAssociation ? TYPE_ASSOCIATION : KV.Value.FileVersionString) << "\n";
                 Output << NameToDecl.Value;
                 Output << TYPE_DECL_END << "\n";
             }
@@ -391,9 +402,13 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
     }
     End();
 
-    FFileHelper::SaveStringToFile(ToString(),
-        *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts")),
-        FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    const FString BPDeclarationFilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts");
+
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+    PuertsSourceControlUtils::MakeSourceControlFileWritable(UEDeclarationFilePath);
+#endif
+
+    FFileHelper::SaveStringToFile(ToString(), *BPDeclarationFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }
 
 static UPackage* GetPackage(UObject* Obj)
@@ -505,15 +520,15 @@ void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuf
     }
 }
 
-void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos()
+void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(bool InGenFull)
 {
     FString FileContent;
     FFileHelper::LoadFileToString(
         FileContent, *(IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/ue/ue_bp.d.ts")));
-    RestoreBlueprintTypeDeclInfos(FileContent);
+    RestoreBlueprintTypeDeclInfos(FileContent, InGenFull);
 }
 
-void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FString& FileContent)
+void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FString& FileContent, bool InGenFull)
 {
     FString Rest = FileContent;
     static const FString Start = TEXT(TYPE_DECL_START);
@@ -527,6 +542,7 @@ void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FStrin
         if (DeclEnd < Pos)
             return;
         FString FileVersionString = FileContent.Mid(Pos + Start.Len(), VersionInfoEnd - Pos - Start.Len());
+        const bool bIsAssociation = FileVersionString == TYPE_ASSOCIATION;
         FString TypeDecl = FileContent.Mid(VersionInfoEnd + 1, DeclEnd - VersionInfoEnd - 1);
         int NamespaceStart = TypeDecl.Find(*NS_Keyword);
         if (NamespaceStart > 0)
@@ -557,7 +573,9 @@ void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FStrin
                         {
                             TMap<FName, FString> NameToDecl;
                             NameToDecl.Add(TypeName, TypeDecl);
-                            BlueprintTypeDeclInfoCache.Add(FName(*PackageName), {NameToDecl, FileVersionString, false, true});
+                            bool bIsExist = InGenFull ? false : bIsAssociation;
+                            BlueprintTypeDeclInfoCache.Add(
+                                FName(*PackageName), {NameToDecl, FileVersionString, bIsExist, true, bIsAssociation});
                         }
                     }
                 }
@@ -591,7 +609,16 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
     AssetRegistry.GetAssets(BPFilter, AssetList);
     for (FAssetData const& AssetData : AssetList)
     {
+#if ENGINE_MAJOR_VERSION >= 5
+        const FAssetPackageData* PackageData = nullptr;
+        auto OptionalPackageData = AssetRegistry.GetAssetPackageDataCopy(AssetData.PackageName);
+        if (OptionalPackageData.IsSet())
+        {
+            PackageData = &OptionalPackageData.GetValue();
+        }
+#else
         const FAssetPackageData* PackageData = AssetRegistry.GetAssetPackageData(AssetData.PackageName);
+#endif
         auto BlueprintTypeDeclInfoPtr = BlueprintTypeDeclInfoCache.Find(AssetData.PackageName);
 
         if (PackageData && BlueprintTypeDeclInfoPtr)
@@ -604,7 +631,7 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
         else
         {
             BlueprintTypeDeclInfoCache.Add(AssetData.PackageName,
-                {TMap<FName, FString>(), PackageData ? PackageData->PackageGuid.ToString() : FString(TEXT("")), true, true});
+                {TMap<FName, FString>(), PackageData ? PackageData->PackageGuid.ToString() : FString(TEXT("")), true, true, false});
         }
     }
 }
@@ -637,6 +664,15 @@ void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
     if (ToGen->IsNative())
     {
         ProcessedByName.Add(SafeName(ToGen->GetName()));
+    }
+    else if (BeginGenAssetData)
+    {
+        UPackage* Package = GetPackage(ToGen);
+        BlueprintTypeDeclInfo* BlueprintTypeDeclInfo = BlueprintTypeDeclInfoCache.Find(Package->GetFName());
+        if (!BlueprintTypeDeclInfo)
+        {
+            BlueprintTypeDeclInfoCache.Add(Package->GetFName(), {TMap<FName, FString>(), FString(TEXT("")), true, false, true});
+        }
     }
 
     if (auto Class = Cast<UClass>(ToGen))
@@ -1492,7 +1528,7 @@ public:
     void GenTypeScriptDeclaration(bool InGenFull, FName InSearchPath) override
     {
         FTypeScriptDeclarationGenerator TypeScriptDeclarationGenerator;
-        TypeScriptDeclarationGenerator.RestoreBlueprintTypeDeclInfos();
+        TypeScriptDeclarationGenerator.RestoreBlueprintTypeDeclInfos(InGenFull);
         TypeScriptDeclarationGenerator.LoadAllWidgetBlueprint(InSearchPath, InGenFull);
         TypeScriptDeclarationGenerator.GenTypeScriptDeclaration(true, true);
     }
