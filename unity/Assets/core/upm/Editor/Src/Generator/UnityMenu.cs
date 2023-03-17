@@ -55,8 +55,6 @@ namespace Puerts.Editor
 
                 Utils.filters = null;
             }
-
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts (require('csharp') style)", false, 6)]
             public static void GenerateDTSOldStyle()
             {
                 var start = DateTime.Now;
@@ -69,7 +67,7 @@ namespace Puerts.Editor
 
                 Utils.filters = null;
             }
-
+#if !UNITY_WEBGL
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate/il2cpp macro .h", false, 6)]
             public static void GenerateMacroHeader() {
 #if !EXPERIMENTAL_IL2CPP_PUERTS
@@ -78,6 +76,7 @@ namespace Puerts.Editor
                 GenerateMacroHeader(true);
 #endif
             }
+#endif
             public static void GenerateMacroHeader(bool forceIl2Cpp)
             {
 #if PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM

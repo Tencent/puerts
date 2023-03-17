@@ -118,6 +118,8 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 不支持的版本：（高于）4.8.3
 
+若未开启继承ue类功能，则不需要类似继承模式那样要用typescript库去分析语法，因此没有上述的typescript版本特定要求
+
 ## ue_bp.d.ts报错，重新生成无效
 
 蓝图声明文件默认增量生成（文件不发生变化不生成），有时其依赖的类型发生了变化，或者被版本管理工具修改，此时可以试试全量生成，控>制台执行`Puerts.Gen FULL`

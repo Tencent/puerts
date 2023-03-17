@@ -1,9 +1,17 @@
 # Typescript
 
-### 自行编译 TS
 正如我们的项目名字叫 Puer**TS**，其实我们更建议你使用 Typescript 来开发项目。
 
-实际上，Typescript 本质上就是一种加强版的 Javascript，当您编写完 Typescript 之后，可以自行将其编译为 Javascript。这里提供一个 tsconfig.json 范例，或是参见官方demo 项目：
+### TSLoader
+PuerTS以第三方模块的形式做了一个包，[puerts-ts-loader](https://github.com/zombieyang/puerts-ts-loader)，基于PuerTS的Loader机制，专攻处理Typescript。
+
+并且debugpath、sourcemap、consoleredirect等处理也一并内置了，推荐通过它来使用Typescript。
+
+详细内容直接观看它主页即可，如果决定采用它，本页下方的内容就可以跳过了。
+
+### 自行编译 TS
+
+你也可以选择自行将其编译为 Javascript。这里提供一个 tsconfig.json 范例，或是参见官方demo 项目：
 ```json
 {
   "compilerOptions": {
