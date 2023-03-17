@@ -5,9 +5,10 @@ on:
   push:
     paths: 
       - unity/Assets/**
-      - unity/general/**
+      - unity/dotnet-test/**
       - unity/native_src/**
-      - unity/native_src_ourv8/**
+      - unity/native_src_il2cpp/**
+      - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
@@ -21,122 +22,136 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '6.x.x'
       - uses: actions/checkout@v3
-      - name: Build
-        uses: ./.github/workflows/composites/unity-build-plugins/windows/
+      - name: Setup Unity
+        uses: ./.github/workflows/composites/unity-setup/
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
-          config: Debug
-          arch: x64
+          os: 'win'
+          version: '2021.3.16f1'
+          cachekey: '2021'
+          UNITY_USERNAME: ${{ secrets.UNITY_USERNAME }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
       - name: UnitTest
         run: |
           cd unity
           npm i
-          npx ts-node --esm general/run-test.mts --backend v8_9.4
-  unittest-win-quickjs:
-    runs-on: windows-2019
+          cd test/unity
+          node ../../cli unity-test --unity C:/UNITY/2021.3.16f1/Editor/Unity.exe
+      - name: TestResult
+        if: always()
+        shell: bash
+        run: |
+          cd unity/test/unity
+          echo "testresult in v1"
+          cat log1.txt | grep "Failed\|Passed" 
+          echo "testresult in v2"
+          cat log2.txt | grep "Failed\|Passed" 
+  # unittest-win-quickjs:
+  #   runs-on: windows-2019
 
-    steps:
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '6.x.x'
-      - uses: actions/checkout@v3
-      - name: Build
-        uses: ./.github/workflows/composites/unity-build-plugins/windows/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: quickjs
-          config: Debug
-          arch: x64
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          npx ts-node --esm general/run-test.mts --backend quickjs
+  #   steps:
+  #     - uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '6.x.x'
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       uses: ./.github/workflows/composites/unity-build-plugins/windows/
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         backend: quickjs
+  #         config: Debug
+  #         arch: x64
+  #     - name: UnitTest
+  #       run: |
+  #         cd unity
+  #         npm i
+  #         cd dotnet-test
+  #         node ../cli dotnet-test quickjs
           
-  unittest-win-nodejs:
-    runs-on: windows-2019
+  # unittest-win-nodejs:
+  #   runs-on: windows-2019
 
-    steps:
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '6.x.x'
-      - uses: actions/checkout@v3
-      - name: Build
-        uses: ./.github/workflows/composites/unity-build-plugins/windows/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: nodejs_16
-          config: Debug
-          arch: x64
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          npx ts-node --esm general/run-test.mts --backend nodejs_16
+  #   steps:
+  #     - uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '6.x.x'
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       uses: ./.github/workflows/composites/unity-build-plugins/windows/
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         backend: nodejs_16
+  #         config: Debug
+  #         arch: x64
+  #     - name: UnitTest
+  #       run: |
+  #         cd unity
+  #         npm i
+  #         cd dotnet-test
+  #         node ../cli dotnet-test nodejs_16
 
-  unittest-osx-v8:
-    runs-on: macos-latest
+  # unittest-osx-v8:
+  #   runs-on: macos-latest
 
-    steps:
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '6.x.x'
-      - uses: actions/checkout@v3
-      - name: Build
-        uses: ./.github/workflows/composites/unity-build-plugins/osx/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: v8_9.4
-          config: Debug
-          arch: x64
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          npx ts-node --esm general/run-test.mts --backend v8_9.4
-  unittest-osx-quickjs:
-    runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '6.x.x'
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       uses: ./.github/workflows/composites/unity-build-plugins/osx/
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         backend: v8_9.4
+  #         config: Debug
+  #         arch: x64
+  #     - name: UnitTest
+  #       run: |
+  #         cd unity
+  #         npm i
+  #         cd dotnet-test
+  #         node ../cli dotnet-test v8_9.4
+  # unittest-osx-quickjs:
+  #   runs-on: macos-latest
 
-    steps:
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '6.x.x'
-      - uses: actions/checkout@v3
-      - name: Build
-        uses: ./.github/workflows/composites/unity-build-plugins/osx/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: quickjs
-          config: Debug
-          arch: x64
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          npx ts-node --esm general/run-test.mts --backend quickjs
+  #   steps:
+  #     - uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '6.x.x'
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       uses: ./.github/workflows/composites/unity-build-plugins/osx/
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         backend: quickjs
+  #         config: Debug
+  #         arch: x64
+  #     - name: UnitTest
+  #       run: |
+  #         cd unity
+  #         npm i
+  #         cd dotnet-test
+  #         node ../cli dotnet-test quickjs
           
-  unittest-osx-nodejs:
-    runs-on: macos-latest
+  # unittest-osx-nodejs:
+  #   runs-on: macos-latest
 
-    steps:
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '6.x.x'
-      - uses: actions/checkout@v3
-      - name: Build
-        uses: ./.github/workflows/composites/unity-build-plugins/osx/
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          backend: nodejs_16
-          config: Debug
-          arch: x64
-      - name: UnitTest
-        run: |
-          cd unity
-          npm i
-          npx ts-node --esm general/run-test.mts --backend nodejs_16
+  #   steps:
+  #     - uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '6.x.x'
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       uses: ./.github/workflows/composites/unity-build-plugins/osx/
+  #       with:
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         backend: nodejs_16
+  #         config: Debug
+  #         arch: x64
+  #     - name: UnitTest
+  #       run: |
+  #         cd unity
+  #         npm i
+  #         cd dotnet-test
+  #         node ../cli dotnet-test nodejs_16

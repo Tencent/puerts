@@ -1,6 +1,5 @@
-# 在Javascript调用C#
-
-在上一篇中，我们简单试了一下Hello world
+# Calling C# from JavaScript
+In the previous example, we briefly tried Hello World:
 
 ```csharp
 //1. Hello World
@@ -11,15 +10,14 @@ void Start() {
     ");
 }
 ```
+In fact, the `console.log` here is not quite the same as the one in the browser. This `console.log` is intercepted by PuerTS and will actually call `UnityEngine.Debug.Log` to print the string content.
 
-事实上，此处`console.log`和浏览器的`console.log`并不太一致。这个`console.log`被PuerTS所内置劫持了，实际会将字符串内容调用`UnityEngine.Debug.Log`打印。
-
-在Puerts的帮助下，Javascript和C#的打通还可以更精彩，请往下看：
+With the help of Puerts, the integration between JavaScript and C# can be even more exciting. See below for more:
 
 ------------------
-
+### Object creating
 ```csharp
-//2. 创建C#对象
+//2. Creating a C# object
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
@@ -28,20 +26,22 @@ void Start() {
     ");
 }
 ```
-在本例中，我们直接在 Javascript 中创建了一个 C# 的Vector!
+In this example, we directly created a C# Vector in JavaScript!
 
-在 PuerTS 所创建的 Javascript 环境里，你可以通过`CS`这个对象，输入任意类的 FullName (包含完整命名空间的路径)，访问任意的 C# 类，包括直接创建一个 Vector3 对象。
+In the Javascript environment created by PuerTS, you can access any C# class by entering the FullName (the complete namespace path) of any class, including creating a Vector3 object directly, using the CS object.
 
-当然，写出完整的命名空间还是比较麻烦的，不过你也可以通过声明一个变量别名来简化
-```
+Of course, it is still cumbersome to write out the full namespace, but you can also simplify it by declaring a variable alias:
+
+```javascript
     const Vector2 = CS.UnityEngine.Vector2;
     console.log(Vector2.one)
 ```
 ------------------------------------
+### properties accessing
+Once the object is created, calling its methods or accessing its properties is also very easy.
 
-对象创建出来了，调用其方法、访问其属性也是非常容易的。
 ```csharp
-//3. 调用C#函数或对象方法
+//3. Calling C# functions or object methods
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
@@ -53,14 +53,13 @@ void Start() {
     ");
 }
 ```
-可以看出，不管是函数调用还是属性访问/赋值，用法上都和 C# 一模一样。
-
+As you can see, whether it's function calls or property access/assignment, the usage is exactly the same as in C#.
 ---------------------
-
-不过，C# 还是会有一些在 JS 里不常见的用法，比如**ref**,**out**和**泛型**。就需要借助 PuerTS 提供的 API 来实现
+### special calls
+However, there are still some usage in C# that are not commonly seen in JS, such as **ref**, **out**, and **generics**. We need to use the API provided by PuerTS to implement them.
 
 ```csharp
-//4. out/ref/泛型
+//4. out/ref/generics
 class Example4 {
     public static double InOutArgFunc(int a, out int b, ref int c)
     {
@@ -73,14 +72,14 @@ class Example4 {
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
-        // 通过puer.$ref创建一个可以用于使用out/ref参数的变量
+        // create a variable that can be used for out/ref parameters through puer.$ref
         let p1 = puer.$ref();
         let p2 = puer.$ref(10);
         let ret = CS.Example4.InOutArgFunc(100, p1, p2);
         console.log('ret=' + ret + ', out=' + puer.$unref(p1) + ', ref=' + puer.$unref(p2));
         // ret=200, out=100, ref=20
 
-        // 通过puer.$generic来创建一个List<int>类型
+        // create a List<int> type through puer.$generic
         let List = puer.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
         let lst = new List();
         lst.Add(1);
@@ -90,16 +89,17 @@ void Start() {
     ");
 }
 ```
-也并没有非常复杂，就可以完成了！
+done easily!
 
-> 需要注意的是，可能你会想“Typescript明明支持泛型，为什么不用上呢？“。遗憾的是，Typescript泛型只是一个编译时的概念，在实际运行的时候还是运行的是Javascript，因此还是需要puer.$generic来处理。
+> It should be noted that you may think, "Typescript supports generics, why not use them?" Unfortunately, TypeScript generics are only a compile-time concept. At runtime, JavaScript is still running, so puer.$generic is still needed to handle them.
+
 
 ----------------------------
-
-除了这上述特殊的用法之外，还要介绍两种情况：typeof函数和运算符重载：
+### typeof and operator overload
+In addition to these special usages, there are two more situations to introduce: typeof function and operator overload:
 
 ```csharp
-//5. typeof/运算符重载
+//5. typeof/operator overload
 void Start() {
     Puerts.JsEnv env = new Puerts.JsEnv();
     env.Eval(@"
@@ -113,13 +113,13 @@ void Start() {
     ");
 }
 ```
-因为 C# 的`typeof`无法通过 C# 命名空间的方式访问，有点类似关键字的角色，因此PuerTS 提供内置方法`$typeof`访问
+Because C#'s `typeof` cannot be accessed through C# namespaces and plays a role similar to keywords, PuerTS provides the built-in method `$typeof` for access.
 
-另外由于 JS 尚未全面支持运算符重载（TC39还在草案阶段），这里需要用 op_xxxx 代替运算符
+Furthermore, because JS has not fully supported operator overload yet (TC39 is still in the proposal stage), op_xxxx needs to be used instead of the operator.
 
 ----------------
-
-让我们来看 Javascript 调用 C# 的最后一个案例：async
+### async
+Let's look at the last case of JS calling C#: async.
 
 ```csharp
 // async
@@ -150,7 +150,6 @@ void Start() {
     ");
 }
 ```
-对于 C# 的`async`函数，JS 侧通过`puer.$promise`包装一下 C# 返回的 task，即可 await 调用了
-
+For C#'s async function, on the JS side, by wrapping the task returned by C# with puer.$promise, we can use await to call it.
 -------------
-这一部分是有关 JS 调用 C# 的。下一部分我们反过来，介绍 C# 调用 JS
+This section is about calling C# from JS. In the next section, we will reverse the process and introduce calling JS from C#.

@@ -1,14 +1,15 @@
-# 使用extension函数
-对于项目中存在的使用C# extension功能实现的方法，如果要在JS侧调用，你可以选以下三种办法中的一种来处理：
 
-1. 把扩展目标类与扩展函数所在类加入wrapper生成列表（推荐）
-puerts会在生成代码时帮你遍历整个assembly，将该类存在的所有扩展函数都塞到`static-wrapper`里，这样在JS侧就可以正常调用。
+# using C# extension methods
+For methods implemented using C# extension in the project, there are three ways to handle them when calling on the JS side:
 
-2. 在JS侧调用手动扩展函数
-如下图所示，参数0是扩展目标类，参数1是包含扩展函数的扩展类。你可以在JsEnv初始化的位置去调用这个函数
-```
+1. Add the target class and the class containing the extension method to the wrapper generation list (recommended).
+When generating code, Puerts will help you iterate through the entire assembly and add all extension functions that exist in the class to the static-wrapper, so that they can be called normally on the JS side.
+
+2. Call the extension method manually on the JS side.
+As shown in the figure below, Parameter 0 is the extended target class, and Parameter 1 is the extended class that contains the extension method. You can call this function at the initialization of JsEnv.
+
+```javascript
 puer.$extension(CS.PuertsTest.BaseClass, CS.PuertsTest.BaseClassExtension);
 ```
-
-3. 打开PUERTS_REFLECT_ALL_EXTENSION宏
-打开这个宏后，puerts会在首次产生反射调用时帮你遍历整个assembly。这样就不需要你生成它或者手动调用扩展函数，但副作用是首次反射调用的等待时长会变长，且内存占用会变多
+3. Enable the PUERTS_REFLECT_ALL_EXTENSION macro.
+After enabling this macro, Puerts will help you iterate through the entire assembly when the first reflection call is generated. This means that you don't need to generate it or call the extension function manually, but the side effect is that the waiting time for the first reflection call will become longer, and the memory usage will increase.

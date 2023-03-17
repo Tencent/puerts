@@ -1,7 +1,7 @@
-# Unity PuerTS Plugin 编译指南
+# PuerTS Unity Plugin 编译指南
 在unity里使用PuerTS时，Plugins目录的puerts.dll,puerts.bundle等，都是C++编译成的native plugin。
 
-## PuerTS 本身是怎么编译 C++ plugin 的？
+## PuerTS 官方是怎么编译 C++ plugin 的？
 
 PuerTS采用`github action`进行自动化构建。因此，你可以很容易地在 .github/workflows/build_unity_plugins.yml 中找到编译 C++ plugins 的步骤。
 

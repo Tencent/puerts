@@ -15,9 +15,9 @@ namespace puerts
 FORCEINLINE bool UEObjectIsPendingKill(const UObject* Test)
 {
 #if ENGINE_MAJOR_VERSION > 4
-    return !IsValid(Test);
+    return !IsValid(Test) || Test->IsUnreachable();
 #else
-    return Test->IsPendingKill();
+    return Test->IsPendingKillOrUnreachable();
 #endif
 }
 
@@ -34,4 +34,15 @@ typedef FThreadSafeObjectIterator FUEObjectIterator;
 #else
 typedef FObjectIterator FUEObjectIterator;
 #endif
+
+template <typename T>
+T* FindAnyType(const FString& InShortName)
+{
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+    return FindFirstObject<T>(
+        *InShortName, EFindFirstObjectOptions::EnsureIfAmbiguous | EFindFirstObjectOptions::NativeFirst, ELogVerbosity::Error);
+#else
+    return FindObject<T>(ANY_PACKAGE, *InShortName);
+#endif
+}
 }    // namespace puerts

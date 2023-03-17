@@ -12,7 +12,11 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "AssetToolsModule.h"
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
 #include "FileHelpers.h"
 #include "Misc/PackageName.h"
 #include "UObject/MetaData.h"
@@ -35,21 +39,6 @@
 #include "PuertsModule.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
-
-UClass* FindClass(const TCHAR* ClassName)
-{
-    check(ClassName);
-
-    UObject* ClassPackage = ANY_PACKAGE;
-
-    if (UClass* Result = FindObject<UClass>(ClassPackage, ClassName))
-        return Result;
-
-    if (UObjectRedirector* RenamedClassRedirector = FindObject<UObjectRedirector>(ClassPackage, ClassName))
-        return CastChecked<UClass>(RenamedClassRedirector->DestinationObject);
-
-    return nullptr;
-}
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsEditorModule, Log, All);
 

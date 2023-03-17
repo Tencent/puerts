@@ -205,7 +205,7 @@ public:
                 JsEnvGroup->SetJsEnvSelector(Selector);
             }
 
-            //这种不支持等待
+            // 这种不支持等待
             if (Settings.WaitDebugger)
             {
                 UE_LOG(PuertsModule, Warning, TEXT("Do not support WaitDebugger in Group Mode!"));
@@ -359,7 +359,12 @@ void FPuertsModule::RegisterSettings()
 #endif
     UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
     const TCHAR* SectionName = TEXT("/Script/Puerts.PuertsSetting");
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+    const FString PuertsConfigIniPath =
+        FConfigCacheIni::NormalizeConfigIniPath(FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini")));
+#else
     const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
+#endif
     if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
     {
         GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
@@ -411,9 +416,14 @@ void FPuertsModule::StartupModule()
 #endif
 
 #if WITH_HOT_RELOAD
+#if ENGINE_MAJOR_VERSION >= 5
+    FCoreUObjectDelegates::ReloadCompleteDelegate.AddLambda(
+        [&](EReloadCompleteReason)
+#else
     IHotReloadInterface& HotReloadSupport = FModuleManager::LoadModuleChecked<IHotReloadInterface>("HotReload");
     HotReloadSupport.OnHotReload().AddLambda(
         [&](bool)
+#endif
         {
             if (Enabled)
             {

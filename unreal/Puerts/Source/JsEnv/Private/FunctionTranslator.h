@@ -50,7 +50,7 @@ public:
     bool IsValid() const;
 
 protected:
-    FORCEINLINE void Call_ProcessParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    FORCEINLINE bool Call_ProcessParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
         const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
     {
         if (Return)
@@ -68,9 +68,10 @@ protected:
             }
             else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - StartPos], Params, false))
             {
-                return;
+                return false;
             }
         }
+        return true;
     }
 
     FORCEINLINE void Call_ProcessReturnAndOutParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
@@ -103,6 +104,8 @@ protected:
     TWeakObjectPtr<UObject> BindObject;
 
     bool IsStatic;
+
+    bool SkipWorldContextInArg0;
 
     uint32 ParamsBufferSize;
 

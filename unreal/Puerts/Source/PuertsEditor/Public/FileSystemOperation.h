@@ -50,3 +50,11 @@ class PUERTSEDITOR_API UFileSystemOperation : public UBlueprintFunctionLibrary
     // UFUNCTION(BlueprintCallable, Category = "File")
     // static TArray<FString> ReadDirectory(FString Path, TArray<FString> Extensions, TArray<FString> exclude, int32 Depth);
 };
+
+#ifdef PUERTS_WITH_SOURCE_CONTROL
+namespace PuertsSourceControlUtils
+{
+PUERTSEDITOR_API bool MakeSourceControlFileWritable(const FString& InFileToMakeWritable);
+PUERTSEDITOR_API bool CheckoutSourceControlFile(const FString& InFileToCheckout);
+}    // namespace PuertsSourceControlUtils
+#endif

@@ -58,7 +58,7 @@ export default TS_Player;
 
 Then you can choose it in the UE editor.
 
-![select_character.png](../../../doc/pic/select_character.png)
+![select_character.png](../..//pic/select_character.png)
 
 - Can be identified by the UE, support constructor, support Override Blueprint Override method, support axial map Axis, Action event, support RPC
 
@@ -266,6 +266,6 @@ Puerts supports both `V8` and `quickjs` two virtual machines, and `V8` currently
 
 The first `V8` version provided by default.
 
-If you want to use `V8` version `8.4.371.19`, navigate to [the V8 GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_v8.yml) and download the latest `build V8` artifact. Extract the contents to `Plugins/Puerts/ThirdParty` (or appropriate location). Then in the [JsEnv.Build.cs](../../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs) file, set `UseNewV8` to `true`.
+If you want to use `V8` version `8.4.371.19`, navigate to [the V8 GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_v8.yml) and download the latest `build V8` artifact. Extract the contents to `Plugins/Puerts/ThirdParty` (or appropriate location). Then in the `JsEnv.Build.cs` file, set `UseNewV8` to `true`.
 
-If you want to use `quickjs`, navigate to [the quickjs GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_quickjs.yml), download compiled `quickjs`, extract to `Plugins/Puerts/ThirdParty` (or appropriate location), and set `UseQuickJs` to `true` in the [JsEnv.Build.cs](../../../unreal/Puerts/Source/JsEnv/JsEnv.Build.cs) file.
+If you want to use `quickjs`, navigate to [the quickjs GitHub Actions](https://github.com/Tencent/puerts/actions/workflows/build_quickjs.yml), download compiled `quickjs`, extract to `Plugins/Puerts/ThirdParty` (or appropriate location), and set `UseQuickJs` to `true` in the `JsEnv.Build.cs` file.

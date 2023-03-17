@@ -1,5 +1,17 @@
 # FAQ
 
+## [Puer001]DllNotFoundException: puerts
+
+意思是Unity无法加载PuerTS的Native Plugin，比如windows下的`.dll`，macOS下的`.dylib`或`.bundle`，其它平台下的`.a`、`.so`等。
+
+出现该问题的可能性如下：
+1. 你确实没有把PuerTS的Native Plugin放到Assets目录下
+2. Native Plugin的Import Setting，即平台设置，没有设置对。请在Unity里点击对应的文件设置好平台。或者你可以将[官方demo项目](https://github.com/chexiongsheng/puerts_unity_demo)里对应的meta文件拷过来用。
+3. Native Plugin所依赖的系统库不存在。Mac下可以使用`otool`、Linux下可以使用`objdump`，Windows下可以使用[Dependencies](https://github.com/lucasg/Dependencies)查看NativePlugin文件的依赖。查出来后自行补充安装即可。
+
+相关issue：https://github.com/Tencent/puerts/issues/941
+
+
 ## invalid arguments to XXX
 
 如果你用js，可能是输错参数了。
@@ -48,11 +60,11 @@ ts/js中调用require('./a/b')时，ILoader会被调用并传入字符串".../a/
 
 ~~~bash
 sudo xattr -r -d com.apple.quarantine puerts.bundle
-~~~
+~~~ 
 
 ## 生成代码打包手机版本时报方法（runInEditMode等等）找不到
 
-因为这些方法是编辑器独有的，可以通过filter过滤掉，filter使用参考[使用手册](manual.md)
+因为这些方法是编辑器独有的，可以通过filter过滤掉，filter使用参考[使用手册](wrapper/filter.md)
 
 ## 编辑器下运行正常，il2cpp打包后调用函数/访问属性失败
 
@@ -65,7 +77,7 @@ unity默认会进行代码剪裁，简而言之unity发现某引擎api，系统a
 ## 编辑器下运行正常，打包后调用扩展方法报错(不生成静态代码)
 默认打包后不再使用反射获取扩展函数, 可使用`PUERTS_REFLECT_ALL_EXTENSION`宏来开启反射.(反射速度慢, 建议在任何时候都应该生成静态代码)
 
-## GetComponent<XXX>()在CS为null，但在JS调用却不为null，为什么
+## `GetComponent<XXX>()`在CS为null，但在JS调用却不为null，为什么
 其实那C#对象并不为null，是UnityEngine.Object重载的==操作符。当一个对象被Destroy，未初始化等情况，obj == null返回true；`GetComponent<XXX>()`如果组件不存在，Unity重载==的结果也会让其返回null。但这些C#对象并不为null，可以通过System.Object.ReferenceEquals(null, obj)来验证下。
 
 对应这种情况，可以为UnityEngine.Object写一个扩展方法，需要判空的时候统一用它解决：

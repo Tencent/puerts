@@ -1,0 +1,48 @@
+name: unity setup
+
+inputs:
+  os:
+    required:
+  version:
+    required:
+  cachekey:
+    required:
+  UNITY_USERNAME:
+    required:
+  UNITY_PASSWORD:
+    required:
+  UNITY_SERIAL:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/cache/restore@v3
+      id: cache-unity
+      with:
+        path: C:/UNITY
+        key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
+    - name: MKDIR
+      if: steps.cache-unity.outputs.cache-hit != 'true'
+      shell: bash
+      run: mkdir C:/UNITY
+    - name: Setup Unity
+      if: steps.cache-unity.outputs.cache-hit != 'true'
+      uses: kuler90/setup-unity@v1
+      with:
+        unity-modules: windows-il2cpp
+        unity-version: ${{ inputs.version }}
+        install-path: C:/UNITY
+    - uses: actions/cache/save@v3
+      if: steps.cache-unity.outputs.cache-hit != 'true'
+      with:
+        path: C:/UNITY
+        key: ${{ inputs.os }}-${{ inputs.cachekey }}-unity 
+
+    - name: Activate Unity
+      uses: kuler90/activate-unity@v1
+      with:
+        unity-path: C:/UNITY/${{ inputs.version }}/Editor/Unity.exe
+        unity-username: ${{ inputs.UNITY_USERNAME }}
+        unity-password: ${{ inputs.UNITY_PASSWORD }}
+        unity-serial: ${{ inputs.UNITY_SERIAL }}

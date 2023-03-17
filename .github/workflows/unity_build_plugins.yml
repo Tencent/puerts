@@ -5,7 +5,8 @@ on:
   push:
     paths: 
       - unity/native_src/**
-      - unity/native_src_ourv8/**
+      - unity/native_src_il2cpp/**
+      - unity/cli/**
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
       - unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.h
       - unreal/Puerts/Source/JsEnv/Private/PromiseRejectCallback.hpp
@@ -25,23 +26,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  android_qjs:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildAndroidQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-          
-  android_nodejs:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildAndroidNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/android/
         with:
@@ -58,23 +47,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  ios_qjs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildiOSQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-          
-  ios_nodejs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildiOSNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/ios/
         with:
@@ -91,23 +68,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  osx_node:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildOSXNodejs
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: nodejs_16
-          
-  osx_qjs:
-    runs-on: macos-11
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildOSXQuickJS
         uses: ./.github/workflows/composites/unity-build-plugins/osx/
         with:
@@ -124,23 +89,11 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: v8_9.4
-          
-  windows_qjs:
-    runs-on: windows-2019
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildWindowsQuickjs
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           backend: quickjs
-
-  windows_node:
-    runs-on: windows-2019
-
-    steps:
-      - uses: actions/checkout@v3
       - name: BuildWindowsNodeJS
         uses: ./.github/workflows/composites/unity-build-plugins/windows/
         with:
