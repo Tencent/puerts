@@ -2,7 +2,7 @@
 // ip/basic_resolver_results.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -28,12 +28,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace ip {
 
 /// A range of entries produced by a resolver.
 /**
- * The asio::ip::basic_resolver_results class template is used to define
+ * The puerts_asio::ip::basic_resolver_results class template is used to define
  * a range over the results returned by a resolver.
  *
  * The iterator's value_type, obtained when a results iterator is dereferenced,
@@ -122,7 +122,7 @@ public:
 #if !defined(GENERATING_DOCUMENTATION)
   // Create results from an addrinfo list returned by getaddrinfo.
   static basic_resolver_results create(
-      asio::detail::addrinfo_type* address_info,
+      puerts_asio::detail::addrinfo_type* address_info,
       const std::string& host_name, const std::string& service_name)
   {
     basic_resolver_results results;
@@ -192,7 +192,7 @@ public:
   static basic_resolver_results create(
       Windows::Foundation::Collections::IVectorView<
         Windows::Networking::EndpointPair^>^ endpoints,
-      const asio::detail::addrinfo_type& hints,
+      const puerts_asio::detail::addrinfo_type& hints,
       const std::string& host_name, const std::string& service_name)
   {
     basic_resolver_results results;
@@ -217,9 +217,9 @@ public:
             basic_resolver_entry<InternetProtocol>(
               typename InternetProtocol::endpoint(
                 ip::make_address(
-                  asio::detail::winrt_utils::string(
+                  puerts_asio::detail::winrt_utils::string(
                     pair->RemoteHostName->CanonicalName)),
-                asio::detail::winrt_utils::integer(
+                puerts_asio::detail::winrt_utils::integer(
                   pair->RemoteServiceName)),
               host_name, service_name));
       }
@@ -304,7 +304,7 @@ private:
 };
 
 } // namespace ip
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

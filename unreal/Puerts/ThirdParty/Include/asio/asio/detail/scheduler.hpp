@@ -2,7 +2,7 @@
 // detail/scheduler.hpp
 // ~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -25,11 +25,12 @@
 #include "asio/detail/op_queue.hpp"
 #include "asio/detail/reactor_fwd.hpp"
 #include "asio/detail/scheduler_operation.hpp"
+#include "asio/detail/thread.hpp"
 #include "asio/detail/thread_context.hpp"
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 struct scheduler_thread_info;
@@ -43,8 +44,11 @@ public:
 
   // Constructor. Specifies the number of concurrent threads that are likely to
   // run the scheduler. If set to 1 certain optimisation are performed.
-  ASIO_DECL scheduler(asio::execution_context& ctx,
-      int concurrency_hint = 0);
+  ASIO_DECL scheduler(puerts_asio::execution_context& ctx,
+      int concurrency_hint = 0, bool own_thread = true);
+
+  // Destructor.
+  ASIO_DECL ~scheduler();
 
   // Destroy all user-defined handler objects owned by the service.
   ASIO_DECL void shutdown();
@@ -53,20 +57,20 @@ public:
   ASIO_DECL void init_task();
 
   // Run the event loop until interrupted or no more work.
-  ASIO_DECL std::size_t run(asio::error_code& ec);
+  ASIO_DECL std::size_t run(puerts_asio::error_code& ec);
 
   // Run until interrupted or one operation is performed.
-  ASIO_DECL std::size_t run_one(asio::error_code& ec);
+  ASIO_DECL std::size_t run_one(puerts_asio::error_code& ec);
 
   // Run until timeout, interrupted, or one operation is performed.
   ASIO_DECL std::size_t wait_one(
-      long usec, asio::error_code& ec);
+      long usec, puerts_asio::error_code& ec);
 
   // Poll for operations without blocking.
-  ASIO_DECL std::size_t poll(asio::error_code& ec);
+  ASIO_DECL std::size_t poll(puerts_asio::error_code& ec);
 
   // Poll for one operation without blocking.
-  ASIO_DECL std::size_t poll_one(asio::error_code& ec);
+  ASIO_DECL std::size_t poll_one(puerts_asio::error_code& ec);
 
   // Interrupt the event processing loop.
   ASIO_DECL void stop();
@@ -95,15 +99,20 @@ public:
   }
 
   // Return whether a handler can be dispatched immediately.
-  bool can_dispatch()
-  {
-    return thread_call_stack::contains(this) != 0;
-  }
+  ASIO_DECL bool can_dispatch();
+
+  /// Capture the current exception so it can be rethrown from a run function.
+  ASIO_DECL void capture_current_exception();
 
   // Request invocation of the given operation and return immediately. Assumes
   // that work_started() has not yet been called for the operation.
   ASIO_DECL void post_immediate_completion(
       operation* op, bool is_continuation);
+
+  // Request invocation of the given operations and return immediately. Assumes
+  // that work_started() has not yet been called for the operations.
+  ASIO_DECL void post_immediate_completions(std::size_t n,
+      op_queue<operation>& ops, bool is_continuation);
 
   // Request invocation of the given operation and return immediately. Assumes
   // that work_started() was previously called for the operation.
@@ -139,15 +148,15 @@ private:
 
   // Run at most one operation. May block.
   ASIO_DECL std::size_t do_run_one(mutex::scoped_lock& lock,
-      thread_info& this_thread, const asio::error_code& ec);
+      thread_info& this_thread, const puerts_asio::error_code& ec);
 
   // Run at most one operation with a timeout. May block.
   ASIO_DECL std::size_t do_wait_one(mutex::scoped_lock& lock,
-      thread_info& this_thread, long usec, const asio::error_code& ec);
+      thread_info& this_thread, long usec, const puerts_asio::error_code& ec);
 
   // Poll for at most one operation.
   ASIO_DECL std::size_t do_poll_one(mutex::scoped_lock& lock,
-      thread_info& this_thread, const asio::error_code& ec);
+      thread_info& this_thread, const puerts_asio::error_code& ec);
 
   // Stop the task and all idle threads.
   ASIO_DECL void stop_all_threads(mutex::scoped_lock& lock);
@@ -155,6 +164,10 @@ private:
   // Wake a single idle thread, or the task, and always unlock the mutex.
   ASIO_DECL void wake_one_thread_and_unlock(
       mutex::scoped_lock& lock);
+
+  // Helper class to run the scheduler in its own thread.
+  class thread_function;
+  friend class thread_function;
 
   // Helper class to perform task-related operations on block exit.
   struct task_cleanup;
@@ -199,10 +212,13 @@ private:
 
   // The concurrency hint used to initialise the scheduler.
   const int concurrency_hint_;
+
+  // The thread that is running the scheduler.
+  puerts_asio::detail::thread* thread_;
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

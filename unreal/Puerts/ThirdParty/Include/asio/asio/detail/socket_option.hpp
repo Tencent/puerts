@@ -2,7 +2,7 @@
 // detail/socket_option.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,7 +23,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 namespace socket_option {
 
@@ -121,7 +121,7 @@ public:
     default:
       {
         std::length_error ex("boolean socket option resize");
-        asio::detail::throw_exception(ex);
+        puerts_asio::detail::throw_exception(ex);
       }
     }
   }
@@ -202,7 +202,7 @@ public:
     if (s != sizeof(value_))
     {
       std::length_error ex("integer socket option resize");
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 
@@ -299,7 +299,7 @@ public:
     if (s != sizeof(value_))
     {
       std::length_error ex("linger socket option resize");
-      asio::detail::throw_exception(ex);
+      puerts_asio::detail::throw_exception(ex);
     }
   }
 
@@ -309,7 +309,7 @@ private:
 
 } // namespace socket_option
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

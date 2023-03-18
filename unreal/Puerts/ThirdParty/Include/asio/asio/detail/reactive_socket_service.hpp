@@ -2,7 +2,7 @@
 // detail/reactive_socket_service.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -21,7 +21,7 @@
 
 #include "asio/buffer.hpp"
 #include "asio/error.hpp"
-#include "asio/io_context.hpp"
+#include "asio/execution_context.hpp"
 #include "asio/socket_base.hpp"
 #include "asio/detail/buffer_sequence_adapter.hpp"
 #include "asio/detail/memory.hpp"
@@ -40,12 +40,12 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 template <typename Protocol>
 class reactive_socket_service :
-  public service_base<reactive_socket_service<Protocol> >,
+  public execution_context_service_base<reactive_socket_service<Protocol> >,
   public reactive_socket_service_base
 {
 public:
@@ -73,9 +73,10 @@ public:
   };
 
   // Constructor.
-  reactive_socket_service(asio::io_context& io_context)
-    : service_base<reactive_socket_service<Protocol> >(io_context),
-      reactive_socket_service_base(io_context)
+  reactive_socket_service(execution_context& context)
+    : execution_context_service_base<
+        reactive_socket_service<Protocol> >(context),
+      reactive_socket_service_base(context)
   {
   }
 
@@ -87,7 +88,7 @@ public:
 
   // Move-construct a new socket implementation.
   void move_construct(implementation_type& impl,
-      implementation_type& other_impl)
+      implementation_type& other_impl) ASIO_NOEXCEPT
   {
     this->base_move_construct(impl, other_impl);
 
@@ -120,8 +121,8 @@ public:
   }
 
   // Open a new socket implementation.
-  asio::error_code open(implementation_type& impl,
-      const protocol_type& protocol, asio::error_code& ec)
+  puerts_asio::error_code open(implementation_type& impl,
+      const protocol_type& protocol, puerts_asio::error_code& ec)
   {
     if (!do_open(impl, protocol.family(),
           protocol.type(), protocol.protocol(), ec))
@@ -130,9 +131,9 @@ public:
   }
 
   // Assign a native socket to a socket implementation.
-  asio::error_code assign(implementation_type& impl,
+  puerts_asio::error_code assign(implementation_type& impl,
       const protocol_type& protocol, const native_handle_type& native_socket,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     if (!do_assign(impl, protocol.type(), native_socket, ec))
       impl.protocol_ = protocol;
@@ -146,8 +147,8 @@ public:
   }
 
   // Bind the socket to the specified local endpoint.
-  asio::error_code bind(implementation_type& impl,
-      const endpoint_type& endpoint, asio::error_code& ec)
+  puerts_asio::error_code bind(implementation_type& impl,
+      const endpoint_type& endpoint, puerts_asio::error_code& ec)
   {
     socket_ops::bind(impl.socket_, endpoint.data(), endpoint.size(), ec);
     return ec;
@@ -155,8 +156,8 @@ public:
 
   // Set a socket option.
   template <typename Option>
-  asio::error_code set_option(implementation_type& impl,
-      const Option& option, asio::error_code& ec)
+  puerts_asio::error_code set_option(implementation_type& impl,
+      const Option& option, puerts_asio::error_code& ec)
   {
     socket_ops::setsockopt(impl.socket_, impl.state_,
         option.level(impl.protocol_), option.name(impl.protocol_),
@@ -166,8 +167,8 @@ public:
 
   // Set a socket option.
   template <typename Option>
-  asio::error_code get_option(const implementation_type& impl,
-      Option& option, asio::error_code& ec) const
+  puerts_asio::error_code get_option(const implementation_type& impl,
+      Option& option, puerts_asio::error_code& ec) const
   {
     std::size_t size = option.size(impl.protocol_);
     socket_ops::getsockopt(impl.socket_, impl.state_,
@@ -180,7 +181,7 @@ public:
 
   // Get the local endpoint.
   endpoint_type local_endpoint(const implementation_type& impl,
-      asio::error_code& ec) const
+      puerts_asio::error_code& ec) const
   {
     endpoint_type endpoint;
     std::size_t addr_len = endpoint.capacity();
@@ -192,7 +193,7 @@ public:
 
   // Get the remote endpoint.
   endpoint_type remote_endpoint(const implementation_type& impl,
-      asio::error_code& ec) const
+      puerts_asio::error_code& ec) const
   {
     endpoint_type endpoint;
     std::size_t addr_len = endpoint.capacity();
@@ -204,8 +205,8 @@ public:
   }
 
   // Disable sends or receives on the socket.
-  asio::error_code shutdown(base_implementation_type& impl,
-      socket_base::shutdown_type what, asio::error_code& ec)
+  puerts_asio::error_code shutdown(base_implementation_type& impl,
+      socket_base::shutdown_type what, puerts_asio::error_code& ec)
   {
     socket_ops::shutdown(impl.socket_, what, ec);
     return ec;
@@ -216,20 +217,31 @@ public:
   template <typename ConstBufferSequence>
   size_t send_to(implementation_type& impl, const ConstBufferSequence& buffers,
       const endpoint_type& destination, socket_base::message_flags flags,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
-    buffer_sequence_adapter<asio::const_buffer,
-        ConstBufferSequence> bufs(buffers);
+    typedef buffer_sequence_adapter<puerts_asio::const_buffer,
+        ConstBufferSequence> bufs_type;
 
-    return socket_ops::sync_sendto(impl.socket_, impl.state_,
-        bufs.buffers(), bufs.count(), flags,
-        destination.data(), destination.size(), ec);
+    if (bufs_type::is_single_buffer)
+    {
+      return socket_ops::sync_sendto1(impl.socket_, impl.state_,
+          bufs_type::first(buffers).data(),
+          bufs_type::first(buffers).size(), flags,
+          destination.data(), destination.size(), ec);
+    }
+    else
+    {
+      bufs_type bufs(buffers);
+      return socket_ops::sync_sendto(impl.socket_, impl.state_,
+          bufs.buffers(), bufs.count(), flags,
+          destination.data(), destination.size(), ec);
+    }
   }
 
   // Wait until data can be sent without blocking.
   size_t send_to(implementation_type& impl, const null_buffers&,
       const endpoint_type&, socket_base::message_flags,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     // Wait for socket to become ready.
     socket_ops::poll_write(impl.socket_, impl.state_, -1, ec);
@@ -239,21 +251,33 @@ public:
 
   // Start an asynchronous send. The data being sent must be valid for the
   // lifetime of the asynchronous operation.
-  template <typename ConstBufferSequence, typename Handler>
+  template <typename ConstBufferSequence, typename Handler, typename IoExecutor>
   void async_send_to(implementation_type& impl,
       const ConstBufferSequence& buffers,
       const endpoint_type& destination, socket_base::message_flags flags,
-      Handler& handler)
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
     typedef reactive_socket_sendto_op<ConstBufferSequence,
-        endpoint_type, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+        endpoint_type, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(impl.socket_, buffers, destination, flags, handler);
+    p.p = new (p.v) op(success_ec_, impl.socket_,
+        buffers, destination, flags, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::write_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_send_to"));
@@ -263,18 +287,30 @@ public:
   }
 
   // Start an asynchronous wait until data can be sent without blocking.
-  template <typename Handler>
+  template <typename Handler, typename IoExecutor>
   void async_send_to(implementation_type& impl, const null_buffers&,
-      const endpoint_type&, socket_base::message_flags, Handler& handler)
+      const endpoint_type&, socket_base::message_flags,
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef reactive_null_buffers_op<Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef reactive_null_buffers_op<Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(handler);
+    p.p = new (p.v) op(success_ec_, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::write_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_send_to(null_buffers)"));
@@ -289,15 +325,27 @@ public:
   size_t receive_from(implementation_type& impl,
       const MutableBufferSequence& buffers,
       endpoint_type& sender_endpoint, socket_base::message_flags flags,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
-    buffer_sequence_adapter<asio::mutable_buffer,
-        MutableBufferSequence> bufs(buffers);
+    typedef buffer_sequence_adapter<puerts_asio::mutable_buffer,
+        MutableBufferSequence> bufs_type;
 
     std::size_t addr_len = sender_endpoint.capacity();
-    std::size_t bytes_recvd = socket_ops::sync_recvfrom(
-        impl.socket_, impl.state_, bufs.buffers(), bufs.count(),
-        flags, sender_endpoint.data(), &addr_len, ec);
+    std::size_t bytes_recvd;
+    if (bufs_type::is_single_buffer)
+    {
+      bytes_recvd = socket_ops::sync_recvfrom1(impl.socket_,
+          impl.state_, bufs_type::first(buffers).data(),
+          bufs_type::first(buffers).size(), flags,
+          sender_endpoint.data(), &addr_len, ec);
+    }
+    else
+    {
+      bufs_type bufs(buffers);
+      bytes_recvd = socket_ops::sync_recvfrom(
+          impl.socket_, impl.state_, bufs.buffers(), bufs.count(),
+          flags, sender_endpoint.data(), &addr_len, ec);
+    }
 
     if (!ec)
       sender_endpoint.resize(addr_len);
@@ -308,7 +356,7 @@ public:
   // Wait until data can be received without blocking.
   size_t receive_from(implementation_type& impl, const null_buffers&,
       endpoint_type& sender_endpoint, socket_base::message_flags,
-      asio::error_code& ec)
+      puerts_asio::error_code& ec)
   {
     // Wait for socket to become ready.
     socket_ops::poll_read(impl.socket_, impl.state_, -1, ec);
@@ -322,22 +370,35 @@ public:
   // Start an asynchronous receive. The buffer for the data being received and
   // the sender_endpoint object must both be valid for the lifetime of the
   // asynchronous operation.
-  template <typename MutableBufferSequence, typename Handler>
+  template <typename MutableBufferSequence,
+      typename Handler, typename IoExecutor>
   void async_receive_from(implementation_type& impl,
       const MutableBufferSequence& buffers, endpoint_type& sender_endpoint,
-      socket_base::message_flags flags, Handler& handler)
+      socket_base::message_flags flags, Handler& handler,
+      const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
     typedef reactive_socket_recvfrom_op<MutableBufferSequence,
-        endpoint_type, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+        endpoint_type, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
     int protocol = impl.protocol_.type();
-    p.p = new (p.v) op(impl.socket_, protocol,
-        buffers, sender_endpoint, flags, handler);
+    p.p = new (p.v) op(success_ec_, impl.socket_, protocol,
+        buffers, sender_endpoint, flags, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::read_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_receive_from"));
@@ -350,19 +411,30 @@ public:
   }
 
   // Wait until data can be received without blocking.
-  template <typename Handler>
-  void async_receive_from(implementation_type& impl,
-      const null_buffers&, endpoint_type& sender_endpoint,
-      socket_base::message_flags flags, Handler& handler)
+  template <typename Handler, typename IoExecutor>
+  void async_receive_from(implementation_type& impl, const null_buffers&,
+      endpoint_type& sender_endpoint, socket_base::message_flags flags,
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef reactive_null_buffers_op<Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef reactive_null_buffers_op<Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(handler);
+    p.p = new (p.v) op(success_ec_, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::read_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_receive_from(null_buffers)"));
@@ -379,13 +451,13 @@ public:
 
   // Accept a new connection.
   template <typename Socket>
-  asio::error_code accept(implementation_type& impl,
-      Socket& peer, endpoint_type* peer_endpoint, asio::error_code& ec)
+  puerts_asio::error_code accept(implementation_type& impl,
+      Socket& peer, endpoint_type* peer_endpoint, puerts_asio::error_code& ec)
   {
     // We cannot accept a socket that is already open.
     if (peer.is_open())
     {
-      ec = asio::error::already_open;
+      ec = puerts_asio::error::already_open;
       return ec;
     }
 
@@ -407,49 +479,32 @@ public:
     return ec;
   }
 
-#if defined(ASIO_HAS_MOVE)
-  // Accept a new connection.
-  typename Protocol::socket accept(implementation_type& impl,
-      io_context* peer_io_context, endpoint_type* peer_endpoint,
-      asio::error_code& ec)
-  {
-    typename Protocol::socket peer(
-        peer_io_context ? *peer_io_context : io_context_);
-
-    std::size_t addr_len = peer_endpoint ? peer_endpoint->capacity() : 0;
-    socket_holder new_socket(socket_ops::sync_accept(impl.socket_,
-          impl.state_, peer_endpoint ? peer_endpoint->data() : 0,
-          peer_endpoint ? &addr_len : 0, ec));
-
-    // On success, assign new connection to peer socket object.
-    if (new_socket.get() != invalid_socket)
-    {
-      if (peer_endpoint)
-        peer_endpoint->resize(addr_len);
-      peer.assign(impl.protocol_, new_socket.get(), ec);
-      if (!ec)
-        new_socket.release();
-    }
-
-    return peer;
-  }
-#endif // defined(ASIO_HAS_MOVE)
-
   // Start an asynchronous accept. The peer and peer_endpoint objects must be
   // valid until the accept's handler is invoked.
-  template <typename Socket, typename Handler>
+  template <typename Socket, typename Handler, typename IoExecutor>
   void async_accept(implementation_type& impl, Socket& peer,
-      endpoint_type* peer_endpoint, Handler& handler)
+      endpoint_type* peer_endpoint, Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef reactive_socket_accept_op<Socket, Protocol, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef reactive_socket_accept_op<Socket, Protocol, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(impl.socket_, impl.state_, peer,
-        impl.protocol_, peer_endpoint, handler);
+    p.p = new (p.v) op(success_ec_, impl.socket_, impl.state_,
+        peer, impl.protocol_, peer_endpoint, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected() && !peer.is_open())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::read_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_accept"));
@@ -461,20 +516,32 @@ public:
 #if defined(ASIO_HAS_MOVE)
   // Start an asynchronous accept. The peer_endpoint object must be valid until
   // the accept's handler is invoked.
-  template <typename Handler>
-  void async_accept(implementation_type& impl,
-      asio::io_context* peer_io_context,
-      endpoint_type* peer_endpoint, Handler& handler)
+  template <typename PeerIoExecutor, typename Handler, typename IoExecutor>
+  void async_move_accept(implementation_type& impl,
+      const PeerIoExecutor& peer_io_ex, endpoint_type* peer_endpoint,
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef reactive_socket_move_accept_op<Protocol, Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef reactive_socket_move_accept_op<Protocol,
+        PeerIoExecutor, Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(peer_io_context ? *peer_io_context : io_context_,
-        impl.socket_, impl.state_, impl.protocol_, peer_endpoint, handler);
+    p.p = new (p.v) op(success_ec_, peer_io_ex, impl.socket_,
+        impl.state_, impl.protocol_, peer_endpoint, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::read_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_accept"));
@@ -485,8 +552,8 @@ public:
 #endif // defined(ASIO_HAS_MOVE)
 
   // Connect the socket to the specified endpoint.
-  asio::error_code connect(implementation_type& impl,
-      const endpoint_type& peer_endpoint, asio::error_code& ec)
+  puerts_asio::error_code connect(implementation_type& impl,
+      const endpoint_type& peer_endpoint, puerts_asio::error_code& ec)
   {
     socket_ops::sync_connect(impl.socket_,
         peer_endpoint.data(), peer_endpoint.size(), ec);
@@ -494,18 +561,30 @@ public:
   }
 
   // Start an asynchronous connect.
-  template <typename Handler>
+  template <typename Handler, typename IoExecutor>
   void async_connect(implementation_type& impl,
-      const endpoint_type& peer_endpoint, Handler& handler)
+      const endpoint_type& peer_endpoint,
+      Handler& handler, const IoExecutor& io_ex)
   {
     bool is_continuation =
       asio_handler_cont_helpers::is_continuation(handler);
 
+    typename associated_cancellation_slot<Handler>::type slot
+      = puerts_asio::get_associated_cancellation_slot(handler);
+
     // Allocate and construct an operation to wrap the handler.
-    typedef reactive_socket_connect_op<Handler> op;
-    typename op::ptr p = { asio::detail::addressof(handler),
+    typedef reactive_socket_connect_op<Handler, IoExecutor> op;
+    typename op::ptr p = { puerts_asio::detail::addressof(handler),
       op::ptr::allocate(handler), 0 };
-    p.p = new (p.v) op(impl.socket_, handler);
+    p.p = new (p.v) op(success_ec_, impl.socket_, handler, io_ex);
+
+    // Optionally register for per-operation cancellation.
+    if (slot.is_connected())
+    {
+      p.p->cancellation_key_ =
+        &slot.template emplace<reactor_op_cancellation>(
+            &reactor_, &impl.reactor_data_, impl.socket_, reactor::connect_op);
+    }
 
     ASIO_HANDLER_CREATION((reactor_.context(), *p.p, "socket",
           &impl, impl.socket_, "async_connect"));
@@ -517,7 +596,7 @@ public:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -9,8 +9,10 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class PuertsEditor : ModuleRules {
-    public PuertsEditor(ReadOnlyTargetRules target) : base(target) {
+public class PuertsEditor : ModuleRules 
+{
+    public PuertsEditor(ReadOnlyTargetRules Target) : base(Target) 
+    {
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
@@ -34,6 +36,13 @@ public class PuertsEditor : ModuleRules {
                 "AssetTools"
             }
         );
-        bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
+        
+        if (JsEnv.WithSourceControl)
+        {
+            PrivateDependencyModuleNames.Add("SourceControl");
+            PublicDefinitions.Add("PUERTS_WITH_SOURCE_CONTROL");
+        }
+        
+        bEnableUndefinedIdentifierWarnings = false; // 閬垮厤鍦╒S 2017缂栬瘧鏃跺嚭鐜癈4668閿欒
     }
 }

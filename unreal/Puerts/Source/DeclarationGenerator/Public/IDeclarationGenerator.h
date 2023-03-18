@@ -27,9 +27,7 @@ public:
         return FModuleManager::Get().IsModuleLoaded("DeclarationGenerator");
     }
 
-    virtual void LoadAllWidgetBlueprint() = 0;
-
-    virtual void GenTypeScriptDeclaration() = 0;
+    virtual void GenTypeScriptDeclaration(bool InGenFull, FName InSearchPath) = 0;
 
     virtual void GenReactDeclaration() = 0;
 };

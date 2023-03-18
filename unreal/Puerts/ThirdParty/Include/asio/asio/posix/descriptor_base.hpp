@@ -2,7 +2,7 @@
 // posix/descriptor_base.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -25,7 +25,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace posix {
 
 /// The descriptor_base class is used as a base for the descriptor class as a
@@ -56,9 +56,9 @@ public:
    *
    * @par Example
    * @code
-   * asio::posix::stream_descriptor descriptor(io_context); 
+   * puerts_asio::posix::stream_descriptor descriptor(my_context);
    * ...
-   * asio::descriptor_base::bytes_readable command(true);
+   * puerts_asio::descriptor_base::bytes_readable command(true);
    * descriptor.io_control(command);
    * std::size_t bytes_readable = command.get();
    * @endcode
@@ -69,7 +69,7 @@ public:
 #if defined(GENERATING_DOCUMENTATION)
   typedef implementation_defined bytes_readable;
 #else
-  typedef asio::detail::io_control::bytes_readable bytes_readable;
+  typedef puerts_asio::detail::io_control::bytes_readable bytes_readable;
 #endif
 
 protected:
@@ -80,7 +80,7 @@ protected:
 };
 
 } // namespace posix
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

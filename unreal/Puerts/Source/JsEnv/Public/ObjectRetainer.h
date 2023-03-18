@@ -41,7 +41,7 @@ public:
     virtual FString GetReferencerName() const override;
 
 #ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
+    FCriticalSection RetainedObjectsCritical;
 #endif
 
 private:

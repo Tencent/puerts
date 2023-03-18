@@ -19,6 +19,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include <memory>
+
 namespace puerts
 {
 class ICppObjectMapper
@@ -34,6 +36,8 @@ public:
 
     virtual bool IsInstanceOfCppObject(const void* TypeId, v8::Local<v8::Object> JsObject) = 0;
 
+    virtual std::weak_ptr<int> GetJsEnvLifeCycleTracker() = 0;
+
     virtual ~ICppObjectMapper()
     {
     }
@@ -43,7 +47,7 @@ public:
 class IObjectMapper : public ICppObjectMapper
 {
 public:
-    virtual void Bind(UClass* Class, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
+    virtual void Bind(FClassWrapper* ClassWrapper, UObject* UEObject, v8::Local<v8::Object> JSObject) = 0;
 
     virtual void UnBind(UClass* Class, UObject* UEObject) = 0;
 

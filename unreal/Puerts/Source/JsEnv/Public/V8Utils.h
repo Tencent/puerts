@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Tencent is pleased to support the open source community by making Puerts available.
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
@@ -19,6 +19,7 @@
 #pragma warning(pop)
 
 #include "DataTransfer.h"
+#include "UECompatible.h"
 
 namespace puerts
 {
@@ -74,7 +75,7 @@ public:
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Context>& Context, v8::Local<v8::Value> Value, int Index = 0)
     {
         auto UEObject = reinterpret_cast<UObject*>(GetPointer(Context, Value, Index));
-        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill()))
+        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
                    ? UEObject
                    : RELEASED_UOBJECT;
     }
@@ -82,7 +83,7 @@ public:
     FORCEINLINE static UObject* GetUObject(v8::Local<v8::Object> Object, int Index = 0)
     {
         auto UEObject = reinterpret_cast<UObject*>(GetPointer(Object, Index));
-        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObject->IsPendingKill()))
+        return (!UEObject || (UEObject != RELEASED_UOBJECT && UEObject->IsValidLowLevelFast() && !UEObjectIsPendingKill(UEObject)))
                    ? UEObject
                    : RELEASED_UOBJECT;
     }
@@ -120,7 +121,23 @@ public:
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const FName& String)
     {
-        return ToV8String(Isolate, String.ToString());
+        const FNameEntry* Entry = String.GetComparisonNameEntry();
+        FString Out;
+        if (String.GetNumber() == NAME_NO_NUMBER_INTERNAL)
+        {
+            Out.Empty(Entry->GetNameLength());
+            Entry->AppendNameToString(Out);
+        }
+        else
+        {
+            Out.Empty(Entry->GetNameLength() + 6);
+            Entry->AppendNameToString(Out);
+
+            Out += TEXT('_');
+            Out.AppendInt(NAME_INTERNAL_TO_EXTERNAL(String.GetNumber()));
+        }
+
+        return ToV8String(Isolate, Out);
     }
 
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const FText& String)
@@ -136,6 +153,29 @@ public:
     FORCEINLINE static v8::Local<v8::String> ToV8String(v8::Isolate* Isolate, const char* String)
     {
         return v8::String::NewFromUtf8(Isolate, String, v8::NewStringType::kNormal).ToLocalChecked();
+    }
+
+    static v8::Local<v8::String> ToV8StringFromFileContent(v8::Isolate* Isolate, const TArray<uint8>& FileContent)
+    {
+        const uint8* Buffer = FileContent.GetData();
+        auto Size = FileContent.Num();
+
+        if (Size >= 2 && !(Size & 1) && ((Buffer[0] == 0xff && Buffer[1] == 0xfe) || (Buffer[0] == 0xfe && Buffer[1] == 0xff)))
+        {
+            FString Content;
+            FFileHelper::BufferToString(Content, Buffer, Size);
+            return ToV8String(Isolate, Content);
+        }
+        else
+        {
+            if (Size >= 3 && Buffer[0] == 0xef && Buffer[1] == 0xbb && Buffer[2] == 0xbf)
+            {
+                // Skip over UTF-8 BOM if there is one
+                Buffer += 3;
+                Size -= 3;
+            }
+            return v8::String::NewFromUtf8(Isolate, (const char*) Buffer, v8::NewStringType::kNormal, Size).ToLocalChecked();
+        }
     }
 
     template <typename T>

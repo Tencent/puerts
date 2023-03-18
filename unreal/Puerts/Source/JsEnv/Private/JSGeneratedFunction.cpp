@@ -17,9 +17,6 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallJS)
 
     if (Func)
     {
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Func->Isolate);
-#endif
         auto PinedDynamicInvoker = Func->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {
@@ -36,16 +33,13 @@ DEFINE_FUNCTION(UJSGeneratedFunction::execCallMixin)
     UJSGeneratedFunction* JsFunc = Cast<UJSGeneratedFunction>(Func);
     if (!JsFunc)
     {
-        JsFunc = Cast<UJSGeneratedFunction>(Func->GetSuperStruct());
+        JsFunc = GetJSGeneratedFunctionFromScript(Func);
     }
     check(JsFunc);
     // UE_LOG(LogTemp, Warning, TEXT("overrided function called, %s(%p)"), *Func->GetName(), Func);
 
     if (JsFunc)
     {
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Func->Isolate);
-#endif
         auto PinedDynamicInvoker = JsFunc->DynamicInvoker.Pin();
         if (PinedDynamicInvoker)
         {

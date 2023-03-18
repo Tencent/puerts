@@ -47,7 +47,52 @@ public:
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
         std::function<void(void*)> OnCall);
 
+    bool IsValid() const;
+
 protected:
+    FORCEINLINE bool Call_ProcessParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+        const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
+    {
+        if (Return)
+        {
+            Return->Property->InitializeValue_InContainer(Params);
+        }
+
+        for (int i = StartPos; i < Arguments.size(); ++i)
+        {
+            Arguments[i]->Property->InitializeValue_InContainer(Params);
+
+            if (UNLIKELY(ArgumentDefaultValues && Info[i - StartPos]->IsUndefined()))
+            {
+                Arguments[i]->Property->CopyCompleteValue_InContainer(Params, ArgumentDefaultValues);
+            }
+            else if (!Arguments[i]->JsToUEInContainer(Isolate, Context, Info[i - StartPos], Params, false))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    FORCEINLINE void Call_ProcessReturnAndOutParams(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+        const v8::FunctionCallbackInfo<v8::Value>& Info, void* Params, int StartPos)
+    {
+        if (Return)
+        {
+            Info.GetReturnValue().Set(Return->UEToJsInContainer(Isolate, Context, Params));
+            Return->Property->DestroyValue_InContainer(Params);
+        }
+
+        for (int i = StartPos; i < Arguments.size(); ++i)
+        {
+            Arguments[i]->UEOutToJsInContainer(Isolate, Context, Info[i - StartPos], Params, false);
+            if (Arguments[i]->ParamShallowCopySize == 0)
+            {
+                Arguments[i]->Property->DestroyValue_InContainer(Params);
+            }
+        }
+    }
+
     std::vector<std::unique_ptr<FPropertyTranslator>> Arguments;
 
     std::unique_ptr<FPropertyTranslator> Return;
@@ -60,6 +105,8 @@ protected:
 
     bool IsStatic;
 
+    bool SkipWorldContextInArg0;
+
     uint32 ParamsBufferSize;
 
     void* ArgumentDefaultValues;
@@ -70,6 +117,12 @@ private:
     static void Call(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void Call(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void SlowCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        UObject* CallObject, UFunction* CallFunction, void* Params);
+
+    void FastCall(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info,
+        UObject* CallObject, UFunction* CallFunction, void* Params);
 
     void Init(UFunction* InFunction, bool IsDelegate);
 

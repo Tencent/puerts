@@ -141,6 +141,16 @@ pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t l
         v8::String::NewFromUtf8(context->GetIsolate(), str, v8::NewStringType::kNormal, static_cast<int>(length)).ToLocalChecked());
 }
 
+pesapi_value pesapi_create_binary(pesapi_env env, void* bin, size_t length)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    return v8impl::PesapiValueFromV8LocalValue(v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), bin, length));
+#else
+    return v8impl::PesapiValueFromV8LocalValue(v8::ArrayBuffer::New(context->GetIsolate(), bin, length));
+#endif
+}
+
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -166,14 +176,14 @@ int64_t pesapi_get_value_int64(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->ToBigInt(context).ToLocalChecked()->Int64Value();
+    return value->IsBigInt() ? value->ToBigInt(context).ToLocalChecked()->Int64Value() : 0;
 }
 
 uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return value->ToBigInt(context).ToLocalChecked()->Uint64Value();
+    return value->IsBigInt() ? value->ToBigInt(context).ToLocalChecked()->Uint64Value() : 0;
 }
 
 double pesapi_get_value_double(pesapi_env env, pesapi_value pvalue)
@@ -199,6 +209,34 @@ const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value pvalue, ch
         str->WriteUtf8(context->GetIsolate(), buf, *bufsize);
     }
     return buf;
+}
+
+void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsize)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+
+    if (value->IsArrayBufferView())
+    {
+        v8::Local<v8::ArrayBufferView> buffView = value.As<v8::ArrayBufferView>();
+        *bufsize = buffView->ByteLength();
+        auto Ab = buffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + buffView->ByteOffset();
+#else
+        return static_cast<char*>(Ab->GetContents().Data()) + buffView->ByteOffset();
+#endif
+    }
+    if (value->IsArrayBuffer())
+    {
+        auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_Get_Data(ab, *bufsize);
+#else
+        return ab->GetContents().Data();
+#endif
+    }
+    return nullptr;
 }
 
 bool pesapi_is_null(pesapi_env env, pesapi_value pvalue)
@@ -267,11 +305,17 @@ bool pesapi_is_function(pesapi_env env, pesapi_value pvalue)
     return value->IsFunction();
 }
 
+bool pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
+{
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    return value->IsArrayBuffer() || value->IsArrayBufferView();
+}
+
 pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     return v8impl::PesapiValueFromV8LocalValue(
-        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, copy));
+        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, !copy));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
@@ -281,6 +325,15 @@ void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
     if (value.IsEmpty() || !value->IsObject())
         return nullptr;
     return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>());
+}
+
+const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    if (value.IsEmpty() || !value->IsObject())
+        return nullptr;
+    return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>(), 1);
 }
 
 bool pesapi_is_native_object(pesapi_env env, const void* class_id, pesapi_value pvalue)
@@ -357,6 +410,23 @@ pesapi_value pesapi_get_holder(pesapi_callback_info pinfo)
     return v8impl::PesapiValueFromV8LocalValue((*info).Holder());
 }
 
+void* pesapi_get_userdata(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    if ((*info).IsConstructCall())
+        return nullptr;
+    return v8::Local<v8::External>::Cast((*info).Data())->Value();
+}
+
+void* pesapi_get_constructor_userdata(pesapi_callback_info pinfo)
+{
+    auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
+    if (!(*info).IsConstructCall())
+        return nullptr;
+    auto ClassDefinition = reinterpret_cast<puerts::JSClassDefinition*>((v8::Local<v8::External>::Cast((*info).Data()))->Value());
+    return ClassDefinition->Data;
+}
+
 void pesapi_add_return(pesapi_callback_info pinfo, pesapi_value value)
 {
     auto info = reinterpret_cast<const v8::FunctionCallbackInfo<v8::Value>*>(pinfo);
@@ -396,12 +466,11 @@ void pesapi_release_env_holder(pesapi_env_holder env_holder)
     }
 }
 
-pesapi_scope pesapi_open_scope(pesapi_env env)
+pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder)
 {
-    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    context->GetIsolate()->Enter();
-    auto scope = new pesapi_scope__(context->GetIsolate());
-    context->Enter();
+    env_holder->isolate->Enter();
+    auto scope = new pesapi_scope__(env_holder->isolate);
+    env_holder->context_persistent.Get(env_holder->isolate)->Enter();
     return scope;
 }
 
@@ -546,10 +615,33 @@ pesapi_value pesapi_call_function(pesapi_env env, pesapi_value pfunc, pesapi_val
     {
         return nullptr;
     }
-    else
+    return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
+}
+
+pesapi_value pesapi_eval(pesapi_env env, const uint8_t* code, size_t code_size, const char* path)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto isolate = context->GetIsolate();
+    v8::Local<v8::String> url =
+        v8::String::NewFromUtf8(isolate, path == nullptr ? "" : path, v8::NewStringType::kNormal).ToLocalChecked();
+    std::vector<char> buff;
+    buff.reserve(code_size + 1);
+    memcpy(buff.data(), code, code_size);
+    buff[code_size] = '\0';
+    v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, buff.data(), v8::NewStringType::kNormal).ToLocalChecked();
+    v8::ScriptOrigin origin(url);
+
+    auto CompiledScript = v8::Script::Compile(context, source, &origin);
+    if (CompiledScript.IsEmpty())
     {
-        return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
+        return nullptr;
     }
+    auto maybe_ret = CompiledScript.ToLocalChecked()->Run(context);
+    if (maybe_ret.IsEmpty())
+    {
+        return nullptr;
+    }
+    return v8impl::PesapiValueFromV8LocalValue(maybe_ret.ToLocalChecked());
 }
 
 struct pesapi_type_info__
@@ -672,12 +764,13 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
-    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties)
+    pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties, void* userdata)
 {
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
     classDef.ScriptName = type_name;
+    classDef.Data = userdata;
 
     classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
     classDef.Finalize = finalize;

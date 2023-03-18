@@ -1,0 +1,36 @@
+name: build ios unity plugin
+
+inputs:
+  backend:
+    description: 'js backend'     
+    required: true
+  config:
+    type: choice
+    description: Release Or Debug
+    default: 'Release'
+    options:
+    - Release
+    - Debug
+  GITHUB_TOKEN:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    # - name: Get backend artifact
+    #   uses: ./.github/workflows/composites/unity-download-backend/
+    #   with:
+    #     github_token: ${{ inputs.GITHUB_TOKEN }}
+    #     backend: ${{ inputs.backend }}
+    - name: Build
+      shell: bash
+      run: |
+        cd unity
+        npm i
+        cd native_src
+        node ../cli make --platform ios --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        path: ./unity/Assets/core/upm/Plugins/**/*
+        name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

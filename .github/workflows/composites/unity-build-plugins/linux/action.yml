@@ -1,0 +1,42 @@
+name: build linux unity plugin
+
+inputs:
+  backend:
+    description: 'js backend'     
+    required: true
+  config:
+    type: choice
+    description: Release Or Debug
+    default: 'Release'
+    options:
+    - Release
+    - Debug
+  GITHUB_TOKEN:
+    required:
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install libc++-dev
+      shell: bash
+      run: |
+        sudo apt-get install clang
+        sudo apt-get install libc++-dev
+        sudo apt-get install libc++abi-dev
+    # - name: Get backend artifact
+    #   uses: ./.github/workflows/composites/unity-download-backend/
+    #   with:
+    #     github_token: ${{ inputs.GITHUB_TOKEN }}
+    #     backend: ${{ inputs.backend }}
+    - name: Build
+      shell: bash
+      run: |
+        cd unity
+        npm i
+        cd native_src
+        node ../cli make --platform linux --backend ${{ inputs.backend }} --config ${{ inputs.config }}
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        path: ./unity/Assets/core/upm/Plugins/**/*
+        name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})

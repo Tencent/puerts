@@ -26,19 +26,52 @@ var global = global || (function () { return this; }());
         }
     });
     
-    function createNamespaceOrClass(path, parentDir) {
-        return new Proxy({__path: path, __parent:parentDir}, {
+    const TNAMESPACE = 0;
+    const TENUM = 1
+    const TBLUEPRINT = 2;
+    const TSTRUCT = 3
+    
+    function createNamespaceOrClass(path, parentDir, nodeType) {
+        return new Proxy({__path: path, __parent:parentDir, __type:nodeType}, {
             get: function(node, name) {
                 if (!(name in node)) {
                     if (name === '__parent' || name === '__path') return undefined;
-                    node[name] = createNamespaceOrClass(name, node);
+                    
+                    if (node.__type == TENUM) { // auto load
+                        node[name] = createNamespaceOrClass(name, node, TNAMESPACE);
+                        blueprint_load(node[name]);
+                    } else {
+                        let newNodeType = node.__type;
+                        
+                        if (newNodeType === TNAMESPACE) {
+                            let path = `/${name}.${name}`
+                            let c = node;
+                            while (c && c.__path) {
+                                path = `/${c.__path}${path}`
+                                c = c.__parent;
+                            }
+                            const obj = UE.Object.Load(path);
+                            if (obj) {
+                                const typeName = obj.GetClass().GetName();
+                                if (typeName === 'UserDefinedEnum') {
+                                    newNodeType = TENUM;
+                                } else if (typeName === 'UserDefinedStruct') {
+                                    newNodeType = TSTRUCT;
+                                } else {
+                                    newNodeType = TBLUEPRINT;
+                                }
+                            }
+                        }
+                        
+                        node[name] = createNamespaceOrClass(name, node, newNodeType);
+                    }
                 }
                 return node[name];
             }
         });
     }
     
-    cache["Game"] = createNamespaceOrClass("Game");
+    cache["Game"] = createNamespaceOrClass("Game", undefined, TNAMESPACE);
     
     puerts.registerBuildinModule('ue', UE);
     
@@ -76,6 +109,9 @@ var global = global || (function () { return this; }());
     puerts.$set = setref;
     puerts.merge = global.__tgjsMergeObject;
     global.__tgjsMergeObject = undefined;
+    
+    cache.FNameLiteral = global.__tgjsFNameToArrayBuffer;
+    global.__tgjsFNameToArrayBuffer = undefined;
     
     let rawmakeclass = global.__tgjsMakeUClass
     global.__tgjsMakeUClass = undefined;
@@ -531,7 +567,7 @@ var global = global || (function () { return this; }());
         "CustomThunkTemplates": MetaDataInst,
         //  decorator to add class specifier
         "uclass": dummyDecorator,
-        //  meta data of class
+        //  metadata of class
         "ToolTip": MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
@@ -552,7 +588,7 @@ var global = global || (function () { return this; }());
         "ExposedAsyncProxy": MetaDataInst,
         "BlueprintThreadSafe": MetaDataInst,
         "UsesHierarchy": MetaDataInst,
-        //  decorator to add class meta data
+        //  decorator to add class metadata
         "umeta": dummyDecorator
     }
 
@@ -585,7 +621,7 @@ var global = global || (function () { return this; }());
         "InternalUseParam": MetaDataInst,
         //  decorator to add function specifier
         "ufunction": dummyDecorator,
-        //  type of meta data specifier
+        //  type of metadata specifier
         "ToolTip": MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
@@ -593,7 +629,6 @@ var global = global || (function () { return this; }());
         "ArrayParm": MetaDataInst,
         "ArrayTypeDependentParams": MetaDataInst,
         "AutoCreateRefTerm": MetaDataInst,
-        "BlueprintInternalUseOnly": MetaDataInst,
         "BlueprintProtected": MetaDataInst,
         "CallableWithoutWorldContext": MetaDataInst,
         "CommutativeAssociativeBinaryOperator": MetaDataInst,
@@ -633,7 +668,7 @@ var global = global || (function () { return this; }());
         "MapValueParam": MetaDataInst,
         "AnimBlueprintFunction": MetaDataInst,
         "ArrayParam": MetaDataInst,
-        //  decorator to add function meta data
+        //  decorator to add function metadata
         "umeta": dummyDecorator
     }
 

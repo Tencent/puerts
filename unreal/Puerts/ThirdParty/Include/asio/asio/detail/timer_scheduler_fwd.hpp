@@ -2,7 +2,7 @@
 // detail/timer_scheduler_fwd.hpp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,7 +17,7 @@
 
 #include "asio/detail/config.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 #if defined(ASIO_WINDOWS_RUNTIME)
@@ -35,6 +35,6 @@ typedef class select_reactor timer_scheduler;
 #endif
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #endif // ASIO_DETAIL_TIMER_SCHEDULER_FWD_HPP

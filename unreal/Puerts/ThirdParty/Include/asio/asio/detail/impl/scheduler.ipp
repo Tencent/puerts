@@ -2,7 +2,7 @@
 // detail/impl/scheduler.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,11 +23,30 @@
 #include "asio/detail/reactor.hpp"
 #include "asio/detail/scheduler.hpp"
 #include "asio/detail/scheduler_thread_info.hpp"
+#include "asio/detail/signal_blocker.hpp"
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
+
+class scheduler::thread_function
+{
+public:
+  explicit thread_function(scheduler* s)
+    : this_(s)
+  {
+  }
+
+  void operator()()
+  {
+    puerts_asio::error_code ec;
+    this_->run(ec);
+  }
+
+private:
+  scheduler* this_;
+};
 
 struct scheduler::task_cleanup
 {
@@ -35,7 +54,7 @@ struct scheduler::task_cleanup
   {
     if (this_thread_->private_outstanding_work > 0)
     {
-      asio::detail::increment(
+      puerts_asio::detail::increment(
           scheduler_->outstanding_work_,
           this_thread_->private_outstanding_work);
     }
@@ -60,7 +79,7 @@ struct scheduler::work_cleanup
   {
     if (this_thread_->private_outstanding_work > 1)
     {
-      asio::detail::increment(
+      puerts_asio::detail::increment(
           scheduler_->outstanding_work_,
           this_thread_->private_outstanding_work - 1);
     }
@@ -84,9 +103,9 @@ struct scheduler::work_cleanup
   thread_info* this_thread_;
 };
 
-scheduler::scheduler(
-    asio::execution_context& ctx, int concurrency_hint)
-  : asio::detail::execution_context_service_base<scheduler>(ctx),
+scheduler::scheduler(puerts_asio::execution_context& ctx,
+    int concurrency_hint, bool own_thread)
+  : puerts_asio::detail::execution_context_service_base<scheduler>(ctx),
     one_thread_(concurrency_hint == 1
         || !ASIO_CONCURRENCY_HINT_IS_LOCKING(
           SCHEDULER, concurrency_hint)
@@ -99,16 +118,47 @@ scheduler::scheduler(
     outstanding_work_(0),
     stopped_(false),
     shutdown_(false),
-    concurrency_hint_(concurrency_hint)
+    concurrency_hint_(concurrency_hint),
+    thread_(0)
 {
   ASIO_HANDLER_TRACKING_INIT;
+
+  if (own_thread)
+  {
+    ++outstanding_work_;
+    puerts_asio::detail::signal_blocker sb;
+    thread_ = new puerts_asio::detail::thread(thread_function(this));
+  }
+}
+
+scheduler::~scheduler()
+{
+  if (thread_)
+  {
+    mutex::scoped_lock lock(mutex_);
+    shutdown_ = true;
+    stop_all_threads(lock);
+    lock.unlock();
+    thread_->join();
+    delete thread_;
+  }
 }
 
 void scheduler::shutdown()
 {
   mutex::scoped_lock lock(mutex_);
   shutdown_ = true;
+  if (thread_)
+    stop_all_threads(lock);
   lock.unlock();
+
+  // Join thread to ensure task operation is returned to queue.
+  if (thread_)
+  {
+    thread_->join();
+    delete thread_;
+    thread_ = 0;
+  }
 
   // Destroy handler objects.
   while (!op_queue_.empty())
@@ -134,9 +184,9 @@ void scheduler::init_task()
   }
 }
 
-std::size_t scheduler::run(asio::error_code& ec)
+std::size_t scheduler::run(puerts_asio::error_code& ec)
 {
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   if (outstanding_work_ == 0)
   {
     stop();
@@ -156,9 +206,9 @@ std::size_t scheduler::run(asio::error_code& ec)
   return n;
 }
 
-std::size_t scheduler::run_one(asio::error_code& ec)
+std::size_t scheduler::run_one(puerts_asio::error_code& ec)
 {
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   if (outstanding_work_ == 0)
   {
     stop();
@@ -174,9 +224,9 @@ std::size_t scheduler::run_one(asio::error_code& ec)
   return do_run_one(lock, this_thread, ec);
 }
 
-std::size_t scheduler::wait_one(long usec, asio::error_code& ec)
+std::size_t scheduler::wait_one(long usec, puerts_asio::error_code& ec)
 {
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   if (outstanding_work_ == 0)
   {
     stop();
@@ -192,9 +242,9 @@ std::size_t scheduler::wait_one(long usec, asio::error_code& ec)
   return do_wait_one(lock, this_thread, usec, ec);
 }
 
-std::size_t scheduler::poll(asio::error_code& ec)
+std::size_t scheduler::poll(puerts_asio::error_code& ec)
 {
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   if (outstanding_work_ == 0)
   {
     stop();
@@ -223,9 +273,9 @@ std::size_t scheduler::poll(asio::error_code& ec)
   return n;
 }
 
-std::size_t scheduler::poll_one(asio::error_code& ec)
+std::size_t scheduler::poll_one(puerts_asio::error_code& ec)
 {
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   if (outstanding_work_ == 0)
   {
     stop();
@@ -274,6 +324,17 @@ void scheduler::compensating_work_started()
   ++static_cast<thread_info*>(this_thread)->private_outstanding_work;
 }
 
+bool scheduler::can_dispatch()
+{
+  return thread_call_stack::contains(this) != 0;
+}
+
+void scheduler::capture_current_exception()
+{
+  if (thread_info_base* this_thread = thread_call_stack::contains(this))
+    this_thread->capture_current_exception();
+}
+
 void scheduler::post_immediate_completion(
     scheduler::operation* op, bool is_continuation)
 {
@@ -294,6 +355,30 @@ void scheduler::post_immediate_completion(
   work_started();
   mutex::scoped_lock lock(mutex_);
   op_queue_.push(op);
+  wake_one_thread_and_unlock(lock);
+}
+
+void scheduler::post_immediate_completions(std::size_t n,
+    op_queue<scheduler::operation>& ops, bool is_continuation)
+{
+#if defined(ASIO_HAS_THREADS)
+  if (one_thread_ || is_continuation)
+  {
+    if (thread_info_base* this_thread = thread_call_stack::contains(this))
+    {
+      static_cast<thread_info*>(this_thread)->private_outstanding_work
+        += static_cast<long>(n);
+      static_cast<thread_info*>(this_thread)->private_op_queue.push(ops);
+      return;
+    }
+  }
+#else // defined(ASIO_HAS_THREADS)
+  (void)is_continuation;
+#endif // defined(ASIO_HAS_THREADS)
+
+  increment(outstanding_work_, static_cast<long>(n));
+  mutex::scoped_lock lock(mutex_);
+  op_queue_.push(ops);
   wake_one_thread_and_unlock(lock);
 }
 
@@ -355,7 +440,7 @@ void scheduler::abandon_operations(
 
 std::size_t scheduler::do_run_one(mutex::scoped_lock& lock,
     scheduler::thread_info& this_thread,
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   while (!stopped_)
   {
@@ -398,6 +483,7 @@ std::size_t scheduler::do_run_one(mutex::scoped_lock& lock,
 
         // Complete the operation. May throw an exception. Deletes the object.
         o->complete(this, ec, task_result);
+        this_thread.rethrow_pending_exception();
 
         return 1;
       }
@@ -414,7 +500,7 @@ std::size_t scheduler::do_run_one(mutex::scoped_lock& lock,
 
 std::size_t scheduler::do_wait_one(mutex::scoped_lock& lock,
     scheduler::thread_info& this_thread, long usec,
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   if (stopped_)
     return 0;
@@ -478,13 +564,14 @@ std::size_t scheduler::do_wait_one(mutex::scoped_lock& lock,
 
   // Complete the operation. May throw an exception. Deletes the object.
   o->complete(this, ec, task_result);
+  this_thread.rethrow_pending_exception();
 
   return 1;
 }
 
 std::size_t scheduler::do_poll_one(mutex::scoped_lock& lock,
     scheduler::thread_info& this_thread,
-    const asio::error_code& ec)
+    const puerts_asio::error_code& ec)
 {
   if (stopped_)
     return 0;
@@ -532,6 +619,7 @@ std::size_t scheduler::do_poll_one(mutex::scoped_lock& lock,
 
   // Complete the operation. May throw an exception. Deletes the object.
   o->complete(this, ec, task_result);
+  this_thread.rethrow_pending_exception();
 
   return 1;
 }
@@ -564,7 +652,7 @@ void scheduler::wake_one_thread_and_unlock(
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

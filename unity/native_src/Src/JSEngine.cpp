@@ -24,6 +24,9 @@ namespace puerts
     static void EvalWithPath(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
@@ -51,6 +54,19 @@ namespace puerts
         Info.GetReturnValue().Set(Result.ToLocalChecked());
     }
 
+    static void GetLastException(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        v8::Isolate* Isolate = Info.GetIsolate();
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        Info.GetReturnValue().Set(JsEngine->LastException.Get(Isolate));
+    }
+
+    void JSEngine::SetLastException(v8::Local<v8::Value> Exception)
+    {
+        LastException.Reset(MainIsolate, Exception);
+        LastExceptionInfo = FV8Utils::ExceptionToString(MainIsolate, Exception);
+    }
+
 #if WITH_NODEJS
     void JSEngine::JSEngineWithNode()
     {
@@ -74,9 +90,15 @@ namespace puerts
                 printf("InitializeNodeWithArgs failed\n");
             }
         }
-        std::string Flags = "";
+        std::string Flags = "--stack_size=856";
 #if PUERTS_DEBUG
         Flags += "--expose-gc";
+#if PLATFORM_MAC
+        Flags += " --jitless --no-expose-wasm";
+#endif
+#endif
+#if PLATFORM_IOS
+        Flags += " --jitless --no-expose-wasm";
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
         
@@ -99,28 +121,35 @@ namespace puerts
         auto Isolate = MainIsolate;
         ResultInfo.Isolate = MainIsolate;
 
-        v8::Isolate::Scope Isolatescope(Isolate);
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
+        v8::Isolate::Scope IsolateScope(Isolate);
 
         v8::HandleScope HandleScope(Isolate);
 
         v8::Local<v8::Context> Context = node::NewContext(Isolate);
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]context");
+        v8::Local<v8::Object> Global = Context->Global();
 
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(MainIsolate, Context);
+
+        v8::Local<v8::Value> Console = Global->Get(Context, FV8Utils::V8String(MainIsolate, "console")).ToLocalChecked();
 
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
         NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
     
         //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
         NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+        
+        Global->Set(Context, FV8Utils::V8String(MainIsolate, "console"), Console).Check();
 
         v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
             NodeEnv,
             "const publicRequire ="
             "  require('module').createRequire(process.cwd() + '/');"
-            "globalThis.require = publicRequire;"
-            "require('vm').runInThisContext(process.argv[1]);");
+            "globalThis.require = publicRequire;");
 
         if (LoadenvRet.IsEmpty())  // There has been a JS exception.
         {
@@ -129,12 +158,14 @@ namespace puerts
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
 
         MainIsolate->SetData(0, this);
-        v8::Local<v8::Object> Global = Context->Global();
 
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(MainIsolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
+        MainIsolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
+
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(MainIsolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+        Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(MainIsolate, v8::Map::New(MainIsolate));
 
@@ -153,12 +184,15 @@ namespace puerts
             v8::V8::Initialize();
         }
 
-        std::string Flags = "";
+        std::string Flags = "--no-harmony-top-level-await --stack_size=856";
 #if PUERTS_DEBUG
-        Flags += "--expose-gc";
+        Flags += " --expose-gc";
+#if PLATFORM_MAC
+        Flags += " --jitless --no-expose-wasm";
+#endif
 #endif
 #if PLATFORM_IOS
-        Flags += "--jitless --no-expose-wasm";
+        Flags += " --jitless --no-expose-wasm";
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 
@@ -179,6 +213,9 @@ namespace puerts
         ResultInfo.Isolate = MainIsolate;
         Isolate->SetData(0, this);
 
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope Isolatescope(Isolate);
         v8::HandleScope HandleScope(Isolate);
 
@@ -193,8 +230,15 @@ namespace puerts
 
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
-        Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
-        Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+        if (external_quickjs_runtime == nullptr) 
+        {
+            Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
+            Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+            Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
+        }
+#if !WITH_QUICKJS
+        Isolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
+#endif
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }
@@ -221,15 +265,23 @@ namespace puerts
 
         JSObjectIdMap.Reset();
         JsPromiseRejectCallback.Reset();
+        LastException.Reset();
 
         for (int i = 0; i < Templates.size(); ++i)
         {
             Templates[i].Reset();
         }
+        for (int i = 0; i < Metadatas.size(); ++i)
+        {
+            Metadatas[i].Reset();
+        }
 
         {
             auto Isolate = MainIsolate;
-            v8::Isolate::Scope Isolatescope(Isolate);
+#ifdef THREAD_SAFE
+            v8::Locker Locker(Isolate);
+#endif
+            v8::Isolate::Scope IsolateScope(Isolate);
             v8::HandleScope HandleScope(Isolate);
             auto Context = ResultInfo.Context.Get(Isolate);
             v8::Context::Scope ContextScope(Context);
@@ -250,12 +302,12 @@ namespace puerts
                 Iter->second.Reset();
             }
 #if !WITH_QUICKJS
-            for (auto Iter = ModuleCacheMap.begin(); Iter != ModuleCacheMap.end(); ++Iter)
+            for (auto Iter = PathToModuleMap.begin(); Iter != PathToModuleMap.end(); ++Iter)
             {
                 Iter->second.Reset();
             }
 #endif
-            ModuleCacheMap.clear();
+            PathToModuleMap.clear();
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
@@ -322,6 +374,9 @@ namespace puerts
         std::lock_guard<std::mutex> guard(JSObjectsMutex);
 
         // PLog(puerts::Log, "[PuertsDLL][CreateJSObject]ContextScope");
+#ifdef THREAD_SAFE
+        v8::Locker Locker(InIsolate);
+#endif
         v8::Isolate::Scope IsolateScope(InIsolate);
         v8::HandleScope HandleScope(InIsolate);
         v8::Context::Scope ContextScope(InContext);
@@ -373,6 +428,9 @@ namespace puerts
 
         // PLog(puerts::Log, std::to_string((long)InObject));
         v8::Isolate* Isolate = InObject->Isolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = InObject->Context.Get(Isolate);
@@ -415,7 +473,6 @@ namespace puerts
 
     void JSEngine::ReleaseJSFunction(JSFunction* InFunction)
     {
-        std::lock_guard<std::mutex> guard(JSFunctionsMutex);
         JSFunctions[InFunction->Index] = nullptr;
         delete InFunction;
     }
@@ -443,6 +500,9 @@ namespace puerts
     void JSEngine::SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -456,6 +516,9 @@ namespace puerts
     static void NewWrap(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
@@ -497,6 +560,9 @@ namespace puerts
         }
 
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -512,7 +578,12 @@ namespace puerts
         
         Template->InstanceTemplate()->SetInternalFieldCount(3);//1: object id, 2: type id, 3: magic
         Templates.push_back(v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template));
+        auto Map = v8::Map::New(Isolate);
+        Metadatas.push_back(v8::UniquePersistent<v8::Map>(Isolate, Map));
+
         NameToTemplateID[FullName] = ClassId;
+        Map->Set(Context, FV8Utils::V8String(Isolate, "classid"), v8::Number::New(Isolate, ClassId));
+        Template->SetClassName(FV8Utils::V8String(Isolate, FullName));
 
         if (BaseClassId >= 0)
         {
@@ -524,6 +595,9 @@ namespace puerts
     bool JSEngine::RegisterFunction(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -543,9 +617,12 @@ namespace puerts
         return true;
     }
 
-    bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool DontDelete)
+    bool JSEngine::RegisterProperty(int ClassID, const char *Name, bool IsStatic, CSharpFunctionCallback Getter, int64_t GetterData, CSharpFunctionCallback Setter, int64_t SetterData, bool NotReadonlyStatic)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -555,9 +632,22 @@ namespace puerts
 
         auto Attr = (Setter == nullptr) ? v8::ReadOnly : v8::None;
 
-        if (DontDelete)
+        if (!NotReadonlyStatic) 
         {
-            Attr = (v8::PropertyAttribute)(Attr | v8::DontDelete);
+            v8::Local<v8::Map> Metadata = Metadatas[ClassID].Get(Isolate);
+            v8::Local<v8::Set> ReadonlyStaticMembersSet;
+            v8::Local<v8::Value> NameOfTheSet = FV8Utils::V8String(Isolate, "readonlyStaticMembers");
+            v8::Local<v8::Value> ReadonlyStaticMembersSetValue = Metadata->Get(Context, NameOfTheSet).ToLocalChecked();
+            if (ReadonlyStaticMembersSetValue->IsNullOrUndefined())
+            {
+                ReadonlyStaticMembersSet = v8::Set::New(Isolate);
+                Metadata->Set(Context, NameOfTheSet, ReadonlyStaticMembersSet);
+            }
+            else
+            {
+                ReadonlyStaticMembersSet = v8::Local<v8::Set>::Cast(ReadonlyStaticMembersSetValue);
+            }
+            ReadonlyStaticMembersSet->Add(Context, FV8Utils::V8String(Isolate, Name));
         }
 
         if (IsStatic)
@@ -567,7 +657,8 @@ namespace puerts
         }
         else
         {
-            Templates[ClassID].Get(Isolate)->PrototypeTemplate()->SetAccessorProperty(FV8Utils::V8String(Isolate, Name), ToTemplate(Isolate, IsStatic, Getter, GetterData)
+            Templates[ClassID].Get(Isolate)->PrototypeTemplate()->SetAccessorProperty(FV8Utils::V8String(Isolate, Name),
+                ToTemplate(Isolate, IsStatic, Getter, GetterData)
                 , Setter == nullptr ? v8::Local<v8::FunctionTemplate>() : ToTemplate(Isolate, IsStatic, Setter, SetterData), Attr);
         }
 
@@ -582,7 +673,7 @@ namespace puerts
         auto Context = Isolate->GetCurrentContext();
 
         auto Result = Templates[ClassID].Get(Isolate)->GetFunction(Context).ToLocalChecked();
-        Result->Set(Context, FV8Utils::V8String(Isolate, "$cid"), v8::Integer::New(Isolate, ClassID));
+        Result->Set(Context, FV8Utils::V8String(Isolate, "__puertsMetadata"), Metadatas[ClassID].Get(Isolate));
         return Result;
     }
 
@@ -625,8 +716,9 @@ namespace puerts
         
         JSObject->SetAlignedPointerInInternalField(1, LifeCycleInfo);
         JSObject->SetAlignedPointerInInternalField(2, reinterpret_cast<void *>(OBJECT_MAGIC));
-        ObjectMap[Ptr] = v8::UniquePersistent<v8::Value>(MainIsolate, JSObject);
-        ObjectMap[Ptr].SetWeak<FLifeCycleInfo>(LifeCycleInfo, OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        v8::UniquePersistent<v8::Value> persistent(MainIsolate, JSObject);
+        persistent.SetWeak<FLifeCycleInfo>(LifeCycleInfo, OnGarbageCollected, v8::WeakCallbackType::kInternalFields);
+        ObjectMap[Ptr] = std::move(persistent);
     }
 
     void JSEngine::UnBindObject(FLifeCycleInfo* LifeCycleInfo, void* Ptr)
@@ -651,9 +743,35 @@ namespace puerts
         MainIsolate->LowMemoryNotification();
     }
 
+    bool JSEngine::IdleNotificationDeadline(double DeadlineInSeconds)
+    {
+#ifndef WITH_QUICKJS
+        return MainIsolate->IdleNotificationDeadline(DeadlineInSeconds);
+#else
+        return true;
+#endif
+    }
+
+    void JSEngine::RequestMinorGarbageCollectionForTesting()
+    {
+#ifndef WITH_QUICKJS
+        MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kMinorGarbageCollection);
+#endif
+    }
+
+    void JSEngine::RequestFullGarbageCollectionForTesting()
+    {
+#ifndef WITH_QUICKJS
+        MainIsolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
+#endif
+    }
+
     void JSEngine::CreateInspector(int32_t Port)
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -668,6 +786,9 @@ namespace puerts
     void JSEngine::DestroyInspector()
     {
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
@@ -683,14 +804,17 @@ namespace puerts
     void JSEngine::LogicTick()
     {
 #if WITH_NODEJS
-
         v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
         v8::Context::Scope ContextScope(Context);
 
         uv_run(NodeUVLoop, UV_RUN_NOWAIT);
+        static_cast<node::MultiIsolatePlatform*>(GPlatform.get())->DrainTasks(Isolate);
 #endif
     }
 

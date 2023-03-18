@@ -713,8 +713,41 @@ static void FLinearColorS_LerpUsingHSV(const v8::FunctionCallbackInfo<v8::Value>
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
+#if ENGINE_MAJOR_VERSION >= 5
+static void FLinearColorM_QuantizeFloor(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    if (Info.Length() == 0)
+    {
+        if (true)
+        {
+            auto Self = puerts::DataTransfer::GetPointerFast<FLinearColor>(Info.Holder());
+            if (!Self)
+            {
+                puerts::DataTransfer::ThrowException(
+                    Isolate, "[FLinearColor::M_QuantizeFloor] Attempt to access a NULL self pointer");
+                return;
+            }
+            auto MethodResult = Self->QuantizeFloor();
+            void* Ptr = new FColor(MethodResult);
+
+            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+
+            Info.GetReturnValue().Set(V8Result);
+
+            return;
+        }
+    }
+    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+}
+#endif
+
 static void FLinearColorM_Quantize(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
+#if ENGINE_MAJOR_VERSION >= 5
+    FLinearColorM_QuantizeFloor(Info);
+#else
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 0)
@@ -738,6 +771,7 @@ static void FLinearColorM_Quantize(const v8::FunctionCallbackInfo<v8::Value>& In
         }
     }
     puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+#endif
 }
 
 static void FLinearColorM_QuantizeRound(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1159,7 +1193,7 @@ struct AutoRegisterForFLinearColor
             {"MakeFromColorTemperature", FLinearColorS_MakeFromColorTemperature}, {"Dist", FLinearColorS_Dist},
             {"LerpUsingHSV", FLinearColorS_LerpUsingHSV}, {0, 0}};
 
-        Def.UETypeName = "FLinearColor";
+        Def.UETypeName = "LinearColor";
 
         Def.Initialize = _FLinearColorNew_;
         Def.Finalize = _FLinearColorDelete_;

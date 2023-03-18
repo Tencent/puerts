@@ -9,6 +9,7 @@
 #pragma once
 
 #include <cstdio>
+#include <functional>
 
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
@@ -25,4 +26,6 @@ public:
     {
         return FModuleManager::Get().IsModuleLoaded("PuertsEditor");
     }
+
+    virtual void SetCmdImpl(std::function<void(const FString&, const FString&)> Func) = 0;
 };

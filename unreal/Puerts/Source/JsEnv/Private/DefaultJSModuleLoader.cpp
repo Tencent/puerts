@@ -67,12 +67,15 @@ bool DefaultJSModuleLoader::CheckExists(const FString& PathIn, FString& Path, FS
 bool DefaultJSModuleLoader::SearchModuleInDir(
     const FString& Dir, const FString& RequiredModule, FString& Path, FString& AbsolutePath)
 {
-    if (FPaths::GetExtension(RequiredModule) == TEXT(""))
+    FString Extension = FPaths::GetExtension(RequiredModule);
+    bool IsJs = Extension == TEXT("js") || Extension == TEXT("mjs") || Extension == TEXT("cjs") || Extension == TEXT("json");
+    if (Extension == TEXT("") || !IsJs)
     {
         return SearchModuleWithExtInDir(Dir, RequiredModule + ".js", Path, AbsolutePath) ||
                SearchModuleWithExtInDir(Dir, RequiredModule + ".mjs", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath) ||
-               SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath);
+               SearchModuleWithExtInDir(Dir, RequiredModule + ".cjs", Path, AbsolutePath) ||
+               SearchModuleWithExtInDir(Dir, RequiredModule / "package.json", Path, AbsolutePath) ||
+               SearchModuleWithExtInDir(Dir, RequiredModule / "index.js", Path, AbsolutePath);
     }
     else
     {
@@ -128,10 +131,10 @@ bool DefaultJSModuleLoader::Load(const FString& Path, TArray<uint8>& Content)
         int len = FileHandle->Size();
         Content.Reset(len + 2);
         Content.AddUninitialized(len);
-        FileHandle->Read(Content.GetData(), len);
+        const bool Success = FileHandle->Read(Content.GetData(), len);
         delete FileHandle;
 
-        return true;
+        return Success;
     }
     return false;
 }

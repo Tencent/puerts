@@ -2,7 +2,7 @@
 // impl/io_context.ipp
 // ~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -31,23 +31,24 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 
 io_context::io_context()
-  : impl_(add_impl(new impl_type(*this, ASIO_CONCURRENCY_HINT_DEFAULT)))
+  : impl_(add_impl(new impl_type(*this,
+          ASIO_CONCURRENCY_HINT_DEFAULT, false)))
 {
 }
 
 io_context::io_context(int concurrency_hint)
   : impl_(add_impl(new impl_type(*this, concurrency_hint == 1
-          ? ASIO_CONCURRENCY_HINT_1 : concurrency_hint)))
+          ? ASIO_CONCURRENCY_HINT_1 : concurrency_hint, false)))
 {
 }
 
 io_context::impl_type& io_context::add_impl(io_context::impl_type* impl)
 {
-  asio::detail::scoped_ptr<impl_type> scoped_impl(impl);
-  asio::add_service<impl_type>(*this, scoped_impl.get());
+  puerts_asio::detail::scoped_ptr<impl_type> scoped_impl(impl);
+  puerts_asio::add_service<impl_type>(*this, scoped_impl.get());
   return *scoped_impl.release();
 }
 
@@ -57,14 +58,14 @@ io_context::~io_context()
 
 io_context::count_type io_context::run()
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   count_type s = impl_.run(ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return s;
 }
 
 #if !defined(ASIO_NO_DEPRECATED)
-io_context::count_type io_context::run(asio::error_code& ec)
+io_context::count_type io_context::run(puerts_asio::error_code& ec)
 {
   return impl_.run(ec);
 }
@@ -72,14 +73,14 @@ io_context::count_type io_context::run(asio::error_code& ec)
 
 io_context::count_type io_context::run_one()
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   count_type s = impl_.run_one(ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return s;
 }
 
 #if !defined(ASIO_NO_DEPRECATED)
-io_context::count_type io_context::run_one(asio::error_code& ec)
+io_context::count_type io_context::run_one(puerts_asio::error_code& ec)
 {
   return impl_.run_one(ec);
 }
@@ -87,14 +88,14 @@ io_context::count_type io_context::run_one(asio::error_code& ec)
 
 io_context::count_type io_context::poll()
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   count_type s = impl_.poll(ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return s;
 }
 
 #if !defined(ASIO_NO_DEPRECATED)
-io_context::count_type io_context::poll(asio::error_code& ec)
+io_context::count_type io_context::poll(puerts_asio::error_code& ec)
 {
   return impl_.poll(ec);
 }
@@ -102,14 +103,14 @@ io_context::count_type io_context::poll(asio::error_code& ec)
 
 io_context::count_type io_context::poll_one()
 {
-  asio::error_code ec;
+  puerts_asio::error_code ec;
   count_type s = impl_.poll_one(ec);
-  asio::detail::throw_error(ec);
+  puerts_asio::detail::throw_error(ec);
   return s;
 }
 
 #if !defined(ASIO_NO_DEPRECATED)
-io_context::count_type io_context::poll_one(asio::error_code& ec)
+io_context::count_type io_context::poll_one(puerts_asio::error_code& ec)
 {
   return impl_.poll_one(ec);
 }
@@ -130,7 +131,7 @@ void io_context::restart()
   impl_.restart();
 }
 
-io_context::service::service(asio::io_context& owner)
+io_context::service::service(puerts_asio::io_context& owner)
   : execution_context::service(owner)
 {
 }
@@ -167,7 +168,7 @@ void io_context::service::fork_service(io_context::fork_event)
 }
 #endif // !defined(ASIO_NO_DEPRECATED)
 
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

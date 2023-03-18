@@ -12,7 +12,11 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "AssetToolsModule.h"
+#if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
+#include "AssetRegistry/AssetRegistryModule.h"
+#else
 #include "AssetRegistryModule.h"
+#endif
 #include "FileHelpers.h"
 #include "Misc/PackageName.h"
 #include "UObject/MetaData.h"
@@ -35,21 +39,6 @@
 #include "PuertsModule.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
-
-UClass* FindClass(const TCHAR* ClassName)
-{
-    check(ClassName);
-
-    UObject* ClassPackage = ANY_PACKAGE;
-
-    if (UClass* Result = FindObject<UClass>(ClassPackage, ClassName))
-        return Result;
-
-    if (UObjectRedirector* RenamedClassRedirector = FindObject<UObjectRedirector>(ClassPackage, ClassName))
-        return CastChecked<UClass>(RenamedClassRedirector->DestinationObject);
-
-    return nullptr;
-}
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsEditorModule, Log, All);
 
@@ -76,10 +65,22 @@ static bool IsPlaying()
         return;                                                                                            \
     }
 
+bool UPEBlueprintAsset::Existed(const FString& InName, const FString& InPath)
+{
+    FString BPPath = FString(TEXT(TS_BLUEPRINT_PATH)) / InName + TEXT(".uasset");
+    if (BPPath[0] == TEXT('/') || BPPath[0] == TEXT('\\'))
+    {
+        BPPath = BPPath.Mid(1);
+    }
+    BPPath = FPaths::ProjectContentDir() / BPPath;
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    return PlatformFile.FileExists(*BPPath);
+}
+
 bool UPEBlueprintAsset::LoadOrCreate(
     const FString& InName, const FString& InPath, UClass* ParentClass, int32 InSetFlags, int32 InClearFlags)
 {
-    FString PackageName = FString(TEXT("/Game/Blueprints/TypeScript/")) / InPath / InName;
+    FString PackageName = FString(TEXT("/Game" TS_BLUEPRINT_PATH)) / InPath / InName;
 
     // UE_LOG(LogTemp, Warning, TEXT("LoadOrCreate.PackageName: %s"), *PackageName);
 
@@ -1072,7 +1073,6 @@ void UPEBlueprintAsset::RemoveNotExistedFunction()
             NeedSave = NeedSave || (RemoveOverrideEvent > 0);
         }
     }
-    FunctionAdded.Empty();
 }
 
 void UPEBlueprintAsset::Save()
@@ -1086,17 +1086,47 @@ void UPEBlueprintAsset::Save()
         TypeScriptGeneratedClass->HasConstructor = HasConstructor;
         if (NeedSave)
         {
+            FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+            FKismetEditorUtilities::CompileBlueprint(Blueprint);
+
             for (TFieldIterator<UFunction> FuncIt(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper); FuncIt; ++FuncIt)
             {
                 auto Function = *FuncIt;
                 Function->FunctionFlags &= ~FUNC_Native;
+
+                auto FunctionFName = Function->GetFName();
+                FString FunctionName = Function->GetName();
+
+                static FString AxisPrefix(TEXT("InpAxisEvt_"));
+                if (FunctionName.StartsWith(AxisPrefix))
+                {
+                    auto FunctionNameWithoutPrefix = FunctionName.Mid(AxisPrefix.Len());
+                    int32 SubPos;
+                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                    {
+                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                    }
+                }
+                static FString ActionPrefix(TEXT("InpActEvt_"));
+                if (FunctionName.StartsWith(ActionPrefix))
+                {
+                    auto FunctionNameWithoutPrefix = FunctionName.Mid(ActionPrefix.Len());
+                    int32 SubPos;
+                    if (FunctionNameWithoutPrefix.FindChar('_', SubPos))
+                    {
+                        FunctionName = FunctionNameWithoutPrefix.Mid(0, SubPos);
+                    }
+                }
+                if (FunctionAdded.Contains(*FunctionName))
+                {
+                    TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
+                }
             }
-            FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-            FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
             TArray<UPackage*> PackagesToSave;
             PackagesToSave.Add(Package);
             FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, false, false);
         }
     }
+    FunctionAdded.Empty();
 }

@@ -9,8 +9,10 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class DeclarationGenerator : ModuleRules {
-    public DeclarationGenerator(ReadOnlyTargetRules target) : base(target) {
+public class DeclarationGenerator : ModuleRules 
+{
+    public DeclarationGenerator(ReadOnlyTargetRules Target) : base(Target) 
+    {
         PublicIncludePaths.AddRange(
             new string[] {
                 "Programs/UnrealHeaderTool/Public",
@@ -31,6 +33,7 @@ public class DeclarationGenerator : ModuleRules {
                 "InputCore",
                 "Projects",
                 "JsEnv",
+                "Puerts",
 #if UE_5_0_OR_LATER
                 "ToolMenus",
 #endif
@@ -45,6 +48,11 @@ public class DeclarationGenerator : ModuleRules {
                     "AssetRegistry"
                 }
             );
+        }
+        
+        if (JsEnv.WithSourceControl)
+        {
+            PrivateDependencyModuleNames.Add("PuertsEditor");
         }
         
         bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误

@@ -73,7 +73,11 @@ declare module "ue" {
         Empty(): void;
     }
 
-        
+    interface TSharedPtr<T> {
+        __tid_SharedPtr: T
+        Equals(other: TSharedPtr<T>):boolean
+    }
+
     type BuiltinBool = 0;
     type BuiltinByte = 1;
     type BuiltinInt = 2;
@@ -118,6 +122,8 @@ declare module "ue" {
     function NewObject(Cls: Class, Outer?: Object, Name?:string, ObjectFlags?: number): Object;
     
     function NewStruct(St: ScriptStruct): object;
+
+    function FNameLiteral(str:string):string;
     
     type TWeakObjectPtr<T> = {
         [K in keyof T]: T[K];

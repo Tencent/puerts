@@ -2,7 +2,7 @@
 // detail/impl/win_thread.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -28,7 +28,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 win_thread::~win_thread()
@@ -70,9 +70,9 @@ void win_thread::start_thread(func_base* arg, unsigned int stack_size)
   {
     DWORD last_error = ::GetLastError();
     delete arg;
-    asio::error_code ec(last_error,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "thread.entry_event");
+    puerts_asio::error_code ec(last_error,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "thread.entry_event");
   }
 
   arg->exit_event_ = exit_event_ = ::CreateEventW(0, true, false, 0);
@@ -80,9 +80,9 @@ void win_thread::start_thread(func_base* arg, unsigned int stack_size)
   {
     DWORD last_error = ::GetLastError();
     delete arg;
-    asio::error_code ec(last_error,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "thread.exit_event");
+    puerts_asio::error_code ec(last_error,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "thread.exit_event");
   }
 
   unsigned int thread_id = 0;
@@ -96,9 +96,9 @@ void win_thread::start_thread(func_base* arg, unsigned int stack_size)
       ::CloseHandle(entry_event);
     if (exit_event_)
       ::CloseHandle(exit_event_);
-    asio::error_code ec(last_error,
-        asio::error::get_system_category());
-    asio::detail::throw_error(ec, "thread");
+    puerts_asio::error_code ec(last_error,
+        puerts_asio::error::get_system_category());
+    puerts_asio::detail::throw_error(ec, "thread");
   }
 
   if (entry_event)
@@ -139,7 +139,7 @@ void __stdcall apc_function(ULONG_PTR) {}
 #endif
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

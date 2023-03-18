@@ -1,3 +1,0 @@
-BACKEND_ARTIFACT_NAME=qjs_v8_bin
-BACKEND_ARTIFACT_WORKFLOW=build_quickjs.yml
-BACKEND_ARTIFACT_REPO=puerts/backend-quickjs

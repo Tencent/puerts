@@ -17,6 +17,10 @@ class UPuertsSetting : public UObject
 {
     GENERATED_BODY()
 public:
+    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
+        meta = (defaultValue = "JavaScript", Tooltip = "JavaScript Source Code Root Path", DisplayName = "JavaScript Root"))
+    FString RootPath = "JavaScript";
+
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = false))
     bool AutoModeEnable = false;
 
@@ -43,4 +47,10 @@ public:
     UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
         meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
     bool WatchDisable = false;
+
+    UPROPERTY(config, EditAnywhere, Category = "Declaration Generator", meta = (DisplayName = "D.ts Ignore Class Name List"))
+    TArray<FString> IgnoreClassListOnDTS;
+
+    UPROPERTY(config, EditAnywhere, Category = "Declaration Generator", meta = (DisplayName = "D.ts Ignore Struct Name List"))
+    TArray<FString> IgnoreStructListOnDTS;
 };

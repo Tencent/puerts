@@ -25,6 +25,10 @@
 namespace puerts
 {
 class FPropertyTranslator;
+FORCEINLINE int32 GetSizeWithAlignment(PropertyMacro* InProperty)
+{
+    return Align(InProperty->GetSize(), InProperty->GetMinAlignment());
+}
 
 struct FScriptArrayEx
 {
@@ -62,7 +66,7 @@ struct FScriptArrayEx
 
     FORCEINLINE static void Destruct(FScriptArray* ScriptArray, PropertyMacro* Property, int32 Index, int32 Count = 1)
     {
-        const int32 ElementSize = Property->GetSize();
+        const int32 ElementSize = GetSizeWithAlignment(Property);
         uint8* Dest = GetData(ScriptArray, ElementSize, Index);
         for (int32 i = 0; i < Count; ++i)
         {
@@ -74,7 +78,11 @@ struct FScriptArrayEx
     FORCEINLINE static void Empty(FScriptArray* ScriptArray, PropertyMacro* Property)
     {
         Destruct(ScriptArray, Property, 0, ScriptArray->Num());
-        ScriptArray->Empty(0, Property->GetSize());
+#if ENGINE_MAJOR_VERSION > 4
+        ScriptArray->Empty(0, GetSizeWithAlignment(Property), __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+#else
+        ScriptArray->Empty(0, GetSizeWithAlignment(Property));
+#endif
     }
 };
 

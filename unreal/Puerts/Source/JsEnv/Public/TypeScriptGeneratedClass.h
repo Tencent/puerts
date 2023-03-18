@@ -12,14 +12,15 @@
 
 #include "CoreMinimal.h"
 #include "Engine/BlueprintGeneratedClass.h"
+#include "Templates/Function.h"
+#include "Templates/SharedPointer.h"
 #include "TypeScriptGeneratedClass.generated.h"
 
-#ifdef THREAD_SAFE
-namespace v8
+struct PendingConstructJobInfo
 {
-class Isolate;
-}
-#endif
+    TFunction<void()> Func = nullptr;
+    TSharedPtr<int> Ref = nullptr;
+};
 
 /**
  *
@@ -30,15 +31,23 @@ class JSENV_API UTypeScriptGeneratedClass : public UBlueprintGeneratedClass
     GENERATED_BODY()
 
 public:
-    TWeakPtr<puerts::ITsDynamicInvoker> DynamicInvoker;
+    TWeakPtr<puerts::ITsDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
     TSet<FName> FunctionToRedirect;
 
-    FGraphEventRef PendingConstructJob = nullptr;
+    bool RedirectedToTypeScript = false;
 
-#ifdef THREAD_SAFE
-    v8::Isolate* Isolate;
+    TMap<FName, FNativeFuncPtr> TempNativeFuncStorage;
+
+#if WITH_EDITOR
+    bool NeedReBind = true;
+    TSet<TWeakObjectPtr<UObject>> GeneratedObjects;
+    bool FunctionToRedirectInitialized = false;
+    static void NotifyRebind(UClass* Class);
+    void LazyLoadRedirect();
 #endif
+
+    DECLARE_FUNCTION(execLazyLoadCallJS);
 
     static void StaticConstructor(const FObjectInitializer& ObjectInitializer);
 
@@ -53,6 +62,8 @@ public:
     void CancelRedirection();
 
     bool NotSupportInject();
+
+    void RestoreNativeFunc();
 
     UPROPERTY()
     bool HasConstructor;

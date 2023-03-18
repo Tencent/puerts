@@ -683,7 +683,7 @@ struct AutoRegisterForFIntPoint
         static puerts::JSFunctionInfo Functions[] = {{"DivideAndRoundUp", FIntPointS_DivideAndRoundUp},
             {"DivideAndRoundDown", FIntPointS_DivideAndRoundDown}, {"Num", FIntPointS_Num}, {0, 0}};
 
-        Def.UETypeName = "FIntPoint";
+        Def.UETypeName = "IntPoint";
 
         Def.Initialize = _FIntPointNew_;
         Def.Finalize = _FIntPointDelete_;

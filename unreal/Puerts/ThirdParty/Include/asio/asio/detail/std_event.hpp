@@ -2,7 +2,7 @@
 // detail/std_event.hpp
 // ~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -26,7 +26,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 class std_event
@@ -71,6 +71,18 @@ public:
     lock.unlock();
     if (have_waiters)
       cond_.notify_one();
+  }
+
+  // Unlock the mutex and signal one waiter who may destroy us.
+  template <typename Lock>
+  void unlock_and_signal_one_for_destruction(Lock& lock)
+  {
+    ASIO_ASSERT(lock.locked());
+    state_ |= 1;
+    bool have_waiters = (state_ > 1);
+    if (have_waiters)
+      cond_.notify_one();
+    lock.unlock();
   }
 
   // If there's a waiter, unlock the mutex and signal it.
@@ -167,7 +179,7 @@ private:
 };
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

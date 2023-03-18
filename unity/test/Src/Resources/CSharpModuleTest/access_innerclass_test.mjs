@@ -1,0 +1,1 @@
+CS.NUnit.Framework.Assert.AreEqual(CS.Puerts.UnitTest.CSharpModuleTest.Inner.i, 3)

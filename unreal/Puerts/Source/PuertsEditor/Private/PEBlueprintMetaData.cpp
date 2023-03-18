@@ -5,6 +5,7 @@
 #include "UObject/MetaData.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
+#include "UECompatible.h"
 
 const TCHAR* UPEClassMetaData::NAME_HideCategories{TEXT("HideCategories")};
 const TCHAR* UPEClassMetaData::NAME_ShowCategories{TEXT("ShowCategories")};
@@ -322,8 +323,8 @@ void UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBluep
         return;
     }
 
-    InBlueprint->bDeprecate = InClass->ClassFlags & CLASS_Deprecated;
-    InBlueprint->bGenerateAbstractClass = InClass->ClassFlags & CLASS_Abstract;
+    InBlueprint->bDeprecate = (bool) (InClass->ClassFlags & CLASS_Deprecated);
+    InBlueprint->bGenerateAbstractClass = (bool) (InClass->ClassFlags & CLASS_Abstract);
     InBlueprint->BlueprintDescription = InClass->HasMetaData(TEXT("Tooltip")) ? InClass->GetMetaData(TEXT("Tooltip")) : FString{};
     InBlueprint->BlueprintDisplayName =
         InClass->HasMetaData(TEXT("DisplayName")) ? InClass->GetMetaData(TEXT("DisplayName")) : FString{};
@@ -340,7 +341,7 @@ void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
     UClass* ExpectedWithinClass = InClass->GetSuperClass() ? InClass->GetSuperClass()->ClassWithin : UObject::StaticClass();
     if (ClassWithIn.IsEmpty() == false)
     {
-        UClass* WithinClass = FindObject<UClass>(ANY_PACKAGE, *ClassWithIn);
+        UClass* WithinClass = puerts::FindAnyType<UClass>(ClassWithIn);
         if (WithinClass == nullptr)
         {
             UE_LOG(LogTemp, Error, TEXT("the with in class of %s: %s is not found"), *InClass->GetName(), *ClassWithIn);
@@ -510,9 +511,11 @@ bool UPEFunctionMetaData::Apply(UK2Node_FunctionEntry* InFunctionEntry) const
     bMetaDataChanged = UpdateTextMetaData(TEXT("Keywords"), MetaData, MetaDataToSet.Keywords) || bMetaDataChanged;
     bMetaDataChanged = UpdateTextMetaData(TEXT("CompactNodeTitle"), MetaData, MetaDataToSet.CompactNodeTitle) || bMetaDataChanged;
     bMetaDataChanged = UpdateTextMetaData(TEXT("ToolTip"), MetaData, MetaDataToSet.ToolTip) || bMetaDataChanged;
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
     bMetaDataChanged = UpdateBooleanMetaData(TEXT("DeprecatedFunction"), MetaData, MetaDataToSet.bIsDeprecated) || bMetaDataChanged;
     bMetaDataChanged =
         UpdateStringMetaData(TEXT("DeprecationMessage"), MetaData, MetaDataToSet.DeprecationMessage) || bMetaDataChanged;
+#endif
 
     return bFlagsChanged || bMetaDataChanged;
 }

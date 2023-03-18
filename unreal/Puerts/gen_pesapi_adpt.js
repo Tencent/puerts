@@ -26,7 +26,7 @@ for(var i = 0; i < lines.length; i++) {
             j++;
         }
     }
-    let m = line.match(/^PESAPI_EXTERN\s+([\w\*]+)\s+(pesapi_[^\(]+)(.+);/);
+    let m = line.match(/^PESAPI_EXTERN\s+([\w\* ]+)\s+(pesapi_[^\(]+)(.+);/);
     if (m) {
         //console.log(`${m[1]} ${m[2]} ${m[3]}`);
         let [_, returnType, functionName, paramertsDef] = m;
@@ -45,9 +45,9 @@ for(var i = 0; i < lines.length; i++) {
     }
 }
 
-var pesapi_adpt = '#define PESAPI_ADPT_C\n\n#include <pesapi.h>\n\nEXTERN_C_START\n\n' + apiImpl
-                  + '\nvoid pesapi_init(pesapi_func_ptr* func_array){'
-                  + ptrSetter + '}\n\nEXTERN_C_END\n';
+var pesapi_adpt = '#define PESAPI_ADPT_C\n\n#include "pesapi.h"\n\n#if !IL2CPP_TARGET_IOS\n\nEXTERN_C_START\n\n' + apiImpl
+                  + '\n#endif\n\nvoid pesapi_init(pesapi_func_ptr* func_array){\n#if !IL2CPP_TARGET_IOS\n'
+                  + ptrSetter + '\n#endif\n}\n\nEXTERN_C_END\n';
                   
 fs.writeFileSync('pesapi_adpt.c', pesapi_adpt);
 

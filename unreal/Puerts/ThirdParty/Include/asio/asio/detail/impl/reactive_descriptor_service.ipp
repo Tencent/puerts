@@ -2,7 +2,7 @@
 // detail/impl/reactive_descriptor_service.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -26,13 +26,13 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 reactive_descriptor_service::reactive_descriptor_service(
-    asio::io_context& io_context)
-  : service_base<reactive_descriptor_service>(io_context),
-    reactor_(asio::use_service<reactor>(io_context))
+    execution_context& context)
+  : execution_context_service_base<reactive_descriptor_service>(context),
+    reactor_(puerts_asio::use_service<reactor>(context))
 {
   reactor_.init_task();
 }
@@ -51,6 +51,7 @@ void reactive_descriptor_service::construct(
 void reactive_descriptor_service::move_construct(
     reactive_descriptor_service::implementation_type& impl,
     reactive_descriptor_service::implementation_type& other_impl)
+  ASIO_NOEXCEPT
 {
   impl.descriptor_ = other_impl.descriptor_;
   other_impl.descriptor_ = -1;
@@ -90,40 +91,40 @@ void reactive_descriptor_service::destroy(
     reactor_.deregister_descriptor(impl.descriptor_, impl.reactor_data_,
         (impl.state_ & descriptor_ops::possible_dup) == 0);
 
-    asio::error_code ignored_ec;
+    puerts_asio::error_code ignored_ec;
     descriptor_ops::close(impl.descriptor_, impl.state_, ignored_ec);
 
     reactor_.cleanup_descriptor_data(impl.reactor_data_);
   }
 }
 
-asio::error_code reactive_descriptor_service::assign(
+puerts_asio::error_code reactive_descriptor_service::assign(
     reactive_descriptor_service::implementation_type& impl,
-    const native_handle_type& native_descriptor, asio::error_code& ec)
+    const native_handle_type& native_descriptor, puerts_asio::error_code& ec)
 {
   if (is_open(impl))
   {
-    ec = asio::error::already_open;
+    ec = puerts_asio::error::already_open;
     return ec;
   }
 
   if (int err = reactor_.register_descriptor(
         native_descriptor, impl.reactor_data_))
   {
-    ec = asio::error_code(err,
-        asio::error::get_system_category());
+    ec = puerts_asio::error_code(err,
+        puerts_asio::error::get_system_category());
     return ec;
   }
 
   impl.descriptor_ = native_descriptor;
   impl.state_ = descriptor_ops::possible_dup;
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
-asio::error_code reactive_descriptor_service::close(
+puerts_asio::error_code reactive_descriptor_service::close(
     reactive_descriptor_service::implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   if (is_open(impl))
   {
@@ -139,7 +140,7 @@ asio::error_code reactive_descriptor_service::close(
   }
   else
   {
-    ec = asio::error_code();
+    ec = puerts_asio::error_code();
   }
 
   // The descriptor is closed by the OS even if close() returns an error.
@@ -172,13 +173,13 @@ reactive_descriptor_service::release(
   return descriptor;
 }
 
-asio::error_code reactive_descriptor_service::cancel(
+puerts_asio::error_code reactive_descriptor_service::cancel(
     reactive_descriptor_service::implementation_type& impl,
-    asio::error_code& ec)
+    puerts_asio::error_code& ec)
 {
   if (!is_open(impl))
   {
-    ec = asio::error::bad_descriptor;
+    ec = puerts_asio::error::bad_descriptor;
     return ec;
   }
 
@@ -186,7 +187,7 @@ asio::error_code reactive_descriptor_service::cancel(
         "descriptor", &impl, impl.descriptor_, "cancel"));
 
   reactor_.cancel_ops(impl.descriptor_, impl.reactor_data_);
-  ec = asio::error_code();
+  ec = puerts_asio::error_code();
   return ec;
 }
 
@@ -211,7 +212,7 @@ void reactive_descriptor_service::start_op(
 }
 
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 

@@ -46,15 +46,10 @@ struct FValue
         double Number;
         bool Boolean;
         int64_t BigInt;
-        struct 
-        {
-            void *ObjectPtr;
-            int ClassID;
-        } ObjectInfo;
         class JSFunction *FunctionPtr;
         class puerts::JSObject *JSObjectPtr;
     };
-    v8::UniquePersistent<v8::Value> ArrayBuffer;
+    v8::UniquePersistent<v8::Value> Persistent;
 };
 
 struct FResultInfo
@@ -73,17 +68,15 @@ public:
 
     ~JSFunction();
 
-    bool Invoke(int argumentsLength, bool HasResult);
+    bool Invoke(bool HasResult);
 
     std::vector<FValue> Arguments;
-
-    std::vector< v8::Local<v8::Value>> V8Args;
-
-    void PushArgument(FValue arg);
 
     v8::UniquePersistent<v8::Function> GFunction;
 
     std::string LastExceptionInfo;
+
+    v8::UniquePersistent<v8::Value> LastException;
 
     FResultInfo ResultInfo;
 

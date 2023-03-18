@@ -21,165 +21,54 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Install NDK
-        run: |
-          cd ~
-          wget -O NDK -q https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
-          sudo apt install unzip -y
-          unzip -q NDK
-          export ANDROID_NDK=~/android-ndk-r21b
-      - name: Build
-        run: |
-          ls ~/android-ndk-r21b
-          cd unity/native_src
-          chmod 777 make_android.sh
-          ./make_android.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v3
+    - name: BuildAndroid
+      uses: ./.github/workflows/composites/unity-build-plugins/android/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   ios:
-    runs-on: macos-10.15
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Use Xcode 12.0 for x86
-        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
-      - name: Build
-        run: |
-          cd unity/native_src
-          sh ./make_ios.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
-  osx_arm64:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Build
-        run: |
-          cd unity/native_src
-          sh ./make_osx_arm64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v3
+    - name: BuildiOS
+      uses: ./.github/workflows/composites/unity-build-plugins/ios/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   osx:
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Use Xcode 12.0 for x86
-        run: sudo xcode-select -switch "/Applications/Xcode_12.app"
-      - name: Build
-        run: |
-          cd unity/native_src
-          sh ./make_osx.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v3
+    - name: BuildOSX
+      uses: ./.github/workflows/composites/unity-build-plugins/osx/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   windows:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-        shell: bash
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Build
-        run: |
-          cd unity\native_src
-          .\make_win64.bat ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-          # .\make_win32.bat ${{ github.event.inputs.backend }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
+    - uses: actions/checkout@v3
+    - name: BuildWindows
+      uses: ./.github/workflows/composites/unity-build-plugins/windows/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}
   linux64:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install libc++-dev
-        run: |
-          sudo apt-get install clang
-          sudo apt-get install libc++-dev
-          sudo apt-get install libc++abi-dev
-      - uses: actions/checkout@v2
-      - name: Get backend artifact remote
-        run: echo "$(cat unity/native_src/cmake/${{ github.event.inputs.backend }}/backend.rc)" >> $GITHUB_ENV
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ${{ env.BACKEND_ARTIFACT_WORKFLOW }}
-          name: ${{ env.BACKEND_ARTIFACT_NAME }}
-          repo: ${{ env.BACKEND_ARTIFACT_REPO }}
-          path: unity/native_src/
-      - name: Build
-        run: |
-          cd unity/native_src
-          chmod 777 make_linux64.sh
-          ./make_linux64.sh ${{ github.event.inputs.backend }} ${{ github.event.inputs.config }}
-      - name: Upload
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./unity/Assets/Plugins/**/*
-          name: Unity_Plugins (${{ github.event.inputs.backend }}_${{ github.event.inputs.config }})
- 
+    - uses: actions/checkout@v3
+    - name: BuildLinux
+      uses: ./.github/workflows/composites/unity-build-plugins/linux/
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        backend: ${{ github.event.inputs.backend }}
+        config: ${{ github.event.inputs.config }}

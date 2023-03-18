@@ -41,7 +41,7 @@ v8::Global<v8::Function>& FTickerDelegateWrapper::GetFunction()
 
 void FTickerDelegateWrapper::Init(const v8::FunctionCallbackInfo<v8::Value>& Info,
     std::function<void(v8::Isolate*, v8::TryCatch*)> InExceptionHandler,
-    std::function<void(FDelegateHandle*)> InDelegateHandleCleaner)
+    std::function<void(FUETickDelegateHandle*)> InDelegateHandleCleaner)
 {
     Isolate = Info.GetIsolate();
     v8::Isolate::Scope IsolateScope(GetIsolate());
@@ -83,7 +83,7 @@ bool FTickerDelegateWrapper::CallFunction(float)
     return Continue;
 }
 
-void FTickerDelegateWrapper::SetDelegateHandle(FDelegateHandle* Handle)
+void FTickerDelegateWrapper::SetDelegateHandle(FUETickDelegateHandle* Handle)
 {
     DelegateHandle = Handle;
 }

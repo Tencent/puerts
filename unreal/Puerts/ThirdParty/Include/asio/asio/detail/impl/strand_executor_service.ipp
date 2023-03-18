@@ -2,7 +2,7 @@
 // detail/impl/strand_executor_service.ipp
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2021 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -20,7 +20,7 @@
 
 #include "asio/detail/push_options.hpp"
 
-namespace asio {
+namespace puerts_asio {
 namespace detail {
 
 strand_executor_service::strand_executor_service(execution_context& ctx)
@@ -35,7 +35,7 @@ void strand_executor_service::shutdown()
 {
   op_queue<scheduler_operation> ops;
 
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   strand_impl* impl = impl_list_;
   while (impl)
@@ -56,7 +56,7 @@ strand_executor_service::create_implementation()
   new_impl->locked_ = false;
   new_impl->shutdown_ = false;
 
-  asio::detail::mutex::scoped_lock lock(mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(mutex_);
 
   // Select a mutex from the pool of shared mutexes.
   std::size_t salt = salt_++;
@@ -81,7 +81,7 @@ strand_executor_service::create_implementation()
 
 strand_executor_service::strand_impl::~strand_impl()
 {
-  asio::detail::mutex::scoped_lock lock(service_->mutex_);
+  puerts_asio::detail::mutex::scoped_lock lock(service_->mutex_);
 
   // Remove implementation from linked list of all implementations.
   if (service_->impl_list_ == this)
@@ -126,8 +126,32 @@ bool strand_executor_service::running_in_this_thread(
   return !!call_stack<strand_impl>::contains(impl.get());
 }
 
+bool strand_executor_service::push_waiting_to_ready(implementation_type& impl)
+{
+  impl->mutex_->lock();
+  impl->ready_queue_.push(impl->waiting_queue_);
+  bool more_handlers = impl->locked_ = !impl->ready_queue_.empty();
+  impl->mutex_->unlock();
+  return more_handlers;
+}
+
+void strand_executor_service::run_ready_handlers(implementation_type& impl)
+{
+  // Indicate that this strand is executing on the current thread.
+  call_stack<strand_impl>::context ctx(impl.get());
+
+  // Run all ready handlers. No lock is required since the ready queue is
+  // accessed only within the strand.
+  puerts_asio::error_code ec;
+  while (scheduler_operation* o = impl->ready_queue_.front())
+  {
+    impl->ready_queue_.pop();
+    o->complete(impl.get(), ec, 0);
+  }
+}
+
 } // namespace detail
-} // namespace asio
+} // namespace puerts_asio
 
 #include "asio/detail/pop_options.hpp"
 
