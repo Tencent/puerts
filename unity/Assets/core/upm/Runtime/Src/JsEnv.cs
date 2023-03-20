@@ -222,10 +222,6 @@ namespace Puerts
         internal string ResolveModuleContent(string identifer, out string pathForDebug) 
         {
             pathForDebug = identifer;
-            if (identifer == "csharp" || identifer == "puerts") 
-            {
-                return String.Format("export default globalThis.{0}", identifer);
-            }
             if (!loader.FileExists(identifer)) 
             {
                 return null;
