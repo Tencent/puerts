@@ -24,8 +24,8 @@
 > 这个页面上线以来，数据也发生过变动，原因：https://github.com/throw-out/PerformanceTesting/pull/2 、 https://github.com/Tencent/xLua/commit/899175ef946bb8f9d3e70d425cb875d7510adc82
 
 ### 安卓所有数据 (Vivo Neo6SE)
-| :----                                                 | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | Method                                                | Static  | Call      | csharp | xLua   | puer W | puer I R  | puer I W
+| :----:                                                | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | void Payload();                                       | ×       | 200000    | 0.0    | 34.7   | 30.0   | 42.0      | 24.0
 | void Payload();                                       | √       | 200000    | 0.0    | 21.3   | 23.0   | 20.0      | 9.0
 | void Payload(int);                                    | √       | 200000    | 0.0    | 18.1   | 30.0   | 32.0      | 24.0
@@ -46,8 +46,8 @@
 | payload(): number // ScriptCallScript                 | √       | 200000000 | 245.3  | 9350.3 | 183.0  | 182.0     | 182.0
 
 ### ios所有数据 （iPhone XsMax）
-| :----                                                 | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | Method                                                | Static  | Call      | csharp | xLua   | puer W | puer I R  | puer I W
+| :----:                                                | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | void Payload();                                       | ×       | 200000    | 0.0    | 10.2   | 28.0   | 27.0      | 24.0
 | void Payload();                                       | √       | 200000    | 0.0    | 25.8   | 34.0   | 34.0      | 26.0
 | void Payload(int);                                    | √       | 200000    | 0.0    | 10.7   | 27.0   | 30.0      | 22.0
