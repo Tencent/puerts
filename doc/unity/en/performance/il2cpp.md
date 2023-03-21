@@ -1,7 +1,7 @@
 # PuerTS il2cpp Binding Mode
 This mode is a new feature added to version 2.0 of Puer. As the name suggests, the optimization is only targeted at Unity's Il2cpp mode.
 
-In simple terms, the new method allows Il2cpp to interact directly with V8, rather than calling native plugins via C# PInvoke, reducing the cost of cross-language communication. This ultimately greatly improves performance, surpassing xlua. See the [Il2cpp binding performance data](./performance) for details.
+In simple terms, the new method allows Il2cpp to interact directly with V8, rather than calling native plugins via C# PInvoke, reducing the cost of cross-language communication. This ultimately greatly improves performance, surpassing xlua. See the [Il2cpp binding performance data](./index) for details.
 
 There are significant changes in the usage of the il2cpp binding mode, such as different steps for compiling plugins and wrappers, but there is no need to make any changes to the API or usage mechanism.
 
