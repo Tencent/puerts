@@ -340,7 +340,6 @@ export namespace PuertsJSEngine {
     export interface EngineConstructorParam {
         UTF8ToString: (strPtr: CSString) => string,
         _malloc: (size: number) => number,
-        _memset: (ptr: number, ch: number, size: number) => number,
         _memcpy: (dst: number, src: number, size: number) => void,
         _free: (ptr: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
@@ -350,7 +349,6 @@ export namespace PuertsJSEngine {
     export interface UnityAPI {
         UTF8ToString: (strPtr: CSString) => string,
         _malloc: (size: number) => number,
-        _memset: (ptr: number, ch: number, size: number) => number,
         _memcpy: (dst: number, src: number, size: number) => void,
         _free: (ptr: number) => void,
         stringToUTF8: (str: string, buffer: any, size: number) => any,
@@ -382,11 +380,10 @@ export class PuertsJSEngine {
 
     constructor(ctorParam: PuertsJSEngine.EngineConstructorParam) {
         this.csharpObjectMap = new CSharpObjectMap();
-        const { UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
+        const { UTF8ToString, _malloc, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
         this.unityApi = { 
             UTF8ToString, 
             _malloc, 
-            _memset, 
             _memcpy, 
             _free, 
             stringToUTF8, 

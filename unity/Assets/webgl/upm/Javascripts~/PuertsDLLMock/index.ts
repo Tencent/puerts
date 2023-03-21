@@ -25,10 +25,10 @@ global.PuertsWebGL = {
     debug: false,
     // puerts首次初始化时会调用这里，并把Unity的通信接口传入
     Init({
-        UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
+        UTF8ToString, _malloc, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
     }: PuertsJSEngine.EngineConstructorParam) {
         const engine = new PuertsJSEngine({
-            UTF8ToString, _malloc, _memset, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
+            UTF8ToString, _malloc, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance
         });
 
         const executeModuleCache: { [filename: string]: any } = {};

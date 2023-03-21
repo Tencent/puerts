@@ -39,7 +39,6 @@ export default function WebGLBackendSetToJSOutArgumentAPI(engine: PuertsJSEngine
         },
         SetArrayBufferToOutValue: function (isolate: IntPtr, value: MockIntPtr, /*Byte[] */index: any, length: int) {
             var obj = FunctionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
-            // 这里必须使用Uint8Array而不是AB本身，因为ab会是wasm的大buffer。除非为了变成ab而copy一遍。
             obj[0] = engine.unityApi.HEAP8.buffer.slice(index, index + length);
 
         },
