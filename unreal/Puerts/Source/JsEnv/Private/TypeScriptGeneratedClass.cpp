@@ -95,7 +95,7 @@ void UTypeScriptGeneratedClass::LazyLoadRedirect()
         {
             continue;
         }
-        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public;
+        Function->FunctionFlags |= FUNC_BlueprintCallable | FUNC_BlueprintEvent | FUNC_Public | FUNC_Native;
         Function->SetNativeFunc(&UTypeScriptGeneratedClass::execLazyLoadCallJS);
         AddNativeFunction(*Function->GetName(), &UTypeScriptGeneratedClass::execLazyLoadCallJS);
     }
