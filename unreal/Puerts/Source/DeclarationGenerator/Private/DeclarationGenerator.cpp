@@ -1395,14 +1395,22 @@ private:
             UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
             {
                 FToolMenuSection& Section = Menu->FindOrAddSection("User");
-                if (&Section == nullptr) { Section = Menu->FindOrAddSection("WindowLayout"); }
-                Section.AddMenuEntryWithCommandList(FGenDTSCommands::Get().PluginAction, PluginCommands);
+            	if (&Section == nullptr)
+            	{
+                	Section = Menu->FindOrAddSection("WindowLayout");
+            	}
+            	{
+                	Section.AddMenuEntryWithCommandList(FGenDTSCommands::Get().PluginAction, PluginCommands);
+            	}
             }
         }
 
         {
             UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.User");
-            if (ToolbarMenu == nullptr) { ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar"); }
+            if (ToolbarMenu == nullptr)
+            {
+                ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
+            }
             {
                 FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("PluginTools");
                 {
