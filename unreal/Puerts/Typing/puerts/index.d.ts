@@ -39,6 +39,9 @@ declare module "puerts" {
     
     //function requestJitModuleMethod(moduleName: string, methodName: string, callback: (err: Error, result: any)=> void, ... args: any[]): void;
     
+    /**
+     * @deprecated please use mixin instead! 
+    */
     function makeUClass(ctor: { new(): Object }): Class;
     
     function blueprint<T extends {
