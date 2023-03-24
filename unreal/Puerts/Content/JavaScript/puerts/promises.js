@@ -66,4 +66,16 @@ var global = global || (function () { return this; }());
         }
     }
     
+    const org_setTimeout = setTimeout;
+    function setTimeout_p(handler, timeout, ...args) {
+        org_setTimeout(() => handler(...args),  timeout);
+    }
+    global.setTimeout = setTimeout_p;
+    
+    const org_setInterval = setInterval;
+    function setInterval_p(handler, timeout, ...args) {
+        org_setInterval(() => handler(...args),  timeout);
+    }
+    global.setInterval = setInterval_p;
+    
 }(global));
