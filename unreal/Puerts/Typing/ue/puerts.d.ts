@@ -9,7 +9,7 @@ declare module "ue" {
     type ArgumentTypes<T> = T extends (... args: infer U ) => infer R ? U: never;
 
     interface $CallbackID {}
-    
+
     interface $Delegate<T extends (...args: any) => any> {
         Bind(fn : T): void;
         Bind(target: Object, methodName: string): void;
@@ -25,14 +25,14 @@ declare module "ue" {
         Broadcast(...a: ArgumentTypes<T>) : ReturnType<T>;
         Clear(): void;
     }
-    
+
     interface FixSizeArray<T> {
         Num(): number;
         Get(Index: number): T;
         GetRef(Index: number): T;
         Set(Index: number, Value: T): void;
     }
-    
+
     interface TArray<T> {
         Num(): number;
         Add(Value: T): void;
@@ -45,7 +45,7 @@ declare module "ue" {
         IsValidIndex(Index: number): boolean;
         Empty(): void;
     }
-    
+
     interface TSet<T> {
         Num(): number;
         Add(Value: T): void;
@@ -59,7 +59,7 @@ declare module "ue" {
         IsValidIndex(Index: number): boolean;
         Empty(): void;
     }
-    
+
     interface TMap<TKey, TValue> {
         Num(): number;
         Add(Key: TKey, Value: TValue): void;
@@ -96,8 +96,8 @@ declare module "ue" {
     const BuiltinText = 6;
     const BuiltinName = 7;
 
-    type ContainerKVType<T> = 
-        T extends BuiltinBool ? boolean : 
+    type ContainerKVType<T> =
+        T extends BuiltinBool ? boolean :
         T extends BuiltinByte | BuiltinInt | BuiltinFloat ? number :
         T extends BuiltinInt64 ? bigint :
         T extends BuiltinString | BuiltinText | BuiltinName ? string :
@@ -110,7 +110,11 @@ declare module "ue" {
     function NewArray<T extends SupportedContainerKVType>(t: T): TArray<ContainerKVType<T>>;
     function NewSet<T extends SupportedContainerKVType>(t: T): TSet<ContainerKVType<T>>;
     function NewMap<TKey extends SupportedContainerKVType, TValue extends SupportedContainerKVType>(k: TKey, v: TValue): TMap<ContainerKVType<TKey>, ContainerKVType<TValue>>;
-    
+    function JsMapToTMap<T1 extends SupportedContainerKVType, T2 extends SupportedContainerKVType>(m: any, t1: T1, t2: T2): TMap<T1, T2>;
+    function JsArrayToTArray<T1, T2 extends SupportedContainerKVType>(arr: T1[], t: T2): TArray<T2>;
+    function TArrayToJsArray<T>(size: TArray<T>): T[];
+    function TMapToJsMap<T1, T2>(TM: TMap<T1, T2>): Map<T1, T2>;
+
     type DataPropertyNames<T> = {
         [K in keyof T]: T[K] extends (...args: any) => any ? never : K;
     }[keyof T];
@@ -120,11 +124,11 @@ declare module "ue" {
     };
 
     function NewObject(Cls: Class, Outer?: Object, Name?:string, ObjectFlags?: number): Object;
-    
+
     function NewStruct(St: ScriptStruct): object;
 
     function FNameLiteral(str:string):string;
-    
+
     type TWeakObjectPtr<T> = {
         [K in keyof T]: T[K];
     }
@@ -137,7 +141,7 @@ declare module "ue" {
     type TLazyObjectPtr<T> = {
         [K in keyof T]: T[K];
     }
-    
+
     type TSubclassOf<T> = {
         [K in keyof T]: T[K];
     }

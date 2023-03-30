@@ -274,6 +274,14 @@ private:
 
     void NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+    void TArrayToJsArray(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void TMapToJsMap(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void JsArrayToTArray(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+    void JsMapToTMap(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
     std::shared_ptr<FStructWrapper> GetStructWrapper(UStruct* InStruct, bool& IsReuseTemplate);
 
     struct FTemplateInfo

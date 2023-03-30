@@ -8,15 +8,15 @@
 var global = global || (function () { return this; }());
 (function (global) {
     "use strict";
-    
+
     let loadUEType = global.__tgjsLoadUEType;
     global.__tgjsLoadUEType = undefined;
-    
+
     let loadCDataType = global.__tgjsLoadCDataType;
     global.__tgjsLoadCDataType = undefined;
-    
+
     let cache = Object.create(null);
-    
+
     let UE = new Proxy(cache, {
         get: function(classWrapers, name) {
             if (!(name in classWrapers)) {
@@ -25,24 +25,24 @@ var global = global || (function () { return this; }());
             return classWrapers[name];
         }
     });
-    
+
     const TNAMESPACE = 0;
     const TENUM = 1
     const TBLUEPRINT = 2;
     const TSTRUCT = 3
-    
+
     function createNamespaceOrClass(path, parentDir, nodeType) {
         return new Proxy({__path: path, __parent:parentDir, __type:nodeType}, {
             get: function(node, name) {
                 if (!(name in node)) {
                     if (name === '__parent' || name === '__path') return undefined;
-                    
+
                     if (node.__type == TENUM) { // auto load
                         node[name] = createNamespaceOrClass(name, node, TNAMESPACE);
                         blueprint_load(node[name]);
                     } else {
                         let newNodeType = node.__type;
-                        
+
                         if (newNodeType === TNAMESPACE) {
                             let path = `/${name}.${name}`
                             let c = node;
@@ -62,7 +62,7 @@ var global = global || (function () { return this; }());
                                 }
                             }
                         }
-                        
+
                         node[name] = createNamespaceOrClass(name, node, newNodeType);
                     }
                 }
@@ -70,11 +70,11 @@ var global = global || (function () { return this; }());
             }
         });
     }
-    
+
     cache["Game"] = createNamespaceOrClass("Game", undefined, TNAMESPACE);
-    
+
     puerts.registerBuildinModule('ue', UE);
-    
+
     let CPP = new Proxy(cache, {
         get: function(classWrapers, name) {
             if (!(name in classWrapers)) {
@@ -83,9 +83,9 @@ var global = global || (function () { return this; }());
             return classWrapers[name];
         }
     });
-    
+
     puerts.registerBuildinModule('cpp', CPP);
-    
+
     function ref(x) {
         return [x];
     }
@@ -93,31 +93,31 @@ var global = global || (function () { return this; }());
     function unref(r) {
         return r[0];
     }
-    
+
     function setref(x, val) {
         x[0] = val;
     }
-    
+
     cache.NewObject = global.__tgjsNewObject;
     global.__tgjsNewObject = undefined;
-    
+
     cache.NewStruct = global.__tgjsNewStruct;
     global.__tgjsNewStruct = undefined;
-    
+
     puerts.$ref = ref;
     puerts.$unref = unref;
     puerts.$set = setref;
     puerts.merge = global.__tgjsMergeObject;
     global.__tgjsMergeObject = undefined;
-    
+
     cache.FNameLiteral = global.__tgjsFNameToArrayBuffer;
     global.__tgjsFNameToArrayBuffer = undefined;
-    
+
     let rawmakeclass = global.__tgjsMakeUClass
     global.__tgjsMakeUClass = undefined;
-    
+
     function defaultUeConstructor(){};
-    
+
     function makeUClass(cls) {
         if (typeof cls === 'function' && !cls.hasOwnProperty('arguments')
             && typeof cls.StaticClass === 'function'
@@ -125,7 +125,7 @@ var global = global || (function () { return this; }());
             //let parentClass = Object.getPrototypeOf(cls.prototype).constructor;
             let proto = cls.prototype;
             let methods = Object.create(null);
-            
+
             let names = Object.getOwnPropertyNames(proto);
             let ueConstructor = defaultUeConstructor;
             for(var i = 0; i < names.length; ++i) {
@@ -139,19 +139,19 @@ var global = global || (function () { return this; }());
                     }
                 }
             }
-            
+
             return rawmakeclass(ueConstructor, proto, `${cls.name}_C`, methods, cls.StaticClass());
-            
+
         } else {
             throw new Error("invalid class");
         }
     }
-    
+
     puerts.makeUClass = makeUClass;
-    
+
     let UEClassToJSClass = global.__tgjsUEClassToJSClass;
     global.__tgjsUEClassToJSClass = undefined;
-    
+
     function blueprint(path) {
         console.warn('deprecated! use blueprint.tojs instead');
         let ufield = UE.Field.Load(path);
@@ -163,12 +163,12 @@ var global = global || (function () { return this; }());
             throw new Error("can not load type in " + path);
         }
     }
-    
+
     blueprint.tojs = UEClassToJSClass;
-    
+
     let __tgjsMixin = global.__tgjsMixin;
     global.__tgjsMixin = undefined;
-    
+
     function mixin(to, mixinClass, config) {
         config = config || {};
         let mixinMethods = Object.create(null);
@@ -181,7 +181,7 @@ var global = global || (function () { return this; }());
             }
         }
         let cls = __tgjsMixin(to.StaticClass(), mixinMethods, config.objectTakeByNative, config.inherit, config.noMixinedWarning);
-        
+
         let jsCls = UEClassToJSClass(cls);
         Object.getOwnPropertyNames(mixinMethods).forEach(name => {
             if (!jsCls.prototype.hasOwnProperty(name)) {
@@ -193,21 +193,21 @@ var global = global || (function () { return this; }());
                 );
             }
         });
-                
+
         if (config.inherit) {
             config.generatedClass = cls;
         }
         return jsCls;
     }
-    
+
     blueprint.mixin = mixin;
-    
+
     function unmixin(to) {
         __tgjsMixin(to.StaticClass(), {}, undefined, undefined, undefined, true);
     }
-    
+
     blueprint.unmixin = unmixin;
-    
+
     function blueprint_load(cls) {
         if (cls.__path) {
             let c = cls
@@ -223,20 +223,20 @@ var global = global || (function () { return this; }());
             }
             let jsclass = UEClassToJSClass(ufield);
             jsclass.__puerts_ufield = ufield;
-            
+
             if (cls.__parent) {
                 jsclass.__parent = cls.__parent;
                 jsclass.__name = cls.__path;
                 cls.__parent[cls.__path] = jsclass;
             }
-            
+
         } else {
             throw new Error("argument #0 is not a unload type");
         }
     }
-    
+
     blueprint.load = blueprint_load;
-    
+
     function blueprint_unload(cls) {
         if (cls.__puerts_ufield) {
             delete cls.__puerts_ufield;
@@ -245,14 +245,26 @@ var global = global || (function () { return this; }());
             }
         }
     }
-    
+
     blueprint.unload = blueprint_unload;
-    
+
     puerts.blueprint = blueprint;
-    
+
     const newContainer = global.__tgjsNewContainer;
     global.__tgjsNewContainer = undefined;
-    
+
+    const tarrayToJsArray = global.__tgjsTArrayToJsArray;
+    global.__tgjsNewEmptyArray = undefined;
+
+    const jsArrayToTArray = global.__tgjsJsArrayToTArray;
+    global.__tgjsJsArrayToTArray = undefined;
+
+    const jsMapToTMap = global.__tgjsJsMapToTMap;
+    global.__tgjsJsMapToTMap = undefined;
+
+    const tMapToJsMap = global.__tgjsTMapToJsMap;
+    global.__tgjsTMapToJsMap = undefined;
+
     function translateType(t) {
         if (typeof t !== 'number') {
             if (t.hasOwnProperty('__puerts_ufield')) {
@@ -264,26 +276,42 @@ var global = global || (function () { return this; }());
             return t;
         }
     }
-    
+
     function NewArray(t1) {
         t1 = translateType(t1);
 
         return newContainer(0, t1);
     }
-    
+
     function NewSet(t1) {
         t1 = translateType(t1);
-        
+
         return newContainer(1, t1);
     }
-    
+
     function NewMap(t1, t2) {
         t1 = translateType(t1);
         t2 = translateType(t2);
-        
+
         return newContainer(2, t1, t2);
     }
-    
+
+    function JsMapToTMap(m, t1, t2) {
+        return jsMapToTMap(m, t1, t2);
+    }
+
+    function JsArrayToTArray(arr, t) {
+        return jsArrayToTArray(arr, t);
+    }
+
+    function TArrayToJsArray(num) {
+        return tarrayToJsArray(num);
+    }
+
+    function TMapToJsMap(m) {
+        return tMapToJsMap(m);
+    }
+
     cache.BuiltinBool = 0;
     cache.BuiltinByte = 1;
     cache.BuiltinInt = 2;
@@ -292,11 +320,15 @@ var global = global || (function () { return this; }());
     cache.BuiltinString = 5;
     cache.BuiltinText = 6;
     cache.BuiltinName = 7;
-    
+
     cache.NewArray = NewArray;
     cache.NewSet = NewSet;
     cache.NewMap = NewMap;
-    
+    cache.TArrayToJsArray = TArrayToJsArray;
+    cache.TMapToJsMap = TMapToJsMap;
+    cache.JsArrayToTArray = JsArrayToTArray;
+    cache.JsMapToTMap = JsMapToTMap;
+
     const FunctionFlags = {
         FUNC_None                : 0x00000000,
 
@@ -336,7 +368,7 @@ var global = global || (function () { return this; }());
         FUNC_AllFlags        : 0xFFFFFFFF,
     };
     Object.freeze(FunctionFlags);
-   
+
     const FunctionExportFlags =
     {
         FUNCEXPORT_Final			:0x00000001,	// function declaration included "final" keyword.  Used to differentiate between functions that have FUNC_Final only because they're private
@@ -365,7 +397,7 @@ var global = global || (function () { return this; }());
         "COND_SimulatedOnlyNoReplay" : 11            ,   // This property will send to actors only, but not to replay connections
         "COND_SimulatedOrPhysicsNoReplay" : 12        ,   // This property will send to simulated Or bRepPhysics actors, but not to replay connections
         "COND_SkipReplay" : 13                        ,   // This property will not send to the replay connection
-        "COND_Never" : 15                            ,   // This property will never be replicated                        
+        "COND_Never" : 15                            ,   // This property will never be replicated
     }
     Object.freeze(ELifetimeCondition);
 
@@ -393,10 +425,10 @@ var global = global || (function () { return this; }());
         CLASS_NotPlaceable: 0x00000200,
         /** Handle object configuration on a per-object basis, rather than per-class. */
         CLASS_PerObjectConfig: 0x00000400,
-        
+
         /** Whether SetUpRuntimeReplicationData still needs to be called for this class */
         CLASS_ReplicationDataIsSetUp: 0x00000800,
-        
+
         /** Class can be constructed from editinline New button. */
         CLASS_EditInlineNew: 0x00001000,
         /** Display properties in the editor without using categories. */
@@ -410,13 +442,13 @@ var global = global || (function () { return this; }());
 
         /** Class flag indicating the class is having its layout changed, and therefore is not ready for a CDO to be created */
         CLASS_LayoutChanging: 0x00020000,
-        
+
         /** Indicates that the class was created from blueprint source material */
         CLASS_CompiledFromBlueprint: 0x00040000,
 
         /** Indicates that only the bare minimum bits of this class should be DLL exported/imported */
         CLASS_MinimalAPI: 0x00080000,
-        
+
         /** Indicates this class must be DLL exported/imported (along with all of it's members) */
         CLASS_RequiredAPI: 0x00100000,
 
@@ -461,18 +493,18 @@ var global = global || (function () { return this; }());
         CPF_ZeroConstructor					: 0x0000000000000200,	///< memset is fine for construction
         CPF_ReturnParm						: 0x0000000000000400,	///< Return value.
         CPF_DisableEditOnTemplate			: 0x0000000000000800,	///< Disable editing of this property on an archetype/sub-blueprint
-        //CPF_      						: 0x0000000000001000,	///< 
+        //CPF_      						: 0x0000000000001000,	///<
         CPF_Transient   					: 0x0000000000002000,	///< Property is transient: shouldn't be saved or loaded, except for Blueprint CDOs.
         CPF_Config      					: 0x0000000000004000,	///< Property should be loaded/saved as permanent profile.
-        //CPF_								: 0x0000000000008000,	///< 
+        //CPF_								: 0x0000000000008000,	///<
         CPF_DisableEditOnInstance			: 0x0000000000010000,	///< Disable editing on an instance of this class
         CPF_EditConst   					: 0x0000000000020000,	///< Property is uneditable in the editor.
         CPF_GlobalConfig					: 0x0000000000040000,	///< Load config from base class, not subclass.
         CPF_InstancedReference				: 0x0000000000080000,	///< Property is a component references.
         //CPF_								: 0x0000000000100000,	///<
         CPF_DuplicateTransient				: 0x0000000000200000,	///< Property should always be reset to the default value during any type of duplication (copy/paste, binary duplication, etc.)
-        //CPF_								: 0x0000000000400000,	///< 
-        //CPF_    							: 0x0000000000800000,	///< 
+        //CPF_								: 0x0000000000400000,	///<
+        //CPF_    							: 0x0000000000800000,	///<
         CPF_SaveGame						: 0x0000000001000000,	///< Property should be serialized for save games, this is only checked for game-specific archives with ArIsSaveGame
         CPF_NoClear							: 0x0000000002000000,	///< Hide clear (and browse) button.
         //CPF_  							: 0x0000000004000000,	///<
@@ -480,7 +512,7 @@ var global = global || (function () { return this; }());
         CPF_BlueprintAssignable				: 0x0000000010000000,	///< MC Delegates only.  Property should be exposed for assigning in blueprint code
         CPF_Deprecated  					: 0x0000000020000000,	///< Property is deprecated.  Read it from an archive, but don't save it.
         CPF_IsPlainOldData					: 0x0000000040000000,	///< If this is set, then the property can be memcopied instead of CopyCompleteValue / CopySingleValue
-        CPF_RepSkip							: 0x0000000080000000,	///< Not replicated. For non replicated properties in replicated structs 
+        CPF_RepSkip							: 0x0000000080000000,	///< Not replicated. For non replicated properties in replicated structs
         CPF_RepNotify						: 0x0000000100000000,	///< Notify actors when a property is replicated
         CPF_Interp							: 0x0000000200000000,	///< interpolatable property for use with matinee
         CPF_NonTransactional				: 0x0000000400000000,	///< Property isn't transacted
@@ -507,11 +539,11 @@ var global = global || (function () { return this; }());
         CPF_SkipSerialization				: 0x0080000000000000,	///< Property shouldn't be serialized, can still be exported to text
     }
 
-    
+
     function dummyDecorator() {
         return () => {};
     }
-    
+
     cache.rpc = {
         "FunctionFlags" : FunctionFlags,
         "PropertyFlags" : PropertyFlags,
@@ -519,9 +551,9 @@ var global = global || (function () { return this; }());
         "flags" : dummyDecorator,
         "condition" : dummyDecorator
     }
-    
+
     const MetaDataInst = '';
-    
+
     cache.uclass = {
         //  the class specifier
         "ClassGroup": MetaDataInst,
@@ -718,7 +750,7 @@ var global = global || (function () { return this; }());
         "ToolTip":  MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
-        "AllowAbstract": MetaDataInst, 
+        "AllowAbstract": MetaDataInst,
         "AllowAnyActor": MetaDataInst,
         "AllowedClasses": MetaDataInst,
         "AllowPreserveRatio": MetaDataInst,
@@ -778,7 +810,7 @@ var global = global || (function () { return this; }());
         "DevelopmentOnly": MetaDataInst,
         "NeedsLatentFixup": MetaDataInst,
         "LatentCallbackTarget": MetaDataInst,
-        "GetOptions": MetaDataInst,    
+        "GetOptions": MetaDataInst,
         "Bitmask": MetaDataInst,
         "BitmaskEnum": MetaDataInst,
         //  decorator
@@ -798,7 +830,7 @@ var global = global || (function () { return this; }());
         "ToolTip":  MetaDataInst,
         "ShortTooltip": MetaDataInst,
         "DocumentationPolicy": MetaDataInst,
-        "AllowAbstract": MetaDataInst, 
+        "AllowAbstract": MetaDataInst,
         "AllowAnyActor": MetaDataInst,
         "AllowedClasses": MetaDataInst,
         "AllowPreserveRatio": MetaDataInst,
@@ -857,7 +889,7 @@ var global = global || (function () { return this; }());
         "DevelopmentOnly": MetaDataInst,
         "NeedsLatentFixup": MetaDataInst,
         "LatentCallbackTarget": MetaDataInst,
-        "GetOptions": MetaDataInst,    
+        "GetOptions": MetaDataInst,
         "Bitmask": MetaDataInst,
         "BitmaskEnum": MetaDataInst,
         //  decorator
@@ -865,13 +897,13 @@ var global = global || (function () { return this; }());
     }
 
     cache.edit_on_instance = dummyDecorator;
-    
+
     cache.no_blueprint = dummyDecorator;
-    
+
     cache.set_flags = dummyDecorator;
-    
+
     cache.clear_flags = dummyDecorator;
-    
+
     cache.FunctionFlags = FunctionFlags;
 
     cache.ClassFlags = ClassFlags;
@@ -882,5 +914,5 @@ var global = global || (function () { return this; }());
 
     puerts.toManualReleaseDelegate = (x) => x;
     puerts.toDelegate = (o,k) => [o, k];
-    
+
 }(global));

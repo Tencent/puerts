@@ -507,6 +507,14 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     MethodBindingHelper<&FJsEnvImpl::NewContainer>::Bind(Isolate, Context, Global, "__tgjsNewContainer", This);
 
+    MethodBindingHelper<&FJsEnvImpl::TArrayToJsArray>::Bind(Isolate, Context, Global, "__tgjsTArrayToJsArray", This);
+
+    MethodBindingHelper<&FJsEnvImpl::TMapToJsMap>::Bind(Isolate, Context, Global, "__tgjsTMapToJsMap", This);
+
+    MethodBindingHelper<&FJsEnvImpl::JsArrayToTArray>::Bind(Isolate, Context, Global, "__tgjsJsArrayToTArray", This);
+
+    MethodBindingHelper<&FJsEnvImpl::JsMapToTMap>::Bind(Isolate, Context, Global, "__tgjsJsMapToTMap", This);
+
     MethodBindingHelper<&FJsEnvImpl::MergeObject>::Bind(Isolate, Context, Global, "__tgjsMergeObject", This);
 
     MethodBindingHelper<&FJsEnvImpl::NewObjectByClass>::Bind(Isolate, Context, Global, "__tgjsNewObject", This);
@@ -3139,6 +3147,213 @@ void FJsEnvImpl::NewContainer(const v8::FunctionCallbackInfo<v8::Value>& Info)
         default:
             FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("invalid container type %d"), ContainerType));
     }
+}
+
+void FJsEnvImpl::TArrayToJsArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    auto Arr = Info[0]->ToObject(Context).ToLocalChecked();
+    auto Self = FV8Utils::GetPointerFast<FScriptArray>(Arr, 0);
+    auto Inner = FV8Utils::GetPointerFast<FPropertyTranslator>(Arr, 1);
+
+    // FV8Utils::GetPointerFast是一个模板函数，用于从v8::Object中获取指针数据。
+    // Index参数表示要获取的指针数据的索引，因为一个v8::Object可以存储多个指针数据。
+    // 一般来说，Index 0表示对象本身的指针，Index 1表示对象类型的指针。
+
+    int32 ArrSize = Self->Num();
+
+    v8::Local<v8::Array> JsArr = v8::Array::New(Isolate, ArrSize);
+    int32 ArrayItemSize = GetSizeWithAlignment(Inner->Property);
+    for (int Index = 0; Index < ArrSize; ++Index)
+    {
+        uint8* DataPtr = reinterpret_cast<uint8*>(Self->GetData()) + Index * ArrayItemSize;
+        auto Ret = Inner->UEToJs(Isolate, Context, DataPtr, true);
+        if (Inner->NeedLinkOuter)
+        {
+            LinkOuterImpl(Context, Info.Holder(), Ret);
+        }
+        JsArr->Set(Context, Index, Ret);
+    }
+
+    Info.GetReturnValue().Set(v8::Local<v8::Value>::New(Isolate, JsArr));
+}
+
+void FJsEnvImpl::TMapToJsMap(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    auto MapObject = Info[0]->ToObject(Context).ToLocalChecked();
+
+    auto MapOrigin = FV8Utils::GetPointerFast<FScriptMap>(MapObject, 0);    // Map的原始指针
+    auto KeyPropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(MapObject, 1);
+    auto KeyProperty = KeyPropertyTranslator->Property;    // 获得Key的数据类型
+    auto ValuePropertyTranslator = FV8Utils::GetPointerFast<FPropertyTranslator>(MapObject, 2);
+    auto ValueProperty = ValuePropertyTranslator->Property;    // 获得Value的数据类型
+
+    if (!KeyPropertyTranslator->PropertyWeakPtr.IsValid() || !ValuePropertyTranslator->PropertyWeakPtr.IsValid())
+    {
+        FV8Utils::ThrowException(Isolate, "key/value info is invalid!");
+        return;
+    }
+
+    int32 MaxSize = MapOrigin->GetMaxIndex();
+
+    v8::Local<v8::Map> JsMap = v8::Map::New(Isolate);
+
+    for (int32 Index = 0; Index < MaxSize; ++Index)
+    {
+        auto ScriptLayout = FScriptMap::GetScriptLayout(
+            KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
+        uint8* Data = reinterpret_cast<uint8*>(MapOrigin->GetData(Index, ScriptLayout));
+        void* KeyPtr = Data + GetKeyOffset(ScriptLayout);
+        auto ItemKey = KeyPropertyTranslator->UEToJs(Isolate, Context, KeyPtr, false);
+
+        void* ValuePtr = MapOrigin->FindValue(
+            KeyPtr, ScriptLayout, [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
+            [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); });
+        auto ItemValue = ValuePropertyTranslator->UEToJs(Isolate, Context, ValuePtr, false);
+
+        JsMap->Set(Context, ItemKey, ItemValue);
+    }
+
+    Info.GetReturnValue().Set(v8::Local<v8::Value>::New(Isolate, JsMap));
+}
+
+void FJsEnvImpl::JsArrayToTArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    auto Obj = Info[0];
+    if (!Info[0]->IsArray())
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("JsArrayToTArray param 0 is not a array")));
+        return;
+    }
+
+    auto JsArr = v8::Local<v8::Array>::Cast(Info[0]);
+
+    PropertyMacro* Property = nullptr;
+
+    if (!GetContainerTypeProperty(Context, Info[1], &Property))
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("JsArrayToTArray param 1 is not Target Type")));
+        return;
+    }
+    auto ScriptArray = reinterpret_cast<FScriptArray*>(new FScriptArrayEx(Property));
+    auto Inner = FPropertyTranslator::Create(Property);
+
+    uint32_t Length = JsArr->Length();
+
+    int32 ElementSize = GetSizeWithAlignment(Property);
+#if ENGINE_MAJOR_VERSION > 4
+    ScriptArray->Add(Length, ElementSize, __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+#else
+    ScriptArray->Add(Length, ElementSize);
+#endif
+
+    for (uint32_t Index = 0; Index < Length; Index++)
+    {
+        v8::Local<v8::Value> Element = JsArr->Get(Context, Index).ToLocalChecked();
+
+        uint8* DataPtr = reinterpret_cast<uint8*>(ScriptArray->GetData()) + Index * ElementSize;
+        Property->InitializeValue(DataPtr);    //使用之前必须得初始化，即使是设置也要
+        Inner->JsToUE(Isolate, Context, Element, DataPtr, false);
+    }
+
+    Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, Property, ScriptArray, false));
+}
+
+void FJsEnvImpl::JsMapToTMap(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    auto Obj = Info[0];
+    if (!Info[0]->IsMap())
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("JsArrayToTArray param 0 is not a map")));
+        return;
+    }
+
+    auto JsMap = v8::Local<v8::Map>::Cast(Info[0]);
+
+    PropertyMacro* KeyProperty = nullptr;
+    PropertyMacro* ValueProperty = nullptr;
+
+    if (!GetContainerTypeProperty(Context, Info[1], &KeyProperty))
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("JsArrayToTArray param 1 is not Target Type")));
+        return;
+    }
+    if (!GetContainerTypeProperty(Context, Info[2], &ValueProperty))
+    {
+        FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("JsArrayToTArray param 2 is not Target Type")));
+        return;
+    }
+
+    auto ScriptMap = reinterpret_cast<FScriptMap*>(new FScriptMapEx(KeyProperty, ValueProperty));
+    auto KeyInner = FPropertyTranslator::Create(KeyProperty);
+    auto ValueInner = FPropertyTranslator::Create(ValueProperty);
+
+    void* KeyPtr = FMemory_Alloca(GetSizeWithAlignment(KeyProperty));
+    KeyProperty->InitializeValue(KeyPtr);
+
+    void* ValuePtr = FMemory_Alloca(GetSizeWithAlignment(ValueProperty));
+    ValueProperty->InitializeValue(ValuePtr);
+
+    auto ScriptLayout = FScriptMap::GetScriptLayout(
+        KeyProperty->GetSize(), KeyProperty->GetMinAlignment(), ValueProperty->GetSize(), ValueProperty->GetMinAlignment());
+
+    // 数组的 N位是Key N+1位是Value 对应的就是第N个键值对
+    auto ToArray = JsMap->AsArray();
+
+    for (uint32 Index = 0; Index < ToArray->Length(); Index += 2)
+    {
+        v8::Local<v8::Value> ElementKey = ToArray->Get(Context, Index).ToLocalChecked();
+        v8::Local<v8::Value> ElementValue = ToArray->Get(Context, Index + 1).ToLocalChecked();
+
+        KeyInner->JsToUE(Isolate, Context, ElementKey, KeyPtr, false);
+        ValueInner->JsToUE(Isolate, Context, ElementValue, ValuePtr, false);
+
+        ScriptMap->Add(
+            KeyPtr, ValuePtr, ScriptLayout,
+            [KeyProperty](const void* ElementKey) { return KeyProperty->GetValueTypeHash(ElementKey); },
+            [KeyProperty](const void* A, const void* B) { return KeyProperty->Identical(A, B); },
+            [KeyProperty, KeyPtr](void* NewElementKey)
+            {
+                KeyProperty->InitializeValue(NewElementKey);
+                KeyProperty->CopySingleValue(NewElementKey, KeyPtr);
+            },
+            [ValueProperty, ValuePtr](void* NewElementValue)
+            {
+                ValueProperty->InitializeValue(NewElementValue);
+                ValueProperty->CopySingleValue(NewElementValue, ValuePtr);
+            },
+            [ValueProperty, ValuePtr](void* ExistingElementValue)
+            { ValueProperty->CopySingleValue(ExistingElementValue, ValuePtr); },
+            [KeyProperty](void* ElementKey) { KeyProperty->DestroyValue(ElementKey); },
+            [ValueProperty](void* ElementValue) { ValueProperty->DestroyValue(ElementValue); });
+    }
+    KeyProperty->DestroyValue(KeyPtr);
+    ValueProperty->DestroyValue(ValuePtr);
+
+    Info.GetReturnValue().Set(FindOrAddContainer(Isolate, Context, KeyProperty, ValueProperty, ScriptMap, false));
 }
 
 void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FString, UObject*>>& Arguments, bool IsScript)
