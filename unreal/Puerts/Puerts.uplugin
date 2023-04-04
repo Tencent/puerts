@@ -32,7 +32,7 @@
     {
       "Name": "Puerts",
       "Type": "Runtime",
-      "LoadingPhase": "PreDefault",
+      "LoadingPhase": "Default",
       "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
     },
     {
