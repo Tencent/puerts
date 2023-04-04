@@ -32,7 +32,7 @@
     {
       "Name": "Puerts",
       "Type": "Runtime",
-      "LoadingPhase": "Default",
+      "LoadingPhase": "PostEngineInit",
       "WhitelistPlatforms": [ "Win64", "Android", "Mac", "IOS", "Linux" ]
     },
     {
