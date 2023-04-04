@@ -38,7 +38,7 @@
     {
       "Name": "PuertsEditor",
       "Type": "Editor",
-      "LoadingPhase": "Default"
+      "LoadingPhase": "PostEngineInit"
     }
   ]
 }
