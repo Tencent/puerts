@@ -175,10 +175,19 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             AddedMethods.Add(FunctionInfo->Name);
             if (!IsReuseTemplate)
             {
+#if WITH_V8_FAST_CALL
+                Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
+                    v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
+                        FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
+                                           : v8::Local<v8::Value>(),
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kAllow, v8::SideEffectType::kHasSideEffect,
+                        FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr));
+#else
                 Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
                     v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
                         FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
                                            : v8::Local<v8::Value>()));
+#endif
             }
             ++FunctionInfo;
         }
@@ -188,10 +197,19 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             AddedFunctions.Add(FunctionInfo->Name);
             if (!IsReuseTemplate)
             {
+#if WITH_V8_FAST_CALL
+                Result->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
+                    v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
+                        FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
+                                           : v8::Local<v8::Value>(),
+                        v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kAllow, v8::SideEffectType::kHasSideEffect,
+                        FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr));
+#else
                 Result->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
                     v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
                         FunctionInfo->Data ? static_cast<v8::Local<v8::Value>>(v8::External::New(Isolate, FunctionInfo->Data))
                                            : v8::Local<v8::Value>()));
+#endif
             }
             ++FunctionInfo;
         }

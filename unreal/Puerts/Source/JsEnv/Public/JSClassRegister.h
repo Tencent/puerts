@@ -33,6 +33,7 @@ struct JSENV_API JSFunctionInfo
     const char* Name;
     v8::FunctionCallback Callback;
     void* Data = nullptr;
+    const CFunctionInfo* ReflectionInfo = nullptr;
 };
 
 struct JSENV_API JSPropertyInfo

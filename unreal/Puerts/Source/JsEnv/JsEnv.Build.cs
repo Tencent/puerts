@@ -1,9 +1,10 @@
 /*
-* Tencent is pleased to support the open source community by making Puerts available.
-* Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
-* Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms.
-* This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
-*/
+ * Tencent is pleased to support the open source community by making Puerts available.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may
+ * be subject to their corresponding license terms. This file is subject to the terms and conditions defined in file 'LICENSE',
+ * which is part of this source code package.
+ */
 
 using UnrealBuildTool;
 using System.IO;
@@ -11,7 +12,7 @@ using System.Reflection;
 
 public class JsEnv : ModuleRules
 {
-    private bool UseNewV8 = 
+    private bool UseNewV8 =
 #if UE_4_25_OR_LATER
         true;
 #else
@@ -25,22 +26,23 @@ public class JsEnv : ModuleRules
     private bool UseQuickjs = false;
 
     private bool WithFFI = false;
-    
+
     private bool ForceStaticLibInEditor = false;
 
     private bool ThreadSafe = false;
 
     private bool FTextAsString = true;
-    
+
     public static bool WithSourceControl = false;
-    
+
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
-        //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        // PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
-        
+        // PublicDefinitions.Add("WITH_V8_FAST_CALL");
+
         PublicDefinitions.Add("TS_BLUEPRINT_PATH=\"/Blueprints/TypeScript/\"");
-        
+
         PublicDefinitions.Add(ThreadSafe ? "THREAD_SAFE" : "NOT_THREAD_SAFE");
 
         if (!FTextAsString)
@@ -48,18 +50,17 @@ public class JsEnv : ModuleRules
             PublicDefinitions.Add("PUERTS_FTEXT_AS_OBJECT");
         }
 
-        PublicDependencyModuleNames.AddRange(new string[]
-        {
-            "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas", "UMG"
-        });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "ParamDefaultValueMetas", "UMG" });
 
         if (Target.bBuildEditor)
         {
-            PublicDependencyModuleNames.AddRange(new string[] { "DirectoryWatcher", });
+            PublicDependencyModuleNames.AddRange(new string[] {
+                "DirectoryWatcher",
+            });
         }
 
         bEnableExceptions = true;
-        bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
+        bEnableUndefinedIdentifierWarnings = false;    // 避免在VS 2017编译时出现C4668错误
         var ContextField = GetType().GetField("Context", BindingFlags.Instance | BindingFlags.NonPublic);
         if (ContextField != null)
         {
@@ -86,8 +87,9 @@ public class JsEnv : ModuleRules
         {
             OldThirdParty(Target);
         }
-        
-        if (WithFFI) AddFFI(Target);
+
+        if (WithFFI)
+            AddFFI(Target);
 
         string coreJSPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Content"));
         string destDirName = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "Content"));
@@ -96,14 +98,15 @@ public class JsEnv : ModuleRules
 
     void OldThirdParty(ReadOnlyTargetRules Target)
     {
-        string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8_for_ue424_or_below", "Lib"));
+        string LibraryPath =
+            Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8_for_ue424_or_below", "Lib"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            //if (Target.bBuildEditor)
+            // if (Target.bBuildEditor)
             //{
             //    WinDll(Path.Combine(LibraryPath, "V8"));
             //}
-            //else
+            // else
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "Win64");
 
@@ -148,9 +151,9 @@ public class JsEnv : ModuleRules
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libbase.a"));
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
-            } 
+            }
 #if !UE_4_22_OR_LATER
-            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 22) 
+            else if (Target.Version.MajorVersion == 4 && Target.Version.MinorVersion < 22)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "Android", "armeabi-v7a", "7.4.288");
                 PublicLibraryPaths.Add(V8LibraryPath);
@@ -203,7 +206,7 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libplatform.a"));
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
 
-            //PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
+            // PublicAdditionalLibraries.Add(Path.Combine(Path.Combine(LibraryPath, "ffi", "iOS"), "libffi.a"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
@@ -211,7 +214,8 @@ public class JsEnv : ModuleRules
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
         }
 
-        string V8HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8_for_ue424_or_below", "Inc"));
+        string V8HeaderPath =
+            Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "v8_for_ue424_or_below", "Inc"));
         // External headers
         if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -224,14 +228,12 @@ public class JsEnv : ModuleRules
                 PublicIncludePaths.AddRange(new string[] { Path.Combine(V8HeaderPath, "7.4.288") });
             }
         }
-        //else if (Target.bBuildEditor && Target.Platform == UnrealTargetPlatform.Win64)
+        // else if (Target.bBuildEditor && Target.Platform == UnrealTargetPlatform.Win64)
         //{
         //    PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "8.4.371.19") });
         //}
-        else if (Target.Platform == UnrealTargetPlatform.Win64 ||
-            Target.Platform == UnrealTargetPlatform.IOS ||
-            Target.Platform == UnrealTargetPlatform.Mac ||
-            Target.Platform == UnrealTargetPlatform.Linux)
+        else if (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.IOS ||
+                 Target.Platform == UnrealTargetPlatform.Mac || Target.Platform == UnrealTargetPlatform.Linux)
         {
             PublicIncludePaths.AddRange(new string[] { Path.Combine(V8HeaderPath, "7.7.299") });
         }
@@ -246,22 +248,22 @@ public class JsEnv : ModuleRules
         string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Library"));
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "Win64")});
+            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "Win64") });
             PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "Win64", "ffi.lib"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "macOS")});
+            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "macOS") });
             PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "macOS", "libffi.a"));
         }
         else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "iOS")});
+            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "iOS") });
             PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "iOS", "libffi.a"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            PublicIncludePaths.AddRange(new string[] {Path.Combine(HeaderPath, "ffi", "Android")});
+            PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "ffi", "Android") });
             PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "Android", "armeabi-v7a", "libffi.a"));
             PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "ffi", "Android", "arm64-v8a", "libffi.a"));
         }
@@ -273,7 +275,8 @@ public class JsEnv : ModuleRules
     {
         foreach (var DllName in DllNames)
         {
-            if(Delay) PublicDelayLoadDLLs.Add(DllName);
+            if (Delay)
+                PublicDelayLoadDLLs.Add(DllName);
             var DllPath = Path.Combine(LibraryPath, DllName);
             var DestDllPath = Path.Combine("$(BinaryOutputDir)", DllName);
             RuntimeDependencies.Add(DestDllPath, DllPath, StagedFileType.NonUFS);
@@ -286,15 +289,9 @@ public class JsEnv : ModuleRules
         PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8.dll.lib"));
         PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "v8_libplatform.dll.lib"));
 
-        AddRuntimeDependencies(new string[]
-        {
-            "v8.dll",
-            "v8_libplatform.dll",
-            "v8_libbase.dll",
-            "zlib.dll"
-        }, V8LibraryPath, false);
+        AddRuntimeDependencies(new string[] { "v8.dll", "v8_libplatform.dll", "v8_libbase.dll", "zlib.dll" }, V8LibraryPath, false);
     }
-    
+
     void MacDylib(string LibraryPath)
     {
         string V8LibraryPath = Path.Combine(LibraryPath, "macOSdylib");
@@ -306,7 +303,7 @@ public class JsEnv : ModuleRules
 
     void ThirdParty(ReadOnlyTargetRules Target)
     {
-        //Add header
+        // Add header
         string HeaderPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Include"));
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "websocketpp") });
         PublicIncludePaths.AddRange(new string[] { Path.Combine(HeaderPath, "asio") });
@@ -320,7 +317,7 @@ public class JsEnv : ModuleRules
                 string V8LibraryPath = Path.Combine(LibraryPath, "Win64MD");
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "wee8.lib"));
             }
-            else 
+            else
             {
                 WinDll(LibraryPath);
             }
@@ -334,8 +331,8 @@ public class JsEnv : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            //PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
-            //PublicFrameworks.AddRange(new string[] { "WebKit" });
+            // PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
+            // PublicFrameworks.AddRange(new string[] { "WebKit" });
             if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
@@ -351,8 +348,8 @@ public class JsEnv : ModuleRules
             PublicFrameworks.AddRange(new string[] { "WebKit" });
             string V8LibraryPath = Path.Combine(LibraryPath, "iOS", "arm64");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
-        } 
-        else if (Target.Platform == UnrealTargetPlatform.Linux) 
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libwee8.a"));
@@ -363,7 +360,7 @@ public class JsEnv : ModuleRules
             PrivateDefinitions.Add("FORCE_USE_STATIC_V8_LIB");
         }
     }
-    
+
     void ThirdPartyNodejs(ReadOnlyTargetRules Target)
     {
         PrivateDefinitions.Add("WITH_NODEJS");
@@ -391,11 +388,9 @@ public class JsEnv : ModuleRules
         {
             /*
             #if UE_4_19_OR_LATER
-                        AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml"));
-            #else
-                        AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml")));
-            #endif
-            #if UE_4_24_OR_LATER
+                        AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "..", "..", "ThirdParty",
+            "Libnode_APL.xml")); #else AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin",
+            Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "Libnode_APL.xml"))); #endif #if UE_4_24_OR_LATER
                         PublicSystemLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "armeabi-v7a"));
                         PublicSystemLibraryPaths.Add(Path.Combine(LibraryPath, "Android", "arm64-v8a"));
                         PublicSystemLibraries.Add("node");
@@ -405,7 +400,7 @@ public class JsEnv : ModuleRules
                         PublicAdditionalLibraries.Add("node");
             #endif  //UE_4_24_OR_LATER
             */
-            
+
             string[] Archs = new string[] { "armeabi-v7a", "arm64-v8a" };
             foreach (var Arch in Archs)
             {
@@ -432,7 +427,6 @@ public class JsEnv : ModuleRules
                     PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
                 }
             }
-            
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
@@ -471,8 +465,8 @@ public class JsEnv : ModuleRules
             {
                 PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libv8_libsampler.a"));
             }
-        } 
-        else if (Target.Platform == UnrealTargetPlatform.Linux) 
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
             string V8LibraryPath = Path.Combine(LibraryPath, "Linux");
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "libnode.so"));
@@ -498,11 +492,7 @@ public class JsEnv : ModuleRules
             }
             PublicAdditionalLibraries.Add(Path.Combine(V8LibraryPath, "quickjs.dll.lib"));
             AddRuntimeDependencies(new string[] { "msys-quickjs.dll" }, V8LibraryPath, false);
-            AddRuntimeDependencies(new string[]
-            {
-                "libgcc_s_seh-1.dll",
-                "libwinpthread-1.dll"
-            }, V8LibraryPath, true);
+            AddRuntimeDependencies(new string[] { "libgcc_s_seh-1.dll", "libwinpthread-1.dll" }, V8LibraryPath, true);
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -514,7 +504,7 @@ public class JsEnv : ModuleRules
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
             // PublicFrameworks.AddRange(new string[] { "WebKit",  "JavaScriptCore" });
-            //PublicFrameworks.AddRange(new string[] { "WebKit" });
+            // PublicFrameworks.AddRange(new string[] { "WebKit" });
             if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 string V8LibraryPath = Path.Combine(LibraryPath, "macOS");
@@ -545,9 +535,7 @@ public class JsEnv : ModuleRules
 
         if (!dir.Exists)
         {
-            throw new DirectoryNotFoundException(
-            "Source directory does not exist or could not be found: "
-            + sourceDirName);
+            throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + sourceDirName);
         }
 
         if (!Directory.Exists(destDirName))
@@ -573,5 +561,4 @@ public class JsEnv : ModuleRules
             }
         }
     }
-
 }
