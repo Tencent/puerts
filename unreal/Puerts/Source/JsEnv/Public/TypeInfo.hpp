@@ -9,7 +9,7 @@
 #pragma once
 
 #include <string>
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
 #include "V8FastCall.hpp"
 #endif
 
@@ -255,7 +255,7 @@ public:
     virtual unsigned int DefaultCount() const = 0;
     virtual const CTypeInfo* Argument(unsigned int index) const = 0;
     virtual const char* CustomSignature() const = 0;
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
     virtual const class v8::CFunction* FastCallInfo() const = 0;
 #endif
 };
@@ -343,7 +343,7 @@ public:
     {
         return nullptr;
     }
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
     virtual const class v8::CFunction* FastCallInfo() const override
     {
         return nullptr;
@@ -371,7 +371,7 @@ public:
     virtual ~CFunctionInfoByPtrImpl()
     {
     }
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
     virtual const class v8::CFunction* FastCallInfo() const override
     {
         return V8FastCall<Ret (*)(Args...), func>::info();
@@ -394,7 +394,7 @@ public:
     virtual ~CFunctionInfoByPtrImpl()
     {
     }
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
     virtual const class v8::CFunction* FastCallInfo() const override
     {
         return V8FastCall<Ret (Inc::*)(Args...), func>::info();
@@ -417,7 +417,7 @@ public:
     virtual ~CFunctionInfoByPtrImpl()
     {
     }
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
     virtual const class v8::CFunction* FastCallInfo() const override
     {
         return V8FastCall<Ret (Inc::*)(Args...) const, func>::info();

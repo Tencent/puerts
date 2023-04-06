@@ -359,7 +359,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     v8::V8::SetFlagsFromString(Flags, sizeof(Flags));
 #endif
 
-#if WITH_V8_FAST_CALL
+#ifdef WITH_V8_FAST_CALL
     char FCFlags[] = "--turbo-fast-api-calls";
     v8::V8::SetFlagsFromString(FCFlags, sizeof(FCFlags));
 #endif
