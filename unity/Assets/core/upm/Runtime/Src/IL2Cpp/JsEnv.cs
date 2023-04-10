@@ -139,8 +139,8 @@ namespace Puerts
 
         public T ExecuteModule<T>(string specifier, string exportee)
         {
-            if (typeof(T) == typeof(JSObject)) {
-                throw new Exception("T must not be Puerts.JSObject. use ExecuteModule without generic please");
+            if (exportee == "" && typeof(T) != typeof(JSObject)) {
+                throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
             JSObject jso = moduleExecuter(specifier);
             JSOGetter<T> getter = Eval<JSOGetter<T>>("(function (jso, str) { return jso[str]; });");
