@@ -108,16 +108,36 @@ namespace Puerts.UnitTest
 
         public Func<int> JSFunctionTestPipeLine(Func<int> initialValue, Func<Func<int>, Func<int>> JSValueHandler)
         {
-            AssertAndPrint("CSGetFunctionFieldFromCS", initialValue(), functionTestStartValue());
             AssertAndPrint("CSGetFunctionArgFromJS", initialValue(), 3);
             AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue), initialValue); // 这里判断一下引用
-            AssertAndPrint("CSSetFunctionFieldFromJS", functionTestEndValue(), 3);
-            AssertAndPrint("CSInvokeFunctionEvent", functionEvent(), 30);
-            return functionTestEndValue;
+            return initialValue;
         }
-        public Func<int> functionTestStartValue = () => 3;
-        public Func<int> functionTestEndValue = null;
         public event Func<int> functionEvent;
+
+        public void JSFunctionTestCheckMemberValue()
+        {
+            AssertAndPrint("CSFunctionTsetField", functionTestField(), 3);
+            AssertAndPrint("CSFunctionTestProp", functionTestProp(), 3);
+            AssertAndPrint("CSFunctionTestFieldStatic", functionTestFieldStatic(), 3);
+            AssertAndPrint("CSFunctionTestPropStatic", functionTestPropStatic(), 3);
+
+            AssertAndPrint("CSInvokeFunctionEvent", functionEvent(), 30);
+        }
+        public Func<int> functionTestField = null;
+        protected Func<int> _functionTestProp = null;
+        public Func<int> functionTestProp 
+        {
+            get { return _functionTestProp; }
+            set { _functionTestProp = value; }
+        }
+        public static Func<int> functionTestFieldStatic = null;
+        protected static Func<int> _functionTestPropStatic = null;
+        public static Func<int> functionTestPropStatic
+        {
+            get { return _functionTestPropStatic; }
+            set { _functionTestPropStatic = value; }
+        }
+
         /**
         * 初始值1，每次交互+1
         */
@@ -261,14 +281,21 @@ namespace Puerts.UnitTest
 
                     const testHelper = TestHelper.GetInstance();
 
-                    const oFunc = testHelper.functionTestStartValue = () => 3
-                    const evfn = () => 30;
-                    testHelper.add_functionEvent(evfn);
-                    testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
+                    const oFunc = () => 3
+                    const rFunc = testHelper.JSFunctionTestPipeLine(oFunc, function (func) {
                         testHelper.functionTestEndValue = oFunc;
                         return testHelper.functionTestEndValue;
                     });
+
+                    const evfn = () => 30;
+                    testHelper.add_functionEvent(evfn);
+                    testHelper.functionTestField = () => 3
+                    testHelper.functionTestProp = () => 3
+                    TestHelper.functionTestFieldStatic = () => 3
+                    TestHelper.functionTestPropStatic = () => 3
+                    testHelper.JSFunctionTestCheckMemberValue();
                     testHelper.remove_functionEvent(evfn);
+
                 })()
             ");
             jsEnv.Tick();

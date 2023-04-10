@@ -502,7 +502,7 @@ static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8:
 
     ${ENDIF()}    
     ${CODE_SNIPPETS.JSValToCSVal(fieldWrapperInfo.ReturnSignature, "info[0]", "p")}
-    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, &p);
+    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${fieldWrapperInfo.Signature == 'o' ? 'p' : '&p'});
 }`;
 }
 
