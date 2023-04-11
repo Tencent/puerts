@@ -1209,10 +1209,12 @@ handle_underlying:
     {
         csThis = pesapi_get_native_object_ptr(env, jsThis);
         Il2CppClass* thisType = method->klass;
+#ifndef UNITY_2021_1_OR_NEWER
         if (Class::IsValuetype(thisType))
         {
             csThis = ((uint8_t*)csThis) - sizeof(Il2CppObject);
         }
+#endif
     }
     if (isExtensionMethod)
     {
@@ -1490,7 +1492,15 @@ static void ReflectionSetFieldWrapper(pesapi_callback_info info, FieldInfo* fiel
     else
     {
         void* val = JsValueToCSRef(fieldType, env, jsValue);
-        SetFieldValue(csThis, field, offset, &val);
+        
+        if(!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+        {
+            SetFieldValue(csThis, field, offset, &val);
+        }
+        else
+        {
+            SetFieldValue(csThis, field, offset, val);
+        }
     }
 }
 
