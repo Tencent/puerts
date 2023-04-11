@@ -143,7 +143,6 @@ void FStructWrapper::InitTemplateProperties(
 
 v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* Isolate, v8::FunctionCallback Construtor)
 {
-    v8::EscapableHandleScope HandleScope(Isolate);
     auto ClassDefinition = FindClassByType(Struct.Get());
     bool IsReuseTemplate = false;
 #if PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE
@@ -395,7 +394,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             nullptr, nullptr, nullptr, v8::Local<v8::Value>(), v8::PropertyHandlerFlags::kNonMasking));
 #endif
 
-    return HandleScope.Escape(Result);
+    return Result;
 }
 
 void FStructWrapper::StaticClass(const v8::FunctionCallbackInfo<v8::Value>& Info)

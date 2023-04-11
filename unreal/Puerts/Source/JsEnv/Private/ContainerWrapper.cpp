@@ -14,7 +14,6 @@ namespace puerts
 v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
     v8::Isolate::Scope Isolatescope(Isolate);
-    v8::EscapableHandleScope HandleScope(Isolate);
     auto Result = v8::FunctionTemplate::New(Isolate, New);
     Result->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1 Property
 
@@ -30,7 +29,7 @@ v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isol
         FV8Utils::InternalString(Isolate, "IsValidIndex"), v8::FunctionTemplate::New(Isolate, IsValidIndex));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Empty"), v8::FunctionTemplate::New(Isolate, Empty));
 
-    return HandleScope.Escape(Result);
+    return Result;
 }
 
 void FScriptArrayWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -269,7 +268,6 @@ int32 FScriptArrayWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Val
 v8::Local<v8::FunctionTemplate> FScriptSetWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
     v8::Isolate::Scope Isolatescope(Isolate);
-    v8::EscapableHandleScope HandleScope(Isolate);
     auto Result = v8::FunctionTemplate::New(Isolate, New);
     Result->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1 Property
 
@@ -286,7 +284,7 @@ v8::Local<v8::FunctionTemplate> FScriptSetWrapper::ToFunctionTemplate(v8::Isolat
         FV8Utils::InternalString(Isolate, "IsValidIndex"), v8::FunctionTemplate::New(Isolate, IsValidIndex));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Empty"), v8::FunctionTemplate::New(Isolate, Empty));
 
-    return HandleScope.Escape(Result);
+    return Result;
 }
 
 void FScriptSetWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -488,7 +486,6 @@ int32 FScriptSetWrapper::FindIndexInner(const v8::FunctionCallbackInfo<v8::Value
 v8::Local<v8::FunctionTemplate> FScriptMapWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
     v8::Isolate::Scope Isolatescope(Isolate);
-    v8::EscapableHandleScope HandleScope(Isolate);
     auto Result = v8::FunctionTemplate::New(Isolate, New);
     Result->InstanceTemplate()->SetInternalFieldCount(6);    // 0 Ptr, 1-2 Property
 
@@ -505,7 +502,7 @@ v8::Local<v8::FunctionTemplate> FScriptMapWrapper::ToFunctionTemplate(v8::Isolat
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "GetKey"), v8::FunctionTemplate::New(Isolate, GetKey));
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Empty"), v8::FunctionTemplate::New(Isolate, Empty));
 
-    return HandleScope.Escape(Result);
+    return Result;
 }
 
 void FScriptMapWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -743,7 +740,6 @@ FScriptMapLayout FScriptMapWrapper::GetScriptLayout(const PropertyMacro* KeyProp
 v8::Local<v8::FunctionTemplate> FFixSizeArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
     v8::Isolate::Scope Isolatescope(Isolate);
-    v8::EscapableHandleScope HandleScope(Isolate);
     auto Result = v8::FunctionTemplate::New(Isolate, New);
     Result->InstanceTemplate()->SetInternalFieldCount(4);    // 0 Ptr, 1 Property
 
@@ -753,7 +749,7 @@ v8::Local<v8::FunctionTemplate> FFixSizeArrayWrapper::ToFunctionTemplate(v8::Iso
     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, "Set"), v8::FunctionTemplate::New(Isolate, Set));
     // Result->PrototypeTemplate()->SetIndexedPropertyHandler(Getter, Setter);
 
-    return HandleScope.Escape(Result);
+    return Result;
 }
 
 void FFixSizeArrayWrapper::Num(const v8::FunctionCallbackInfo<v8::Value>& Info)

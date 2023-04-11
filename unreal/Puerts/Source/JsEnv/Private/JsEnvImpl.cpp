@@ -2733,7 +2733,6 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         {
             InitExtensionMethodsMap();
         }
-        v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
         bool IsReuseTemplate = false;
