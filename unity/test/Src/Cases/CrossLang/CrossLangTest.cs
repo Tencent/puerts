@@ -14,10 +14,14 @@ namespace Puerts.UnitTest
     }
     public struct TestStruct
     {
-        public int value;
-        public TestStruct(int val)
+        public float value;
+        public float value2;
+        public float value3;
+        public TestStruct(float val)
         {
             value = val;
+            value2 = 0;
+            value3 = 0;
         }
     }
 
@@ -116,7 +120,7 @@ namespace Puerts.UnitTest
 
         public void JSFunctionTestCheckMemberValue()
         {
-            AssertAndPrint("CSFunctionTsetField", functionTestField(), 3);
+            AssertAndPrint("CSFunctionTestField", functionTestField(), 3);
             AssertAndPrint("CSFunctionTestProp", functionTestProp(), 3);
             AssertAndPrint("CSFunctionTestFieldStatic", functionTestFieldStatic(), 3);
             AssertAndPrint("CSFunctionTestPropStatic", functionTestPropStatic(), 3);
@@ -143,69 +147,134 @@ namespace Puerts.UnitTest
         */
         public int NumberTestPipeLine(int initialValue, out int outArg, Func<int, int> JSValueHandler)
         {
-            AssertAndPrint("CSGetNumberFieldFromCS", initialValue, numberTestStartValue);
             AssertAndPrint("CSGetNumberArgFromJS", initialValue, 1);
             AssertAndPrint("CSGetNumberReturnFromJS", JSValueHandler(initialValue + 1), 3);
-            AssertAndPrint("CSSetNumberFieldFromJS", numberTestEndValue, 3);
             outArg = 4;
             return 5;
         }
-        public int numberTestStartValue = 1;
-        public int numberTestEndValue = 0;
-        /**
-        * 判断引用即可
-        */
-        public DateTime DateTestPipeLine(DateTime initialValue, out DateTime outArg, Func<DateTime, DateTime> JSValueHandler)
+
+        public int numberTestField = 0;
+        protected int _numberTestProp = 0;
+        public int numberTestProp 
         {
-            AssertAndPrint("CSGetDateArgFromJS", initialValue.ToString(), "1998/11/11 0:00:00");
-            AssertAndPrint("CSGetDateReturnFromJS", JSValueHandler(initialValue), initialValue);
-            outArg = initialValue;
-            return initialValue;
+            get { return _numberTestProp; }
+            set { _numberTestProp = value; }
         }
+        public static int numberTestFieldStatic = 0;
+        protected static int _numberTestPropStatic = 0;
+        public static int numberTestPropStatic
+        {
+            get { return _numberTestPropStatic; }
+            set { _numberTestPropStatic = value; }
+        }
+
+        public void NumberTestCheckMemberValue()
+        {
+            AssertAndPrint("CSNumberTestField", numberTestField, 3);
+            AssertAndPrint("CSNumberTestProp", numberTestProp, 3);
+            AssertAndPrint("CSNumberTestFieldStatic", numberTestFieldStatic, 3);
+            AssertAndPrint("CSNumberTestPropStatic", numberTestPropStatic, 3);
+        }
+
         /**
         * 初始值 'abc'
         * 后续每次交互往后多加一个字母
         */
         public string StringTestPipeLine(string initialValue, out string outArg, Func<string, string> JSValueHandler)
         {
-            AssertAndPrint("CSGetStringFieldFromCS", initialValue, stringTestStartValue);
             AssertAndPrint("CSGetStringArgFromJS", initialValue, "abc");
             AssertAndPrint("CSGetStringReturnFromJS", JSValueHandler(initialValue + "d"), "abcde");
-            AssertAndPrint("CSSetStringFieldFromJS", stringTestEndValue, "abcde");
             outArg = "abcdef";
             return "abcdefg";
         }
-        public string stringTestStartValue = "abc";
-        public string stringTestEndValue = "";
+
+        public string stringTestField = null;
+        protected string _stringTestProp = null;
+        public string stringTestProp 
+        {
+            get { return _stringTestProp; }
+            set { _stringTestProp = value; }
+        }
+        public static string stringTestFieldStatic = null;
+        protected static string _stringTestPropStatic = null;
+        public static string stringTestPropStatic
+        {
+            get { return _stringTestPropStatic; }
+            set { _stringTestPropStatic = value; }
+        }
+
+        public void StringTestCheckMemberValue()
+        {
+            AssertAndPrint("CSStringTestField", stringTestField, "Puer");
+            AssertAndPrint("CSStringTestProp", stringTestProp, "Puer");
+            AssertAndPrint("CSStringTestFieldStatic", stringTestFieldStatic, "Puer");
+            AssertAndPrint("CSStringTestPropStatic", stringTestPropStatic, "Puer");
+        }
         /**
         * js到cs都是true，cs到js都是false
         */
         public bool BoolTestPipeLine(bool initialValue, out bool outArg, Func<bool, bool> JSValueHandler)
         {
-            AssertAndPrint("CSGetBoolFieldFromCS", initialValue, boolTestStartValue);
             AssertAndPrint("CSGetBoolArgFromJS", initialValue);
             AssertAndPrint("CSGetBoolReturnFromJS", JSValueHandler(false));
-            AssertAndPrint("CSSetBoolFieldFromJS", boolTestEndValue);
             outArg = false;
             return false;
         }
-        public bool boolTestStartValue = true;
-        public bool boolTestEndValue = false;
+        public bool boolTestField = false;
+        protected bool _boolTestProp = false;
+        public bool boolTestProp 
+        {
+            get { return _boolTestProp; }
+            set { _boolTestProp = value; }
+        }
+        public static bool boolTestFieldStatic = false;
+        protected static bool _boolTestPropStatic = false;
+        public static bool boolTestPropStatic
+        {
+            get { return _boolTestPropStatic; }
+            set { _boolTestPropStatic = value; }
+        }
+
+        public void BoolTestCheckMemberValue()
+        {
+            AssertAndPrint("CSBoolTestField", boolTestField, true);
+            AssertAndPrint("CSBoolTestProp", boolTestProp, true);
+            AssertAndPrint("CSBoolTestFieldStatic", boolTestFieldStatic, true);
+            AssertAndPrint("CSBoolTestPropStatic", boolTestPropStatic, true);
+        }
         /**
         * 初始值 9007199254740992 (js侧Number.MAX_SAFE_INTEGER+1)
         * 后续每次交互都+1
         */
         public long BigIntTestPipeLine(long initialValue, out long outArg, Func<long, long> JSValueHandler)
         {
-            AssertAndPrint("CSGetBigIntFieldFromCS", initialValue, bigIntTestStartValue);
             AssertAndPrint("CSGetBigIntArgFromJS", initialValue, 9007199254740992);
             AssertAndPrint("CSGetBigIntReturnFromJS", JSValueHandler(initialValue + 1), initialValue + 2);
-            AssertAndPrint("CSSetBigIntFieldFromJS", bigIntTestEndValue, initialValue + 2);
             outArg = initialValue + 3;
             return initialValue + 4;
         }
-        public long bigIntTestStartValue = 9007199254740992;
-        public long bigIntTestEndValue = 0;
+        public long bigintTestField = 0;
+        protected long _bigintTestProp = 0;
+        public long bigintTestProp 
+        {
+            get { return _bigintTestProp; }
+            set { _bigintTestProp = value; }
+        }
+        public static long bigintTestFieldStatic = 0;
+        protected static long _bigintTestPropStatic = 0;
+        public static long bigintTestPropStatic
+        {
+            get { return _bigintTestPropStatic; }
+            set { _bigintTestPropStatic = value; }
+        }
+
+        public void BigintTestCheckMemberValue()
+        {
+            AssertAndPrint("CSBigintTestField", bigintTestField, 9007199254740987);
+            AssertAndPrint("CSBigintTestProp", bigintTestProp, 9007199254740987);
+            AssertAndPrint("CSBigintTestFieldStatic", bigintTestFieldStatic, 9007199254740987);
+            AssertAndPrint("CSBigintTestPropStatic", bigintTestPropStatic, 9007199254740987);
+        }
         /**
         */
         public Puerts.ArrayBuffer ArrayBufferTestPipeLine(Puerts.ArrayBuffer initialValue, out Puerts.ArrayBuffer outArg, Func<Puerts.ArrayBuffer, Puerts.ArrayBuffer> JSValueHandler) 
@@ -218,36 +287,94 @@ namespace Puerts.UnitTest
             byte[] bytes = new byte[1] { 5 };
             return new Puerts.ArrayBuffer(bytes);
         }
+        public Puerts.ArrayBuffer arrayBufferTestField = null;
+        protected Puerts.ArrayBuffer _arrayBufferTestProp = null;
+        public Puerts.ArrayBuffer arrayBufferTestProp 
+        {
+            get { return _arrayBufferTestProp; }
+            set { _arrayBufferTestProp = value; }
+        }
+        public static Puerts.ArrayBuffer arrayBufferTestFieldStatic = null;
+        protected static Puerts.ArrayBuffer _arrayBufferTestPropStatic = null;
+        public static Puerts.ArrayBuffer arrayBufferTestPropStatic
+        {
+            get { return _arrayBufferTestPropStatic; }
+            set { _arrayBufferTestPropStatic = value; }
+        }
+
+        public void ArrayBufferTestCheckMemberValue()
+        {
+            AssertAndPrint("CSArrayBufferTestField", arrayBufferTestField.Bytes[0], 192);
+            AssertAndPrint("CSArrayBufferTestProp", arrayBufferTestProp.Bytes[0], 192);
+            AssertAndPrint("CSArrayBufferTestFieldStatic", arrayBufferTestFieldStatic.Bytes[0], 192);
+            AssertAndPrint("CSArrayBufferTestPropStatic", arrayBufferTestPropStatic.Bytes[0], 192);
+        }
         /**
         * 判断引用即可
         */
         public TestObject NativeObjectTestPipeLine(TestObject initialValue, out TestObject outArg, Func<TestObject, TestObject> JSValueHandler)
         {
-            AssertAndPrint("CSGetNativeObjectFieldFromCS", initialValue, nativeObjectTestStartValue);
             AssertAndPrint("CSGetNativeObjectArgFromJS", initialValue != null && initialValue.value == 1);
             AssertAndPrint("CSGetNativeObjectReturnFromJS", JSValueHandler(initialValue), initialValue);
-            AssertAndPrint("CSSetNativeObjectFieldFromJS", nativeObjectTestEndValue, initialValue);
 
             outArg = initialValue;
             return initialValue;
         }
-        public TestObject nativeObjectTestStartValue = new TestObject(1);
-        public TestObject nativeObjectTestEndValue = null;
+        public TestObject nativeObjectTestField = null;
+        protected TestObject _nativeObjectTestProp = null;
+        public TestObject nativeObjectTestProp 
+        {
+            get { return _nativeObjectTestProp; }
+            set { _nativeObjectTestProp = value; }
+        }
+        public static TestObject nativeObjectTestFieldStatic = null;
+        protected static TestObject _nativeObjectTestPropStatic = null;
+        public static TestObject nativeObjectTestPropStatic
+        {
+            get { return _nativeObjectTestPropStatic; }
+            set { _nativeObjectTestPropStatic = value; }
+        }
+
+        public void NativeObjectTestCheckMemberValue()
+        {
+            AssertAndPrint("CSNativeObjectTestField", nativeObjectTestField.value, 678);
+            AssertAndPrint("CSNativeObjectTestProp", nativeObjectTestProp.value, 678);
+            AssertAndPrint("CSNativeObjectTestFieldStatic", nativeObjectTestFieldStatic.value, 678);
+            AssertAndPrint("CSNativeObjectTestPropStatic", nativeObjectTestPropStatic.value, 678);
+        }
         /**
         * 结构体，判断值相等
         */
-        public TestStruct NativeObjectStructTestPipeLine(TestStruct initialValue, out TestStruct outArg, Func<TestStruct, TestStruct> JSValueHandler)
+        public TestStruct NativeStructTestPipeLine(TestStruct initialValue, out TestStruct outArg, Func<TestStruct, TestStruct> JSValueHandler)
         {
-            AssertAndPrint("CSGetNativeObjectStructFieldFromCS", initialValue.value, nativeObjectStructTestStartValue.value);
-            AssertAndPrint("CSGetNativeObjectStructArgFromJS", initialValue.value, 1);
-            AssertAndPrint("CSGetNativeObjectStructReturnFromJS", JSValueHandler(initialValue).value, initialValue.value);
-            AssertAndPrint("CSSetNativeObjectStructFieldFromJS", nativeObjectStructTestEndValue.value, initialValue.value);
+            AssertAndPrint("CSGetNativeStructArgFromJS", initialValue.value, 1);
+            AssertAndPrint("CSGetNativeStructReturnFromJS", JSValueHandler(initialValue).value, initialValue.value);
 
             outArg = initialValue;
             return initialValue;
         }
-        public TestStruct nativeObjectStructTestStartValue = new TestStruct(1);
-        public TestStruct nativeObjectStructTestEndValue = default(TestStruct);
+        public TestStruct nativeStructTestField = default(TestStruct);
+        protected TestStruct _nativeStructTestProp = default(TestStruct);
+        public TestStruct nativeStructTestProp 
+        {
+            get { return _nativeStructTestProp; }
+            set { _nativeStructTestProp = value; }
+        }
+        public static TestStruct nativeStructTestFieldStatic = default(TestStruct);
+        protected static TestStruct _nativeStructTestPropStatic = default(TestStruct);
+        public static TestStruct nativeStructTestPropStatic
+        {
+            get { return _nativeStructTestPropStatic; }
+            set { _nativeStructTestPropStatic = value; }
+        }
+
+        public void NativeStructTestCheckMemberValue()
+        {
+            AssertAndPrint("CSNativeStructTestField", nativeStructTestField.value, 765);
+            AssertAndPrint("CSNativeStructTestProp", nativeStructTestProp.value, 765);
+            AssertAndPrint("CSNativeStructTestFieldStatic", nativeStructTestFieldStatic.value, 765);
+            AssertAndPrint("CSNativeStructTestPropStatic", nativeStructTestPropStatic.value, 765);
+        }
         /**
         * CS侧暂无法处理，判断引用即可
         */
@@ -258,12 +385,23 @@ namespace Puerts.UnitTest
             return initialValue;
         }
 
+        /**
+        * 判断引用即可
+        */
+        public DateTime DateTestPipeLine(DateTime initialValue, out DateTime outArg, Func<DateTime, DateTime> JSValueHandler)
+        {
+            AssertAndPrint("CSGetDateArgFromJS", initialValue.ToString(), "1998/11/11 0:00:00");
+            AssertAndPrint("CSGetDateReturnFromJS", JSValueHandler(initialValue), initialValue);
+            outArg = initialValue;
+            return initialValue;
+        }
+
         public Func<object> ReturnAnyTestFunc;
 
         public void InvokeReturnAnyTestFunc(TestStruct srcValue)
         {
             var ret = (TestStruct)ReturnAnyTestFunc.Invoke();
-            AssertAndPrint("InvokeReturnNativeObjectStructTestFunc", srcValue.value, ret.value);
+            AssertAndPrint("InvokeReturnNativeStructTestFunc", srcValue.value, ret.value);
         }
     }
 
@@ -312,14 +450,18 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oNum = outRef[0] = testHelper.numberTestStartValue;
+                    const oNum = outRef[0] = 1;
                     const rNum = testHelper.NumberTestPipeLine(oNum, outRef, function (num) {
                         assertAndPrint('JSGetNumberArgFromCS', num, oNum + 1);
-                        testHelper.numberTestEndValue = oNum + 2;
-                        return testHelper.numberTestEndValue;
+                        return oNum + 2;
                     });
                     assertAndPrint('JSGetNumberOutArgFromCS', outRef[0], oNum + 3);
                     assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
+                    testHelper.numberTestField = 3
+                    testHelper.numberTestProp = 3
+                    TestHelper.numberTestFieldStatic = 3
+                    TestHelper.numberTestPropStatic = 3
+                    testHelper.NumberTestCheckMemberValue();
                 })()
             ");
             jsEnv.Tick();
@@ -336,15 +478,20 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oStr = outRef[0] = testHelper.stringTestStartValue;
+                    const oStr = outRef[0] = 'abc';
                     const rStr = testHelper.StringTestPipeLine(oStr, outRef, function (str) {
                         assertAndPrint('JSGetStringArgFromCS', str, 'abcd');
-                        testHelper.stringTestEndValue = oStr + 'de';
-                        return testHelper.stringTestEndValue;
+                        return 'abcde';
                     });
                     
                     assertAndPrint('JSGetStringOutArgFromCS', outRef[0], oStr + 'def');
                     assertAndPrint('JSGetStringReturnFromCS', rStr, oStr + 'defg');
+
+                    testHelper.stringTestField = 'Puer'
+                    testHelper.stringTestProp = 'Puer'
+                    TestHelper.stringTestFieldStatic = 'Puer'
+                    TestHelper.stringTestPropStatic = 'Puer'
+                    testHelper.StringTestCheckMemberValue();
                 })()
             ");
             jsEnv.Tick();
@@ -361,14 +508,19 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oBool = outRef[0] = testHelper.boolTestStartValue;
+                    const oBool = outRef[0] = true;
                     const rBool = testHelper.BoolTestPipeLine(oBool, outRef, function (b) {
                         assertAndPrint('JSGetBoolArgFromCS', b, false);
-                        testHelper.boolTestEndValue = true;
-                        return testHelper.boolTestEndValue;
+                        return true;
                     });
                     assertAndPrint('JSGetBoolOutArgFromCS', outRef[0], false);
                     assertAndPrint('JSGetBoolReturnFromCS', rBool, false);
+                    
+                    testHelper.boolTestField = true
+                    testHelper.boolTestProp = true
+                    TestHelper.boolTestFieldStatic = true
+                    TestHelper.boolTestPropStatic = true
+                    testHelper.BoolTestCheckMemberValue();
                 })()
             ");
             jsEnv.Tick();
@@ -387,39 +539,47 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oBigInt = outRef[0] = testHelper.bigIntTestStartValue;
+                    const oBigInt = outRef[0] = 9007199254740992n;
                     const rBigInt = testHelper.BigIntTestPipeLine(oBigInt, outRef, function (bi) {
                         assertAndPrint('JSGetBigIntArgFromCS', bi == oBigInt + 1n);
-                        testHelper.bigIntTestEndValue = oBigInt + 2n;
-                        return testHelper.bigIntTestEndValue;
+                        return 9007199254740994n;
                     });
                     assertAndPrint('JSGetBigIntOutArgFromCS', outRef[0] == oBigInt + 3n);
                     assertAndPrint('JSGetBigIntReturnFromCS', rBigInt == oBigInt + 4n);
+                    
+                    testHelper.bigintTestField = 9007199254740987n
+                    testHelper.bigintTestProp = 9007199254740987n
+                    TestHelper.bigintTestFieldStatic = 9007199254740987n
+                    TestHelper.bigintTestPropStatic = 9007199254740987n
+                    testHelper.BigintTestCheckMemberValue();
                 })()
             ");
             jsEnv.Tick();
         }
         [Test]
-        public void NativeStructInstanceTest()
+        public void ArrayBufferInstanceTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
                 (function() {
                     const TestHelper = CS.Puerts.UnitTest.TestHelper;
                     const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
-
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oNativeObjectStruct = outRef[0] = testHelper.nativeObjectStructTestStartValue;
-                    const rNativeObjectStruct = testHelper.NativeObjectStructTestPipeLine(oNativeObjectStruct, outRef, function (obj) {
-                        assertAndPrint('JSGetNativeObjectStructArgFromCS', obj.value == oNativeObjectStruct.value);
-                        testHelper.nativeObjectStructTestEndValue = oNativeObjectStruct;
-                        return testHelper.nativeObjectStructTestEndValue;
+                    const oAB = new Uint8Array([1]).buffer;
+                    const rAB = testHelper.ArrayBufferTestPipeLine(oAB, outRef, function(bi) {
+                        assertAndPrint('JSGetArrayBufferArgFromCS', new Uint8Array(bi)[0], 2);
+                        return new Uint8Array([3]).buffer
                     });
-                    assertAndPrint('JSGetNativeObjectStructOutArgFromCS', outRef[0].value == oNativeObjectStruct.value);
-                    assertAndPrint('JSGetNativeObjectStructReturnFromCS', rNativeObjectStruct.value == oNativeObjectStruct.value);
-
+                    assertAndPrint('JSGetArrayBufferOutArgFromCS', new Uint8Array(outRef[0])[0], 4);
+                    assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
+                    
+                    testHelper.arrayBufferTestField = new Uint8Array([192]).buffer
+                    testHelper.arrayBufferTestProp = new Uint8Array([192]).buffer
+                    TestHelper.arrayBufferTestFieldStatic = new Uint8Array([192]).buffer
+                    TestHelper.arrayBufferTestPropStatic = new Uint8Array([192]).buffer
+                    testHelper.ArrayBufferTestCheckMemberValue();
                 })()
             ");
             jsEnv.Tick();
@@ -436,14 +596,49 @@ namespace Puerts.UnitTest
                     const testHelper = TestHelper.GetInstance();
 
                     const outRef = [];
-                    const oNativeObject = outRef[0] = testHelper.nativeObjectTestStartValue;;
+                    const oNativeObject = outRef[0] = new CS.Puerts.UnitTest.TestObject(1);
                     const rNativeObject = testHelper.NativeObjectTestPipeLine(oNativeObject, outRef, function (obj) {
                         assertAndPrint('JSGetNativeObjectArgFromCS', obj, oNativeObject);
-                        testHelper.nativeObjectTestEndValue = oNativeObject;
-                        return testHelper.nativeObjectTestEndValue;
+                        return oNativeObject;
                     });
                     assertAndPrint('JSGetNativeObjectOutArgFromCS', outRef[0], oNativeObject);
                     assertAndPrint('JSGetNativeObjectReturnFromCS', rNativeObject, oNativeObject);
+                    
+                    testHelper.nativeObjectTestField = new CS.Puerts.UnitTest.TestObject(678)
+                    testHelper.nativeObjectTestProp = new CS.Puerts.UnitTest.TestObject(678)
+                    TestHelper.nativeObjectTestFieldStatic = new CS.Puerts.UnitTest.TestObject(678)
+                    TestHelper.nativeObjectTestPropStatic = new CS.Puerts.UnitTest.TestObject(678)
+                    testHelper.NativeObjectTestCheckMemberValue();
+                })()
+            ");
+            jsEnv.Tick();
+        }
+        [Test]
+        public void NativeStructInstanceTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
+                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
+
+                    const testHelper = TestHelper.GetInstance();
+
+                    const outRef = [];
+                    const oNativeStruct = outRef[0] = new CS.Puerts.UnitTest.TestStruct(1);
+                    const rNativeStruct = testHelper.NativeStructTestPipeLine(oNativeStruct, outRef, function (obj) {
+                        assertAndPrint('JSGetNativeStructArgFromCS', obj.value == oNativeStruct.value);
+                        return oNativeStruct;
+                    });
+                    assertAndPrint('JSGetNativeStructOutArgFromCS', outRef[0].value == oNativeStruct.value);
+                    assertAndPrint('JSGetNativeStructReturnFromCS', rNativeStruct.value == oNativeStruct.value);
+
+                    testHelper.nativeStructTestField = new CS.Puerts.UnitTest.TestStruct(765)
+                    testHelper.nativeStructTestProp = new CS.Puerts.UnitTest.TestStruct(765)
+                    TestHelper.nativeStructTestFieldStatic = new CS.Puerts.UnitTest.TestStruct(765)
+                    TestHelper.nativeStructTestPropStatic = new CS.Puerts.UnitTest.TestStruct(765)
+                    testHelper.NativeStructTestCheckMemberValue();
+                    console.log(TestHelper.nativeStructTestFieldStatic)
                 })()
             ");
             jsEnv.Tick();
@@ -470,51 +665,6 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Tick();
         }
-        [Test]
-        public void ArrayBufferInstanceTest()
-        {
-            var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.Eval(@"
-                (function() {
-                    const TestHelper = CS.Puerts.UnitTest.TestHelper;
-                    const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
-                    const testHelper = TestHelper.GetInstance();
-
-                    const outRef = [];
-                    const oAB = new Uint8Array([1]).buffer;
-                    const rAB = testHelper.ArrayBufferTestPipeLine(oAB, outRef, function(bi) {
-                        assertAndPrint('JSGetArrayBufferArgFromCS', new Uint8Array(bi)[0], 2);
-                        return new Uint8Array([3]).buffer
-                    });
-                    assertAndPrint('JSGetArrayBufferOutArgFromCS', new Uint8Array(outRef[0])[0], 4);
-                    assertAndPrint('JSGetArrayBufferReturnFromCS', new Uint8Array(rAB)[0], 5);
-                })()
-            ");
-            jsEnv.Tick();
-        }
-
-        // [Test]
-        // public void DateTimeInstanceTest()
-        // {
-        //     var jsEnv = UnitTestEnv.GetEnv();
-        //     jsEnv.Eval(@"
-        //         (function() {
-        //             const TestHelper = loadType(jsEnv.GetTypeByString('Puerts.UnitTest.TestHelper'))
-        //             const assertAndPrint = TestHelper.AssertAndPrint.bind(TestHelper);
-
-        //             const testHelper = TestHelper.GetInstance();
-
-        //             const outRef = [];
-        //             const oDate = outRef[0] = new Date('1998-11-11');
-        //             const rDate = testHelper.DateTestPipeLine(oDate, outRef, function(date) {
-        //                 assertAndPrint('JSGetDateArgFromCS', date.getTime(), oDate.getTime());
-        //                 return oDate;
-        //             });
-        //             assertAndPrint('JSGetDateOutArgFromCS', outRef[0].getTime(), oDate.getTime());
-        //             assertAndPrint('JSGetDateReturnFromCS', rDate.getTime(), oDate.getTime());
-        //         })()
-        //     ");
-        // }
         [Test]
         public void DateTimeTest()
         {

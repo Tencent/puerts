@@ -155,12 +155,12 @@ namespace PuertsIl2cpp
                             var methodPointer = GetMethodPointer(ctor);
                             if (methodInfoPointer == IntPtr.Zero)
                             {
-                                UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
+                                UnityEngine.Debug.LogWarning(string.Format("cannot get method info for {0}:{1}, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
                                 continue;
                             }
                             if (methodPointer == IntPtr.Zero)
                             {
-                                UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
+                                UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
                                 continue;
                             }
                             var wrapData = AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), methodInfoPointer, methodPointer, usedTypes.Count);
@@ -195,12 +195,12 @@ namespace PuertsIl2cpp
                         var methodPointer = GetMethodPointer(method);
                         if (methodInfoPointer == IntPtr.Zero)
                         {
-                            UnityEngine.Debug.LogWarning(string.Format("can not get method info for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            UnityEngine.Debug.LogWarning(string.Format("cannot get method info for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
                             return;
                         }
                         if (methodPointer == IntPtr.Zero)
                         {
-                            UnityEngine.Debug.LogWarning(string.Format("can not get method poninter for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
                             return;
                         }
                         var wrapData = AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isExtensionMethod, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
