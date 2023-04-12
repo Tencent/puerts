@@ -28,6 +28,16 @@ namespace Puerts
 #if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]
 #endif
+    public interface ILoader2
+    {
+        string Resolve(string specifier, string referrer);
+        string ReadFile(string filepath, out string debugpath);
+    }
+
+
+#if ENABLE_IL2CPP
+    [UnityEngine.Scripting.Preserve]
+#endif
     public class DefaultLoader : ILoader, IModuleChecker
     {
         private string root = "";

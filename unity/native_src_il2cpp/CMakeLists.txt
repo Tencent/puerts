@@ -42,6 +42,7 @@ include_directories(
     Inc
     ../Assets/core/upm/Plugins/puerts_il2cpp
     ${BACKEND_INC_NAMES}
+    ${PROJECT_SOURCE_DIR}/../native_src/Inc
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private
     ${ThirdParty}/Include/websocketpp
     ${ThirdParty}/Include/asio
@@ -59,6 +60,7 @@ set ( PUERTS_SRC
     Src/CppObjectMapper.cpp
     Src/DataTransfer.cpp
     Src/JSClassRegister.cpp
+    ${PROJECT_SOURCE_DIR}/../native_src/Src/BackendEnv.cpp
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 

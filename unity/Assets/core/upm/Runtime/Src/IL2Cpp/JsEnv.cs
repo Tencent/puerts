@@ -79,19 +79,33 @@ namespace Puerts
 
             PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
 
-            Eval(@"
+            Eval(PathHelper.JSCode + @"
                 var global = this;
                 (function() {
                     var loader = jsEnv.GetLoader();
-                    global.__puerts_resolve_module_content__ = function(specifier) {
+                    global.__puer_resolve_module_url__ = function(specifier, referer) {
+                        const originSp = specifier;
+                        if (!loader.Resolve) {
+                            let s = !__puer_path__.isRelative(specifier) ? specifier : __puer_path__.normalize(__puer_path__.dirname(referer) + '/' + specifier)
+                            if (loader.FileExists(s)) {
+                                return s
+                            } else {
+                                throw new Error(`module not found in js: ${originSp}`);
+                            }
+
+                        } else {
+                            let p = loader.Resolve(specifier, referer)
+                            if (!p) {
+                                throw new Error(`module not found in js: ${originSp}`);
+                            }
+                            return p;
+                        }
+                    }
+                    global.__puer_resolve_module_content__ = function(specifier) {
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
-                        
-                        if (loader.FileExists(specifier)) {
-                            return loader.ReadFile(specifier, debugpathRef);
-                        } else {
-                            throw new Error(`module not found in js: ${originSp}`);
-                        }
+
+                        return loader.ReadFile(specifier, debugpathRef);                    
                     }
                 })();
             ");

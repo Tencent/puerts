@@ -13,22 +13,6 @@ namespace Puerts
 {
     internal class StaticCallbacks
     {
-        [MonoPInvokeCallback(typeof(ModuleResolveCallback))]
-        internal static string ModuleResolverCallback(string identifer, int jsEnvIdx, out string pathForDebug)
-        {
-            JsEnv env = JsEnv.jsEnvs[jsEnvIdx];
-            pathForDebug = identifer;
-            try
-            {
-                return env.ResolveModuleContent(identifer, out pathForDebug);
-            }
-            catch (Exception e)
-            {
-                // 因为只是C++到C#的通信，此处C++侧没有加v8::TryCatch。不能用PuertsDLL.ThrowException
-                return "throw new Error(`resolve module " + identifer + " error: " + e.Message + "`)";
-            }
-        }
-
         [MonoPInvokeCallback(typeof(V8FunctionCallback))]
         internal static void JsEnvCallbackWrap(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {

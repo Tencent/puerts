@@ -76,7 +76,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 30;
+            const int libVersionExpect = 31;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -143,7 +143,38 @@ namespace Puerts
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetNestedTypes", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetNestedTypes));
             PuertsDLL.SetGlobalFunction(isolate, "__tgjsGetLoader", StaticCallbacks.JsEnvCallbackWrap, AddCallback(GetLoader));
 
-            PuertsDLL.SetModuleResolver(isolate, StaticCallbacks.ModuleResolverCallback, Idx);
+            Eval(PathHelper.JSCode + @"
+                var global = this;
+                (function() {
+                    var loader = __tgjsGetLoader();
+                    global.__puer_resolve_module_url__ = function(specifier, referer) {
+                        const originSp = specifier;
+                        if (!loader.Resolve) {
+                            let s = !__puer_path__.isRelative(specifier) ? specifier : __puer_path__.normalize(__puer_path__.dirname(referer) + '/' + specifier)
+                            if (loader.FileExists(s)) {
+                                return s
+                            } else {
+                                throw new Error(`module not found in js: ${originSp}`);
+                            }
+
+                        } else {
+                            let p = loader.Resolve(specifier, referer)
+                            if (!p) {
+                                throw new Error(`module not found in js: ${originSp}`);
+                            }
+                            return p;
+                        }
+                    }
+                    global.__puer_resolve_module_content__ = function(specifier) {
+                        const debugpathRef = [], contentRef = [];
+                        const originSp = specifier;
+
+                        return loader.ReadFile(specifier, debugpathRef);                    
+                    }
+                })();
+            ");
+            
+            moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
@@ -215,6 +246,7 @@ namespace Puerts
             catch (Exception ex)
             {
                 Dispose();
+                UnityEngine.Debug.LogError(ex.StackTrace);
                 throw ex;
             }
         }
@@ -250,44 +282,18 @@ namespace Puerts
         *
         * example: JsEnv.ExecuteModule("main.mjs")
         */
-        public T ExecuteModule<T>(string filename, string exportee = "")
+        public T ExecuteModule<T>(string specifier, string exportee)
         {
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-#if THREAD_SAFE
-            lock(this) {
-#endif
-                IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename, exportee);
-                if (resultInfo == IntPtr.Zero)
-                {
-                    string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
-                    throw new Exception(exceptionInfo);
-                }
-                T result = StaticTranslate<T>.Get(Idx, isolate, NativeValueApi.GetValueFromResult, resultInfo, false);
-                PuertsDLL.ResetResult(resultInfo);
-
-                return result;
-#if THREAD_SAFE
-            }
-#endif
+            JSObject jso = moduleExecuter(specifier);
+            JSOGetter<T> getter = Eval<JSOGetter<T>>("(function (jso, str) { return jso[str]; });");
+            return getter(jso, exportee);
         }
-
-        public void ExecuteModule(string filename)
+        public JSObject ExecuteModule(string specifier)
         {
-#if THREAD_SAFE
-            lock(this) {
-#endif
-                IntPtr resultInfo = PuertsDLL.ExecuteModule(isolate, filename, null);
-                if (resultInfo == IntPtr.Zero)
-                {
-                    string exceptionInfo = PuertsDLL.GetLastExceptionInfo(isolate);
-                    throw new Exception(exceptionInfo);
-                }
-                PuertsDLL.ResetResult(resultInfo);
-#if THREAD_SAFE
-            }
-#endif
+            return moduleExecuter(specifier);
         }
 
         public void Eval(string chunk, string chunkName = "chunk")
@@ -333,7 +339,6 @@ namespace Puerts
 
         public void ClearModuleCache()
         {
-            Eval("global.clearModuleCache()");
             PuertsDLL.ClearModuleCache(isolate, "");
         }
 

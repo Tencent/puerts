@@ -21,6 +21,7 @@
 
 #include "JSFunction.h"
 #include "V8InspectorImpl.h"
+#include "BackendEnv.h"
 
 #if WITH_NODEJS
 #pragma warning(push, 0)
@@ -168,6 +169,8 @@ public:
 
     v8::Isolate* MainIsolate;
 
+    bool ClearModuleCache(const char* Path);
+
     std::vector<char> StrBuffer;
 
     FResultInfo ResultInfo;
@@ -180,15 +183,8 @@ public:
     }
 
     int32_t Idx;
-    
-    CSharpModuleResolveCallback ModuleResolver;
-#if defined(WITH_QUICKJS)
-    std::map<std::string, JSModuleDef*> PathToModuleMap;
-#else
-    std::map<std::string, v8::UniquePersistent<v8::Module>> PathToModuleMap;
-#endif
 
-    std::map<int, std::string> ScriptIdToPathMap;
+    puerts::BackendEnv BackendEnv;
     
 private:
 #if defined(WITH_NODEJS)
@@ -227,8 +223,6 @@ private:
     std::mutex JSFunctionsMutex;
 
     std::mutex JSObjectsMutex;
-
-    V8Inspector* Inspector;
 
 public:
     v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
