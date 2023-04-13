@@ -55,6 +55,7 @@ namespace Puerts
         public JsEnv(ILoader loader, int debugPort = -1)
         {
             this.loader = loader;
+
             //only once is enough
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
             PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetPesapiImpl());
@@ -133,6 +134,8 @@ namespace Puerts
             ExecuteModule("puerts/promises.mjs");
 
             this.debugPort = debugPort;
+            if (loader is IBuiltinLoadedListener)
+                (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
         }
 
         [UnityEngine.Scripting.Preserve]

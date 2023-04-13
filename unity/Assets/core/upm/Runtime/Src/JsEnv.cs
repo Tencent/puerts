@@ -246,9 +246,10 @@ namespace Puerts
             catch (Exception ex)
             {
                 Dispose();
-                UnityEngine.Debug.LogError(ex.StackTrace);
-                throw ex;
+                throw;
             }
+            if (loader is IBuiltinLoadedListener)
+                (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
         }
 
         internal string ResolveModuleContent(string identifer, out string pathForDebug) 

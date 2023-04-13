@@ -28,11 +28,19 @@ namespace Puerts
 #if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]
 #endif
-    public interface ILoader2
+    public interface IResolvableLoader
     {
         string Resolve(string specifier, string referrer);
-        string ReadFile(string filepath, out string debugpath);
     }
+
+#if ENABLE_IL2CPP
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public interface IBuiltinLoadedListener
+    {
+        void OnBuiltinLoaded(JsEnv env);
+    }
+
 
 
 #if ENABLE_IL2CPP
