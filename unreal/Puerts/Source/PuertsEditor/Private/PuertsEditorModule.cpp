@@ -78,7 +78,6 @@ void FPuertsEditorModule::StartupModule()
 
     FEditorDelegates::PreBeginPIE.AddRaw(this, &FPuertsEditorModule::PreBeginPIE);
     FEditorDelegates::EndPIE.AddRaw(this, &FPuertsEditorModule::EndPIE);
-    FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsEditorModule::OnPostEngineInit);
 
     ConsoleCommand = MakeUnique<FAutoConsoleCommand>(TEXT("Puerts"), TEXT("Puerts action"),
         FConsoleCommandWithArgsDelegate::CreateLambda(
@@ -104,6 +103,7 @@ void FPuertsEditorModule::StartupModule()
                     UE_LOG(Puerts, Error, TEXT("Puerts command not initialized"));
                 }
             }));
+    this->OnPostEngineInit();
 }
 
 TSharedPtr<FKismetCompilerContext> MakeCompiler(
