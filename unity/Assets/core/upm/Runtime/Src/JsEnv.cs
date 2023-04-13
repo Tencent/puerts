@@ -160,7 +160,7 @@ namespace Puerts
                         } else {
                             let p = loader.Resolve(specifier, referer)
                             if (!p) {
-                                throw new Error(`module not found in js: ${originSp}`);
+                                throw new Error(`module not found(1): ${originSp}`);
                             }
                             return p;
                         }
@@ -169,7 +169,11 @@ namespace Puerts
                         const debugpathRef = [], contentRef = [];
                         const originSp = specifier;
 
-                        return loader.ReadFile(specifier, debugpathRef);                    
+                        const content = loader.ReadFile(specifier, debugpathRef);                    
+                        if (!content) {
+                            throw new Error(`module not found(2): ${originSp}`);
+                        }
+                        return content
                     }
                 })();
             ");
