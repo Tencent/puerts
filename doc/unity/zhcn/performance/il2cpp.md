@@ -1,7 +1,7 @@
 # PuerTS il2cpp绑定模式
 这个模式是Puer2.0版本新加的模式。顾名思义，优化仅针对Unity Il2cpp模式。
 
-简单粗浅地说，新的方式是让il2cpp直接与v8交互，而非经由C# PInvoke调用native plugin的方式，减少跨语言的消耗。最终使得性能表现大幅提升，反超xlua，详见[il2cpp绑定性能数据](./index)
+简单粗浅地说，新的方式是让il2cpp直接与v8交互，而非经由C# PInvoke调用native plugin的方式，减少跨语言的消耗。最终使得性能表现大幅提升，反超xlua，详见[il2cpp绑定性能数据](./index.md)
 
 il2cpp绑定模式在使用方式上会有较大的变化，比如需要自己编译Plugin与wrapper生成的步骤不同，API和使用机制上无需做任何改动。
 
