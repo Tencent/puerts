@@ -557,7 +557,7 @@ void FTypeScriptDeclarationGenerator::RestoreBlueprintTypeDeclInfos(const FStrin
                             .TrimStartAndEnd();
                     FString PackageName = FString(TEXT("/")) + Namespace.Replace(TEXT("."), TEXT("/"));
 
-                    FRegexPattern Pattern(TEXT("\\{\\s+(?:(?:class)|(?:enum))\\s+([a-zA-Z0-9_]+)"));
+                    FRegexPattern Pattern(TEXT("\\{\\s+(?:(?:class)|(?:enum))\\s+([\\u4e00-\\u9fa5a-zA-Z0-9_]+)"));
                     FRegexMatcher Matcher(Pattern, TypeDecl.Mid(NamespaceEnd));
 
                     if (Matcher.FindNext())
