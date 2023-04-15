@@ -288,6 +288,8 @@ namespace Puerts
                     for (int i = 0; i < props.Length; i++)
                     {
                         var prop = props[i];
+                        if (!prop.CanRead)
+                            continue;
                         if ((typeof(IEnumerable<Type>)).IsAssignableFrom(prop.PropertyType))
                         {
                             var types = prop.GetValue(null, null) as IEnumerable<Type>;
