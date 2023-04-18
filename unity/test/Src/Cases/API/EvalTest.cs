@@ -250,5 +250,22 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "puer:import-meta/entry.mjs");
             jsEnv.Tick();
         }
+        [Test]
+        public void ESModuleImportPackageTest()
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("import-package/index.js", @"
+                import str from './lib.js'
+                export default str
+            ");
+            loader.AddMockFileContent("import-package/lib.js", @"
+                export default 'lib in package'
+            ");
+            var jsEnv = UnitTestEnv.GetEnv();
+
+            string res = jsEnv.ExecuteModule<string>("import-package", "default");
+            Assert.AreEqual(res, "lib in package");
+            jsEnv.Tick();
+        }
     }
 }

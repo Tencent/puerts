@@ -47,6 +47,7 @@ include_directories(
 
 set ( PUERTS_INC
     Inc/Log.h
+    Inc/BackendEnv.h
     Inc/JSEngine.h
     Inc/V8Utils.h
     Inc/JSFunction.h
@@ -57,6 +58,7 @@ set ( PUERTS_INC
 set ( PUERTS_SRC
     Src/Puerts.cpp
     Src/Log.cpp
+    Src/BackendEnv.cpp
     Src/JSEngine.cpp
     Src/JSEngine_Eval.cpp
     Src/JSFunction.cpp

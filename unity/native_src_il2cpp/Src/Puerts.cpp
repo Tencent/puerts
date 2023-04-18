@@ -50,7 +50,6 @@
 #define USE_OUTSIZE_UNITY 1
 
 #include "UnityExports4Puerts.h"
-#include "PromiseRejectCallback.hpp"
 
 namespace puerts
 {
@@ -799,63 +798,8 @@ struct JSEnv
             }
         })->GetFunction(Context).ToLocalChecked()).Check();
 
-        Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__puer_execute_module_sync__").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& info)
-        {
-            v8::Isolate* Isolate = info.GetIsolate();
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-            v8::Context::Scope ContextScope(Context);
+        BackendEnv.InitInject(MainIsolate);
 
-            v8::Local<v8::String> Specifier_v8 = info[0]->ToString(Context).ToLocalChecked();
-
-            auto emptyStrV8 = v8::String::NewFromUtf8(Isolate, "", v8::NewStringType::kNormal).ToLocalChecked();
-            v8::ScriptOrigin origin(emptyStrV8,
-                            v8::Integer::New(Isolate, 0),                      // line offset
-                            v8::Integer::New(Isolate, 0),                    // column offset
-                            v8::True(Isolate),                    // is cross origin
-                            v8::Local<v8::Integer>(),                 // script id
-                            v8::Local<v8::Value>(),                   // source map URL
-                            v8::False(Isolate),                   // is opaque (?)
-                            v8::False(Isolate),                   // is WASM
-                            v8::True(Isolate),                    // is ES Module
-                            v8::PrimitiveArray::New(Isolate, 10)
-            );
-            v8::ScriptCompiler::Source source(emptyStrV8, origin);
-            v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
-                    .ToLocalChecked();
-
-            v8::MaybeLocal<v8::Module> mod = puerts::esmodule::ResolveModule(Context, Specifier_v8, entryModule);
-            if (mod.IsEmpty())
-            {
-                // TODO
-                return;
-            }
-            v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-            if (!puerts::esmodule::LinkModule(Context, moduleChecked))
-            {
-                // TODO
-                return;
-            }
-            v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
-            if (ret.IsNothing() || !ret.ToChecked())
-            {
-                // TODO
-                return;
-            }
-            v8::MaybeLocal<v8::Value> evalRet = moduleChecked->Evaluate(Context);
-            if (evalRet.IsEmpty())
-            {
-                // TODO
-                return;
-            }
-            info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
-
-        })->GetFunction(Context).ToLocalChecked()).Check();
-        MainIsolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
-
-        MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::BackendEnv>);
-        Context->Global()->Set(Context, v8::String::NewFromUtf8(MainIsolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     }
     
     ~JSEnv()

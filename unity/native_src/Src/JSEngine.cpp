@@ -8,7 +8,6 @@
 #include "V8Utils.h"
 #include "Log.h"
 #include <memory>
-#include "PromiseRejectCallback.hpp"
 #include <stdarg.h>
 
 namespace puerts
@@ -158,13 +157,10 @@ namespace puerts
         // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
 
         MainIsolate->SetData(0, this);
+        MainIsolate->SetData(1, &BackendEnv);
+        BackendEnv.InitInject(MainIsolate);
 
         Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(MainIsolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
-
-        MainIsolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
-        MainIsolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
-
-        Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(MainIsolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
         Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(MainIsolate, v8::Map::New(MainIsolate));
@@ -211,7 +207,8 @@ namespace puerts
 #endif
         auto Isolate = MainIsolate;
         ResultInfo.Isolate = MainIsolate;
-        Isolate->SetData(0, this);
+        MainIsolate->SetData(0, this);
+        MainIsolate->SetData(1, &BackendEnv);
 
 #ifdef THREAD_SAFE
         v8::Locker Locker(Isolate);
@@ -232,13 +229,9 @@ namespace puerts
 
         if (external_quickjs_runtime == nullptr) 
         {
-            Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<JSEngine>);
-            Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsSetPromiseRejectCallback"), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<JSEngine>)->GetFunction(Context).ToLocalChecked()).Check();
+            BackendEnv.InitInject(MainIsolate);
             Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
         }
-#if !WITH_QUICKJS
-        Isolate->SetHostInitializeImportMetaObjectCallback(&JSEngine::HostInitializeImportMetaObject);
-#endif
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
     }
@@ -247,7 +240,6 @@ namespace puerts
     JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
         GeneralDestructor = nullptr;
-        Inspector = nullptr;
 #if WITH_NODEJS
         JSEngineWithNode();
 #else
@@ -257,14 +249,10 @@ namespace puerts
 
     JSEngine::~JSEngine()
     {
-        if (Inspector)
-        {
-            delete Inspector;
-            Inspector = nullptr;
-        }
+        DestroyInspector();
 
         JSObjectIdMap.Reset();
-        JsPromiseRejectCallback.Reset();
+        BackendEnv.JsPromiseRejectCallback.Reset();
         LastException.Reset();
 
         for (int i = 0; i < Templates.size(); ++i)
@@ -301,13 +289,8 @@ namespace puerts
                 }
                 Iter->second.Reset();
             }
-#if !WITH_QUICKJS
-            for (auto Iter = PathToModuleMap.begin(); Iter != PathToModuleMap.end(); ++Iter)
-            {
-                Iter->second.Reset();
-            }
-#endif
-            PathToModuleMap.clear();
+            BackendEnv.PathToModuleMap.clear();
+            BackendEnv.ScriptIdToPathMap.clear();
         }
         {
             std::lock_guard<std::mutex> guard(JSFunctionsMutex);
@@ -767,38 +750,13 @@ namespace puerts
     }
 
     void JSEngine::CreateInspector(int32_t Port)
-    {
-        v8::Isolate* Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        if (Inspector == nullptr)
-        {
-            Inspector = CreateV8Inspector(Port, &Context);
-        }
+    {    
+        BackendEnv.CreateInspector(MainIsolate, &ResultInfo.Context, Port);
     }
 
     void JSEngine::DestroyInspector()
     {
-        v8::Isolate* Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        if (Inspector != nullptr)
-        {
-            delete Inspector;
-            Inspector = nullptr;
-        }
+        BackendEnv.DestroyInspector(MainIsolate, &ResultInfo.Context);
     }
 
     void JSEngine::LogicTick()
@@ -820,10 +778,11 @@ namespace puerts
 
     bool JSEngine::InspectorTick()
     {
-        if (Inspector != nullptr)
-        {
-            return Inspector->Tick();
-        }
-        return true;
+        return BackendEnv.InspectorTick() ? 1 : 0;
+    }
+    
+    bool JSEngine::ClearModuleCache(const char* Path)
+    {
+        return BackendEnv.ClearModuleCache(ResultInfo.Context.Get(MainIsolate), Path);
     }
 }

@@ -13,6 +13,7 @@ namespace Puerts.UnitTest
     {
         private static JsEnv env;
         private static UnitTestLoader loader;
+        private static UnitTestLoader2 loader2;
 
         UnitTestEnv() { }
 
@@ -21,7 +22,8 @@ namespace Puerts.UnitTest
             if (env == null) 
             {
                 loader = new UnitTestLoader();
-                env = new JsEnv(loader);
+                loader2 = new UnitTestLoader2();
+                env = new JsEnv(loader2);
             }
         }
 
@@ -31,10 +33,10 @@ namespace Puerts.UnitTest
             return env;
         }
 
-        public static UnitTestLoader GetLoader() 
+        public static UnitTestLoader2 GetLoader() 
         {
             if (env == null) Init();
-            return loader;
+            return loader2;
         }
     }
 }

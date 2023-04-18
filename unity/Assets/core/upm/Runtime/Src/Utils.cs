@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -445,10 +446,12 @@ namespace Puerts
         }
 #endif
     }
+
     internal static class Utils_Internal
     {
         internal static volatile Dictionary<Type, IEnumerable<MethodInfo>> extensionMethodMap = null;
     }
+
 }
 
 #endif
