@@ -5,7 +5,7 @@ using Puerts;
 
 namespace Puerts.UnitTest 
 {
-    public class UnitTestLoader2: ILoader2, ILoader
+    public class UnitTestLoader2: IResolvableLoader, ILoader
     {
 
         public UnitTestLoader2() 
