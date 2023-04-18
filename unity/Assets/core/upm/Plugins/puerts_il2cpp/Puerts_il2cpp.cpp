@@ -339,6 +339,12 @@ static puerts::UnityExports g_unityExports;
 static void* CtorCallback(pesapi_callback_info info)
 {
     JsClassInfoHeader* classInfo = reinterpret_cast<JsClassInfoHeader*>(pesapi_get_constructor_userdata(info));
+    // or will crash in macos.
+    if (*(classInfo->CtorWrapDatas) == nullptr)
+    {
+        pesapi_throw_by_string(info, "no valid constructor is found");
+        return nullptr;
+    }
     
     void* Ptr = ObjectAllocate(classInfo->Class);
     
