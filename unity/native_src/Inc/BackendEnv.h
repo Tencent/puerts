@@ -14,6 +14,9 @@
 #include <algorithm>
 #include "Log.h"
 #include "V8InspectorImpl.h"
+#if WITH_QUICKJS
+#include "quickjs-msvc.h"
+#endif
 
 namespace puerts
 {
@@ -30,7 +33,11 @@ namespace puerts
         } 
 
         // Module
+#if defined(WITH_QUICKJS)
+        std::map<std::string, JSModuleDef*> PathToModuleMap;
+#else
         std::map<std::string, v8::UniquePersistent<v8::Module>> PathToModuleMap;
+#endif
         std::map<int, std::string> ScriptIdToPathMap;
 
         // PromiseCallback
@@ -51,13 +58,16 @@ namespace puerts
 
         bool InspectorTick();
 
-        bool ClearModuleCache(v8::Local<v8::Context> Context, const char* Path);
+        bool ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path);
     };
 
 
 
     namespace esmodule 
     {
+        void ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info);
+
+#if !WITH_QUICKJS
         v8::MaybeLocal<v8::Module> _ResolveModule(
             v8::Local<v8::Context> Context,
             v8::Local<v8::String> Specifier,
@@ -70,5 +80,8 @@ namespace puerts
         bool LinkModule(v8::Local<v8::Context> Context, v8::Local<v8::Module> RefModule);
 
         void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta);
+#else 
+        JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque);
+#endif
     }
 }

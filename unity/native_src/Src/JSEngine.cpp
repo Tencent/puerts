@@ -783,6 +783,6 @@ namespace puerts
     
     bool JSEngine::ClearModuleCache(const char* Path)
     {
-        return BackendEnv.ClearModuleCache(ResultInfo.Context.Get(MainIsolate), Path);
+        return BackendEnv.ClearModuleCache(MainIsolate, ResultInfo.Context.Get(MainIsolate), Path);
     }
 }
