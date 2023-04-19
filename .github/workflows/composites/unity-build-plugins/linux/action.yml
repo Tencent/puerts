@@ -23,11 +23,6 @@ runs:
         sudo apt-get install clang
         sudo apt-get install libc++-dev
         sudo apt-get install libc++abi-dev
-    # - name: Get backend artifact
-    #   uses: ./.github/workflows/composites/unity-download-backend/
-    #   with:
-    #     github_token: ${{ inputs.GITHUB_TOKEN }}
-    #     backend: ${{ inputs.backend }}
     - name: Build
       shell: bash
       run: |
