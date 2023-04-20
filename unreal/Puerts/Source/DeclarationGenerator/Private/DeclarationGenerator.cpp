@@ -849,7 +849,7 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     else if (auto InterfaceProperty = CastFieldMacro<InterfacePropertyMacro>(Property))
     {
         AddToGen.Add(InterfaceProperty->InterfaceClass);
-        StringBuffer << SafeName(InterfaceProperty->InterfaceClass->GetName());
+        StringBuffer << GetNameWithNamespace(InterfaceProperty->InterfaceClass);
     }
     else if (auto WeakObjectProperty = CastFieldMacro<WeakObjectPropertyMacro>(Property))
     {
