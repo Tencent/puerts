@@ -445,6 +445,7 @@ namespace Puerts
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetNullToOutValue(IntPtr isolate, IntPtr value);
 
+#if PUERTS_GENERAL && !PUERTS_GENERAL_OSX
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ThrowException(IntPtr isolate, byte[] message);
 
@@ -453,6 +454,10 @@ namespace Puerts
             var bytes = Encoding.UTF8.GetBytes(message);
             ThrowException(isolate, bytes);
         }
+#else
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ThrowException(IntPtr isolate, string message);
+#endif
 
         //begin cs call js
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
