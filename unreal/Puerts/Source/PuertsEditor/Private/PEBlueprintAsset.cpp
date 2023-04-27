@@ -974,7 +974,8 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
 
     if (auto ComponentClass = Cast<UClass>(PinType.PinSubCategoryObject))
     {
-        if (Blueprint->SimpleConstructionScript && PinType.PinCategory == UEdGraphSchema_K2::PC_Object &&
+        if (Blueprint->GeneratedClass->IsChildOf<AActor>() && Blueprint->SimpleConstructionScript &&
+            PinType.PinCategory == UEdGraphSchema_K2::PC_Object &&
             (ComponentClass == UActorComponent::StaticClass() || ComponentClass->IsChildOf<UActorComponent>()))
         {
             auto SCSNode = Blueprint->SimpleConstructionScript->FindSCSNode(NewVarName);
