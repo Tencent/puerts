@@ -14,6 +14,11 @@
   "CanBeUsedWithUnrealHeaderTool" : true,
   "Modules": [
     {
+      "Name": "WasmCore",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault"
+    },
+    {
       "Name": "JsEnv",
       "Type": "Runtime",
       "LoadingPhase": "PreDefault",
@@ -25,9 +30,9 @@
       "LoadingPhase": "Default"
     },
     {
-      "Name" : "ParamDefaultValueMetas",
-      "Type" : "Program",
-      "LoadingPhase" : "PostConfigInit"
+      "Name": "ParamDefaultValueMetas",
+      "Type": "Program",
+      "LoadingPhase": "PostConfigInit"
     },
     {
       "Name": "Puerts",

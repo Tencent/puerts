@@ -71,6 +71,16 @@ public class JsEnv : ModuleRules
             }
         }
 
+        bool UseWasm = true;
+        if (UseWasm)
+        {
+            PublicDefinitions.Add("WITH_WASM");
+        }
+        PublicDependencyModuleNames.AddRange(new string[]
+            {
+                "WasmCore", "Json"
+            });
+
         if (UseNodejs)
         {
             ThirdPartyNodejs(Target);
