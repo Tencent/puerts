@@ -82,12 +82,13 @@ static_assert(!wasm_is_simple_type<FVector>::value, "");
 template <typename T>
 struct _wasm_is_complex_type
 {
+    // TODO Is it necessary to consider trivially copyable class?
     //这里有点奇怪
     // 属性数量大于1的结构体当指针
     // 小于32的结构体当int32,小于64的结构体当int64,大于64的当指针
     // 我们判断不了属性数量，所以强制规定,结构体必须大于64
     static constexpr bool value =
-        !wasm_is_simple_type<T>::value && std::is_class<T>::value && std::is_trivially_copyable<T>::value && (sizeof(T) > 8);
+        !wasm_is_simple_type<T>::value && std::is_class<T>::value && (sizeof(T) > 8);
 };
 
 template <typename T>
@@ -109,8 +110,9 @@ template <typename T>
 struct wasm_is_support_pointer_type
 {
     using No_PTr = typename std::remove_pointer<T>::type;
+    // TODO UObject is a "complex_type", right?
     static constexpr bool value =
-        std::is_pointer<T>::value && !wasm_is_complex_type<No_PTr>::value && !wasm_is_simple_type<No_PTr>::value;
+        std::is_pointer<T>::value && !wasm_is_simple_type<No_PTr>::value && wasm_is_complex_type<No_PTr>::value;
 };
 
 template <typename... Args>
