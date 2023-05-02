@@ -24,7 +24,7 @@ struct true_false_type
 template <typename T, typename Enable = void>
 struct _wasm_is_simple_type;
 
-//定义简单的类型,该类型会直接被放在栈上
+// 定义简单的类型,该类型会直接被放在栈上
 template <>
 struct _wasm_is_simple_type<bool> : true_false_type<true>
 {
@@ -78,17 +78,16 @@ static_assert(wasm_is_simple_type<const int>::value, "");
 static_assert(!wasm_is_simple_type<void*>::value, "");
 static_assert(!wasm_is_simple_type<FVector>::value, "");
 
-//定义复杂类型,该类型会被当作指针放在栈上
+// 定义复杂类型,该类型会被当作指针放在栈上
 template <typename T>
 struct _wasm_is_complex_type
 {
     // TODO Is it necessary to consider trivially copyable class?
-    //这里有点奇怪
+    // 这里有点奇怪
     // 属性数量大于1的结构体当指针
     // 小于32的结构体当int32,小于64的结构体当int64,大于64的当指针
     // 我们判断不了属性数量，所以强制规定,结构体必须大于64
-    static constexpr bool value =
-        !wasm_is_simple_type<T>::value && std::is_class<T>::value && (sizeof(T) > 8);
+    static constexpr bool value = !wasm_is_simple_type<T>::value && std::is_class<T>::value && (sizeof(T) > 8);
 };
 
 template <typename T>
@@ -256,7 +255,7 @@ struct _m3_type_to_sig<T, typename std::enable_if<wasm_is_support_pointer_type<T
 template <typename T, typename Enable = void>
 struct m3_type_to_sig;
 
-//引用当指针处理
+// 引用当指针处理
 template <typename T>
 struct m3_type_to_sig<T, typename std::enable_if<std::is_reference<T>::value>::type>
 {
@@ -274,7 +273,7 @@ struct m3_type_to_sig<T, typename std::enable_if<!std::is_reference<T>::value>::
 template <typename Ret, typename... Args>
 struct m3_signature
 {
-    //不支持返回值的引用
+    // 不支持返回值的引用
     static_assert(!std::is_reference<Ret>::value, "");
 
     static const char* get()
@@ -283,7 +282,7 @@ struct m3_signature
         return (const char*) value;
     }
 };
-//记录不同类型的指针,再wasm存的类型
+// 记录不同类型的指针,再wasm存的类型
 template <typename T, typename = void>
 struct _wasm_pointer_support_ptr_in_wasm;
 
@@ -306,7 +305,7 @@ struct wasm_pointer_support_ptr_in_wasm
         typename std::remove_pointer<typename wasm_remove_const_ref<T>::type>::type>::type;
 };
 
-//指针
+// 指针
 template <typename T, typename memstack_t = typename std::add_pointer_t<typename std::remove_reference_t<T>>,
     typename t_remove_pointer = typename std::remove_pointer<T>::type>
 typename std::enable_if<wasm_is_support_pointer_type<T>::value, int>::type wasm_link_get_args_from_stack(
@@ -319,7 +318,7 @@ typename std::enable_if<wasm_is_support_pointer_type<T>::value, int>::type wasm_
     return 0;
 }
 
-//简单类型,非引用
+// 简单类型,非引用
 template <typename T, typename memstack_t = typename std::add_pointer_t<typename std::remove_reference_t<T>>>
 typename std::enable_if<wasm_is_simple_type<T>::value && !std::is_reference<T>::value, int>::type wasm_link_get_args_from_stack(
     IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem, memstack_t& stack_ptr, int index)
@@ -329,7 +328,7 @@ typename std::enable_if<wasm_is_simple_type<T>::value && !std::is_reference<T>::
     return 0;
 }
 
-//简单类型引用
+// 简单类型引用
 template <typename T, typename memstack_t = typename std::add_pointer_t<typename std::remove_reference_t<T>>>
 typename std::enable_if<wasm_is_simple_type<T>::value && std::is_reference<T>::value, int>::type wasm_link_get_args_from_stack(
     IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem, memstack_t& stack_ptr, int index)
@@ -341,7 +340,7 @@ typename std::enable_if<wasm_is_simple_type<T>::value && std::is_reference<T>::v
     return 0;
 }
 
-//复杂类型
+// 复杂类型
 template <typename T, typename memstack_t = typename std::add_pointer_t<typename std::remove_reference_t<T>>>
 typename std::enable_if<wasm_is_complex_type<T>::value, int>::type wasm_link_get_args_from_stack(
     IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem, memstack_t& stack_ptr, int index)
@@ -365,8 +364,8 @@ struct wasm_link_helper<Ret(Args...), func>
     template <int... Index>
     struct Functor<std::index_sequence<Index...>>
     {
-        //返回值是指针
-        //规避malloc,需要link的函数,返回值禁止是指针
+        // 返回值是指针
+        // 规避malloc,需要link的函数,返回值禁止是指针
         /*template<class T>
         static typename std::enable_if<wasm_is_support_pointer_type<T>::value && !std::is_same<T, void>::value, const void*>::type
         _InternalInvoke(IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem)
@@ -386,7 +385,7 @@ struct wasm_link_helper<Ret(Args...), func>
             }
         }*/
 
-        //没有返回值
+        // 没有返回值
         template <class T>
         static typename std::enable_if<std::is_same<T, void>::value, void>::type _InternalInvoke(
             IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem)
@@ -401,7 +400,7 @@ struct wasm_link_helper<Ret(Args...), func>
             func(*std::get<Index>(parm)...);
             return nullptr;
         }
-        //返回值是复杂类型
+        // 返回值是复杂类型
         template <class T>
         static typename std::enable_if<wasm_is_complex_type<T>::value && !std::is_same<T, void>::value, const void*>::type
         _InternalInvoke(IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem)
@@ -421,7 +420,7 @@ struct wasm_link_helper<Ret(Args...), func>
 
             return nullptr;
         }
-        //返回值是简单类型
+        // 返回值是简单类型
         template <class T>
         static typename std::enable_if<wasm_is_simple_type<T>::value && !std::is_same<T, void>::value, const void*>::type
         _InternalInvoke(IM3Runtime rt, IM3ImportContext _ctx, wasm_stack_type _sp, wasm_mem_type _mem)
@@ -454,7 +453,7 @@ struct wasm_link_wrapper;
 template <typename Ret, typename... Args, Ret (*func)(Args...)>
 struct wasm_link_wrapper<Ret(Args...), func>
 {
-    //为了规避malloc,暂时禁止返回值是指针的函数link
+    // 为了规避malloc,暂时禁止返回值是指针的函数link
     /*template<typename T>
     static typename std::enable_if<wasm_is_support_pointer_type<T>::value && !std::is_same<T, void>::value, bool>::type
     InternalLink(IM3Module _module, const char* const function_name)
@@ -477,7 +476,7 @@ struct wasm_link_wrapper<Ret(Args...), func>
     static typename std::enable_if<wasm_is_simple_type<T>::value && !std::is_same<T, void>::value, bool>::type InternalLink(
         IM3Module _module, const char* const function_name)
     {
-        //返回值不能是引用
+        // 返回值不能是引用
         static_assert(!std::is_reference<Ret>::value, "");
         return Export_m3_LinkRawFunctionEx(_module, "*", function_name, m3_signature<Ret, Args...>::get(),
             &wasm_link_helper<Ret(Args...), func>::template Functor<std::make_index_sequence<sizeof...(Args)>>::Invoke, nullptr);
@@ -487,7 +486,7 @@ struct wasm_link_wrapper<Ret(Args...), func>
     static typename std::enable_if<wasm_is_complex_type<T>::value && !std::is_same<T, void>::value, bool>::type InternalLink(
         IM3Module _module, const char* const function_name)
     {
-        //返回值不能是引用
+        // 返回值不能是引用
         static_assert(!std::is_reference<Ret>::value, "");
         return Export_m3_LinkRawFunctionEx(_module, "*", function_name, m3_signature<void, Ret&, Args...>::get(),
             &wasm_link_helper<Ret(Args...), func>::template Functor<std::make_index_sequence<sizeof...(Args)>>::Invoke, nullptr);
