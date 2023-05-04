@@ -1,6 +1,4 @@
 ﻿#pragma once
-#include "CoreMinimal.h"
-#include "HAL/Platform.h"
 #include "wasm3.h"
 #include "m3_env.h"
 #include "WasmCommonIncludes.h"
@@ -76,7 +74,6 @@ static_assert(wasm_is_simple_type<int&>::value, "");
 static_assert(wasm_is_simple_type<int>::value, "");
 static_assert(wasm_is_simple_type<const int>::value, "");
 static_assert(!wasm_is_simple_type<void*>::value, "");
-static_assert(!wasm_is_simple_type<FVector>::value, "");
 
 //定义复杂类型,该类型会被当作指针放在栈上
 template <typename T>
@@ -102,8 +99,6 @@ struct wasm_is_complex_type<void>
 };
 
 static_assert(!wasm_is_complex_type<void*>::value, "");
-static_assert(wasm_is_complex_type<FVector>::value, "");
-static_assert(wasm_is_complex_type<FHitResult>::value, "");
 
 template <typename T>
 struct wasm_is_support_pointer_type
