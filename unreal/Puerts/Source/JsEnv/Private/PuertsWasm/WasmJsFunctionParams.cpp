@@ -360,7 +360,7 @@ static void InitWasmParamsFromJson(WasmJsParamDesc& TargetParamDesc, const TShar
     UScriptStruct* Struct = nullptr;
     if (JsonObject->TryGetStringField(TEXT("ClassName"), ClassName))
     {
-        Struct = FindAnyType<UScriptStruct>(ClassName, 1);
+        Struct = FindAnyType<UScriptStruct>(*ClassName + 1);
         check(Struct->GetCppStructOps()->IsPlainOldData() && Struct->IsNative());
     }
 
