@@ -106,6 +106,9 @@ var global = global || (function () { return this; }());
             }
             
             let [fullPath, debugPath] = moduleInfo;
+            if(debugPath.startsWith("Pak: ")){
+                debugPath = fullPath
+            }
             
             let key = fullPath;
             if ((key in moduleCache) && !forceReload) {
