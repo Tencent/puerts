@@ -36,13 +36,13 @@ typedef FObjectIterator FUEObjectIterator;
 #endif
 
 template <typename T>
-T* FindAnyType(const FString& InShortName)
+T* FindAnyType(const FString& InShortName, const int Index = 0)
 {
 #if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
-    return FindFirstObject<T>(
-        *InShortName, EFindFirstObjectOptions::EnsureIfAmbiguous | EFindFirstObjectOptions::NativeFirst, ELogVerbosity::Error);
+    return FindFirstObject<T>(*InShortName + Index,
+        EFindFirstObjectOptions::EnsureIfAmbiguous | EFindFirstObjectOptions::NativeFirst, ELogVerbosity::Error);
 #else
-    return FindObject<T>(ANY_PACKAGE, *InShortName);
+    return FindObject<T>(ANY_PACKAGE, *InShortName + Index);
 #endif
 }
 }    // namespace puerts
