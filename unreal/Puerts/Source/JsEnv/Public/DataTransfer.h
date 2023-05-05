@@ -222,17 +222,27 @@ public:
     }
 
     template <typename T>
-    FORCEINLINE static T* GetPointerFast(v8::Local<v8::Object> Object, int Index = 0)
+    FORCEINLINE static T* GetPointerFast(v8::Local<v8::Object> Object, int Index)
     {
-        if (Object->InternalFieldCount() > (Index * 2 + 1))
+        int P1 = Index << 1;
+        int P2 = P1 + 1;
+        if (LIKELY(Object->InternalFieldCount() > P2))
         {
             return static_cast<T*>(MakeAddressWithHighPartOfTwo(
-                Object->GetAlignedPointerFromInternalField(Index * 2), Object->GetAlignedPointerFromInternalField(Index * 2 + 1)));
+                Object->GetAlignedPointerFromInternalField(P1), Object->GetAlignedPointerFromInternalField(P2)));
         }
-        else
+        return nullptr;
+    }
+
+    template <typename T>
+    FORCEINLINE static T* GetPointerFast(v8::Local<v8::Object> Object)
+    {
+        if (LIKELY(Object->InternalFieldCount() > 1))
         {
-            return nullptr;
+            return static_cast<T*>(MakeAddressWithHighPartOfTwo(
+                Object->GetAlignedPointerFromInternalField(0), Object->GetAlignedPointerFromInternalField(1)));
         }
+        return nullptr;
     }
 
     //替代 Object->SetAlignedPointerInInternalField(Index, Ptr);

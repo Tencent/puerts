@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-pre.3] - 2023-04-19
+1. Fix: ios Node.js cannot start for PuerTS's openupm version #1302
+2. Fix: the dependencies of DontBinding methods are still generated in DTS generation #1295
+3. Fix: some properties only have setters will report errors in wrapper generation #1298
+4. Fix: several problems with static fields in il2cpp binding mode #1288
+5. Fix: il2cpp binding mode + Unity2021 will crash when using structs reflecting #1288
+6. Fix: still cannot find generic classes after link.xml generation #1288
+7. Feature: add C# Enumerable forof support on JS side #1234
+8. Feature: refactor old ExecuteModule implementation to be consistent with il2cpp binding mode. At the same time, import 'csharp' and import 'puerts' are no longer supported, and it is recommended to use global variables.
+9. Feature: add `IResolvableLoader` to implement node_modules loading and solve #1270.
+10. Feature: add `IBuiltinLoadedListener` to allow Loader to do some operations after the built-in script is executed, which is convenient for encapsulating third-party Loader.
+
 ## [2.0.0-pre.1] - 2023-02-27
 1. Add a new language binding directly based on il2cpp and there will be huge performance benifit. see our docsite for more information.
 2. The package layout of unity code in this repository is changed to UPM layout.

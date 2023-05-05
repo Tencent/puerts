@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define API_LEVEL 30
+#define API_LEVEL 31
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -74,22 +74,22 @@ V8_EXPORT void SetGlobalFunction(v8::Isolate *Isolate, const char *Name, CSharpF
 V8_EXPORT void SetModuleResolver(v8::Isolate *Isolate, CSharpModuleResolveCallback Resolver, int32_t Idx)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    JsEngine->ModuleResolver = Resolver;
+    // JsEngine->ModuleResolver = Resolver;
     JsEngine->Idx = Idx;
 }
 
-V8_EXPORT FResultInfo * ExecuteModule(v8::Isolate *Isolate, const char* Path, const char* Exportee)
-{
-    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    if (JsEngine->ExecuteModule(Path, Exportee))
-    {
-        return &(JsEngine->ResultInfo);
-    }
-    else
-    {
-        return nullptr;
-    }
-}
+// V8_EXPORT FResultInfo * ExecuteModule(v8::Isolate *Isolate, const char* Path, const char* Exportee)
+// {
+//     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+//     if (JsEngine->ExecuteModule(Path, Exportee))
+//     {
+//         return &(JsEngine->ResultInfo);
+//     }
+//     else
+//     {
+//         return nullptr;
+//     }
+// }
 
 V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)
 {
@@ -107,37 +107,7 @@ V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char*
 V8_EXPORT bool ClearModuleCache(v8::Isolate *Isolate, const char* Path)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-    std::string key(Path);
-    if (key.size() == 0) 
-    {
-#if !WITH_QUICKJS
-        for (auto Iter = JsEngine->PathToModuleMap.begin(); Iter != JsEngine->PathToModuleMap.end(); ++Iter)
-        {
-            Iter->second.Reset();
-        }
-#else
-#endif
-        JsEngine->PathToModuleMap.clear();
-        return true;
-    } 
-    else 
-    {
-        auto finder = JsEngine->PathToModuleMap.find(key);
-        if (finder != JsEngine->PathToModuleMap.end()) 
-        {
-            JsEngine->PathToModuleMap.erase(key);
-#if !WITH_QUICKJS
-            finder->second.Reset();
-            return true;
-#else
-            v8::Isolate::Scope IsolateScope(Isolate);
-            v8::HandleScope HandleScope(Isolate);
-            JSContext* ctx = JsEngine->ResultInfo.Context.Get(Isolate)->context_;
-            return JS_ReleaseLoadedModule(ctx, Path);
-#endif
-        }
-    }
-    return false;
+    return JsEngine->ClearModuleCache(Path);
 }   
 
 V8_EXPORT int _RegisterClass(v8::Isolate *Isolate, int BaseTypeId, const char *FullName, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data)

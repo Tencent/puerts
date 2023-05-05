@@ -38,6 +38,7 @@ public class JsEnv : ModuleRules
     {
         //PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
+        //PublicDefinitions.Add("WITH_V8_FAST_CALL");
         
         PublicDefinitions.Add("TS_BLUEPRINT_PATH=\"/Blueprints/TypeScript/\"");
         
@@ -69,6 +70,16 @@ public class JsEnv : ModuleRules
                 bCanHotReloadField.SetValue(ContextField.GetValue(this), false);
             }
         }
+
+        bool UseWasm = true;
+        if (UseWasm)
+        {
+            PublicDefinitions.Add("WITH_WASM");
+        }
+        PublicDependencyModuleNames.AddRange(new string[]
+            {
+                "WasmCore", "Json"
+            });
 
         if (UseNodejs)
         {

@@ -205,8 +205,7 @@ void FFunctionTranslator::Init(UFunction* InFunction, bool IsDelegate)
 
 v8::Local<v8::FunctionTemplate> FFunctionTranslator::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    v8::EscapableHandleScope HandleScope(Isolate);
-    return HandleScope.Escape(v8::FunctionTemplate::New(Isolate, Call, v8::External::New(Isolate, this)));
+    return v8::FunctionTemplate::New(Isolate, Call, v8::External::New(Isolate, this));
 }
 
 void FFunctionTranslator::Call(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -623,8 +622,7 @@ FExtensionMethodTranslator::FExtensionMethodTranslator(UFunction* InFunction) : 
 
 v8::Local<v8::FunctionTemplate> FExtensionMethodTranslator::ToFunctionTemplate(v8::Isolate* Isolate)
 {
-    v8::EscapableHandleScope HandleScope(Isolate);
-    return HandleScope.Escape(v8::FunctionTemplate::New(Isolate, CallExtension, v8::External::New(Isolate, this)));
+    return v8::FunctionTemplate::New(Isolate, CallExtension, v8::External::New(Isolate, this));
 }
 
 void FExtensionMethodTranslator::CallExtension(const v8::FunctionCallbackInfo<v8::Value>& Info)

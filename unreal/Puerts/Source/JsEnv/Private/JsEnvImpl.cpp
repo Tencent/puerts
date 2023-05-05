@@ -99,6 +99,10 @@
 #include "Engine/CollisionProfile.h"
 #endif
 
+#if WITH_WASM
+#include "PuertsWasm/WasmJsFunctionParams.h"
+#endif
+
 namespace puerts
 {
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
@@ -357,6 +361,11 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #if PLATFORM_IOS
     char Flags[] = "--jitless --no-expose-wasm";
     v8::V8::SetFlagsFromString(Flags, sizeof(Flags));
+#endif
+
+#ifdef WITH_V8_FAST_CALL
+    char FCFlags[] = "--turbo-fast-api-calls";
+    v8::V8::SetFlagsFromString(FCFlags, sizeof(FCFlags));
 #endif
 
     // char GCFlags[] = "--expose-gc";
@@ -618,11 +627,22 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 #ifdef SINGLE_THREAD_VERIFY
     BoundThreadId = FPlatformTLS::GetCurrentThreadId();
 #endif
+
+#if WITH_WASM
+    PuertsWasmRuntime = std::make_shared<WasmRuntime>(2 * 1024);
+
+    FString ScriptRoot = FPaths::ProjectContentDir() / ModuleLoader->GetScriptRoot();
+    InitWasmRuntimeToJsObject(Global, PuertsWasmRuntime.get(), ScriptRoot / TEXT("wasm"), AllWasmJsModuleDesc);
+#endif
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
+#if WITH_WASM
+    PuertsWasmRuntime.reset();
+#endif
+
 #ifdef SINGLE_THREAD_VERIFY
     ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
 #endif
@@ -2728,7 +2748,6 @@ FJsEnvImpl::FTemplateInfo* FJsEnvImpl::GetTemplateInfoOfType(UStruct* InStruct, 
         {
             InitExtensionMethodsMap();
         }
-        v8::EscapableHandleScope HandleScope(Isolate);
         v8::Local<v8::FunctionTemplate> Template;
 
         bool IsReuseTemplate = false;

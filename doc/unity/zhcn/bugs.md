@@ -1,3 +1,4 @@
+# 已知bug及其说明
 * https://github.com/Tencent/puerts/issues/65
 Typescript类继承CSharp类会引起的内存问题 | Memory Management problem when a typescript class is extended a csharp class
 

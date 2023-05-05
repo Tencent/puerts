@@ -463,12 +463,12 @@ namespace Puerts.Editor
                         AddRefType(workTypes, refTypes, type);
                         var defType = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
                         if (!genTypeSet.Contains(defType)) genTypeSet.Add(defType);
-                        foreach (var field in type.GetFields(Utils.Flags))
+                        foreach (var field in type.GetFields(Utils.Flags).Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding))
                         {
                             AddRefType(workTypes, refTypes, field.FieldType);
                         }
 
-                        foreach (var method in type.GetMethods(Utils.Flags))
+                        foreach (var method in type.GetMethods(Utils.Flags).Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding))
                         {
                             AddRefType(workTypes, refTypes, method.ReturnType);
                             foreach (var pinfo in method.GetParameters())

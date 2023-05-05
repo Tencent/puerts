@@ -28,6 +28,24 @@ namespace Puerts
 #if ENABLE_IL2CPP
     [UnityEngine.Scripting.Preserve]
 #endif
+    public interface IResolvableLoader
+    {
+        string Resolve(string specifier, string referrer);
+    }
+
+#if ENABLE_IL2CPP
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public interface IBuiltinLoadedListener
+    {
+        void OnBuiltinLoaded(JsEnv env);
+    }
+
+
+
+#if ENABLE_IL2CPP
+    [UnityEngine.Scripting.Preserve]
+#endif
     public class DefaultLoader : ILoader, IModuleChecker
     {
         private string root = "";

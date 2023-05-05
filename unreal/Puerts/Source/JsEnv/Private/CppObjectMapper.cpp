@@ -155,8 +155,6 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
     auto Iter = CDataNameToTemplateMap.find(ClassDefinition->TypeId);
     if (Iter == CDataNameToTemplateMap.end())
     {
-        v8::EscapableHandleScope HandleScope(Isolate);
-
         auto Template = v8::FunctionTemplate::New(
             Isolate, CDataNew, v8::External::New(Isolate, const_cast<void*>(reinterpret_cast<const void*>(ClassDefinition))));
         Template->InstanceTemplate()->SetInternalFieldCount(4);
@@ -221,7 +219,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
 
         CDataNameToTemplateMap[ClassDefinition->TypeId] = v8::UniquePersistent<v8::FunctionTemplate>(Isolate, Template);
 
-        return HandleScope.Escape(Template);
+        return Template;
     }
     else
     {

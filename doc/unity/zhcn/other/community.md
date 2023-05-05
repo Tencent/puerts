@@ -12,6 +12,7 @@
 | @Geequlim | https://github.com/Geequlim/puerts-starter-kit | Framework | 100+ |
 | @zgz682000 | https://github.com/zgz682000/puerts-component | Framework | 20+ |
 | @jungog | https://github.com/jungog/UnityTs | Framework | |
+| @zombieyang | https://github.com/zombieyang/puerts-ts-loader | Library | |
 
 * 例子项目
 

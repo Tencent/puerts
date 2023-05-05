@@ -492,7 +492,7 @@ static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8:
 }
 
 static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIp) {
-    //PLog(LogLevel::Log, "Running ifs_${fieldWrapperInfo.Signature}");
+    // PLog(LogLevel::Log, "Running ifs_${fieldWrapperInfo.Signature}");
     
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -502,7 +502,7 @@ static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8:
 
     ${ENDIF()}    
     ${CODE_SNIPPETS.JSValToCSVal(fieldWrapperInfo.ReturnSignature, "info[0]", "p")}
-    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, &p);
+    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
 }`;
 }
 

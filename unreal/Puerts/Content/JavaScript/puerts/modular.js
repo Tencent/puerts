@@ -106,6 +106,9 @@ var global = global || (function () { return this; }());
             }
             
             let [fullPath, debugPath] = moduleInfo;
+            if(debugPath.startsWith("Pak: ")){
+                debugPath = fullPath
+            }
             
             let key = fullPath;
             if ((key in moduleCache) && !forceReload) {
@@ -122,11 +125,11 @@ var global = global || (function () { return this; }());
             if (fullPath.endsWith(".json")) {
                 let packageConfigure = JSON.parse(script);
                 
-                if (fullPath.endsWith("package.json") && packageConfigure.main) {
+                if (fullPath.endsWith("package.json")) {
                     isESM = packageConfigure.type === "module"
                     let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
                     let tmpRequire = genRequire(fullDirInJs, isESM);
-                    let r = tmpRequire(packageConfigure.main);
+                    let r = tmpRequire(packageConfigure.main || "index.js");
                     tmpModuleStorage[sid] = undefined;
                     m.exports = r;
                 } else {

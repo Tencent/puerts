@@ -1324,7 +1324,7 @@ public:
         {
             functionInfos_.push_back(GeneralFunctionReflectionInfo{name, info});
         }
-        functions_.push_back(GeneralFunctionInfo{name, func, nullptr});
+        functions_.push_back(GeneralFunctionInfo{name, func, nullptr, info});
         return *this;
     }
 
@@ -1334,7 +1334,7 @@ public:
         {
             functionInfos_.push_back(GeneralFunctionReflectionInfo{name, infos[i]});
         }
-        functions_.push_back(GeneralFunctionInfo{name, func, nullptr});
+        functions_.push_back(GeneralFunctionInfo{name, func, nullptr, nullptr});
         return *this;
     }
 
@@ -1344,7 +1344,7 @@ public:
         {
             methodInfos_.push_back(GeneralFunctionReflectionInfo{name, info});
         }
-        methods_.push_back(GeneralFunctionInfo{name, func, nullptr});
+        methods_.push_back(GeneralFunctionInfo{name, func, nullptr, info});
         return *this;
     }
 
@@ -1354,7 +1354,7 @@ public:
         {
             methodInfos_.push_back(GeneralFunctionReflectionInfo{name, infos[i]});
         }
-        methods_.push_back(GeneralFunctionInfo{name, func, nullptr});
+        methods_.push_back(GeneralFunctionInfo{name, func, nullptr, nullptr});
         return *this;
     }
 

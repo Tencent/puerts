@@ -9,7 +9,7 @@ body:
     id: read
     attributes:
       label: 前置阅读 | Pre-reading
-      description: 我已经自行查找、阅读以下内容（阅读了请打勾） | I have searched and read the following on my own (Please tick after reading)
+      description: 我已经自行查找、阅读以下内容（**阅读了请打勾**） | I have searched and read the following on my own (**Please tick after reading**)
       options:
         - label: "[文档](https://puerts.github.io/unity/zhcn/readme)/[Doc](https://puerts.github.io/unity/en/readme)"
           required: true

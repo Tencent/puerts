@@ -423,7 +423,7 @@ struct Converter<T*,
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T* value)
     {
-        return ::puerts::DataTransfer::FindOrAddStruct<T>(context->GetIsolate(), context, value, true);
+        return ::puerts::DataTransfer::FindOrAddStruct<T>(context->GetIsolate(), context, (void*) value, true);
     }
 
     static T* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)

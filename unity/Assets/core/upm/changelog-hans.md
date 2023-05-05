@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-pre.3] - 2023-04-19
+1. 修复：openupm版本ios Node.js无法启动的问题 #1302
+1. 修复：DTS生成时DontBinding方法的依赖依旧被生成的问题 #1295
+1. 修复：wrapper生成时某些property只有setter时报错的问题 #1298
+1. 修复：il2cpp绑定模式下，static field的若干问题 #1288
+1. 修复：il2cpp绑定模式+Unity2021 反射调用结构体时的crash问题 #1288
+1. 修复：link.xml生成后，il2cpp绑定模式下依然无法找到泛型类的问题 #1288
+1. 功能：添加C# Enumerable在JS侧的forof支持 #1234
+2. 功能：重构旧版ExecuteModule的实现，使之与il2cpp绑定模式下一致。同时不再支持import 'csharp'和 import 'puerts'，建议使用全局变量。
+3. 功能：添加`IResolvableLoader`，用于实现node_modules加载与解决 #1270 问题
+4. 功能：添加`IBuiltinLoadedListener`，可以让Loader在内置脚本执行完毕后做一些操作，便于封装第三方Loader。
+
 ## [2.0.0-pre.1] - 2023-02-27
 1. 添加了新的il2cpp binding方式，性能有飞跃式提升。详见官方文档`Il2cpp绑定`章节
 2. 本仓库的Unity代码变为了UPM目录结构。
