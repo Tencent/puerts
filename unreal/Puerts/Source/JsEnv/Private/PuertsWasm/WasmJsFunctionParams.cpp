@@ -14,6 +14,7 @@
 #include "V8Utils.h"
 #include "JSLogger.h"
 #include "../ObjectMapper.h"
+#include "UECompatible.h"
 namespace puerts
 {
 static bool PushOneParam(v8::Isolate* Isoate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& JsObject,
@@ -359,7 +360,7 @@ static void InitWasmParamsFromJson(WasmJsParamDesc& TargetParamDesc, const TShar
     UScriptStruct* Struct = nullptr;
     if (JsonObject->TryGetStringField(TEXT("ClassName"), ClassName))
     {
-        Struct = FindObject<UScriptStruct>(ANY_PACKAGE, *ClassName + 1);
+        Struct = FindAnyType<UScriptStruct>(*ClassName + 1);
         check(Struct->GetCppStructOps()->IsPlainOldData() && Struct->IsNative());
     }
 
