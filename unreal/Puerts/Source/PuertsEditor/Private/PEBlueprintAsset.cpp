@@ -988,9 +988,8 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
                 USCS_Node* NewSCSNode = Blueprint->SimpleConstructionScript->CreateNode(ComponentClass, NewVarName);
                 Blueprint->SimpleConstructionScript->AddNode(NewSCSNode);
                 NeedSave = true;
-                ComponentsAdded.Add(NewVarName);
             }
-
+            ComponentsAdded.Add(NewVarName);
             return;
         }
     }
