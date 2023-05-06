@@ -161,9 +161,14 @@ public:
     void RemoveNotExistedMemberVariable();
 
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    void RemoveNotExistedComponent();
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void Save();
 
 private:
+    TSet<FName> ComponentsAdded;
+
     TSet<FName> MemberVariableAdded;
 
     TSet<FName> FunctionAdded;

@@ -989,7 +989,7 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
                 Blueprint->SimpleConstructionScript->AddNode(NewSCSNode);
                 NeedSave = true;
             }
-
+            ComponentsAdded.Add(NewVarName);
             return;
         }
     }
@@ -1097,6 +1097,31 @@ void UPEBlueprintAsset::AddMemberVariableWithMetaData(FName InNewVarName, FPEGra
     NeedSave = InMetaData->Apply(Blueprint->NewVariables[VarIndex]) || NeedSave;
     if (NeedSave)
         CanChangeCheck();
+}
+
+void UPEBlueprintAsset::RemoveNotExistedComponent()
+{
+    if (IsPlaying())
+    {
+        return;
+    }
+    if (Blueprint && Blueprint->SimpleConstructionScript)
+    {
+        TArray<FName> ToDelete;
+        for (int32 i = 0; i < Blueprint->SimpleConstructionScript->GetAllNodes().Num(); i++)
+        {
+            if (!ComponentsAdded.Contains(Blueprint->SimpleConstructionScript->GetAllNodes()[i]->GetVariableName()))
+            {
+                ToDelete.Add(Blueprint->SimpleConstructionScript->GetAllNodes()[i]->GetVariableName());
+            }
+        }
+        for (auto Name : ToDelete)
+        {
+            NeedSave = true;
+            RemoveComponent(Name);
+        }
+    }
+    ComponentsAdded.Empty();
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()

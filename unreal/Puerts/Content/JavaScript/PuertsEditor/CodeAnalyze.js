@@ -921,6 +921,7 @@ function watch(configFilePath) {
                         }
                     }
                 });
+                bp.RemoveNotExistedComponent();
                 bp.RemoveNotExistedMemberVariable();
                 bp.RemoveNotExistedFunction();
                 bp.HasConstructor = hasConstructor;
