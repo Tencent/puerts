@@ -12,6 +12,9 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Puerts.Editor.Generator;
+#if !PUERTS_GENERAL
+using Mono.Reflection;
+#endif
 
 namespace PuertsIl2cpp.Editor
 {
