@@ -882,5 +882,19 @@ var global = global || (function () { return this; }());
 
     puerts.toManualReleaseDelegate = (x) => x;
     puerts.toDelegate = (o,k) => [o, k];
+
+    function mergePrototype(from, to, exclude) {
+        Object.getOwnPropertyNames(from).forEach(name => {
+            if (!(name in exclude)) {
+                Object.defineProperty(
+                    to,
+                    name,
+                    Object.getOwnPropertyDescriptor(from, name) ||
+                    Object.create(null)
+                );
+            }
+        });
+    }
+    puerts.__mergePrototype = mergePrototype
     
 }(global));
