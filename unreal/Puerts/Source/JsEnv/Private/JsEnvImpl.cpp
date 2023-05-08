@@ -615,6 +615,10 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
         Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "getESMMain")).ToLocalChecked().As<v8::Function>());
 
     ReloadJs.Reset(Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__reload")).ToLocalChecked().As<v8::Function>());
+#if !PUERTS_FORCE_CPP_UFUNCTION
+    MergePrototype.Reset(
+        Isolate, PuertsObj->Get(Context, FV8Utils::ToV8String(Isolate, "__mergePrototype")).ToLocalChecked().As<v8::Function>());
+#endif
 
     DelegateProxiesCheckerHandler =
         FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FJsEnvImpl::CheckDelegateProxies), 1);
@@ -789,6 +793,9 @@ FJsEnvImpl::~FJsEnvImpl()
         MapTemplate.Reset();
         SetTemplate.Reset();
         ArrayTemplate.Reset();
+#if !PUERTS_FORCE_CPP_UFUNCTION
+        MergePrototype.Reset();
+#endif
     }
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
@@ -1195,6 +1202,10 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                         // implement by js
                         TypeScriptGeneratedClass->FunctionToRedirect.Empty();
 
+#if !PUERTS_FORCE_CPP_UFUNCTION
+                        auto NetMethods = v8::Object::New(Isolate);
+#endif
+
                         for (TFieldIterator<UFunction> It(TypeScriptGeneratedClass, EFieldIteratorFlags::ExcludeSuper,
                                  EFieldIteratorFlags::ExcludeDeprecated, EFieldIteratorFlags::ExcludeInterfaces);
                              It; ++It)
@@ -1251,6 +1262,14 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                         FuncInfo->JsFunction = v8::UniquePersistent<v8::Function>(
                                             Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked()));
                                     }
+
+#if !PUERTS_FORCE_CPP_UFUNCTION
+                                    if (Function->HasAnyFunctionFlags(FUNC_Net))
+                                    {
+                                        __USE(NetMethods->Set(Context, V8Name, v8::True(Isolate)));
+                                    }
+#endif
+
                                     TypeScriptGeneratedClass->FunctionToRedirect.Add(FunctionFName);
                                     TypeScriptGeneratedClass->RedirectToTypeScript(Function);
                                 }
@@ -1279,6 +1298,12 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                 __USE(Proto->SetPrototype(Context, NativeProto->GetPrototype()));
                             }
                             __USE(NativeProto->SetPrototype(Context, Proto));
+
+#if !PUERTS_FORCE_CPP_UFUNCTION
+                            v8::Local<v8::Value> MergeArgs[] = {Proto, NativeProto, NetMethods};
+
+                            __USE(MergePrototype.Get(Isolate)->Call(Context, v8::Undefined(Isolate), 3, MergeArgs));
+#endif
                         }
                         else
                         {

@@ -521,6 +521,10 @@ private:
 
     v8::Global<v8::Function> ReloadJs;
 
+#if !PUERTS_FORCE_CPP_UFUNCTION
+    v8::Global<v8::Function> MergePrototype;
+#endif
+
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
     TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;

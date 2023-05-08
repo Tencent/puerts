@@ -71,6 +71,16 @@ public class JsEnv : ModuleRules
             }
         }
 
+        bool bForceAllUFunctionInCPP = true;
+        if (bForceAllUFunctionInCPP)
+        {
+            PublicDefinitions.Add("PUERTS_FORCE_CPP_UFUNCTION=1");
+        }
+        else
+        {
+            PublicDefinitions.Add("PUERTS_FORCE_CPP_UFUNCTION=0");
+        }
+
         bool UseWasm = true;
         if (UseWasm)
         {
