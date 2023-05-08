@@ -61,14 +61,25 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
     info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
 
 #else 
-    JS_SetModuleLoaderFunc(Isolate->runtime_, NULL, puerts::esmodule::js_module_loader, NULL);
+    JS_SetModuleLoaderFunc(Isolate->runtime_, puerts::esmodule::js_module_resolver, puerts::esmodule::js_module_loader, NULL);
     JSContext* ctx = Context->context_;
 
     v8::String::Utf8Value Specifier_utf8(Isolate, Specifier_v8);
     std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
 
-    JSModuleDef* EntryModule = puerts::esmodule::js_module_loader(ctx, Specifier_std.c_str(), nullptr);
-    if (EntryModule == nullptr) {
+    char* resolved_name = puerts::esmodule::js_module_resolver(ctx, "", Specifier_std.c_str(), nullptr);
+    if (resolved_name == nullptr)
+    {
+        // should be a exception on mockV8's VM
+        Isolate->handleException();
+        return;
+    }
+
+    JSModuleDef* EntryModule = puerts::esmodule::js_module_loader(ctx, resolved_name, nullptr);
+    if (EntryModule == nullptr) 
+    {
+        // should be a exception on mockV8's VM
+        Isolate->handleException();
         return;
     }
 
@@ -78,6 +89,7 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
     v8::Value* val = nullptr;
     if (JS_IsException(evalRet)) {
         JS_FreeValue(ctx, evalRet);
+        Isolate->handleException();
         return;
 
     } else {
@@ -85,6 +97,11 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
         val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
         JS_FreeValue(ctx, evalRet);
         v8::Local<v8::Value> ns = v8::Local<v8::Value>(val);
+
+        if (ns->IsNullOrUndefined())
+        {
+            ns = v8::Object::New(Isolate);
+        }
 
         info.GetReturnValue().Set(ns);
 
@@ -347,24 +364,54 @@ static v8::MaybeLocal<v8::Value> CallRead(
     }
 
 #else 
-
-    JSModuleDef* puerts::esmodule::js_module_loader(JSContext* ctx, const char *name, void *opaque) {
+    char* puerts::esmodule::js_module_resolver(
+        JSContext *ctx, const char *base_name, const char *name, void* opaque
+    )
+    {
         JSRuntime *rt = JS_GetRuntime(ctx);
         v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
         BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
         v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
         v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
-        v8::Local<v8::Value> ReferrerName = v8::String::NewFromUtf8(Isolate, "").ToLocalChecked();
+        v8::Local<v8::Value> ReferrerName = v8::String::NewFromUtf8(Isolate, base_name).ToLocalChecked();
+
+        v8::TryCatch TryCatch(Isolate);
         v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
         if (maybeRet.IsEmpty()) 
         {
+            // should be a exception on mockV8's VM
+
+            // TODO rethrow this error will crash, why?
+            // JSValue ex = TryCatch.catched_;
+            std::string ErrorMessage = std::string("[Puer002]module not found ") + name;
+            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
+            JS_Throw(ctx, ex);
+            // there should be a exception in quickjs VM now
             return nullptr;
         }
-        Specifier = maybeRet.ToLocalChecked();
 
+        Specifier = maybeRet.ToLocalChecked();
         v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
-        std::string name_std(*Specifier_utf8, Specifier_utf8.length());
+        const char* specifier = *Specifier_utf8;
+
+        int32_t size = strlen(specifier);
+        char* rname = (char*)js_malloc(ctx, strlen(specifier) + 1);
+        memcpy(rname, specifier, size);
+        rname[size] = '\0';
+        return rname;
+    }
+
+    JSModuleDef* puerts::esmodule::js_module_loader(
+        JSContext* ctx, const char *name, void *opaque
+    ) 
+    {
+        JSRuntime *rt = JS_GetRuntime(ctx);
+        v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
+        BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
+        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        
+        std::string name_std(name, strlen(name));
 
         auto Iter = mm->PathToModuleMap.find(name_std);
         if (Iter != mm->PathToModuleMap.end())//create and link
@@ -372,9 +419,19 @@ static v8::MaybeLocal<v8::Value> CallRead(
             return Iter->second;
         }
 
-        maybeRet = CallRead(Isolate, Context, Specifier);
+        v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
+        v8::TryCatch TryCatch(Isolate);
+        v8::MaybeLocal<v8::Value> maybeRet = CallRead(Isolate, Context, Specifier);
         if (maybeRet.IsEmpty()) 
         {
+            // should be a exception on mockV8's VM
+
+            // JSValue ex = TryCatch.catched_;
+            // TODO rethrow this error will crash, why?
+            std::string ErrorMessage = std::string("[Puer003]module not found ") + name;
+            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
+            JS_Throw(ctx, ex);
+            // there should be a exception in quickjs VM now
             return nullptr;
         }
         v8::Local<v8::String> V8Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
@@ -383,14 +440,12 @@ static v8::MaybeLocal<v8::Value> CallRead(
         const char* Code = *Code_utf8;
         if (Code == nullptr) 
         {
-            std::string ErrorMessage = std::string("module not found ") + name_std;
-            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
-            JS_Throw(ctx, ex);
             return nullptr;
         }
         JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
         if (JS_IsException(func_val)) {
+            // there should be a exception in quickjs VM now
             return nullptr;
         }
 

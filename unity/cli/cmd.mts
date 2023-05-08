@@ -128,9 +128,9 @@ backendProgram
 
 program
     .command("dotnet-test [backend]")
-    // .option("--backend <backend>", "the JS backend will be used", "v8_9.4")
-    .action((backend: string) => {
-        dotnetTest(cwd, backend || "quickjs");
+    .option("--filter <filter>", "testcase will be filtered", "")
+    .action((backend: string, options: any) => {
+        dotnetTest(cwd, backend || "quickjs", options.filter);
     });
 
 program

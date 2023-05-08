@@ -52,7 +52,7 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
     return [definitions, linkPuerTS, linkUnitTests, linkGenerators].join('\n');
 }
 
-export async function dotnetTest(cwd: string, backend: string) {
+export async function dotnetTest(cwd: string, backend: string, filter: string = '') {
     if (!existsSync(`${cwd}/Src/Helloworld.cs`)) {
         console.error("[Puer] Cannot find UnitTest Src");
         process.exit();
@@ -100,7 +100,7 @@ export async function dotnetTest(cwd: string, backend: string) {
         originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, true), '</Project>'].join('\n'))
     );
     assert.equal(0, exec(`dotnet build vsauto.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code)
-    assert.equal(0, exec(`dotnet test vsauto.csproj --blame-hang-timeout 5000ms`, { cwd: workdir }).code)
+    assert.equal(0, exec(`dotnet test vsauto.csproj --blame-hang-timeout 5000ms ${filter ? `--filter ${filter}` : ''}`, { cwd: workdir }).code)
 }
 
 

@@ -82,6 +82,8 @@ namespace puerts
         void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta);
 #else 
         JSModuleDef* js_module_loader(JSContext* ctx, const char *name, void *opaque);
+
+        char* js_module_resolver(JSContext *ctx, const char *base_name, const char *name, void* opaque);
 #endif
     }
 }
