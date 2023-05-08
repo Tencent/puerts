@@ -172,9 +172,9 @@ namespace Puerts
                     return JSObjectTranslator(jsEnvIdx, isolate, getValueApi, value, isByRef);
                 case JsValueType.NativeObject:
                     var typeId = getValueApi.GetTypeId(isolate, value, isByRef);
-                    if (!jsEnv.TypeRegister.IsArray(typeId))
+                    if (!jsEnv.TypeManager.IsArray(typeId))
                     {
-                        var objType = jsEnv.TypeRegister.GetType(typeId);
+                        var objType = jsEnv.TypeManager.GetType(typeId);
                         if (objType != typeof(object) && generalGetterMap.ContainsKey(objType))
                         {
                             return generalGetterMap[objType](jsEnvIdx, isolate, getValueApi, value, isByRef);
@@ -516,7 +516,7 @@ namespace Puerts
                 var jsEnv = JsEnv.jsEnvs[jsEnvIdx];
                 if (realType == typeof(object))
                 {
-                    int typeId = jsEnv.TypeRegister.GetTypeId(isolate, realType);
+                    int typeId = jsEnv.TypeManager.GetTypeId(isolate, realType);
                     int objectId = jsEnv.objectPool.FindOrAddObject(obj);
                     setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                 }
@@ -540,7 +540,7 @@ namespace Puerts
                     }
                     else
                     {
-                        int typeId = jsEnv.TypeRegister.GetTypeId(isolate, obj.GetType());
+                        int typeId = jsEnv.TypeManager.GetTypeId(isolate, obj.GetType());
                         int objectId = jsEnv.objectPool.AddBoxedValueType(obj);
                         setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                     }
@@ -557,7 +557,7 @@ namespace Puerts
                     }
                     else
                     {
-                        int typeId = jsEnv.TypeRegister.GetTypeId(isolate, obj.GetType());
+                        int typeId = jsEnv.TypeManager.GetTypeId(isolate, obj.GetType());
                         int objectId = jsEnv.objectPool.FindOrAddObject(obj);
                         setValueApi.SetNativeObject(isolate, holder, typeId, new IntPtr(objectId));
                     }

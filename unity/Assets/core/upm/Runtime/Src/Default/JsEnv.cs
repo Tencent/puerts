@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using Puerts.TypeMapping;
 #if CSHARP_7_3_OR_NEWER
 using System.Threading.Tasks;
 #endif
@@ -28,7 +29,15 @@ namespace Puerts
 
         internal readonly GeneralSetterManager GeneralSetterManager;
 
-        internal readonly TypeRegister TypeRegister = null;
+        internal TypeManager TypeRegister 
+        {
+            get {
+                UnityEngine.Debug.LogWarning("use JsEnv.TypeManager instead");
+                return TypeManager;
+            }
+        }
+
+        internal readonly TypeManager TypeManager = null;
 
         internal readonly GenericDelegateFactory genericDelegateFactory;
 
@@ -119,7 +128,7 @@ namespace Puerts
             }
 
             objectPool = new ObjectPool();
-            TypeRegister = new TypeRegister(this);
+            TypeManager = new TypeManager(this);
             genericDelegateFactory = new GenericDelegateFactory(this);
             jsObjectFactory = new JSObjectFactory();
 
@@ -182,7 +191,7 @@ namespace Puerts
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
-            const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.AutoStaticCodeRegister";
+            const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.PuerRegisterInfo_Gen";
             var autoRegister = Type.GetType(AutoStaticCodeRegisterClassName, false);
             if (autoRegister == null)
             {
@@ -194,11 +203,11 @@ namespace Puerts
             }
             if (autoRegister != null)
             {
-                var methodInfoOfRegister = autoRegister.GetMethod("Register");
+                var methodInfoOfRegister = autoRegister.GetMethod("AddRegisterInfoGetterIntoJsEnv");
                 methodInfoOfRegister.Invoke(null, new object[] { this });
             }
 #endif
-            TypeRegister.InitArrayTypeId(isolate);
+            TypeManager.InitArrayTypeId();
 
             if (debugPort != -1)
             {
@@ -354,26 +363,13 @@ namespace Puerts
             }
         }
 
-        public void AddLazyStaticWrapLoader(Type type, Func<TypeRegisterInfo> lazyStaticWrapLoader)
+        public void AddRegisterInfoGetter(Type type, Func<RegisterInfo> getter)
         {
 #if THREAD_SAFE
             lock (this)
             {
 #endif
-            TypeRegister.AddLazyStaticWrapLoader(type, lazyStaticWrapLoader);
-#if THREAD_SAFE
-            }
-#endif
-        }
-
-        public void AddLazyStaticWrapLoaderGenericDefinition(Type typeDefinition, Type[] genericArgumentsType, Type wrapperDefinition)
-        {
-            
-#if THREAD_SAFE
-            lock (this)
-            {
-#endif
-                TypeRegister.AddLazyStaticWrapLoaderGenericDefinition(typeDefinition, genericArgumentsType, wrapperDefinition);
+            TypeManager.AddRegisterInfoGetter(type, getter);
 #if THREAD_SAFE
             }
 #endif
@@ -430,7 +426,7 @@ namespace Puerts
         //use by BlittableCopy
         public int GetTypeId(Type type)
         {
-            return TypeRegister.GetTypeId(isolate, type);
+            return TypeManager.GetTypeId(isolate, type);
         }
 
         internal GenericDelegate ToGenericDelegate(IntPtr ptr)
@@ -484,7 +480,7 @@ namespace Puerts
             if (PuertsDLL.GetJsValueType(isolate, value, false) == JsValueType.String)
             {
                 string classFullName = PuertsDLL.GetStringFromValue(isolate, value, false);
-                var maybeType = TypeRegister.GetType(classFullName);
+                var maybeType = TypeManager.GetType(classFullName);
                 if (paramLen == 1)
                 {
                     type = maybeType;
@@ -500,7 +496,7 @@ namespace Puerts
                         if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) return null;
                         var argTypeId = PuertsDLL.GetTypeIdFromValue(isolate, value, false);
                         if (argTypeId == -1) return null;
-                        genericArguments[i - 1] = TypeRegister.GetType(argTypeId);
+                        genericArguments[i - 1] = TypeManager.GetType(argTypeId);
                     }
                     type = maybeType.MakeGenericType(genericArguments);
                 }
@@ -540,7 +536,7 @@ namespace Puerts
                     {
                         throw new Exception("invalid Type for generic arguments " + (i - 2));
                     };
-                    genericArguments[i - 2] = TypeRegister.GetType(argTypeId);
+                    genericArguments[i - 2] = TypeManager.GetType(argTypeId);
                 }
 
                 PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke));
@@ -559,7 +555,7 @@ namespace Puerts
                 
                 if (type != null)
                 {
-                    int typeId = TypeRegister.GetTypeId(isolate, type);
+                    int typeId = TypeManager.GetTypeId(isolate, type);
                     PuertsDLL.ReturnClass(isolate, info, typeId);
                 }
             }

@@ -185,7 +185,7 @@ namespace PuertsStaticWrap
     ${ENDIF()}
     
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8ConstructorCallback))]
-        ${data.BlittableCopy ? 'unsafe ' : ''}private static IntPtr Constructor(IntPtr isolate, IntPtr info, int paramLen, long data)
+        ${data.BlittableCopy ? 'unsafe ' : ''}internal static IntPtr Constructor(IntPtr isolate, IntPtr info, int paramLen, long data)
         {
             try
             {
@@ -252,7 +252,7 @@ ${ENDIF()}
     // ==================== methods start ====================
 ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy && !method.IsStatic ? 'unsafe ' : ''}private static void ${(method.IsStatic ? "F" : "M")}_${method.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy && !method.IsStatic ? 'unsafe ' : ''}internal static void ${(method.IsStatic ? "F" : "M")}_${method.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -320,7 +320,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
             if (property.HasGetter) {
                 $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}private static void G_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}internal static void G_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -339,7 +339,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                 var acg = new ArgumentCodeGenerator(0);
                 $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}private static void S_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy && !property.IsStatic ? 'unsafe ' : ''}internal static void S_${property.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -364,7 +364,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
             var acg = new ArgumentCodeGenerator(0);
             $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy ? 'unsafe ' : ''}private static void GetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy ? 'unsafe ' : ''}internal static void GetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -393,7 +393,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
             var keyAcg = new ArgumentCodeGenerator(0);
             $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy ? 'unsafe ' : ''}private static void SetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy ? 'unsafe ' : ''}internal static void SetItem(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -429,7 +429,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
     // ==================== operator start ====================
     ${FOR(toJsArray(data.Operators).filter(oper => !oper.IsLazyMember), operator => $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        private static void O_${operator.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        internal static void O_${operator.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -481,7 +481,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                 var acg = new ArgumentCodeGenerator(0);
                 $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe ' : ''}private static void A_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe ' : ''}internal static void A_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -502,7 +502,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                 var acg = new ArgumentCodeGenerator(0);
                 $`
         [Puerts.MonoPInvokeCallback(typeof(Puerts.V8FunctionCallback))]
-        ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe' : ''}private static void R_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
+        ${data.BlittableCopy && !eventInfo.IsStatic ? 'unsafe' : ''}internal static void R_${eventInfo.Name}(IntPtr isolate, IntPtr info, IntPtr self, int paramLen, long data)
         {
             try
             {
@@ -522,58 +522,15 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
         })}
     // ==================== events end ====================
 
-        public static Puerts.TypeRegisterInfo GetRegisterInfo()
-        {
-            return new Puerts.TypeRegisterInfo()
-            {
-                BlittableCopy = ${data.BlittableCopy},
-                Constructor = Constructor,
-                Methods = new System.Collections.Generic.Dictionary<Puerts.MethodKey, Puerts.V8FunctionCallback>()
-                {   ${[
-            toJsArray(data.Methods).filter(p => !p.IsLazyMember).map(method => `
-                    { new Puerts.MethodKey { Name = "${method.Name}", IsStatic = ${method.IsStatic}}, ${(method.IsStatic ? "F" : "M")}_${method.Name} }`).join(','),
-            data.GetIndexs.Length > 0 ? `
-                    { new Puerts.MethodKey { Name = "get_Item", IsStatic = false}, GetItem }\n` : '',
-            data.SetIndexs.Length > 0 ? `
-                    { new Puerts.MethodKey { Name = "set_Item", IsStatic = false}, SetItem }\n` : '',
-            toJsArray(data.Operators).filter(p => !p.IsLazyMember).map(operator => `
-                    { new Puerts.MethodKey { Name = "${operator.Name}", IsStatic = true}, O_${operator.Name} }`).join(',\n'),
-            toJsArray(data.Events).filter(p => !p.IsLazyMember).map(eventInfo => {
-                const ret = [];
-                if (eventInfo.HasAdd) {
-                    ret.push(`
-                    { new Puerts.MethodKey { Name = "add_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}}, A_${eventInfo.Name} }`)
-                }
-                if (eventInfo.HasRemove) {
-                    ret.push(`
-                    { new Puerts.MethodKey { Name = "remove_${eventInfo.Name}", IsStatic = ${eventInfo.IsStatic}},  R_${eventInfo.Name} }`)
-                }
-                return ret.join(',')
-            }).join(',\n')
-        ].filter(str => str.trim()).join(',\n')}
-                },
-                Properties = new System.Collections.Generic.Dictionary<string, Puerts.PropertyRegisterInfo>()
-                {
-                    ${toJsArray(data.Properties).filter(p => !p.IsLazyMember).map(property => `
-                    {"${property.Name}", new Puerts.PropertyRegisterInfo(){ IsStatic = ${property.IsStatic}, Getter = ${property.HasGetter ? "G_" + property.Name : "null"}, Setter = ${property.HasSetter ? "S_" + property.Name : "null"}} }`).join(',\n')}
-                },
-                LazyMembers = new System.Collections.Generic.List<Puerts.LazyMemberRegisterInfo>()
-                {   ${toJsArray(data.LazyMembers).map(item => {
-            return `
-                    new Puerts.LazyMemberRegisterInfo() { Name = "${item.Name}", IsStatic = ${item.IsStatic}, Type = (Puerts.LazyMemberType)${item.Type}, HasGetter = ${item.HasGetter}, HasSetter = ${item.HasSetter} }`
-        })}
-                }
-            };
-        }
     ${IF(data.BlittableCopy, () => {
             $`
-        unsafe private static ${data.Name} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
+        unsafe internal static ${data.Name} StaticGetter(int jsEnvIdx, IntPtr isolate, Puerts.IGetValueFromJs getValueApi, IntPtr value, bool isByRef)
         {
             ${data.Name}* result = (${data.Name}*)getValueApi.GetNativeObject(isolate, value, isByRef);
             return result == null ? default(${data.Name}) : *result;
         }
 
-        unsafe private static void StaticSetter(int jsEnvIdx, IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, ${data.Name} val)
+        unsafe internal static void StaticSetter(int jsEnvIdx, IntPtr isolate, Puerts.ISetValueToJs setValueApi, IntPtr value, ${data.Name} val)
         {
             HeapValue = val;
             fixed (${data.Name}* result = &HeapValue)

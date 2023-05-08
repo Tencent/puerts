@@ -8,6 +8,7 @@ public class PuerCfg {
     public static List<Type> binding {
         get {
             return new List<Type>{
+                typeof(UnityEngine.Vector3),
                 typeof(Puerts.UnitTest.HelperExtension),
                 typeof(Puerts.UnitTest.ExtensionTestHelper),
                 typeof(Puerts.UnitTest.ExtensionTestHelperDerived),

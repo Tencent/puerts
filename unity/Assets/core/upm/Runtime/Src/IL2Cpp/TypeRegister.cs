@@ -1,0 +1,215 @@
+#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
+
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Linq;
+using PuertsIl2cpp;
+
+namespace Puerts.TypeMapping
+{
+    internal class TypeRegister
+    {
+        internal RegisterInfoManager RegisterInfoManager;
+
+        internal void AddRegisterInfoGetter(Type type, Func<RegisterInfo> getter)
+        {
+            RegisterInfoManager.Add(type, getter);
+        }
+
+        //call by native, do no throw!!
+        public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
+        {
+            try
+            {
+                Type type = NativeAPI.TypeIdToType(typeId);
+                if (type == null) return;
+                //UnityEngine.Debug.Log(string.Format("try load type {0}", type));
+                Register(type, includeNonPublic);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogError(string.Format("try load type throw {0}", e));
+            }
+        }
+
+        private static void Register(Type type, bool includeNonPublic, bool throwIfMemberFail = false)
+        {
+            BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+            if (includeNonPublic)
+            {
+                flag = flag | BindingFlags.NonPublic;
+            }
+
+            Register(type, type.GetConstructors(flag), type.GetMethods(flag), type.GetProperties(flag), type.GetFields(flag), throwIfMemberFail);
+        }
+
+        private static void Register(Type type, MethodBase[] ctors = null, MethodBase[] methods = null, PropertyInfo[] properties = null, FieldInfo[] fields = null, bool throwIfMemberFail = false)
+        {
+            IntPtr typeInfo = IntPtr.Zero;
+            try
+            {
+                bool isDelegate = typeof(MulticastDelegate).IsAssignableFrom(type) && type != typeof(MulticastDelegate);
+                var typeId = NativeAPI.GetTypeId(type);
+                //UnityEngine.Debug.Log(string.Format("{0} typeId is {1}", type, typeId));
+                var superTypeId = (isDelegate || type == typeof(object) || type.BaseType == null) ? IntPtr.Zero : NativeAPI.GetTypeId(type.BaseType);
+                typeInfo = NativeAPI.CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
+                if (typeInfo == IntPtr.Zero)
+                {
+                    if (isDelegate) throw new Exception(string.Format("create TypeInfo for {0} fail. maybe the BridgeInfo is not found, try to regenerate the FunctionBridge.Gen.h", type));
+                    throw new Exception(string.Format("create TypeInfo for {0} fail", type));
+                }
+                if (!isDelegate)
+                {
+                    if (ctors != null && ctors.Length > 0 && (!type.IsArray || type == typeof(System.Array)))
+                    {
+                        foreach (var ctor in ctors)
+                        {
+                            if (ctor.IsGenericMethodDefinition) continue;
+                            List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
+                            //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
+                            var methodInfoPointer = NativeAPI.GetMethodInfoPointer(ctor);
+                            var methodPointer = NativeAPI.GetMethodPointer(ctor);
+                            if (methodInfoPointer == IntPtr.Zero)
+                            {
+                                UnityEngine.Debug.LogWarning(string.Format("cannot get method info for {0}:{1}, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
+                                continue;
+                            }
+                            if (methodPointer == IntPtr.Zero)
+                            {
+                                UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
+                                continue;
+                            }
+                            var wrapData = NativeAPI.AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), methodInfoPointer, methodPointer, usedTypes.Count);
+                            if (wrapData == IntPtr.Zero)
+                            {
+                                if (!throwIfMemberFail)
+                                {
+#if WARNING_IF_MEMBERFAIL
+                                    UnityEngine.Debug.LogWarning(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor)));
+#endif
+                                    continue;
+                                }
+                                throw new Exception(string.Format("add constructor for {0} fail, signature:{1}", type, TypeUtils.GetMethodSignature(ctor)));
+                            }
+                            for (int i = 0; i < usedTypes.Count; ++i)
+                            {
+                                var usedTypeId = NativeAPI.GetTypeId(usedTypes[i]);
+                                //UnityEngine.Debug.Log(string.Format("set used type for ctor {0}: {1}={2}, typeId:{3}", ctor, i, usedTypes[i], usedTypeId));
+                                NativeAPI.SetTypeInfo(wrapData, i, usedTypeId);
+                            }
+                        }
+                    }
+
+                    Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter, bool isExtensionMethod) =>
+                    {
+                        method = TypeUtils.HandleMaybeGenericMethod(method);
+                        if (method == null) return;
+                        
+                        List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
+                        // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
+                        var methodInfoPointer = NativeAPI.GetMethodInfoPointer(method);
+                        var methodPointer = NativeAPI.GetMethodPointer(method);
+                        if (methodInfoPointer == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("cannot get method info for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            return;
+                        }
+                        if (methodPointer == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            return;
+                        }
+                        var wrapData = NativeAPI.AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isExtensionMethod, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
+                        if (wrapData == IntPtr.Zero)
+                        {
+                            if (throwIfMemberFail)
+                            {
+                                throw new Exception(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            }
+                            else
+                            {
+#if WARNING_IF_MEMBERFAIL
+                                UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+#endif
+                                return;
+                            }
+                        }
+                        for (int i = 0; i < usedTypes.Count; ++i)
+                        {
+                            var usedTypeId = NativeAPI.GetTypeId(usedTypes[i]);
+                            //UnityEngine.Debug.Log(string.Format("set used type for method {0}: {1}={2}, typeId:{3}", method, i, usedTypes[i], usedTypeId));
+                            NativeAPI.SetTypeInfo(wrapData, i, usedTypeId);
+                        }
+                    };
+
+                    if (methods != null && (!type.IsArray || type == typeof(System.Array)))
+                    {
+                        foreach (var method in methods)
+                        {
+                            if (method.IsAbstract) continue;
+                            AddMethodToType(method.Name, method as MethodInfo, false, false, false);
+                        }
+                    }
+					
+					var extensionMethods = ExtensionMethodInfo.Get(type);
+					if (extensionMethods != null)
+                    {
+                        foreach (var method in extensionMethods)
+                        {
+                            AddMethodToType(method.Name, method as MethodInfo, false, false, true);
+                        }
+                    }
+
+                    if (properties != null)
+                    {
+                        foreach (var prop in properties)
+                        {
+                            var getter = prop.GetGetMethod();
+                            if (getter != null && !getter.IsGenericMethodDefinition && !getter.IsAbstract)
+                            {
+                                AddMethodToType(prop.Name, getter, true, false, false);
+                            }
+                            var setter = prop.GetSetMethod();
+                            if (setter != null && !setter.IsGenericMethodDefinition && !setter.IsAbstract)
+                            {
+                                AddMethodToType(prop.Name, setter, false, true, false);
+                            }
+                        }
+                    }
+
+                    if (fields != null)
+                    {
+                        foreach (var field in fields)
+                        {
+                            string sig = (field.IsStatic ? "" : "t") + TypeUtils.GetTypeSignature(field.FieldType);
+                            if (!NativeAPI.AddField(typeInfo, sig, field.Name, field.IsStatic, NativeAPI.GetFieldInfoPointer(field), NativeAPI.GetFieldOffset(field, type.IsValueType), NativeAPI.GetTypeId(field.FieldType)))
+                            {
+                                if (!throwIfMemberFail)
+                                {
+#if WARNING_IF_MEMBERFAIL
+                                    UnityEngine.Debug.LogWarning(string.Format("add field for {0}:{1} fail, signature:{2}", type, field, sig));
+#endif
+                                    continue;
+                                }
+                                throw new Exception(string.Format("add field for {0}:{1} fail, signature:{2}", type, field, sig));
+                            }
+                            //UnityEngine.Debug.Log(string.Format("AddField {0} of {1} ok offset={2}", field, type, GetFieldOffset(field, type.IsValueType)));
+                        }
+                    }
+                }
+
+                if (!NativeAPI.RegisterCSharpType(typeInfo))
+                {
+                    throw new Exception(string.Format("Register for {0} fail", type));
+                }
+            }
+            catch(Exception e)
+            {
+                NativeAPI.ReleaseCSharpTypeInfo(typeInfo);
+                throw e;
+            }
+        }
+    }
+}
+#endif

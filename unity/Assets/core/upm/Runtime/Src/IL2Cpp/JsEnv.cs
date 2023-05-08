@@ -12,7 +12,7 @@ using System.Reflection;
 #if CSHARP_7_3_OR_NEWER
 using System.Threading.Tasks;
 #endif
-
+using Puerts.TypeMapping;
 
 namespace Puerts
 {
@@ -21,6 +21,8 @@ namespace Puerts
     {
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
+
+        TypeRegister TypeRegister;
 
         Type persistentObjectInfoType;
         MethodInfo objectPoolAddMethodInfo;
@@ -60,7 +62,7 @@ namespace Puerts
             PuertsIl2cpp.NativeAPI.SetLogCallback(PuertsIl2cpp.NativeAPI.Log);
             PuertsIl2cpp.NativeAPI.InitialPuerts(PuertsIl2cpp.NativeAPI.GetPesapiImpl());
             PuertsIl2cpp.NativeAPI.ExchangeAPI(PuertsIl2cpp.NativeAPI.GetUnityExports());
-            tryLoadTypeMethodInfo = typeof(PuertsIl2cpp.NativeAPI).GetMethod("RegisterNoThrow");
+            tryLoadTypeMethodInfo = typeof(TypeRegister).GetMethod("RegisterNoThrow");
             PuertsIl2cpp.NativeAPI.SetTryLoadCallback(PuertsIl2cpp.NativeAPI.GetMethodInfoPointer(tryLoadTypeMethodInfo), PuertsIl2cpp.NativeAPI.GetMethodPointer(tryLoadTypeMethodInfo));
 
             persistentObjectInfoType = typeof(Puerts.JSObject);
@@ -113,6 +115,27 @@ namespace Puerts
             
             moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
 
+            TypeRegister = new TypeRegister();
+
+            //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
+#if !DISABLE_AUTO_REGISTER
+            const string AutoStaticCodeRegisterClassName = "PuertsStaticWrap.PuerRegisterInfo_Gen";
+            var autoRegister = Type.GetType(AutoStaticCodeRegisterClassName, false);
+            if (autoRegister == null)
+            {
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    autoRegister = assembly.GetType(AutoStaticCodeRegisterClassName, false);
+                    if (autoRegister != null) break;
+                }
+            }
+            if (autoRegister != null)
+            {
+                var methodInfoOfRegister = autoRegister.GetMethod("AddRegisterInfoGetterIntoJsEnv");
+                methodInfoOfRegister.Invoke(null, new object[] { this });
+            }
+#endif
+
             if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 0) 
                 Backend = new BackendV8(this);
             else if (PuertsIl2cpp.NativeAPI.GetLibBackend() == 1)
@@ -136,6 +159,18 @@ namespace Puerts
             this.debugPort = debugPort;
             if (loader is IBuiltinLoadedListener)
                 (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
+        }
+
+        public void AddRegisterInfoGetter(Type type, Func<RegisterInfo> getter)
+        {
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
+            TypeRegister.AddRegisterInfoGetter(type, getter);
+#if THREAD_SAFE
+            }
+#endif
         }
 
         [UnityEngine.Scripting.Preserve]
