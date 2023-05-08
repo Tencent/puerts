@@ -10,16 +10,16 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
 
     const definitions = `
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <DefineConstants>PUER_CONSOLE_TEST;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
+        <DefineConstants>${process.platform == 'win32' ? 'PLATFORM_WINDOWS': 'PLATFORM_MAC'};PUER_CONSOLE_TEST;PUERTS_GENERAL;DISABLE_AUTO_REGISTER;TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_1;</DefineConstants>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
     `
     const linkPuerTS = `
     <ItemGroup>
-        ${glob.sync(join(dir, '../packages/core/upm/**/*.cs').replace(/\\/g, '/'))
+        ${glob.sync(join(dir, '../../Assets/core/upm/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, '../packages/core/upm/'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../../Assets/core/upm/'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')}
     </ItemGroup>
@@ -27,17 +27,29 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
     
     const linkUnitTests = `
     <ItemGroup>
-        ${glob.sync(join(dir, './Src/**/*.cs').replace(/\\/g, '/'))
-            .filter(pathname => !excludeGenerator || pathname.indexOf('WrapperGenerator') == -1)
+        ${glob.sync(join(dir, '../Src/Cases/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, './Src'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../Src/Cases'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')
         }
     </ItemGroup>
     `
-    return [definitions, linkPuerTS, linkUnitTests].join('\n');
+
+    const linkGenerators = `
+    <ItemGroup>
+        ${glob.sync(join(dir, './Src/**/*.cs').replace(/\\/g, '/'))
+            .filter(pathname => !excludeGenerator || pathname.indexOf('WrapperGenerator') == -1)
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, './Src/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')
+        }
+    </ItemGroup>
+    `
+    return [definitions, linkPuerTS, linkUnitTests, linkGenerators].join('\n');
 }
 
 export async function dotnetTest(cwd: string, backend: string) {
@@ -65,7 +77,7 @@ export async function dotnetTest(cwd: string, backend: string) {
     );
     assert.equal(0, exec(`dotnet build vsauto.csproj -p:StartupObject=PuerGen -v quiet`, { cwd: workdir }).code)
     
-    const copyConfig = await runPuertsMake(join(cwd, '../native_src'), {
+    const copyConfig = await runPuertsMake(join(cwd, '../../native_src'), {
         platform: process.platform == 'win32' ? 'win' : 'osx',
         config: "Debug",
         backend: backend,
@@ -88,7 +100,7 @@ export async function dotnetTest(cwd: string, backend: string) {
         originProjectConfig.replace('</Project>', [collectCSFilesAndMakeCompileConfig(cwd, workdir, true), '</Project>'].join('\n'))
     );
     assert.equal(0, exec(`dotnet build vsauto.csproj -p:StartupObject=PuertsTest -v quiet`, { cwd: workdir }).code)
-    assert.equal(0, exec(`dotnet test vsauto.csproj`, { cwd: workdir }).code)
+    assert.equal(0, exec(`dotnet test vsauto.csproj --blame-hang-timeout 5000ms`, { cwd: workdir }).code)
 }
 
 

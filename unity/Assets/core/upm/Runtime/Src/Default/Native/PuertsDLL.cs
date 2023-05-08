@@ -84,7 +84,9 @@ namespace Puerts
             } 
             catch(DllNotFoundException)
             {
+#if !PUERTS_GENERAL
                 UnityEngine.Debug.LogError("[Puer001] DllNotFoundException detected. You can solve this problem following the FAQ.");
+#endif
                 throw;
             }
             catch(Exception) 

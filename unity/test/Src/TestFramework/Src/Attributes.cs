@@ -29,8 +29,20 @@ namespace NUnit {
                 this.priority = priority;
             }
         }
+
+        public class StringAssert
+        {
+            public static void Contains(string a, string b)
+            {
+                if (!b.Contains(a)) 
+                {
+                    throw new Exception($"expect {b} to contain {a} but failed");
+                }
+            }
+        }
         
-        public class Assert {
+        public class Assert 
+        {
             public static void Catch(Action action, string message = "") 
             {
                 try 
@@ -46,13 +58,6 @@ namespace NUnit {
                     return;
                 }
                 throw new Exception($"expect an error but tbe code did not thrown any");
-            }
-            public static void Contains(string a, string b)
-            {
-                if (!b.Contains(a)) 
-                {
-                    throw new Exception($"expect {b} to contain {a} but failed");
-                }
             }
             // public static void Contains(object a, ICollection b)
             // {

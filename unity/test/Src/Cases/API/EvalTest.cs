@@ -33,10 +33,10 @@ namespace Puerts.UnitTest
             } 
             catch(Exception e) 
             {
-                Assert.Contains("whatever.mjs", e.Message);
+                StringAssert.Contains("whatever.mjs", e.Message);
                 return;
             }
-            Assert.AreEqual("unexpected to reach here", true);
+            throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
         [Test]
@@ -51,10 +51,10 @@ namespace Puerts.UnitTest
             } 
             catch(Exception e) 
             {
-                Assert.Contains("export", e.Message);
+                StringAssert.Contains("export", e.Message);
                 return;
             }
-            Assert.AreEqual("unexpected to reach here", true);
+            throw new Exception("unexpected to reach here");
         }
         [Test]
         public void ESModuleEvaluateError()
@@ -68,10 +68,10 @@ namespace Puerts.UnitTest
             } 
             catch(Exception e) 
             {
-                Assert.Contains("not a function", e.Message);
+                StringAssert.Contains("not a function", e.Message);
                 return;
             }
-            Assert.AreEqual("unexpected to reach here", true);
+            throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
         [Test]
@@ -86,10 +86,10 @@ namespace Puerts.UnitTest
             } 
             catch(Exception e) 
             {
-                Assert.Contains("whatever.mjs", e.Message);
+                StringAssert.Contains("whatever.mjs", e.Message);
                 return;
             }
-            Assert.AreEqual("unexpected to reach here", true);
+            throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
         [Test]
@@ -105,10 +105,10 @@ namespace Puerts.UnitTest
             } 
             catch(Exception e) 
             {
-                Assert.Contains("export", e.Message);
+                StringAssert.Contains("export", e.Message);
                 return;
             }
-            Assert.AreEqual("unexpected to reach here", true);
+            throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
         [Test]
@@ -124,10 +124,10 @@ namespace Puerts.UnitTest
             } 
             catch(Exception e) 
             {
-                Assert.Contains("not a function", e.Message);
+                StringAssert.Contains("not a function", e.Message);
                 return;
             }
-            Assert.AreEqual("unexpected to reach here", true);
+            throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
         // [Test]

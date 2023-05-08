@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Puerts.UnitTest
 {
-        [UnityEngine.Scripting.Preserve]
+    [UnityEngine.Scripting.Preserve]
     public class MultiEnvTestA
     {
         int number;
@@ -25,7 +25,8 @@ namespace Puerts.UnitTest
             return new MultiEnvTestA(3);
         }
     }
-        [UnityEngine.Scripting.Preserve]
+    
+    [UnityEngine.Scripting.Preserve]
     public class MultiEnvTestB
     {
         int number;
@@ -135,8 +136,13 @@ namespace Puerts.UnitTest
 
         [Test]
         public void MultiEnv() {
+#if PUERTS_GENERAL
+            var jsEnv1 = new JsEnv(new TxtLoader());
+            var jsEnv2 = new JsEnv(new TxtLoader());
+#else
             var jsEnv1 = new JsEnv(new UnitTestLoader());
             var jsEnv2 = new JsEnv(new UnitTestLoader());
+#endif
 
             jsEnv1.Eval(@"
                 (function() {

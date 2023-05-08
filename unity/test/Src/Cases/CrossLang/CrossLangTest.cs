@@ -638,7 +638,6 @@ namespace Puerts.UnitTest
                     TestHelper.nativeStructTestFieldStatic = new CS.Puerts.UnitTest.TestStruct(765)
                     TestHelper.nativeStructTestPropStatic = new CS.Puerts.UnitTest.TestStruct(765)
                     testHelper.NativeStructTestCheckMemberValue();
-                    console.log(TestHelper.nativeStructTestFieldStatic)
                 })()
             ");
             jsEnv.Tick();

@@ -19,15 +19,11 @@ public class WrapperGenConfig
         {
             return new List<Type>()
             {
-                typeof(Puerts.UnitTest.OptionalParametersClass),
-                typeof(Puerts.UnitTest.WrapperTest),
-                typeof(Puerts.UnitTest.MultiEnvTestA),
-                typeof(Puerts.UnitTest.MultiEnvTestB),
-                typeof(Puerts.UnitTest.GenericGenTest<Type, JsEnv>),
-                typeof(Puerts.UnitTest.GenericGenTest2),
-                typeof(Puerts.UnitTest.GenericWrapperBase<JsEnv>),
-                typeof(Puerts.UnitTest.AmbigiousCallTest),
-                typeof(Puerts.UnitTest.ParamsCallTest)
+                typeof(Puerts.UnitTest.HelperExtension),
+                typeof(Puerts.UnitTest.ExtensionTestHelper),
+                typeof(Puerts.UnitTest.ExtensionTestHelperDerived),
+                typeof(Puerts.UnitTest.ExtensionTestHelper1),
+                typeof(Puerts.UnitTest.ExtensionTestHelperDerived1)
             };
         }
     }
