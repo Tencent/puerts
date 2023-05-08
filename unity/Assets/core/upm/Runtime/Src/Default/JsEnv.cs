@@ -220,18 +220,14 @@ namespace Puerts
                 {
                     OnDispose += ExecuteModule<Action>("puerts/dispose.mjs", "default");
                 }
-#if !PUERTS_GENERAL
                 if (!(Backend is BackendNodeJS)) 
                 {
-#endif
                     ExecuteModule("puerts/polyfill.mjs");
-#if !PUERTS_GENERAL
                 }
                 else
                 {
                     ExecuteModule("puerts/nodepatch.mjs");
                 }
-#endif
 
 #if UNITY_EDITOR
                 if (OnJsEnvCreate != null) 
