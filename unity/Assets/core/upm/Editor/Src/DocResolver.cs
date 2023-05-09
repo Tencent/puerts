@@ -214,12 +214,10 @@ namespace Puerts
             _sb.Append(declType.FullName);
             _sb.Append('.');
             _sb.Append(methodBase.Name);
-            _sb.Append('(');
             if (!ExtractMethodParamters(methodBase, _sb))
             {
                 return null;
             }
-            _sb.Append(')');
             var xName = _sb.ToString();
             DocBody body;
             _mdocs.TryGetValue(xName, out body);
@@ -256,6 +254,8 @@ namespace Puerts
         where T : MethodBase
         {
             var parameters = methodBase.GetParameters();
+            if (parameters.Length > 0)
+                sb.Append('(');
             for (int i = 0, size = parameters.Length; i < size; i++)
             {
                 var type = parameters[i].ParameterType;
@@ -269,6 +269,8 @@ namespace Puerts
                     sb.Append(',');
                 }
             }
+            if (parameters.Length > 0)
+                sb.Append(')');
             return true;
         }
 
