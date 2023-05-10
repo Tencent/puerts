@@ -1,4 +1,5 @@
-import { FunctionCallbackInfoPtrManager, global, OnFinalize, PuertsJSEngine } from "../library";
+import { OnFinalize, PuertsJSEngine, global } from "../library";
+
 /**
  * mixin
  * 注册类API，如注册全局函数、注册类，以及类的属性方法等
@@ -18,7 +19,7 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
             const id = csharpObjectMap.classes.length;
 
             let tempExternalCSID: CSIdentifier = 0;
-            const ctor = function () {
+            const ctor = function NativeObject() {
                 // 设置类型ID
                 this["$cid"] = id;
                 // nativeObject的构造函数
@@ -30,10 +31,15 @@ export default function WebGLBackendRegisterAPI(engine: PuertsJSEngine) {
                 tempExternalCSID = 0;
                 if (csID === 0) {
                     const args = Array.prototype.slice.call(arguments, 0);
-                    const callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(args);
+                    const callbackInfoPtr = engine.functionCallbackInfoPtrManager.GetMockPointer(args);
                     // 虽然puerts内Constructor的返回值叫self，但它其实就是CS对象的一个id而已。
-                    csID = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, callbackidx);
-                    FunctionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
+                    try {
+                        csID = engine.callV8ConstructorCallback(constructor, callbackInfoPtr, args.length, callbackidx);
+                    } catch(e) {
+                        engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
+                        throw e;
+                    }
+                    engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr);
                 }
                 // blittable
                 if (size) {

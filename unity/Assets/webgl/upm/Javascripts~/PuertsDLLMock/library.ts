@@ -1,3 +1,5 @@
+import { $GetArgumentFinalValue } from "./mixins/getFromJSArgument";
+
 /**
  * 一次函数调用的info
  * 对应v8::FunctionCallbackInfo
@@ -21,16 +23,62 @@ export class FunctionCallbackInfo {
  */
 export class FunctionCallbackInfoPtrManager {
     // FunctionCallbackInfo的列表，以列表的index作为IntPtr的值
-    private static infos: FunctionCallbackInfo[] = [new FunctionCallbackInfo([0])] // 这里原本只是个普通的0
-    // FunctionCallbackInfo用完后，就可以放入回收列表，以供下次复用
-    private static freeInfosIndex: MockIntPtr[] = [];
+    private infos: FunctionCallbackInfo[] = [new FunctionCallbackInfo([0])] // 这里原本只是个普通的0
+    // FunctionCallbackInfo用完后，将其序号放入“回收列表”，下次就能继续服用该index，而不必让infos数组无限扩展下去
+    private freeInfosIndex: MockIntPtr[] = [];
+    private freeCallbackInfoMemoryByLength: {
+        [length: number]: number[]
+    } = {};
 
+    private readonly argumentValueLengthIn32 = 4;
+    private readonly engine: PuertsJSEngine;
+
+    constructor(engine: PuertsJSEngine) {
+        this.engine = engine;
+    }
+    
+    private allocCallbackInfoMemory(argslength: number): number {
+        if (
+            this.freeCallbackInfoMemoryByLength[argslength] &&
+            this.freeCallbackInfoMemoryByLength[argslength].length
+        ) {
+            return this.freeCallbackInfoMemoryByLength[argslength].pop();
+
+        } else {
+            return this.engine.unityApi._malloc((argslength * this.argumentValueLengthIn32 + 1) << 2);
+        }
+    }
+    private recycleCallbackInfoMemory(bufferptr: number, argslength: number) {
+        if (!this.freeCallbackInfoMemoryByLength[argslength] && argslength < 5) {
+            this.freeCallbackInfoMemoryByLength[argslength] = [];
+        }
+        // 拍脑袋定的最大缓存个数大小。 50 - 参数个数 * 10
+        if (this.freeCallbackInfoMemoryByLength[argslength].length > (50 - argslength * 10)) {
+            this.engine.unityApi._free(bufferptr);
+
+        } else {
+            this.freeCallbackInfoMemoryByLength[argslength].push(bufferptr);
+        }
+    }
     /**
      * intptr的格式为id左移四位
      * 
-     * 右侧四位就是为了放下参数的序号，用于表示callbackinfo参数的intptr
+     * 右侧四位，是为了在右四位存储参数的序号，这样可以用于表示callbackinfo参数的intptr
      */
-    static GetMockPointer(args: any[]): MockIntPtr {
+    // static GetMockPointer(args: any[]): MockIntPtr {
+    //     let index: number;
+    //     index = this.freeInfosIndex.pop();
+    //     // index最小为1
+    //     if (index) {
+    //         this.infos[index].args = args;
+    //     } else {
+    //         index = this.infos.push(new FunctionCallbackInfo(args)) - 1;
+    //     }
+    //     return index << 4;
+    // }
+    GetMockPointer(args: any[]): MockIntPtr {
+        var buffer = this.allocCallbackInfoMemory(args.length);
+
         let index: number;
         index = this.freeInfosIndex.pop();
         // index最小为1
@@ -39,31 +87,51 @@ export class FunctionCallbackInfoPtrManager {
         } else {
             index = this.infos.push(new FunctionCallbackInfo(args)) - 1;
         }
-        return index << 4;
+
+        this.engine.unityApi.HEAP32[buffer >> 2] = index;
+        for (var i = 0; i < args.length; i++) {
+            // init each value
+            const jsValueType = GetType(this.engine, args[i]);
+            this.engine.unityApi.HEAP32[(buffer >> 2) + (1 + i * this.argumentValueLengthIn32)] = buffer; // a pointer to the info
+            this.engine.unityApi.HEAP32[(buffer >> 2) + (2 + i * this.argumentValueLengthIn32)] = jsValueType;    // jsvaluetype
+            this.engine.unityApi.HEAP32[(buffer >> 2) + (3 + i * this.argumentValueLengthIn32)] = $GetArgumentFinalValue(
+                this.engine, args[i], jsValueType,
+                ((buffer >> 2) + (4 + i * this.argumentValueLengthIn32)) << 2
+            );    // value
+        }
+        return buffer;
     }
 
-    static GetByMockPointer(intptr: MockIntPtr): FunctionCallbackInfo {
-        return this.infos[intptr >> 4];
+    // static GetByMockPointer(intptr: MockIntPtr): FunctionCallbackInfo {
+    //     return this.infos[intptr >> 4];
+    // }
+    GetByMockPointer(intptr: MockIntPtr): FunctionCallbackInfo {
+        const index = this.engine.unityApi.HEAP32[intptr >> 2];
+        return this.infos[index];
     }
 
-    static GetReturnValueAndRecycle(intptr: MockIntPtr): any {
-        const index = intptr >> 4;
-        this.freeInfosIndex.push(index);
+    GetReturnValueAndRecycle(intptr: MockIntPtr): any {
+        const index = this.engine.unityApi.HEAP32[intptr >> 2];
         let info = this.infos[index];
         let ret = info.returnValue;
+        this.recycleCallbackInfoMemory(intptr, info.args.length);
         info.recycle();
+        this.freeInfosIndex.push(index);
         return ret;
     }
 
-    static ReleaseByMockIntPtr(intptr: MockIntPtr) {
-        const index = intptr >> 4;
-        this.infos[index].recycle();
+    ReleaseByMockIntPtr(intptr: MockIntPtr) {
+        const index = this.engine.unityApi.HEAP32[intptr >> 2];
+        let info = this.infos[index];
+        this.recycleCallbackInfoMemory(intptr, info.args.length);
+        info.recycle();
         this.freeInfosIndex.push(index);
     }
 
-    static GetArgsByMockIntPtr<T>(ptr: MockIntPtr): T {
-        const callbackInfoIndex = ptr >> 4;
-        const argsIndex = ptr & 15;
+    GetArgsByMockIntPtr<T>(valueptr: MockIntPtr): T {
+        const infoptr = this.engine.unityApi.HEAP32[valueptr >> 2];
+        const callbackInfoIndex = this.engine.unityApi.HEAP32[infoptr >> 2];
+        const argsIndex = (valueptr - infoptr - 4) / (4 * this.argumentValueLengthIn32);
         const info: FunctionCallbackInfo = this.infos[callbackInfoIndex];
         return info.args[argsIndex] as T;
     }
@@ -186,7 +254,20 @@ export class CSharpObjectMap {
     public namesToClassesID: { [name: string]: number } = {};
     public classIDWeakMap = new WeakMap();
 
+    constructor() {
+        this._memoryDebug && setInterval(()=> {
+            console.log('addCalled', this.addCalled);
+            console.log('removeCalled', this.removeCalled);
+            console.log('wr', this.nativeObjectKV.size);
+        }, 1000)
+    }
+
+    private _memoryDebug = false
+    private addCalled: number = 0;
+    private removeCalled: number = 0;
+
     add(csID: CSIdentifier, obj: any) {
+        this._memoryDebug && this.addCalled ++;
         // this.nativeObjectKV[csID] = createWeakRef(obj);
         // this.csIDWeakMap.set(obj, csID);
         this.nativeObjectKV.set(csID, createWeakRef(obj));
@@ -195,6 +276,7 @@ export class CSharpObjectMap {
         })
     }
     remove(csID: CSIdentifier) {
+        this._memoryDebug && this.removeCalled ++;
         // delete this.nativeObjectKV[csID];
         this.nativeObjectKV.delete(csID);
     }
@@ -363,6 +445,7 @@ export namespace PuertsJSEngine {
 
 export class PuertsJSEngine {
     public readonly csharpObjectMap: CSharpObjectMap
+    public readonly functionCallbackInfoPtrManager: FunctionCallbackInfoPtrManager
 
     public readonly unityApi: PuertsJSEngine.UnityAPI;
 
@@ -380,6 +463,7 @@ export class PuertsJSEngine {
 
     constructor(ctorParam: PuertsJSEngine.EngineConstructorParam) {
         this.csharpObjectMap = new CSharpObjectMap();
+        this.functionCallbackInfoPtrManager = new FunctionCallbackInfoPtrManager(this);
         const { UTF8ToString, _malloc, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
         this.unityApi = { 
             UTF8ToString, 
@@ -435,16 +519,23 @@ export class PuertsJSEngine {
         // 不能用箭头函数！此处返回的函数会放到具体的class上，this有含义。
         const engine = this;
         return function (...args: any[]) {
-            let callbackInfoPtr = FunctionCallbackInfoPtrManager.GetMockPointer(args);
-            engine.callV8FunctionCallback(
-                functionPtr,
-                // getIntPtrManager().GetPointerForJSValue(this),
-                isStatic ? 0:engine.csharpObjectMap.getCSIdentifierFromObject(this),
-                callbackInfoPtr,
-                args.length,
-                callbackIdx
-            )
-            return FunctionCallbackInfoPtrManager.GetReturnValueAndRecycle(callbackInfoPtr);
+            let callbackInfoPtr = engine.functionCallbackInfoPtrManager.GetMockPointer(args);
+            try {
+                engine.callV8FunctionCallback(
+                    functionPtr,
+                    // getIntPtrManager().GetPointerForJSValue(this),
+                    isStatic ? 0:engine.csharpObjectMap.getCSIdentifierFromObject(this),
+                    callbackInfoPtr,
+                    args.length,
+                    callbackIdx
+                );
+
+                return engine.functionCallbackInfoPtrManager.GetReturnValueAndRecycle(callbackInfoPtr);
+                
+            } catch(e) {
+                engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr,);
+                throw e;
+            }
         }
     }
 
