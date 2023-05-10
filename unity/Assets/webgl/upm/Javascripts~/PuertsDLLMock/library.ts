@@ -94,7 +94,7 @@ export class FunctionCallbackInfoPtrManager {
             const jsValueType = GetType(this.engine, args[i]);
             this.engine.unityApi.HEAP32[(buffer >> 2) + (1 + i * this.argumentValueLengthIn32)] = buffer; // a pointer to the info
             this.engine.unityApi.HEAP32[(buffer >> 2) + (2 + i * this.argumentValueLengthIn32)] = jsValueType;    // jsvaluetype
-            this.engine.unityApi.HEAP32[(buffer >> 2) + (3 + i * this.argumentValueLengthIn32)] = $GetArgumentFinalValue(
+            this.engine.unityApi.HEAPF32[(buffer >> 2) + (3 + i * this.argumentValueLengthIn32)] = $GetArgumentFinalValue(
                 this.engine, args[i], jsValueType,
                 ((buffer >> 2) + (4 + i * this.argumentValueLengthIn32)) << 2
             );    // value
@@ -437,6 +437,7 @@ export namespace PuertsJSEngine {
         lengthBytesUTF8: (str: string) => number,
         HEAP8: Uint8Array,
         HEAP32: Uint32Array,
+        HEAPF32: Float32Array,
         dynCall_viiiii: Function,
         dynCall_viii: Function,
         dynCall_iiiii: Function
@@ -477,11 +478,17 @@ export class PuertsJSEngine {
             dynCall_viii: unityInstance.dynCall_viii.bind(unityInstance),
             dynCall_viiiii: unityInstance.dynCall_viiiii.bind(unityInstance),
             HEAP32: null,
-            HEAP8: null
+            HEAP8: null,
+            HEAPF32: null,
         };
         Object.defineProperty(this.unityApi, 'HEAP32', {
             get: function() {
                 return unityInstance.HEAP32
+            }
+        })
+        Object.defineProperty(this.unityApi, 'HEAPF32', {
+            get: function() {
+                return unityInstance.HEAPF32
             }
         })
         Object.defineProperty(this.unityApi, 'HEAP8', {

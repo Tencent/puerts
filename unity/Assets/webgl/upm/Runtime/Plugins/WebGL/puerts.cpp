@@ -2,7 +2,7 @@ struct MockV8Value
 {
     int FunctionCallbackInfo;
     int JSValueType;
-    int FinalValuePointer;
+    float FinalValuePointer;
     int length;
 };
 
@@ -33,11 +33,11 @@ extern "C" {
     void* GetStringFromValue(void* isolate, MockV8Value* value, int &length, bool byref)
     {
         length = value->length;
-        return (void*)value->FinalValuePointer;
+        return (void*)(int)value->FinalValuePointer;
     }
     bool GetBooleanFromValue(void* isolate, MockV8Value* value, bool byref)
     {
-        return (bool)value->FinalValuePointer;
+        return (bool)(int)value->FinalValuePointer;
     }
     int GetBigIntFromValue(void* isolate, MockV8Value* value, bool byref)
     {
@@ -45,19 +45,19 @@ extern "C" {
     }
     void* GetObjectFromValue(void* isolate, MockV8Value* value, bool byref)
     {
-        return (void*)value->FinalValuePointer;
+        return (void*)(int)value->FinalValuePointer;
     }
     void* GetFunctionFromValue(void* isolate, MockV8Value* value, bool byref)
     {
-        return (void*)value->FinalValuePointer;
+        return (void*)(int)value->FinalValuePointer;
     }
     void* GetJSObjectFromValue(void* isolate, MockV8Value* value, bool byref)
     {
-        return (void*)value->FinalValuePointer;
+        return (void*)(int)value->FinalValuePointer;
     }
     void* GetArrayBufferFromValue(void* isolate, MockV8Value* value, int &length, bool byref)
     {
         length = value->length;
-        return (void*)value->FinalValuePointer;
+        return (void*)(int)value->FinalValuePointer;
     }
 }
