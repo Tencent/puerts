@@ -63,8 +63,8 @@ export function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValue
             }
             var ptr = engine.unityApi._malloc(val.byteLength);
             engine.unityApi.HEAP8.set(new Int8Array(val), ptr);
-            engine.unityApi.HEAP32[lengthOffset >> 2] = val.byteLength;
             setOutValue32(engine, lengthOffset, val.byteLength);
+            return ptr;
     }
 }
 /**
