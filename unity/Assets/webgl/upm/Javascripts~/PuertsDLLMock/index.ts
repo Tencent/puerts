@@ -130,27 +130,38 @@ global.PuertsWebGL = {
                                         console.error('file not found: ' + specifier);
                                     }
                                     specifier = foundSpecifier;
-
-                                    PUERTS_JS_RESOURCES[specifier](result.exports, (specifierTo: string)=> {
-                                        return mockRequire(normalize(specifier, specifierTo));
-                                    }, result)
+                                    
+                                    executeModuleCache[specifier] = -1;
+                                    try {
+                                        PUERTS_JS_RESOURCES[specifier](result.exports, function mRequire(specifierTo: string) {
+                                            return mockRequire(normalize(specifier, specifierTo));
+                                        }, result);
+                                    } catch(e) {
+                                        delete executeModuleCache[specifier];
+                                        throw e
+                                    }
                                     executeModuleCache[specifier] = result.exports;
                                 }
 
                                 return result.exports;
                                 function tryFindAndGetFindedSpecifier(specifier: string, obj: any) {
-                                    let tryfind = [specifier];
-                                    if (specifier.indexOf('.') == -1) tryfind = tryfind.concat([specifier + '.js', specifier + '.ts', specifier + '.mjs', specifier + '.mts'])
-
-                                    let finded = -1;
-                                    tryfind.forEach((s, index)=> { 
-                                        finded = finded != -1 ? finded: (!!obj[s] ? index : -1); 
-                                    });
-
-                                    if (finded == -1) {
+                                    let tryFindName = [specifier];
+                                    if (specifier.indexOf('.') == -1)
+                                        tryFindName = tryFindName.concat([specifier + '.js', specifier + '.ts', specifier + '.mjs', specifier + '.mts']);
+    
+                                    let finded: number | false = tryFindName.reduce((ret, name, index) => {
+                                        if (ret !== false) return ret;
+                                        if (name in obj) {
+                                            if (obj[name] == -1) throw new Error(`circular dependency is detected when requiring "${name}"`);
+                                            return index;
+                                        }
+                                        return false;
+                                    }, false)
+                                    if (finded === false) {
                                         return null;
-                                    } else {
-                                        return tryfind[finded];
+                                    }
+                                    else {
+                                        return tryFindName[finded];
                                     }
                                 }
                             }
