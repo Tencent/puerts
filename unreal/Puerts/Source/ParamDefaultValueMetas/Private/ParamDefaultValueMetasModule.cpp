@@ -14,8 +14,14 @@
 
 #define LOCTEXT_NAMESPACE "FParamDefaultValueMetasModule"
 
-class FParamDefaultValueMetasModule : public IScriptGeneratorPluginInterface
+class FParamDefaultValueMetasModule
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+    : public IModuleInterface
+#else
+    : public IScriptGeneratorPluginInterface
+#endif
 {
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION < 2
 public:
     virtual void StartupModule() override
     {
@@ -147,6 +153,7 @@ private:
     FString GeneratedFileContent;
 
     bool Finished = false;
+#endif
 };
 
 #undef LOCTEXT_NAMESPACE

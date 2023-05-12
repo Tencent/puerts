@@ -136,7 +136,11 @@ void V8InspectorChannelImpl::sendNotification(std::unique_ptr<v8_inspector::Stri
 
 class V8InspectorClientImpl : public V8Inspector,
 #if USING_UE
+#if ENGINE_MAJOR_VERSION >= 5
+                              public FTSTickerObjectBase,
+#else
                               public FTickerObjectBase,
+#endif
 #endif
                               public v8_inspector::V8InspectorClient
 {
@@ -246,7 +250,11 @@ void MicroTasksRunnerFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 V8InspectorClientImpl::V8InspectorClientImpl(int32_t InPort, v8::Local<v8::Context> InContext)
 #if USING_UE
+#if ENGINE_MAJOR_VERSION >= 5
+    : FTSTickerObjectBase(0.001f)
+#else
     : FTickerObjectBase(0.001f)
+#endif
 #endif
 {
     Isolate = InContext->GetIsolate();
