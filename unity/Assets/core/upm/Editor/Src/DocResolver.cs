@@ -75,7 +75,7 @@ namespace Puerts
                         var pname = kv.Key;
                         var ptext = kv.Value;
                         //sb.AppendLine($" * @param {pname} {ptext}");
-                        sb.AppendLine(string.Format(" * @param {0} {1}", pname, ptext));
+                        sb.AppendLine(string.Format(" * @param ${0} {1}", pname, ptext));
                     }
                 }
 
