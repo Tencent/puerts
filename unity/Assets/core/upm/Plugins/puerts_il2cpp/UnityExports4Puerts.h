@@ -180,6 +180,7 @@ struct UnityExports
     CStringToCSharpStringFunc CStringToCSharpString = nullptr;
     TryTranslateFunc TryTranslatePrimitive = nullptr;
     TryTranslateFunc TryTranslateBuiltin = nullptr;
+    TryTranslateFunc TryTranslateValueType = nullptr;
     GetTIDFunc GetTID = nullptr;
     ThrowInvalidOperationExceptionFunc ThrowInvalidOperationException = nullptr;
     GetReturnTypeFunc GetReturnType = nullptr;

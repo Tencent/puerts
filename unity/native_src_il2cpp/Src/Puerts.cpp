@@ -367,6 +367,15 @@ inline static v8::Local<v8::Value> CSAnyToJsValue(v8::Isolate* Isolate, v8::Loca
         return Ret;
     }
     
+    jsVal = GUnityExports.TryTranslateValueType(*Context, Obj);
+    
+    if (jsVal)
+    {
+        v8::Local<v8::Value> Ret;
+        memcpy(static_cast<void*>(&Ret), &jsVal, sizeof(jsVal));
+        return Ret;
+    }
+    
     return CSRefToJsValue(Isolate, Context, Obj);
 }
 

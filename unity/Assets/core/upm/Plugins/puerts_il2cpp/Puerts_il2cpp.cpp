@@ -538,6 +538,27 @@ pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
     return TryTranslatePrimitiveWithClass(env, obj);
 }
 
+pesapi_value TryTranslateValueType(pesapi_env env, Il2CppObject* obj)
+{
+    if (obj && obj->klass)
+    {
+        auto objClass = obj->klass;
+        if (Class::IsValuetype(objClass))
+        {
+            auto len = objClass->native_size;
+            if (len < 0)
+            {
+                len = objClass->instance_size - sizeof(Il2CppObject);
+            }
+            
+            auto buff = new uint8_t[len];
+            memcpy(buff, Object::Unbox(obj), len);
+            return pesapi_create_native_object(env, objClass, buff, true);
+        }
+    }
+    return nullptr;
+}
+
 union PrimitiveValueType
 {
     int8_t i1;
@@ -809,21 +830,21 @@ handle_underlying:
     return Object::Box(klass, toBox);
 }
 
-pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *klass, Il2CppObject* obj)
+pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
 {
-    if (klass == il2cpp_defaults.void_class || !obj) return pesapi_create_undefined(env);
+    if (targetClass == il2cpp_defaults.void_class || !obj) return pesapi_create_undefined(env);
     
-    if (!klass)
+    if (!targetClass)
     {
-        klass = il2cpp_defaults.object_class;
+        targetClass = il2cpp_defaults.object_class;
     }
     
-    if (Class::IsEnum(klass))
+    if (Class::IsEnum(targetClass))
     {
-        klass = Class::GetElementClass(klass);
+        targetClass = Class::GetElementClass(targetClass);
     }
     
-    pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, klass != il2cpp_defaults.object_class ? klass : nullptr);
+    pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, targetClass != il2cpp_defaults.object_class ? targetClass : nullptr);
     
     if (jsVal) 
     {
@@ -837,19 +858,14 @@ pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *klass, Il2CppObject* ob
         return jsVal;
     }
     
-    if (Class::IsValuetype(klass))
+    jsVal = TryTranslateValueType(env, obj);
+    
+    if (jsVal) 
     {
-        auto len = klass->native_size;
-        if (len < 0)
-        {
-            len = klass->instance_size - sizeof(Il2CppObject);
-        }
-        
-        auto buff = new uint8_t[len];
-        memcpy(buff, Object::Unbox(obj), len);
-        return pesapi_create_native_object(env, klass, buff, true);
+        return jsVal;
     }
-    auto objClass = obj && obj->klass ? obj->klass : klass;
+
+    auto objClass = obj && obj->klass ? obj->klass : targetClass;
     return pesapi_create_native_object(env, objClass, obj, false);
 }
 
@@ -1547,6 +1563,7 @@ puerts::UnityExports* GetUnityExports()
     g_unityExports.CStringToCSharpString = &String::NewWrapper;
     g_unityExports.TryTranslatePrimitive = &TryTranslatePrimitive;
     g_unityExports.TryTranslateBuiltin = &TryTranslateBuiltin;
+    g_unityExports.TryTranslateValueType = &TryTranslateValueType;
     g_unityExports.GetTID = &GetTID;
     g_unityExports.ThrowInvalidOperationException = &ThrowInvalidOperationException;
     g_unityExports.GetReturnType = &GetReturnType;
