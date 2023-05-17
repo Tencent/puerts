@@ -1,7 +1,7 @@
 {
   "name": "@puerts/webgl",
   "displayName": "Puerts WebGL Support",
-  "version": "1.1.1-pre.0",
+  "version": "1.1.1-pre.1",
   "description": "Use PuerTS in WebGL mode. Javascript code will run in browser's JS environment and get speed up by JIT.",
   "keywords": [
     "Script"
