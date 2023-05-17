@@ -127,9 +127,16 @@ var global = global || (function () { return this; }());
                 
                 if (fullPath.endsWith("package.json")) {
                     isESM = packageConfigure.type === "module"
+                    let url = packageConfigure.main || "index.js";
+                    if (isESM) {
+                        url = packageConfigure.exports && packageConfigure.exports["."] && packageConfigure.exports["."]["default"] && packageConfigure.exports["."]["default"]["require"]
+                        if (!url) {
+                            throw new Error("can not require a esm in cjs module!");
+                        }
+                    }
                     let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
                     let tmpRequire = genRequire(fullDirInJs, isESM);
-                    let r = tmpRequire(packageConfigure.main || "index.js");
+                    let r = tmpRequire(url);
                     tmpModuleStorage[sid] = undefined;
                     m.exports = r;
                 } else {
