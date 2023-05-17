@@ -832,8 +832,9 @@ handle_underlying:
 
 pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *targetClass, Il2CppObject* obj)
 {
-    if (targetClass == il2cpp_defaults.void_class || !obj) return pesapi_create_undefined(env);
-    
+    if (targetClass == il2cpp_defaults.void_class ) return pesapi_create_undefined(env);
+    if (!obj) return pesapi_create_null(env);
+
     if (!targetClass)
     {
         targetClass = il2cpp_defaults.object_class;
@@ -1288,7 +1289,12 @@ handle_underlying:
                 auto underlyClass = Class::GetNullableArgument(parameterKlass);
                 uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
                 bool hasValue = GetValueTypeFromJs(env, jsValue, underlyClass, storage);
+#ifndef UNITY_2021_1_OR_NEWER
                 *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
+#else
+                *(static_cast<uint8_t*>(storage)) = hasValue;
+#endif    // ! 
+
                 args[i] = storage;
             }
             else if (passedByReference)
