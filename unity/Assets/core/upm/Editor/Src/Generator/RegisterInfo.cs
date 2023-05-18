@@ -11,17 +11,17 @@ namespace Puerts.Editor
         internal class MemberRegisterInfoForGenerate : MemberRegisterInfo
         {
             // use string to work well in js
-            public string MemberType;
+            new public string MemberType;
 
-            public string UseBindingMode;
+            new public string UseBindingMode;
 
-            public string Constructor;
+            new public string Constructor;
 
-            public string Method;
+            new public string Method;
 
-            public string PropertyGetter;
+            new public string PropertyGetter;
 
-            public string PropertySetter;
+            new public string PropertySetter;
 
         }
         internal class RegisterInfoForGenerate : RegisterInfo

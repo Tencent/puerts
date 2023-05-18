@@ -22,7 +22,7 @@ namespace Puerts
         IntPtr nativeJsEnv;
         IntPtr nativePesapiEnv;
 
-        TypeRegister TypeRegister;
+        // TypeRegister TypeRegister;
 
         Type persistentObjectInfoType;
         MethodInfo objectPoolAddMethodInfo;
@@ -115,7 +115,7 @@ namespace Puerts
             
             moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
 
-            TypeRegister = new TypeRegister();
+            // TypeRegister = new TypeRegister();
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER

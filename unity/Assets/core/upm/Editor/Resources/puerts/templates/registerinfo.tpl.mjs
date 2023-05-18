@@ -22,13 +22,14 @@ namespace PuertsStaticWrap
 #if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
                 BlittableCopy = ${item.BlittableCopy},
 #endif
-                Members = new System.Collections.Generic.List<MemberRegisterInfo>
+                Members = new System.Collections.Generic.Dictionary<string, MemberRegisterInfo>
                 {
                     ${FOR(listToJsArray(item.Members), member=> `
-                    new MemberRegisterInfo { Name = "${member.Name}", IsStatic = ${member.IsStatic}, MemberType = MemberType.${member.MemberType}, UseBindingMode = BindingMode.${member.UseBindingMode}
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
-                    ${referWrapperMember(item.WrapperName, member.Constructor, member.Method, member.PropertyGetter, member.PropertySetter)} },
+                    {"${member.Name}", new MemberRegisterInfo { Name = "${member.Name}", IsStatic = ${member.IsStatic}, MemberType = MemberType.${member.MemberType}, UseBindingMode = BindingMode.${member.UseBindingMode}
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+                    ${referWrapperMember(item.WrapperName, member.Constructor, member.Method, member.PropertyGetter, member.PropertySetter)}
 #endif
+                    }},
                     `)}
                 }
             };

@@ -10,16 +10,62 @@ namespace Puerts.TypeMapping
 {
     internal class TypeRegister
     {
-        internal RegisterInfoManager RegisterInfoManager;
+        internal static RegisterInfoManager RegisterInfoManager = null;
 
-        internal void AddRegisterInfoGetter(Type type, Func<RegisterInfo> getter)
+        internal static void AddRegisterInfoGetter(Type type, Func<RegisterInfo> getter)
         {
+            if (RegisterInfoManager == null) RegisterInfoManager = new RegisterInfoManager();
+                
             RegisterInfoManager.Add(type, getter);
+        }
+
+        private static IntPtr ReflectionWrapperFunc = IntPtr.Zero;
+        private static IntPtr ReflectionFieldWrappers = IntPtr.Zero;
+        private static BindingMode GetBindingMode(RegisterInfo info, string name)
+        {
+            if (info == null) return RegisterInfoManager.DefaultBindingMode;
+            return info.Members[name].UseBindingMode;
+        }
+        private static IntPtr GetWrapperFunc(RegisterInfo registerInfo, string name, string signature)
+        {
+            BindingMode bindingMode = GetBindingMode(registerInfo, name);
+            IntPtr wrapper = IntPtr.Zero;
+            if (bindingMode == BindingMode.FastBinding) 
+            {
+                wrapper = NativeAPI.FindWrapFunc(signature);
+            } 
+
+            if (wrapper == IntPtr.Zero && bindingMode != BindingMode.DontBinding)
+            {
+                wrapper = ReflectionWrapperFunc;
+            }
+            
+            return wrapper;
+        }
+        private static IntPtr GetFieldWrapper(RegisterInfo registerInfo, string name, string signature)
+        {
+            BindingMode bindingMode = GetBindingMode(registerInfo, name);
+            IntPtr wrapper = IntPtr.Zero;
+            if (bindingMode == BindingMode.FastBinding) 
+            {
+                wrapper = NativeAPI.FindFieldWrap(signature);
+            } 
+
+            if (wrapper == IntPtr.Zero && bindingMode != BindingMode.DontBinding)
+            {
+                wrapper = ReflectionFieldWrappers;
+            }
+            
+            return wrapper;
         }
 
         //call by native, do no throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {
+            if (ReflectionWrapperFunc == IntPtr.Zero) ReflectionWrapperFunc = NativeAPI.FindWrapFunc(null);
+            if (ReflectionFieldWrappers == IntPtr.Zero) ReflectionFieldWrappers = NativeAPI.FindFieldWrap(null);
+            if (RegisterInfoManager == null) RegisterInfoManager = new RegisterInfoManager();
+                
             try
             {
                 Type type = NativeAPI.TypeIdToType(typeId);
@@ -53,6 +99,12 @@ namespace Puerts.TypeMapping
                 var typeId = NativeAPI.GetTypeId(type);
                 //UnityEngine.Debug.Log(string.Format("{0} typeId is {1}", type, typeId));
                 var superTypeId = (isDelegate || type == typeof(object) || type.BaseType == null) ? IntPtr.Zero : NativeAPI.GetTypeId(type.BaseType);
+
+                Func<RegisterInfo> getRegisterInfoFunc;
+                bool hasRegisterInfo = RegisterInfoManager.TryGetValue(type, out getRegisterInfoFunc);
+                RegisterInfo registerInfo = null;
+                if (hasRegisterInfo) registerInfo = getRegisterInfoFunc();
+
                 typeInfo = NativeAPI.CreateCSharpTypeInfo(type.ToString(), typeId, superTypeId, typeId, type.IsValueType, isDelegate, isDelegate ? TypeUtils.GetMethodSignature(type.GetMethod("Invoke"), true) : "");
                 if (typeInfo == IntPtr.Zero)
                 {
@@ -67,7 +119,11 @@ namespace Puerts.TypeMapping
                         {
                             if (ctor.IsGenericMethodDefinition) continue;
                             List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
+                            var signature = TypeUtils.GetMethodSignature(ctor);
+
+                            var wrapper = GetWrapperFunc(registerInfo, ".ctor", signature);
                             //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
+
                             var methodInfoPointer = NativeAPI.GetMethodInfoPointer(ctor);
                             var methodPointer = NativeAPI.GetMethodPointer(ctor);
                             if (methodInfoPointer == IntPtr.Zero)
@@ -80,7 +136,14 @@ namespace Puerts.TypeMapping
                                 UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, ctor, TypeUtils.GetMethodSignature(ctor)));
                                 continue;
                             }
-                            var wrapData = NativeAPI.AddConstructor(typeInfo, TypeUtils.GetMethodSignature(ctor), methodInfoPointer, methodPointer, usedTypes.Count);
+                            var wrapData = NativeAPI.AddConstructor(
+                                typeInfo, 
+                                signature,
+                                wrapper, 
+                                methodInfoPointer, 
+                                methodPointer, 
+                                usedTypes.Count
+                            );
                             if (wrapData == IntPtr.Zero)
                             {
                                 if (!throwIfMemberFail)
@@ -101,13 +164,16 @@ namespace Puerts.TypeMapping
                         }
                     }
 
-                    Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGeter, bool isSetter, bool isExtensionMethod) =>
+                    Action<string, MethodInfo, bool, bool, bool> AddMethodToType = (string name, MethodInfo method, bool isGetter, bool isSetter, bool isExtensionMethod) =>
                     {
                         method = TypeUtils.HandleMaybeGenericMethod(method);
                         if (method == null) return;
-                        
                         List<Type> usedTypes = TypeUtils.GetUsedTypes(method, isExtensionMethod);
+                        var signature = TypeUtils.GetMethodSignature(method, false, isExtensionMethod);
                         // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
+
+                        var wrapper = GetWrapperFunc(registerInfo, name, signature);
+                         
                         var methodInfoPointer = NativeAPI.GetMethodInfoPointer(method);
                         var methodPointer = NativeAPI.GetMethodPointer(method);
                         if (methodInfoPointer == IntPtr.Zero)
@@ -120,7 +186,19 @@ namespace Puerts.TypeMapping
                             UnityEngine.Debug.LogWarning(string.Format("cannot get method pointer for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
                             return;
                         }
-                        var wrapData = NativeAPI.AddMethod(typeInfo, TypeUtils.GetMethodSignature(method, false, isExtensionMethod), name, !isExtensionMethod && method.IsStatic, isExtensionMethod, isGeter, isSetter, methodInfoPointer, methodPointer, usedTypes.Count);
+                        var wrapData = NativeAPI.AddMethod(
+                            typeInfo, 
+                            signature,
+                            wrapper,
+                            name, 
+                            !isExtensionMethod && method.IsStatic, 
+                            isExtensionMethod, 
+                            isGetter, 
+                            isSetter, 
+                            methodInfoPointer, 
+                            methodPointer, 
+                            usedTypes.Count
+                        );
                         if (wrapData == IntPtr.Zero)
                         {
                             if (throwIfMemberFail)
@@ -182,17 +260,29 @@ namespace Puerts.TypeMapping
                     {
                         foreach (var field in fields)
                         {
-                            string sig = (field.IsStatic ? "" : "t") + TypeUtils.GetTypeSignature(field.FieldType);
-                            if (!NativeAPI.AddField(typeInfo, sig, field.Name, field.IsStatic, NativeAPI.GetFieldInfoPointer(field), NativeAPI.GetFieldOffset(field, type.IsValueType), NativeAPI.GetTypeId(field.FieldType)))
+                            string signature = (field.IsStatic ? "" : "t") + TypeUtils.GetTypeSignature(field.FieldType);
+                            var name = field.Name;
+                            
+                            var wrapper = GetFieldWrapper(registerInfo, name, signature);
+
+                            if (!NativeAPI.AddField(
+                                typeInfo, 
+                                wrapper, 
+                                name, 
+                                field.IsStatic, 
+                                NativeAPI.GetFieldInfoPointer(field), 
+                                NativeAPI.GetFieldOffset(field, type.IsValueType), 
+                                NativeAPI.GetTypeId(field.FieldType))
+                            )
                             {
                                 if (!throwIfMemberFail)
                                 {
 #if WARNING_IF_MEMBERFAIL
-                                    UnityEngine.Debug.LogWarning(string.Format("add field for {0}:{1} fail, signature:{2}", type, field, sig));
+                                    UnityEngine.Debug.LogWarning(string.Format("add field for {0}:{1} fail, signature:{2}", type, field, signature));
 #endif
                                     continue;
                                 }
-                                throw new Exception(string.Format("add field for {0}:{1} fail, signature:{2}", type, field, sig));
+                                throw new Exception(string.Format("add field for {0}:{1} fail, signature:{2}", type, field, signature));
                             }
                             //UnityEngine.Debug.Log(string.Format("AddField {0} of {1} ok offset={2}", field, type, GetFieldOffset(field, type.IsValueType)));
                         }

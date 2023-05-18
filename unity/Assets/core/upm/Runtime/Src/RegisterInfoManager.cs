@@ -44,15 +44,28 @@ namespace Puerts.TypeMapping
     {
         public bool BlittableCopy = false;
 
-        public List<MemberRegisterInfo> Members;
+        public Dictionary<string, MemberRegisterInfo> Members;
     }
 
     internal class RegisterInfoManager
     {
         Dictionary<Type, Func<RegisterInfo>> RegisterInfoGetters = new Dictionary<Type, Func<RegisterInfo>>();
+        protected BindingMode _DefaultBindingMode;
+        public BindingMode DefaultBindingMode 
+        {
+            get
+            {
+                return _DefaultBindingMode;
+            }
+            internal set
+            {
+                _DefaultBindingMode = value;
+            }
+        }
         
         internal void Add(Type type, Func<RegisterInfo> RegisterInfoGetter)
         {
+            if (RegisterInfoGetters.ContainsKey(type)) return;
             RegisterInfoGetters.Add(type, RegisterInfoGetter);
         }
 

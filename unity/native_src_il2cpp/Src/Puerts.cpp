@@ -974,14 +974,17 @@ static void SetParamArrayFlagAndOptionalNum(puerts::WrapData* data, const char* 
     }
 }
 
-V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
+V8_EXPORT puerts::WrapFuncPtr FindWrapFunc(const char* signature)
+{
+    if (signature == nullptr)
+        return puerts::GUnityExports.ReflectionWrapper;
+    else 
+        return puerts::FindWrapFunc(signature);
+}
+
+V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
     //puerts::PLog("ctor %s -> %s", classInfo->Name.c_str(), signature);
-    puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
-    if (!WrapFunc)
-    {
-        WrapFunc = puerts::GUnityExports.ReflectionWrapper;
-    }
     if (!WrapFunc) return nullptr;
     int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
     puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
@@ -997,13 +1000,8 @@ V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const
     return data;
 }
 
-V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool isStatic, bool isExtensionMethod, bool isGetter, bool isSetter, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
+V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, const char* name, bool isStatic, bool isExtensionMethod, bool isGetter, bool isSetter, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
-    puerts::WrapFuncPtr WrapFunc = puerts::FindWrapFunc(signature);
-    if (!WrapFunc)
-    {
-        WrapFunc = puerts::GUnityExports.ReflectionWrapper;
-    }
     if (!WrapFunc) return nullptr;
     int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
     puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
@@ -1037,9 +1035,23 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
     return data;
 }
 
-V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, const char* signature, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
+V8_EXPORT puerts::FieldWrapFuncInfo* FindFieldWrap(const char* signature)
 {
-    puerts::FieldWrapFuncInfo* wrapFuncInfo = puerts::FindFieldWrapFuncInfo(signature);
+    if (signature == nullptr)
+    {
+        auto info = new puerts::FieldWrapFuncInfo();
+        info->Getter = puerts::GUnityExports.ReflectionGetFieldWrapper;
+        info->Setter = puerts::GUnityExports.ReflectionSetFieldWrapper;
+        
+        return info;
+    }
+
+    else 
+        return puerts::FindFieldWrapFuncInfo(signature);
+}
+
+V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, puerts::FieldWrapFuncInfo* wrapFuncInfo, const char* name, bool is_static, void* fieldInfo, int offset, void* fieldTypeInfo)
+{
     puerts::FieldWrapFuncPtr Getter = nullptr;
     puerts::FieldWrapFuncPtr Setter = nullptr;
     if (wrapFuncInfo) 
@@ -1048,11 +1060,6 @@ V8_EXPORT bool AddField(puerts::JsClassInfo* classInfo, const char* signature, c
         Setter = wrapFuncInfo->Setter;
     }
     else
-    {
-        Getter = puerts::GUnityExports.ReflectionGetFieldWrapper;
-        Setter = puerts::GUnityExports.ReflectionSetFieldWrapper;
-    }
-    if (!Getter && !Setter)
     {
         return false;
     }

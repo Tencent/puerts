@@ -437,8 +437,12 @@ namespace Puerts
             else
             {
                 // otherwise when registerInfo is not null, most of member use FastBinding, some member with IsLazyMember=true use LazyBinding
-                foreach (var memberRegisterInfo in registerInfo.Members)
+                
+                // foreach (var memberRegisterInfo in registerInfo.Members)
+                var keys = registerInfo.Members.Keys.ToList();
+                for (int i = 0, l = keys.Count; i < l; i++)
                 {
+                    var memberRegisterInfo = registerInfo.Members[keys[i]];
                     // todo add lazybinding,slowbinding
                     if (memberRegisterInfo.MemberType == MemberType.Constructor)
                     {
