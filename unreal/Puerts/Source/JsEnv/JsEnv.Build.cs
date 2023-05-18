@@ -44,6 +44,8 @@ public class JsEnv : ModuleRules
         
         PublicDefinitions.Add(ThreadSafe ? "THREAD_SAFE" : "NOT_THREAD_SAFE");
 
+        ShadowVariableWarningLevel = WarningLevel.Warning;
+
         if (!FTextAsString)
         {
             PublicDefinitions.Add("PUERTS_FTEXT_AS_OBJECT");
