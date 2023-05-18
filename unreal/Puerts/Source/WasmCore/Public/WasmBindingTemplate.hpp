@@ -354,7 +354,7 @@ typename std::enable_if<wasm_is_complex_type<T>::value, int>::type wasm_link_get
     return 0;
 }
 
-template <typename Func, Func>
+template <typename Func, Func* func>
 struct wasm_link_helper;
 
 template <typename Ret, typename... Args, Ret (*func)(Args...)>
@@ -449,7 +449,7 @@ struct wasm_link_helper<Ret(Args...), func>
     };
 };
 
-template <typename Func, Func>
+template <typename Func, Func* func>
 struct wasm_link_wrapper;
 
 template <typename Ret, typename... Args, Ret (*func)(Args...)>
