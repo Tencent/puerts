@@ -56,7 +56,7 @@ namespace Puerts.Editor
                                 return res ? BindingMode.SlowBinding : BindingMode.FastBinding;
                             });
                             InstructionsFilters.Add((MemberInfo mbi) => {
-                                return dlg(FilterAction.Instructions, mbi);
+                                return dlg(FilterAction.MethodInInstructions, mbi);
                             });
                         }
                     }

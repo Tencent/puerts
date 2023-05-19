@@ -172,6 +172,10 @@ namespace Puerts
             }
 #endif
         }
+        public void SetDefaultBindingMode(BindingMode bindingMode)
+        {
+            TypeRegister.RegisterInfoManager.DefaultBindingMode = bindingMode;
+        }
 
         [UnityEngine.Scripting.Preserve]
         public Type GetTypeByString(string className)

@@ -32,7 +32,7 @@ public class InstructionsFilter
     [Filter]
     static bool GetFilterClass(FilterAction filterAction, MemberInfo mbi)
     {
-        if (filterAction == FilterAction.Instructions) 
+        if (filterAction == FilterAction.MethodInInstructions) 
             return skipAssembles.Contains(mbi.DeclaringType.Assembly.GetName().Name);
         return false;
     }

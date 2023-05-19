@@ -984,7 +984,7 @@ V8_EXPORT puerts::WrapFuncPtr FindWrapFunc(const char* signature)
 
 V8_EXPORT puerts::WrapData* AddConstructor(puerts::JsClassInfo* classInfo, const char* signature, puerts::WrapFuncPtr WrapFunc, void* method, puerts::MethodPointer methodPointer, int typeInfoNum)
 {
-    //puerts::PLog("ctor %s -> %s", classInfo->Name.c_str(), signature);
+    // puerts::PLog(puerts::LogLevel::Log, "ctor %s -> %s", classInfo->Name.c_str(), signature);
     if (!WrapFunc) return nullptr;
     int allocSize = sizeof(puerts::WrapData) + sizeof(void*) * typeInfoNum;
     puerts::WrapData* data = (puerts::WrapData*)malloc(allocSize);
