@@ -372,7 +372,7 @@ private:
 
     template <typename T>
     struct ReturnConverter<T,
-        typename std::enable_if<(ReturnByPointer || std::is_reference<T>::value && !std::is_const<T>::value) &&
+        typename std::enable_if<(ReturnByPointer || (std::is_reference<T>::value && !std::is_const<T>::value)) &&
                                 (is_objecttype<typename std::decay<T>::type>::value ||
                                     is_uetype<typename std::decay<T>::type>::value)>::type>
     {
