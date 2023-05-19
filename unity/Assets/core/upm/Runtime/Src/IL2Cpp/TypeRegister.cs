@@ -23,11 +23,20 @@ namespace Puerts.TypeMapping
         private static IntPtr ReflectionFieldWrappers = IntPtr.Zero;
         private static BindingMode GetBindingMode(RegisterInfo info, string name)
         {
-            if (info == null) return RegisterInfoManager.DefaultBindingMode;
+            if (info == null || !info.Members.ContainsKey(name)) return RegisterInfoManager.DefaultBindingMode;
             return info.Members[name].UseBindingMode;
         }
-        private static IntPtr GetWrapperFunc(RegisterInfo registerInfo, string name, string signature)
+        private static IntPtr GetWrapperFunc(RegisterInfo registerInfo, MemberInfo member, string signature)
         {
+            string name = member.Name;
+            if (member is MethodInfo) 
+            {
+                var method = (MethodInfo)member;
+                if (method.IsSpecialName && method.Name != "get_Item" && (method.Name.StartsWith("get_") || method.Name.StartsWith("set_")))
+                {
+                    name = member.Name.Substring(4);
+                }
+            }
             BindingMode bindingMode = GetBindingMode(registerInfo, name);
             IntPtr wrapper = IntPtr.Zero;
             if (bindingMode == BindingMode.FastBinding) 
@@ -121,7 +130,12 @@ namespace Puerts.TypeMapping
                             List<Type> usedTypes = TypeUtils.GetUsedTypes(ctor);
                             var signature = TypeUtils.GetMethodSignature(ctor);
 
-                            var wrapper = GetWrapperFunc(registerInfo, ".ctor", signature);
+                            var wrapper = GetWrapperFunc(registerInfo, ctor, signature);
+                            if (wrapper == IntPtr.Zero)
+                            {
+                                UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}", type));
+                                continue;
+                            }
                             //UnityEngine.Debug.Log(string.Format("add ctor {0}, usedTypes count: {1}", ctor, usedTypes.Count));
 
                             var methodInfoPointer = NativeAPI.GetMethodInfoPointer(ctor);
@@ -172,7 +186,12 @@ namespace Puerts.TypeMapping
                         var signature = TypeUtils.GetMethodSignature(method, false, isExtensionMethod);
                         // UnityEngine.Debug.Log(string.Format("add method {0}, usedTypes count: {1}", method, usedTypes.Count));
 
-                        var wrapper = GetWrapperFunc(registerInfo, name, signature);
+                        var wrapper = GetWrapperFunc(registerInfo, method, signature);
+                        if (wrapper == IntPtr.Zero)
+                        {
+                            UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
+                            return;
+                        }
                          
                         var methodInfoPointer = NativeAPI.GetMethodInfoPointer(method);
                         var methodPointer = NativeAPI.GetMethodPointer(method);
@@ -264,6 +283,11 @@ namespace Puerts.TypeMapping
                             var name = field.Name;
                             
                             var wrapper = GetFieldWrapper(registerInfo, name, signature);
+                            if (wrapper == IntPtr.Zero)
+                            {
+                                UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, name, signature));
+                                return;
+                            }
 
                             if (!NativeAPI.AddField(
                                 typeInfo, 

@@ -21,6 +21,7 @@ namespace Puerts.UnitTest
     }
     public class ForofTestHelper 
     {
+        [UnityEngine.Scripting.Preserve]
         public static List<string> GetAStringList() 
         {
             return new List<string>()

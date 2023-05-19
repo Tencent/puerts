@@ -46,7 +46,7 @@ namespace Puerts.Editor
                     MemberRegisterInfoForGenerate oldMRI;
                     if (dict.TryGetValue(Name, out oldMRI))
                     {
-                        if (Enum.Parse<BindingMode>(newMRI.UseBindingMode) < Enum.Parse<BindingMode>(oldMRI.UseBindingMode))
+                        if ((int)Enum.Parse(typeof(BindingMode), newMRI.UseBindingMode) < (int)Enum.Parse(typeof(BindingMode), oldMRI.UseBindingMode))
                             oldMRI.UseBindingMode = newMRI.UseBindingMode;
                     }
                     else
