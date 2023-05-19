@@ -32,7 +32,9 @@ namespace Puerts
         internal TypeManager TypeRegister 
         {
             get {
+#if !PUERTS_GENERAL
                 UnityEngine.Debug.LogWarning("use JsEnv.TypeManager instead");
+#endif
                 return TypeManager;
             }
         }
