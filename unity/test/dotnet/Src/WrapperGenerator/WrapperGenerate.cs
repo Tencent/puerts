@@ -37,5 +37,9 @@ public class PuerGen
             TxtLoader.PathToBinDir("../../../Src/StaticWrapper/"),
             new TxtLoader()
         );
+        Puerts.Editor.Generator.FileExporter.GenRegisterInfo(
+            TxtLoader.PathToBinDir("../../../Src/StaticWrapper/"),
+            new TxtLoader()
+        );
     }
 }

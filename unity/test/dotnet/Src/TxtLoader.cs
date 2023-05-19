@@ -112,7 +112,7 @@ namespace Puerts.UnitTest
                 loader = new TxtLoader();
                 env = new JsEnv(loader);
 #if PUERTS_GENERAL
-                PuertsStaticWrap.AutoStaticCodeRegister.Register(env);
+                PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoJsEnv(env);
 #endif
             }
         }

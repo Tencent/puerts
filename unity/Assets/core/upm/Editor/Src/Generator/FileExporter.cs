@@ -187,7 +187,7 @@ namespace Puerts.Editor
                     textWriter.Flush();
                 }
             }
-            public static void GenRegisterInfo(string outDir)
+            public static void GenRegisterInfo(string outDir, ILoader loader = null)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",
@@ -201,7 +201,11 @@ namespace Puerts.Editor
 
                 var RegisterInfos = RegisterInfoGenerator.GetRegisterInfos(genTypes);
 
-                using (var jsEnv = new Puerts.JsEnv())
+                if (loader == null)
+                {
+                    loader = new DefaultLoader();
+                }
+                using (var jsEnv = new JsEnv(loader))
                 {
                     var registerInfoRender = jsEnv.ExecuteModule<Func<List<RegisterInfoForGenerate>, string>>("puerts/templates/registerinfo.tpl.mjs", "default");
                     string registerInfoContent = registerInfoRender(RegisterInfos);

@@ -40,6 +40,7 @@ namespace Puerts.UnitTest
         {
             var env = UnitTestEnv.GetEnv();
             env.ExecuteModule("CSharpModuleTest/forof_test.mjs");
+            env.Tick();
         }
         
         [Test]
