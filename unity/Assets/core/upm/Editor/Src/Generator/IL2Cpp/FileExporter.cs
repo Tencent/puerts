@@ -19,16 +19,10 @@ using Mono.Reflection;
 
 namespace PuertsIl2cpp.Editor
 {
-<<<<<<< HEAD
-    namespace Generator {
-
-        public class FileExporter {
-=======
     namespace Generator
     {
         public class FileExporter
         {
->>>>>>> 4fdb3f3c ([unity]RegisterInfo refactor)
             public static List<string> GetValueTypeFieldSignatures(Type type)
             {
                 List<string> ret = new List<string>();
@@ -195,6 +189,7 @@ namespace PuertsIl2cpp.Editor
 
                 HashSet<Type> typeInGenericArgument = new HashSet<Type>();
                 HashSet<MethodBase> processed = new HashSet<MethodBase>();
+#if !PUERTS_GENERAL
                 foreach (var method in methodToWrap)
                 {
                     GenericArgumentInInstructions(method, typeInGenericArgument, processed, mb =>
