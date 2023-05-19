@@ -230,10 +230,9 @@ void ReportException(const websocketpp::exception& Exception, const TCHAR* JobIn
     char* str = new char[len + 1];
     memset(str, 0, len + 1);
     WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-    if (wstr)
-        delete[] wstr;
+    delete[] wstr;
     UE_LOG(LogV8Inspector, Warning, TEXT("%s, errno:%d, message:%s"), JobInfo, Exception.code().value(), UTF8_TO_TCHAR(str));
-    delete str;
+    delete[] str;
 #else
     UE_LOG(LogV8Inspector, Warning, TEXT("%s, errno:%d, message:%s"), JobInfo, Exception.code().value(),
         ANSI_TO_TCHAR(Exception.what()));
