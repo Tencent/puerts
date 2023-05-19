@@ -22,9 +22,9 @@ namespace Puerts.Editor
 
             public static void ExportDTS(string saveTo, ILoader loader = null, bool csharpModuleWillGen = false)
             {
-                if (Utils.filters == null)
+                if (!Utils.HasFilter)
                 {
-                    Utils.filters = Configure.GetFilters();
+                    Utils.SetFilters(Configure.GetFilters());
                     configure = Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",
                         "Puerts.BlittableCopyAttribute",
@@ -62,15 +62,15 @@ namespace Puerts.Editor
                     }
                 }
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
 
 
             public static void ExportWrapper(string saveTo, ILoader loader = null)
             {
-                if (Utils.filters == null)
+                if (!Utils.HasFilter)
                 {
-                    Utils.filters = Configure.GetFilters();
+                    Utils.SetFilters(Configure.GetFilters());
 
                     configure = Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",
@@ -149,7 +149,7 @@ namespace Puerts.Editor
                     // }
                 }
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
 
             public static void GenMarcoHeader(string outDir, bool forceIl2Cpp)

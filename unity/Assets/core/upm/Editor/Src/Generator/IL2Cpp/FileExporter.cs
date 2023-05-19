@@ -80,10 +80,9 @@ namespace PuertsIl2cpp.Editor
                 return (parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer) ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
             }
 
-            public static void GenericArgumentInInstructions(MethodBase node, HashSet<Type> result, HashSet<MethodBase> proceed, HashSet<string> skipAssembles, Func<MethodBase, IEnumerable<MethodBase>> callingMethodsGetter)
+            public static void GenericArgumentInInstructions(MethodBase node, HashSet<Type> result, HashSet<MethodBase> proceed, Func<MethodBase, IEnumerable<MethodBase>> callingMethodsGetter)
             {
                 var declaringType = node.DeclaringType;
-                if (declaringType != null && skipAssembles.Contains(declaringType.Assembly.GetName().Name)) return;
                 if (proceed.Contains(node)) return;
                 if (node.IsGenericMethod && !node.IsGenericMethodDefinition)
                 {
@@ -95,13 +94,14 @@ namespace PuertsIl2cpp.Editor
                         }
                     }
                 }
+                if (declaringType != null && Utils.shouldNotGetArgumentsInInstructions(node)) return;
 
                 proceed.Add(node);
 
                 var callingMethods = callingMethodsGetter(node);
                 foreach (var callingMethod in callingMethods)
                 {
-                    GenericArgumentInInstructions(callingMethod, result, proceed, skipAssembles, callingMethodsGetter);
+                    GenericArgumentInInstructions(callingMethod, result, proceed, callingMethodsGetter);
                 }
             }
 
@@ -158,6 +158,7 @@ namespace PuertsIl2cpp.Editor
 
                 const BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
                 const BindingFlags flagForPuer = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                Utils.SetFilters(Puerts.Configure.GetFilters());
 
                 var typeExcludeDelegate = types
                     .Where(t => !typeof(MulticastDelegate).IsAssignableFrom(t));
@@ -194,25 +195,9 @@ namespace PuertsIl2cpp.Editor
 
                 HashSet<Type> typeInGenericArgument = new HashSet<Type>();
                 HashSet<MethodBase> processed = new HashSet<MethodBase>();
-                HashSet<string> skipAssembles = new HashSet<string>()
-                {
-                    "mscorlib",
-                    "System.Core",
-                    "System.Xml",
-                    "System.Data",
-                    "System.Windows.Forms",
-                    "System.ComponentModel.DataAnnotations",
-                    "UnityEngine.CoreModule",
-                    "UnityEditor.CoreModule",
-                    "UnityEditor.Graphs",
-                    "Unity.Plastic.Newtonsoft.Json",
-                    "nunit.framework",
-                    "UnityEditor.GraphViewModule",
-                };
-#if !PUERTS_GENERAL
                 foreach (var method in methodToWrap)
                 {
-                    GenericArgumentInInstructions(method, typeInGenericArgument, processed, skipAssembles, mb =>
+                    GenericArgumentInInstructions(method, typeInGenericArgument, processed, mb =>
                     {
                         if (mb.GetMethodBody() == null || mb.IsGenericMethodDefinition || mb.IsAbstract) return new MethodBase[] { };
                         try
@@ -224,7 +209,6 @@ namespace PuertsIl2cpp.Editor
                         }
                         catch (Exception)
                         {
-
                             //UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.GetName().Name, mb.DeclaringType));
                             return new MethodBase[] { };
                         }
@@ -287,24 +271,20 @@ namespace PuertsIl2cpp.Editor
                         .Distinct()
                         .ToList());
 
-                    // configureTypes.Clear();
-                    
-                    Utils.filters = Puerts.Configure.GetFilters();
-
                     genWrapperCtor = configureTypes
                         .SelectMany(t => t.GetConstructors(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != Puerts.Editor.Generator.BindingMode.DontBinding);
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
 
                     genWrapperMethod = configureTypes
                         .SelectMany(t => t.GetMethods(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != Puerts.Editor.Generator.BindingMode.DontBinding);
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
 
                     genWrapperField = configureTypes
                         .SelectMany(t => t.GetFields(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != Puerts.Editor.Generator.BindingMode.DontBinding);
+                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
 
                     var configureUsedTypes = configureTypes
                         .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
@@ -324,7 +304,7 @@ namespace PuertsIl2cpp.Editor
                         .Select(s => s.FirstOrDefault())
                         .ToList();
 
-                    Utils.filters = null;
+                    Utils.SetFilters(null);
                 }
 
                 var wrapperInfos = genWrapperMethod

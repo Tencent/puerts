@@ -41,7 +41,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts (global.CS style)", false, 6)]
@@ -55,7 +55,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
             public static void GenerateDTSOldStyle()
             {
@@ -67,7 +67,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
 #if !UNITY_WEBGL
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate/il2cpp macro .h", false, 6)]

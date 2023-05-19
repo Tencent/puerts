@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Collections;
 using System;
+using Puerts.TypeMapping;
 
 /************************************************************************************************
     *  配置
@@ -55,6 +56,12 @@ namespace Puerts
     [AttributeUsage(AttributeTargets.Method)]
     public class FilterAttribute : Attribute
     {
+    }
+
+    public enum FilterAction
+    {
+        BindingMode = 1,
+        Instructions = 2
     }
 
     public static class Configure
