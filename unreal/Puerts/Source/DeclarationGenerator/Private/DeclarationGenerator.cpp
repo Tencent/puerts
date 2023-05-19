@@ -357,7 +357,7 @@ void FTypeScriptDeclarationGenerator::GenTypeScriptDeclaration(bool InGenStruct,
             auto Asset = AssetData.GetAsset();
             if (auto Blueprint = Cast<UBlueprint>(Asset))
             {
-                if (Blueprint->GeneratedClass)
+                if (Blueprint->Status != BS_Error && Blueprint->GeneratedClass)
                 {
                     Gen(Blueprint->GeneratedClass);
                 }
