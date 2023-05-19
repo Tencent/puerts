@@ -1296,6 +1296,18 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 
     StringBuffer << " {\n";
 
+    if (const auto UserDefinedStruct = Cast<UUserDefinedStruct>(Struct))
+    {
+        if (UserDefinedStruct->Status == UDSS_Error)
+        {
+            UE_LOG(LogTemp, Error, TEXT("User Defined Struct %s has error:%s"), *UserDefinedStruct->GetName(),
+                *UserDefinedStruct->ErrorMessage);
+            StringBuffer << "}\n\n";
+            WriteOutput(Struct, StringBuffer);
+            return;
+        }
+    }
+
     auto GenConstrutor = [&]()
     {
         FStringBuffer TmpBuff;
