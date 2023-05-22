@@ -31,7 +31,7 @@ namespace PuertsStaticWrap
                 Members = new System.Collections.Generic.Dictionary<string, MemberRegisterInfo>
                 {
                     ${FOR(listToJsArray(item.Members), member=> `
-                    {"${member.Name}", new MemberRegisterInfo { Name = "${member.Name}", IsStatic = ${member.IsStatic}, MemberType = MemberType.${member.MemberType}, UseBindingMode = BindingMode.${member.UseBindingMode}
+                    {"${member.Name}${member.IsStatic ? '_static' : ''}", new MemberRegisterInfo { Name = "${member.Name}", IsStatic = ${member.IsStatic}, MemberType = MemberType.${member.MemberType}, UseBindingMode = BindingMode.${member.UseBindingMode}
 #if !EXPERIMENTAL_IL2CPP_PUERTS
                     ${referWrapperMember(item.WrapperName, member.Constructor, member.Method, member.PropertyGetter, member.PropertySetter)}
 #endif

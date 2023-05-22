@@ -378,7 +378,7 @@ namespace Puerts
 
             HashSet<string> readonlyStaticFields = new HashSet<string>();
 
-            int typeId = -1;
+            int typeId = RegisterConstructor(type, registerInfo, baseTypeId, flag);
             if (registerInfo != null)
             {
                 // foreach (var memberRegisterInfo in registerInfo.Members)
@@ -386,23 +386,8 @@ namespace Puerts
                 for (int i = 0, l = keys.Count; i < l; i++)
                 {
                     var memberRegisterInfo = registerInfo.Members[keys[i]];
-                    // todo add lazybinding,slowbinding
                     if (memberRegisterInfo.MemberType == MemberType.Constructor)
                     {
-                        if (memberRegisterInfo.Constructor == null || memberRegisterInfo.UseBindingMode != BindingMode.FastBinding) 
-                        {
-                            sbr.needFillSlowBindingConstructor = RegisterInfoManager.DefaultBindingMode != BindingMode.DontBinding;
-                            continue;
-                        }
-                        if (registerInfo.BlittableCopy)
-                        {
-                            typeId = PuertsDLL.RegisterStruct(jsEnv.isolate, -1, type.AssemblyQualifiedName, memberRegisterInfo.Constructor,
-                                null, jsEnv.Idx, System.Runtime.InteropServices.Marshal.SizeOf(type));
-                        }
-                        else
-                        {
-                            typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, memberRegisterInfo.Constructor, null, jsEnv.Idx);
-                        }
                     }
                     else if (memberRegisterInfo.MemberType == MemberType.Method)
                     {
@@ -412,6 +397,7 @@ namespace Puerts
                             continue;
                         }
                         var result = PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, memberRegisterInfo.Name, memberRegisterInfo.IsStatic, memberRegisterInfo.Method, jsEnv.Idx);
+                        // System.Console.WriteLine("*" + typeId + "_" + type + "." + memberRegisterInfo.Name + "->" + result);
                         if (memberRegisterInfo.Name == "ToString" && registerInfo.BlittableCopy)
                         {
                             PuertsDLL.RegisterFunction(jsEnv.isolate, typeId, "toString", false, memberRegisterInfo.Method, jsEnv.Idx);
@@ -427,45 +413,12 @@ namespace Puerts
                         PuertsDLL.RegisterProperty(jsEnv.isolate, typeId, memberRegisterInfo.Name, memberRegisterInfo.IsStatic, memberRegisterInfo.PropertyGetter, jsEnv.Idx, memberRegisterInfo.PropertySetter, jsEnv.Idx, !readonlyStaticFields.Contains(memberRegisterInfo.Name));
                     }
                 }
+            // } else {
+            //     System.Console.WriteLine(type);
             }
             
-            if (registerInfo == null || (sbr.needFillSlowBindingConstructor || sbr.needFillSlowBindingProperty.Count > 0 || sbr.needFillSlowBindingMethod.Count > 0))
+            if (registerInfo == null || (sbr.needFillSlowBindingProperty.Count > 0 || sbr.needFillSlowBindingMethod.Count > 0))
             {
-                // registerInfo is null, then all the member use the SlowBinding
-
-                // constructors
-                if (registerInfo == null || sbr.needFillSlowBindingConstructor)
-                {
-                    JSConstructorCallback constructorCallback = null;
-
-                    if (typeof(Delegate).IsAssignableFrom(type))
-                    {
-                        DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv);
-                        constructorCallback = delegateConstructWrap.Construct;
-                    }
-                    else
-                    {
-                        bool hasNoParametersCtor = false;
-                        var constructorWraps = type.GetConstructors(flag)
-                            .Select(m =>
-                            {
-                                if (m.GetParameters().Length == 0)
-                                {
-                                    hasNoParametersCtor = true;
-                                }
-                                return new OverloadReflectionWrap(m, jsEnv);
-                            })
-                            .ToList();
-                        if (type.IsValueType && !hasNoParametersCtor)
-                        {
-                            constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv));
-                        }
-                        MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
-                        constructorCallback = constructorReflectionWrap.Construct;
-                    }
-
-                    typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
-                }
 
                 // methods and properties
                 MethodInfo[] methods = Puerts.Utils.GetMethodAndOverrideMethod(type, flag);
@@ -580,7 +533,74 @@ namespace Puerts
             return typeId;
         }
 
+        private int RegisterConstructor(Type type, RegisterInfo registerInfo, int baseTypeId, BindingFlags flag)
+        {
+            var reflectConstructor = true;
+            int typeId = 0;
+            if (registerInfo != null)
+            {
+                // foreach (var memberRegisterInfo in registerInfo.Members)
+                var keys = registerInfo.Members.Keys.ToList();
+                for (int i = 0, l = keys.Count; i < l; i++)
+                {
+                    var memberRegisterInfo = registerInfo.Members[keys[i]];
+                    if (memberRegisterInfo.MemberType == MemberType.Constructor)
+                    {
+                        if (memberRegisterInfo.Constructor == null || memberRegisterInfo.UseBindingMode != BindingMode.FastBinding) 
+                        {
+                            reflectConstructor = RegisterInfoManager.DefaultBindingMode != BindingMode.DontBinding;
+                            break;
+                        }
+                        reflectConstructor = false;
+                        if (registerInfo.BlittableCopy)
+                        {
+                            typeId = PuertsDLL.RegisterStruct(jsEnv.isolate, -1, type.AssemblyQualifiedName, memberRegisterInfo.Constructor,
+                                null, jsEnv.Idx, System.Runtime.InteropServices.Marshal.SizeOf(type));
+                        }
+                        else
+                        {
+                            typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, memberRegisterInfo.Constructor, null, jsEnv.Idx);
+                        }
+                    }
+                }
+            }
 
+            if (reflectConstructor)
+            {
+                JSConstructorCallback constructorCallback = null;
+
+                if (typeof(Delegate).IsAssignableFrom(type))
+                {
+                    DelegateConstructWrap delegateConstructWrap = new DelegateConstructWrap(type, jsEnv);
+                    constructorCallback = delegateConstructWrap.Construct;
+                }
+                else
+                {
+                    bool hasNoParametersCtor = false;
+                    var constructorWraps = type.GetConstructors(flag)
+                        .Select(m =>
+                        {
+                            if (m.GetParameters().Length == 0)
+                            {
+                                hasNoParametersCtor = true;
+                            }
+                            return new OverloadReflectionWrap(m, jsEnv);
+                        })
+                        .ToList();
+                    if (type.IsValueType && !hasNoParametersCtor)
+                    {
+                        constructorWraps.Add(new OverloadReflectionWrap(type, jsEnv));
+                    }
+                    MethodReflectionWrap constructorReflectionWrap = new MethodReflectionWrap(".ctor", constructorWraps);
+                    constructorCallback = constructorReflectionWrap.Construct;
+                }
+
+                typeId = PuertsDLL.RegisterClass(jsEnv.isolate, baseTypeId, type.AssemblyQualifiedName, constructorWrap, null, jsEnv.AddConstructor(constructorCallback));
+            
+            }
+
+            return typeId;
+        }
 
         private JSFunctionCallback GenFieldGetter(Type type, FieldInfo field)
         {

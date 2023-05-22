@@ -378,7 +378,14 @@ namespace Puerts
         }
         public void SetDefaultBindingMode(BindingMode bindingMode)
         {
+#if THREAD_SAFE
+            lock (this)
+            {
+#endif
             TypeManager.RegisterInfoManager.DefaultBindingMode = bindingMode;
+#if THREAD_SAFE
+            }
+#endif
         }
 
         private readonly List<JSFunctionCallback> callbacks = new List<JSFunctionCallback>();

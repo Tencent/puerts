@@ -111,7 +111,7 @@ namespace Puerts.UnitTest
             {
                 loader = new TxtLoader();
                 env = new JsEnv(loader);
-#if PUERTS_GENERAL
+#if PUERTS_GENERAL && !TESTING_REFLECTION
                 PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoJsEnv(env);
 #endif
             }

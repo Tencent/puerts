@@ -79,7 +79,7 @@ const fixGet = {
     float: (v8ValueCode, isByRef) => `(float)PuertsDLL.GetNumberFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
     bool: (v8ValueCode, isByRef) => `(bool)PuertsDLL.GetBooleanFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
     string: (v8ValueCode, isByRef) => `(string)PuertsDLL.GetStringFromValue(isolate, ${v8ValueCode}, ${isByRef})`,
-    'System.DateTime': (v8ValueCode, isByRef) => `(new DateTime(1970, 1, 1)).AddMilliseconds(PuertsDLL.GetDateFromValue(isolate, ${v8ValueCode}, ${isByRef}))`,
+    // 'System.DateTime': (v8ValueCode, isByRef) => `(new DateTime(1970, 1, 1)).AddMilliseconds(PuertsDLL.GetDateFromValue(isolate, ${v8ValueCode}, ${isByRef}))`,
 };
 const fixReturn = {
     char: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
@@ -95,7 +95,7 @@ const fixReturn = {
     float: 'Puerts.PuertsDLL.ReturnNumber(isolate, info, result)',
     bool: 'Puerts.PuertsDLL.ReturnBoolean(isolate, info, result)',
     string: 'Puerts.PuertsDLL.ReturnString(isolate, info, result)',
-    "System.DateTime": 'Puerts.PuertsDLL.ReturnDate(isolate, info, (result - new DateTime(1970, 1, 1)).TotalMilliseconds)',
+    // "System.DateTime": 'Puerts.PuertsDLL.ReturnDate(isolate, info, (result - new DateTime(1970, 1, 1)).TotalMilliseconds)',
 };
 const operatorMap = {
     op_Equality: '==',

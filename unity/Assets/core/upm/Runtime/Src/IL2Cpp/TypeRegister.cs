@@ -27,10 +27,11 @@ namespace Puerts.TypeMapping
 
         private static IntPtr ReflectionWrapperFunc = IntPtr.Zero;
         private static IntPtr ReflectionFieldWrappers = IntPtr.Zero;
-        private static BindingMode GetBindingMode(RegisterInfo info, string name)
+        private static BindingMode GetBindingMode(RegisterInfo info, string name, bool isStatic)
         {
-            if (info == null || !info.Members.ContainsKey(name)) return RegisterInfoManager.DefaultBindingMode;
-            return info.Members[name].UseBindingMode;
+            var _name = name + (isStatic ? '_static': '')
+            if (info == null || !info.Members.ContainsKey(_name)) return RegisterInfoManager.DefaultBindingMode;
+            return info.Members[_name].UseBindingMode;
         }
         private static IntPtr GetWrapperFunc(RegisterInfo registerInfo, MemberInfo member, string signature)
         {

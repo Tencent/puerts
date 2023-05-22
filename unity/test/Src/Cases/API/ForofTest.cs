@@ -18,6 +18,11 @@ namespace Puerts.UnitTest
             this.y = y;
             this.z = z;
         }
+
+        public override string ToString() 
+        { 
+            return this.x + " " + this.y + " " + this.z;
+        }
     }
     public class ForofTestHelper 
     {

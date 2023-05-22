@@ -1,5 +1,5 @@
 # *.meta
-/test/dotnet/vsauto
+/test/dotnet/vsauto*
 /test/dotnet/Src/StaticWrapper
 /test/unity/Assets/Resources/*.meta
 /test/unity/Assets/*.meta

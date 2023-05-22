@@ -156,7 +156,7 @@ namespace Puerts.Editor
 
                             if (addMethod != null && addMethod.IsPublic)
                             {
-                                Collector.Add(m.Name, new MemberRegisterInfoForGenerate
+                                Collector.Add("add_" + m.Name, new MemberRegisterInfoForGenerate
                                 {
                                     Name = "add_" + m.Name,
                                     UseBindingMode = Utils.getBindingMode(m).ToString(),
@@ -168,7 +168,7 @@ namespace Puerts.Editor
                             }
                             if (removeMethod != null && removeMethod.IsPublic)
                             {
-                                Collector.Add(m.Name, new MemberRegisterInfoForGenerate
+                                Collector.Add("remove_" + m.Name, new MemberRegisterInfoForGenerate
                                 {
                                     Name = "remove_" + m.Name,
                                     UseBindingMode = Utils.getBindingMode(m).ToString(),
@@ -192,7 +192,7 @@ namespace Puerts.Editor
                                 var setMethod = m.GetSetMethod();
                                 if (getMethod != null && getMethod.IsPublic)
                                 {
-                                    Collector.Add(m.Name, new MemberRegisterInfoForGenerate
+                                    Collector.Add("get_Item", new MemberRegisterInfoForGenerate
                                     {
                                         Name = "get_Item",
                                         UseBindingMode = Utils.getBindingMode(m).ToString(),
@@ -204,7 +204,7 @@ namespace Puerts.Editor
                                 }
                                 if (setMethod != null && setMethod.IsPublic)
                                 {
-                                    Collector.Add(m.Name, new MemberRegisterInfoForGenerate
+                                    Collector.Add("set_Item", new MemberRegisterInfoForGenerate
                                     {
                                         Name = "set_Item",
                                         UseBindingMode = Utils.getBindingMode(m).ToString(),
