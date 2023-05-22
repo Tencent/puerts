@@ -26,7 +26,7 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execCallJS)
             UTypeScriptGeneratedClass* ClassMayNeedReBind = nullptr;
             auto TempClass = Context->GetClass();
 
-            while (TempClass && (TempClass != Class) && (!ClassMayNeedReBind))
+            while (TempClass && (TempClass != Class) && (!ClassMayNeedReBind || !ClassMayNeedReBind->NeedReBind))
             {
                 ClassMayNeedReBind = Cast<UTypeScriptGeneratedClass>(TempClass);
                 TempClass = TempClass->GetSuperClass();
