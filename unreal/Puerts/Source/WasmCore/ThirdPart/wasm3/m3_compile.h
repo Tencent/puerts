@@ -45,178 +45,162 @@ enum
     c_waOp_memoryFill           = 0xfc0b
 };
 
-#define d_FuncRetType(ftype, i) ((ftype)->types[(i)])
-#define d_FuncArgType(ftype, i) ((ftype)->types[(ftype)->numRets + (i)])
+
+#define d_FuncRetType(ftype,i)  ((ftype)->types[(i)])
+#define d_FuncArgType(ftype,i)  ((ftype)->types[(ftype)->numRets + (i)])
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 typedef struct M3CompilationScope
 {
-    struct M3CompilationScope* outer;
+    struct M3CompilationScope *     outer;
 
-    pc_t pc;    // used by ContinueLoop's
-    pc_t patches;
-    i32 depth;
-    u16 exitStackIndex;
-    u16 blockStackIndex;
-    //    u16                             topSlot;
-    IM3FuncType type;
-    m3opcode_t opcode;
-    bool isPolymorphic;
-} M3CompilationScope;
+    pc_t                            pc;                 // used by ContinueLoop's
+    pc_t                            patches;
+    i32                             depth;
+    u16                             exitStackIndex;
+    u16                             blockStackIndex;
+//    u16                             topSlot;
+    IM3FuncType                     type;
+    m3opcode_t                      opcode;
+    bool                            isPolymorphic;
+}
+M3CompilationScope;
 
-typedef M3CompilationScope* IM3CompilationScope;
+typedef M3CompilationScope *        IM3CompilationScope;
 
 typedef struct
 {
-    IM3Runtime runtime;
-    IM3Module module;
+    IM3Runtime          runtime;
+    IM3Module           module;
 
-    bytes_t wasm;
-    bytes_t wasmEnd;
-    bytes_t lastOpcodeStart;
+    bytes_t             wasm;
+    bytes_t             wasmEnd;
+    bytes_t             lastOpcodeStart;
 
-    M3CompilationScope block;
+    M3CompilationScope  block;
 
-    IM3Function function;
+    IM3Function         function;
 
-    IM3CodePage page;
+    IM3CodePage         page;
 
 #ifdef DEBUG
-    u32 numEmits;
-    u32 numOpcodes;
+    u32                 numEmits;
+    u32                 numOpcodes;
 #endif
 
-    u16 stackFirstDynamicIndex;    // args and locals are pushed to the stack so that their slot locations can be tracked. the wasm
-                                   // model itself doesn't treat these values as being on the stack, so stackFirstDynamicIndex marks
-                                   // the start of the real Wasm stack
-    u16 stackIndex;                // current stack top
+    u16                 stackFirstDynamicIndex;     // args and locals are pushed to the stack so that their slot locations can be tracked. the wasm model itself doesn't
+                                                    // treat these values as being on the stack, so stackFirstDynamicIndex marks the start of the real Wasm stack
+    u16                 stackIndex;                 // current stack top
 
-    u16 slotFirstConstIndex;
-    u16 slotMaxConstIndex;    // as const's are encountered during compilation this tracks their location in the "real" stack
+    u16                 slotFirstConstIndex;
+    u16                 slotMaxConstIndex;          // as const's are encountered during compilation this tracks their location in the "real" stack
 
-    u16 slotFirstLocalIndex;
-    u16 slotFirstDynamicIndex;    // numArgs + numLocals + numReservedConstants. the first mutable slot available to the compiler.
+    u16                 slotFirstLocalIndex;
+    u16                 slotFirstDynamicIndex;      // numArgs + numLocals + numReservedConstants. the first mutable slot available to the compiler.
 
-    u16 maxStackSlots;
+    u16                 maxStackSlots;
 
-    m3slot_t constants[d_m3MaxConstantTableSize];
+    m3slot_t            constants                   [d_m3MaxConstantTableSize];
 
     // 'wasmStack' holds slot locations
-    u16 wasmStack[d_m3MaxFunctionStackHeight];
-    u8 typeStack[d_m3MaxFunctionStackHeight];
+    u16                 wasmStack                   [d_m3MaxFunctionStackHeight];
+    u8                  typeStack                   [d_m3MaxFunctionStackHeight];
 
     // 'm3Slots' contains allocation usage counts
-    u8 m3Slots[d_m3MaxFunctionSlots];
+    u8                  m3Slots                     [d_m3MaxFunctionSlots];
 
-    u16 slotMaxAllocatedIndexPlusOne;
+    u16                 slotMaxAllocatedIndexPlusOne;
 
-    u16 regStackIndexPlusOne[2];
+    u16                 regStackIndexPlusOne        [2];
 
-    m3opcode_t previousOpcode;
-} M3Compilation;
+    m3opcode_t          previousOpcode;
+}
+M3Compilation;
 
-typedef M3Compilation* IM3Compilation;
+typedef M3Compilation *                 IM3Compilation;
 
-typedef M3Result (*M3Compiler)(IM3Compilation, m3opcode_t);
+typedef M3Result (* M3Compiler)         (IM3Compilation, m3opcode_t);
+
 
 //-----------------------------------------------------------------------------------------------------------------------------------
+
 
 typedef struct M3OpInfo
 {
 #ifdef DEBUG
-    const char* const name;
+    const char * const      name;
 #endif
 
-    i8 stackOffset;
-    u8 type;
+    i8                      stackOffset;
+    u8                      type;
 
     // for most operations:
     // [0]= top operand in register, [1]= top operand in stack, [2]= both operands in stack
-    IM3Operation operations[4];
+    IM3Operation            operations [4];
 
-    M3Compiler compiler;
-} M3OpInfo;
+    M3Compiler              compiler;
+}
+M3OpInfo;
 
-typedef const M3OpInfo* IM3OpInfo;
+typedef const M3OpInfo *    IM3OpInfo;
 
-IM3OpInfo GetOpInfo(m3opcode_t opcode);
+IM3OpInfo  GetOpInfo  (m3opcode_t opcode);
 
 // TODO: This helper should be removed, when MultiValue is implemented
-static inline u8 GetSingleRetType(IM3FuncType ftype)
-{
-    return (ftype && ftype->numRets) ? ftype->types[0] : (u8) c_m3Type_none;
+static inline
+u8 GetSingleRetType(IM3FuncType ftype) {
+    return (ftype && ftype->numRets) ? ftype->types[0] : (u8)c_m3Type_none;
 }
 
 static const u16 c_m3RegisterUnallocated = 0;
 static const u16 c_slotUnused = 0xffff;
 
-static inline bool IsRegisterAllocated(IM3Compilation o, u32 i_register)
+static inline
+bool  IsRegisterAllocated  (IM3Compilation o, u32 i_register)
 {
-    return (o->regStackIndexPlusOne[i_register] != c_m3RegisterUnallocated);
+    return (o->regStackIndexPlusOne [i_register] != c_m3RegisterUnallocated);
 }
 
-static inline bool IsStackPolymorphic(IM3Compilation o)
+static inline
+bool  IsStackPolymorphic  (IM3Compilation o)
 {
     return o->block.isPolymorphic;
 }
 
-static inline bool IsRegisterSlotAlias(u16 i_slot)
-{
-    return (i_slot >= d_m3Reg0SlotAlias and i_slot != c_slotUnused);
-}
-static inline bool IsFpRegisterSlotAlias(u16 i_slot)
-{
-    return (i_slot == d_m3Fp0SlotAlias);
-}
-static inline bool IsIntRegisterSlotAlias(u16 i_slot)
-{
-    return (i_slot == d_m3Reg0SlotAlias);
-}
+static inline bool  IsRegisterSlotAlias        (u16 i_slot)    { return (i_slot >= d_m3Reg0SlotAlias and i_slot != c_slotUnused); }
+static inline bool  IsFpRegisterSlotAlias      (u16 i_slot)    { return (i_slot == d_m3Fp0SlotAlias);  }
+static inline bool  IsIntRegisterSlotAlias     (u16 i_slot)    { return (i_slot == d_m3Reg0SlotAlias); }
+
 
 #ifdef DEBUG
-#define M3OP(...)   \
-    {               \
-        __VA_ARGS__ \
-    }
-#define M3OP_RESERVED \
-    {                 \
-        "reserved"    \
-    }
+    #define M3OP(...)       { __VA_ARGS__ }
+    #define M3OP_RESERVED   { "reserved" }
 #else
-// Strip-off name
-#define M3OP(name, ...) \
-    {                   \
-        __VA_ARGS__     \
-    }
-#define M3OP_RESERVED \
-    {                 \
-        0             \
-    }
+    // Strip-off name
+    #define M3OP(name, ...) { __VA_ARGS__ }
+    #define M3OP_RESERVED   { 0 }
 #endif
 
 #if d_m3HasFloat
-#define M3OP_F M3OP
+    #define M3OP_F          M3OP
 #elif d_m3NoFloatDynamic
-#define M3OP_F(n, o, t, op, ...) M3OP(n, o, t, {op_Unsupported, op_Unsupported, op_Unsupported, op_Unsupported}, __VA_ARGS__)
+    #define M3OP_F(n,o,t,op,...)        M3OP(n, o, t, { op_Unsupported, op_Unsupported, op_Unsupported, op_Unsupported }, __VA_ARGS__)
 #else
-#define M3OP_F(...) \
-    {               \
-        0           \
-    }
+    #define M3OP_F(...)     { 0 }
 #endif
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-u16 GetMaxUsedSlotPlusOne(IM3Compilation o);
+u16         GetMaxUsedSlotPlusOne       (IM3Compilation o);
 
-M3Result CompileBlock(IM3Compilation io, IM3FuncType i_blockType, m3opcode_t i_blockOpcode);
+M3Result    CompileBlock                (IM3Compilation io, IM3FuncType i_blockType, m3opcode_t i_blockOpcode);
 
-M3Result CompileBlockStatements(IM3Compilation io);
-M3Result CompileFunction(IM3Function io_function);
+M3Result    CompileBlockStatements      (IM3Compilation io);
+M3Result    CompileFunction             (IM3Function io_function);
 
-M3Result CompileRawFunction(IM3Module io_module, IM3Function io_function, const void* i_function, const void* i_userdata);
+M3Result    CompileRawFunction          (IM3Module io_module, IM3Function io_function, const void * i_function, const void * i_userdata);
 
 d_m3EndExternC
 
-#endif    // m3_compile_h
+#endif // m3_compile_h

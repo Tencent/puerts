@@ -12,10 +12,9 @@
 
 d_m3BeginExternC
 
-    M3Result
-    m3_LinkLibC(IM3Module io_module);
-M3Result m3_LinkSpecTest(IM3Module io_module);
+M3Result    m3_LinkLibC     (IM3Module io_module);
+M3Result    m3_LinkSpecTest (IM3Module io_module);
 
 d_m3EndExternC
 
-#endif    // m3_api_libc_h
+#endif // m3_api_libc_h
