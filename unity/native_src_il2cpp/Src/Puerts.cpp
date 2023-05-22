@@ -1035,15 +1035,19 @@ V8_EXPORT puerts::WrapData* AddMethod(puerts::JsClassInfo* classInfo, const char
     return data;
 }
 
+static puerts::FieldWrapFuncInfo *ReflectionFuncWrap = nullptr;
 V8_EXPORT puerts::FieldWrapFuncInfo* FindFieldWrap(const char* signature)
 {
     if (signature == nullptr)
     {
-        auto info = new puerts::FieldWrapFuncInfo();
-        info->Getter = puerts::GUnityExports.ReflectionGetFieldWrapper;
-        info->Setter = puerts::GUnityExports.ReflectionSetFieldWrapper;
+        if (ReflectionFuncWrap == nullptr)
+        {
+            ReflectionFuncWrap = new puerts::FieldWrapFuncInfo();
+            ReflectionFuncWrap->Getter = puerts::GUnityExports.ReflectionGetFieldWrapper;
+            ReflectionFuncWrap->Setter = puerts::GUnityExports.ReflectionSetFieldWrapper;
+        }
         
-        return info;
+        return ReflectionFuncWrap;
     }
 
     else 

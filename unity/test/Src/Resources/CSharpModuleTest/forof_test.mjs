@@ -15,7 +15,6 @@ for (const listElement of list) {
     total += listElement;
 }
 for (const dictElement of dict) {
-    console.log(dictElement)
     total += dictElement.Key + dictElement.Value;
 }
 Assert_AreEqual(total, 103);
