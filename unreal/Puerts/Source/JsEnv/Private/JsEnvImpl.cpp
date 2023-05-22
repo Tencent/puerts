@@ -1678,7 +1678,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
         Bind(ClassWrapper, UEObject, Result);
         if (!SkipTypeScriptInitial && ClassWrapper->IsTypeScriptGeneratedClass)
         {
-            TypeScriptInitial(Class, UEObject);
+            TypeScriptInitial(UEObject->GetClass(), UEObject);
         }
         return Result;
     }
@@ -2120,12 +2120,16 @@ void FJsEnvImpl::InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction*
     }
 }
 
-void FJsEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object)
+void FJsEnvImpl::TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound)
 {
     if (auto TypeScriptGeneratedClass = Cast<UTypeScriptGeneratedClass>(Class))
     {
-        TypeScriptInitial(Class->GetSuperClass(), Object);
+        TypeScriptInitial(Class->GetSuperClass(), Object, true);
         TsConstruct(TypeScriptGeneratedClass, Object);
+    }
+    else if (!TypeScriptClassFound)
+    {
+        TypeScriptInitial(Class->GetSuperClass(), Object, false);
     }
 }
 

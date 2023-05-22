@@ -228,7 +228,7 @@ public:
 
     void InvokeMixinMethod(UObject* ContextObject, UJSGeneratedFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
-    void TypeScriptInitial(UClass* Class, UObject* Object);
+    void TypeScriptInitial(UClass* Class, UObject* Object, const bool TypeScriptClassFound = false);
 
     void InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFrame& Stack, void* RESULT_PARAM);
 
