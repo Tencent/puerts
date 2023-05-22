@@ -17,8 +17,10 @@ jobs:
     strategy:
       matrix:
         path:
-          - 'unreal/Puerts/Source'
-          - 'unreal/ReactUMG/Source'
+          - check: 'unreal/Puerts/Source'
+            exclude: '\.c$'
+          - check: 'unreal/ReactUMG/Source'
+            exclude: '\.c$'
     steps:
     - uses: actions/checkout@v3
     - name: Run clang-format style check
