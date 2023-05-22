@@ -49,7 +49,7 @@ DEFINE_FUNCTION(UTypeScriptGeneratedClass::execLazyLoadCallJS)
         PinedDynamicInvoker->NotifyReBind(Class);
     }
 #else
-    NotifyRebind(Class);
+    NotifyRebind(Context ? Context->GetClass() : Class);
 #endif
     Class->RestoreNativeFunc();
     execCallJS(Context, Stack, RESULT_PARAM);
