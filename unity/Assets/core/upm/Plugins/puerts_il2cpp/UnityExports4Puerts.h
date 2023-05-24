@@ -27,6 +27,8 @@ typedef void TypeIdType;
 
 typedef void (*SetNativePtrFunc)(v8::Object* obj, void* ptr, void* type_id);
 
+typedef v8::Value* (*CreateJSArrayBufferFunc)(v8::Context* env, void* buffer, size_t length);
+
 typedef void (*UnrefJsObjectFunc)(struct PersistentObjectInfo* objectInfo);
 
 typedef void* (*IsInstFunc)(void * obj, void* typeId); 
@@ -85,6 +87,8 @@ typedef void (*FieldWrapFuncPtr)(pesapi_callback_info info, FieldInfo* field, si
 typedef Il2CppClass TypeIdType;
 
 typedef void (*SetNativePtrFunc)(pesapi_value obj, void* ptr, const void* type_id);
+
+typedef pesapi_value (*CreateJSArrayBufferFunc)(pesapi_env env, void* buffer, size_t length);
 
 typedef void (*UnrefJsObjectFunc)(PersistentObjectInfo* delegateInfo);
 
@@ -198,8 +202,10 @@ struct UnityExports
     //plugin api
     
     SetNativePtrFunc SetNativePtr = nullptr;
+    CreateJSArrayBufferFunc CreateJSArrayBuffer = nullptr;
     UnrefJsObjectFunc UnrefJsObject = nullptr;
     FunctionToDelegateFunc FunctionToDelegate = nullptr;
+
     
     SetPersistentObjectFunc SetPersistentObject = nullptr;
     GetPersistentObjectFunc GetPersistentObject = nullptr;

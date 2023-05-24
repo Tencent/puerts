@@ -160,6 +160,14 @@ static void SetNativePtr(v8::Object* obj, void* ptr, void* type_id)
     DataTransfer::SetPointer(obj, type_id, 1);
 }
 
+static v8::Value* CreateJSArrayBuffer(v8::Context* context, void* Ptr, size_t Size)
+{
+    v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(context->GetIsolate(), Size);
+    void* Buff = Ab->GetBackingStore()->Data();
+    ::memcpy(Buff, Ptr, Size);
+    return *Ab;
+}
+
 static void* _GetRuntimeObjectFromPersistentObject(v8::Local<v8::Context> Context, v8::Local<v8::Object> Obj)
 {
     auto Isolate = Context->GetIsolate();
@@ -1188,6 +1196,7 @@ V8_EXPORT bool RegisterCSharpType(puerts::JsClassInfo* classInfo)
 V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
 {
     exports->SetNativePtr = &puerts::SetNativePtr;
+    exports->CreateJSArrayBuffer = &puerts::CreateJSArrayBuffer;
     exports->UnrefJsObject = &puerts::UnrefJsObject;
     exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
     exports->SetPersistentObject = &puerts::SetPersistentObject;

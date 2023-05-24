@@ -443,7 +443,7 @@ pesapi_value TryTranslateBuiltin(pesapi_env env, Il2CppObject* obj)
             Il2CppArray* buffer;
             il2cpp_field_get_value(obj, ArrayBufferBytesField, &buffer);
 
-            return pesapi_create_binary(env, Array::GetFirstElementAddress(buffer), (size_t) length);
+            return g_unityExports.CreateJSArrayBuffer(env, Array::GetFirstElementAddress(buffer), (size_t) length);
         }
     }
     return nullptr;
