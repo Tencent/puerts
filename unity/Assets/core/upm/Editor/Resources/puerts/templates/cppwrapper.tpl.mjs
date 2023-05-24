@@ -1,5 +1,7 @@
 import { FOR, default as t, IF, ENDIF, ELSE } from "./tte.mjs"
 
+const sigs = CS.PuertsIl2cpp.TypeUtils.TypeSignatures;
+
 function listToJsArray(csArr) {
     let arr = [];
     if (!csArr) return arr;
@@ -43,7 +45,7 @@ const CODE_SNIPPETS = {
             signature = signature.substring(1);
         }
         var t = (signature in PrimitiveSignatureCppTypeMap) ? PrimitiveSignatureCppTypeMap[signature] : "void*";
-        if (signature.startsWith('s_') && signature.endsWith('_')) {
+        if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
             t = `struct ${signature}`;
         }
         if (signature[0] == 'P') {
@@ -57,7 +59,11 @@ const CODE_SNIPPETS = {
 struct ${valueTypeInfo.Signature}
 {
     ${FOR(listToJsArray(valueTypeInfo.FieldSignatures), (s, i) => t`
+    ${IF(valueTypeInfo.Signature.startsWith(sigs.NullableStructPrefix) && i == valueTypeInfo.FieldSignatures.Count - 1)}
+    ${CODE_SNIPPETS.SToCPPType(s)} hasValue;
+    ${ELSE()}
     ${CODE_SNIPPETS.SToCPPType(s)} p${i};
+    ${ENDIF()}
     `)}
 };
     `;
@@ -88,7 +94,7 @@ struct ${valueTypeInfo.Signature}
                 return signature == 'b' ? 'false' : '0';
             }
         
-            if (signature.startsWith('s_') && signature.endsWith('_')) {
+            if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
                 return '{}'
             }
         
@@ -135,7 +141,7 @@ struct ${valueTypeInfo.Signature}
             ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || (info[${index}]->IsFunction() ? !IsDelegate(TIp${index}) : !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))))) return false;`
         } else if (signature == 'O') {
             return '';
-        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+        } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
             ret += `(!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
         } else { // TODO: 适配所有类型，根据!!true去查找没处理的
             ret += '!!true) return false;';
@@ -145,16 +151,26 @@ struct ${valueTypeInfo.Signature}
     
     refSetback(signature, index) {
         if (signature[0] == 'P' && signature != 'Pv') {
-            const elementSignatrue = signature.substring(1);
-            var val = CODE_SNIPPETS.CSValToJSVal(elementSignatrue, `*p${index}`)
+            const elementSignature = signature.substring(1);
+            var val = CODE_SNIPPETS.CSValToJSVal(elementSignature, `*p${index}`)
 
             if (val) {
-                if (elementSignatrue.startsWith('s_') && elementSignatrue.endsWith('_')) {
+                if (elementSignature.startsWith(sigs.StructPrefix) && elementSignature.endsWith('_')) {
+                    // 这个 == 的判断是因为如果外部如果传了指针进来，此时指针指向的内容已经变了，不需要重设
+                    // this '==' is because if a pointer is passed in from external, the content of the pointer is changed and dont need to setback.
                     return `if (!op${index}.IsEmpty() && p${index} == &up${index})
     {
         auto _unused = op${index}->Set(context, 0, ${val});
     }
             `;    
+                } else if (elementSignature.startsWith(sigs.NullableStructPrefix) && elementSignature.endsWith('_')) {
+                    return `if (!op${index}.IsEmpty() && p${index} == &up${index})
+    {
+        if (!p${index}->hasValue) auto _unused = op${index}->Set(context, 0, v8::Null(isolate));
+        if (p${index} == &up${index}) auto _unused = op${index}->Set(context, 0, ${val});
+    }
+            `;    
+
                 } else {
                     return `if (!op${index}.IsEmpty())
     {
@@ -176,7 +192,9 @@ struct ${valueTypeInfo.Signature}
             return 'info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, ret));';
         } else if (signature in PrimitiveSignatureCppTypeMap) {
             return 'info.GetReturnValue().Set(ret);';
-        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+        } else if (signature.startsWith(sigs.NullableStructPrefix) && signature.endsWith('_')) {
+            return `if (!ret.hasValue) info.GetReturnValue().Set(v8::Null(isolate)); else info.GetReturnValue().Set(CopyValueType(isolate, context, TIret, &ret, sizeof(ret)));`;
+        } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
             return 'info.GetReturnValue().Set(CopyValueType(isolate, context, TIret, &ret, sizeof(ret)));';
         } else if (signature == 'o') { // classes except System.Object
             return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
@@ -230,12 +248,12 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
         u${CSName} = JsValueToCSRef(context, t${CSName}, TI${CSName});
     }
         `
-        } else if (signature.startsWith('s_') && signature.endsWith('_')) { //valuetype
+        } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype
             return `    // JSValToCSVal struct
     ${signature}* p${CSName} = DataTransfer::GetPointer<${signature}>(context, ${JSName});
     ${signature} ${CSName} = p${CSName} ? *p${CSName} : ${signature} {};`
 
-        } else if (signature.startsWith('Ps_') && signature.endsWith('_')) { //valuetype ref
+        } else if ((signature.startsWith('P' + sigs.StructPrefix) || signature.startsWith('P' + sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype ref
             const S = signature.substring(1);
             return `    // JSValToCSVal Pstruct
     ${S}* ${CSName} = nullptr; // valuetype ref
@@ -279,7 +297,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
                 return `    // JSValToCSVal ref params
     void* ${CSName} = RestArguments<void*>::PackRef(context, info, TI${CSName}, ${start});
                 `
-            } else if (si.startsWith('s_') && si.endsWith('_')) { 
+            } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
                 return `    // JSValToCSVal valuetype params
     void* ${CSName} = RestArguments<${si}>::PackValueType(context, info, TI${CSName}, ${start});
                 `
@@ -303,7 +321,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
                 return `    // JSValToCSVal ref  with default
     void* ${CSName} = OptionalParameter<void*>::GetRefType(context, info, method, ${start}, TI${CSName});
                 `
-            } else if (si.startsWith('s_') && si.endsWith('_')) { 
+            } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) { 
                 return `    // JSValToCSVal valuetype  with default
     ${si} ${CSName} = OptionalParameter<${si}>::GetValueType(context, info, method, ${start});
                 `
@@ -325,7 +343,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
             return `CSAnyToJsValue(isolate, context, ${CSName})`;
         } else if (signature == 'o') {
             return `CSRefToJsValue(isolate, context, ${CSName})`;
-        } else if (signature.startsWith('s_') && signature.endsWith('_')) {
+        } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
             return `CopyValueType(isolate, context, TI${CSName[0] == '*' ? CSName.substring(1) : CSName}, ${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`}, sizeof(${CSName}))`
         }
     }
@@ -387,7 +405,7 @@ function genBridgeArgs(parameterSignatures) {
             let unpackMethod = 'RestArguments<void*>::UnPackRefOrBoxedValueType';
             if (si in PrimitiveSignatureCppTypeMap) {
                 unpackMethod = `RestArguments<${PrimitiveSignatureCppTypeMap[si]}>::UnPackPrimitive`;
-            } else if (si.startsWith('s_') && si.endsWith('_')) {
+            } else if ((si.startsWith(sigs.StructPrefix) || si.startsWith(sigs.NullableStructPrefix)) && si.endsWith('_')) {
                 unpackMethod = `RestArguments<${si}>::UnPackValueType`;
             } 
             return `auto arrayLength = GetArrayLength(p${parameterSignatures.length - 1});
@@ -457,7 +475,7 @@ static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Si
 
 function genGetField(fieldWrapperInfo) {
     const signature = fieldWrapperInfo.ReturnSignature;
-    if (signature.startsWith('s_') && signature.endsWith('_')) { //valuetype
+    if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) { //valuetype
         if (needThis(fieldWrapperInfo)) {
             return `auto ret = (char*)self + offset;
     

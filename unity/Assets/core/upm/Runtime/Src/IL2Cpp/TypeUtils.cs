@@ -63,6 +63,29 @@ namespace PuertsIl2cpp
 	
     public static class TypeUtils
     {
+        public class TypeSignatures
+        {
+            public static string Void = "v";
+            public static string Bool = "b";
+            public static string Byte = "u1";
+            public static string Sbyte = "i1";
+            public static string Short = "i2";
+            public static string Ushort = "u2";
+            public static string Int = "i4";
+            public static string Uint = "u4";
+            public static string Long = "i8";
+            public static string Ulong = "u8";
+            public static string Char = "c";
+            public static string Double = "r8";
+            public static string Float = "r4";
+            public static string IntPtr = "p";
+            public static string String = "s";
+            public static string SystemObject = "O";
+            public static string RefOrPointerPrefix = "P";
+            public static string Object = "o";
+            public static string StructPrefix = "S_";
+            public static string NullableStructPrefix = "N_";
+        }
         private static Type GetType(string className, bool isQualifiedName)
         {
             Type type = Type.GetType(className, false);
@@ -108,7 +131,6 @@ namespace PuertsIl2cpp
             return GetType(className, false);
         }
 
-
         public static string GetValueTypeFieldsSignature(Type type)
         {
             if (!type.IsValueType)
@@ -118,11 +140,11 @@ namespace PuertsIl2cpp
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             if (type.BaseType.IsValueType)
             {
-                sb.Append(GetValueTypeFieldsSignature(type.BaseType));
+                sb.Append(GetTypeSignature(type.BaseType));
             }
             foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                sb.Append((field.FieldType.IsValueType && !field.FieldType.IsPrimitive) ? GetValueTypeFieldsSignature(field.FieldType) : GetTypeSignature(field.FieldType));
+                sb.Append(GetTypeSignature(field.FieldType));
             }
             return sb.ToString();
         }
@@ -131,59 +153,59 @@ namespace PuertsIl2cpp
         {
             if (type == typeof(void))
             {
-                return "v";
+                return TypeSignatures.Void;
             }
             else if (type == typeof(bool))
             {
-                return "b";
+                return TypeSignatures.Bool;
             }
             else if (type == typeof(byte))
             {
-                return "u1";
+                return TypeSignatures.Byte;
             }
             else if (type == typeof(sbyte))
             {
-                return "i1";
+                return TypeSignatures.Sbyte;
             }
             else if (type == typeof(short))
             {
-                return "i2";
+                return TypeSignatures.Short;
             }
             else if (type == typeof(ushort))
             {
-                return "u2";
+                return TypeSignatures.Ushort;
             }
             else if (type == typeof(int))
             {
-                return "i4";
+                return TypeSignatures.Int;
             }
             else if (type == typeof(uint))
             {
-                return "u4";
+                return TypeSignatures.Uint;
             }
             else if (type == typeof(long))
             {
-                return "i8";
+                return TypeSignatures.Long;
             }
             else if (type == typeof(ulong))
             {
-                return "u8";
+                return TypeSignatures.Ulong;
             }
             else if (type == typeof(char))
             {
-                return "c";
+                return TypeSignatures.Char;
             }
             else if (type == typeof(double))
             {
-                return "r8";
+                return TypeSignatures.Double;
             }
             else if (type == typeof(float))
             {
-                return "r4";
+                return TypeSignatures.Float;
             }
             else if (type == typeof(IntPtr) || type == typeof(UIntPtr))
             {
-                return "p";
+                return TypeSignatures.IntPtr;
             }
             //else if (type == typeof(DateTime)) //是否要支持？
             //{
@@ -191,15 +213,15 @@ namespace PuertsIl2cpp
             //}
             else if (type == typeof(string))
             {
-                return "s";
+                return TypeSignatures.String;
             }
             else if (type == typeof(object)) //object特殊处理，比如check可以不用判断，比如return可以优化
             {
-                return "O";
+                return TypeSignatures.SystemObject;
             }
             else if (type.IsByRef || type.IsPointer)
             {
-                return "P" + GetTypeSignature(type.GetElementType());
+                return TypeSignatures.RefOrPointerPrefix + GetTypeSignature(type.GetElementType());
             }
             else if (type.IsEnum)
             {
@@ -207,12 +229,15 @@ namespace PuertsIl2cpp
             }
             else if (!type.IsValueType)
             {
-                return "o";
+                return TypeSignatures.Object;
             }
             else if (type.IsValueType && !type.IsPrimitive)
             {
                 //return "s" + Marshal.SizeOf(type);
-                return "s_" + GetValueTypeFieldsSignature(type) + "_";
+                if (Nullable.GetUnderlyingType(type) != null) 
+                    return TypeSignatures.NullableStructPrefix + GetValueTypeFieldsSignature(type) + "_";
+                else 
+                    return TypeSignatures.StructPrefix + GetValueTypeFieldsSignature(type) + "_";
             }
             throw new NotSupportedException("no support type: " + type);
         }
