@@ -225,7 +225,10 @@ namespace PuertsIl2cpp
             }
             else if (type.IsEnum)
             {
-                return GetTypeSignature(Enum.GetUnderlyingType(type));
+                if (type.IsGenericParameter)
+                    return "";
+                else
+                    return GetTypeSignature(Enum.GetUnderlyingType(type));
             }
             else if (!type.IsValueType)
             {

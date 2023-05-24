@@ -393,6 +393,11 @@ inline static v8::Local<v8::Value> CopyValueType(v8::Isolate* Isolate, v8::Local
     memcpy(buff, Ptr, SizeOfValueType);
     return DataTransfer::FindOrAddCData(Isolate, Context, TypeId, buff, false);
 }
+inline static v8::Local<v8::Value> CopyNullableValueType(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool hasValue, size_t SizeOfValueType)
+{
+    if (!hasValue) return v8::Null(Isolate);
+    return CopyValueType(Isolate, Context, TypeId, Ptr, SizeOfValueType);
+}
 
 inline static const void* GetTypeId(v8::Local<v8::Object> Obj)
 {

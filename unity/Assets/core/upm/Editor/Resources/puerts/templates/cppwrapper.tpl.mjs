@@ -59,7 +59,7 @@ const CODE_SNIPPETS = {
 struct ${valueTypeInfo.Signature}
 {
     ${FOR(listToJsArray(valueTypeInfo.FieldSignatures), (s, i) => t`
-    ${IF(valueTypeInfo.Signature.startsWith(sigs.NullableStructPrefix) && i == valueTypeInfo.FieldSignatures.Count - 1)}
+    ${IF(valueTypeInfo.Signature.startsWith(sigs.NullableStructPrefix) && i == valueTypeInfo.NullableHasValuePosition)}
     ${CODE_SNIPPETS.SToCPPType(s)} hasValue;
     ${ELSE()}
     ${CODE_SNIPPETS.SToCPPType(s)} p${i};
@@ -193,7 +193,7 @@ struct ${valueTypeInfo.Signature}
         } else if (signature in PrimitiveSignatureCppTypeMap) {
             return 'info.GetReturnValue().Set(ret);';
         } else if (signature.startsWith(sigs.NullableStructPrefix) && signature.endsWith('_')) {
-            return `if (!ret.hasValue) info.GetReturnValue().Set(v8::Null(isolate)); else info.GetReturnValue().Set(CopyValueType(isolate, context, TIret, &ret, sizeof(ret)));`;
+            return 'info.GetReturnValue().Set(CopyNullableValueType(isolate, context, TIret, &ret, ret.hasValue, sizeof(ret)));';
         } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
             return 'info.GetReturnValue().Set(CopyValueType(isolate, context, TIret, &ret, sizeof(ret)));';
         } else if (signature == 'o') { // classes except System.Object
@@ -343,7 +343,9 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
             return `CSAnyToJsValue(isolate, context, ${CSName})`;
         } else if (signature == 'o') {
             return `CSRefToJsValue(isolate, context, ${CSName})`;
-        } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
+        } else if (signature.startsWith(sigs.NullableStructPrefix) && signature.endsWith('_')) {
+            return `CopyNullableValueType(isolate, context, TI${CSName[0] == '*' ? CSName.substring(1) : CSName}, ${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`}, (${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`})->hasValue, sizeof(${CSName}))`
+        } else if (signature.startsWith(sigs.StructPrefix) && signature.endsWith('_')) {
             return `CopyValueType(isolate, context, TI${CSName[0] == '*' ? CSName.substring(1) : CSName}, ${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`}, sizeof(${CSName}))`
         }
     }

@@ -44,6 +44,7 @@ namespace PuertsIl2cpp.Editor
                 public string Signature;
                 public string CsName;
                 public List<string> FieldSignatures;
+                public int NullableHasValuePosition;
             }
 
             class SignatureInfo
@@ -98,6 +99,10 @@ namespace PuertsIl2cpp.Editor
 
             private static void IterateAllValueType(Type type, List<ValueTypeInfo> list)
             {
+                if (type.IsPrimitive) {
+                    PuertsIl2cpp.TypeUtils.GetTypeSignature(type);
+                    return;
+                }
                 Type baseType = type.BaseType;
                 while (baseType != null && baseType != typeof(System.Object))
                 {
@@ -112,10 +117,25 @@ namespace PuertsIl2cpp.Editor
                     if (field.FieldType.IsValueType && !field.FieldType.IsPrimitive) IterateAllValueType(field.FieldType, list);
                 }
 
+                int value = -1;
+                if (Nullable.GetUnderlyingType(type) != null)
+                {
+                    var fields = type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    for (var i = 0; i < fields.Length; i++)
+                    {
+                        if (fields[i].Name == "hasValue" || fields[i].Name == "has_value") 
+                        {
+                            value = i;
+                            break;
+                        }
+                    }
+                }
+
                 list.Add(new ValueTypeInfo { 
                     Signature = PuertsIl2cpp.TypeUtils.GetTypeSignature(type), 
                     CsName = type.Name, 
-                    FieldSignatures = GetValueTypeFieldSignatures(type) 
+                    FieldSignatures = GetValueTypeFieldSignatures(type),
+                    NullableHasValuePosition = value
                 });
             }
 
@@ -258,6 +278,8 @@ namespace PuertsIl2cpp.Editor
                         .Where(t => !t.IsGenericTypeDefinition && !t.Name.StartsWith("<"))
                         .Distinct()
                         .ToList());
+
+                    // configureTypes.Clear();
                     
                     Utils.filters = Puerts.Configure.GetFilters();
                     
@@ -283,9 +305,13 @@ namespace PuertsIl2cpp.Editor
                         .Concat(genWrapperField.Select(f => f.FieldType))
                         .Distinct();
                     
-                    valueTypeInfos = configureUsedTypes.Concat(delegateUsedTypes)
-                        .Where(t => t.IsValueType && !t.IsPrimitive && !t.IsEnum)
-                        .Select(t => new ValueTypeInfo { Signature = PuertsIl2cpp.TypeUtils.GetTypeSignature(t), CsName = t.Name, FieldSignatures = GetValueTypeFieldSignatures(t) })
+                    valueTypeInfos = new List<ValueTypeInfo>();
+                    foreach (var type in configureUsedTypes.Concat(delegateUsedTypes))
+                    {
+                        IterateAllValueType(type, valueTypeInfos);
+                    }
+                    
+                    valueTypeInfos = valueTypeInfos
                         .GroupBy(s => s.Signature)
                         .Select(s => s.FirstOrDefault())
                         .ToList();
