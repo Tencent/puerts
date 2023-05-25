@@ -111,6 +111,7 @@ namespace Puerts.UnitTest
             env.UsingFunc<bool, bool>();
             env.UsingFunc<long, long>();
             env.UsingFunc<TestStruct, TestStruct>();
+            env.UsingFunc<TestStruct?, TestStruct?>();
 #endif
         }
 
