@@ -555,6 +555,40 @@ public:
     }
 };
 
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+class FFieldPathPropertyTranslator : public FPropertyWithDestructorReflection
+{
+public:
+    explicit FFieldPathPropertyTranslator(PropertyMacro* InProperty) : FPropertyWithDestructorReflection(InProperty)
+    {
+    }
+
+    v8::Local<v8::Value> UEToJs(
+        v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const void* ValuePtr, bool PassByPointer) const override
+    {
+        return FV8Utils::ToV8String(Isolate, FieldPathProperty->GetPropertyValuePtr(ValuePtr)->ToString());
+    }
+
+    bool JsToUE(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::Local<v8::Value>& Value, void* ValuePtr,
+        bool DeepCopy) const override
+    {
+        auto Path = FV8Utils::ToFString(Isolate, Value);
+        FFieldPath FieldPath;
+        FieldPath.Generate(*Path);
+
+        if (!FieldPath.GetTyped(FieldPathProperty->PropertyClass))
+        {
+            FV8Utils::ThrowException(Isolate, FString::Printf(TEXT("invalid FieldPath: %s"), *Path));
+            return false;
+        }
+
+        FieldPathProperty->SetPropertyValue(ValuePtr, FieldPath);
+
+        return true;
+    }
+};
+#endif
+
 #ifdef GetObject
 #undef GetObject
 #endif
@@ -1254,6 +1288,12 @@ struct PropertyTranslatorCreator
         {
             return Creator<DoNothingPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);    //统一在别的地方处理
         }
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+        else if (InProperty->IsA<FFieldPathProperty>())
+        {
+            return Creator<FFieldPathPropertyTranslator>::Do(InProperty, IgnoreOut, Ptr);
+        }
+#endif
         else
         {
             return Creator<DoNothingPropertyTranslator>::Do(InProperty, IgnoreOut,

@@ -144,6 +144,9 @@ public:
         DelegatePropertyMacro* DelegateProperty;
         MulticastDelegatePropertyMacro* MulticastDelegateProperty;
         ClassPropertyMacro* ClassProperty;
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+        FFieldPathProperty* FieldPathProperty;
+#endif
     };
 
 #if ENGINE_MINOR_VERSION < 25 && ENGINE_MAJOR_VERSION < 5

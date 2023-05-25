@@ -871,6 +871,12 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         AddToGen.Add(LazyObjectProperty->PropertyClass);
         StringBuffer << "TLazyObjectPtr<" << GetNameWithNamespace(LazyObjectProperty->PropertyClass) << ">";
     }
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
+    else if (CastField<FFieldPathProperty>(Property))
+    {
+        StringBuffer << "string";
+    }
+#endif
     else
     {
         return false;
