@@ -6,25 +6,18 @@
  * which is part of this source code package.
  */
 
-#if USE_WASM3
-#include <array>
-#include <tuple>
-#include "WasmRuntime.h"
-#include "WasmModule.h"
-#include "WasmFunction.h"
-#include "WasmStaticLink.h"
-#include "CoreMinimal.h"
-#include "Binding.hpp"
-#include "UEDataBinding.hpp"
-#include "Kismet/KismetMathLibrary.h"
+#include "WasmEnv.h"
 
-float atan2_ue_bind(float X, float Y)
+WasmEnv::WasmEnv()
 {
-    return UKismetMathLibrary::Atan2(X, Y);
+    _Env = m3_NewEnvironment();    // m3_FreeEnvironment
 }
 
-WASM_BEGIN_LINK_GLOBAL(TestMath, 0)
-WASM_LINK_GLOBAL(atan2_ue_bind)
-WASM_END_LINK_GLOBAL(TestMath, 0)
-
-#endif
+WasmEnv::~WasmEnv()
+{
+    if (_Env)
+    {
+        m3_FreeEnvironment(_Env);
+        _Env = nullptr;
+    }
+}

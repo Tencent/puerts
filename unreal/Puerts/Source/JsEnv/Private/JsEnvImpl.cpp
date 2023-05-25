@@ -99,7 +99,7 @@
 #include "Engine/CollisionProfile.h"
 #endif
 
-#if WITH_WASM
+#if USE_WASM3
 #include "PuertsWasm/WasmJsFunctionParams.h"
 #endif
 
@@ -551,6 +551,15 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MethodBindingHelper<&FJsEnvImpl::ClearInterval>::Bind(Isolate, Context, Global, "clearInterval", This);
     //#endif
 
+#if USE_WASM3
+    MethodBindingHelper<&FJsEnvImpl::Wasm_NewMemory>::Bind(Isolate, Context, Global, "__tgjsWasm_NewMemory", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryGrowth", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryBuffer>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryBuffer", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_Instance>::Bind(Isolate, Context, Global, "__tgjsWasm_Instance", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_OverrideWebAssembly>::Bind(
+        Isolate, Context, Global, "__tgjsWasm_OverrideWebAssembly", This);
+#endif
+
     MethodBindingHelper<&FJsEnvImpl::DumpStatisticsLog>::Bind(Isolate, Context, Global, "dumpStatisticsLog", This);
 
     Global
@@ -632,19 +641,26 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     BoundThreadId = FPlatformTLS::GetCurrentThreadId();
 #endif
 
-#if WITH_WASM
-    PuertsWasmRuntime = std::make_shared<WasmRuntime>(2 * 1024);
-
-    FString ScriptRoot = FPaths::ProjectContentDir() / ModuleLoader->GetScriptRoot();
-    InitWasmRuntimeToJsObject(Global, PuertsWasmRuntime.get(), ScriptRoot / TEXT("wasm"), AllWasmJsModuleDesc);
+#if USE_WASM3
+    PuertsWasmEnv = std::make_shared<WasmEnv>();
+    //创建默认的runtime
+    PuertsWasmRuntimeList.Add(std::make_shared<WasmRuntime>(PuertsWasmEnv.get()));
+    ExecuteModule("puerts/wasm3_helper.js");
 #endif
 }
 
 // #lizard forgives
 FJsEnvImpl::~FJsEnvImpl()
 {
-#if WITH_WASM
-    PuertsWasmRuntime.reset();
+#if USE_WASM3
+    PuertsWasmRuntimeList.Empty();
+    PuertsWasmEnv.reset();
+    for (auto Item : PuertsWasmCachedLinkFunctionList)
+    {
+        Item->CachedFunction.Reset();
+        delete Item;
+    }
+    PuertsWasmCachedLinkFunctionList.Empty();
 #endif
 
 #ifdef SINGLE_THREAD_VERIFY
@@ -4203,4 +4219,140 @@ void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value>& In
     Logger->Info(StatisticsLog);
 #endif    // !WITH_QUICKJS
 }
+
+#if USE_WASM3
+void FJsEnvImpl::Wasm_NewMemory(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgInt32, EArgInt32);
+
+    int InitPages = Info[0]->Int32Value(Context).ToChecked();
+    int MaxPages = Info[1]->Int32Value(Context).ToChecked();
+    check(InitPages >= 0 && MaxPages > 0 && MaxPages >= InitPages);
+    auto Runtime = std::make_shared<WasmRuntime>(PuertsWasmEnv.get(), MaxPages, InitPages);
+    PuertsWasmRuntimeList.Add(Runtime);
+    Info.GetReturnValue().Set(Runtime->GetRuntimeSeq());
+}
+
+void FJsEnvImpl::Wasm_MemoryGrowth(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgInt32, EArgInt32);
+
+    int Seq = Info[0]->Int32Value(Context).ToChecked();
+    int n = Info[1]->Int32Value(Context).ToChecked();
+    for (auto Runtime : PuertsWasmRuntimeList)
+    {
+        if (Runtime->GetRuntimeSeq() == Seq)
+        {
+            int previous = Runtime->Grow(n);
+            Info.GetReturnValue().Set(previous);
+            return;
+        }
+    }
+
+    FV8Utils::ThrowException(Isolate, "can not find associated runtime with memory");
+    return;
+}
+
+void FJsEnvImpl::Wasm_MemoryBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgInt32);
+
+    int Seq = Info[0]->Int32Value(Context).ToChecked();
+    for (auto Runtime : PuertsWasmRuntimeList)
+    {
+        if (Runtime->GetRuntimeSeq() == Seq)
+        {
+            int Length = 0;
+            uint8* Ptr = Runtime->GetBuffer(Length);
+            if (Ptr)
+            {
+                auto Buffer = v8::ArrayBuffer::New(Isolate, Ptr, Length, v8::ArrayBufferCreationMode::kExternalized);
+                Info.GetReturnValue().Set(Buffer);
+            }
+            else
+            {
+                FV8Utils::ThrowException(Isolate, "no memory?");
+            }
+            return;
+        }
+    }
+    FV8Utils::ThrowException(Isolate, "can not find associated runtime with memory");
+    return;
+}
+
+void FJsEnvImpl::Wasm_Instance(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+    // typedarray or arraybuffer, importobject or undefined, exports object
+    if (Info.Length() != 3)
+    {
+        FV8Utils::ThrowException(Isolate, "params number dismatch");
+        return;
+    }
+    if (!Info[2]->IsObject())
+    {
+        FV8Utils::ThrowException(Isolate, "params at 3 must be object");
+        return;
+    }
+    v8::Local<v8::Object> ExportsObject = Info[2].As<v8::Object>();
+
+    v8::Local<v8::ArrayBuffer> InArrayBuffer;
+    if (Info[0]->IsArrayBuffer())
+    {
+        InArrayBuffer = Info[0].As<v8::ArrayBuffer>();
+    }
+    else if (Info[0]->IsTypedArray())
+    {
+        InArrayBuffer = Info[0].As<v8::TypedArray>()->Buffer();
+    }
+
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+    void* Buffer = static_cast<char*>(v8::ArrayBuffer_Get_Data(InArrayBuffer));
+#else
+    void* Buffer = InArrayBuffer->GetContents().Data();
+#endif
+    int BufferLength = InArrayBuffer->ByteLength();
+
+    TArray<uint8> InData;
+    InData.Append((uint8*) Buffer, BufferLength);
+    auto Runtime = NormalInstanceModule(
+        Isolate, Context, InData, ExportsObject, Info[1], PuertsWasmRuntimeList, PuertsWasmCachedLinkFunctionList);
+    if (Runtime)
+    {
+        Info.GetReturnValue().Set(Runtime->GetRuntimeSeq());
+    }
+}
+
+void FJsEnvImpl::Wasm_OverrideWebAssembly(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+#if WASM3_OVERRIDE_WEBASSEMBLY
+    Info.GetReturnValue().Set(v8::True(Info.GetIsolate()));
+#else
+    Info.GetReturnValue().Set(v8::False(Info.GetIsolate()));
+#endif
+}
+
+#endif
 }    // namespace puerts

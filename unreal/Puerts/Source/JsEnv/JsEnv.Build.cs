@@ -83,10 +83,23 @@ public class JsEnv : ModuleRules
             PublicDefinitions.Add("PUERTS_FORCE_CPP_UFUNCTION=0");
         }
 
-        bool UseWasm = true;
+        bool UseWasm = false;
         if (UseWasm)
         {
-            PublicDefinitions.Add("WITH_WASM");
+            PublicDefinitions.Add("USE_WASM3=1");
+        }
+        else
+        {
+            PublicDefinitions.Add("USE_WASM3=0");
+        }
+        bool OverrideWebAssembly = false;
+        if (OverrideWebAssembly)
+        {
+            PublicDefinitions.Add("WASM3_OVERRIDE_WEBASSEMBLY=1");
+        }
+        else
+        {
+            PublicDefinitions.Add("WASM3_OVERRIDE_WEBASSEMBLY=0");
         }
         PublicDependencyModuleNames.AddRange(new string[]
             {

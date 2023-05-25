@@ -12,42 +12,58 @@
 #include "HAL/Platform.h"
 #include "m3_exec_defs.h"
 #include "m3_env.h"
+#include "WasmModuleInstance.h"
 
 static TArray<WasmRuntime*> _AllWasmRuntimes;
 static uint16 WasmRuntime_Seq = 1;
 
-WasmRuntime::WasmRuntime(int StackSizeInBytes)
+WasmRuntime::WasmRuntime(WasmEnv* Env, int MaxPage /*= 10*/, int InitPage /*= 1*/, int StackSizeInBytes /*= 5 * 1024*/)
 {
     _RuntimeSeq = WasmRuntime_Seq;
     WasmRuntime_Seq++;
     if (!WasmRuntime_Seq)
         WasmRuntime_Seq++;
-    _Env = m3_NewEnvironment();    // m3_FreeEnvironment
-    check(_Env);
-    _Runtime = m3_NewRuntime(_Env, StackSizeInBytes, this);    // m3_FreeRuntime
-    _Runtime->memory.maxPages = 10;                            // 64K一个Page,最多允许640K
-    _Runtime->memoryLimit = 3 * 1024 * 1024;
-    ResizeMemory(_Runtime, 10);
-    check(_Runtime);
+    _Env = Env;
+    _Runtime = m3_NewRuntime(_Env->GetEnv(), StackSizeInBytes, this);
+    _Runtime->memory.maxPages = MaxPage;
+    ResizeMemory(_Runtime, InitPage);
     _AllWasmRuntimes.Add(this);
 }
 
 WasmRuntime::~WasmRuntime()
 {
-    for (WasmModule* Module : _AllModules)
+    for (WasmModuleInstance*& Instance : _AllModuleInstances)
     {
-        delete Module;
+        delete Instance;
     }
 
-    m3_FreeRuntime(_Runtime);
-    m3_FreeEnvironment(_Env);
+    if (_Runtime)
+    {
+        m3_FreeRuntime(_Runtime);
+        _Runtime = nullptr;
+    }
+
     _AllWasmRuntimes.Remove(this);
 }
 
-WasmModule* WasmRuntime::LoadModule(const TCHAR* Path, int LinkCategory /*= -1*/)
+int WasmRuntime::Grow(int number)
 {
-    _AllModules.Add(new WasmModule(Path, this, LinkCategory));
-    WasmModule* ret = _AllModules[_AllModules.Num() - 1];
+    int Ret = _Runtime->memory.numPages;
+    ResizeMemory(_Runtime, _Runtime->memory.numPages + number);
+    return Ret;
+}
+
+uint8* WasmRuntime::GetBuffer(int& Length)
+{
+    u8* base = m3MemData(_Runtime->memory.mallocated);
+    Length = _Runtime->memory.mallocated->length;
+    return base + sizeof(M3MemoryHeader);
+}
+
+WasmModuleInstance* WasmRuntime::OnModuleInstance(WasmModuleInstance* InModuleInstance)
+{
+    _AllModuleInstances.Add(InModuleInstance);
+    WasmModuleInstance* ret = _AllModuleInstances[_AllModuleInstances.Num() - 1];
     if (MaxWasmStackAllocCount == 0)
     {
         if (ret->GetAllExportFunctions().Contains("GetStackParamBegin"))
