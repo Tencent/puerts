@@ -538,6 +538,19 @@ pesapi_value TryTranslatePrimitive(pesapi_env env, Il2CppObject* obj)
     return TryTranslatePrimitiveWithClass(env, obj);
 }
 
+pesapi_value TranslateValueType(pesapi_env env, Il2CppClass* targetClass, Il2CppObject* obj)
+{
+    auto len = targetClass->native_size;
+    if (len < 0)
+    {
+        len = targetClass->instance_size - sizeof(Il2CppObject);
+    }
+
+    auto buff = new uint8_t[len];
+    memcpy(buff, Object::Unbox(obj), len);
+    return pesapi_create_native_object(env, targetClass, buff, true);
+}
+
 pesapi_value TryTranslateValueType(pesapi_env env, Il2CppObject* obj)
 {
     if (obj && obj->klass)
@@ -545,19 +558,12 @@ pesapi_value TryTranslateValueType(pesapi_env env, Il2CppObject* obj)
         auto objClass = obj->klass;
         if (Class::IsValuetype(objClass))
         {
-            auto len = objClass->native_size;
-            if (len < 0)
-            {
-                len = objClass->instance_size - sizeof(Il2CppObject);
-            }
-            
-            auto buff = new uint8_t[len];
-            memcpy(buff, Object::Unbox(obj), len);
-            return pesapi_create_native_object(env, objClass, buff, true);
+            return TranslateValueType(env, objClass, obj);
         }
     }
     return nullptr;
 }
+
 
 union PrimitiveValueType
 {
@@ -851,17 +857,25 @@ pesapi_value CSRefToJsValue(pesapi_env env, Il2CppClass *targetClass, Il2CppObje
     {
         return jsVal;
     }
+
+    if (Class::IsValuetype(targetClass))
+    {
+        jsVal = TranslateValueType(env, targetClass, obj);
+        if (jsVal)
+        {
+            return jsVal;
+        }    
+    }
     
-    jsVal = TryTranslateBuiltin(env, obj);
-    
+    jsVal = TryTranslateValueType(env, obj);
     if (jsVal) 
     {
         return jsVal;
     }
-    
-    jsVal = TryTranslateValueType(env, obj);
-    
-    if (jsVal) 
+
+    jsVal = TryTranslateBuiltin(env, obj);
+
+    if (jsVal)
     {
         return jsVal;
     }
@@ -1376,8 +1390,21 @@ handle_underlying:
         
         pesapi_value jsValue = pesapi_get_arg(info, i - csArgStart);
         
-        if (Class::IsValuetype(parameterKlass) && passedByReference && !Class::IsNullable(parameterKlass))
+        if (Class::IsValuetype(parameterKlass) && passedByReference)
         {
+            if (Class::IsNullable(parameterKlass))
+            {
+#ifndef UNITY_2021_1_OR_NEWER
+                bool hasValue = !!*(static_cast<uint8_t*>(args[i]) + parameterKlass->instance_size - sizeof(Il2CppObject));
+#else
+                bool hasValue = !!*(static_cast<uint8_t*>(args[i]));
+#endif    // ! 
+                if (!hasValue)
+                {
+                    JsObjectSetRef(env, jsValue, pesapi_create_null(env));
+                    continue;
+                }
+            }
             auto underlyClass = Class::FromIl2CppType(&parameterKlass->byval_arg);
             JsObjectSetRef(env, jsValue, CSRefToJsValue(env, underlyClass, (Il2CppObject*)(((uint8_t*)args[i]) - sizeof(Il2CppObject))));
         }
@@ -1502,7 +1529,11 @@ static void ReflectionSetFieldWrapper(pesapi_callback_info info, FieldInfo* fiel
             auto underlyClass = Class::GetNullableArgument(fieldType);
             uint32_t valueSize = underlyClass->instance_size - sizeof(Il2CppObject);
             bool hasValue = GetValueTypeFromJs(env, jsValue, underlyClass, storage);
+#ifndef UNITY_2021_1_OR_NEWER
             *(static_cast<uint8_t*>(storage) + valueSize) = hasValue;
+#else
+            *(static_cast<uint8_t*>(storage)) = hasValue;
+#endif    // ! 
             SetFieldValue(csThis, field, offset, storage);
         }
         else
