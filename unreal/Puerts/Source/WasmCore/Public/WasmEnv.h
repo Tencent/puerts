@@ -6,25 +6,20 @@
  * which is part of this source code package.
  */
 
-#if USE_WASM3
-#include <array>
-#include <tuple>
-#include "WasmRuntime.h"
-#include "WasmModule.h"
-#include "WasmFunction.h"
-#include "WasmStaticLink.h"
+#pragma once
 #include "CoreMinimal.h"
-#include "Binding.hpp"
-#include "UEDataBinding.hpp"
-#include "Kismet/KismetMathLibrary.h"
+#include "WasmCommonIncludes.h"
 
-float atan2_ue_bind(float X, float Y)
+class WASMCORE_API WasmEnv final
 {
-    return UKismetMathLibrary::Atan2(X, Y);
-}
+private:
+    IM3Environment _Env;
 
-WASM_BEGIN_LINK_GLOBAL(TestMath, 0)
-WASM_LINK_GLOBAL(atan2_ue_bind)
-WASM_END_LINK_GLOBAL(TestMath, 0)
-
-#endif
+public:
+    WasmEnv();
+    ~WasmEnv();
+    FORCEINLINE IM3Environment GetEnv()
+    {
+        return _Env;
+    }
+};

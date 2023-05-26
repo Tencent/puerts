@@ -7,7 +7,7 @@
  */
 
 #pragma once
-
+#if USE_WASM3
 #include "CoreMinimal.h"
 #include "WasmModule.h"
 
@@ -19,39 +19,14 @@
 
 namespace puerts
 {
-enum class WasmJsParamType
+struct WasmNormalLinkInfo
 {
-    Type_Void,
-    Type_Bool,
-    Type_Int,
-    Type_Int64,
-    Type_Float,
-    Type_Double,
-    Type_Struct,
-    Type_Pointer,
+    v8::UniquePersistent<v8::Function> CachedFunction;
+    v8::Isolate* Isolate;
 };
 
-struct WasmJsParamDesc
-{
-    WasmJsParamType ParamType;
-    uint8 IsReference : 1;
-    uint8 IsConst : 1;
-    uint8 IsUObject : 1;
-    UScriptStruct* Struct;
-};
-
-struct WasmJsFunctionDesc
-{
-    const WasmFunction* Function;
-    WasmJsParamDesc ReturnValue;
-    TArray<WasmJsParamDesc> ParamList;
-};
-
-struct WasmJsModuleDesc
-{
-    TArray<WasmJsFunctionDesc> FunctionList;
-};
-
-void InitWasmRuntimeToJsObject(v8::Local<v8::Object>& GlobalObject, WasmRuntime* TargetRuntime, const FString& RootPath,
-    TArray<WasmJsModuleDesc>& AllWasmJsModuleDesc);
+WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, TArray<uint8>& InData,
+    v8::Local<v8::Object>& ExportsObject, v8::Local<v8::Value> ImportsValue,
+    const TArray<std::shared_ptr<WasmRuntime>>& RuntimeList, TArray<WasmNormalLinkInfo*>& CachedLinkFunctionList);
 };    // namespace puerts
+#endif

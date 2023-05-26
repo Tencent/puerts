@@ -8,26 +8,25 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "wasm3.h"
-#include "m3_env.h"
 #include "WasmCommonIncludes.h"
+#include "WasmEnv.h"
 
-class WasmModule;
+class WasmModuleInstance;
 class WasmFunction;
 class WasmPointerSupport;
 
 struct WASMCORE_API WasmStackAllocCacheInfo
 {
-    WASM_PTR PtrInWasm;
-    char* RealPtr;
+    WASM_PTR PtrInWasm = 0;
+    char* RealPtr = nullptr;
 };
 
 class WASMCORE_API WasmRuntime final
 {
 private:
-    IM3Environment _Env;
+    WasmEnv* _Env;
     IM3Runtime _Runtime;
-    TArray<WasmModule*> _AllModules;
+    TArray<WasmModuleInstance*> _AllModuleInstances;
     uint16 _RuntimeSeq;
 
     WasmStackAllocCacheInfo CurrentStackAllocInfo;
@@ -56,19 +55,19 @@ public:
         CurrentStackAllocInfo = NewInfo;
     }
 
-    WasmRuntime(int StackSizeInBytes);
+    WasmRuntime(WasmEnv* Env, int MaxPage = 10, int InitPage = 1, int StackSizeInBytes = 5 * 1024);
     ~WasmRuntime();
+
+    int Grow(int number);
+    uint8* GetBuffer(int& Length);
 
     uint16 GetRuntimeSeq() const
     {
         return _RuntimeSeq;
     }
 
-    WasmModule* LoadModule(const TCHAR* Path, int LinkCategory = -1);
-    FORCEINLINE IM3Environment GetEnv() const
-    {
-        return _Env;
-    }
+    WasmModuleInstance* OnModuleInstance(WasmModuleInstance* InModuleInstance);
+
     FORCEINLINE IM3Runtime GetRuntime() const
     {
         return _Runtime;

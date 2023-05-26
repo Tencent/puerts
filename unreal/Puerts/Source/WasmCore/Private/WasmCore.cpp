@@ -7,11 +7,43 @@
  */
 
 #include "WasmCore.h"
+#include "WasmEnv.h"
+#include "WasmRuntime.h"
+#include "WasmModuleInstance.h"
+#include "WasmFunction.h"
 
 #define LOCTEXT_NAMESPACE "WasmCoreModule"
 
 void WasmCoreModule::StartupModule()
 {
+    /*if (true)
+    {
+        WasmEnv* Env = new WasmEnv();
+        WasmRuntime* Runtime = new WasmRuntime(Env);
+        {
+            TArray<uint8> Data;
+
+    if (FFileHelper::LoadFileToArray(Data, *(FPaths::ProjectContentDir() / TEXT("JavaScript/wasm/main.wasm"))))
+            {
+
+    WasmModuleInstance* Instance = new WasmModuleInstance(Runtime, Data, 0);
+            }
+        }
+
+        {
+
+    TArray<uint8> Data;
+            if (FFileHelper::LoadFileToArray(Data, *(FPaths::ProjectContentDir() /
+    TEXT("JavaScript/wasm/testvector.wasm"))))
+            { WasmModuleInstance* Instance = new WasmModuleInstance(Runtime, Data, 0);
+
+    float a = Instance->GetAllExportFunctions()[TEXT("TestVector")]->Call<float, FVector>(FVector(1, 2, 3));
+
+    UE_LOG(LogTemp, Warning, TEXT("sss %f"), a); }
+        }
+        delete Runtime;
+        delete Env;
+    }*/
 }
 
 void WasmCoreModule::ShutdownModule()
