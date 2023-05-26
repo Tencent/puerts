@@ -4284,7 +4284,11 @@ void FJsEnvImpl::Wasm_MemoryBuffer(const v8::FunctionCallbackInfo<v8::Value>& In
             uint8* Ptr = Runtime->GetBuffer(Length);
             if (Ptr)
             {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+                auto Buffer = v8::ArrayBuffer_New_Without_Stl(Isolate, Ptr, Length);
+#else
                 auto Buffer = v8::ArrayBuffer::New(Isolate, Ptr, Length, v8::ArrayBufferCreationMode::kExternalized);
+#endif
                 Info.GetReturnValue().Set(Buffer);
             }
             else
