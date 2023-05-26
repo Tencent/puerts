@@ -8,6 +8,7 @@
 #if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Puerts.TypeMapping;
 #if CSHARP_7_3_OR_NEWER
@@ -887,9 +888,11 @@ namespace Puerts
             lock (funcRefCount)
             {
                 pendingRemovedList.Clear();
-                foreach (var kv in funcRefCount)
+                var funcRefKeyList = funcRefCount.Keys.ToList();
+                for (int i = 0, l = funcRefKeyList.Count; i < l; i++)
                 {
-                    if (kv.Value <= 0) pendingRemovedList.Add(kv.Key);
+                    var k = funcRefKeyList[i];
+                    if (funcRefCount[k] <= 0) pendingRemovedList.Add(k);
                 }
                 for(int i = 0; i  < pendingRemovedList.Count; ++i)
                 {
@@ -912,9 +915,11 @@ namespace Puerts
             lock (JSObjRefCount)
             {
                 pendingRemovedJsObjList.Clear();
-                foreach (var kv in JSObjRefCount)
+                var JSObjRefKeyList = JSObjRefCount.Keys.ToList();
+                for (int i = 0, l = JSObjRefKeyList.Count; i < l; i++)
                 {
-                    if (kv.Value <= 0) pendingRemovedJsObjList.Add(kv.Key);
+                    var k = JSObjRefKeyList[i];
+                    if (JSObjRefCount[k] <= 0) pendingRemovedList.Add(k);
                 }
                 for(int i = 0; i  < pendingRemovedJsObjList.Count; ++i)
                 {
@@ -933,3 +938,6 @@ namespace Puerts
 }
 
 #endif
+
+
+
