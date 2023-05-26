@@ -347,7 +347,7 @@ namespace Puerts.Editor
                                 Namespace = interfaces[i].Namespace
                             };
 
-                            if (result.IsGenericTypeDefinition && interfaces[i].IsGenericType &&
+                            if (!type.IsInterface && result.IsGenericTypeDefinition && interfaces[i].IsGenericType &&
                                 typeof(IEnumerable<>) == interfaces[i].GetGenericTypeDefinition())
                             {
                                 result.IteratorReturnName = Utils.GetTsTypeName(interfaces[i].GenericTypeArguments[0]);
