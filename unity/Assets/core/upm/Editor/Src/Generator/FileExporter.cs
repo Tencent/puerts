@@ -199,6 +199,11 @@ namespace Puerts.Editor
                     .Distinct()
                     .ToList();
 
+                if (!Utils.HasFilter)
+                {
+                    Utils.SetFilters(Configure.GetFilters());
+                }
+                
                 var RegisterInfos = RegisterInfoGenerator.GetRegisterInfos(genTypes);
 
                 if (loader == null)

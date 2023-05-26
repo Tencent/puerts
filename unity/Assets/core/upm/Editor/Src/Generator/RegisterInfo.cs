@@ -36,7 +36,7 @@ namespace Puerts.Editor
 
             public string WrapperName;
 
-            public List<MemberRegisterInfoForGenerate> Members;
+            public new List<MemberRegisterInfoForGenerate> Members;
         }
         internal class RegisterInfoGenerator
         {
@@ -52,7 +52,7 @@ namespace Puerts.Editor
                     MemberRegisterInfoForGenerate oldMRI;
                     if (dict.TryGetValue(Name, out oldMRI))
                     {
-                        if ((int)Enum.Parse(typeof(BindingMode), newMRI.UseBindingMode) < (int)Enum.Parse(typeof(BindingMode), oldMRI.UseBindingMode))
+                        if ((int)Enum.Parse(typeof(BindingMode), newMRI.UseBindingMode) > (int)Enum.Parse(typeof(BindingMode), oldMRI.UseBindingMode))
                             oldMRI.UseBindingMode = newMRI.UseBindingMode;
                     }
                     else
