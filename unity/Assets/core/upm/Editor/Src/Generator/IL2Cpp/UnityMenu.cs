@@ -21,11 +21,12 @@ namespace PuertsIl2cpp.Editor
             public const string PUERTS_MENU_PREFIX = "PuerTS";
 
 #if !PUERTS_GENERAL && !UNITY_WEBGL
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate For il2cpp Binding (all in one)", false, 2)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate For Xil2cpp mode (all in one)", false, 2)]
             public static void GenV2() {
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
                 PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
+                Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
                 Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(true);
             }
 
@@ -87,6 +88,7 @@ namespace PuertsIl2cpp.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
                 AssetDatabase.Refresh();
             }
+
 
 #endif
         }

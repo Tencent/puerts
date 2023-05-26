@@ -22,7 +22,8 @@ namespace Puerts.Editor
 
 #if !PUERTS_GENERAL
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate (all in one)", false, 1)]
-            public static void GenV1() {
+            public static void GenV1() 
+            {
                 Puerts.Editor.Generator.UnityMenu.GenerateCode();
                 Puerts.Editor.Generator.UnityMenu.GenerateDTS();
                 Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(false);
@@ -36,13 +37,14 @@ namespace Puerts.Editor
                 Directory.CreateDirectory(saveTo);
 
                 FileExporter.ExportWrapper(saveTo);
+                Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts (global.CS style)", false, 6)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts", false, 6)]
             public static void GenerateDTS()
             {
                 var start = DateTime.Now;
@@ -53,7 +55,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
             public static void GenerateDTSOldStyle()
             {
@@ -65,7 +67,7 @@ namespace Puerts.Editor
                 Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms");
                 AssetDatabase.Refresh();
 
-                Utils.filters = null;
+                Utils.SetFilters(null);
             }
 #if !UNITY_WEBGL
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate/il2cpp macro .h", false, 6)]
@@ -100,6 +102,16 @@ namespace Puerts.Editor
                 }
             }
 
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/RegisterInfo", false, 7)]
+            public static void GenRegisterInfo()
+            {
+                var start = DateTime.Now;
+                var saveTo = Puerts.Configure.GetCodeOutputDirectory();
+                Directory.CreateDirectory(saveTo);
+                FileExporter.GenRegisterInfo(saveTo);
+                Debug.Log("finished! use " + (DateTime.Now - start).TotalMilliseconds + " ms Outputed to " + saveTo);
+                AssetDatabase.Refresh();
+            }
 #endif
         }
     }

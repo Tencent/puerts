@@ -18,9 +18,15 @@ namespace Puerts.UnitTest
             this.y = y;
             this.z = z;
         }
+
+        public override string ToString() 
+        { 
+            return this.x + " " + this.y + " " + this.z;
+        }
     }
     public class ForofTestHelper 
     {
+        [UnityEngine.Scripting.Preserve]
         public static List<string> GetAStringList() 
         {
             return new List<string>()
@@ -39,6 +45,7 @@ namespace Puerts.UnitTest
         {
             var env = UnitTestEnv.GetEnv();
             env.ExecuteModule("CSharpModuleTest/forof_test.mjs");
+            env.Tick();
         }
         
         [Test]

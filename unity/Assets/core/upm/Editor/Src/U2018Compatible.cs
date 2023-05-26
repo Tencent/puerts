@@ -8,6 +8,7 @@
 using System.Collections.Generic;
 using Puerts;
 using System.Reflection;
+using Puerts.TypeMapping;
 
 //1、配置类必须打[Configure]标签
 //2、必须放Editor目录
@@ -16,7 +17,7 @@ public class U2018Compatible
 {
 #if UNITY_2018_1_OR_NEWER
     [Filter]
-    static Puerts.Editor.Generator.BindingMode Filter(MemberInfo memberInfo)
+    static BindingMode Filter(MemberInfo memberInfo)
     {
         if (memberInfo.DeclaringType.IsGenericType && memberInfo.DeclaringType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
         {
@@ -28,7 +29,7 @@ public class U2018Compatible
                 {
                     if (typeof(System.Collections.IEnumerable).IsAssignableFrom(parameterInfos[0].ParameterType))
                     {
-                        return Puerts.Editor.Generator.BindingMode.DontBinding;
+                        return BindingMode.DontBinding;
                     }
                 }
             }
@@ -37,7 +38,7 @@ public class U2018Compatible
                 var methodInfo = memberInfo as MethodInfo;
                 if (methodInfo.Name == "TryAdd" || methodInfo.Name == "Remove" && methodInfo.GetParameters().Length == 2)
                 {
-                    return Puerts.Editor.Generator.BindingMode.DontBinding;
+                    return BindingMode.DontBinding;
                 }
             }
         }
@@ -49,7 +50,7 @@ public class U2018Compatible
                 var parameterInfos = constructorInfo.GetParameters();
                 if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(int))
                 {
-                    return Puerts.Editor.Generator.BindingMode.DontBinding;
+                    return BindingMode.DontBinding;
                 }
             }
             else if (memberInfo.MemberType == MemberTypes.Method)
@@ -57,19 +58,19 @@ public class U2018Compatible
                 var methodInfo = memberInfo as MethodInfo;
                 if (methodInfo.Name == "TryGetValue" && methodInfo.GetParameters().Length == 2)
                 {
-                    return Puerts.Editor.Generator.BindingMode.DontBinding;
+                    return BindingMode.DontBinding;
                 }
             }
         }
         if (memberInfo.DeclaringType.ToString() == "System.Type" && memberInfo.Name == "IsSZArray")
         {
-            return Puerts.Editor.Generator.BindingMode.DontBinding;
+            return BindingMode.DontBinding;
         }
         if (memberInfo.DeclaringType.ToString() == "System.Threading.Tasks.Task" && memberInfo.Name == "IsCompletedSuccessfully")
         {
-            return Puerts.Editor.Generator.BindingMode.DontBinding;
+            return BindingMode.DontBinding;
         }
-        return Puerts.Editor.Generator.BindingMode.FastBinding;
+        return BindingMode.FastBinding;
     }
 #endif
 }
