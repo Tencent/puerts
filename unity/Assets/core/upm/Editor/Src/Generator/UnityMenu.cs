@@ -44,7 +44,7 @@ namespace Puerts.Editor
                 Utils.SetFilters(null);
             }
 
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts (global.CS style)", false, 6)]
+            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/index.d.ts", false, 6)]
             public static void GenerateDTS()
             {
                 var start = DateTime.Now;
