@@ -266,6 +266,8 @@ namespace PuertsIl2cpp.Editor
                         .Distinct()
                         .ToList());
 
+                    // configureTypes.Clear();
+
                     genWrapperCtor = configureTypes
                         .SelectMany(t => t.GetConstructors(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))

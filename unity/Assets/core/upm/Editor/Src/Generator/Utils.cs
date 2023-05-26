@@ -170,7 +170,7 @@ namespace Puerts.Editor
                 foreach (var filter in BindingModeFilters)
                 {
                     var mode = filter(mbi);
-                    strictestMode = strictestMode < mode ? mode : strictestMode;
+                    strictestMode = strictestMode > mode ? mode : strictestMode;
                 }
                 return strictestMode;
             }

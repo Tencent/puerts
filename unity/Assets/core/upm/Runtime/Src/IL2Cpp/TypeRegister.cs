@@ -29,14 +29,15 @@ namespace Puerts.TypeMapping
         private static IntPtr ReflectionFieldWrappers = IntPtr.Zero;
         private static BindingMode GetBindingMode(RegisterInfo info, string name, bool isStatic)
         {
-            var _name = name + (isStatic ? '_static': '')
+            var _name = name + (isStatic ? "_static": "");
             if (info == null || !info.Members.ContainsKey(_name)) return RegisterInfoManager.DefaultBindingMode;
             return info.Members[_name].UseBindingMode;
         }
         private static IntPtr GetWrapperFunc(RegisterInfo registerInfo, MemberInfo member, string signature)
         {
             string name = member.Name;
-            if (member is MethodInfo) 
+            bool isMethod = member is MethodInfo;
+            if (isMethod) 
             {
                 var method = (MethodInfo)member;
                 if (method.IsSpecialName && method.Name != "get_Item" && (method.Name.StartsWith("get_") || method.Name.StartsWith("set_")))
@@ -44,7 +45,7 @@ namespace Puerts.TypeMapping
                     name = member.Name.Substring(4);
                 }
             }
-            BindingMode bindingMode = GetBindingMode(registerInfo, name);
+            BindingMode bindingMode = GetBindingMode(registerInfo, name, isMethod ? ((MethodInfo)member).IsStatic : false);
             IntPtr wrapper = IntPtr.Zero;
             if (bindingMode == BindingMode.FastBinding) 
             {
@@ -58,9 +59,9 @@ namespace Puerts.TypeMapping
             
             return wrapper;
         }
-        private static IntPtr GetFieldWrapper(RegisterInfo registerInfo, string name, string signature)
+        private static IntPtr GetFieldWrapper(RegisterInfo registerInfo, string name, bool isStatic, string signature)
         {
-            BindingMode bindingMode = GetBindingMode(registerInfo, name);
+            BindingMode bindingMode = GetBindingMode(registerInfo, name, isStatic);
             IntPtr wrapper = IntPtr.Zero;
             if (bindingMode == BindingMode.FastBinding) 
             {
@@ -289,7 +290,7 @@ namespace Puerts.TypeMapping
                             string signature = (field.IsStatic ? "" : "t") + TypeUtils.GetTypeSignature(field.FieldType);
                             var name = field.Name;
                             
-                            var wrapper = GetFieldWrapper(registerInfo, name, signature);
+                            var wrapper = GetFieldWrapper(registerInfo, name, field.IsStatic, signature);
                             if (wrapper == IntPtr.Zero)
                             {
                                 UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, name, signature));
