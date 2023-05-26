@@ -55,6 +55,8 @@ const CODE_SNIPPETS = {
     },
     
     defineValueType(valueTypeInfo) {
+        // TODO 会存在一个 IsEnum 且 IsGenericParameter 的类型，signature为空，先过滤处理，晚点彻查。
+        if (!valueTypeInfo.Signature) return ''
         return t`// ${valueTypeInfo.CsName}
 struct ${valueTypeInfo.Signature}
 {
