@@ -24,3 +24,13 @@ public:
 
     bool bCopy = false;
 };
+
+USTRUCT(BlueprintType)
+struct FArrayBufferValue
+{
+public:
+    GENERATED_USTRUCT_BODY()
+
+public:
+    TArray<uint8> Data;
+};

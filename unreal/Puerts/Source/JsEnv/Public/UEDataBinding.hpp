@@ -254,6 +254,62 @@ struct Converter<FArrayBuffer>
     }
 };
 
+template <>
+struct Converter<FArrayBufferValue>
+{
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBufferValue& value)
+    {
+        v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(context->GetIsolate(), value.Data.Num());
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        void* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
+#else
+        void* Buff = Ab->GetContents().Data();
+#endif
+        ::memcpy(Buff, value.Data.GetData(), value.Data.Num());
+        return Ab;
+    }
+
+    static FArrayBufferValue toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        FArrayBufferValue Ret;
+        size_t Len = 0;
+        char* Data = nullptr;
+        if (value->IsArrayBufferView())
+        {
+            v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
+            auto Ab = BuffView->Buffer();
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
+#else
+            Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
+#endif
+            Len = BuffView->ByteLength();
+        }
+        else if (value->IsArrayBuffer())
+        {
+            auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+            Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, Len));
+#else
+            Data = Ab->GetContents().Data();
+            Len = Ab->GetContents().ByteLength();
+#endif
+        }
+        if (Len > 0 && Data)
+        {
+            Ret.Data.AddUninitialized(Len);
+            ::memcpy(Ret.Data.GetData(), Data, Len);
+        }
+
+        return Ret;
+    }
+
+    static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    {
+        return value->IsArrayBuffer() || value->IsArrayBufferView();
+    }
+};
+
 template <typename T>
 struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObject*>::value>::type>
 {
@@ -338,6 +394,15 @@ struct ScriptTypeName<FText>
 
 template <>
 struct ScriptTypeName<FArrayBuffer>
+{
+    static constexpr auto value()
+    {
+        return Literal("ArrayBuffer");
+    }
+};
+
+template <>
+struct ScriptTypeName<FArrayBufferValue>
 {
     static constexpr auto value()
     {

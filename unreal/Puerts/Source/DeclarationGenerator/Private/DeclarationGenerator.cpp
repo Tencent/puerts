@@ -638,7 +638,8 @@ void FTypeScriptDeclarationGenerator::LoadAllWidgetBlueprint(FName InSearchPath,
 
 void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
 {
-    if (ToGen->GetName().Equals(TEXT("ArrayBuffer")) || ToGen->GetName().Equals(TEXT("JsObject")))
+    if (ToGen->GetName().Equals(TEXT("ArrayBuffer")) || ToGen->GetName().Equals(TEXT("ArrayBufferValue")) ||
+        ToGen->GetName().Equals(TEXT("JsObject")))
     {
         return;
     }
@@ -751,7 +752,8 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
     }
     else if (auto StructProperty = CastFieldMacro<StructPropertyMacro>(Property))
     {
-        if (StructProperty->Struct->GetName() != TEXT("ArrayBuffer") && StructProperty->Struct->GetName() != TEXT("JsObject"))
+        if (StructProperty->Struct->GetName() != TEXT("ArrayBuffer") &&
+            StructProperty->Struct->GetName() != TEXT("ArrayBufferValue") && StructProperty->Struct->GetName() != TEXT("JsObject"))
         {
             const FString& Name = GetNameWithNamespace(StructProperty->Struct);
             const TArray<FString>& IgnoreStructListOnDTS = IPuertsModule::Get().GetIgnoreStructListOnDTS();
@@ -769,7 +771,8 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         {
             StringBuffer << "object";
         }
-        else if (StructProperty->Struct->GetName() == TEXT("ArrayBuffer"))
+        else if (StructProperty->Struct->GetName() == TEXT("ArrayBuffer") ||
+                 StructProperty->Struct->GetName() == TEXT("ArrayBufferValue"))
         {
             StringBuffer << "ArrayBuffer";
         }

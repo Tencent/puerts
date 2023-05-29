@@ -111,6 +111,7 @@ public:
         if (!OwnerIsClass)
         {
             if ((InProperty->IsA<StructPropertyMacro>() && StructProperty->Struct != FArrayBuffer::StaticStruct() &&
+                    StructProperty->Struct != FArrayBufferValue::StaticStruct() &&
                     StructProperty->Struct != FJsObject::StaticStruct()) ||
                 InProperty->IsA<MapPropertyMacro>() || InProperty->IsA<ArrayPropertyMacro>() || InProperty->IsA<SetPropertyMacro>())
             {
