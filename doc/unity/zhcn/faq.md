@@ -11,6 +11,10 @@
 
 相关issue：https://github.com/Tencent/puerts/issues/941
 
+## [Puer002]module not found
+PuerTS在加载js文件时没有能够找到对应的js文件，具体来说，是调用ILoader的`FileExists`返回了false，或是调用IResolvableLoader的`Resolve`时返回了空字符串或null。
+
+如果遇到这个问题，先确认你使用的loader是DefaultLoader（即创建JsEnv时没有传任何参数）还是你自己编写的自定义Loader。然后检查这个Loader的`FileExists`函数或是`Resolve`函数，看看为什么会返回不正确的值。
 
 ## invalid arguments to XXX
 

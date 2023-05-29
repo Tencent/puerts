@@ -14,6 +14,11 @@ There are several possible reasons why this issue may occur:
 
 Related issue: https://github.com/Tencent/puerts/issues/941
 
+## [Puer002]module not found
+PuerTS was unable to find the corresponding js file when loading the js script. Specifically, either the `FileExists` call of the `ILoader` returned false, or the `Resolve` call of the `IResolvableLoader` returned an empty string or null.
+
+If you encounter this issue, first confirm whether you are using the `DefaultLoader` (i.e., no parameters are passed when creating the JsEnv) or a custom Loader you wrote yourself. Then, check the `FileExists` function or the `Resolve` function of the Loader and see why it returns incorrect values.
+
 ## invalid arguments to XXX
 
 If you're using JS, it may be because you have typed the arguments incorrectly.
