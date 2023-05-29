@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-pre.4] - 2023-05-29
+1. 修复：从JS往C#抛错时可能出现非法字符。
+2. 修复：注释文档生成的两个问题 #1322 #1329
+3. 修复：如果一个C#对象的构造函数抛错，可能导致后续有对象莫名其妙变为null
+4. 优化：WebGL下的性能优化
+5. 修复: 生成继承于IEnumerable的类在dts下报错 #1322
+6. 为了更好区分`Unity本身的Il2cpp backend`和我们在2.0版本新做的`puerts il2cpp特别优化模式`，我们将我们2.0的新模式命名为`xIl2cpp mode`
+7. 修复：在xIl2cpp模式下，在C#侧创建ArrayBuffer可能导致它的内存被改写。#1340
+8. 修复：在xIl2cpp模式下，在一个返回值为System.Object的函数里返回结构体会导致crash。
+9. 修复：在xIl2cpp模式下，传递nullable valuetype会导致crash。 #1320
+10. 修复：在xIl2cpp模式下，往ref/out参数设置valuetype会导致crash。 #1343
+11. 类注册逻辑重构: #1317。现在我们拥有了全新的权限控制能力，修复了一些xil2cpp模式下的相关问题。
+
 ## [2.0.0-pre.3] - 2023-04-19
 1. 修复：openupm版本ios Node.js无法启动的问题 #1302
 1. 修复：DTS生成时DontBinding方法的依赖依旧被生成的问题 #1295

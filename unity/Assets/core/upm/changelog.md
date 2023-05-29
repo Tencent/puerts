@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-pre.4] - 2023-05-29
+1. Fix: the Error message threw from JS to CS would have unexpected character.
+2. Fix: doc generating fix #1322 #1329
+3. Fix: if an error is thrown in constructor, some valuetype would become null unexpectly.
+4. optimize: performance in WebGL is optimized.
+5. Fix: dts with Enumerable would throw compile error #1322
+6. To distinguish the meaning between Unity Il2cpp backend, we named the new il2cpp binding mode(v2 mode) to xIl2cpp mode.
+7. Fix: in xIl2cpp mode, create Puerts.ArrayBuffer in csharp would make its memory unstable. #1340
+8. Fix: in xIl2cpp mode, it would crash when returning a valuetype in a method with returntype `System.Object`.
+9. Fix: in xIl2cpp mode, it would crash when transfering nullable valuetype. #1320
+10. Fix: in xIl2cpp mode, it would crash when setting a valuetype to ref/out arguments. #1343
+11. Register logic refactor: #1317. Now we have a new access control ability.
+
 ## [2.0.0-pre.3] - 2023-04-19
 1. Fix: ios Node.js cannot start for PuerTS's openupm version #1302
 2. Fix: the dependencies of DontBinding methods are still generated in DTS generation #1295
