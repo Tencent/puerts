@@ -1,14 +1,15 @@
-# 生成过滤器 - Filter
+# 生成控制 (Filter)
 
-### Filter是干嘛的
-在生成StaticWrapper时，PuerTS会默认将生成列表里的所有类的所有字段生成wrapper。但实际情况下我们往往需要一系列控制，比如：
+当你生成wrapper时遇到以下问题时，就可以参考这段文档：
 1. 某些成员生成之后会引发编译错误，需要过滤掉不生成
 2. 权限控制。希望某些成员不允许JS访问。
-3. 代码包体积控制。生成出来的代码还是会占一定体积，会希望某些接口能在首次访问时才生成wrapper。
 
-这时候Filter就派上了用场，下面将会一个一个case地演示：
+## Filter是干嘛的
+PuerTS提供一系列的生成控制能力，通过配置一个Filter函数对StaticWrapper进行少量的自定义，实现上述需求。
 
-### 过滤编译错误的接口
+下面会以案例进行说明
+
+## 过滤编译错误的接口
 生成`StaticWrapper`的程序是运行在Editor的，因此PuerTS在执行的反射时候，会把Editor专有的接口生成到`StaticWrapper`里。但在后续游戏打包时，由于Runtime的Assembly没有这些接口，就会导致编译脚本的时候出错。
 
 ```csharp
@@ -29,9 +30,9 @@ public class ExamplesCfg
 }
 ```
 
+## 权限控制
 
-### 权限控制
-
+首先，如果你想禁用某个类的某一些接口，不允许它在JS侧被调用，可以如下编写Filter
 ```C#
 static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
@@ -43,18 +44,38 @@ static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.Membe
 }
 ```
 
-### 惰性生成
-前面提到过，在未生成`StaticWrapper`时，一次接口调用会有两部分反射调用：1. 反射获取一个类下的成员 2. 根据MemberInfo取值。
+上述情况，PuerTS会在Wrapper里记录这几个属性的信息，这样在注册这几个属性的时候，就会禁止它们被调用。
 
-惰性生成的意思就是在编辑器里执行第1步反射，将信息生成为代码，这样运行时就只需要进行第2步反射。在代码体积和运行速度之间取得平衡。
+但如果是反过来，你希望禁用大部分的JS调用，只允许少部分接口可调的时候，就不太可能为所有的属性生成wrapper并标记为不可用。
 
+这时候你可以通过这样的C#调用来禁止默认JS调用：
+
+```C#
+var env = new JsEnv();
+env.SetDefaultBindingMode(BindingMode.DontBinding)
+```
+再为需要通过的属性在Filter里返回可用即可：
 ```C#
 static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
-    if (memberInfo.DeclaringType.ToString() == "System.Threading.Tasks.Task" && memberInfo.Name == "IsCompletedSuccessfully")
+    if (memberInfo.DeclaringType == typeof(UnityEngine.Vector3)) // 使vector3可用
     {
-        return Puerts.Editor.Generator.BindingMode.LazyBinding; // 首次调用时才执行反射
+        return Puerts.Editor.Generator.BindingMode.FastBinding;
     }
-    return Puerts.Editor.Generator.BindingMode.FastBinding; // 等同于前面return false的情况
+    return Puerts.Editor.Generator.BindingMode.DontBinding;
+}
+```
+
+## xIl2cpp模式遍历过滤
+xIl2cpp模式下，默认的自带的cppwrapper生成是全量类型的生成。因此会尝试获取methodbody来搜索类型。
+
+这个行为可能会不太稳定，如果想让某些类型不进行这个操作，可以通过这种方式过滤
+```C#
+[Filter]
+static bool GetFilterClass(FilterAction filterAction, MemberInfo mbi)
+{
+    if (filterAction == FilterAction.MethodInInstructions) 
+        return skipAssembles.Contains(mbi.DeclaringType.Assembly.GetName().Name);
+    return false;
 }
 ```
