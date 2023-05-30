@@ -31,7 +31,7 @@ find . -name "*.dylib" | xargs sudo xattr -r -d com.apple.quarantine
 
 纯蓝图工程不会自动编译Plugins，而Puerts目前的源码或者发布包内，都是C++源码。
 
-可以clone puerts的demo，在vs编译工程后拷贝到纯蓝图工程。
+一个纯蓝图如何使用一个C++ Plugins是个UE通用问题，目前已知可行的方式是添加一个C++代码把这纯蓝图工程转为C++工程，另外一个比较有可能（但未验证的方式）是自行编译UE引擎，而且编译引擎时把puerts放进去一起编译。
 
 ### 虚拟机切换
 
