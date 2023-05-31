@@ -7,6 +7,7 @@
  */
 
 #include "TypeScriptGeneratedClass.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "PropertyMacros.h"
 #include "JSGeneratedFunction.h"
 #include "JSLogger.h"

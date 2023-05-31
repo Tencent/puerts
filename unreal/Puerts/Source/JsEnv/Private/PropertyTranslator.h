@@ -12,6 +12,7 @@
 
 #include "CoreMinimal.h"
 #include "CoreUObject.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "PropertyMacros.h"
 
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4

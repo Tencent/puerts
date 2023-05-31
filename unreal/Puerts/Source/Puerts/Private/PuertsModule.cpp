@@ -21,6 +21,10 @@
 #endif
 #include "Commandlets/Commandlet.h"
 #include "TypeScriptGeneratedClass.h"
+#include "Runtime/Launch/Resources/Version.h"
+#include "Misc/Paths.h"
+#include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
 
 DEFINE_LOG_CATEGORY_STATIC(PuertsModule, Log, All);
 

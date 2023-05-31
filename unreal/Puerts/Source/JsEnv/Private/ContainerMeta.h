@@ -9,6 +9,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "PropertyMacros.h"
 #include "UObject/UnrealType.h"
 #include "UObject/TextProperty.h"

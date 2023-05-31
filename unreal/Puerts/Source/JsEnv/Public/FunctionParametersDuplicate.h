@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Engine/Blueprint.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "PropertyMacros.h"
 
 static PropertyMacro* DuplicateProperty(
