@@ -273,7 +273,7 @@ struct Converter<FArrayBufferValue>
     {
         FArrayBufferValue Ret;
         size_t Len = 0;
-        char* Data = nullptr;
+        void* Data = nullptr;
         if (value->IsArrayBufferView())
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
@@ -289,7 +289,7 @@ struct Converter<FArrayBufferValue>
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
 #if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, Len));
+            Data = v8::ArrayBuffer_Get_Data(Ab, Len);
 #else
             Data = Ab->GetContents().Data();
             Len = Ab->GetContents().ByteLength();
