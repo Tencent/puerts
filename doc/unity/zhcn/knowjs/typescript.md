@@ -96,4 +96,6 @@ require('source-map-support').install();
 
 #### console-redirect
 
-在控制台里得到 Typescript 栈之后，还有一点是比较麻烦的，就是你不能像 C# 文件一样直接点击控制台里的文件路径跳转到指定位置。这时候就要添加 consoleredirect 的支持。你可以参考这个项目：https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect。
+在控制台里得到 Typescript 栈之后，还有一点是比较麻烦的，就是你不能像 C# 文件一样直接点击控制台里的文件路径跳转到指定位置。这时候就要添加 consoleredirect 的支持。
+
+你可以参考这个项目：https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect。

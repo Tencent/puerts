@@ -96,4 +96,6 @@ After that, you can get the Typescript stack trace in the console.
 
 #### Console-redirect
 
-After obtaining the Typescript stack trace in the console, there's still one issue that's a bit troublesome: you can't click on the file path in the console to jump to the specified location like you can with C# files. This is where consoleredirect support comes in. Refer to: https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect
+After obtaining the Typescript stack trace in the console, there's still one issue that's a bit troublesome: you can't click on the file path in the console to jump to the specified location like you can with C# files. 
+
+This is where consoleredirect support comes in. Refer to: https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect
