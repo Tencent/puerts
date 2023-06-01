@@ -395,7 +395,11 @@ namespace Puerts
             try
             {
                 JSCallInfo callInfo = new JSCallInfo(isolate, info, self, argumentsLen);
-                if (overloads.Count == 1 && overloads[0].parameters.optionalParamPos == overloads[0].parameters.paramLength) {
+                if (
+                    overloads.Count == 1 && 
+                    overloads[0].parameters.optionalParamPos == overloads[0].parameters.paramLength &&
+                    overloads[0].parameters.paramLength == callInfo.Length
+                ) {
                     overloads[0].Invoke(callInfo);
                     return;
                 } 
@@ -411,7 +415,7 @@ namespace Puerts
                         }
                     }
                 }
-                PuertsDLL.ThrowException(isolate, "invalid arguments to " + name);
+                PuertsDLL.ThrowException(isolate, "invalid arguments to " + name + " or the overload is striped by unity");
             }
             catch (TargetInvocationException e)
             {
@@ -437,7 +441,7 @@ namespace Puerts
                         return overload.Construct(jsCallInfo);
                     }
                 }
-                PuertsDLL.ThrowException(isolate, "invalid arguments to " + name);
+                PuertsDLL.ThrowException(isolate, "invalid arguments to " + name + " or the overload is striped by unity");
             }
             catch (TargetInvocationException e)
             {
