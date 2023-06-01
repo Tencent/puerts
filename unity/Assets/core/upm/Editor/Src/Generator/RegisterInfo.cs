@@ -97,7 +97,7 @@ namespace Puerts.Editor
                         {
                             if (m.DeclaringType == type && m.IsSpecialName && m.Name.StartsWith("op_") && m.IsStatic)
                             {
-                                if (m.Name == "op_Explicit" || m.Name == "op_Implicit") return null;
+                                if (m.Name == "op_Explicit" || m.Name == "op_Implicit") continue;
                                 Collector.Add(m.Name, new MemberRegisterInfoForGenerate
                                 {
                                     Name = m.Name,
