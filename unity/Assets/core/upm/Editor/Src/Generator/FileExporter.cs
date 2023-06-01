@@ -126,7 +126,6 @@ namespace Puerts.Editor
                         }
                         while (makeFileUniqueMap.ContainsKey(filePath.ToLower()))
                         {
-                            // ���ڴ�Сд�ظ����������һ��idȥ��
                             filePath = saveTo + staticWrapperInfo.WrapClassName + "_" + uniqueId + ".cs";
                             uniqueId++;
                         }
@@ -168,7 +167,7 @@ namespace Puerts.Editor
                 }
 
 #if UNITY_ANDROID || UNITY_IPHONE
-            if (false)
+                if (false)
 #endif
                 {
                     fileContent += @"
