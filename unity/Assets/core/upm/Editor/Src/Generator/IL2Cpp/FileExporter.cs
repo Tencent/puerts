@@ -421,15 +421,6 @@ namespace PuertsIl2cpp.Editor
                     .ToList();
                 using (var jsEnv = new Puerts.JsEnv())
                 {
-                    var genericPreserverRender = jsEnv.ExecuteModule<Func<List<Type>, string>>("puerts/templates/linkxmlgen.tpl.mjs", "GenericTypePreserverTemplate");
-                    string genericPreserverContent = genericPreserverRender(genTypes);
-                    var genericPreserverPath = outDir + "GenericTypePreserver_Gen.cs";
-                    using (StreamWriter textWriter = new StreamWriter(genericPreserverPath, false, Encoding.UTF8))
-                    {
-                        textWriter.Write(genericPreserverContent);
-                        textWriter.Flush();
-                    }
-
                     var linkXMLRender = jsEnv.ExecuteModule<Func<List<Type>, string>>("puerts/templates/linkxmlgen.tpl.mjs", "LinkXMLTemplate");
                     string linkXMLContent = linkXMLRender(genTypes);
                     var linkXMLPath = outDir + "link.xml";

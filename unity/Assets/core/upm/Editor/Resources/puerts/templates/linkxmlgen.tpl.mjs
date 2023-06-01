@@ -15,27 +15,27 @@ export function LinkXMLTemplate(genTypes) {
 </linker>`.trim();
 }
 
-export function GenericTypePreserverTemplate(genTypes) {
-    return `
-namespace Puerts
-{
-    #if ENABLE_IL2CPP
-        [UnityEngine.Scripting.Preserve]
-    #endif
-    public static class GenericTypePreserver_Gen
-    {
-        #if ENABLE_IL2CPP
-            [UnityEngine.Scripting.Preserve]
-        #endif
-        public static void Preserver()
-        {
-        ${FOR(listToJsArray(genTypes).filter(item=> item.IsGenericType), item => `
-            UnityEngine.Debug.Log(typeof(${item.GetFriendlyName()}));
-        `)}
-        }
-    }
-}`.trim();
-}
+// export function GenericTypePreserverTemplate(genTypes) {
+//     return `
+// namespace Puerts
+// {
+//     #if ENABLE_IL2CPP
+//         [UnityEngine.Scripting.Preserve]
+//     #endif
+//     public static class GenericTypePreserver_Gen
+//     {
+//         #if ENABLE_IL2CPP
+//             [UnityEngine.Scripting.Preserve]
+//         #endif
+//         public static void Preserver()
+//         {
+//         ${FOR(listToJsArray(genTypes).filter(item=> item.IsGenericType), item => `
+//             UnityEngine.Debug.Log(typeof(${item.GetFriendlyName()}));
+//         `)}
+//         }
+//     }
+// }`.trim();
+// }
 
 function getAssemblyInfo(genTypes) {
     if (!genTypes) return [];
