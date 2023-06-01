@@ -784,6 +784,11 @@ namespace puerts
     
     bool JSEngine::ClearModuleCache(const char* Path)
     {
-        return BackendEnv.ClearModuleCache(MainIsolate, ResultInfo.Context.Get(MainIsolate), Path);
+        v8::Isolate::Scope IsolateScope(MainIsolate);
+        v8::HandleScope HandleScope(MainIsolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
+        v8::Context::Scope ContextScope(Context);
+
+        return BackendEnv.ClearModuleCache(MainIsolate, Context, Path);
     }
 }
