@@ -34,12 +34,12 @@ void Start() {
 }
 ```
 
-实际上，**立即执行函数**就是Javascript里很类似模块的一个概念。它拥有一个独立的作用域，且能定义它自己的输出项。非常便于封装一个功能。
+实际上，在Javascript里，**立即执行函数**就是很类似模块的一个概念。它拥有一个独立的作用域，且能定义它自己的输出项。非常便于封装一个功能。
 
 -------------
 ### ESM 模块
 
-从**立即执行函数**开始，Javascript 生态后续发展出过很多个模块规范，目前最流行的就是 JS 官方标准：ESM。
+从**立即执行函数**开始，Javascript 生态后续发展出过很多个模块规范，比如CommonJS，但目前最流行的是 JS 官方标准：ESM。
 
 PuerTS 是支持执行 ESM 规范的模块的
 
@@ -63,27 +63,10 @@ void Start() {
 执行以上代码，控制台会输出hello puerts。
 
 -------------------
-### 指定 ESM 模块的后缀名
-
-默认情况下，PuerTS只会将`.mjs`后缀名的文件当作ESM模块处理，其它则不会。
-
-但你可以为你传入JsEnv的`ILoader`再实现一个interface`Puerts.IModuleChecker`。通过`IsESM()`方法指定哪些路径的文件会被当作ESM模块处理。
-```
-class MyLoader: ILoader, IModuleChecker {
-    // ...
-    public IsESM(string specifier) 
-    {
-        return !specifier.EndsWith(".cjs"); // 只要不是cjs结尾都认为是ESM模块
-    }
-}
-
-// ...
-var loader = new MyLoader();
-var env = new JsEnv(loader);
-```
-
--------------------
 
 通过以上写法，即可利用puerts加载js文件并执行，而不需要使用前面例子中的Eval（也不建议您正式开发时使用）。
 
-在独立的文件写 JS 之后，下一步我们要回归 PuerTS 的其中一个重点：TS
+### CommonJS
+在比较古老的PuerTS版本里，曾经也支持过CommonJS模块规范。但在`2.0`版本之后，PuerTS不再默认支持CommonJS，转为建议使用更为流行的ESM规范，
+
+不过，PuerTS依旧提供了单独的第三方包，如果你在切换ESM中遇到任何困难，可以通过添加这个支持包来恢复CommonJS支持，参见：[PuerTS.CommonJS](https://github.com/Tencent/puerts/tree/master/unity/Assets/commonjs/upm)
