@@ -71,7 +71,9 @@ namespace Puerts.Editor
             {
                 BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 
-                return genTypes
+                return genTypes.Where(type => 
+                        !(type.IsEnum || type.IsArray || (Generator.Utils.IsDelegate(type) && type != typeof(Delegate)))
+                    )
                     .Select(type =>
                     {
                         var Collector = new MRICollector();
