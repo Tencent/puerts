@@ -7,6 +7,153 @@
 #include "BackendEnv.h"
 #include "PromiseRejectCallback.hpp"
 
+#pragma warning(push, 0)  
+#include "libplatform/libplatform.h"
+#include "v8.h"
+#pragma warning(pop)
+
+#if defined(WITH_NODEJS)
+
+#pragma warning(push, 0)
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+
+#else // !WITH_NODEJS
+
+#if defined(PLATFORM_WINDOWS)
+
+#if _WIN64
+#include "Blob/Win64/SnapshotBlob.h"
+#else
+#include "Blob/Win32/SnapshotBlob.h"
+#endif
+
+#elif defined(PLATFORM_ANDROID_ARM)
+#include "Blob/Android/armv7a/SnapshotBlob.h"
+#elif defined(PLATFORM_ANDROID_ARM64)
+#include "Blob/Android/arm64/SnapshotBlob.h"
+#elif defined(PLATFORM_MAC_ARM64)
+#include "Blob/macOS_arm64/SnapshotBlob.h"
+#elif defined(PLATFORM_MAC)
+#include "Blob/macOS/SnapshotBlob.h"
+#elif defined(PLATFORM_IOS)
+#include "Blob/iOS/arm64/SnapshotBlob.h"
+#elif defined(PLATFORM_LINUX)
+#include "Blob/Linux/SnapshotBlob.h"
+#endif
+
+#endif // WITH_NODEJS
+
+static std::unique_ptr<v8::Platform> GPlatform;
+#if defined(WITH_NODEJS)
+static std::vector<std::string>* Args;
+static std::vector<std::string>* ExecArgs;
+static std::vector<std::string>* Errors;
+#endif
+
+void puerts::BackendEnv::GlobalPrepare()
+{
+    if (!GPlatform)
+    {
+#if defined(WITH_NODEJS)
+        int Argc = 2;
+        char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
+        char ** Argv = uv_setup_args(Argc, ArgvIn);
+        Args = new std::vector<std::string>(Argv, Argv + Argc);
+        ExecArgs = new std::vector<std::string>();
+        Errors = new std::vector<std::string>();
+
+        GPlatform = node::MultiIsolatePlatform::Create(4);
+        v8::V8::InitializePlatform(GPlatform.get());
+        v8::V8::Initialize();
+        int ExitCode = node::InitializeNodeWithArgs(Args, ExecArgs, Errors);
+        for (const std::string& error : *Errors)
+        {
+            printf("InitializeNodeWithArgs failed\n");
+        }
+#else
+        GPlatform = v8::platform::NewDefaultPlatform();
+        v8::V8::InitializePlatform(GPlatform.get());
+        v8::V8::Initialize();
+#endif
+    }
+}
+
+v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
+{
+    v8::Isolate* MainIsolate;
+
+#if defined(WITH_NODEJS)
+    NodeUVLoop = new uv_loop_t;
+    const int Ret = uv_loop_init(NodeUVLoop);
+    if (Ret != 0)
+    {
+        // TODO log
+        printf("uv_loop_init failed\n");
+        return nullptr;
+    }
+
+    NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
+    // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
+
+    auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
+        Platform);
+
+    MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+#else
+    v8::StartupData SnapshotBlob;
+    SnapshotBlob.data = (const char *)SnapshotBlobCode;
+    SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
+    v8::V8::SetSnapshotDataBlob(&SnapshotBlob);
+
+    // 初始化Isolate和DefaultContext
+    CreateParams = new v8::Isolate::CreateParams();
+    CreateParams->array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+    
+#if WITH_QUICKJS
+        MainIsolate = (external_quickjs_runtime == nullptr) ? v8::Isolate::New(*CreateParams) : v8::Isolate::New(external_quickjs_runtime);
+#else
+        MainIsolate = v8::Isolate::New(*CreateParams);
+#endif
+#endif
+
+    return MainIsolate;
+}
+
+void puerts::BackendEnv::FreeIsolate(v8::Isolate* MainIsolate)
+{
+#if WITH_NODEJS
+    // node::EmitExit(NodeEnv);
+    node::Stop(NodeEnv);
+    node::FreeEnvironment(NodeEnv);
+    node::FreeIsolateData(NodeIsolateData);
+    auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+    bool platform_finished = false;
+    Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
+        *static_cast<bool*>(data) = true;
+    }, &platform_finished);
+    Platform->UnregisterIsolate(MainIsolate);
+#endif
+    MainIsolate->Dispose();
+    MainIsolate = nullptr;
+#if WITH_NODEJS
+    // Wait until the platform has cleaned up all relevant resources.
+    while (!platform_finished)
+    {
+        uv_run(NodeUVLoop, UV_RUN_ONCE);
+    }
+
+    int err = uv_loop_close(NodeUVLoop);
+    assert(err == 0);
+    delete NodeUVLoop;
+#else
+    delete CreateParams->array_buffer_allocator;
+    delete CreateParams;
+#endif
+}
+
 void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
 {
     v8::Isolate* Isolate = info.GetIsolate();
@@ -110,14 +257,37 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
 #endif
 }
 
-void puerts::BackendEnv::InitInject(v8::Isolate* Isolate)
+void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context)
 {
+#if defined(WITH_NODEJS)
+    v8::Local<v8::Object> Global = Context->Global();
+    auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
+    v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
+    auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
+
+    NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+
+    NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
+
+    Global->Set(Context, strConsole, Console).Check();
+
+    v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
+        NodeEnv,
+        "const publicRequire ="
+        "  require('module').createRequire(process.cwd() + '/');"
+        "globalThis.require = publicRequire;");
+
+    if (LoadenvRet.IsEmpty())  // There has been a JS exception.
+    {
+        return;
+    }
+#endif
+
     Isolate->SetPromiseRejectCallback(&PromiseRejectCallback<puerts::BackendEnv>);
+
 #if !WITH_QUICKJS
     Isolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
 #endif
-
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__puer_execute_module_sync__").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
@@ -236,227 +406,227 @@ static v8::MaybeLocal<v8::Value> CallRead(
 }
 
 #if !WITH_QUICKJS
-    v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
-        v8::Local<v8::Context> Context,
-        v8::Local<v8::String> Specifier,
-        v8::Local<v8::Module> Referrer,
-        bool& isFromCache
-    )
+v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
+    v8::Local<v8::Context> Context,
+    v8::Local<v8::String> Specifier,
+    v8::Local<v8::Module> Referrer,
+    bool& isFromCache
+)
+{
+    v8::Isolate* Isolate = Context->GetIsolate();
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
+
+    v8::Local<v8::Value> ReferrerName;
+    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
+    if (referIter != mm->ScriptIdToPathMap.end())
     {
-        v8::Isolate* Isolate = Context->GetIsolate();
-        BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
-
-        v8::Local<v8::Value> ReferrerName;
-        const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
-        if (referIter != mm->ScriptIdToPathMap.end())
-        {
-            std::string referPath_std = referIter->second;
-            ReferrerName = v8::String::NewFromUtf8(Isolate, referPath_std.c_str()).ToLocalChecked();
-        }
-        else
-        {
-            ReferrerName = v8::String::NewFromUtf8(Isolate, "").ToLocalChecked();
-        }
-
-        v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
-        if (maybeRet.IsEmpty()) 
-        {
-            return v8::MaybeLocal<v8::Module> {};
-        }
-        Specifier = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
-
-        v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
-        std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-
-        const auto cacheIter = mm->PathToModuleMap.find(Specifier_std);
-        if (cacheIter != mm->PathToModuleMap.end())//create and link
-        {
-            isFromCache = true;
-            return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
-        }
-        
-        maybeRet = CallRead(Isolate, Context, Specifier);
-        if (maybeRet.IsEmpty()) 
-        {
-            return v8::MaybeLocal<v8::Module> {};
-        }
-        v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
-
-        v8::ScriptOrigin Origin(Specifier,
-                            v8::Integer::New(Isolate, 0),                      // line offset
-                            v8::Integer::New(Isolate, 0),                    // column offset
-                            v8::True(Isolate),                    // is cross origin
-                            v8::Local<v8::Integer>(),                 // script id
-                            v8::Local<v8::Value>(),                   // source map URL
-                            v8::False(Isolate),                   // is opaque (?)
-                            v8::False(Isolate),                   // is WASM
-                            v8::True(Isolate),                    // is ES Module
-                            v8::PrimitiveArray::New(Isolate, 10));
-
-        v8::ScriptCompiler::CompileOptions options;
-
-        v8::ScriptCompiler::Source Source(Code, Origin);
-        v8::Local<v8::Module> Module;
-
-        if (!v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
-                .ToLocal(&Module)) 
-        {
-            return v8::MaybeLocal<v8::Module> {};
-        }
-        mm->ScriptIdToPathMap[Module->ScriptId()] = Specifier_std;
-        mm->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
-        return Module;
+        std::string referPath_std = referIter->second;
+        ReferrerName = v8::String::NewFromUtf8(Isolate, referPath_std.c_str()).ToLocalChecked();
+    }
+    else
+    {
+        ReferrerName = v8::String::NewFromUtf8(Isolate, "").ToLocalChecked();
     }
 
-    v8::MaybeLocal<v8::Module> puerts::esmodule::ResolveModule(
-        v8::Local<v8::Context> Context,
-        v8::Local<v8::String> Specifier,
-        v8::Local<v8::Module> Referrer
-    )
+    v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
+    if (maybeRet.IsEmpty()) 
     {
+        return v8::MaybeLocal<v8::Module> {};
+    }
+    Specifier = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
+
+    v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
+    std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
+
+    const auto cacheIter = mm->PathToModuleMap.find(Specifier_std);
+    if (cacheIter != mm->PathToModuleMap.end())//create and link
+    {
+        isFromCache = true;
+        return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
+    }
+    
+    maybeRet = CallRead(Isolate, Context, Specifier);
+    if (maybeRet.IsEmpty()) 
+    {
+        return v8::MaybeLocal<v8::Module> {};
+    }
+    v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
+
+    v8::ScriptOrigin Origin(Specifier,
+                        v8::Integer::New(Isolate, 0),                      // line offset
+                        v8::Integer::New(Isolate, 0),                    // column offset
+                        v8::True(Isolate),                    // is cross origin
+                        v8::Local<v8::Integer>(),                 // script id
+                        v8::Local<v8::Value>(),                   // source map URL
+                        v8::False(Isolate),                   // is opaque (?)
+                        v8::False(Isolate),                   // is WASM
+                        v8::True(Isolate),                    // is ES Module
+                        v8::PrimitiveArray::New(Isolate, 10));
+
+    v8::ScriptCompiler::CompileOptions options;
+
+    v8::ScriptCompiler::Source Source(Code, Origin);
+    v8::Local<v8::Module> Module;
+
+    if (!v8::ScriptCompiler::CompileModule(Isolate, &Source, v8::ScriptCompiler::kNoCompileOptions)
+            .ToLocal(&Module)) 
+    {
+        return v8::MaybeLocal<v8::Module> {};
+    }
+    mm->ScriptIdToPathMap[Module->ScriptId()] = Specifier_std;
+    mm->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
+    return Module;
+}
+
+v8::MaybeLocal<v8::Module> puerts::esmodule::ResolveModule(
+    v8::Local<v8::Context> Context,
+    v8::Local<v8::String> Specifier,
+    v8::Local<v8::Module> Referrer
+)
+{
+    bool isFromCache = false;
+    return _ResolveModule(Context, Specifier, Referrer, isFromCache);
+}
+
+bool puerts::esmodule::LinkModule(
+    v8::Local<v8::Context> Context,
+    v8::Local<v8::Module> RefModule
+)
+{
+    v8::Isolate* Isolate = Context->GetIsolate();
+
+    for (int i = 0, length = RefModule->GetModuleRequestsLength(); i < length; i++)
+    {
+        v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
+
         bool isFromCache = false;
-        return _ResolveModule(Context, Specifier, Referrer, isFromCache);
-    }
-
-    bool puerts::esmodule::LinkModule(
-        v8::Local<v8::Context> Context,
-        v8::Local<v8::Module> RefModule
-    )
-    {
-        v8::Isolate* Isolate = Context->GetIsolate();
-
-        for (int i = 0, length = RefModule->GetModuleRequestsLength(); i < length; i++)
+        v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, RefModule, isFromCache);
+        if (MaybeModule.IsEmpty())
         {
-            v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
-
-            bool isFromCache = false;
-            v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, RefModule, isFromCache);
-            if (MaybeModule.IsEmpty())
+            return false;
+        }
+        if (!isFromCache) 
+        {
+            if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
             {
                 return false;
             }
-            if (!isFromCache) 
-            {
-                if (!LinkModule(Context, MaybeModule.ToLocalChecked())) 
-                {
-                    return false;
-                }
-            }
         }
-
-        return true;
     }
 
-    void puerts::esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+    return true;
+}
+
+void puerts::esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
+{
+    v8::Isolate* Isolate = Context->GetIsolate();
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
+
+    auto iter = mm->ScriptIdToPathMap.find(Module->ScriptId());
+    if (iter != mm->ScriptIdToPathMap.end()) 
     {
-        v8::Isolate* Isolate = Context->GetIsolate();
-        BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
-
-        auto iter = mm->ScriptIdToPathMap.find(Module->ScriptId());
-        if (iter != mm->ScriptIdToPathMap.end()) 
-        {
-            meta->CreateDataProperty(
-                Context, 
-                v8::String::NewFromUtf8(Isolate, "url").ToLocalChecked(),
-                v8::String::NewFromUtf8(Isolate, ("puer:" + iter->second).c_str()).ToLocalChecked()
-            ).ToChecked();
-        }
+        meta->CreateDataProperty(
+            Context, 
+            v8::String::NewFromUtf8(Isolate, "url").ToLocalChecked(),
+            v8::String::NewFromUtf8(Isolate, ("puer:" + iter->second).c_str()).ToLocalChecked()
+        ).ToChecked();
     }
+}
 
 #else 
-    char* puerts::esmodule::js_module_resolver(
-        JSContext *ctx, const char *base_name, const char *name, void* opaque
-    )
+char* puerts::esmodule::js_module_resolver(
+    JSContext *ctx, const char *base_name, const char *name, void* opaque
+)
+{
+    JSRuntime *rt = JS_GetRuntime(ctx);
+    v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
+    v8::Local<v8::Value> ReferrerName = v8::String::NewFromUtf8(Isolate, base_name).ToLocalChecked();
+
+    v8::TryCatch TryCatch(Isolate);
+    v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
+    if (maybeRet.IsEmpty()) 
     {
-        JSRuntime *rt = JS_GetRuntime(ctx);
-        v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
-        BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+        // should be a exception on mockV8's VM
 
-        v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
-        v8::Local<v8::Value> ReferrerName = v8::String::NewFromUtf8(Isolate, base_name).ToLocalChecked();
-
-        v8::TryCatch TryCatch(Isolate);
-        v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
-        if (maybeRet.IsEmpty()) 
-        {
-            // should be a exception on mockV8's VM
-
-            // TODO rethrow this error will crash, why?
-            // JSValue ex = TryCatch.catched_;
-            std::string ErrorMessage = std::string("[Puer002]module not found ") + name;
-            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
-            JS_Throw(ctx, ex);
-            // there should be a exception in quickjs VM now
-            return nullptr;
-        }
-
-        Specifier = maybeRet.ToLocalChecked();
-        v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
-        const char* specifier = *Specifier_utf8;
-
-        int32_t size = strlen(specifier);
-        char* rname = (char*)js_malloc(ctx, strlen(specifier) + 1);
-        memcpy(rname, specifier, size);
-        rname[size] = '\0';
-        return rname;
+        // TODO rethrow this error will crash, why?
+        // JSValue ex = TryCatch.catched_;
+        std::string ErrorMessage = std::string("[Puer002]module not found ") + name;
+        JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
+        JS_Throw(ctx, ex);
+        // there should be a exception in quickjs VM now
+        return nullptr;
     }
 
-    JSModuleDef* puerts::esmodule::js_module_loader(
-        JSContext* ctx, const char *name, void *opaque
-    ) 
+    Specifier = maybeRet.ToLocalChecked();
+    v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
+    const char* specifier = *Specifier_utf8;
+
+    int32_t size = strlen(specifier);
+    char* rname = (char*)js_malloc(ctx, strlen(specifier) + 1);
+    memcpy(rname, specifier, size);
+    rname[size] = '\0';
+    return rname;
+}
+
+JSModuleDef* puerts::esmodule::js_module_loader(
+    JSContext* ctx, const char *name, void *opaque
+) 
+{
+    JSRuntime *rt = JS_GetRuntime(ctx);
+    v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    
+    std::string name_std(name, strlen(name));
+
+    auto Iter = mm->PathToModuleMap.find(name_std);
+    if (Iter != mm->PathToModuleMap.end())//create and link
     {
-        JSRuntime *rt = JS_GetRuntime(ctx);
-        v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
-        BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-        
-        std::string name_std(name, strlen(name));
-
-        auto Iter = mm->PathToModuleMap.find(name_std);
-        if (Iter != mm->PathToModuleMap.end())//create and link
-        {
-            return Iter->second;
-        }
-
-        v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
-        v8::TryCatch TryCatch(Isolate);
-        v8::MaybeLocal<v8::Value> maybeRet = CallRead(Isolate, Context, Specifier);
-        if (maybeRet.IsEmpty()) 
-        {
-            // should be a exception on mockV8's VM
-
-            // JSValue ex = TryCatch.catched_;
-            // TODO rethrow this error will crash, why?
-            std::string ErrorMessage = std::string("[Puer003]module not found ") + name;
-            JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
-            JS_Throw(ctx, ex);
-            // there should be a exception in quickjs VM now
-            return nullptr;
-        }
-        v8::Local<v8::String> V8Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
-        v8::String::Utf8Value Code_utf8(Isolate, V8Code);
-
-        const char* Code = *Code_utf8;
-        if (Code == nullptr) 
-        {
-            return nullptr;
-        }
-        JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
-
-        if (JS_IsException(func_val)) {
-            // there should be a exception in quickjs VM now
-            return nullptr;
-        }
-
-        auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
-
-        auto obj = JS_GetImportMeta(ctx, module_);
-        JS_SetProperty(ctx, obj, JS_NewAtom(ctx, "url"), JS_NewString(ctx, ("puer:" + name_std).c_str()));
-        JS_FreeValue(ctx, obj);
-
-        mm->PathToModuleMap[name_std] = module_;
-
-        return module_;
+        return Iter->second;
     }
+
+    v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
+    v8::TryCatch TryCatch(Isolate);
+    v8::MaybeLocal<v8::Value> maybeRet = CallRead(Isolate, Context, Specifier);
+    if (maybeRet.IsEmpty()) 
+    {
+        // should be a exception on mockV8's VM
+
+        // JSValue ex = TryCatch.catched_;
+        // TODO rethrow this error will crash, why?
+        std::string ErrorMessage = std::string("[Puer003]module not found ") + name;
+        JSValue ex = JS_NewStringLen(ctx, ErrorMessage.c_str(), ErrorMessage.length());
+        JS_Throw(ctx, ex);
+        // there should be a exception in quickjs VM now
+        return nullptr;
+    }
+    v8::Local<v8::String> V8Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
+    v8::String::Utf8Value Code_utf8(Isolate, V8Code);
+
+    const char* Code = *Code_utf8;
+    if (Code == nullptr) 
+    {
+        return nullptr;
+    }
+    JSValue func_val = JS_Eval(ctx, Code, strlen(Code), name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+
+    if (JS_IsException(func_val)) {
+        // there should be a exception in quickjs VM now
+        return nullptr;
+    }
+
+    auto module_ = (JSModuleDef *) JS_VALUE_GET_PTR(func_val);
+
+    auto obj = JS_GetImportMeta(ctx, module_);
+    JS_SetProperty(ctx, obj, JS_NewAtom(ctx, "url"), JS_NewString(ctx, ("puer:" + name_std).c_str()));
+    JS_FreeValue(ctx, obj);
+
+    mm->PathToModuleMap[name_std] = module_;
+
+    return module_;
+}
 #endif

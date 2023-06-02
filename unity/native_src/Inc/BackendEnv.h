@@ -18,6 +18,15 @@
 #include "quickjs-msvc.h"
 #endif
 
+#if defined(WITH_NODEJS)
+
+#pragma warning(push, 0)
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+
+#endif
+
 namespace puerts
 {
     class BackendEnv 
@@ -31,6 +40,19 @@ namespace puerts
         {
             Inspector = nullptr;
         } 
+
+        v8::Isolate::CreateParams* CreateParams;
+#if defined(WITH_NODEJS)
+        uv_loop_t* NodeUVLoop;
+
+        std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
+
+        node::IsolateData* NodeIsolateData;
+
+        node::Environment* NodeEnv;
+
+        const float UV_LOOP_DELAY = 0.1;
+#endif
 
         // Module
 #if defined(WITH_QUICKJS)
@@ -50,7 +72,13 @@ namespace puerts
         {
             return (BackendEnv*)Isolate->GetData(1);
         }
-        void InitInject(v8::Isolate* Isolate);
+        static void GlobalPrepare();
+
+        v8::Isolate* CreateIsolate(void* external_quickjs_runtime);
+
+        void FreeIsolate(v8::Isolate* Isolate);
+
+        void InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
         
         void CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port);
 
@@ -61,7 +89,12 @@ namespace puerts
         bool ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path);
     };
 
+#if WITH_NODEJS
+    namespace nodejs
+    {
 
+    }
+#endif
 
     namespace esmodule 
     {
