@@ -144,7 +144,15 @@ namespace PuertsIl2cpp
             }
             foreach (var field in type.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                sb.Append(GetTypeSignature(field.FieldType));
+                // special handling circular definition by pointer
+                if (
+                    (field.FieldType.IsByRef || field.FieldType.IsPointer) &&
+                    field.FieldType.GetElementType() == type
+                ) {
+                    sb.Append("Pv");
+                } 
+                else
+                    sb.Append(GetTypeSignature(field.FieldType));
             }
             return sb.ToString();
         }

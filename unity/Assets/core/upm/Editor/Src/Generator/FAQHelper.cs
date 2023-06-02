@@ -45,8 +45,11 @@ class FAQHelper
 
     static FAQHelper()
     {
-        EditorApplication.update += EditorUpdate;
-        Application.logMessageReceived += OnLog;
+        if (!EditorApplication.isPlaying)
+        {
+            EditorApplication.update += EditorUpdate;
+            Application.logMessageReceived += OnLog;
+        }
     }
 
     private static bool print010StaticWrapperError = false;
