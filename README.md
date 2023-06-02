@@ -6,7 +6,7 @@
 [![unreal](https://img.shields.io/badge/unreal-v1.0.3-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.3)
 
 [![unity](https://img.shields.io/badge/unity(stable)-v1.4.1-blue.svg)](doc/unity/zhcn/install.md)
-[![unity](https://img.shields.io/badge/unity(preview)-v2.0.0_pre.3-blue.svg)](doc/unity/zhcn/install.md)
+[![unity](https://img.shields.io/badge/unity(preview)-v2.0.0_pre.4-blue.svg)](doc/unity/zhcn/install.md)
 ![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
 
 ## What？
