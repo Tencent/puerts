@@ -14,64 +14,77 @@ using UnityEngine;
 using System.Linq;
 using System.IO;
 
-[InitializeOnLoad]
-class FAQHelper 
+namespace Puerts.Editor
 {
-    private static void OnLog(string condition, string stacktrace, LogType type)
+    [InitializeOnLoad]
+    class FAQHelper 
     {
-        string genPath = Puerts.Configure.GetCodeOutputDirectory();
-        genPath = genPath.Substring(genPath.IndexOf("Assets"));
-
-        if (type == LogType.Error)
+        private static void OnLog(string condition, string stacktrace, LogType type)
         {
-            if (condition.Contains(genPath))
-            {
-                if (condition.Contains("Wrap.cs"))
-                {
-                    print010StaticWrapperError = true;
-                }
-                if (condition.Contains("RegisterInfo_Gen.cs"))
-                {
-                    print011RegisterInfoError = true;
-                }
-            }
+            string genPath = Puerts.Configure.GetCodeOutputDirectory();
+            genPath = genPath.Substring(genPath.IndexOf("Assets"));
 
-            if (condition.Contains("'unityenv_for_puerts.h' file not found")) 
+            if (type == LogType.Error)
             {
-                print012MacroHeader = true;
+                if (condition.Contains(genPath))
+                {
+                    if (condition.Contains("Wrap.cs"))
+                    {
+                        print010StaticWrapperError = true;
+                    }
+                    if (condition.Contains("RegisterInfo_Gen.cs"))
+                    {
+                        print011RegisterInfoError = true;
+                    }
+                }
+
+                if (condition.Contains("'unityenv_for_puerts.h' file not found")) 
+                {
+                    print012MacroHeader = true;
+                }
             }
         }
-    }
 
-    static FAQHelper()
-    {
-        if (!EditorApplication.isPlaying)
+        static FAQHelper()
         {
             EditorApplication.update += EditorUpdate;
+        }
+
+        private static bool enabled = false;
+        public static void Enable()
+        {
+            if (enabled) return;
+            enabled = true;
             Application.logMessageReceived += OnLog;
         }
-    }
-
-    private static bool print010StaticWrapperError = false;
-    private static bool print011RegisterInfoError = false;
-    private static bool print012MacroHeader = false;
-
-    private static void EditorUpdate()
-    {
-        if (print010StaticWrapperError)
+        public static void Disable()
         {
-            UnityEngine.Debug.Log("[Puer010] StaticWrapper error detected, maybe you should use filter to exclude some member.");
-            print010StaticWrapperError = false;
+            if (!enabled) return;
+            enabled = false;
+            Application.logMessageReceived -= OnLog;
         }
-        if (print011RegisterInfoError)
+
+        private static bool print010StaticWrapperError = false;
+        private static bool print011RegisterInfoError = false;
+        private static bool print012MacroHeader = false;
+
+        private static void EditorUpdate()
         {
-            UnityEngine.Debug.Log("[Puer011] RegisterInfo error detected. maybe you should clean the generated code and regenerate.");
-            print011RegisterInfoError = false;
-        }
-        if (print012MacroHeader)
-        {
-            UnityEngine.Debug.Log("[Puer012] Build error detected, please use 'PuerTS->Generate->il2cpp macro.h'.");
-            print012MacroHeader = false;
+            if (print010StaticWrapperError)
+            {
+                UnityEngine.Debug.Log("[Puer010] StaticWrapper error detected, maybe you should use filter to exclude some member.");
+                print010StaticWrapperError = false;
+            }
+            if (print011RegisterInfoError)
+            {
+                UnityEngine.Debug.Log("[Puer011] RegisterInfo error detected. maybe you should clean the generated code and regenerate.");
+                print011RegisterInfoError = false;
+            }
+            if (print012MacroHeader)
+            {
+                UnityEngine.Debug.Log("[Puer012] Build error detected, please use 'PuerTS->Generate->il2cpp macro.h'.");
+                print012MacroHeader = false;
+            }
         }
     }
 }
