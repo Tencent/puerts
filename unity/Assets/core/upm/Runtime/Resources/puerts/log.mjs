@@ -34,7 +34,7 @@ if (UnityEngine_Debug || !global.console) {
             } catch (err) {
                 return err;
             }
-        }).join(',');
+        }).join(' ');
     }
     
     function getStack(error) {
