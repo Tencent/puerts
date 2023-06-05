@@ -586,10 +586,7 @@ function watch(configFilePath) {
                     if (options.outDir && sourceFileName.startsWith(options.outDir)) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = tsi.getDirectoryPath(moduleFileName);
-                        let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
-                        bp.Save();
-                        return bp.GeneratedClass;
+                        return onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath);
                     }
                 }
             }
@@ -926,6 +923,7 @@ function watch(configFilePath) {
                 bp.RemoveNotExistedFunction();
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
+                return bp.GeneratedClass;
             }
             function getModuleNames(type) {
                 let ret = [];
