@@ -13,7 +13,6 @@
 
 #endif // WITH_NODEJS
 
-
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
 #include "pesapi.h"
@@ -726,6 +725,17 @@ struct JSEnv
     
     ~JSEnv()
     {
+#if WITH_NODEJS
+        {
+            v8::Isolate::Scope IsolateScope(MainIsolate);
+            v8::HandleScope HandleScope(MainIsolate);
+            auto Context = MainContext.Get(MainIsolate);
+            v8::Context::Scope ContextScope(Context);
+            BackendEnv.LogicTick(MainIsolate, Context);
+            BackendEnv.StopPolling();
+        }
+#endif
+
         CppObjectMapper.UnInitialize(MainIsolate);
         BackendEnv.PathToModuleMap.clear();
         BackendEnv.ScriptIdToPathMap.clear();
@@ -737,7 +747,7 @@ struct JSEnv
         }
 
         MainContext.Reset();
-        BackendEnv.FreeIsolate(MainIsolate);
+        BackendEnv.FreeIsolate();
     }
     
     v8::Isolate* MainIsolate;
@@ -1142,6 +1152,7 @@ V8_EXPORT int InspectorTick(puerts::JSEnv* jsEnv)
 
 V8_EXPORT void LogicTick(puerts::JSEnv* jsEnv)
 {
+    jsEnv->BackendEnv.LogicTick();
 }
 
 #ifdef __cplusplus

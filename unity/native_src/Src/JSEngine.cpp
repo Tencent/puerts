@@ -116,6 +116,10 @@ namespace puerts
 
     JSEngine::~JSEngine()
     {
+#if WITH_NODEJS
+        LogicTick();
+        BackendEnv.StopPolling();
+#endif
         DestroyInspector();
 
         JSObjectIdMap.Reset();
@@ -177,7 +181,7 @@ namespace puerts
         ResultInfo.Context.Reset();
         ResultInfo.Result.Reset();
 
-        BackendEnv.FreeIsolate(MainIsolate);
+        BackendEnv.FreeIsolate();
 
         for (int i = 0; i < CallbackInfos.size(); ++i)
         {
@@ -601,19 +605,7 @@ namespace puerts
 
     void JSEngine::LogicTick()
     {
-// #if WITH_NODEJS
-//         v8::Isolate* Isolate = MainIsolate;
-// #ifdef THREAD_SAFE
-//         v8::Locker Locker(Isolate);
-// #endif
-//         v8::Isolate::Scope IsolateScope(Isolate);
-//         v8::HandleScope HandleScope(Isolate);
-//         v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-//         v8::Context::Scope ContextScope(Context);
-
-//         uv_run(NodeUVLoop, UV_RUN_NOWAIT);
-//         static_cast<node::MultiIsolatePlatform*>(GPlatform.get())->DrainTasks(Isolate);
-// #endif
+        BackendEnv.LogicTick();
     }
 
     bool JSEngine::InspectorTick()

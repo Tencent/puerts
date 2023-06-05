@@ -12,12 +12,23 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#if defined(WITH_NODEJS)
+#if WITH_NODEJS
 
 #pragma warning(push, 0)
 #include "node.h"
 #include "uv.h"
 #pragma warning(pop)
+
+#if PLATFORM_WINDOWS
+#include <windows.h>
+#elif PLATFORM_LINUX
+#include <sys/epoll.h>
+#elif PLATFORM_MAC
+#include <sys/select.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#endif
 
 #else // !WITH_NODEJS
 
@@ -33,6 +44,8 @@
 #include "Blob/Android/armv7a/SnapshotBlob.h"
 #elif defined(PLATFORM_ANDROID_ARM64)
 #include "Blob/Android/arm64/SnapshotBlob.h"
+#elif defined(PLATFORM_ANDROID_x64)
+#include "Blob/Android/x64/SnapshotBlob.h"
 #elif defined(PLATFORM_MAC_ARM64)
 #include "Blob/macOS_arm64/SnapshotBlob.h"
 #elif defined(PLATFORM_MAC)
@@ -41,7 +54,7 @@
 #include "Blob/iOS/arm64/SnapshotBlob.h"
 #elif defined(PLATFORM_LINUX)
 #include "Blob/Linux/SnapshotBlob.h"
-#endif
+#endif // defined(PLATFORM_WINDOWS)
 
 #endif // WITH_NODEJS
 
@@ -50,6 +63,168 @@ static std::unique_ptr<v8::Platform> GPlatform;
 static std::vector<std::string>* Args;
 static std::vector<std::string>* ExecArgs;
 static std::vector<std::string>* Errors;
+#endif
+
+
+#if defined(WITH_NODEJS)
+void puerts::BackendEnv::StartPolling()
+{
+    uv_async_init(&NodeUVLoop, &DummyUVHandle, nullptr);
+    uv_sem_init(&PollingSem, 0);
+    uv_thread_create(
+        &PollingThread,
+        [](void* arg)
+        {
+            auto* self = static_cast<puerts::BackendEnv*>(arg);
+            while (true)
+            {
+                uv_sem_wait(&self->PollingSem);
+
+                if (self->PollingClosed)
+                    break;
+
+                self->PollEvents();
+
+                if (self->PollingClosed)
+                    break;
+
+                self->hasPendingTask = true;
+            }
+        },
+        this);
+
+#if PLATFORM_WINDOWS
+    // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
+    // to avoid cpu pegging likely caused by a busy loop in PollEvents
+    // if (FPlatformMisc::NumberOfCores() == 1)
+    if (false)
+    {
+        if (NodeUVLoop.iocp && NodeUVLoop.iocp != INVALID_HANDLE_VALUE)
+            CloseHandle(NodeUVLoop.iocp);
+        NodeUVLoop.iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
+    }
+#elif PLATFORM_LINUX
+    Epoll = epoll_create(1);
+    int backend_fd = uv_backend_fd(&NodeUVLoop);
+    struct epoll_event ev = {0};
+    ev.events = EPOLLIN;
+    ev.data.fd = backend_fd;
+    epoll_ctl(Epoll, EPOLL_CTL_ADD, backend_fd, &ev);
+    NodeUVLoop.data = this;
+    NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
+
+#elif PLATFORM_MAC
+    NodeUVLoop.data = this;
+    NodeUVLoop.on_watcher_queue_updated = OnWatcherQueueChanged;
+#endif
+    UvRunOnce();
+}
+
+void puerts::BackendEnv::UvRunOnce()
+{
+    auto Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+    v8::Locker Locker(Isolate);
+#endif
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto Context = MainContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    // TODO: catch uv_run可以让脚本错误不至于进程退出，但这不知道会不会对node有什么副作用
+    v8::TryCatch TryCatch(Isolate);
+
+    uv_run(&NodeUVLoop, UV_RUN_NOWAIT);
+    if (TryCatch.HasCaught())
+    {
+        // Logger->Error(FString::Printf(TEXT("uv_run throw: %s"), *FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+    }
+    else
+    {
+        static_cast<node::MultiIsolatePlatform*>(GPlatform.get())->DrainTasks(Isolate);
+    }
+
+    hasPendingTask = false;
+
+    // Tell the Polling thread to continue.
+    uv_sem_post(&PollingSem);
+}
+
+void puerts::BackendEnv::PollEvents()
+{
+#if PLATFORM_WINDOWS
+    DWORD bytes;
+    DWORD timeout = uv_backend_timeout(&NodeUVLoop);
+    ULONG_PTR key;
+    OVERLAPPED* overlapped;
+
+    timeout = timeout > 100 ? 100 : timeout;
+
+    GetQueuedCompletionStatus(NodeUVLoop.iocp, &bytes, &key, &overlapped, timeout);
+
+    // Give the event back so libuv can deal with it.
+    if (overlapped != NULL)
+        PostQueuedCompletionStatus(NodeUVLoop.iocp, bytes, key, overlapped);
+#elif PLATFORM_LINUX
+    int timeout = uv_backend_timeout(&NodeUVLoop);
+    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
+
+    // Wait for new libuv events.
+    int r;
+    do
+    {
+        struct epoll_event ev;
+        r = epoll_wait(Epoll, &ev, 1, timeout);
+    } while (r == -1 && errno == EINTR);
+#elif PLATFORM_MAC
+    struct timeval tv;
+    int timeout = uv_backend_timeout(&NodeUVLoop);
+    timeout = (timeout > 100 || timeout < 0) ? 100 : timeout;
+    if (timeout != -1)
+    {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+    }
+
+    fd_set readset;
+    int fd = uv_backend_fd(&NodeUVLoop);
+    FD_ZERO(&readset);
+    FD_SET(fd, &readset);
+
+    // Wait for new libuv events.
+    int r;
+    do
+    {
+        r = select(fd + 1, &readset, nullptr, nullptr, timeout == -1 ? nullptr : &tv);
+    } while (r == -1 && errno == EINTR);
+#endif
+}
+
+void puerts::BackendEnv::OnWatcherQueueChanged(uv_loop_t* loop)
+{
+#if !PLATFORM_WINDOWS
+    puerts::BackendEnv* self = static_cast<puerts::BackendEnv*>(loop->data);
+    self->WakeupPollingThread();
+#endif
+}
+
+void puerts::BackendEnv::WakeupPollingThread()
+{
+    uv_async_send(&DummyUVHandle);
+}
+
+void puerts::BackendEnv::StopPolling()
+{
+    PollingClosed = true;
+
+    uv_sem_post(&PollingSem);
+
+    WakeupPollingThread();
+
+    uv_thread_join(&PollingThread);
+
+    uv_sem_destroy(&PollingSem);
+}
 #endif
 
 void puerts::BackendEnv::GlobalPrepare()
@@ -82,11 +257,8 @@ void puerts::BackendEnv::GlobalPrepare()
 
 v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
 {
-    v8::Isolate* MainIsolate;
-
 #if defined(WITH_NODEJS)
-    NodeUVLoop = new uv_loop_t;
-    const int Ret = uv_loop_init(NodeUVLoop);
+    const int Ret = uv_loop_init(&NodeUVLoop);
     if (Ret != 0)
     {
         // TODO log
@@ -98,7 +270,7 @@ v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
     // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
 
     auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
+    MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), &NodeUVLoop,
         Platform);
 
     MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
@@ -122,7 +294,7 @@ v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
     return MainIsolate;
 }
 
-void puerts::BackendEnv::FreeIsolate(v8::Isolate* MainIsolate)
+void puerts::BackendEnv::FreeIsolate()
 {
 #if WITH_NODEJS
     // node::EmitExit(NodeEnv);
@@ -130,27 +302,40 @@ void puerts::BackendEnv::FreeIsolate(v8::Isolate* MainIsolate)
     node::FreeEnvironment(NodeEnv);
     node::FreeIsolateData(NodeIsolateData);
     auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-    bool platform_finished = false;
-    Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
-        *static_cast<bool*>(data) = true;
-    }, &platform_finished);
+    // bool platform_finished = false;
+    // Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
+    //     *static_cast<bool*>(data) = true;
+    // }, &platform_finished);
     Platform->UnregisterIsolate(MainIsolate);
 #endif
+    MainContext.Reset();
     MainIsolate->Dispose();
     MainIsolate = nullptr;
 #if WITH_NODEJS
     // Wait until the platform has cleaned up all relevant resources.
-    while (!platform_finished)
-    {
-        uv_run(NodeUVLoop, UV_RUN_ONCE);
-    }
+    // while (!platform_finished)
+    // {
+    //     uv_run(&NodeUVLoop, UV_RUN_ONCE);
+    // }
 
-    int err = uv_loop_close(NodeUVLoop);
-    assert(err == 0);
-    delete NodeUVLoop;
+    // int err = uv_loop_close(&NodeUVLoop);
+    // assert(err == 0);
 #else
     delete CreateParams->array_buffer_allocator;
     delete CreateParams;
+#endif
+}
+
+void puerts::BackendEnv::LogicTick()
+{
+#if WITH_NODEJS
+    v8::Isolate::Scope IsolateScope(MainIsolate);
+    v8::HandleScope HandleScope(MainIsolate);
+    auto Context = MainContext.Get(MainIsolate);
+    v8::Context::Scope ContextScope(Context);
+
+    if (hasPendingTask)
+        UvRunOnce();
 #endif
 }
 
@@ -259,13 +444,14 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
 
 void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context)
 {
+    MainContext.Reset(Isolate, Context);
 #if defined(WITH_NODEJS)
     v8::Local<v8::Object> Global = Context->Global();
     auto strConsole = v8::String::NewFromUtf8(Isolate, "console").ToLocalChecked();
     v8::Local<v8::Value> Console = Global->Get(Context, strConsole).ToLocalChecked();
     auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
 
-    NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
+    NodeIsolateData = node::CreateIsolateData(Isolate, &NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
 
     NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
 
@@ -291,6 +477,10 @@ void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context>
 
     Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
     Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__puer_execute_module_sync__").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
+
+#if defined(WITH_NODEJS)
+    StartPolling();
+#endif
 }
 
 void puerts::BackendEnv::CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port)

@@ -31,6 +31,11 @@ namespace puerts
 {
     class BackendEnv 
     {
+    private:
+        v8::Isolate* MainIsolate;
+
+        v8::Global<v8::Context> MainContext;
+
     public:
         ~BackendEnv() {
             PathToModuleMap.clear();
@@ -42,8 +47,11 @@ namespace puerts
         } 
 
         v8::Isolate::CreateParams* CreateParams;
+
+        void LogicTick();
+
 #if defined(WITH_NODEJS)
-        uv_loop_t* NodeUVLoop;
+        uv_loop_t NodeUVLoop;
 
         std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
 
@@ -52,6 +60,34 @@ namespace puerts
         node::Environment* NodeEnv;
 
         const float UV_LOOP_DELAY = 0.1;
+
+        uv_thread_t PollingThread;
+
+        uv_sem_t PollingSem;
+
+        uv_async_t DummyUVHandle;
+
+        bool PollingClosed = false;
+
+        // FGraphEventRef LastJob;
+        bool hasPendingTask = false;
+
+#if PLATFORM_LINUX
+        int Epoll;
+#endif
+
+        void StartPolling();
+
+        void UvRunOnce();
+
+        void PollEvents();
+
+        static void OnWatcherQueueChanged(uv_loop_t* loop);
+
+        void WakeupPollingThread();
+
+        void StopPolling();
+
 #endif
 
         // Module
@@ -76,7 +112,7 @@ namespace puerts
 
         v8::Isolate* CreateIsolate(void* external_quickjs_runtime);
 
-        void FreeIsolate(v8::Isolate* Isolate);
+        void FreeIsolate();
 
         void InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
         
