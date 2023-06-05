@@ -28,33 +28,6 @@
 #include "node.h"
 #include "uv.h"
 #pragma warning(pop)
-#else
-
-#if defined(PLATFORM_WINDOWS)
-
-#if _WIN64
-#include "Blob/Win64/SnapshotBlob.h"
-#else
-#include "Blob/Win32/SnapshotBlob.h"
-#endif
-
-#elif defined(PLATFORM_ANDROID_ARM)
-#include "Blob/Android/armv7a/SnapshotBlob.h"
-#elif defined(PLATFORM_ANDROID_ARM64)
-#include "Blob/Android/arm64/SnapshotBlob.h"
-#elif defined(PLATFORM_ANDROID_x64)
-#include "Blob/Android/x64/SnapshotBlob.h"
-#elif defined(PLATFORM_MAC_ARM64)
-#include "Blob/macOS_arm64/SnapshotBlob.h"
-#elif defined(PLATFORM_MAC)
-#include "Blob/macOS/SnapshotBlob.h"
-#elif defined(PLATFORM_IOS)
-#include "Blob/iOS/arm64/SnapshotBlob.h"
-#elif defined(PLATFORM_IOS_SIMULATOR)
-#include "Blob/iOS/x64/SnapshotBlob.h"
-#elif defined(PLATFORM_LINUX)
-#include "Blob/Linux/SnapshotBlob.h"
-#endif
 
 #endif
 
@@ -87,13 +60,6 @@ struct FLifeCycleInfo
     int Size;
 };
 
-static std::unique_ptr<v8::Platform> GPlatform;
-#if defined(WITH_NODEJS)
-static std::vector<std::string>* Args;
-static std::vector<std::string>* ExecArgs;
-static std::vector<std::string>* Errors;
-#endif
-
 v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size);
 
 enum JSEngineBackend
@@ -106,8 +72,6 @@ enum JSEngineBackend
 class JSEngine
 {
 private: 
-    void JSEngineWithNode();
-    void JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context);
 #if !WITH_QUICKJS
     static void HostInitializeImportMetaObject(v8::Local<v8::Context> context, v8::Local<v8::Module> module, v8::Local<v8::Object> meta);
 #endif
@@ -187,19 +151,6 @@ public:
     puerts::BackendEnv BackendEnv;
     
 private:
-#if defined(WITH_NODEJS)
-    uv_loop_t* NodeUVLoop;
-
-    std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
-
-    node::IsolateData* NodeIsolateData;
-
-    node::Environment* NodeEnv;
-
-    const float UV_LOOP_DELAY = 0.1;
-#endif
-    v8::Isolate::CreateParams* CreateParams;
-
     std::vector<FCallbackInfo*> CallbackInfos;
 
     std::vector<FLifeCycleInfo*> LifeCycleInfos;

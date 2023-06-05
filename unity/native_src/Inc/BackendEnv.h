@@ -18,10 +18,24 @@
 #include "quickjs-msvc.h"
 #endif
 
+#if defined(WITH_NODEJS)
+
+#pragma warning(push, 0)
+#include "node.h"
+#include "uv.h"
+#pragma warning(pop)
+
+#endif
+
 namespace puerts
 {
     class BackendEnv 
     {
+    private:
+        v8::Isolate* MainIsolate;
+
+        v8::Global<v8::Context> MainContext;
+
     public:
         ~BackendEnv() {
             PathToModuleMap.clear();
@@ -31,6 +45,50 @@ namespace puerts
         {
             Inspector = nullptr;
         } 
+
+        v8::Isolate::CreateParams* CreateParams;
+
+        void LogicTick();
+
+#if defined(WITH_NODEJS)
+        uv_loop_t NodeUVLoop;
+
+        std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
+
+        node::IsolateData* NodeIsolateData;
+
+        node::Environment* NodeEnv;
+
+        const float UV_LOOP_DELAY = 0.1;
+
+        uv_thread_t PollingThread;
+
+        uv_sem_t PollingSem;
+
+        uv_async_t DummyUVHandle;
+
+        bool PollingClosed = false;
+
+        // FGraphEventRef LastJob;
+        bool hasPendingTask = false;
+
+#if PLATFORM_LINUX
+        int Epoll;
+#endif
+
+        void StartPolling();
+
+        void UvRunOnce();
+
+        void PollEvents();
+
+        static void OnWatcherQueueChanged(uv_loop_t* loop);
+
+        void WakeupPollingThread();
+
+        void StopPolling();
+
+#endif
 
         // Module
 #if defined(WITH_QUICKJS)
@@ -50,7 +108,13 @@ namespace puerts
         {
             return (BackendEnv*)Isolate->GetData(1);
         }
-        void InitInject(v8::Isolate* Isolate);
+        static void GlobalPrepare();
+
+        v8::Isolate* CreateIsolate(void* external_quickjs_runtime);
+
+        void FreeIsolate();
+
+        void InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context);
         
         void CreateInspector(v8::Isolate* Isolate, const v8::Global<v8::Context>* ContextGlobal, int32_t Port);
 
@@ -61,7 +125,12 @@ namespace puerts
         bool ClearModuleCache(v8::Isolate* Isolate, v8::Local<v8::Context> Context, const char* Path);
     };
 
+#if WITH_NODEJS
+    namespace nodejs
+    {
 
+    }
+#endif
 
     namespace esmodule 
     {

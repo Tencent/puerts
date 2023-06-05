@@ -66,119 +66,10 @@ namespace puerts
         LastExceptionInfo = FV8Utils::ExceptionToString(MainIsolate, Exception);
     }
 
-#if WITH_NODEJS
-    void JSEngine::JSEngineWithNode()
+    JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
     {
-        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]start");
-        if (!GPlatform)
-        {
-            // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
-            int Argc = 2;
-            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
-            char ** Argv = uv_setup_args(Argc, ArgvIn);
-            Args = new std::vector<std::string>(Argv, Argv + Argc);
-            ExecArgs = new std::vector<std::string>();
-            Errors = new std::vector<std::string>();
-
-            GPlatform = node::MultiIsolatePlatform::Create(4);
-            v8::V8::InitializePlatform(GPlatform.get());
-            v8::V8::Initialize();
-            int ExitCode = node::InitializeNodeWithArgs(Args, ExecArgs, Errors);
-            for (const std::string& error : *Errors)
-            {
-                printf("InitializeNodeWithArgs failed\n");
-            }
-        }
-        std::string Flags = "--stack_size=856";
-#if PUERTS_DEBUG
-        Flags += "--expose-gc";
-#if PLATFORM_MAC
-        Flags += " --jitless --no-expose-wasm";
-#endif
-#endif
-#if PLATFORM_IOS
-        Flags += " --jitless --no-expose-wasm";
-#endif
-        v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
-        
-        NodeUVLoop = new uv_loop_t;
-        const int Ret = uv_loop_init(NodeUVLoop);
-        if (Ret != 0)
-        {
-            // TODO log
-            printf("uv_loop_init failed\n");
-            return;
-        }
-
-        NodeArrayBufferAllocator = node::ArrayBufferAllocator::Create();
-        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolate");
-
-        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-        MainIsolate = node::NewIsolate(NodeArrayBufferAllocator.get(), NodeUVLoop,
-            Platform);
-
-        auto Isolate = MainIsolate;
-        ResultInfo.Isolate = MainIsolate;
-
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-
-        v8::HandleScope HandleScope(Isolate);
-
-        v8::Local<v8::Context> Context = node::NewContext(Isolate);
-        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]context");
-        v8::Local<v8::Object> Global = Context->Global();
-
-        v8::Context::Scope ContextScope(Context);
-        ResultInfo.Context.Reset(MainIsolate, Context);
-
-        v8::Local<v8::Value> Console = Global->Get(Context, FV8Utils::V8String(MainIsolate, "console")).ToLocalChecked();
-
-        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata start");
-        NodeIsolateData = node::CreateIsolateData(Isolate, NodeUVLoop, Platform, NodeArrayBufferAllocator.get()); // node::FreeIsolateData
-    
-        //kDefaultFlags = kOwnsProcessState | kOwnsInspector, if kOwnsInspector set, inspector_agent.cc:681 CHECK_EQ(start_io_thread_async_initialized.exchange(true), false) fail!
-        NodeEnv = CreateEnvironment(NodeIsolateData, Context, *Args, *ExecArgs, node::EnvironmentFlags::kOwnsProcessState);
-        
-        Global->Set(Context, FV8Utils::V8String(MainIsolate, "console"), Console).Check();
-
-        v8::MaybeLocal<v8::Value> LoadenvRet = node::LoadEnvironment(
-            NodeEnv,
-            "const publicRequire ="
-            "  require('module').createRequire(process.cwd() + '/');"
-            "globalThis.require = publicRequire;");
-
-        if (LoadenvRet.IsEmpty())  // There has been a JS exception.
-        {
-            return;
-        }
-        // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]isolatedata done");
-
-        MainIsolate->SetData(0, this);
-        MainIsolate->SetData(1, &BackendEnv);
-        BackendEnv.InitInject(MainIsolate);
-
-        Global->Set(Context, FV8Utils::V8String(MainIsolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(MainIsolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
-        Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
-
-        JSObjectIdMap.Reset(MainIsolate, v8::Map::New(MainIsolate));
-
-        //the same as raw v8
-        MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
-    }
-#endif        
-
-#if !WITH_NODEJS
-    void JSEngine::JSEngineWithoutNode(void* external_quickjs_runtime, void* external_quickjs_context)
-    {
-        if (!GPlatform)
-        {
-            GPlatform = v8::platform::NewDefaultPlatform();
-            v8::V8::InitializePlatform(GPlatform.get());
-            v8::V8::Initialize();
-        }
+        GeneralDestructor = nullptr;
+        BackendEnv::GlobalPrepare();
 
         std::string Flags = "--no-harmony-top-level-await --stack_size=856";
 #if PUERTS_DEBUG
@@ -192,19 +83,8 @@ namespace puerts
 #endif
         v8::V8::SetFlagsFromString(Flags.c_str(), static_cast<int>(Flags.size()));
 
-        v8::StartupData SnapshotBlob;
-        SnapshotBlob.data = (const char *)SnapshotBlobCode;
-        SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
-        v8::V8::SetSnapshotDataBlob(&SnapshotBlob);
+        MainIsolate = BackendEnv.CreateIsolate(external_quickjs_runtime);
 
-        // 初始化Isolate和DefaultContext
-        CreateParams = new v8::Isolate::CreateParams();
-        CreateParams->array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-#if WITH_QUICKJS
-        MainIsolate = (external_quickjs_runtime == nullptr) ? v8::Isolate::New(*CreateParams) : v8::Isolate::New(external_quickjs_runtime);
-#else
-        MainIsolate = v8::Isolate::New(*CreateParams);
-#endif
         auto Isolate = MainIsolate;
         ResultInfo.Isolate = MainIsolate;
         MainIsolate->SetData(0, this);
@@ -224,31 +104,22 @@ namespace puerts
         v8::Context::Scope ContextScope(Context);
         ResultInfo.Context.Reset(Isolate, Context);
         v8::Local<v8::Object> Global = Context->Global();
-
-        Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
-
         if (external_quickjs_runtime == nullptr) 
         {
-            BackendEnv.InitInject(MainIsolate);
+            BackendEnv.InitInject(MainIsolate, Context);
             Global->Set(Context, FV8Utils::V8String(Isolate, "__puertsGetLastException"), v8::FunctionTemplate::New(Isolate, &GetLastException)->GetFunction(Context).ToLocalChecked()).Check();
         }
+        Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
-    }
-#endif
-
-    JSEngine::JSEngine(void* external_quickjs_runtime, void* external_quickjs_context)
-    {
-        GeneralDestructor = nullptr;
-#if WITH_NODEJS
-        JSEngineWithNode();
-#else
-        JSEngineWithoutNode(external_quickjs_runtime, external_quickjs_context);
-#endif
     }
 
     JSEngine::~JSEngine()
     {
+#if WITH_NODEJS
+        LogicTick();
+        BackendEnv.StopPolling();
+#endif
         DestroyInspector();
 
         JSObjectIdMap.Reset();
@@ -306,39 +177,11 @@ namespace puerts
                 delete Iter->second;
             }
         }
-        
-#if WITH_NODEJS
-        // node::EmitExit(NodeEnv);
-        node::Stop(NodeEnv);
-        node::FreeEnvironment(NodeEnv);
-        node::FreeIsolateData(NodeIsolateData);
-        auto Platform = static_cast<node::MultiIsolatePlatform*>(GPlatform.get());
-        bool platform_finished = false;
-        Platform->AddIsolateFinishedCallback(MainIsolate, [](void* data) {
-            *static_cast<bool*>(data) = true;
-        }, &platform_finished);
-        Platform->UnregisterIsolate(MainIsolate);
-#endif
 
         ResultInfo.Context.Reset();
         ResultInfo.Result.Reset();
-        MainIsolate->Dispose();
-        MainIsolate = nullptr;
 
-#if WITH_NODEJS
-        // Wait until the platform has cleaned up all relevant resources.
-        while (!platform_finished)
-        {
-            uv_run(NodeUVLoop, UV_RUN_ONCE);
-        }
-
-        int err = uv_loop_close(NodeUVLoop);
-        assert(err == 0);
-        delete NodeUVLoop;
-#else
-        delete CreateParams->array_buffer_allocator;
-        delete CreateParams;
-#endif
+        BackendEnv.FreeIsolate();
 
         for (int i = 0; i < CallbackInfos.size(); ++i)
         {
@@ -762,19 +605,7 @@ namespace puerts
 
     void JSEngine::LogicTick()
     {
-#if WITH_NODEJS
-        v8::Isolate* Isolate = MainIsolate;
-#ifdef THREAD_SAFE
-        v8::Locker Locker(Isolate);
-#endif
-        v8::Isolate::Scope IsolateScope(Isolate);
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
-        v8::Context::Scope ContextScope(Context);
-
-        uv_run(NodeUVLoop, UV_RUN_NOWAIT);
-        static_cast<node::MultiIsolatePlatform*>(GPlatform.get())->DrainTasks(Isolate);
-#endif
+        BackendEnv.LogicTick();
     }
 
     bool JSEngine::InspectorTick()
