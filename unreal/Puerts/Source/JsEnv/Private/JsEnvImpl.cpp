@@ -2228,6 +2228,19 @@ void FJsEnvImpl::NotifyReBind(UTypeScriptGeneratedClass* Class)
             if (Object->GetClass()->GetName().StartsWith(TEXT("REINST_")))
                 continue;    //跳过父类重新编译后临时状态的对象
             __USE(FindOrAdd(Isolate, Context, Object->GetClass(), Object, true));
+
+            UTypeScriptGeneratedClass* ClassMayNeedReBind = nullptr;
+            auto TempClass = Object->GetClass();
+
+            while (TempClass && (TempClass != Class) && (!ClassMayNeedReBind))
+            {
+                ClassMayNeedReBind = Cast<UTypeScriptGeneratedClass>(TempClass);
+                TempClass = TempClass->GetSuperClass();
+            }
+            if (ClassMayNeedReBind)
+            {
+                MakeSureInject(ClassMayNeedReBind, false, false);
+            }
         }
     }
 #endif
