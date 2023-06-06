@@ -17,8 +17,20 @@ using System.IO;
 namespace Puerts.Editor
 {
     [InitializeOnLoad]
-    class FAQHelper 
+    class FAQHelper : IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
+        public int callbackOrder => 0;
+
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            Application.logMessageReceived += OnLog;
+        }
+
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            Application.logMessageReceived -= OnLog;
+        }
+
         private static void OnLog(string condition, string stacktrace, LogType type)
         {
             string genPath = Puerts.Configure.GetCodeOutputDirectory();
@@ -41,6 +53,7 @@ namespace Puerts.Editor
                 if (condition.Contains("'unityenv_for_puerts.h' file not found")) 
                 {
                     print012MacroHeader = true;
+                    Application.logMessageReceived -= OnLog;
                 }
             }
         }
@@ -48,6 +61,18 @@ namespace Puerts.Editor
         static FAQHelper()
         {
             EditorApplication.update += EditorUpdate;
+            CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
+        }
+
+        private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
+        {
+            foreach (var message in compilerMessages)
+            {
+                if (message.type == CompilerMessageType.Error)
+                {
+                    OnLog(message.file, message.message, LogType.Error);
+                }
+            };
         }
 
         private static bool enabled = false;
