@@ -109,6 +109,7 @@ static void ValueTypeFree(void* ptr)
 static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
+static Il2CppClass *g_typeofSystemObject;
 
 const Il2CppClass* GetReturnType(const MethodInfo* method) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
@@ -197,6 +198,15 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     delegate->method_ptr = functionPtr;
 
     return delegate;
+}
+
+void SetGlobalType_SystemObject(Il2CppReflectionType *type)
+{
+    if (!type)
+    {
+        Exception::Raise(Exception::GetInvalidOperationException("type of SystemObject is null"));
+    }
+    g_typeofSystemObject =  il2cpp_codegen_class_from_type(type->type);
 }
 
 void SetGlobalType_ArrayBuffer(Il2CppReflectionType *type)
@@ -1252,6 +1262,14 @@ handle_underlying:
             csThis = ((uint8_t*)csThis) - sizeof(Il2CppObject);
         }
 #endif
+        if (thisType == g_typeofSystemObject)
+        {
+            auto ptrType = (Il2CppClass*) pesapi_get_native_object_typeid(env, jsThis);
+            if (Class::IsValuetype(ptrType))
+            {
+                csThis = Object::Box(ptrType, csThis);
+            }
+        }
     }
     if (isExtensionMethod)
     {
@@ -1689,6 +1707,7 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_SystemObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_SystemObject);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);

@@ -69,6 +69,7 @@ namespace Puerts
             PuertsIl2cpp.NativeAPI.SetGlobalType_TypedValue(typeof(TypedValue));
             PuertsIl2cpp.NativeAPI.SetGlobalType_ArrayBuffer(typeof(ArrayBuffer));
             PuertsIl2cpp.NativeAPI.SetGlobalType_JSObject(typeof(JSObject));
+            PuertsIl2cpp.NativeAPI.SetGlobalType_SystemObject(typeof(System.Object));
 
             nativeJsEnv = PuertsIl2cpp.NativeAPI.CreateNativeJSEnv();
             nativePesapiEnv = PuertsIl2cpp.NativeAPI.GetPesapiEnvHolder(nativeJsEnv);
