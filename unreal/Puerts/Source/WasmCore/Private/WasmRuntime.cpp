@@ -57,7 +57,7 @@ uint8* WasmRuntime::GetBuffer(int& Length)
 {
     u8* base = m3MemData(_Runtime->memory.mallocated);
     Length = _Runtime->memory.mallocated->length;
-    return base + sizeof(M3MemoryHeader);
+    return base;
 }
 
 WasmModuleInstance* WasmRuntime::OnModuleInstance(WasmModuleInstance* InModuleInstance)

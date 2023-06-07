@@ -271,8 +271,27 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
         return true;
     };
 
-    WasmModuleInstance* NewInstance = new WasmModuleInstance(UsedRuntime, InData, 0, CustomLinkFunc);
-    if (NewInstance->GetAllExportFunctions().Num())
+    WasmModuleInstance* NewInstance = new WasmModuleInstance(InData);
+    if (NewInstance->ParseModule(UsedRuntime->GetEnv()))
+    {
+        //如果没有指明需要import memory,那么使用默认的runtime即可,即便外面传入了memory也不生效
+        if (!NewInstance->GetModule()->memoryImported)
+        {
+            UsedRuntime = RuntimeList[0].get();
+        }
+
+        if (!NewInstance->LoadModule(UsedRuntime, 0, CustomLinkFunc))
+        {
+            delete NewInstance;
+            NewInstance = nullptr;
+        }
+    }
+    else
+    {
+        delete NewInstance;
+        NewInstance = nullptr;
+    }
+    if (NewInstance && NewInstance->GetAllExportFunctions().Num())
     {
         IM3Module _Module = NewInstance->GetModule();
         for (uint32 i = 0; i < _Module->numFunctions; ++i)

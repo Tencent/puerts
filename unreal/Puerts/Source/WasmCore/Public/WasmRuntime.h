@@ -34,6 +34,10 @@ private:
     WASM_PTR MaxWasmStackAllocCount = 0;
 
 public:
+    WasmEnv* GetEnv()
+    {
+        return _Env;
+    }
     WasmStackAllocCacheInfo GetCurrentStackAllocInfo()
     {
         return CurrentStackAllocInfo;
