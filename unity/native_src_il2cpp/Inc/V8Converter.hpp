@@ -58,8 +58,10 @@ typedef v8::FunctionCallback FunctionCallbackType;
 typedef InitializeFunc InitializeFuncType;
 typedef JSFunctionInfo GeneralFunctionInfo;
 typedef JSPropertyInfo GeneralPropertyInfo;
+#if USING_IN_UNREAL_ENGINE
 typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
 typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
+#endif
 
 V8_INLINE int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
 {

@@ -24,7 +24,9 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#if USING_IN_UNREAL_ENGINE
 #include "TypeInfo.hpp"
+#endif
 
 #include <mutex>
 
@@ -50,6 +52,7 @@ typedef void (*FinalizeFunc)(void* Ptr);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
+#if USING_IN_UNREAL_ENGINE
 struct NamedFunctionInfo
 {
     const char* Name;
@@ -61,6 +64,7 @@ struct NamedPropertyInfo
     const char* Name;
     const CTypeInfo* Type;
 };
+#endif
 
 struct JSENV_API JSClassDefinition
 {
@@ -75,18 +79,27 @@ struct JSENV_API JSClassDefinition
     JSPropertyInfo* Variables;     //静态属性
     FinalizeFunc Finalize;
     // int InternalFieldCount;
+#if USING_IN_UNREAL_ENGINE
     NamedFunctionInfo* ConstructorInfos;
     NamedFunctionInfo* MethodInfos;
     NamedFunctionInfo* FunctionInfos;
     NamedPropertyInfo* PropertyInfos;
     NamedPropertyInfo* VariableInfos;
+#endif
     void* Data = nullptr;
 };
 
+#if USING_IN_UNREAL_ENGINE
 #define JSClassEmptyDefinition                      \
     {                                               \
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
     }
+#else
+#define JSClassEmptyDefinition                      \
+    {                                               \
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0             \
+    }
+#endif
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
 

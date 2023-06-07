@@ -39,11 +39,13 @@ JSClassDefinition* JSClassDefinitionDuplicate(const JSClassDefinition* ClassDefi
     Ret->Functions = PropertyInfoDuplicate(ClassDefinition->Functions);
     Ret->Properties = PropertyInfoDuplicate(ClassDefinition->Properties);
     Ret->Variables = PropertyInfoDuplicate(ClassDefinition->Variables);
+#if USING_IN_UNREAL_ENGINE
     Ret->ConstructorInfos = PropertyInfoDuplicate(ClassDefinition->ConstructorInfos);
     Ret->MethodInfos = PropertyInfoDuplicate(ClassDefinition->MethodInfos);
     Ret->FunctionInfos = PropertyInfoDuplicate(ClassDefinition->FunctionInfos);
     Ret->PropertyInfos = PropertyInfoDuplicate(ClassDefinition->PropertyInfos);
     Ret->VariableInfos = PropertyInfoDuplicate(ClassDefinition->VariableInfos);
+#endif
     return Ret;
 }
 
@@ -53,11 +55,13 @@ void JSClassDefinitionDelete(JSClassDefinition* ClassDefinition)
     delete[] ClassDefinition->Functions;
     delete[] ClassDefinition->Properties;
     delete[] ClassDefinition->Variables;
+#if USING_IN_UNREAL_ENGINE
     delete[] ClassDefinition->ConstructorInfos;
     delete[] ClassDefinition->MethodInfos;
     delete[] ClassDefinition->FunctionInfos;
     delete[] ClassDefinition->PropertyInfos;
     delete[] ClassDefinition->VariableInfos;
+#endif
     delete ClassDefinition;
 }
 
