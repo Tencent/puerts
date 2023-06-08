@@ -8,7 +8,7 @@
 #include <cstring>
 #include "V8Utils.h"
 
-#define API_LEVEL 31
+#define API_LEVEL 32
 
 using puerts::JSEngine;
 using puerts::FValue;
@@ -167,6 +167,12 @@ V8_EXPORT void SetGeneralDestructor(v8::Isolate *Isolate, CSharpDestructorCallba
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     JsEngine->GeneralDestructor = GeneralDestructor;
+}
+
+V8_EXPORT JSFunction* GetJSObjectValueGetter(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->JSObjectValueGetter;
 }
 
 //-------------------------- begin js call cs --------------------------

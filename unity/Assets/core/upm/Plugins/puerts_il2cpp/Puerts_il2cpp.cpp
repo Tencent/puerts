@@ -109,7 +109,6 @@ static void ValueTypeFree(void* ptr)
 static Il2CppClass *g_typeofPersistentObjectInfo;
 static Il2CppClass *g_typeofArrayBuffer;
 static Il2CppClass *g_typeofTypedValue;
-static Il2CppClass *g_typeofSystemObject;
 
 const Il2CppClass* GetReturnType(const MethodInfo* method) {
     if (kInvalidIl2CppMethodSlot != method->slot) {
@@ -200,15 +199,6 @@ static void* DelegateAllocate(Il2CppClass *klass, Il2CppMethodPointer functionPt
     return delegate;
 }
 
-void SetGlobalType_SystemObject(Il2CppReflectionType *type)
-{
-    if (!type)
-    {
-        Exception::Raise(Exception::GetInvalidOperationException("type of SystemObject is null"));
-    }
-    g_typeofSystemObject =  il2cpp_codegen_class_from_type(type->type);
-}
-
 void SetGlobalType_ArrayBuffer(Il2CppReflectionType *type)
 {
     if (!type)
@@ -224,7 +214,7 @@ void SetGlobalType_JSObject(Il2CppReflectionType *type)
     {
         Exception::Raise(Exception::GetInvalidOperationException("type of JSObject is null"));
     }
-    g_typeofPersistentObjectInfo =  il2cpp_codegen_class_from_type(type->type);
+    g_typeofPersistentObjectInfo = il2cpp_codegen_class_from_type(type->type);
 }
 
 void SetGlobalType_TypedValue(Il2CppReflectionType *type)
@@ -408,6 +398,7 @@ void ReleaseScriptObject(RuntimeObject* obj)
     int32_t _offset = 1;
     g_unityExports.UnrefJsObject(obj + _offset);
 }
+
 
 bool IsValueType(Il2CppClass *klass)
 {
@@ -1262,7 +1253,7 @@ handle_underlying:
             csThis = ((uint8_t*)csThis) - sizeof(Il2CppObject);
         }
 #endif
-        if (thisType == g_typeofSystemObject)
+        if (thisType == il2cpp_defaults.object_class)
         {
             auto ptrType = (Il2CppClass*) pesapi_get_native_object_typeid(env, jsThis);
             if (Class::IsValuetype(ptrType))
@@ -1596,6 +1587,18 @@ void ArraySetRef(Il2CppArray *array, uint32_t index, void* value)
 {
     il2cpp_array_setref(array, index, value);
 }
+Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key)
+{
+    PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(jsObject + 1);
+    pesapi_env env;
+
+    const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(key);
+    std::string key_std = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
+
+    pesapi_value value = g_unityExports.GetJSObjectValue(objectInfo, env, key_std.c_str());
+
+    return JsValueToCSRef(il2cpp_defaults.object_class, env, value);
+}
 
 puerts::UnityExports* GetUnityExports()
 {
@@ -1707,11 +1710,11 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_TypedValue(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_TypedValue);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_JSObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_JSObject);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_ArrayBuffer(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_ArrayBuffer);
-    InternalCalls::Add("PuertsIl2cpp.NativeAPI::SetGlobalType_SystemObject(System.Type)", (Il2CppMethodPointer)puerts::SetGlobalType_SystemObject);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
     InternalCalls::Add("Puerts.JSObject::releaseScriptObject()", (Il2CppMethodPointer)puerts::ReleaseScriptObject);
+    InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     pesapi_init(func_array);
 }
 

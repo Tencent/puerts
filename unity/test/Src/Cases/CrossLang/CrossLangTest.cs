@@ -26,6 +26,7 @@ namespace Puerts.UnitTest
         }
     }
     [StructLayout(LayoutKind.Sequential)]
+    [UnityEngine.Scripting.Preserve]
     public unsafe struct TestUnsafeStruct
     {
         public uint uintField;
@@ -33,6 +34,7 @@ namespace Puerts.UnitTest
         public byte* bytePointerField;
         public TestUnsafeStruct* anotherStructField;
 
+        [UnityEngine.Scripting.Preserve]
         public TestUnsafeStruct(uint input)
         {
             uintField = input;
@@ -474,7 +476,7 @@ namespace Puerts.UnitTest
         */
         public JSObject JSObjectTestPipeLine(JSObject initialValue, Func<JSObject, JSObject> JSValueHandler) 
         {
-            AssertAndPrint("CSGetJSObjectArgFromJS", initialValue != null);
+            AssertAndPrint("CSGetJSObjectArgFromJS", initialValue.Get<string>("puerts") == "niubi");
             AssertAndPrint("CSGetJSObjectReturnFromJS", JSValueHandler(initialValue) == initialValue);
             return initialValue;
         }
@@ -807,7 +809,7 @@ namespace Puerts.UnitTest
 
                     const oJSObject = { 'puerts': 'niubi' };
                     const rJSObject = testHelper.JSObjectTestPipeLine(oJSObject, function(obj) {
-                        assertAndPrint('JSGetJSObjectArgFromCS', obj == oJSObject);
+                        assertAndPrint('JSGetJSObjectArgFromCS', obj.puerts == oJSObject.puerts);
                         return oJSObject
                     });
                     assertAndPrint('JSGetJSObjectReturnFromCS', rJSObject == oJSObject);

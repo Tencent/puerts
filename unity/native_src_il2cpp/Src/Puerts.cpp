@@ -255,6 +255,24 @@ static void SetPersistentObject(pesapi_env env, pesapi_value pvalue, PersistentO
     objectInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
 }
 
+static v8::Value* GetJSObjectValue(const PersistentObjectInfo* objectInfo, v8::Context* &Context, const char* key)
+{
+    auto Isolate = objectInfo->EnvInfo->Isolate;
+    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto LocalContext = objectInfo->EnvInfo->Context.Get(Isolate);
+    Context = *LocalContext;
+    v8::Context::Scope ContextScope(LocalContext);
+
+    v8::Local<v8::Value> Key = v8::String::NewFromUtf8(Isolate, key).ToLocalChecked();
+
+    v8::Local<v8::Object> Obj = v8::Local<v8::Object>::Cast(objectInfo->JsObject.Get(Isolate));
+
+    auto maybeValue = Obj->Get(LocalContext, Key);
+    if (maybeValue.IsEmpty()) return nullptr;
+    return *maybeValue.ToLocalChecked();
+}
+
 static v8::Value* GetPersistentObject(v8::Context* env, const PersistentObjectInfo* objectInfo)
 {    
     if (objectInfo->JsEnvLifeCycleTracker.expired())
@@ -684,7 +702,7 @@ struct JSEnv
         BackendEnv.InitInject(MainIsolate, Context);
         CppObjectMapper.Initialize(Isolate, Context);
         Isolate->SetData(MAPPER_ISOLATE_DATA_POS, static_cast<ICppObjectMapper*>(&CppObjectMapper));
-        Isolate->SetData(1, &BackendEnv);
+        Isolate->SetData(BACKENDENV_DATA_POS, &BackendEnv);
         
         Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "loadType").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, [](const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
@@ -1090,6 +1108,7 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
     exports->SetPersistentObject = &puerts::SetPersistentObject;
     exports->GetPersistentObject = &puerts::GetPersistentObject;
+    exports->GetJSObjectValue = &puerts::GetJSObjectValue;
     exports->SetRuntimeObjectToPersistentObject = &puerts::SetRuntimeObjectToPersistentObject;
     exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
     puerts::GUnityExports = *exports;

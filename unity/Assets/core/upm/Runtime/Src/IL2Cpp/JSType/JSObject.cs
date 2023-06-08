@@ -30,6 +30,17 @@ namespace Puerts
             throw new NotImplementedException();
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        object GetJSObjectValue(string key)
+        {
+            throw new NotImplementedException();
+        }
+
+        public T Get<T>(string key) 
+        {
+            return (T)GetJSObjectValue(key);
+        }
+
         ~JSObject()
         {
             releaseScriptObject();
