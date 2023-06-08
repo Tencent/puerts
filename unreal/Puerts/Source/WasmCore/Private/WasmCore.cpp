@@ -16,7 +16,7 @@
 
 void WasmCoreModule::StartupModule()
 {
-    if (false)
+    /*if (false)
     {
         WasmEnv* Env = new WasmEnv();
         WasmRuntime* Runtime = new WasmRuntime(Env);
@@ -50,7 +50,7 @@ void WasmCoreModule::StartupModule()
         }
         delete Runtime;
         delete Env;
-    }
+    }*/
 }
 
 void WasmCoreModule::ShutdownModule()
