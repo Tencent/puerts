@@ -12,6 +12,26 @@
 
 namespace puerts
 {
+    static void JSObjectValueGetterFunction(const v8::FunctionCallbackInfo<v8::Value>& Info)
+    {
+        v8::Isolate* Isolate = Info.GetIsolate();
+        if (!Info[0]->IsObject() || !Info[1]->IsString())
+            return;
+
+        auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = JsEngine->ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+        v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(Info[0]);
+
+        auto maybeRet = object->Get(Context, Info[1]);
+        if (maybeRet.IsEmpty())
+            return;
+
+        Info.GetReturnValue().Set(maybeRet.ToLocalChecked());
+    }
+
     v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Isolate* Isolate, void *Ptr, size_t Size)
     {
         v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Isolate, Size);
@@ -112,6 +132,8 @@ namespace puerts
         Global->Set(Context, FV8Utils::V8String(Isolate, "__tgjsEvalScript"), v8::FunctionTemplate::New(Isolate, &EvalWithPath)->GetFunction(Context).ToLocalChecked()).Check();
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
+
+        JSObjectValueGetter = CreateJSFunction(MainIsolate, Context, v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked());
     }
 
     JSEngine::~JSEngine()

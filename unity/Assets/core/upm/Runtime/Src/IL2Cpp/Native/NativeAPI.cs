@@ -155,12 +155,6 @@ namespace PuertsIl2cpp
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static void SetGlobalType_SystemObject(Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static void SetGlobalType_JSObject(Type type)
         {
             throw new NotImplementedException();

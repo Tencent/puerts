@@ -10,6 +10,8 @@ public class PuerCfg {
             return new List<Type>{
                 typeof(UnityEngine.Vector3),
                 typeof(Dictionary<int, int>),
+                typeof(Dictionary<int, int>.Enumerator),
+                typeof(List<int>.Enumerator),
                 typeof(Puerts.UnitTest.HelperExtension),
                 typeof(Puerts.UnitTest.ExtensionTestHelper),
                 typeof(Puerts.UnitTest.ExtensionTestHelperDerived),

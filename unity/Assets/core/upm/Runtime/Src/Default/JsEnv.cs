@@ -46,6 +46,8 @@ namespace Puerts
 
         internal readonly JSObjectFactory jsObjectFactory;
 
+        internal readonly GenericDelegate JSObjectValueGetter;
+
         internal IntPtr isolate;
 
         internal ObjectPool objectPool;
@@ -88,7 +90,7 @@ namespace Puerts
 
         public JsEnv(ILoader loader, int debugPort, IntPtr externalRuntime, IntPtr externalContext)
         {
-            const int libVersionExpect = 31;
+            const int libVersionExpect = 32;
             int libVersion = PuertsDLL.GetApiLevel();
             if (libVersion != libVersionExpect)
             {
@@ -212,6 +214,8 @@ namespace Puerts
 #endif
             TypeManager.InitArrayTypeId();
 
+            JSObjectValueGetter = new GenericDelegate(PuertsDLL.GetJSObjectValueGetter(isolate), this);
+
             if (debugPort != -1)
             {
                 PuertsDLL.CreateInspector(isolate, debugPort);
@@ -262,6 +266,7 @@ namespace Puerts
             }
             if (loader is IBuiltinLoadedListener)
                 (loader as IBuiltinLoadedListener).OnBuiltinLoaded(this);
+
         }
 
         internal string ResolveModuleContent(string identifer, out string pathForDebug) 
@@ -301,8 +306,8 @@ namespace Puerts
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
             JSObject jso = moduleExecuter(specifier);
-            JSOGetter<T> getter = Eval<JSOGetter<T>>("(function (jso, str) { return jso[str]; });");
-            return getter(jso, exportee);
+            
+            return jso.Get<T>(exportee);
         }
         public JSObject ExecuteModule(string specifier)
         {

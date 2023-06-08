@@ -22,6 +22,9 @@
 #if !defined(MAPPER_ISOLATE_DATA_POS)
 #define MAPPER_ISOLATE_DATA_POS 0
 #endif
+#if !defined(BACKENDENV_DATA_POS)
+#define BACKENDENV_DATA_POS 1
+#endif
 
 #define RELEASED_UOBJECT ((UObject*) 12)
 #define RELEASED_UOBJECT_MEMBER ((void*) 12)
