@@ -11,7 +11,7 @@ on:
 
 env:
   V8: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
-  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427.tgz"
+  Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427_with_android.tgz"
 
 jobs:
   
@@ -33,4 +33,24 @@ jobs:
     - name: Build
       run: |
         Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
+        
+        
+  android_ci:
+    name: Windows
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+    - name: Prepare
+      shell: msys2 {0}
+      run: |
+        wget -O v8lib.tgz -q  ${{env.V8}} 
+        tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
+        wget -O temp.tgz -q  ${{env.Engine}} 
+        tar xvfz temp.tgz
+        ls Engine
+        mkdir output
+    - name: Build
+      run: |
+        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android
         
