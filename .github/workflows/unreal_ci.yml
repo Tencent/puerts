@@ -26,5 +26,5 @@ jobs:
         mkdir output
     - name: Build
       run: |
-        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64
+        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
         
