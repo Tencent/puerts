@@ -1260,6 +1260,7 @@ struct PropertyWrapper<Ret*, Variable>
     }
 };
 
+#if USING_IN_UNREAL_ENGINE
 template <typename T>
 class ClassDefineBuilder
 {
@@ -1280,13 +1281,11 @@ class ClassDefineBuilder
 
     InitializeFuncType constructor_{};
 
-#if USING_IN_UNREAL_ENGINE
     std::vector<GeneralFunctionReflectionInfo> constructorInfos_{};
     std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
     std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
     std::vector<GeneralPropertyReflectionInfo> propertyInfos_{};
     std::vector<GeneralPropertyReflectionInfo> variableInfos_{};
-#endif
 
 public:
     explicit ClassDefineBuilder(const char* className) : className_(className)
@@ -1513,5 +1512,5 @@ inline ClassDefineBuilder<T> DefineClass()
     static auto NameLiteral = ScriptTypeName<T>::value();
     return ClassDefineBuilder<T>(NameLiteral.Data());
 }
-
+#endif
 }    // namespace puerts
