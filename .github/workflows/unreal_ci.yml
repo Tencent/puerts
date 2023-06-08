@@ -2,6 +2,12 @@ name: unreal ci
 
 on: 
   workflow_dispatch:
+  push:
+    paths: 
+      - unreal/Puerts/Source/**
+  pull_request:
+    paths: 
+      - unreal/Puerts/Source/**
 
 env:
   V8: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
