@@ -11,36 +11,54 @@
 #include "WasmRuntime.h"
 #include "WasmFunction.h"
 #include "WasmStaticLink.h"
+#include "WasmEnv.h"
 
-void WasmModuleInstance::_OnInit(WasmRuntime* Runtime, TArray<uint8>& InData, int LinkCategory, AdditionLinkFunc _Func)
+WasmModuleInstance::WasmModuleInstance(TArray<uint8>& InData)
+{
+    Data = std::move(InData);
+}
+
+bool WasmModuleInstance::ParseModule(WasmEnv* Env)
 {
     _Module = nullptr;
-    M3Result err = m3_ParseModule(Runtime->GetRuntime()->environment, &_Module, InData.GetData(), InData.Num());    // m3_FreeModule
+    M3Result err = m3_ParseModule(Env->GetEnv(), &_Module, Data.GetData(), Data.Num());    // m3_FreeModule
     if (err)
     {
+        _Module = nullptr;
         UE_LOG(LogTemp, Error, TEXT("m3_ParseModule:%s"), ANSI_TO_TCHAR(err));
-        return;
+        Data.Empty();
+        return false;
     }
+    return true;
+}
+
+bool WasmModuleInstance::LoadModule(WasmRuntime* Runtime, int LinkCategory, AdditionLinkFunc _Func /*= nullptr*/)
+{
+    if (!_Module)
+        return false;
+
     IM3Runtime m3Runtime = Runtime->GetRuntime();
     //初始的page设置为已经分配的,否则runtime加载一个初始memory更小的module,会导致老的import memory的module被重置
     if (_Module->memoryInfo.initPages < m3Runtime->memory.numPages)
     {
         _Module->memoryInfo.initPages = m3Runtime->memory.numPages;
     }
-    err = m3_LoadModule(m3Runtime, _Module);
+    M3Result err = m3_LoadModule(m3Runtime, _Module);
     if (err)
     {
         UE_LOG(LogTemp, Error, TEXT("m3_LoadModule:%s"), ANSI_TO_TCHAR(err));
         m3_FreeModule(_Module);
         _Module = nullptr;
-        return;
+        Data.Empty();
+        return false;
     }
 
     if (LinkCategory >= 0)
     {
         if (!WasmStaticLinkClass::Link(_Module, LinkCategory))
         {
-            return;
+            Data.Empty();
+            return false;
         }
     }
 
@@ -49,7 +67,8 @@ void WasmModuleInstance::_OnInit(WasmRuntime* Runtime, TArray<uint8>& InData, in
         if (!_Func(_Module))
         {
             UE_LOG(LogTemp, Error, TEXT("wasm module addition link function error"));
-            return;
+            Data.Empty();
+            return false;
         }
     }
 
@@ -61,7 +80,8 @@ void WasmModuleInstance::_OnInit(WasmRuntime* Runtime, TArray<uint8>& InData, in
     if (err)
     {
         UE_LOG(LogTemp, Error, TEXT("m3_CompileModule: %s"), ANSI_TO_TCHAR(err));
-        return;
+        Data.Empty();
+        return false;
     }
 
     for (u32 i = 0; i < _Module->numFunctions; ++i)
@@ -72,6 +92,10 @@ void WasmModuleInstance::_OnInit(WasmRuntime* Runtime, TArray<uint8>& InData, in
             _AllExportFunctions.Add(f->export_name, new WasmFunction(f));
         }
     }
+    //清理下data,如果有crash就不清理了吧
+    Data.Empty();
+    Runtime->OnModuleInstance(this);
+    return true;
 
     // compile all function
     /*for (u32 i = 0; i < _Module->numFunctions; ++i)
@@ -93,12 +117,6 @@ void WasmModuleInstance::_OnInit(WasmRuntime* Runtime, TArray<uint8>& InData, in
             }
         }
     }*/
-}
-
-WasmModuleInstance::WasmModuleInstance(WasmRuntime* Runtime, TArray<uint8>& InData, int LinkCategory, AdditionLinkFunc _Func)
-{
-    this->_OnInit(Runtime, InData, LinkCategory, _Func);
-    Runtime->OnModuleInstance(this);
 }
 
 WasmModuleInstance::~WasmModuleInstance()

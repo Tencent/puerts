@@ -17,8 +17,12 @@ var global = global || (function () { return this; }());
     const Wasm_MemoryBuffer = global.__tgjsWasm_MemoryBuffer
     global.__tgjsWasm_MemoryBuffer = undefined
     class Wasm3Memory{
-        constructor({initial, maximum}){
-            this._Seq = Wasm_NewMemory(initial, maximum)
+        constructor({initial, maximum, _Seq}){
+            if(_Seq) {
+                this._Seq = _Seq
+            }else{
+                this._Seq = Wasm_NewMemory(initial, maximum)
+            }
         }
         grow(n){
             Wasm_MemoryGrowth(this._Seq, n)
@@ -42,6 +46,16 @@ var global = global || (function () { return this; }());
         constructor(InWasm3Module, importObject){
             this.exports = {}
             this._Seq = Wasm_Instance(InWasm3Module._bufferSouce, importObject, this.exports)
+            const _Seq = this._Seq
+            let cachedMemory = undefined
+            Object.defineProperty(this.exports, 'memory', {
+                get: function(){
+                    if(!cachedMemory){
+                        cachedMemory = new Wasm3Memory({_Seq:_Seq})
+                    }
+                    return cachedMemory
+                }
+            })
         }
     }
 
@@ -54,7 +68,7 @@ var global = global || (function () { return this; }());
 
     const __tgjsWasm_OverrideWebAssembly = global.__tgjsWasm_OverrideWebAssembly
     global.__tgjsWasm_OverrideWebAssembly = undefined
-    if(!global.WebAssembly && __tgjsWasm_OverrideWebAssembly()){
+    if(__tgjsWasm_OverrideWebAssembly()){
         global.WebAssembly = Wasm3
     }
 

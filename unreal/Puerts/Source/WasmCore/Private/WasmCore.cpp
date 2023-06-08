@@ -16,34 +16,41 @@
 
 void WasmCoreModule::StartupModule()
 {
-    /*if (true)
+    if (false)
     {
         WasmEnv* Env = new WasmEnv();
         WasmRuntime* Runtime = new WasmRuntime(Env);
         {
             TArray<uint8> Data;
-
-    if (FFileHelper::LoadFileToArray(Data, *(FPaths::ProjectContentDir() / TEXT("JavaScript/wasm/main.wasm"))))
+            if (FFileHelper::LoadFileToArray(Data, *(FPaths::ProjectContentDir() / TEXT("JavaScript/wasm/main.wasm"))))
             {
-
-    WasmModuleInstance* Instance = new WasmModuleInstance(Runtime, Data, 0);
+                WasmModuleInstance* Instance = new WasmModuleInstance(Data);
+                if (!Instance->ParseModule(Env) || !Instance->LoadModule(Runtime, 0))
+                {
+                    delete Instance;
+                }
             }
         }
 
         {
-
-    TArray<uint8> Data;
-            if (FFileHelper::LoadFileToArray(Data, *(FPaths::ProjectContentDir() /
-    TEXT("JavaScript/wasm/testvector.wasm"))))
-            { WasmModuleInstance* Instance = new WasmModuleInstance(Runtime, Data, 0);
-
-    float a = Instance->GetAllExportFunctions()[TEXT("TestVector")]->Call<float, FVector>(FVector(1, 2, 3));
-
-    UE_LOG(LogTemp, Warning, TEXT("sss %f"), a); }
+            TArray<uint8> Data;
+            if (FFileHelper::LoadFileToArray(Data, *(FPaths::ProjectContentDir() / TEXT("JavaScript/wasm/testvector.wasm"))))
+            {
+                WasmModuleInstance* Instance = new WasmModuleInstance(Data);
+                if (Instance->ParseModule(Env) && Instance->LoadModule(Runtime, 0))
+                {
+                    float a = Instance->GetAllExportFunctions()[TEXT("TestVector")]->Call<float, FVector>(FVector(1, 2, 3));
+                    UE_LOG(LogTemp, Warning, TEXT("sss %f"), a);
+                }
+                else
+                {
+                    delete Instance;
+                }
+            }
         }
         delete Runtime;
         delete Env;
-    }*/
+    }
 }
 
 void WasmCoreModule::ShutdownModule()
