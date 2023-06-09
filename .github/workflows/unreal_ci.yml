@@ -35,23 +35,27 @@ jobs:
         Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
         
         
-#  android_ci:
-#    name: Android
-#    runs-on: windows-2019
-#    steps:
-#    - uses: actions/checkout@v3
-#    - uses: msys2/setup-msys2@v2
-#    - name: Prepare
-#      shell: msys2 {0}
-#      run: |
-#        wget -O v8lib.tgz -q  ${{env.V8}} 
-#        tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
-#        wget -O temp.tgz -q  ${{env.Engine}} 
-#        tar xvfz temp.tgz
-#        ls Engine
-#        mkdir output
-#    - name: Build
-#      run: |
-#        Engine\Extras\Android\SetupAndroid.bat
-#        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android
+  android_ci:
+    name: Android
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+    - name: Prepare
+      shell: msys2 {0}
+      run: |
+        wget -O v8lib.tgz -q  ${{env.V8}} 
+        tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
+        wget -O temp.tgz -q  ${{env.Engine}} 
+        tar xvfz temp.tgz
+        ls Engine
+        mkdir output
+    - name: SetupAndroid
+      run: |
+        Engine\Extras\Android\SetupAndroid.bat
+        chcp 65001 #set code page to utf-8
+        echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
+    - name: Build
+      run: |
+        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android -VS2019
         
