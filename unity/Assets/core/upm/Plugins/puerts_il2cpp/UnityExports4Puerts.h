@@ -57,7 +57,9 @@ typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, Per
 
 typedef v8::Value* (*GetPersistentObjectFunc)(v8::Context* env, const PersistentObjectInfo* objectInfo);
 
-typedef v8::Value* (*GetJSObjectValueFunc)(const PersistentObjectInfo* objectInfo, v8::Context* &env, const char* key);
+typedef void* (*GetJSObjectValueFunc)(const PersistentObjectInfo* objectInfo, const char* key, const void* type);
+
+typedef v8::Value* (*GetModuleExecutorFunc)(v8::Context* env);
 
 typedef void* (*NewArrayFunc)(const void *typeId, uint32_t length);
 
@@ -120,7 +122,9 @@ typedef void (*SetPersistentObjectFunc)(pesapi_env env, pesapi_value pvalue, Per
 
 typedef pesapi_value (*GetPersistentObjectFunc)(pesapi_env env, const PersistentObjectInfo* objectInfo);
 
-typedef pesapi_value (*GetJSObjectValueFunc)(const PersistentObjectInfo* objectInfo, pesapi_env &env, const char* key);
+typedef Il2CppObject* (*GetJSObjectValueFunc)(const PersistentObjectInfo* objectInfo, const char* key, Il2CppClass* type);
+
+typedef pesapi_value (*GetModuleExecutorFunc)(pesapi_env env);
 
 typedef Il2CppArray* (*NewArrayFunc)(Il2CppClass *typeId, uint32_t length);
 
@@ -213,6 +217,7 @@ struct UnityExports
     SetPersistentObjectFunc SetPersistentObject = nullptr;
     GetPersistentObjectFunc GetPersistentObject = nullptr;
     GetJSObjectValueFunc GetJSObjectValue = nullptr;
+    GetModuleExecutorFunc GetModuleExecutor = nullptr;
 
     GetRuntimeObjectFromPersistentObjectFunc GetRuntimeObjectFromPersistentObject = nullptr;
     SetRuntimeObjectToPersistentObjectFunc SetRuntimeObjectToPersistentObject = nullptr;

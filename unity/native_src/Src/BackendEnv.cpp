@@ -339,109 +339,6 @@ void puerts::BackendEnv::LogicTick()
 #endif
 }
 
-void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
-{
-    v8::Isolate* Isolate = info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
-    v8::Local<v8::String> Specifier_v8 = info[0]->ToString(Context).ToLocalChecked();
-
-#if !WITH_QUICKJS
-    auto emptyStrV8 = v8::String::NewFromUtf8(Isolate, "", v8::NewStringType::kNormal).ToLocalChecked();
-    v8::ScriptOrigin origin(emptyStrV8,
-                    v8::Integer::New(Isolate, 0),                      // line offset
-                    v8::Integer::New(Isolate, 0),                    // column offset
-                    v8::True(Isolate),                    // is cross origin
-                    v8::Local<v8::Integer>(),                 // script id
-                    v8::Local<v8::Value>(),                   // source map URL
-                    v8::False(Isolate),                   // is opaque (?)
-                    v8::False(Isolate),                   // is WASM
-                    v8::True(Isolate),                    // is ES Module
-                    v8::PrimitiveArray::New(Isolate, 10)
-    );
-    v8::ScriptCompiler::Source source(emptyStrV8, origin);
-    v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
-            .ToLocalChecked();
-
-    v8::MaybeLocal<v8::Module> mod = puerts::esmodule::ResolveModule(Context, Specifier_v8, entryModule);
-    if (mod.IsEmpty())
-    {
-        // TODO
-        return;
-    }
-    v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-    if (!puerts::esmodule::LinkModule(Context, moduleChecked))
-    {
-        // TODO
-        return;
-    }
-    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
-    if (ret.IsNothing() || !ret.ToChecked())
-    {
-        // TODO
-        return;
-    }
-    v8::MaybeLocal<v8::Value> evalRet = moduleChecked->Evaluate(Context);
-    if (evalRet.IsEmpty())
-    {
-        // TODO
-        return;
-    }
-    info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
-
-#else 
-    JS_SetModuleLoaderFunc(Isolate->runtime_, puerts::esmodule::js_module_resolver, puerts::esmodule::js_module_loader, NULL);
-    JSContext* ctx = Context->context_;
-
-    v8::String::Utf8Value Specifier_utf8(Isolate, Specifier_v8);
-    std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
-
-    char* resolved_name = puerts::esmodule::js_module_resolver(ctx, "", Specifier_std.c_str(), nullptr);
-    if (resolved_name == nullptr)
-    {
-        // should be a exception on mockV8's VM
-        Isolate->handleException();
-        return;
-    }
-
-    JSModuleDef* EntryModule = puerts::esmodule::js_module_loader(ctx, resolved_name, nullptr);
-    if (EntryModule == nullptr) 
-    {
-        // should be a exception on mockV8's VM
-        Isolate->handleException();
-        return;
-    }
-
-    auto func_obj = JS_DupModule(ctx, EntryModule);
-    auto evalRet = JS_EvalFunction(ctx, func_obj);
-
-    v8::Value* val = nullptr;
-    if (JS_IsException(evalRet)) {
-        JS_FreeValue(ctx, evalRet);
-        Isolate->handleException();
-        return;
-
-    } else {
-        val = Isolate->Alloc<v8::Value>();
-        val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
-        JS_FreeValue(ctx, evalRet);
-        v8::Local<v8::Value> ns = v8::Local<v8::Value>(val);
-
-        if (ns->IsNullOrUndefined())
-        {
-            ns = v8::Object::New(Isolate);
-        }
-
-        info.GetReturnValue().Set(ns);
-
-        return;   
-    }
-#endif
-}
-
 void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context> Context)
 {
     MainContext.Reset(Isolate, Context);
@@ -476,7 +373,6 @@ void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context>
 #endif
 
     Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
-    Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__puer_execute_module_sync__").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()).Check();
 
 #if defined(WITH_NODEJS)
     StartPolling();
@@ -593,6 +489,109 @@ static v8::MaybeLocal<v8::Value> CallRead(
     V8Args.clear();
 
     return maybeRet;
+}
+
+void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
+{
+    v8::Isolate* Isolate = info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    v8::Local<v8::String> Specifier_v8 = info[0]->ToString(Context).ToLocalChecked();
+
+#if !WITH_QUICKJS
+    auto emptyStrV8 = v8::String::NewFromUtf8(Isolate, "", v8::NewStringType::kNormal).ToLocalChecked();
+    v8::ScriptOrigin origin(emptyStrV8,
+                    v8::Integer::New(Isolate, 0),                      // line offset
+                    v8::Integer::New(Isolate, 0),                    // column offset
+                    v8::True(Isolate),                    // is cross origin
+                    v8::Local<v8::Integer>(),                 // script id
+                    v8::Local<v8::Value>(),                   // source map URL
+                    v8::False(Isolate),                   // is opaque (?)
+                    v8::False(Isolate),                   // is WASM
+                    v8::True(Isolate),                    // is ES Module
+                    v8::PrimitiveArray::New(Isolate, 10)
+    );
+    v8::ScriptCompiler::Source source(emptyStrV8, origin);
+    v8::Local<v8::Module> entryModule = v8::ScriptCompiler::CompileModule(Isolate, &source, v8::ScriptCompiler::kNoCompileOptions)
+            .ToLocalChecked();
+
+    v8::MaybeLocal<v8::Module> mod = puerts::esmodule::ResolveModule(Context, Specifier_v8, entryModule);
+    if (mod.IsEmpty())
+    {
+        // TODO
+        return;
+    }
+    v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
+    if (!puerts::esmodule::LinkModule(Context, moduleChecked))
+    {
+        // TODO
+        return;
+    }
+    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
+    if (ret.IsNothing() || !ret.ToChecked())
+    {
+        // TODO
+        return;
+    }
+    v8::MaybeLocal<v8::Value> evalRet = moduleChecked->Evaluate(Context);
+    if (evalRet.IsEmpty())
+    {
+        // TODO
+        return;
+    }
+    info.GetReturnValue().Set(moduleChecked->GetModuleNamespace());
+
+#else 
+    JS_SetModuleLoaderFunc(Isolate->runtime_, puerts::esmodule::js_module_resolver, puerts::esmodule::js_module_loader, NULL);
+    JSContext* ctx = Context->context_;
+
+    v8::String::Utf8Value Specifier_utf8(Isolate, Specifier_v8);
+    std::string Specifier_std(*Specifier_utf8, Specifier_utf8.length());
+
+    char* resolved_name = puerts::esmodule::js_module_resolver(ctx, "", Specifier_std.c_str(), nullptr);
+    if (resolved_name == nullptr)
+    {
+        // should be a exception on mockV8's VM
+        Isolate->handleException();
+        return;
+    }
+
+    JSModuleDef* EntryModule = puerts::esmodule::js_module_loader(ctx, resolved_name, nullptr);
+    if (EntryModule == nullptr) 
+    {
+        // should be a exception on mockV8's VM
+        Isolate->handleException();
+        return;
+    }
+
+    auto func_obj = JS_DupModule(ctx, EntryModule);
+    auto evalRet = JS_EvalFunction(ctx, func_obj);
+
+    v8::Value* val = nullptr;
+    if (JS_IsException(evalRet)) {
+        JS_FreeValue(ctx, evalRet);
+        Isolate->handleException();
+        return;
+
+    } else {
+        val = Isolate->Alloc<v8::Value>();
+        val->value_ = JS_GET_MODULE_NS(ctx, EntryModule);
+        JS_FreeValue(ctx, evalRet);
+        v8::Local<v8::Value> ns = v8::Local<v8::Value>(val);
+
+        if (ns->IsNullOrUndefined())
+        {
+            ns = v8::Object::New(Isolate);
+        }
+
+        info.GetReturnValue().Set(ns);
+
+        return;   
+    }
+#endif
 }
 
 #if !WITH_QUICKJS
@@ -738,7 +737,7 @@ char* puerts::esmodule::js_module_resolver(
 
     v8::TryCatch TryCatch(Isolate);
     v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
-    if (maybeRet.IsEmpty()) 
+    if (maybeRet.IsEmpty() || !(Specifier = maybeRet.ToLocalChecked()).IsString()) 
     {
         // should be a exception on mockV8's VM
 
@@ -751,7 +750,6 @@ char* puerts::esmodule::js_module_resolver(
         return nullptr;
     }
 
-    Specifier = maybeRet.ToLocalChecked();
     v8::String::Utf8Value Specifier_utf8(Isolate, Specifier);
     const char* specifier = *Specifier_utf8;
 

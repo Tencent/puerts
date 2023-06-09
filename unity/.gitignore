@@ -25,6 +25,7 @@
 /native_src_il2cpp/puerts-cpp-tester
 /native_src_il2cpp/build*
 /native_src_il2cpp/compile_commands.json
+/native_src_il2cpp/Src/FunctionBridge.Gen.h
 /node_modules
 /Assets/core/upm/*.meta
 /Assets/core/upm/Runtime/**/*.meta

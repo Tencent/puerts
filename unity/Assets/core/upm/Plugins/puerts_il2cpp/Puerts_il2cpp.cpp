@@ -1587,17 +1587,15 @@ void ArraySetRef(Il2CppArray *array, uint32_t index, void* value)
 {
     il2cpp_array_setref(array, index, value);
 }
-Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key)
+Il2CppObject* GetJSObjectValue(Il2CppObject* jsObject, Il2CppString* key, Il2CppReflectionType* rtype)
 {
     PersistentObjectInfo* objectInfo = reinterpret_cast<PersistentObjectInfo*>(jsObject + 1);
-    pesapi_env env;
 
     const Il2CppChar* utf16 = il2cpp::utils::StringUtils::GetChars(key);
     std::string key_std = il2cpp::utils::StringUtils::Utf16ToUtf8(utf16);
 
-    pesapi_value value = g_unityExports.GetJSObjectValue(objectInfo, env, key_std.c_str());
-
-    return JsValueToCSRef(il2cpp_defaults.object_class, env, value);
+    auto type = il2cpp_codegen_class_from_type(rtype->type);
+    return g_unityExports.GetJSObjectValue(objectInfo, key_std.c_str(), type);
 }
 
 puerts::UnityExports* GetUnityExports()
@@ -1690,6 +1688,23 @@ Il2CppObject* EvalInternal(intptr_t ptr, Il2CppArray * __code, Il2CppString* __p
     }
     return nullptr;
 }
+Il2CppObject* GetModuleExecutor(intptr_t ptr, Il2CppReflectionType* rtype)
+{
+    pesapi_env_holder env_holder = reinterpret_cast<pesapi_env_holder>(ptr);
+
+    internal::AutoValueScope ValueScope(env_holder);
+    auto env = pesapi_get_env_from_holder(env_holder);
+    
+    pesapi_value func = g_unityExports.GetModuleExecutor(env);
+    if (pesapi_has_caught(ValueScope.scope))
+    {
+        Exception::Raise(Exception::GetInvalidOperationException(pesapi_get_exception_as_string(ValueScope.scope, true)));
+        return nullptr;
+    }
+
+    auto type = il2cpp_codegen_class_from_type(rtype->type);
+    return JsValueToCSRef(type, env, func);
+}
 
 }
 
@@ -1713,8 +1728,9 @@ void InitialPuerts(pesapi_func_ptr* func_array)
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetUnityExports()", (Il2CppMethodPointer)puerts::GetUnityExports);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::EvalInternal(System.IntPtr,System.Byte[],System.String,System.Type)", (Il2CppMethodPointer)puerts::EvalInternal);
     InternalCalls::Add("PuertsIl2cpp.NativeAPI::TypeIdToType(System.IntPtr)", (Il2CppMethodPointer)puerts::TypeIdToType);
+    InternalCalls::Add("PuertsIl2cpp.NativeAPI::GetModuleExecutor(System.IntPtr,System.Type)", (Il2CppMethodPointer)puerts::GetModuleExecutor);
     InternalCalls::Add("Puerts.JSObject::releaseScriptObject()", (Il2CppMethodPointer)puerts::ReleaseScriptObject);
-    InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
+    InternalCalls::Add("Puerts.JSObject::GetJSObjectValue(System.String,System.Type)", (Il2CppMethodPointer)puerts::GetJSObjectValue);
     pesapi_init(func_array);
 }
 

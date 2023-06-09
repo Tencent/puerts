@@ -190,9 +190,6 @@ namespace Puerts
             SetGeneralDestructor(isolate, fn);
         }
 
-        // [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-        // public static extern IntPtr ExecuteModule(IntPtr isolate, string path, string exportee);
-
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool ClearModuleCache(IntPtr isolate, string path);
 
@@ -283,6 +280,9 @@ namespace Puerts
         
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetJSObjectValueGetter(IntPtr isolate);
+        
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetModuleExecutor(IntPtr isolate);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReturnClass(IntPtr isolate, IntPtr info, int classID);

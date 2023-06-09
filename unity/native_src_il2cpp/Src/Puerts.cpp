@@ -20,6 +20,7 @@
 #include "Binding.hpp"   
 #include <stdarg.h>
 #include "BackendEnv.h"
+#include "ExecuteModuleJSCode.h"
 
 #define USE_OUTSIZE_UNITY 1
 
@@ -198,6 +199,7 @@ static void* FunctionToDelegate(v8::Isolate* Isolate, v8::Local<v8::Context> Con
     //{
     //    PersistentObjectInfo* delegateInfo = static_cast<PersistentObjectInfo*>((v8::Local<v8::External>::Cast(MaybeDelegate.ToLocalChecked()))->Value());
     //}
+
     void* Ptr = _GetRuntimeObjectFromPersistentObject(Context, Func);
     if (Ptr == nullptr)
     {
@@ -255,23 +257,6 @@ static void SetPersistentObject(pesapi_env env, pesapi_value pvalue, PersistentO
     objectInfo->JsEnvLifeCycleTracker = DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
 }
 
-static v8::Value* GetJSObjectValue(const PersistentObjectInfo* objectInfo, v8::Context* &Context, const char* key)
-{
-    auto Isolate = objectInfo->EnvInfo->Isolate;
-    v8::Isolate::Scope Isolatescope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    auto LocalContext = objectInfo->EnvInfo->Context.Get(Isolate);
-    Context = *LocalContext;
-    v8::Context::Scope ContextScope(LocalContext);
-
-    v8::Local<v8::Value> Key = v8::String::NewFromUtf8(Isolate, key).ToLocalChecked();
-
-    v8::Local<v8::Object> Obj = v8::Local<v8::Object>::Cast(objectInfo->JsObject.Get(Isolate));
-
-    auto maybeValue = Obj->Get(LocalContext, Key);
-    if (maybeValue.IsEmpty()) return nullptr;
-    return *maybeValue.ToLocalChecked();
-}
 
 static v8::Value* GetPersistentObject(v8::Context* env, const PersistentObjectInfo* objectInfo)
 {    
@@ -295,6 +280,36 @@ static v8::Value* GetPersistentObject(v8::Context* env, const PersistentObjectIn
 static void* JsValueToCSRef(v8::Local<v8::Context> context, v8::Local<v8::Value> val, const void *typeId)
 {
     return GUnityExports.JsValueToCSRef(typeId, *context, *val);
+}
+
+static v8::Value* GetModuleExecutor(v8::Context* env)
+{
+    v8::Local<v8::Context> Context;
+    memcpy(static_cast<void*>(&Context), &env, sizeof(env));
+
+    auto ret = pesapi_eval((pesapi_env) env, (const uint8_t*) ExecuteModuleJSCode, strlen(ExecuteModuleJSCode), "__puer_execute__.mjs");
+
+    auto Isolate = Context->GetIsolate();
+
+    return *v8::FunctionTemplate::New(Isolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked();
+}
+
+static void* GetJSObjectValue(const PersistentObjectInfo* objectInfo, const char* key, const void* Typeid)
+{
+    auto Isolate = objectInfo->EnvInfo->Isolate;
+    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    auto LocalContext = objectInfo->EnvInfo->Context.Get(Isolate);
+    v8::Context::Scope ContextScope(LocalContext);
+
+    v8::Local<v8::Value> Key = v8::String::NewFromUtf8(Isolate, key).ToLocalChecked();
+
+    v8::Local<v8::Object> Obj = v8::Local<v8::Object>::Cast(objectInfo->JsObject.Get(Isolate));
+
+    auto maybeValue = Obj->Get(LocalContext, Key);
+    if (maybeValue.IsEmpty()) return nullptr;
+
+    return puerts::JsValueToCSRef(LocalContext, maybeValue.ToLocalChecked(), Typeid);
 }
 
 static bool IsDelegate(const void* typeId)
@@ -1108,9 +1123,10 @@ V8_EXPORT void ExchangeAPI(puerts::UnityExports * exports)
     exports->FunctionToDelegate = &puerts::FunctionToDelegate_pesapi;
     exports->SetPersistentObject = &puerts::SetPersistentObject;
     exports->GetPersistentObject = &puerts::GetPersistentObject;
-    exports->GetJSObjectValue = &puerts::GetJSObjectValue;
     exports->SetRuntimeObjectToPersistentObject = &puerts::SetRuntimeObjectToPersistentObject;
     exports->GetRuntimeObjectFromPersistentObject = &puerts::GetRuntimeObjectFromPersistentObject;
+    exports->GetJSObjectValue = &puerts::GetJSObjectValue;
+    exports->GetModuleExecutor = &puerts::GetModuleExecutor;
     puerts::GUnityExports = *exports;
 }
 

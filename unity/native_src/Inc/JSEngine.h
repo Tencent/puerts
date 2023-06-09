@@ -82,8 +82,6 @@ public:
 
     void SetGlobalFunction(const char *Name, CSharpFunctionCallback Callback, int64_t Data);
 
-    bool ExecuteModule(const char* Path, const char* Exportee);
-        
     bool Eval(const char *Code, const char* Path);
 
     int RegisterClass(const char *FullName, int BaseTypeId, CSharpConstructorCallback Constructor, CSharpDestructorCallback Destructor, int64_t Data, int Size);
@@ -175,8 +173,12 @@ private:
 
     std::mutex JSObjectsMutex;
 
+    JSFunction* ModuleExecutor = nullptr;
+    
 public:
-    JSFunction* JSObjectValueGetter;
+    JSFunction* JSObjectValueGetter = nullptr;
+
+    JSFunction* GetModuleExecutor();
 
     v8::Local<v8::FunctionTemplate> ToTemplate(v8::Isolate* Isolate, bool IsStatic, CSharpFunctionCallback Callback, int64_t Data);
 };

@@ -107,6 +107,12 @@ namespace PuertsIl2cpp
         public static extern bool LogicTick(IntPtr jsEnv);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static Func<string, Puerts.JSObject> GetModuleExecutor(IntPtr NativeJsEnvPtr, Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static IntPtr GetMethodPointer(MethodBase methodInfo)
         {
             throw new NotImplementedException();
@@ -183,6 +189,7 @@ namespace PuertsIl2cpp
         {
             throw new NotImplementedException();
         }
+
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || PUERTS_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #endif

@@ -9,6 +9,7 @@
 #include "Log.h"
 #include <memory>
 #include <stdarg.h>
+#include "ExecuteModuleJSCode.h"
 
 namespace puerts
 {
@@ -133,7 +134,10 @@ namespace puerts
 
         JSObjectIdMap.Reset(Isolate, v8::Map::New(Isolate));
 
-        JSObjectValueGetter = CreateJSFunction(MainIsolate, Context, v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked());
+        JSObjectValueGetter = CreateJSFunction(
+            MainIsolate, Context, 
+            v8::FunctionTemplate::New(Isolate, &JSObjectValueGetterFunction)->GetFunction(Context).ToLocalChecked()
+        );
     }
 
     JSEngine::~JSEngine()
@@ -214,6 +218,62 @@ namespace puerts
         {
             delete LifeCycleInfos[i];
         }
+    }
+
+    JSFunction* JSEngine::GetModuleExecutor()
+    {
+        if (ModuleExecutor == nullptr)
+        {
+            bool success = Eval(ExecuteModuleJSCode, "__puer_execute__.mjs");
+            if (!success) return nullptr;
+            
+            v8::Isolate::Scope IsolateScope(MainIsolate);
+            v8::HandleScope HandleScope(MainIsolate);
+            v8::Local<v8::Context> Context = ResultInfo.Context.Get(MainIsolate);
+            v8::Context::Scope ContextScope(Context);
+            ModuleExecutor = CreateJSFunction(
+                MainIsolate, Context, 
+                v8::FunctionTemplate::New(MainIsolate, puerts::esmodule::ExecuteModule)->GetFunction(Context).ToLocalChecked()
+            );
+        }
+        return ModuleExecutor;
+    }
+
+    bool JSEngine::Eval(const char *Code, const char* Path)
+    {
+        v8::Isolate* Isolate = MainIsolate;
+#ifdef THREAD_SAFE
+        v8::Locker Locker(Isolate);
+#endif
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        v8::Local<v8::Context> Context = ResultInfo.Context.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        v8::Local<v8::String> Url = FV8Utils::V8String(Isolate, Path == nullptr ? "" : Path);
+        v8::Local<v8::String> Source = FV8Utils::V8String(Isolate, Code);
+        v8::ScriptOrigin Origin(Url);
+        v8::TryCatch TryCatch(Isolate);
+
+        auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
+        if (CompiledScript.IsEmpty())
+        {
+            SetLastException(TryCatch.Exception());
+            return false;
+        }
+        auto maybeValue = CompiledScript.ToLocalChecked()->Run(Context);//error info output
+        if (TryCatch.HasCaught())
+        {
+            SetLastException(TryCatch.Exception());
+            return false;
+        }
+
+        if (!maybeValue.IsEmpty())
+        {
+            ResultInfo.Result.Reset(Isolate, maybeValue.ToLocalChecked());
+        }
+
+        return true;
     }
 
     JSObject *JSEngine::CreateJSObject(v8::Isolate *InIsolate, v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)

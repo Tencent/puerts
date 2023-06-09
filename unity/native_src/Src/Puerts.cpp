@@ -78,19 +78,6 @@ V8_EXPORT void SetModuleResolver(v8::Isolate *Isolate, CSharpModuleResolveCallba
     JsEngine->Idx = Idx;
 }
 
-// V8_EXPORT FResultInfo * ExecuteModule(v8::Isolate *Isolate, const char* Path, const char* Exportee)
-// {
-//     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
-//     if (JsEngine->ExecuteModule(Path, Exportee))
-//     {
-//         return &(JsEngine->ResultInfo);
-//     }
-//     else
-//     {
-//         return nullptr;
-//     }
-// }
-
 V8_EXPORT FResultInfo * Eval(v8::Isolate *Isolate, const char *Code, const char* Path)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
@@ -173,6 +160,12 @@ V8_EXPORT JSFunction* GetJSObjectValueGetter(v8::Isolate *Isolate)
 {
     auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
     return JsEngine->JSObjectValueGetter;
+}
+
+V8_EXPORT JSFunction* GetModuleExecutor(v8::Isolate *Isolate)
+{
+    auto JsEngine = FV8Utils::IsolateData<JSEngine>(Isolate);
+    return JsEngine->GetModuleExecutor();
 }
 
 //-------------------------- begin js call cs --------------------------

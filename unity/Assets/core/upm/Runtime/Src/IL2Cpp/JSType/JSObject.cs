@@ -31,14 +31,14 @@ namespace Puerts
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        object GetJSObjectValue(string key)
+        object GetJSObjectValue(string key, Type resultType)
         {
             throw new NotImplementedException();
         }
 
         public T Get<T>(string key) 
         {
-            return (T)GetJSObjectValue(key);
+            return (T)GetJSObjectValue(key, typeof(T));
         }
 
         ~JSObject()

@@ -32,8 +32,7 @@ namespace Puerts
 
         PuertsIl2cpp.ObjectPool objectPool = new PuertsIl2cpp.ObjectPool();
 
-        private Func<string, JSObject> moduleExecuter;
-        private delegate T JSOGetter<T>(JSObject jso, string s);
+        private Func<string, JSObject> moduleExecutor;
 
         ILoader loader;
 
@@ -82,41 +81,6 @@ namespace Puerts
                 PuertsIl2cpp.NativeAPI.GetObjectPointer(objectPool));
 
             PuertsIl2cpp.NativeAPI.SetObjectToGlobal(nativeJsEnv, "jsEnv", PuertsIl2cpp.NativeAPI.GetObjectPointer(this));
-
-            Eval(PathHelper.JSCode + @"
-                var global = this;
-                (function() {
-                    var loader = jsEnv.GetLoader();
-                    global.__puer_resolve_module_url__ = function(specifier, referer) {
-                        const originSp = specifier;
-                        if (!loader.Resolve) {
-                            let s = !__puer_path__.isRelative(specifier) ? specifier : __puer_path__.normalize(__puer_path__.dirname(referer) + '/' + specifier)
-                            if (loader.FileExists(s)) {
-                                return s
-                            } else {
-                                throw new Error(`module not found in js: ${originSp}`);
-                            }
-
-                        } else {
-                            let p = loader.Resolve(specifier, referer)
-                            if (!p) {
-                                throw new Error(`module not found in js: ${originSp}`);
-                            }
-                            return p;
-                        }
-                    }
-                    global.__puer_resolve_module_content__ = function(specifier) {
-                        const debugpathRef = [], contentRef = [];
-                        const originSp = specifier;
-
-                        return loader.ReadFile(specifier, debugpathRef);                    
-                    }
-                })();
-            ");
-            
-            moduleExecuter = Eval<Func<string, JSObject>>("__puer_execute_module_sync__");
-
-            // TypeRegister = new TypeRegister();
 
             //可以DISABLE掉自动注册，通过手动调用PuertsStaticWrap.AutoStaticCodeRegister.Register(jsEnv)来注册
 #if !DISABLE_AUTO_REGISTER
@@ -199,13 +163,15 @@ namespace Puerts
             if (exportee == "" && typeof(T) != typeof(JSObject)) {
                 throw new Exception("T must be Puerts.JSObject when getting the module namespace");
             }
-            JSObject jso = moduleExecuter(specifier);
+            if (moduleExecutor == null) moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>));
+            JSObject jso = moduleExecutor(specifier);
             
             return jso.Get<T>(exportee);
         }
         public JSObject ExecuteModule(string specifier)
         {
-            return moduleExecuter(specifier);
+            if (moduleExecutor == null) moduleExecutor = PuertsIl2cpp.NativeAPI.GetModuleExecutor(nativePesapiEnv, typeof(Func<string, JSObject>));
+            return moduleExecutor(specifier);
         }
 
         public Action TickHandler;
