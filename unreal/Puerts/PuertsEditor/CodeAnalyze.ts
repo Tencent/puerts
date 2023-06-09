@@ -631,7 +631,10 @@ function watch(configFilePath:string) {
                     if (options.outDir && sourceFileName.startsWith(options.outDir)) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = tsi.getDirectoryPath(moduleFileName);
-                        return onBlueprintTypeAddOrChange(baseTypeUClass as UE.Class, type, modulePath);
+                        let bp = new UE.PEBlueprintAsset();
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0);
+                        bp.Save();
+                        return bp.GeneratedClass;
                     }
                 }
             }
@@ -858,7 +861,7 @@ function watch(configFilePath:string) {
                 return ret;
             }
 
-            function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) : UE.Class {
+            function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let lsFunctionLibrary:boolean =  baseTypeUClass && baseTypeUClass.GetName() === "BlueprintFunctionLibrary";
                 let bp = new UE.PEBlueprintAsset();
@@ -980,7 +983,6 @@ function watch(configFilePath:string) {
                 bp.RemoveNotExistedFunction();
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
-                return bp.GeneratedClass;
             }
 
             function getModuleNames(type: ts.Type) : string[] {
