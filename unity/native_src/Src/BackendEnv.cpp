@@ -737,7 +737,7 @@ char* puerts::esmodule::js_module_resolver(
 
     v8::TryCatch TryCatch(Isolate);
     v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
-    if (maybeRet.IsEmpty() || !(Specifier = maybeRet.ToLocalChecked()).IsString()) 
+    if (maybeRet.IsEmpty() || !(Specifier = maybeRet.ToLocalChecked())->IsString()) 
     {
         // should be a exception on mockV8's VM
 
@@ -780,7 +780,8 @@ JSModuleDef* puerts::esmodule::js_module_loader(
     v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
     v8::TryCatch TryCatch(Isolate);
     v8::MaybeLocal<v8::Value> maybeRet = CallRead(Isolate, Context, Specifier);
-    if (maybeRet.IsEmpty()) 
+    v8::Local<v8::Value> ret;
+    if (maybeRet.IsEmpty() || !((ret = maybeRet.ToLocalChecked())->IsString()))
     {
         // should be a exception on mockV8's VM
 
@@ -792,7 +793,7 @@ JSModuleDef* puerts::esmodule::js_module_loader(
         // there should be a exception in quickjs VM now
         return nullptr;
     }
-    v8::Local<v8::String> V8Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
+    v8::Local<v8::String> V8Code = v8::Local<v8::String>::Cast(ret);
     v8::String::Utf8Value Code_utf8(Isolate, V8Code);
 
     const char* Code = *Code_utf8;
