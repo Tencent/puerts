@@ -1105,6 +1105,10 @@ void UPEBlueprintAsset::RemoveNotExistedComponent()
     {
         return;
     }
+    if (Blueprint && Blueprint->GeneratedClass && Blueprint->GeneratedClass->IsChildOf<AActor>())
+    {
+        ComponentsAdded.Add(TEXT("DefaultSceneRoot"));
+    }
     if (Blueprint && Blueprint->SimpleConstructionScript)
     {
         TArray<FName> ToDelete;
