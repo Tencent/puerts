@@ -439,6 +439,7 @@ function watch(configFilePath) {
             console.log("incremental compile " + sourceFilePath + " using " + (new Date().getTime() - beginTime) + "ms");
         }
         let sourceFile = program.getSourceFile(sourceFilePath);
+        const blueprintCache = new Map();
         if (sourceFile) {
             const diagnostics = [
                 ...program.getSyntacticDiagnostics(sourceFile),
@@ -586,10 +587,7 @@ function watch(configFilePath) {
                     if (options.outDir && sourceFileName.startsWith(options.outDir)) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = tsi.getDirectoryPath(moduleFileName);
-                        let bp = new UE.PEBlueprintAsset();
-                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass, 0, 0);
-                        bp.Save();
-                        return bp.GeneratedClass;
+                        return onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath);
                     }
                 }
             }
@@ -808,6 +806,11 @@ function watch(configFilePath) {
                 return ret;
             }
             function onBlueprintTypeAddOrChange(baseTypeUClass, type, modulePath) {
+                const cacheKey = `${modulePath}.${type.getSymbol().getName()}`;
+                if (blueprintCache.has(cacheKey)) {
+                    console.log(`blueprint ${type.getSymbol().getName()} already gen, skip`);
+                    return blueprintCache.get(cacheKey);
+                }
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let lsFunctionLibrary = baseTypeUClass && baseTypeUClass.GetName() === "BlueprintFunctionLibrary";
                 let bp = new UE.PEBlueprintAsset();
@@ -926,6 +929,8 @@ function watch(configFilePath) {
                 bp.RemoveNotExistedFunction();
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
+                blueprintCache.set(cacheKey, bp.GeneratedClass);
+                return bp.GeneratedClass;
             }
             function getModuleNames(type) {
                 let ret = [];
