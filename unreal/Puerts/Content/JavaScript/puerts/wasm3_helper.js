@@ -65,6 +65,7 @@ var global = global || (function () { return this; }());
             resolve(ins)
         })
     }
+    Wasm3.Instance = Wasm3ModuleInstance;
 
     const __tgjsWasm_OverrideWebAssembly = global.__tgjsWasm_OverrideWebAssembly
     global.__tgjsWasm_OverrideWebAssembly = undefined
