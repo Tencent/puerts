@@ -219,7 +219,10 @@ V8_EXPORT double GetNumberFromValue(v8::Isolate* Isolate, v8::Value *Value, int 
     else
     {
         auto Context = Isolate->GetCurrentContext();
-        return Value->NumberValue(Context).ToChecked();
+        auto maybeNumber = Value->NumberValue(Context);
+        if (maybeNumber.IsNothing())
+            return 0;
+        return maybeNumber.ToChecked();
     }
 }
 
