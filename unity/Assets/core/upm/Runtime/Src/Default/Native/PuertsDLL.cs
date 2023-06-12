@@ -220,6 +220,7 @@ namespace Puerts
 #endif
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        // in WebGL, the prefix '_' is necessary. (Dont know why)
         public static extern int _RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, IntPtr constructor, IntPtr destructor, long data);
 
         public static int RegisterClass(IntPtr isolate, int BaseTypeId, string fullName, V8ConstructorCallback constructor, V8DestructorCallback destructor, long data)

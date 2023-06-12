@@ -33,7 +33,7 @@ namespace PuertsStaticWrap
                     ${FOR(listToJsArray(item.Members), member=> `
                     {"${member.Name}${member.IsStatic ? '_static' : ''}", new MemberRegisterInfo { Name = "${member.Name}", IsStatic = ${member.IsStatic}, MemberType = MemberType.${member.MemberType}, UseBindingMode = BindingMode.${member.UseBindingMode}
 #if !EXPERIMENTAL_IL2CPP_PUERTS
-                    ${member.UseBindingMode == 'DontBinding' ? '' : referWrapperMember(item.WrapperName, member.Constructor, member.Method, member.PropertyGetter, member.PropertySetter)}
+                    ${member.UseBindingMode == 'FastBinding' ? referWrapperMember(item.WrapperName, member.Constructor, member.Method, member.PropertyGetter, member.PropertySetter) : ''}
 #endif
                     }},
                     `)}

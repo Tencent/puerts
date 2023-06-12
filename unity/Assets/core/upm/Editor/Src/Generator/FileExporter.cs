@@ -186,6 +186,7 @@ namespace Puerts.Editor
                     textWriter.Flush();
                 }
             }
+            
             public static void GenRegisterInfo(string outDir, ILoader loader = null)
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {

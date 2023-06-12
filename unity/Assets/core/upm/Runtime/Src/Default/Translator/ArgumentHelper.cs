@@ -127,7 +127,7 @@ namespace Puerts
                         var typeId = NativeValueApi.GetValueFromArgument.GetTypeId(isolate, v8Value, isByRef);
                         if (typeId >= 0)
                         {
-                            csType = JsEnv.jsEnvs[jsEnvIdx].TypeRegister.GetType(typeId);
+                            csType = JsEnv.jsEnvs[jsEnvIdx].TypeManager.GetType(typeId);
                         }
                     }
                     return csType != null && expectCsType != null && expectCsType.IsAssignableFrom(csType);
