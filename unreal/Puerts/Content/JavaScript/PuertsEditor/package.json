@@ -4,7 +4,7 @@
   "description": "PuertsEditor",
   "scripts": {},
   "dependencies": {
-    "typescript": "3.4.5"
+    "typescript": "4.7.4"
   },
   "devDependencies": {}
 }
