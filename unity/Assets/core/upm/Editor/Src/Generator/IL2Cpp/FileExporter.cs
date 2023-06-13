@@ -195,9 +195,9 @@ namespace PuertsIl2cpp.Editor
                 {
                     GenericArgumentInInstructions(method, typeInGenericArgument, processed, mb =>
                     {
-                        if (mb.GetMethodBody() == null || mb.IsGenericMethodDefinition || mb.IsAbstract) return new MethodBase[] { };
                         try
                         {
+                            if (mb.GetMethodBody() == null || mb.IsGenericMethodDefinition || mb.IsAbstract) return new MethodBase[] { };
                             return mb.GetInstructions()
                                 .Select(i => i.Operand)
                                 .Where(o => o is MethodBase)
@@ -205,7 +205,7 @@ namespace PuertsIl2cpp.Editor
                         }
                         catch (Exception)
                         {
-                            //UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.GetName().Name, mb.DeclaringType));
+                            UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.GetName().Name, mb.DeclaringType));
                             return new MethodBase[] { };
                         }
                     });
