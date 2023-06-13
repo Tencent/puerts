@@ -354,6 +354,51 @@ function watch(configFilePath:string) {
         }
     }
 
+    let pendingBlueprintRefleshJobs: Array<{type:ts.Type, op:() =>void}> = [];
+    function isChildOf(a: ts.Type, b: ts.Type): boolean {
+        let baseTypes = a.getBaseTypes();
+        if (baseTypes.indexOf(b as ts.BaseType) >= 0) {
+            return true;
+        }
+        for(let i = 0; i < baseTypes.length; ++i) {
+            if (isChildOf(baseTypes[i], b)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function topologicalSort(classes:Array<{type:ts.Type, op:() =>void}>) {
+        const visited = new Set();
+        const result: Array<{type:ts.Type, op:() =>void}> = [];
+      
+        function visit(node:{type:ts.Type, op:() =>void}) {
+          if (!visited.has(node)) {
+            visited.add(node);
+            for (const other of classes) {
+              if (isChildOf(node.type, other.type)) {
+                visit(other);
+              }
+            }
+            result.push(node);
+          }
+        }
+      
+        for (const cls of classes) {
+          visit(cls);
+        }
+      
+        return result;
+    }
+    function refreshBlueprints() {
+        if (pendingBlueprintRefleshJobs.length > 0) {
+            pendingBlueprintRefleshJobs = topologicalSort(pendingBlueprintRefleshJobs);
+            pendingBlueprintRefleshJobs.forEach(job => {
+                job.op();
+            });
+            pendingBlueprintRefleshJobs = [];
+        }
+    }
+
     beginTime = new Date().getTime();
     let program = getProgramFromService();
     console.log ("full compile using " + (new Date().getTime() - beginTime) + "ms");
@@ -411,6 +456,7 @@ function watch(configFilePath:string) {
                 fileVersions[fileName].processed = true;
             }
         });
+        refreshBlueprints();
         if (changed) {
             UE.FileSystemOperation.WriteFile(versionsFilePath, JSON.stringify(fileVersions, null, 4));
         }
@@ -442,6 +488,7 @@ function watch(configFilePath:string) {
                     }
                 }
             }
+            refreshBlueprints();
             if (changed) {
                 console.log("versions saved to " + versionsFilePath);
                 UE.FileSystemOperation.WriteFile(versionsFilePath, JSON.stringify(fileVersions, null, 4));
@@ -479,8 +526,6 @@ function watch(configFilePath:string) {
         }
 
         let sourceFile = program.getSourceFile(sourceFilePath);
-
-        const blueprintCache = new Map<string, UE.Class>();
         
         if (sourceFile) {
             const diagnostics = [
@@ -489,6 +534,8 @@ function watch(configFilePath:string) {
             ];
 
             let checker = program.getTypeChecker();
+
+            checker.getAliasedSymbol
 
             if (diagnostics.length > 0) {
                 logErrors(diagnostics);
@@ -568,7 +615,8 @@ function watch(configFilePath:string) {
 
                         if (foundType && foundBaseTypeUClass) {
                             fileVersions[sourceFilePath].isBP = true;
-                            onBlueprintTypeAddOrChange(foundBaseTypeUClass, foundType, modulePath);
+                            //onBlueprintTypeAddOrChange(foundBaseTypeUClass, foundType, modulePath);
+                            pendingBlueprintRefleshJobs.push({ type: foundType, op: () => onBlueprintTypeAddOrChange(foundBaseTypeUClass, foundType, modulePath) });
                         }
                     }
                 }
@@ -633,7 +681,10 @@ function watch(configFilePath:string) {
                     if (options.outDir && sourceFileName.startsWith(options.outDir)) {
                         let moduleFileName = sourceFileName.substr(options.outDir.length + 1);
                         let modulePath = tsi.getDirectoryPath(moduleFileName);
-                        return onBlueprintTypeAddOrChange(baseTypeUClass as UE.Class, type, modulePath);
+                        let bp = new UE.PEBlueprintAsset();
+                        bp.LoadOrCreate(type.getSymbol().getName(), modulePath, baseTypeUClass as UE.Class, 0, 0);
+                        bp.Save();
+                        return bp.GeneratedClass;
                     }
                 }
             }
@@ -860,12 +911,7 @@ function watch(configFilePath:string) {
                 return ret;
             }
 
-            function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) : UE.Class {
-                const cacheKey = `${modulePath}.${type.getSymbol().getName()}`;
-                if (blueprintCache.has(cacheKey)) {
-                    console.log(`blueprint ${type.getSymbol().getName()} already gen, skip`);
-                    return blueprintCache.get(cacheKey);
-                }
+            function onBlueprintTypeAddOrChange(baseTypeUClass: UE.Class, type: ts.Type, modulePath:string) {
                 console.log(`gen blueprint for ${type.getSymbol().getName()}, path: ${modulePath}`);
                 let lsFunctionLibrary:boolean =  baseTypeUClass && baseTypeUClass.GetName() === "BlueprintFunctionLibrary";
                 let bp = new UE.PEBlueprintAsset();
@@ -987,8 +1033,6 @@ function watch(configFilePath:string) {
                 bp.RemoveNotExistedFunction();
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
-                blueprintCache.set(cacheKey, bp.GeneratedClass);
-                return bp.GeneratedClass;
             }
 
             function getModuleNames(type: ts.Type) : string[] {
@@ -1055,6 +1099,7 @@ function watch(configFilePath:string) {
                 onSourceFileAddOrChange(key, true);
             }
         }
+        refreshBlueprints();
     }
 
     function dispatchCmd(cmd:string, args:string) {
