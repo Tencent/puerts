@@ -6,7 +6,7 @@
 */
 import { FOR } from './tte.mjs'
 
-export default function RegisterInfoTemplate(TypeRegisterInfos, ) {
+export default function RegisterInfoTemplate(TypeRegisterInfos) {
     const typeRegisterInfos = listToJsArray(TypeRegisterInfos);
 
     return `

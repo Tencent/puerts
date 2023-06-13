@@ -459,30 +459,27 @@ namespace PuertsIl2cpp.Editor
                 var filePath = outDir + "unityenv_for_puerts.h";
                 string fileContent = "";
 
+                using (var jsEnv = new Puerts.JsEnv())
+                {
+                    var macroHeaderRender = jsEnv.ExecuteModule<Func<bool, bool, string>>("puerts/xil2cpp/unityenv_for_puerts.h.tpl.mjs", "default");
+                    string macroHeaderContent = macroHeaderRender(              
 #if !UNITY_2021_1_OR_NEWER
-                if (false)
+                        false,
+#else
+                        true,
 #endif
-                {
-                    fileContent += @"
-#ifndef UNITY_2021_1_OR_NEWER
-    #define UNITY_2021_1_OR_NEWER
-#endif";
-                }
-
 #if UNITY_ANDROID || UNITY_IPHONE
-                if (false)
+                        false
+#else
+                        true
 #endif
-                {
-                    fileContent += @"
-#ifndef PUERTS_SHARED
-    #define PUERTS_SHARED
-#endif";
-                }
+                    );
 
-                using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
-                {
-                    textWriter.Write(fileContent);
-                    textWriter.Flush();
+                    using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
+                    {
+                        textWriter.Write(macroHeaderContent);
+                        textWriter.Flush();
+                    }
                 }
             }
         }
