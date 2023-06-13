@@ -11,14 +11,14 @@ public class TestBuilder
     public static void GenV1() 
     {
         Puerts.Editor.Generator.UnityMenu.GenerateCode();
-        Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(false);
     }
     public static void GenV2() 
     {
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateExtensionMethodInfos();
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateLinkXML();
-        Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(true);
+        PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
+        Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
     }
 
     [MenuItem("PuerTS/Tester/BuildV1")]

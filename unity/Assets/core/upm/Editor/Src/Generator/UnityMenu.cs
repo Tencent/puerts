@@ -26,7 +26,6 @@ namespace Puerts.Editor
             {
                 Puerts.Editor.Generator.UnityMenu.GenerateCode();
                 Puerts.Editor.Generator.UnityMenu.GenerateDTS();
-                Puerts.Editor.Generator.UnityMenu.GenerateMacroHeader(false);
             }
             
             [MenuItem(PUERTS_MENU_PREFIX + "/Generate/Wrapper Code", false, 6)]
@@ -68,24 +67,6 @@ namespace Puerts.Editor
                 AssetDatabase.Refresh();
 
                 Utils.SetFilters(null);
-            }
-            [MenuItem(PUERTS_MENU_PREFIX + "/Generate/il2cpp macro .h", false, 6)]
-            public static void GenerateMacroHeader() {
-#if !EXPERIMENTAL_IL2CPP_PUERTS
-                GenerateMacroHeader(false);
-#else
-                GenerateMacroHeader(true);
-#endif
-            }
-            public static void GenerateMacroHeader(bool forceIl2Cpp)
-            {
-// #if PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM
-//                 var saveTo = Path.Combine(Path.GetFullPath("Packages/com.tencent.puerts.core/"), "Plugins/puerts_il2cpp/");
-// #else
-                var saveTo = Path.Combine(Puerts.Configure.GetCodeOutputDirectory(), "Plugins/");
-// #endif
-                Directory.CreateDirectory(saveTo);
-                FileExporter.GenMarcoHeader(saveTo, forceIl2Cpp);
             }
 
             [MenuItem(PUERTS_MENU_PREFIX + "/Clear Generated Code", false, 9)]

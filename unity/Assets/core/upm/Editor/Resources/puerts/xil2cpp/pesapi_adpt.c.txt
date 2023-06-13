@@ -7,7 +7,6 @@
  */
 
 #include "unityenv_for_puerts.h"
-#ifdef EXPERIMENTAL_IL2CPP_PUERTS
 
 #define PESAPI_ADPT_C
 
@@ -531,4 +530,3 @@ void pesapi_init(pesapi_func_ptr* func_array){
 }
 
 EXTERN_C_END
-#endif //EXPERIMENTAL_IL2CPP_PUERTS

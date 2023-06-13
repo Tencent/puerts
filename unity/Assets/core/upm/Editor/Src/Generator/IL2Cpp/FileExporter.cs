@@ -13,9 +13,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Puerts.Editor.Generator;
 using Puerts.TypeMapping;
-#if !PUERTS_GENERAL
+
+#if !PUERTS_GENERAL && !UNITY_WEBGL
 using Mono.Reflection;
-#endif
+using UnityEngine;
 
 namespace PuertsIl2cpp.Editor
 {
@@ -431,6 +432,60 @@ namespace PuertsIl2cpp.Editor
                     }
                 }
             }
+
+            public static void CopyXIl2cppCPlugin(string outDir)
+            {
+                Dictionary<string, string> cPluginCode = new Dictionary<string, string>()
+                {
+                    { "pesapi_adpt.c", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi_adpt.c").text },
+                    { "pesapi.h", Resources.Load<TextAsset>("puerts/xil2cpp/pesapi.h").text },
+                    { "Puerts_il2cpp.cpp", Resources.Load<TextAsset>("puerts/xil2cpp/Puerts_il2cpp.cpp").text },
+                    { "UnityExports4Puerts.h", Resources.Load<TextAsset>("puerts/xil2cpp/UnityExports4Puerts.h").text }
+                };
+
+                foreach (var cPlugin in cPluginCode)
+                {
+                    var path = outDir + cPlugin.Key;
+                    using (StreamWriter textWriter = new StreamWriter(path, false, Encoding.UTF8))
+                    {
+                        textWriter.Write(cPlugin.Value);
+                        textWriter.Flush();
+                    }
+                }
+            }
+
+            public static void GenMarcoHeader(string outDir)
+            {
+                var filePath = outDir + "unityenv_for_puerts.h";
+                string fileContent = "";
+
+#if !UNITY_2021_1_OR_NEWER
+                if (false)
+#endif
+                {
+                    fileContent += @"
+#ifndef UNITY_2021_1_OR_NEWER
+    #define UNITY_2021_1_OR_NEWER
+#endif";
+                }
+
+#if UNITY_ANDROID || UNITY_IPHONE
+                if (false)
+#endif
+                {
+                    fileContent += @"
+#ifndef PUERTS_SHARED
+    #define PUERTS_SHARED
+#endif";
+                }
+
+                using (StreamWriter textWriter = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    textWriter.Write(fileContent);
+                    textWriter.Flush();
+                }
+            }
         }
     }
 }
+#endif

@@ -42,6 +42,7 @@
 /Assets/core/upm/Plugins/x86_64/**/*.dll
 /Assets/core/upm/Plugins/x86/**/*.dll
 /Assets/core/upm/Plugins/x86_64/**/*.so
+/Assets/core/upm/Plugins/puerts_il2cpp/*
 .idea
 /Library/
 /Logs/

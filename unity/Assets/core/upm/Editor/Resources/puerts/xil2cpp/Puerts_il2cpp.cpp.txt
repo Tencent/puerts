@@ -6,8 +6,6 @@
  * which is part of this source code package.
  */
 
-#include "unityenv_for_puerts.h"
-#ifdef EXPERIMENTAL_IL2CPP_PUERTS
 #include "il2cpp-config.h"
 #include "codegen/il2cpp-codegen.h"
 
@@ -1737,5 +1735,3 @@ void InitialPuerts(pesapi_func_ptr* func_array)
 #ifdef __cplusplus
 }
 #endif
-
-#endif //EXPERIMENTAL_IL2CPP_PUERTS
