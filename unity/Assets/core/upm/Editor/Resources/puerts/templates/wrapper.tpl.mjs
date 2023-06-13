@@ -178,6 +178,7 @@ using Puerts;
 
 namespace PuertsStaticWrap
 {
+#pragma warning disable 0219
     public static class ${data.WrapClassName}${data.IsGenericWrapper ? `<${makeGenericAlphaBet(data.GenericArgumentsInfo)}>` : ''} ${data.IsGenericWrapper ? makeConstraints(data.GenericArgumentsInfo) : ''}
     {
     ${IF(data.BlittableCopy)}
@@ -200,7 +201,7 @@ ${IF(data.Constructor, () => $`
                 ${FOR(argumentCodeGenerators, acg => `
                     ${acg.declareAndGetV8Value()};
                     ${acg.declareArgObj()};
-                    ${acg.declareArgJSValueType()};
+                    ${data.Constructor.HasOverloads ? acg.declareArgJSValueType() : ""};
                 `)}
                 ${FOR(toJsArray(overloadGroup), overload =>
                     $`
@@ -271,7 +272,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
                 ${FOR(argumentCodeGenerators, acg => $`
                     ${acg.declareAndGetV8Value()};
                     ${acg.declareArgObj()};
-                    ${acg.declareArgJSValueType()};
+                    ${method.HasOverloads ? acg.declareArgJSValueType() : ''};
                 `)}
                 ${FOR(toJsArray(overloadGroup), overload => $`
                     ${IF(method.HasOverloads && overload.ParameterInfos.Length > 0)}
@@ -554,6 +555,7 @@ ${FOR(toJsArray(data.Methods).filter(item => !item.IsLazyMember), method => $`
         `
         })}
     }
+#pragma warning disable 0219
 }
 #endif
 `
