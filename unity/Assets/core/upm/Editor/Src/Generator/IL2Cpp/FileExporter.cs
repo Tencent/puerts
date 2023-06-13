@@ -203,7 +203,7 @@ namespace PuertsIl2cpp.Editor
                                 .Where(o => o is MethodBase)
                                 .Cast<MethodBase>();
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
                             UnityEngine.Debug.LogWarning(string.Format("get instructions of {0} ({2}:{3}) throw {1}", mb, e.Message, mb.DeclaringType == null ? "" : mb.DeclaringType.Assembly.GetName().Name, mb.DeclaringType));
                             return new MethodBase[] { };
