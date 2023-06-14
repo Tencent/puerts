@@ -267,5 +267,43 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "lib in package");
             jsEnv.Tick();
         }
+        [Test]
+        public void ESModuleExecuteCJS()
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("whatever.mjs", @"
+                import str from 'whatever.cjs';
+                
+                export default str;
+            ");
+            var jsEnv = UnitTestEnv.GetEnv();
+            string str = jsEnv.ExecuteModule<string>("whatever.mjs", "default");
+
+            Assert.True(str == "hello world");
+            jsEnv.Tick();
+
+        }
+        [Test]
+        public void ESModuleExecuteCJSRelative()
+        {
+            var loader = UnitTestEnv.GetLoader();
+            loader.AddMockFileContent("cjs/whatever.cjs", @"
+                module.exports = 'hello world';
+            ");
+            loader.AddMockFileContent("mjs/whatever.mjs", @"
+                import str from '../cjs/whatever.cjs';
+                
+                export default str;
+            ");
+            var jsEnv = UnitTestEnv.GetEnv();
+            string str = jsEnv.ExecuteModule<string>("mjs/whatever.mjs", "default");
+
+            Assert.True(str == "hello world");
+            jsEnv.Tick();
+
+        }
     }
 }

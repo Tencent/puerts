@@ -2,7 +2,8 @@
     "name": "com.tencent.puerts.unittest",
     "rootNamespace": "",
     "references": [
-        "com.tencent.puerts.core"
+        "com.tencent.puerts.core",
+        "com.tencent.puerts.commonjs"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
