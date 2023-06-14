@@ -3,7 +3,7 @@
 
 xIl2cpp模式是Puer2.0版本新加的模式。顾名思义，优化仅针对Unity Il2cpp backend。xIl2cpp这个名字一方面是致敬PuerTS的前身xLua，也代表它是基于Il2cpp进行加强优化的技术。
 
-简单粗浅地说，xIl2cpp模式是让il2cpp直接与v8交互，不再经由C# PInvoke调用native plugin。减少跨语言的消耗。最终使得性能表现大幅提升，详见[il2cpp绑定性能数据](./index.md)
+简单粗浅地说，xIl2cpp模式是让il2cpp直接与v8交互，不再经由C# PInvoke调用native plugin。减少跨语言的消耗。最终使得性能表现大幅提升，详见[xil2cpp模式性能数据](./index.md)
 
 xIl2cpp模式在使用方式上会有较大的变化，比如需要自己编译Plugin与wrapper生成的步骤不同，API和使用机制上无需做任何改动。
 
