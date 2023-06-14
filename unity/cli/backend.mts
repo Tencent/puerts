@@ -10,19 +10,20 @@ export default async function downloadBackend(cwd: string, name: string, url: st
     if (!existsSync(join(cwd, "CMakeLists.txt")) || !existsSync(join(cwd, "cmake"))) {
         throw new Error("invalid puerts native_src directory: " + cwd);
     }
-    mkdir("-p", join(cwd, '.backends'));
-    if (existsSync(join(cwd, '.backends', name)) && statSync(join(cwd, '.backends', name)).isDirectory) {
+    const backendDir = join(cwd, '../native_src/.backends');
+    mkdir("-p", backendDir);
+    if (existsSync(join(backendDir, name)) && statSync(join(backendDir, name)).isDirectory) {
         console.log(`[Puer] download skip: ${name} already exists `);
         return;
 
     } else if (url) {
         console.log(`[Puer] downloading ${name} from ${url}`);
-        const down = download(url, join(cwd, '.backends'), { extract: true });
+        const down = download(url, backendDir, { extract: true });
         await down;
 
     } else if (url = readBackendsJSON(cwd)[name].url) {
         console.log(`[Puer] downloading ${name} from ${url}`);
-        const down = download(url, join(cwd, '.backends'), { extract: true });
+        const down = download(url, backendDir, { extract: true });
         await down;
 
     } else {
