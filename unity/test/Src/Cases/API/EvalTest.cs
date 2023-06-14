@@ -29,11 +29,11 @@ namespace Puerts.UnitTest
             var jsEnv = UnitTestEnv.GetEnv();
             try 
             {
-                jsEnv.ExecuteModule("whatever.mjs");
+                jsEnv.ExecuteModule("notfound/whatever.mjs");
             } 
             catch(Exception e) 
             {
-                StringAssert.Contains("whatever.mjs", e.Message);
+                StringAssert.Contains("notfound/whatever.mjs", e.Message);
                 return;
             }
             throw new Exception("unexpected to reach here");

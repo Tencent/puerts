@@ -2,8 +2,9 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using Puerts;
+using Puerts.ThirdParty;
 
-public class TxtLoader : IResolvableLoader,  ILoader
+public class TxtLoader : IResolvableLoader,  ILoader, IModuleChecker
 {
     public static string PathToBinDir(string appendix)
     {
@@ -15,11 +16,18 @@ public class TxtLoader : IResolvableLoader,  ILoader
         );
     }
     private string root = PathToBinDir("../../../../../Assets/core/upm/Runtime/Resources");
+    private string commonjsRoot = PathToBinDir("../../../../../Assets/commonjs/upm/Runtime/Resources");
     private string editorRoot = PathToBinDir("../../../../../Assets/core/upm/Editor/Resources");
     private string unittestRoot = PathToBinDir("../../../../Src/Resources");
-    public bool FileExists(string filepath)
+    
+    public bool IsESM(string filepath)
     {
-        return false;
+        return !filepath.EndsWith(".cjs");
+    }
+
+    public bool FileExists(string specifier)
+    {
+        return !System.String.IsNullOrEmpty(Resolve(specifier, "."));
     }
 
     public string Resolve(string specifier, string referrer)
@@ -34,7 +42,11 @@ public class TxtLoader : IResolvableLoader,  ILoader
         {
             return path;
         }
-
+        path = Path.Combine(commonjsRoot, specifier);
+        if (System.IO.File.Exists(path)) 
+        {
+            return path;
+        }
         path = Path.Combine(editorRoot, specifier);
         if (System.IO.File.Exists(path)) 
         {
@@ -111,6 +123,7 @@ namespace Puerts.UnitTest
             {
                 loader = new TxtLoader();
                 env = new JsEnv(loader);
+                CommonJS.InjectSupportForCJS(env);
 #if PUERTS_GENERAL && !TESTING_REFLECTION
                 PuertsStaticWrap.PuerRegisterInfo_Gen.AddRegisterInfoGetterIntoJsEnv(env);
 #endif

@@ -26,6 +26,16 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
             ).join('\n')}
     </ItemGroup>
     `
+    const linkPuerTSCommonJS = `
+    <ItemGroup>
+        ${glob.sync(join(dir, '../../Assets/commonjs/upm/Runtime/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../Assets/commonjs/upm/Runtime/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+    `
     
     const linkUnitTests = `
     <ItemGroup>
@@ -51,7 +61,7 @@ function collectCSFilesAndMakeCompileConfig(dir: string, workdir: string, exclud
         }
     </ItemGroup>
     `
-    return [definitions, linkPuerTS, linkUnitTests, linkGenerators].join('\n');
+    return [definitions, linkPuerTS, linkPuerTSCommonJS, linkUnitTests, linkGenerators].join('\n');
 }
 
 async function runTest(cwd: string, copyConfig: any, runInReflection: boolean, filter: string = '') {
