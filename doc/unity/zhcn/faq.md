@@ -11,10 +11,16 @@
 
 相关issue：https://github.com/Tencent/puerts/issues/941
 
-## [Puer002]module not found
-PuerTS在加载js文件时没有能够找到对应的js文件，具体来说，是调用ILoader的`FileExists`返回了false，或是调用IResolvableLoader的`Resolve`时返回了空字符串或null。
+## [Puer002]module not found | [Puer003]module not found
+`Puer002`代表PuerTS在加载js文件时没有能够找到对应的js文件，具体来说，是调用ILoader的`FileExists`返回了false，或是调用IResolvableLoader的`Resolve`时返回了空字符串或null。
 
 如果遇到这个问题，先确认你使用的loader是DefaultLoader（即创建JsEnv时没有传任何参数）还是你自己编写的自定义Loader。然后检查这个Loader的`FileExists`函数或是`Resolve`函数，看看为什么会返回不正确的值。
+
+`Puer003`和`Puer002`是类似的，只不过Puer003是Loader的ReadFile接口返回了空。你同时要检查一下为什么`FileExists`或`Resolve`返回了存在，但ReadFile时却读到了空
+
+## [Puer W001] You are not using upm to install PuerTS or did not add 'PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM' definition.
+在使用xil2cpp模式时，PuerTS->Generate的产物需要经过plugin的重新编译才可用。因此Puer需要将Generate的产物塞回到plugin源码目录处。
+如果你没有采用[文档](./performance/il2cpp.md)建议的方式`git clone`并从package manager里添加PuerTS，外加添加了`PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM`宏，你需要自行将编译产物拿去进行plugin编译。
 
 ## invalid arguments to XXX
 
