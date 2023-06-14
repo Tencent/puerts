@@ -129,7 +129,12 @@ var global = global || (function () { return this; }());
                     isESM = packageConfigure.type === "module"
                     let url = packageConfigure.main || "index.js";
                     if (isESM) {
-                        url = packageConfigure.exports && packageConfigure.exports["."] && ((packageConfigure.exports["."]["default"] && packageConfigure.exports["."]["default"]["require"]) || (packageConfigure.exports["."]["require"] && packageConfigure.exports["."]["require"]["default"]))
+                        let packageExports = packageConfigure.exports && packageConfigure.exports["."];
+                        if (packageExports)
+                            url =
+                                (packageExports["default"] && packageExports["default"]["require"]) ||
+                                (packageExports["require"] && packageExports["require"]["default"]) ||
+                                packageExports["require"];                        
                         if (!url) {
                             throw new Error("can not require a esm in cjs module!");
                         }
