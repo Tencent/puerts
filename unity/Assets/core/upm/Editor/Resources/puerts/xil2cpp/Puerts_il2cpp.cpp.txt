@@ -6,6 +6,7 @@
  * which is part of this source code package.
  */
 
+#include "unityenv_for_puerts.h"
 #include "il2cpp-config.h"
 #include "codegen/il2cpp-codegen.h"
 
