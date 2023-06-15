@@ -61,7 +61,8 @@ namespace Puerts
     public enum FilterAction
     {
         BindingMode = 1,
-        MethodInInstructions = 2
+        MethodInInstructions = 2,
+        DisallowedType = 3
     }
 
     public static class Configure

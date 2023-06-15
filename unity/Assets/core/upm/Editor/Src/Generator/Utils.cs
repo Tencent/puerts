@@ -21,6 +21,7 @@ namespace Puerts.Editor
             public const BindingFlags Flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
             private static List<Func<MemberInfo, bool>> InstructionsFilters = new List<Func<MemberInfo, bool>>();
+            private static List<Func<Type, bool>> DisallowedTypeFilters = new List<Func<Type, bool>>();
             private static List<Func<MemberInfo, BindingMode>> BindingModeFilters = new List<Func<MemberInfo, BindingMode>>();
             
             public static bool HasFilter = false;
@@ -31,6 +32,7 @@ namespace Puerts.Editor
                     HasFilter = false;
                     InstructionsFilters.Clear();
                     BindingModeFilters.Clear();
+                    DisallowedTypeFilters.Clear();
                     return;
                 }
 
@@ -49,15 +51,27 @@ namespace Puerts.Editor
                         }
                         else if (filter.ReturnType == typeof(bool))
                         {
-                            var dlg = (Func<FilterAction, MemberInfo, bool>)Delegate.CreateDelegate(typeof(Func<FilterAction, MemberInfo, bool>), filter);
+                            Type pType = filter.GetParameters()[1].ParameterType;
+                            if (pType == typeof(MemberInfo))
+                            {
+                                var dlg = (Func<FilterAction, MemberInfo, bool>)Delegate.CreateDelegate(typeof(Func<FilterAction, MemberInfo, bool>), filter);
 
-                            BindingModeFilters.Add((MemberInfo mbi) => {
-                                bool res = dlg(FilterAction.BindingMode, mbi);
-                                return res ? BindingMode.SlowBinding : BindingMode.FastBinding;
-                            });
-                            InstructionsFilters.Add((MemberInfo mbi) => {
-                                return dlg(FilterAction.MethodInInstructions, mbi);
-                            });
+                                BindingModeFilters.Add((MemberInfo mbi) => {
+                                    bool res = dlg(FilterAction.BindingMode, mbi);
+                                    return res ? BindingMode.SlowBinding : BindingMode.FastBinding;
+                                });
+                                InstructionsFilters.Add((MemberInfo mbi) => {
+                                    return dlg(FilterAction.MethodInInstructions, mbi);
+                                });
+                            }
+                            else if (pType == typeof(Type))
+                            {
+                                var dlg = (Func<FilterAction, Type, bool>)Delegate.CreateDelegate(typeof(Func<FilterAction, Type, bool>), filter);
+                                
+                                DisallowedTypeFilters.Add((Type type) => {
+                                    return dlg(FilterAction.DisallowedType, type);
+                                });
+                            }
                         }
                     }
                     else 
@@ -162,6 +176,16 @@ namespace Puerts.Editor
                 var getMethod = propertyInfo.GetGetMethod();
                 var setMethod = propertyInfo.GetSetMethod();
                 return getMethod == null ? setMethod.IsStatic : getMethod.IsStatic;
+            }
+
+            internal static bool isDisallowedType(Type type) 
+            {
+                var result = false;
+                foreach (var filter in DisallowedTypeFilters)
+                {
+                    result = result || filter(type);
+                }
+                return result;
             }
 
             internal static BindingMode getBindingMode(MemberInfo mbi) 
