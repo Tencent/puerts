@@ -56,10 +56,10 @@ global.PuertsWebGL = {
                     engine.callV8Destructor = callV8Destructor;
                 },
                 GetLibVersion: function () {
-                    return 30;
+                    return 32;
                 },
                 GetApiLevel: function () {
-                    return 30;
+                    return 32;
                 },
                 GetLibBackend: function () {
                     return 0;
@@ -83,101 +83,95 @@ global.PuertsWebGL = {
                 SetGeneralDestructor: function (isolate: IntPtr, _generalDestructor: IntPtr) {
                     engine.generalDestructor = _generalDestructor
                 },
-                SetModuleResolver: function() {
-
-                },
-                ExecuteModule: function (isolate: IntPtr, pathString: CSString, exportee: CSString) {
-                    try {
-                        let fileName = UTF8ToString(pathString);
-                        if (fileName.indexOf('log.mjs') != -1) {
-                            return 1024;
-                        }
-                        if (typeof wx != 'undefined') {
-                            const result = wxRequire('puerts_minigame_js_resources/' + (fileName.endsWith('.js') ? fileName : fileName + ".js"));
-                            if (exportee) {
-                                engine.lastReturnCSResult = result[UTF8ToString(exportee)];
+                GetModuleExecutor: function() {
+                    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function(fileName: string) {
+                        try {
+                            if (['puerts/log.mjs', 'puerts/timer.mjs'].indexOf(fileName) != -1) { 
+                                return {};
+                            }
+                            if (typeof wx != 'undefined') {
+                                const result = wxRequire('puerts_minigame_js_resources/' + (fileName.endsWith('.js') ? fileName : fileName + ".js"));
+                                return result
+        
                             } else {
-                                engine.lastReturnCSResult = result;
-                            }
-                            return 1024
-    
-                        } else {
-                            function normalize(name: string, to: string) {
-                                if ('./' === to.substring(0, 2)) {
-                                    to = to.substring(2);
-                                }
-                                name = (name.endsWith('/') ? name : name.substring(0, name.lastIndexOf('/') + 1)) + to
-                                const pathSegs = name.replaceAll('//', '/').split('/');
-                                const retPath = [];
-                                for (let i = 0; i < pathSegs.length; i++) {
-                                    if (pathSegs[i] == '..')
-                                        retPath.pop();
-                                    else 
-                                        retPath.push(pathSegs[i]);
-
-                                }
-                                return retPath.join('/');
-                            }
-                            function mockRequire(specifier: string) {
-                                const result: any = { exports: {} };
-                                const foundCacheSpecifier = tryFindAndGetFindedSpecifier(specifier, executeModuleCache);
-                                if (foundCacheSpecifier) {
-                                    result.exports = executeModuleCache[foundCacheSpecifier];
-    
-                                } else {
-                                    const foundSpecifier = tryFindAndGetFindedSpecifier(specifier, PUERTS_JS_RESOURCES);
-                                    if (!foundSpecifier) {
-                                        console.error('file not found: ' + specifier);
+                                function normalize(name: string, to: string) {
+                                    if ('./' === to.substring(0, 2)) {
+                                        to = to.substring(2);
                                     }
-                                    specifier = foundSpecifier;
-                                    
-                                    executeModuleCache[specifier] = -1;
-                                    try {
-                                        PUERTS_JS_RESOURCES[specifier](result.exports, function mRequire(specifierTo: string) {
-                                            return mockRequire(normalize(specifier, specifierTo));
-                                        }, result);
-                                    } catch(e) {
-                                        delete executeModuleCache[specifier];
-                                        throw e
-                                    }
-                                    executeModuleCache[specifier] = result.exports;
-                                }
+                                    name = (name.endsWith('/') ? name : name.substring(0, name.lastIndexOf('/') + 1)) + to
+                                    const pathSegs = name.replaceAll('//', '/').split('/');
+                                    const retPath = [];
+                                    for (let i = 0; i < pathSegs.length; i++) {
+                                        if (pathSegs[i] == '..')
+                                            retPath.pop();
+                                        else 
+                                            retPath.push(pathSegs[i]);
 
-                                return result.exports;
-                                function tryFindAndGetFindedSpecifier(specifier: string, obj: any) {
-                                    let tryFindName = [specifier];
-                                    if (specifier.indexOf('.') == -1)
-                                        tryFindName = tryFindName.concat([specifier + '.js', specifier + '.ts', specifier + '.mjs', specifier + '.mts']);
-    
-                                    let finded: number | false = tryFindName.reduce((ret, name, index) => {
-                                        if (ret !== false) return ret;
-                                        if (name in obj) {
-                                            if (obj[name] == -1) throw new Error(`circular dependency is detected when requiring "${name}"`);
-                                            return index;
+                                    }
+                                    return retPath.join('/');
+                                }
+                                function mockRequire(specifier: string) {
+                                    const result: any = { exports: {} };
+                                    const foundCacheSpecifier = tryFindAndGetFindedSpecifier(specifier, executeModuleCache);
+                                    if (foundCacheSpecifier) {
+                                        result.exports = executeModuleCache[foundCacheSpecifier];
+        
+                                    } else {
+                                        const foundSpecifier = tryFindAndGetFindedSpecifier(specifier, PUERTS_JS_RESOURCES);
+                                        if (!foundSpecifier) {
+                                            console.error('file not found: ' + specifier);
                                         }
-                                        return false;
-                                    }, false)
-                                    if (finded === false) {
-                                        return null;
+                                        specifier = foundSpecifier;
+                                        
+                                        executeModuleCache[specifier] = -1;
+                                        try {
+                                            PUERTS_JS_RESOURCES[specifier](result.exports, function mRequire(specifierTo: string) {
+                                                return mockRequire(normalize(specifier, specifierTo));
+                                            }, result);
+                                        } catch(e) {
+                                            delete executeModuleCache[specifier];
+                                            throw e
+                                        }
+                                        executeModuleCache[specifier] = result.exports;
                                     }
-                                    else {
-                                        return tryFindName[finded];
+
+                                    return result.exports;
+                                    function tryFindAndGetFindedSpecifier(specifier: string, obj: any) {
+                                        let tryFindName = [specifier];
+                                        if (specifier.indexOf('.') == -1)
+                                            tryFindName = tryFindName.concat([specifier + '.js', specifier + '.ts', specifier + '.mjs', specifier + '.mts']);
+        
+                                        let finded: number | false = tryFindName.reduce((ret, name, index) => {
+                                            if (ret !== false) return ret;
+                                            if (name in obj) {
+                                                if (obj[name] == -1) throw new Error(`circular dependency is detected when requiring "${name}"`);
+                                                return index;
+                                            }
+                                            return false;
+                                        }, false)
+                                        if (finded === false) {
+                                            return null;
+                                        }
+                                        else {
+                                            return tryFindName[finded];
+                                        }
                                     }
                                 }
-                            }
 
-                            const requireRet = mockRequire(fileName)
-
-                            if (exportee) {
-                                engine.lastReturnCSResult = requireRet[UTF8ToString(exportee)];
-                            } else {
-                                engine.lastReturnCSResult = requireRet;
+                                const requireRet = mockRequire(fileName)
+                                return requireRet
                             }
-                            return 1024
+                        } catch(e) {
+                            engine.lastException = e;
                         }
-                    } catch(e) {
-                        engine.lastException = e;
-                    }
+                    });
+                    return jsfunc.id;
+                },
+                GetJSObjectValueGetter: function() {
+                    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function(obj: any, key: string) {
+                        return obj[key]
+                    });
+                    return jsfunc.id;
                 },
                 Eval: function (isolate: IntPtr, codeString: CSString, path: string) {
                     if (!global.eval) {
