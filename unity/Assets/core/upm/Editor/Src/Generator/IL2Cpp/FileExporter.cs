@@ -163,15 +163,15 @@ namespace PuertsIl2cpp.Editor
 
                 var ctorToWrapper = typeExcludeDelegate
                     .SelectMany(t => t.GetConstructors(t.FullName.Contains("Puer") ? flagForPuer : flag))
-                    .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                    .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
                 var methodToWrap = typeExcludeDelegate
                     .SelectMany(t => t.GetMethods(t.FullName.Contains("Puer") ? flagForPuer : flag))
-                    .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                    .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
                 var fieldToWrapper = typeExcludeDelegate
                     .SelectMany(t => t.GetFields(t.FullName.Contains("Puer") ? flagForPuer : flag))
-                    .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                    .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
                 var wrapperUsedTypes = types
                     .Concat(ctorToWrapper.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))
@@ -279,17 +279,17 @@ namespace PuertsIl2cpp.Editor
                     genWrapperCtor = configureTypes
                         .SelectMany(t => t.GetConstructors(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                        .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
                     genWrapperMethod = configureTypes
                         .SelectMany(t => t.GetMethods(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                        .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
                     genWrapperField = configureTypes
                         .SelectMany(t => t.GetFields(flag))
                         .Where(m => !Utils.IsNotSupportedMember(m, true))
-                        .Where(m => Utils.getBindingMode(m) != BindingMode.DontBinding);
+                        .Where(m => Utils.getBindingMode(m) != Puerts.BindingMode.DontBinding);
 
                     var configureUsedTypes = configureTypes
                         .Concat(genWrapperCtor.SelectMany(c => c.GetParameters()).Select(pi => GetUnrefParameterType(pi)))

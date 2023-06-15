@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Puerts.TypeMapping
+namespace Puerts
 {
     public enum BindingMode {
         FastBinding = 1024, // static wrapper
@@ -15,74 +15,77 @@ namespace Puerts.TypeMapping
         SlowBinding = 32,   // reflection to call
         DontBinding = 2,    // not able to called in runtime. Also will not generate d.ts
     }
-
-    public enum MemberType
+    
+    namespace TypeMapping
     {
-        Constructor = 1,
-
-        Method = 2,
-        
-        Property = 3,
-    }
-
-    public class MemberRegisterInfo 
-    {
-        public string Name;
-
-        public bool IsStatic;
-
-        public MemberType MemberType; 
-
-        public BindingMode UseBindingMode;
-        
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
-        public V8ConstructorCallback Constructor;
-
-        public V8FunctionCallback Method;
-
-        public V8FunctionCallback PropertyGetter;
-
-        public V8FunctionCallback PropertySetter;
-#endif
-    }
-
-    public class RegisterInfo 
-    {
-        public bool BlittableCopy = false;
-
-        public Dictionary<string, MemberRegisterInfo> Members;
-    }
-
-    internal class RegisterInfoManager
-    {
-        Dictionary<Type, Func<RegisterInfo>> RegisterInfoGetters = new Dictionary<Type, Func<RegisterInfo>>();
-        protected BindingMode _DefaultBindingMode = BindingMode.FastBinding;
-        public BindingMode DefaultBindingMode 
+        public enum MemberType
         {
-            get
+            Constructor = 1,
+
+            Method = 2,
+            
+            Property = 3,
+        }
+
+        public class MemberRegisterInfo 
+        {
+            public string Name;
+
+            public bool IsStatic;
+
+            public MemberType MemberType; 
+
+            public BindingMode UseBindingMode;
+            
+    #if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
+            public V8ConstructorCallback Constructor;
+
+            public V8FunctionCallback Method;
+
+            public V8FunctionCallback PropertyGetter;
+
+            public V8FunctionCallback PropertySetter;
+    #endif
+        }
+
+        public class RegisterInfo 
+        {
+            public bool BlittableCopy = false;
+
+            public Dictionary<string, MemberRegisterInfo> Members;
+        }
+
+        internal class RegisterInfoManager
+        {
+            Dictionary<Type, Func<RegisterInfo>> RegisterInfoGetters = new Dictionary<Type, Func<RegisterInfo>>();
+            protected BindingMode _DefaultBindingMode = BindingMode.FastBinding;
+            public BindingMode DefaultBindingMode 
             {
-                return _DefaultBindingMode;
+                get
+                {
+                    return _DefaultBindingMode;
+                }
+                internal set
+                {
+                    _DefaultBindingMode = value;
+                }
             }
-            internal set
+            
+            internal void Add(Type type, Func<RegisterInfo> RegisterInfoGetter)
             {
-                _DefaultBindingMode = value;
+                if (RegisterInfoGetters.ContainsKey(type)) return;
+                RegisterInfoGetters.Add(type, RegisterInfoGetter);
             }
-        }
-        
-        internal void Add(Type type, Func<RegisterInfo> RegisterInfoGetter)
-        {
-            if (RegisterInfoGetters.ContainsKey(type)) return;
-            RegisterInfoGetters.Add(type, RegisterInfoGetter);
-        }
 
-        internal bool TryGetValue(Type key, out Func<RegisterInfo> value)
-        {
-            return RegisterInfoGetters.TryGetValue(key, out value);
-        }
+            internal bool TryGetValue(Type key, out Func<RegisterInfo> value)
+            {
+                return RegisterInfoGetters.TryGetValue(key, out value);
+            }
 
-        internal bool Remove(Type type)
-        {
-            return RegisterInfoGetters.Remove(type);
+            internal bool Remove(Type type)
+            {
+                return RegisterInfoGetters.Remove(type);
+            }
         }
     }
 }
