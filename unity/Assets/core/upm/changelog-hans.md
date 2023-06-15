@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-pre.5] - 2023-06-15
+1. 修复：生成带op_explicit的类的时候会出现报错 #1363
+2. 修复：ClearModuleCache导致crash的问题 #1364
+3. 修复：xil2cpp模式下结构体通过指针的方式产生递归定义时生成报错的问题 #1365
+4. 修复：xil2cpp模式下打印结构体时crash的问题 #1376
+5. 修复：向数字类型的C# Field/Prop赋值JSObject时crash的问题 #1383
+6. 修复：Filter过滤失效的问题
+7. 优化：xil2cpp的c plugin代码改成生成出来，而不是包内自带。
+8. 优化：添加FAQHelper，用于优化代码生成和build时的错误提示
+9. 优化：反射调用时错误信息优化，兼容接口被裁剪的情况
+10. 优化：console.log各个元素的分隔符由逗号变为空格
+11. 优化：Node.js事件循环优化 #1093 #1279
+12. 优化：屏蔽了DefaultMode StaticWrapper报的警告
+13. 功能：添加`JSObject.Get<T>(string)`，ExecuteModule也重构改为使用该Get接口
+
 ## [2.0.0-pre.4] - 2023-05-29
 1. 修复：从JS往C#抛错时可能出现非法字符。
 2. 修复：注释文档生成的两个问题 #1322 #1329
