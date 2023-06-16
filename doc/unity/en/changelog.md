@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.2] - 2023-06-16
+1. fix: the crashed after getting a StackOverflowException #1208
+2. Fix: the Error message threw from JS to CS would have unexpected character.
+3. Fix: if an error is thrown in constructor, some valuetype would become null unexpectly.
+4. fix：when passing a JS number to C# `object`. the number would be cut to a Int.
+
 ## [1.4.1] - 2023-03-02
 > changelog since 1.4.0
 1. fix: the crashed after getting a StackOverflowException #1208

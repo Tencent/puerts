@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [1.4.2] - 2023-06-16
+1. 修复：出现栈溢出错误是会crash的问题
+2. 修复：从JS往C#抛错时可能出现非法字符。
+3. 修复：如果一个C#对象的构造函数抛错，可能导致后续有对象莫名其妙变为null
+4. 修复：向数字类型的C# Field/Prop赋值JSObject时crash的问题 #1383
+
 ## [1.4.1] - 2023-03-02
 > 以下为相比1.4.0的内容
 1. 修复：出现stack overflow错误后JsEnv析构产生crash的问题 #1208
