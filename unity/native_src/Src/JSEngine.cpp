@@ -75,7 +75,7 @@ namespace puerts
         {
             // PLog(puerts::Log, "[PuertsDLL][JSEngineWithNode]GPlatform");
             int Argc = 2;
-            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await --stack_size=856"};
+            char* ArgvIn[] = {"puerts", "--no-harmony-top-level-await"};
             char ** Argv = uv_setup_args(Argc, ArgvIn);
             Args = new std::vector<std::string>(Argv, Argv + Argc);
             ExecArgs = new std::vector<std::string>();
