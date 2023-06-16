@@ -4,6 +4,9 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-pre.5] - 2023-6.16
+1. compat with core@2.0.0-pre.5
+
 ## [1.1.1-pre.1] - 2023-5-17
 1. optimize: the performance cost of cross-language reduce by 40%.
 2. fix: stackoverflow exception will thrown in circular-dependency.
