@@ -20,6 +20,7 @@ you can get the english version change log at [Github Release](https://github.co
 11. 优化：Node.js事件循环优化 #1093 #1279
 12. 优化：屏蔽了DefaultMode StaticWrapper报的警告
 13. 功能：添加`JSObject.Get<T>(string)`，ExecuteModule也重构改为使用该Get接口
+14. 功能：添加了一种新的Filter用于过滤xil2cpp模式的结构体类型声明
 
 ## [2.0.0-pre.4] - 2023-05-29
 1. 修复：从JS往C#抛错时可能出现非法字符。

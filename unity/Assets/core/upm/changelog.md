@@ -20,6 +20,7 @@ you can get the english version change log at [Github Release](https://github.co
 11. Optimization: Improved Node.js event loop #1093 #1279.
 12. Optimization: Suppressed warnings from DefaultMode's StaticWrapper.
 13. Feature: Added `JSObject.Get<T>(string)` and refactored ExecuteModule to use this Get interface.
+13. Feature: Added Filter for xil2cpp valuetype declaration.
 
 ## [2.0.0-pre.4] - 2023-05-29
 1. Fix: the Error message threw from JS to CS would have unexpected character.
