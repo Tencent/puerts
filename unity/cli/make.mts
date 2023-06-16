@@ -198,7 +198,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     );
     if (!(outputFile instanceof Array)) outputFile = [outputFile];
     const copyConfig = (BackendConfig['copy-libraries'][options.platform]?.[options.arch] || [])
-        .map((pathToBackend: string) => join(cwd, '.backends', options.backend, pathToBackend))
+        .map((pathToBackend: string) => join(cwd, '../native_src/.backends', options.backend, pathToBackend))
         .concat(outputFile);
 
     copyConfig?.forEach((filepath: string) => {

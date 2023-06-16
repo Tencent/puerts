@@ -764,7 +764,7 @@ struct JSEnv
             v8::HandleScope HandleScope(MainIsolate);
             auto Context = MainContext.Get(MainIsolate);
             v8::Context::Scope ContextScope(Context);
-            BackendEnv.LogicTick(MainIsolate, Context);
+            BackendEnv.LogicTick();
             BackendEnv.StopPolling();
         }
 #endif
