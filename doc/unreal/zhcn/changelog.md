@@ -1,3 +1,93 @@
+### v1.0.4 2023年6月19日
+
+#### 新增特性
+
+* 容器GetRef支持LinkOuter
+
+* 默认添加UObject的IsA函数的静态绑定
+
+* setTimeout, setInterval增加argumentgs的支持
+
+* 静态绑定加入fast api call支持
+
+* 添加C#版本的默认值收集模块，用于支持ue5.2
+
+* 添加PUERTS_FORCE_CPP_UFUNCTION选项：打开后在js调用js实现的蓝图方法时，直接调用而不需要在引擎段绕一圈
+
+* 反射支持TFieldPath类型
+
+* 添加栈生命周期的原生Buff转js的ArrayBuffer的支持，fix #1360
+
+
+#### 优化
+
+* 清理大部分ue5的deprecated api使用
+ 
+* 生成时如果蓝图路径和文件名含特殊符号，忽略并打印warning，如果基类非法，就跳到更基础的基类来继承
+
+* 声明生成过滤掉+号
+
+* 在push对象到js的阶段就处理好引用方向（是原生对象引用js，还是js引用原生对象），简化逻辑，并提升性能
+
+* 对象IsUnreachable也作为无效状态
+
+* 非GameThread加载代理蓝图，js相关初始化延迟到第一次push到js fix #1229
+
+* instancof不走ts，提升静态绑定的性能 (#1246)
+
+* 静态绑定返回值如果是非const引用，按指针处理，不用特别指明 fix #1258
+
+* 去掉EscapableHandleScope的使用，fix #1291
+
+* JsEnv.Build.cs的ShadowVariable设置为Warning fix #1189
+
+* 跳过非法蓝图结构体，蓝图类的生成
+
+
+#### 变更
+
+* 如果一个方法是蓝图静态方法，而且第一个参数是__WorldContext的话，调用js时忽略该参数 fix #1210
+
+* makeUClass声明为@deprecated
+
+* Puerts模块的LoadingPhase改为PostEngineInit，这会导致GameInstance的ReceiveInit支持不了
+
+* 如果继承引擎类的ts类成员变量类型为UActorComponent子类，将添加组件，而不是仅仅添加一个变量，这会导致业务代码调整
+
+   - 定义了组件，就自动在蓝图创建组件，无需在构造函数中通过代码创建，规避了UE的一些多线程加载问题，也更简单些
+
+   - 构造函数无法访问Component，建议一些初始化操作放到ReceiveBeginPlay，或者直接在生成的代理蓝图上修改
+   
+   - 不能通过SetupAttachment对component的层级修改（因为构造函数访问不了，ReceiveBeginPlay又太晚了），需要生成的代理蓝图上手动修改
+
+#### bug修复
+
+* 修复在unity v2发现的问题：https://github.com/Tencent/puerts/issues/1203 ，该问题理论上在ue也有机率发生
+
+* linux编译找不到libnode.so
+
+* 反射调用，参数转换抛出异常后不应该继续往下走
+
+* 修复运行Commandlet时的崩溃问题 (#1247) 
+
+* 静态模板const USTRUCT*参数报错的问题，fix #1258
+
+* 代理蓝图，第二次PIE不生效的问题
+
+* ue 5.1按钮消失的问题
+
+* 增加头文件生成的依赖引入
+
+* cjs，esm加载的一些不兼容情况修复
+
+* 中文名字蓝图会导致ue_bp.d.ts重复声明的问题
+
+* 蓝图Interface声明生成无namespace，fix #1304
+
+* 解决反射调用代理蓝图函数，引用参数传递失败的问题
+
+* 解决子类和基类生成蓝图同时被删除，先生成子类再生成基类时导致的REINST assert
+
 ### v1.0.3 2023年2月2日
 
 #### 新增特性
