@@ -65,6 +65,19 @@ Sometimes you will get this error when you map a js function to a delegate. XXX 
 
 * The parameters contain the ref or out modifier, which is not currently supported. Solution: Fill in the issues to provide requirements.
 
+```csharp
+// 代码示例
+Puerts.JsEnv jsEnv = new Puerts.JsEnv();
+jsEnv.UsingFunc<int, int>();
+System.Func<int, int> add = env.Eval<System.Func<int, int>>(@"
+    const add_func = function (num) {
+        return num + 1;
+    }
+    add_func;
+");
+Console.WriteLine(add(10));
+```
+
 ## macOS 10.15 or later prompts that puerts.bundle is damaged and moves it to the trash when starting Unity
 
 Execute
