@@ -59,6 +59,19 @@ ts/js中调用require('./a/b')时，ILoader会被调用并传入字符串".../a/
 
 * 该delegate带了值类型参数或者返回值，解决办法：如果没有返回值，用JsEnv.UsingAction声明下，有返回值就用JsEnv.UsingFunc声明。关于做这项工作的必要性，可参见这个[stackoverflow问题](https://stackoverflow.com/questions/56183606/invoke-generic-method-via-reflection-in-c-sharp-il2cpp-on-ios)
 
+```csharp
+// 代码示例
+Puerts.JsEnv jsEnv = new Puerts.JsEnv();
+jsEnv.UsingFunc<int, int>();
+System.Func<int, int> add = env.Eval<System.Func<int, int>>(@"
+    const add_func = function (num) {
+        return num + 1;
+    }
+    add_func;
+");
+Console.WriteLine(add(10));
+```
+
 * 参数数量超过4个，解决办法：官方目前只支持4个，如果有需要，可以依葫芦画瓢写更多的参数支持。
 
 * 参数含ref，out的修饰，目前尚未支持，解决办法：填写issues来提需求
