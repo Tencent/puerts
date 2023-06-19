@@ -33,6 +33,7 @@ jobs:
           rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_94.tgz -q  ${{env.V8_94}} 
           tar xvfz v8_94.tgz -C unreal/Puerts/ThirdParty
+          mv unreal/Puerts/ThirdParty/v8_9.4 unreal/Puerts/ThirdParty/v8
           cd unreal
           tar cvfz puerts_v8_94.tgz Puerts ReactUMG README.md LICENSE doc
           mv puerts_v8_94.tgz ..
