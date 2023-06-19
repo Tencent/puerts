@@ -192,7 +192,7 @@ namespace puerts
 "        const originSp = specifier;                                                          \n"
 "                                                                                             \n"
 "        let isESM = true;                                                                    \n"
-"        if (loader.IsESM) isESM = loader.IsESM(specifier)                                    \n"
+"        if (loader.IsESM) isESM = specifier.startsWith('puerts/') || loader.IsESM(specifier) \n"
 "        if (!isESM && puer.require) return `export default puer.require('${specifier}')`     \n"
 "        const content = loader.ReadFile(specifier, debugpathRef);                            \n"
 "        if (!content) {                                                                      \n"
