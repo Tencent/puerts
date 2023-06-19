@@ -9,7 +9,8 @@ on:
 
 env:
   UE424_V8: "https://github.com/puerts/backend-v8/releases/download/v8_for_ue424_or_below/v8_for_ue424_or_below.tgz"
-  UE425_V8: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+  V8_84: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+  V8_94: "https://github.com/puerts/backend-v8/releases/download/V8_9.4.146.24_230423/v8_bin_9.4.146.24.tgz"
   quickjs: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230201/qjs_v8_bin.tgz"
   nodejs: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
@@ -23,11 +24,18 @@ jobs:
       - name: Create Release Asset
         run: |
           cp -r README.md LICENSE doc unreal
-          wget -O v8_for_ue425.tgz -q  ${{env.UE425_V8}} 
+          wget -O v8_for_ue425.tgz -q  ${{env.V8_84}} 
           tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts_v8.tgz Puerts ReactUMG README.md LICENSE doc
-          mv puerts_v8.tgz ..
+          tar cvfz puerts_v8_84.tgz Puerts ReactUMG README.md LICENSE doc
+          mv puerts_v8_84.tgz ..
+          cd ..
+          rm -r unreal/Puerts/ThirdParty/v8
+          wget -O v8_94.tgz -q  ${{env.V8_94}} 
+          tar xvfz v8_94.tgz -C unreal/Puerts/ThirdParty
+          cd unreal
+          tar cvfz puerts_v8_94.tgz Puerts ReactUMG README.md LICENSE doc
+          mv puerts_v8_94.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
@@ -77,10 +85,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./puerts_v8.tgz
-          asset_name: puerts_v8.tgz
+          asset_path: ./puerts_v8_84.tgz
+          asset_name: puerts_v8_84.tgz
           asset_content_type: application/tgz
           
+      - name: Upload Puerts Plugins with v8 9.4.146.24
+        #id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./puerts_v8_94.tgz
+          asset_name: puerts_v8_94.tgz
+          asset_content_type: application/tgz
+        
       - name: Upload Puerts Plugins UE424 Or Below
         #id: upload-release-asset
         uses: actions/upload-release-asset@v1
