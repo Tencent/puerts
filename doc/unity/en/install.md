@@ -1,5 +1,7 @@
 # How to install
 
+If you don't know which style or version to use. please visit [FAQ](./faq.md#installation-relavanted)
+
 ### GitHub Clone and use Unity UPM to install
 
 You can add it by this way with Unity that support UPM

@@ -1,5 +1,7 @@
 # 安装PuerTS    
 
+如果你不清楚该使用哪种安装方式，该用哪个版本，请参见 [FAQ](./faq.md#安装相关)
+
 ### GitHub Clone 并用 Unity UPM 安装
 
 带有upm的unity版本，可以使用这种方式安装
