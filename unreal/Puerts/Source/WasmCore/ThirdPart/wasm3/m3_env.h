@@ -110,9 +110,11 @@ typedef struct M3Module
 
     IM3Function *           table0;
     u32                     table0Size;
+    cstr_t                  tableExportName;
 
     M3MemoryInfo            memoryInfo;
     bool                    memoryImported;
+    cstr_t                  memoryExportName;
 
     //bool                    hasWasmCodeCopy;
 

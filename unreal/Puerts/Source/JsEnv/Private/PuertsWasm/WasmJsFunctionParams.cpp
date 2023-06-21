@@ -304,6 +304,11 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
             }
         }
     }
+    if (NewInstance->GetModule()->memoryExportName)
+    {
+        (void) ExportsObject->Set(Context, FV8Utils::ToV8String(Isolate, "__memoryExport"),
+            FV8Utils::ToV8String(Isolate, NewInstance->GetModule()->memoryExportName));
+    }
     return UsedRuntime;
 }
 

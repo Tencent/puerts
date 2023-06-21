@@ -46,16 +46,10 @@ var global = global || (function () { return this; }());
         constructor(InWasm3Module, importObject){
             this.exports = {}
             this._Seq = Wasm_Instance(InWasm3Module._bufferSouce, importObject, this.exports)
-            const _Seq = this._Seq
-            let cachedMemory = undefined
-            Object.defineProperty(this.exports, 'memory', {
-                get: function(){
-                    if(!cachedMemory){
-                        cachedMemory = new Wasm3Memory({_Seq:_Seq})
-                    }
-                    return cachedMemory
-                }
-            })
+            if (this.exports.__memoryExport) {
+                this.exports[this.exports.__memoryExport] = new Wasm3Memory({_Seq:this._Seq});
+                this.exports.__memoryExport = undefined;
+            }
         }
     }
 

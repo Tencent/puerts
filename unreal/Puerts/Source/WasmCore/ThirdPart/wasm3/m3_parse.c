@@ -256,6 +256,16 @@ _       (ReadLEB_u32 (& index, & i_bytes, i_end));                              
             global->name = utf8;
             utf8 = NULL; // ownership transferred to M3Global
         }
+        else if (exportKind == d_externalKind_memory)
+        {
+            io_module->memoryExportName = utf8;
+            utf8 = NULL; // ownership transferred to IM3Module
+        }
+        else if (exportKind == d_externalKind_table)
+        {
+            io_module->tableExportName = utf8;
+            utf8 = NULL; // ownership transferred to IM3Module
+        }
 
         m3_Free (utf8);
     }
