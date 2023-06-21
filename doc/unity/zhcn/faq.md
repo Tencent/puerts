@@ -26,10 +26,13 @@
 
 ## 安装相关
 
-#### 版本中的Stable/RC/Preview 分别意味着什么？
+#### 版本中的 Stable/Latest，RC/Preview 分别意味着什么？
 1. Stable：stable代表这个版本已经被长久的验证过，可以稳定地使用，基本不会有明显问题。
-2. Preview或pre：preview代表这个版本带有一些实验性功能，且这些功能在未来还有可能修改/删除，但这些版本会搭载着最新的功能，比如兼容近期的一些上下游变更（比如mac m系列CPU推出等）
-3. RC：意味着release candidate，介于preview和stable之间。一个版本从preview进入rc意味着这个版本号不会再激进地添加/修改/删除功能，且bug量会逐渐收敛。当一段时间无bug反馈后就会进入stable阶段。
+2. Latest: 版本会搭载着最新的功能，比如兼容近期的一些上下游变更（比如mac m系列CPU推出等）或是包含更高性能的调用、更平滑的入门曲线等。
+
+版本号中的pre和RC：
+1. Preview或pre：preview代表这个版本带有一些实验性功能，且这些功能在未来还有可能修改/删除
+2. RC：意味着release candidate。一个版本从preview进入rc意味着这个版本号不会再激进地添加/修改/删除功能，且bug量会逐渐收敛。当一段时间无bug反馈后就会进入release阶段。
 
 #### PuerTS三种后端V8/QuickJS/NodeJS 是什么意思？
 1. PuerTS本身并不负责编译或是解释执行Javascript，而是通过引入第三方 JS 引擎来做这件事。默认情况下，使用的是 NodeJS 引擎。但根据不同的使用场景，同时也允许你改用QuickJS和V8后端。

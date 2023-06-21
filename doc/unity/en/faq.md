@@ -29,10 +29,13 @@ If you did not use the recommended way of [document](./performance/il2cpp.md) to
 
 ## Installation relavanted
 
-#### What do Stable/RC/Preview mean in versions?
+#### What do `Stable/Latest`, `RC/Preview` mean in versions?
 1. Stable: Stable means that this version has been verified for a long time and can be used stably with few obvious problems.
-2. Preview or pre: Preview means that this version comes with some experimental features, and these features may be modified/deleted in the future, but these versions will carry the latest features, such as compatibility with recent upstream/downstream changes (such as the launch of the mac m series CPU).
-3. RC: Means release candidate, between preview and stable. A version entering RC from preview means that this version number will not add/modify/delete functions radically, and the number of bugs will gradually converge. When there is no bug feedback for a period of time, it will enter the stable stage.
+2. latest: Latest means that this versions will carry the latest features, such as compatibility with recent upstream/downstream changes (such as the launch of the mac m series CPU), better performance or stronger feature.
+
+`pre/rc` in version tag:
+2. Preview or pre: Preview means that this version comes with some experimental features, and these features may be modified/deleted in the future
+3. RC: Means release candidate. A version entering RC from preview means that this version number will not add/modify/delete functions radically, and the number of bugs will gradually converge. When there is no bug feedback for a period of time, it will enter the release stage.
 
 #### What do V8/QuickJS/NodeJS mean in PuerTS backend?
 1. PuerTS itself is not responsible for compiling or interpreting JavaScript, but does this by introducing third-party JS engines. By default, the NodeJS engine is used. However, depending on the different usage scenarios, you can also use the QuickJS and NodeJS backends.
