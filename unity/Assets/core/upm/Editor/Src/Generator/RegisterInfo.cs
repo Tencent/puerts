@@ -105,7 +105,7 @@ namespace Puerts.Editor
                                     Name = m.Name,
                                     UseBindingMode = Utils.getBindingMode(m).ToString(),
                                     MemberType = "Method",
-                                    IsStatic = false,
+                                    IsStatic = m.IsStatic,
 
                                     Method = "O_" + m.Name,
                                 }, false);
@@ -163,7 +163,7 @@ namespace Puerts.Editor
                                     Name = "add_" + m.Name,
                                     UseBindingMode = Utils.getBindingMode(m).ToString(),
                                     MemberType = "Method",
-                                    IsStatic = false,
+                                    IsStatic = addMethod.IsStatic,
 
                                     Method = "A_" + m.Name,
                                 }, false);
@@ -175,7 +175,7 @@ namespace Puerts.Editor
                                     Name = "remove_" + m.Name,
                                     UseBindingMode = Utils.getBindingMode(m).ToString(),
                                     MemberType = "Method",
-                                    IsStatic = false,
+                                    IsStatic = removeMethod.IsStatic,
 
                                     Method = "R_" + m.Name,
                                 }, false);
@@ -199,7 +199,7 @@ namespace Puerts.Editor
                                         Name = "get_Item",
                                         UseBindingMode = Utils.getBindingMode(m).ToString(),
                                         MemberType = "Method",
-                                        IsStatic = false,
+                                        IsStatic = getMethod.IsStatic,
 
                                         Method = "GetItem",
                                     }, false);
@@ -211,7 +211,7 @@ namespace Puerts.Editor
                                         Name = "set_Item",
                                         UseBindingMode = Utils.getBindingMode(m).ToString(),
                                         MemberType = "Method",
-                                        IsStatic = false,
+                                        IsStatic = setMethod.IsStatic,
 
                                         Method = "SetItem",
                                     }, false);
