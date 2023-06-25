@@ -327,6 +327,8 @@ struct Converter<T*, typename std::enable_if<std::is_convertible<T*, const UObje
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
+        if (value.As<v8::Object>()->IsNullOrUndefined())
+            return true;
         return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), T::StaticClass(), value.As<v8::Object>());
     }
 };
