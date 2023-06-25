@@ -39,6 +39,9 @@
 #pragma warning(pop)
 
 #include "V8InspectorImpl.h"
+#if USE_WASM3
+#include "WasmModuleInstance.h"
+#endif
 
 #if !defined(WITH_NODEJS)
 
@@ -555,6 +558,9 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     MethodBindingHelper<&FJsEnvImpl::Wasm_NewMemory>::Bind(Isolate, Context, Global, "__tgjsWasm_NewMemory", This);
     MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryGrowth", This);
     MethodBindingHelper<&FJsEnvImpl::Wasm_MemoryBuffer>::Bind(Isolate, Context, Global, "__tgjsWasm_MemoryBuffer", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_TableGrowth>::Bind(Isolate, Context, Global, "__tgjsWasm_TableGrow", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_TableSet>::Bind(Isolate, Context, Global, "__tgjsWasm_TableSet", This);
+    MethodBindingHelper<&FJsEnvImpl::Wasm_TableLen>::Bind(Isolate, Context, Global, "__tgjsWasm_TableLen", This);
     MethodBindingHelper<&FJsEnvImpl::Wasm_Instance>::Bind(Isolate, Context, Global, "__tgjsWasm_Instance", This);
     MethodBindingHelper<&FJsEnvImpl::Wasm_OverrideWebAssembly>::Bind(
         Isolate, Context, Global, "__tgjsWasm_OverrideWebAssembly", This);
@@ -4313,6 +4319,111 @@ void FJsEnvImpl::Wasm_MemoryBuffer(const v8::FunctionCallbackInfo<v8::Value>& In
     }
     FV8Utils::ThrowException(Isolate, "can not find associated runtime with memory");
     return;
+}
+
+void FJsEnvImpl::Wasm_TableGrowth(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgInt32, EArgInt32, EArgInt32);
+
+    int Seq = Info[0]->Int32Value(Context).ToChecked();
+    int Index = Info[1]->Int32Value(Context).ToChecked();
+    int N = Info[2]->Int32Value(Context).ToChecked();
+    for (auto Runtime : PuertsWasmRuntimeList)
+    {
+        if (Runtime->GetRuntimeSeq() == Seq)
+        {
+            if (auto ModuleInstance = Runtime->GetModuleInstance(Index))
+            {
+                Info.GetReturnValue().Set(static_cast<uint32_t>(ModuleInstance->TableGrow(N)));
+            }
+            else
+            {
+                FV8Utils::ThrowException(Isolate, "invalid Module Instance index");
+            }
+            return;
+        }
+    }
+
+    FV8Utils::ThrowException(Isolate, "can not find associated runtime with memory");
+}
+
+void FJsEnvImpl::Wasm_TableSet(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgInt32, EArgInt32, EArgInt32, EArgFunction);
+
+    int Seq = Info[0]->Int32Value(Context).ToChecked();
+    int Index = Info[1]->Int32Value(Context).ToChecked();
+    int Pos = Info[2]->Int32Value(Context).ToChecked();
+    auto Func = v8::Local<v8::Function>::Cast(Info[3]);
+
+    v8::Local<v8::Value> FuncData;
+
+    if (!Func->Get(Context, FV8Utils::ToV8String(Isolate, M3_FUNCTION_KEY)).ToLocal(&FuncData) || !FuncData->IsExternal())
+    {
+        FV8Utils::ThrowException(Isolate, "Argument 1 must be null or a WebAssembly function of type compatible to 'this'");
+        return;
+    }
+
+    for (auto Runtime : PuertsWasmRuntimeList)
+    {
+        if (Runtime->GetRuntimeSeq() == Seq)
+        {
+            if (auto ModuleInstance = Runtime->GetModuleInstance(Index))
+            {
+                ModuleInstance->TableSet(Pos, static_cast<IM3Function>(v8::Local<v8::External>::Cast(FuncData)->Value()));
+            }
+            else
+            {
+                FV8Utils::ThrowException(Isolate, "invalid Module Instance index");
+            }
+            return;
+        }
+    }
+
+    FV8Utils::ThrowException(Isolate, "can not find associated runtime with memory");
+}
+
+void FJsEnvImpl::Wasm_TableLen(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    v8::Isolate* Isolate = Info.GetIsolate();
+    v8::Isolate::Scope IsolateScope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+    v8::Context::Scope ContextScope(Context);
+
+    CHECK_V8_ARGS(EArgInt32, EArgInt32);
+
+    int Seq = Info[0]->Int32Value(Context).ToChecked();
+    int Index = Info[1]->Int32Value(Context).ToChecked();
+    for (auto Runtime : PuertsWasmRuntimeList)
+    {
+        if (Runtime->GetRuntimeSeq() == Seq)
+        {
+            if (auto ModuleInstance = Runtime->GetModuleInstance(Index))
+            {
+                Info.GetReturnValue().Set(static_cast<uint32_t>(ModuleInstance->TableLen()));
+            }
+            else
+            {
+                FV8Utils::ThrowException(Isolate, "invalid Module Instance index");
+            }
+            return;
+        }
+    }
+
+    FV8Utils::ThrowException(Isolate, "can not find associated runtime with memory");
 }
 
 void FJsEnvImpl::Wasm_Instance(const v8::FunctionCallbackInfo<v8::Value>& Info)

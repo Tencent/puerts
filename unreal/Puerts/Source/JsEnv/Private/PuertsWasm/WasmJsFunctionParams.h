@@ -17,6 +17,8 @@
 #pragma warning(pop)
 #include "WasmFunction.h"
 
+#define M3_FUNCTION_KEY "__puerts_inner_m3_func"
+
 namespace puerts
 {
 struct WasmNormalLinkInfo

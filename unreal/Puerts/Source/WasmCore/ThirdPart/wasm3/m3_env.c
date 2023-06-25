@@ -768,6 +768,46 @@ M3Result checkStartFunction(IM3Module i_module)
     return result;
 }
 
+uint32_t  m3_GetTable0Size  (IM3Module i_module)
+{
+    return i_module->table0Size;
+}
+
+M3Result m3_GrowTable0  (IM3Module i_module, size_t n, size_t * previous_size)
+{
+    M3Result result = m3Err_none;                               d_m3Assert(i_module);
+
+    size_t newTable0Size = i_module->table0Size + n;
+    _throwif ("table overflow", newTable0Size > d_m3MaxSaneTableSize);
+    i_module->table0 = m3_ReallocArray (IM3Function, i_module->table0, newTable0Size, i_module->table0Size);
+    *previous_size = i_module->table0Size;
+    i_module->table0Size = (u32) newTable0Size;
+    _throwifnull(i_module->table0);
+
+    _catch:
+    return result;
+}
+
+M3Result m3_GetTable0  (IM3Module i_module, size_t index, IM3Function * o_function)
+{
+    M3Result result = m3Err_none;                               d_m3Assert(i_module);
+    _throwif ("table overflow", index >= i_module->table0Size);
+    *o_function = i_module->table0[index];
+
+    _catch:
+    return result;
+}
+
+M3Result m3_SetTable0  (IM3Module i_module, size_t index, IM3Function i_function)
+{
+    M3Result result = m3Err_none;                               d_m3Assert(i_module);
+    _throwif ("table overflow", index >= i_module->table0Size);
+    i_module->table0[index] = i_function;
+
+    _catch:
+    return result;
+}
+
 uint32_t  m3_GetArgCount  (IM3Function i_function)
 {
     if (i_function) {

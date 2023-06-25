@@ -173,12 +173,14 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
     const TArray<std::shared_ptr<WasmRuntime>>& RuntimeList, TArray<WasmNormalLinkInfo*>& CachedLinkFunctionList)
 {
     WasmRuntime* UsedRuntime = RuntimeList[0].get();
-    v8::Local<v8::Object> EnvObject;
+
     v8::Local<v8::Object> MemoryObject;
+    v8::Local<v8::Object> ImportsObject;
     //需要同时支持使用js mem以及 env memory
-    if (!ImportsValue->IsNullOrUndefined() && ImportsValue->IsObject())
+    if (ImportsValue->IsObject())
     {
-        v8::Local<v8::Object> ImportsObject = ImportsValue.As<v8::Object>();
+        v8::Local<v8::Object> EnvObject;
+        ImportsObject = ImportsValue.As<v8::Object>();
         {
             auto MaybeEnvValue = ImportsObject->Get(Context, FV8Utils::ToV8String(Isolate, "env"));
             if (!MaybeEnvValue.IsEmpty())
@@ -241,27 +243,37 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
 
     auto CustomLinkFunc = [&](IM3Module _Module) -> bool
     {
-        if (!EnvObject.IsEmpty())
+        if (!ImportsObject.IsEmpty())
         {
-            auto Keys = EnvObject->GetOwnPropertyNames(Context).ToLocalChecked();
-            for (decltype(Keys->Length()) i = 0; i < Keys->Length(); ++i)
+            auto ModuleNames = ImportsObject->GetOwnPropertyNames(Context).ToLocalChecked();
+            for (decltype(ModuleNames->Length()) j = 0; j < ModuleNames->Length(); ++j)
             {
-                v8::Local<v8::Value> Key;
-                if (Keys->Get(Context, i).ToLocal(&Key))
+                v8::Local<v8::Value> ModuleName;
+                v8::Local<v8::Value> ModuleValue;
+                if (ModuleNames->Get(Context, j).ToLocal(&ModuleName) &&
+                    ImportsObject->Get(Context, ModuleName).ToLocal(&ModuleValue))
                 {
-                    v8::Local<v8::Value> EnvValue;
-                    if (EnvObject->Get(Context, Key).ToLocal(&EnvValue))
+                    auto Module = ModuleValue.As<v8::Object>();
+                    v8::String::Utf8Value UtfModuleName(Isolate, ModuleName);
+                    auto FunctionNames = Module->GetOwnPropertyNames(Context).ToLocalChecked();
+                    for (decltype(FunctionNames->Length()) i = 0; i < FunctionNames->Length(); ++i)
                     {
-                        if (EnvValue->IsFunction())
+                        v8::Local<v8::Value> FunctionName;
+                        v8::Local<v8::Value> FunctionValue;
+                        if (FunctionNames->Get(Context, i).ToLocal(&FunctionName) &&
+                            Module->Get(Context, FunctionName).ToLocal(&FunctionValue))
                         {
-                            WasmNormalLinkInfo* NewInfo = new WasmNormalLinkInfo();
-                            NewInfo->CachedFunction.Reset(Isolate, EnvValue.As<v8::Function>());
-                            NewInfo->Isolate = Isolate;
-                            CachedLinkFunctionList.Add(NewInfo);
-                            if (!Export_m3_LinkRawFunctionEx(
-                                    _Module, "*", (*(v8::String::Utf8Value(Isolate, Key))), nullptr, &NormalInstanceLink, NewInfo))
+                            if (FunctionValue->IsFunction())
                             {
-                                return false;
+                                WasmNormalLinkInfo* NewInfo = new WasmNormalLinkInfo();
+                                NewInfo->CachedFunction.Reset(Isolate, FunctionValue.As<v8::Function>());
+                                NewInfo->Isolate = Isolate;
+                                CachedLinkFunctionList.Add(NewInfo);
+                                if (!Export_m3_LinkRawFunctionEx(_Module, *UtfModuleName,
+                                        (*(v8::String::Utf8Value(Isolate, FunctionName))), nullptr, &NormalInstanceLink, NewInfo))
+                                {
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -299,8 +311,10 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
             IM3Function f = &_Module->functions[i];
             if (f->compiled && f->export_name && *(f->export_name))
             {
-                (void) ExportsObject->Set(Context, FV8Utils::ToV8String(Isolate, f->export_name),
-                    v8::Function::New(Context, NormalInstanceCall, v8::External::New(Isolate, f)).ToLocalChecked());
+                auto Data = v8::External::New(Isolate, f);
+                auto Func = v8::Function::New(Context, NormalInstanceCall, Data).ToLocalChecked();
+                Func->Set(Context, FV8Utils::ToV8String(Isolate, M3_FUNCTION_KEY), Data);
+                (void) ExportsObject->Set(Context, FV8Utils::ToV8String(Isolate, f->export_name), Func);
             }
         }
     }
@@ -308,6 +322,13 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
     {
         (void) ExportsObject->Set(Context, FV8Utils::ToV8String(Isolate, "__memoryExport"),
             FV8Utils::ToV8String(Isolate, NewInstance->GetModule()->memoryExportName));
+    }
+    if (NewInstance->GetModule()->tableExportName)
+    {
+        (void) ExportsObject->Set(Context, FV8Utils::ToV8String(Isolate, "__tableExport"),
+            FV8Utils::ToV8String(Isolate, NewInstance->GetModule()->tableExportName));
+        (void) ExportsObject->Set(
+            Context, FV8Utils::ToV8String(Isolate, "__moduleIndex"), v8::Integer::New(Isolate, NewInstance->Index));
     }
     return UsedRuntime;
 }

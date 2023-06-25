@@ -13,7 +13,7 @@ WASMCORE_API bool Export_m3_GetResults(IM3Function i_function, uint32_t i_retc, 
     M3Result err = m3_GetResults(i_function, i_retc, o_retptrs);
     if (err)
     {
-        UE_LOG(LogTemp, Error, TEXT("get results error for %s"), UTF8_TO_TCHAR(i_function->export_name));
+        UE_LOG(LogTemp, Error, TEXT("get results error for %s: %s"), UTF8_TO_TCHAR(i_function->export_name), UTF8_TO_TCHAR(err));
         return false;
     }
     return true;
@@ -23,7 +23,10 @@ WASMCORE_API bool Export_m3_Call(IM3Function i_function, uint32_t i_argc, const 
 {
     M3Result err = m3_Call(i_function, i_argc, i_argptrs);
     if (err)
+    {
+        UE_LOG(LogTemp, Error, TEXT("m3_Call error for %s: %s"), UTF8_TO_TCHAR(i_function->export_name), UTF8_TO_TCHAR(err));
         return false;
+    }
     return true;
 }
 
@@ -33,7 +36,7 @@ WASMCORE_API bool Export_m3_LinkRawFunctionEx(IM3Module io_module, const char* c
     M3Result err = m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName, i_signature, i_function, i_userdata);
     if (err && err != m3Err_functionLookupFailed)
     {
-        UE_LOG(LogTemp, Error, TEXT("link error for %s"), UTF8_TO_TCHAR(i_functionName));
+        UE_LOG(LogTemp, Error, TEXT("link error for %s: %s"), UTF8_TO_TCHAR(i_functionName), UTF8_TO_TCHAR(err));
         return false;
     }
     return true;

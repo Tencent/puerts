@@ -292,6 +292,11 @@ d_m3ErrorConst  (trapStackOverflow,             "[trap] stack overflow")
                                                      IM3Runtime             i_runtime,
                                                      const char * const     i_functionName);
 
+    uint32_t            m3_GetTable0Size            (IM3Module i_module);
+    M3Result            m3_GrowTable0               (IM3Module i_module, size_t n, size_t * previous_size);
+    M3Result            m3_GetTable0                (IM3Module i_module, size_t index, IM3Function * o_function);
+    M3Result            m3_SetTable0                (IM3Module i_module, size_t index, IM3Function i_function);
+
     uint32_t            m3_GetArgCount              (IM3Function i_function);
     uint32_t            m3_GetRetCount              (IM3Function i_function);
     M3ValueType         m3_GetArgType               (IM3Function i_function, uint32_t i_index);

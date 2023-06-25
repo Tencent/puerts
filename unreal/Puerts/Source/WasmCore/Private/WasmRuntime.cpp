@@ -64,6 +64,7 @@ WasmModuleInstance* WasmRuntime::OnModuleInstance(WasmModuleInstance* InModuleIn
 {
     _AllModuleInstances.Add(InModuleInstance);
     WasmModuleInstance* ret = _AllModuleInstances[_AllModuleInstances.Num() - 1];
+    ret->Index = _AllModuleInstances.Num() - 1;
     if (MaxWasmStackAllocCount == 0)
     {
         if (ret->GetAllExportFunctions().Contains("GetStackParamBegin"))

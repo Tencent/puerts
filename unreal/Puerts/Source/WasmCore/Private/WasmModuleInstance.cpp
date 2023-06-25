@@ -119,6 +119,34 @@ bool WasmModuleInstance::LoadModule(WasmRuntime* Runtime, int LinkCategory, Addi
     }*/
 }
 
+size_t WasmModuleInstance::TableGrow(size_t N) const
+{
+    size_t ret;
+    M3Result err = m3_GrowTable0(_Module, N, &ret);
+    if (err)
+    {
+        // TODO: do not log with LogTemp
+        UE_LOG(LogTemp, Error, TEXT("m3_GrowTable0: %s"), ANSI_TO_TCHAR(err));
+        return 0;
+    }
+    return ret;
+}
+
+void WasmModuleInstance::TableSet(size_t Idx, IM3Function Function) const
+{
+    M3Result err = m3_SetTable0(_Module, Idx, Function);
+    if (err)
+    {
+        // TODO: do not log with LogTemp
+        UE_LOG(LogTemp, Error, TEXT("m3_SetTable0: %s"), ANSI_TO_TCHAR(err));
+    }
+}
+
+size_t WasmModuleInstance::TableLen() const
+{
+    return m3_GetTable0Size(_Module);
+}
+
 WasmModuleInstance::~WasmModuleInstance()
 {
     for (auto Iter = _AllExportFunctions.CreateIterator(); Iter; ++Iter)

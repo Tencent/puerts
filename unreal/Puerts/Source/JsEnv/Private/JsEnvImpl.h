@@ -432,6 +432,9 @@ protected:
     void Wasm_NewMemory(const v8::FunctionCallbackInfo<v8::Value>& Info);
     void Wasm_MemoryGrowth(const v8::FunctionCallbackInfo<v8::Value>& Info);
     void Wasm_MemoryBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Wasm_TableGrowth(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Wasm_TableSet(const v8::FunctionCallbackInfo<v8::Value>& Info);
+    void Wasm_TableLen(const v8::FunctionCallbackInfo<v8::Value>& Info);
     void Wasm_Instance(const v8::FunctionCallbackInfo<v8::Value>& Info);
     void Wasm_OverrideWebAssembly(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
