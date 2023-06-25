@@ -1,51 +1,51 @@
 import { FunctionCallbackInfoPtrManager, GetType, JSFunction, jsFunctionOrObjectFactory, PuertsJSEngine, setOutValue32 } from "../library";
 
-export function GetNumberFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
-    return engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
-}
-export function GetDateFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
-    return (engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value) as Date).getTime();
-}
-export function GetStringFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, /*out int */lengthOffset: number, isByRef: bool): number {
-    var returnStr = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<string>(value);
-    return engine.JSStringToCSString(returnStr, lengthOffset);
-}
-export function GetBooleanFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
-    return engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
-}
-export function ValueIsBigInt(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
-    var bigint = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
-    return bigint instanceof BigInt;
-}
-export function GetBigIntFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-    var bigint = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
-    return bigint;
-}
-export function GetObjectFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-    var nativeObject = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
-    return engine.csharpObjectMap.getCSIdentifierFromObject(nativeObject);
-}
-export function GetFunctionFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): JSFunctionPtr {
-    var func = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
-    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(func);
-    return jsfunc.id;
-}
-export function GetJSObjectFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
-    var obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
-    var jsobj = jsFunctionOrObjectFactory.getOrCreateJSObject(obj);
-    return jsobj.id;
-}
-export function GetArrayBufferFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, /*out int */lengthOffset: any, isOut: bool) {
-    var ab = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<ArrayBuffer>(value);
-    if (ab instanceof Uint8Array) {
-        ab = ab.buffer;
-    }
-    var ptr = engine.unityApi._malloc(ab.byteLength);
-    engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
-    engine.unityApi.HEAP32[lengthOffset >> 2] = ab.byteLength;
-    setOutValue32(engine, lengthOffset, ab.byteLength);
-    return ptr;
-}
+// export function GetNumberFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
+//     return engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
+// }
+// export function GetDateFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): number {
+//     return (engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value) as Date).getTime();
+// }
+// export function GetStringFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, /*out int */lengthOffset: number, isByRef: bool): number {
+//     var returnStr = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<string>(value);
+//     return engine.JSStringToCSString(returnStr, lengthOffset);
+// }
+// export function GetBooleanFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
+//     return engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
+// }
+// export function ValueIsBigInt(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): boolean {
+//     var bigint = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+//     return bigint instanceof BigInt;
+// }
+// export function GetBigIntFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
+//     var bigint = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<any>(value);
+//     return bigint;
+// }
+// export function GetObjectFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
+//     var nativeObject = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
+//     return engine.csharpObjectMap.getCSIdentifierFromObject(nativeObject);
+// }
+// export function GetFunctionFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool): JSFunctionPtr {
+//     var func = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
+//     var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(func);
+//     return jsfunc.id;
+// }
+// export function GetJSObjectFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
+//     var obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<(...args: any[]) => any>(value);
+//     var jsobj = jsFunctionOrObjectFactory.getOrCreateJSObject(obj);
+//     return jsobj.id;
+// }
+// export function GetArrayBufferFromValue(engine: PuertsJSEngine, isolate: IntPtr, value: MockIntPtr, /*out int */lengthOffset: any, isOut: bool) {
+//     var ab = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr<ArrayBuffer>(value);
+//     if (ab instanceof Uint8Array) {
+//         ab = ab.buffer;
+//     }
+//     var ptr = engine.unityApi._malloc(ab.byteLength);
+//     engine.unityApi.HEAP8.set(new Int8Array(ab), ptr);
+//     engine.unityApi.HEAP32[lengthOffset >> 2] = ab.byteLength;
+//     setOutValue32(engine, lengthOffset, ab.byteLength);
+//     return ptr;
+// }
 export function $GetArgumentFinalValue(engine: PuertsJSEngine, val: any, jsValueType: number, lengthOffset: number): number {
     if (!jsValueType) jsValueType = GetType(engine, val);
     switch (jsValueType) {

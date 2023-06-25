@@ -38,11 +38,9 @@ export class FunctionCallbackInfoPtrManager {
     }
     
     private allocCallbackInfoMemory(argslength: number): number {
-        if (
-            this.freeCallbackInfoMemoryByLength[argslength] &&
-            this.freeCallbackInfoMemoryByLength[argslength].length
-        ) {
-            return this.freeCallbackInfoMemoryByLength[argslength].pop();
+        const cacheArray = this.freeCallbackInfoMemoryByLength[argslength];
+        if (cacheArray && cacheArray.length) {
+            return cacheArray.pop();
 
         } else {
             return this.engine.unityApi._malloc((argslength * this.argumentValueLengthIn32 + 1) << 2);
@@ -52,12 +50,14 @@ export class FunctionCallbackInfoPtrManager {
         if (!this.freeCallbackInfoMemoryByLength[argslength] && argslength < 5) {
             this.freeCallbackInfoMemoryByLength[argslength] = [];
         }
+        const cacheArray = this.freeCallbackInfoMemoryByLength[argslength];
+        if (!cacheArray) return;
         // 拍脑袋定的最大缓存个数大小。 50 - 参数个数 * 10
-        if (this.freeCallbackInfoMemoryByLength[argslength].length > (50 - argslength * 10)) {
+        if (cacheArray.length > (50 - argslength * 10)) {
             this.engine.unityApi._free(bufferptr);
 
         } else {
-            this.freeCallbackInfoMemoryByLength[argslength].push(bufferptr);
+            cacheArray.push(bufferptr);
         }
     }
     /**
@@ -77,7 +77,7 @@ export class FunctionCallbackInfoPtrManager {
     //     return index << 4;
     // }
     GetMockPointer(args: any[]): MockIntPtr {
-        var buffer = this.allocCallbackInfoMemory(args.length);
+        var bufferPtrIn8 = this.allocCallbackInfoMemory(args.length);
 
         let index: number;
         index = this.freeInfosIndex.pop();
@@ -88,50 +88,68 @@ export class FunctionCallbackInfoPtrManager {
             index = this.infos.push(new FunctionCallbackInfo(args)) - 1;
         }
 
-        this.engine.unityApi.HEAP32[buffer >> 2] = index;
+        const bufferPtrIn32 = bufferPtrIn8 >> 2
+        this.engine.unityApi.HEAP32[bufferPtrIn32] = index;
         for (var i = 0; i < args.length; i++) {
             // init each value
             const jsValueType = GetType(this.engine, args[i]);
-            this.engine.unityApi.HEAP32[(buffer >> 2) + (1 + i * this.argumentValueLengthIn32)] = buffer; // a pointer to the info
-            this.engine.unityApi.HEAP32[(buffer >> 2) + (2 + i * this.argumentValueLengthIn32)] = jsValueType;    // jsvaluetype
-            this.engine.unityApi.HEAPF32[(buffer >> 2) + (3 + i * this.argumentValueLengthIn32)] = $GetArgumentFinalValue(
-                this.engine, args[i], jsValueType,
-                ((buffer >> 2) + (4 + i * this.argumentValueLengthIn32)) << 2
-            );    // value
+            const basePtr = bufferPtrIn32 + i * this.argumentValueLengthIn32 + 1;
+
+            this.engine.unityApi.HEAP32[basePtr] = jsValueType;    // jsvaluetype
+            if (jsValueType == 4 || jsValueType == 512) {
+                // number or date
+                this.engine.unityApi.HEAPF32[basePtr + 1] = $GetArgumentFinalValue(
+                    this.engine, args[i], jsValueType, 0
+                );    // value
+                
+            } else {
+                // pointer
+                this.engine.unityApi.HEAP32[basePtr + 1] = $GetArgumentFinalValue(
+                    this.engine, args[i], jsValueType,
+                    (basePtr + 2) << 2
+                );    // value
+            }
+            this.engine.unityApi.HEAP32[basePtr + 3] = bufferPtrIn8; // a pointer to the info
         }
-        return buffer;
+        return bufferPtrIn8;
     }
 
     // static GetByMockPointer(intptr: MockIntPtr): FunctionCallbackInfo {
     //     return this.infos[intptr >> 4];
     // }
-    GetByMockPointer(intptr: MockIntPtr): FunctionCallbackInfo {
-        const index = this.engine.unityApi.HEAP32[intptr >> 2];
+    GetByMockPointer(ptrIn8: MockIntPtr): FunctionCallbackInfo {
+        const ptrIn32 = ptrIn8 >> 2;
+        const index = this.engine.unityApi.HEAP32[ptrIn32];
         return this.infos[index];
     }
 
-    GetReturnValueAndRecycle(intptr: MockIntPtr): any {
-        const index = this.engine.unityApi.HEAP32[intptr >> 2];
+    GetReturnValueAndRecycle(ptrIn8: MockIntPtr): any {
+        const ptrIn32 = ptrIn8 >> 2;
+        const index = this.engine.unityApi.HEAP32[ptrIn32];
+
         let info = this.infos[index];
         let ret = info.returnValue;
-        this.recycleCallbackInfoMemory(intptr, info.args.length);
+        this.recycleCallbackInfoMemory(ptrIn8, info.args.length);
         info.recycle();
         this.freeInfosIndex.push(index);
         return ret;
     }
 
-    ReleaseByMockIntPtr(intptr: MockIntPtr) {
-        const index = this.engine.unityApi.HEAP32[intptr >> 2];
+    ReleaseByMockIntPtr(ptrIn8: MockIntPtr) {
+        const ptrIn32 = ptrIn8 >> 2;
+        const index = this.engine.unityApi.HEAP32[ptrIn32];
+
         let info = this.infos[index];
-        this.recycleCallbackInfoMemory(intptr, info.args.length);
+        this.recycleCallbackInfoMemory(ptrIn8, info.args.length);
         info.recycle();
         this.freeInfosIndex.push(index);
     }
 
-    GetArgsByMockIntPtr<T>(valueptr: MockIntPtr): T {
-        const infoptr = this.engine.unityApi.HEAP32[valueptr >> 2];
-        const callbackInfoIndex = this.engine.unityApi.HEAP32[infoptr >> 2];
-        const argsIndex = (valueptr - infoptr - 4) / (4 * this.argumentValueLengthIn32);
+    GetArgsByMockIntPtr<T>(valuePtrIn8: MockIntPtr): T {
+        const infoptrIn8 = this.engine.unityApi.HEAP32[(valuePtrIn8 >> 2) + 3];
+        const callbackInfoIndex = this.engine.unityApi.HEAP32[infoptrIn8 >> 2];
+
+        const argsIndex = (valuePtrIn8 - infoptrIn8 - 4) / (4 * this.argumentValueLengthIn32);
         const info: FunctionCallbackInfo = this.infos[callbackInfoIndex];
         return info.args[argsIndex] as T;
     }
@@ -438,6 +456,7 @@ export namespace PuertsJSEngine {
         HEAP8: Uint8Array,
         HEAP32: Uint32Array,
         HEAPF32: Float32Array,
+        HEAPF64: Float64Array,
         dynCall_viiiii: Function,
         dynCall_viii: Function,
         dynCall_iiiii: Function
@@ -480,6 +499,7 @@ export class PuertsJSEngine {
             HEAP32: null,
             HEAP8: null,
             HEAPF32: null,
+            HEAPF64: null
         };
         Object.defineProperty(this.unityApi, 'HEAP32', {
             get: function() {
@@ -489,6 +509,11 @@ export class PuertsJSEngine {
         Object.defineProperty(this.unityApi, 'HEAPF32', {
             get: function() {
                 return unityInstance.HEAPF32
+            }
+        })
+        Object.defineProperty(this.unityApi, 'HEAPF64', {
+            get: function() {
+                return unityInstance.HEAPF64
             }
         })
         Object.defineProperty(this.unityApi, 'HEAP8', {
@@ -523,7 +548,7 @@ export class PuertsJSEngine {
     }
 
     makeV8FunctionCallbackFunction(isStatic: bool, functionPtr: IntPtr, callbackIdx: number) {
-        // 不能用箭头函数！此处返回的函数会放到具体的class上，this有含义。
+        // 不能用箭头函数！此处返回的函数会赋值到具体的class上，其this指针有含义。
         const engine = this;
         return function (...args: any[]) {
             let callbackInfoPtr = engine.functionCallbackInfoPtrManager.GetMockPointer(args);
@@ -531,7 +556,7 @@ export class PuertsJSEngine {
                 engine.callV8FunctionCallback(
                     functionPtr,
                     // getIntPtrManager().GetPointerForJSValue(this),
-                    isStatic ? 0:engine.csharpObjectMap.getCSIdentifierFromObject(this),
+                    isStatic ? 0 : engine.csharpObjectMap.getCSIdentifierFromObject(this),
                     callbackInfoPtr,
                     args.length,
                     callbackIdx

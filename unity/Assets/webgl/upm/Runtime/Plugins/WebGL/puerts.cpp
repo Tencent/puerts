@@ -1,9 +1,16 @@
 struct MockV8Value
 {
-    int FunctionCallbackInfo;
     int JSValueType;
-    float FinalValuePointer;
+    int FinalValuePointer;
     int length;
+    int FunctionCallbackInfo;
+};
+struct MockV8NumberOrDate
+{
+    int JSValueType;
+    float value;
+    float value2;
+    int FunctionCallbackInfo;
 };
 
 extern "C" {
@@ -22,13 +29,13 @@ extern "C" {
     {
         return value->JSValueType;
     }
-    double GetNumberFromValue(void* isolate, MockV8Value* value, bool byref)
+    double GetNumberFromValue(void* isolate, MockV8NumberOrDate* value, bool byref)
     {
-        return static_cast<double>(value->FinalValuePointer);
+        return static_cast<double>(value->value);
     }
-    double GetDateFromValue(void* isolate, MockV8Value* value, bool byref)
+    double GetDateFromValue(void* isolate, MockV8NumberOrDate* value, bool byref)
     {
-        return static_cast<double>(value->FinalValuePointer);
+        return static_cast<double>(value->value);
     }
     void* GetStringFromValue(void* isolate, MockV8Value* value, int &length, bool byref)
     {
