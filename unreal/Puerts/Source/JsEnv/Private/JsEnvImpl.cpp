@@ -2167,7 +2167,7 @@ void FJsEnvImpl::InvokeTsMethod(UObject* ContextObject, UFunction* Function, FFr
     if (!FuncInfo)
     {
         auto Class = Cast<UTypeScriptGeneratedClass>(Function->GetOuterUClassUnchecked());
-        MakeSureInject(Class, false, false);
+        MakeSureInject(Class, true, false);
         FinishInjection(Class);
         FuncInfo = TsFunctionMap.Find(Function);
         if (!FuncInfo)
