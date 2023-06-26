@@ -34,11 +34,13 @@ public:
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
+        JsEnvLifeCycleTracker = puerts::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
     FJsObject(v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
         : Isolate(InContext->GetIsolate()), GContext(InContext->GetIsolate(), InContext), GObject(InContext->GetIsolate(), InObject)
     {
+        JsEnvLifeCycleTracker = puerts::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
     FJsObject& operator=(const FJsObject& InOther)
@@ -46,12 +48,18 @@ public:
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
+        JsEnvLifeCycleTracker = puerts::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
         return *this;
     }
 
     template <typename T>
     T Get(const char* Key) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            UE_LOG(Puerts, Error, TEXT("JsEnv associated had release!"));
+            return {};
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -70,6 +78,11 @@ public:
     template <typename T>
     void Set(const char* Key, T Val) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            UE_LOG(Puerts, Error, TEXT("JsEnv associated had release!"));
+            return;
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -83,6 +96,11 @@ public:
     template <typename... Args>
     void Action(Args... cppArgs) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            UE_LOG(Puerts, Error, TEXT("JsEnv associated had release!"));
+            return;
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -109,6 +127,11 @@ public:
     template <typename Ret, typename... Args>
     Ret Func(Args... cppArgs) const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            UE_LOG(Puerts, Error, TEXT("JsEnv associated had release!"));
+            return {};
+        }
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
         auto Context = GContext.Get(Isolate);
@@ -140,6 +163,11 @@ public:
 
     FORCEINLINE v8::Local<v8::Object> GetJsObject() const
     {
+        if (JsEnvLifeCycleTracker.expired())
+        {
+            UE_LOG(Puerts, Error, TEXT("JsEnv associated had release!"));
+            return {};
+        }
         if (!GObject.IsEmpty())
         {
             return GObject.Get(Isolate);
@@ -167,6 +195,7 @@ private:
     v8::Isolate* Isolate;
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
+    std::weak_ptr<int> JsEnvLifeCycleTracker;
 
     friend struct puerts::converter::Converter<FJsObject>;
 };
