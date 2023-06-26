@@ -591,7 +591,8 @@ export function GetType(engine: PuertsJSEngine, value: any): number {
     if (typeof value == 'boolean') { return 16 }
     if (typeof value == 'function') { return 256 }
     if (value instanceof Date) { return 512 }
-    if (value instanceof Array) { return 128 }
+    // if (value instanceof Array) { return 128 }
+    if (value instanceof Array) { return 64 }
     if (value instanceof ArrayBuffer || value instanceof Uint8Array) { return 1024 }
     if (engine.csharpObjectMap.getCSIdentifierFromObject(value)) { return 32 }
     return 64;
