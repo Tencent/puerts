@@ -348,6 +348,8 @@ static void* CtorCallback(pesapi_callback_info info)
     void* Ptr = ObjectAllocate(classInfo->Class);
     
     g_unityExports.SetNativePtr(pesapi_get_this(info), Ptr, classInfo->TypeId);
+
+    auto isValueType = Class::IsValuetype(classInfo->Class);
     
     try
     {
@@ -362,7 +364,9 @@ static void* CtorCallback(pesapi_callback_info info)
             ++wrapDatas;
         }
         
-        pesapi_throw_by_string(info, "invalid arguments");
+
+        if (!(isValueType && pesapi_get_args_len(info) == 0))
+            pesapi_throw_by_string(info, "invalid arguments");
         
     } 
     catch (Il2CppExceptionWrapper& exception)
