@@ -123,7 +123,7 @@ var global = global || (function () { return this; }());
             isESM = isESM === true || fullPath.endsWith(".mjs")
             let cachedIsESM = isESM;
             if (fullPath.endsWith(".cjs")) {
-                isESM = true;
+                isESM = false;
                 cachedIsESM = false;
             }
             if (fullPath.endsWith(".json")) {
