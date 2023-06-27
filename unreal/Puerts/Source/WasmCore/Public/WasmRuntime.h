@@ -70,6 +70,11 @@ public:
         return _RuntimeSeq;
     }
 
+    WasmModuleInstance* GetModuleInstance(int index) const
+    {
+        return _AllModuleInstances[index];
+    }
+
     WasmModuleInstance* OnModuleInstance(WasmModuleInstance* InModuleInstance);
 
     FORCEINLINE IM3Runtime GetRuntime() const

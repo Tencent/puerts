@@ -870,6 +870,12 @@ function watch(configFilePath) {
                             console.warn(`do not support non-static function [${x.name.getText()}] in BlueprintFunctionLibrary`);
                             return;
                         }
+                        if (x.name.getText() === 'ReceiveInit') {
+                            if (baseTypeUClass == UE.GameInstance.StaticClass() || baseTypeUClass.IsChildOf(UE.GameInstance.StaticClass())) {
+                                console.warn(`do not support override GameInstance.ReceiveInit in ${type.getSymbol().getName()}`);
+                                return;
+                            }
+                        }
                         properties.push(checker.getSymbolAtLocation(x.name));
                     }
                     else if (ts.isPropertyDeclaration(x) && !manualSkip(x)) {

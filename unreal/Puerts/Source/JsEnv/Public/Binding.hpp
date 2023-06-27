@@ -996,10 +996,16 @@ private:
         auto context = GetContext(info);
 
         if (GetArgsLen(info) != ArgsLength)
+        {
+            ThrowException(info, "invalid parameter length");
             return nullptr;
+        }
 
         if (!internal::ArgumentChecker<0, ArgsLength, Args...>::Check(info, context))
+        {
+            ThrowException(info, "invalid parameter");
             return nullptr;
+        }
 
         return new T(internal::TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
     }

@@ -32,6 +32,50 @@ var global = global || (function () { return this; }());
         }
     }
     Wasm3.Memory = Wasm3Memory;
+    
+    const Wasm_TableGrow = global.__tgjsWasm_TableGrow;
+    global.__tgjsWasm_TableGrow = undefined;
+    const Wasm_TableSet = global.__tgjsWasm_TableSet;
+    global.__tgjsWasm_TableSet = undefined;
+    const Wasm_TableLen = global.__tgjsWasm_TableLen;
+    global.__tgjsWasm_TableLen = undefined;
+    
+    class Wasm3Table {
+        constructor(runtimeSeq, moduleIndex) {
+            this._runtimeSeq = runtimeSeq;
+            this._moduleIndex = moduleIndex;
+        }
+        
+        grow(n) {
+            if (this._runtimeSeq && typeof this._moduleIndex === 'number') {
+                return Wasm_TableGrow(this._runtimeSeq, this._moduleIndex, n);
+            } else {
+                throw new Error("invalid table");
+            }
+        }
+        
+        set(index, fn) {
+            if (this._runtimeSeq && typeof this._moduleIndex === 'number') {
+                return Wasm_TableSet(this._runtimeSeq, this._moduleIndex, index, fn);
+            } else {
+                throw new Error("invalid table");
+            }
+        }
+        
+        get(index) {
+            throw new Error("not implemented in wasm3 version");
+        }
+        
+        get length() {
+            if (this._runtimeSeq && typeof this._moduleIndex === 'number') {
+                return Wasm_TableLen(this._runtimeSeq, this._moduleIndex);
+            } else {
+                throw new Error("invalid table");
+            }
+        }
+    }
+    
+    Wasm3.Table = Wasm3Table;
 
     class Wasm3Module{
         constructor(bufferSource){
@@ -50,6 +94,12 @@ var global = global || (function () { return this; }());
                 this.exports[this.exports.__memoryExport] = new Wasm3Memory({_Seq:this._Seq});
                 this.exports.__memoryExport = undefined;
             }
+            if (this.exports.__tableExport && typeof this.exports.__moduleIndex === 'number') {
+                this.exports[this.exports.__tableExport] = new Wasm3Table(this._Seq, this.exports.__moduleIndex);
+                this.exports.__tableExport = undefined;
+                this.exports.__moduleIndex = undefined;
+            }
+            
         }
     }
 
