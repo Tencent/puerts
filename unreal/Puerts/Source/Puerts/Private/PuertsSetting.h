@@ -17,34 +17,35 @@ class UPuertsSetting : public UObject
 {
     GENERATED_BODY()
 public:
-    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
-        meta = (defaultValue = "JavaScript", Tooltip = "JavaScript Source Code Root Path", DisplayName = "JavaScript Root"))
+    UPROPERTY(config, EditAnywhere, Category = "Default JavaScript Environment",
+        meta = (defaultValue = "JavaScript", Tooltip = "JavaScript Source Code Root Path", DisplayName = "JavaScript Source Root"))
     FString RootPath = "JavaScript";
 
-    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Enable", defaultValue = false))
+    UPROPERTY(
+        config, EditAnywhere, Category = "Default JavaScript Environment", meta = (DisplayName = "Enable", defaultValue = false))
     bool AutoModeEnable = false;
 
-    UPROPERTY(
-        config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Debug Enable", defaultValue = false))
+    UPROPERTY(config, EditAnywhere, Category = "Default JavaScript Environment",
+        meta = (DisplayName = "Debug Enable", defaultValue = false))
     bool DebugEnable = false;
 
     UPROPERTY(
-        config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Debug Port", defaultValue = 8080))
+        config, EditAnywhere, Category = "Default JavaScript Environment", meta = (DisplayName = "Debug Port", defaultValue = 8080))
     int32 DebugPort = 8080;
 
-    UPROPERTY(
-        config, EditAnywhere, Category = "Engine Class Extends Mode", meta = (DisplayName = "Wait Debugger", defaultValue = false))
+    UPROPERTY(config, EditAnywhere, Category = "Default JavaScript Environment",
+        meta = (DisplayName = "Wait Debugger", defaultValue = false))
     bool WaitDebugger = false;
 
-    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
+    UPROPERTY(config, EditAnywhere, Category = "Default JavaScript Environment",
         meta = (DisplayName = "Wait Debugger Timeout", defaultValue = 0))
     double WaitDebuggerTimeout = 0;
 
-    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
+    UPROPERTY(config, EditAnywhere, Category = "Default JavaScript Environment",
         meta = (DisplayName = "Number of JavaScript Env", defaultValue = 1))
     int32 NumberOfJsEnv = 1;
 
-    UPROPERTY(config, EditAnywhere, Category = "Engine Class Extends Mode",
+    UPROPERTY(config, EditAnywhere, Category = "Default JavaScript Environment",
         meta = (DisplayName = "Disable TypeScript Watch", defaultValue = false))
     bool WatchDisable = false;
 
