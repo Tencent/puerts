@@ -252,6 +252,11 @@ UFunction* UJSGeneratedClass::Mixin(v8::Isolate* Isolate, UClass* Class, UFuncti
     Function->StaticLink(true);
     Function->ClearInternalFlags(EInternalObjectFlags::Native);
 
+    if (Class->HasAnyInternalFlags(EInternalObjectFlags::RootSet))
+    {
+        Function->AddToRoot();
+    }
+
     if (Existed)
     {
         Function->Original = Super;
@@ -296,6 +301,10 @@ void UJSGeneratedClass::Restore(UClass* Class)
             JGF->JsFunction.Reset();
             *PP = JGF->Next;
             Class->RemoveFunctionFromFunctionMap(JGF);
+            if (JGF->IsRooted())
+            {
+                JGF->RemoveFromRoot();
+            }
             JGF->Rename(nullptr, OrphanedClass, REN_DontCreateRedirectors | REN_DoNotDirty | REN_ForceNoResetLoaders);
             FLinkerLoad::InvalidateExport(JGF);
         }
