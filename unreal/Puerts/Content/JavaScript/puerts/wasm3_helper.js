@@ -41,11 +41,6 @@ var global = global || (function () { return this; }());
     global.__tgjsWasm_TableLen = undefined;
     
     class Wasm3Table {
-        constructor(runtimeSeq, moduleIndex) {
-            this._runtimeSeq = runtimeSeq;
-            this._moduleIndex = moduleIndex;
-        }
-        
         grow(n) {
             if (this._runtimeSeq && typeof this._moduleIndex === 'number') {
                 return Wasm_TableGrow(this._runtimeSeq, this._moduleIndex, n);
@@ -95,9 +90,21 @@ var global = global || (function () { return this; }());
                 this.exports.__memoryExport = undefined;
             }
             if (this.exports.__tableExport && typeof this.exports.__moduleIndex === 'number') {
-                this.exports[this.exports.__tableExport] = new Wasm3Table(this._Seq, this.exports.__moduleIndex);
+                var tbl = new Wasm3Table();
+                tbl._runtimeSeq = this._Seq;
+                tbl._moduleIndex = this.exports.__moduleIndex;
+                this.exports[this.exports.__tableExport] = tbl;
                 this.exports.__tableExport = undefined;
                 this.exports.__moduleIndex = undefined;
+            } else {
+                for(var k in importObject) {
+                    var tbl = importObject[k];
+                    if (tbl instanceof Wasm3Table) {
+                        tbl._runtimeSeq = this._Seq;
+                        tbl._moduleIndex = this.exports.__moduleIndex;
+                        break;
+                    }
+                }
             }
             
         }
