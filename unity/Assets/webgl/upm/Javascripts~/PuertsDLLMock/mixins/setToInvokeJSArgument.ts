@@ -22,7 +22,7 @@ export default function WebGLBackendSetToInvokeJSArgumentApi(engine: PuertsJSEng
         },
         PushBooleanForJSFunction: function (_function: JSFunctionPtr, b: bool) {
             const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
-            func.args.push(b);
+            func.args.push(!!b);
 
         },
         PushBigIntForJSFunction: function (_function: JSFunctionPtr, /*long */longlow: number, longhigh: number) {

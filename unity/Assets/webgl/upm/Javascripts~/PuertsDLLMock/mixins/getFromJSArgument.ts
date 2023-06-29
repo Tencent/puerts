@@ -125,6 +125,11 @@ export default function WebGLBackendGetFromJSArgumentAPI(engine: PuertsJSEngine)
 
         GetTypeIdFromValue: function (isolate: IntPtr, value: MockIntPtr, isByRef: bool) {
             var obj = engine.functionCallbackInfoPtrManager.GetArgsByMockIntPtr(value);
+            
+            if (isByRef) {
+                // @ts-ignore
+                obj = obj[0]
+            }
             var typeid = 0;
             if (obj instanceof JSFunction) {
                 typeid = (obj._func as any)["$cid"];

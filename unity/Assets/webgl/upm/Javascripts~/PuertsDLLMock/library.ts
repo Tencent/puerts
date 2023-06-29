@@ -29,6 +29,7 @@ export class FunctionCallbackInfoPtrManager {
     private freeCallbackInfoMemoryByLength: {
         [length: number]: number[]
     } = {};
+    private freeRefMemory: number[] = []
 
     private readonly argumentValueLengthIn32 = 4;
     private readonly engine: PuertsJSEngine;
@@ -36,7 +37,7 @@ export class FunctionCallbackInfoPtrManager {
     constructor(engine: PuertsJSEngine) {
         this.engine = engine;
     }
-    
+
     private allocCallbackInfoMemory(argslength: number): number {
         const cacheArray = this.freeCallbackInfoMemoryByLength[argslength];
         if (cacheArray && cacheArray.length) {
@@ -46,12 +47,32 @@ export class FunctionCallbackInfoPtrManager {
             return this.engine.unityApi._malloc((argslength * this.argumentValueLengthIn32 + 1) << 2);
         }
     }
-    private recycleCallbackInfoMemory(bufferptr: number, argslength: number) {
+    private allocRefMemory() {
+        if (this.freeRefMemory.length) return this.freeRefMemory.pop();
+        return this.engine.unityApi._malloc(this.argumentValueLengthIn32 << 2);
+    }
+    private recycleRefMemory(bufferptr: number) {
+        if (this.freeRefMemory.length > 20) {
+            this.engine.unityApi._free(bufferptr);
+        } 
+        else {
+            this.freeRefMemory.push(bufferptr);
+        }
+    }
+    private recycleCallbackInfoMemory(bufferptr: number, args: any[]) {
+        const argslength = args.length;
         if (!this.freeCallbackInfoMemoryByLength[argslength] && argslength < 5) {
             this.freeCallbackInfoMemoryByLength[argslength] = [];
         }
         const cacheArray = this.freeCallbackInfoMemoryByLength[argslength];
         if (!cacheArray) return;
+
+        const bufferPtrIn32 = bufferptr << 2;
+        args.forEach((arg, i) => {
+            if (arg instanceof Array && arg.length == 1) {
+                this.recycleRefMemory(this.engine.unityApi.HEAP32[bufferPtrIn32 + i * this.argumentValueLengthIn32 + 1])
+            }
+        })
         // 拍脑袋定的最大缓存个数大小。 50 - 参数个数 * 10
         if (cacheArray.length > (50 - argslength * 10)) {
             this.engine.unityApi._free(bufferptr);
@@ -93,23 +114,47 @@ export class FunctionCallbackInfoPtrManager {
         for (var i = 0; i < args.length; i++) {
             // init each value
             const jsValueType = GetType(this.engine, args[i]);
-            const basePtr = bufferPtrIn32 + i * this.argumentValueLengthIn32 + 1;
+            const jsValuePtr = bufferPtrIn32 + i * this.argumentValueLengthIn32 + 1;
 
-            this.engine.unityApi.HEAP32[basePtr] = jsValueType;    // jsvaluetype
+            this.engine.unityApi.HEAP32[jsValuePtr] = jsValueType;    // jsvaluetype
             if (jsValueType == 4 || jsValueType == 512) {
                 // number or date
-                this.engine.unityApi.HEAPF32[basePtr + 1] = $GetArgumentFinalValue(
+                this.engine.unityApi.HEAPF32[jsValuePtr + 1] = $GetArgumentFinalValue(
                     this.engine, args[i], jsValueType, 0
                 );    // value
-                
-            } else {
-                // pointer
-                this.engine.unityApi.HEAP32[basePtr + 1] = $GetArgumentFinalValue(
+
+            } else if (jsValueType == 64 && args[i] instanceof Array && args[i].length == 1) {
+                // maybe a ref
+                this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
                     this.engine, args[i], jsValueType,
-                    (basePtr + 2) << 2
-                );    // value
+                    0
+                );   
+
+                const refPtrIn8 = this.engine.unityApi.HEAP32[jsValuePtr + 2] = this.allocRefMemory();
+                const refPtr = refPtrIn8 >> 2
+                const refValueType = this.engine.unityApi.HEAP32[refPtr] = GetType(this.engine, args[i][0])
+                if (refValueType == 4 || refValueType == 512) {
+                    // number or date
+                    this.engine.unityApi.HEAPF32[refPtr + 1] = $GetArgumentFinalValue(
+                        this.engine, args[i][0], refValueType, 0
+                    );    // value
+
+                } else {
+                    this.engine.unityApi.HEAP32[refPtr + 1] = $GetArgumentFinalValue(
+                        this.engine, args[i][0], refValueType,
+                        (refPtr + 2) << 2
+                    );  
+                } 
+                this.engine.unityApi.HEAP32[refPtr + 3] = bufferPtrIn8; // a pointer to the info
+
+            } else {
+                // other
+                this.engine.unityApi.HEAP32[jsValuePtr + 1] = $GetArgumentFinalValue(
+                    this.engine, args[i], jsValueType,
+                    (jsValuePtr + 2) << 2
+                );   
             }
-            this.engine.unityApi.HEAP32[basePtr + 3] = bufferPtrIn8; // a pointer to the info
+            this.engine.unityApi.HEAP32[jsValuePtr + 3] = bufferPtrIn8; // a pointer to the info
         }
         return bufferPtrIn8;
     }
@@ -129,7 +174,7 @@ export class FunctionCallbackInfoPtrManager {
 
         let info = this.infos[index];
         let ret = info.returnValue;
-        this.recycleCallbackInfoMemory(ptrIn8, info.args.length);
+        this.recycleCallbackInfoMemory(ptrIn8, info.args);
         info.recycle();
         this.freeInfosIndex.push(index);
         return ret;
@@ -140,7 +185,7 @@ export class FunctionCallbackInfoPtrManager {
         const index = this.engine.unityApi.HEAP32[ptrIn32];
 
         let info = this.infos[index];
-        this.recycleCallbackInfoMemory(ptrIn8, info.args.length);
+        this.recycleCallbackInfoMemory(ptrIn8, info.args);
         info.recycle();
         this.freeInfosIndex.push(index);
     }
@@ -195,7 +240,7 @@ export class JSObject {
         this.id = id;
     }
 
-    public getObject (): object {
+    public getObject(): object {
         return this._obj;
     }
 }
@@ -205,10 +250,10 @@ export class jsFunctionOrObjectFactory {
     private static idMap = new WeakMap<Function | object, number>();
     private static jsFuncOrObjectKV: { [id: number]: JSFunction | JSObject } = {};
 
-    public static getOrCreateJSFunction(funcValue: (...args: any[]) => any) {
+    public static getOrCreateJSFunction(funcValue: (...args: any[]) => any): JSFunction {
         let id = jsFunctionOrObjectFactory.idMap.get(funcValue);
         if (id) {
-            return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+            return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSFunction;
         }
 
         id = jsFunctionOrObjectFactory.regularID++;
@@ -273,7 +318,7 @@ export class CSharpObjectMap {
     public classIDWeakMap = new WeakMap();
 
     constructor() {
-        this._memoryDebug && setInterval(()=> {
+        this._memoryDebug && setInterval(() => {
             console.log('addCalled', this.addCalled);
             console.log('removeCalled', this.removeCalled);
             console.log('wr', this.nativeObjectKV.size);
@@ -285,7 +330,7 @@ export class CSharpObjectMap {
     private removeCalled: number = 0;
 
     add(csID: CSIdentifier, obj: any) {
-        this._memoryDebug && this.addCalled ++;
+        this._memoryDebug && this.addCalled++;
         // this.nativeObjectKV[csID] = createWeakRef(obj);
         // this.csIDWeakMap.set(obj, csID);
         this.nativeObjectKV.set(csID, createWeakRef(obj));
@@ -294,7 +339,7 @@ export class CSharpObjectMap {
         })
     }
     remove(csID: CSIdentifier) {
-        this._memoryDebug && this.removeCalled ++;
+        this._memoryDebug && this.removeCalled++;
         // delete this.nativeObjectKV[csID];
         this.nativeObjectKV.delete(csID);
     }
@@ -310,7 +355,7 @@ export class CSharpObjectMap {
     }
     getCSIdentifierFromObject(obj: any) {
         // return this.csIDWeakMap.get(obj);
-        return obj._puerts_csid_;
+        return obj ? obj._puerts_csid_ : 0;
     }
 }
 
@@ -330,7 +375,7 @@ const createWeakRef: <T extends object>(obj: any) => WeakRef<T> = (function () {
     if (typeof WeakRef == 'undefined') {
         if (typeof WXWeakRef == 'undefined') {
             console.error("WeakRef is not defined. maybe you should use newer environment");
-            return function(obj: any) {
+            return function (obj: any) {
                 return { deref() { return obj } }
             }
         }
@@ -339,8 +384,8 @@ const createWeakRef: <T extends object>(obj: any) => WeakRef<T> = (function () {
         return function (obj: any) {
             return new WXWeakRef(obj);
         }
-    }    
-    return function(obj: any) {
+    }
+    return function (obj: any) {
         return new WeakRef(obj);
     }
 })();
@@ -348,7 +393,7 @@ export { createWeakRef }
 /**
  * JS对象生命周期监听
  */
-interface FinalizationRegistryMock<T> extends FinalizationRegistry<T> {}
+interface FinalizationRegistryMock<T> extends FinalizationRegistry<T> { }
 class FinalizationRegistryMock<T> {
     private _handler: (value: T) => void;
 
@@ -381,22 +426,21 @@ class FinalizationRegistryMock<T> {
         const stepCount = this.refs.length / part;
         let i = this.iteratePosition;
         for (
-            let currentStep = 0; 
-            i < this.refs.length && currentStep < stepCount; 
+            let currentStep = 0;
+            i < this.refs.length && currentStep < stepCount;
             i = (i == this.refs.length - 1 ? 0 : i + 1), currentStep++
         ) {
             if (this.refs[i] == null) {
                 continue;
             }
-            if (!this.refs[i].deref()) 
-            {
+            if (!this.refs[i].deref()) {
                 // 目前没有内存整理能力，如果游戏中期ref很多但后期少了，这里就会白费遍历次数
                 // 但遍历也只是一句==和continue，浪费影响不大
                 this.availableIndex.push(i);
                 this.refs[i] = null;
                 try {
                     this._handler(this.helds[i]);
-                } catch(e) {
+                } catch (e) {
                     console.error(e);
                 }
             }
@@ -485,12 +529,12 @@ export class PuertsJSEngine {
         this.csharpObjectMap = new CSharpObjectMap();
         this.functionCallbackInfoPtrManager = new FunctionCallbackInfoPtrManager(this);
         const { UTF8ToString, _malloc, _memcpy, _free, stringToUTF8, lengthBytesUTF8, unityInstance } = ctorParam;
-        this.unityApi = { 
-            UTF8ToString, 
-            _malloc, 
-            _memcpy, 
-            _free, 
-            stringToUTF8, 
+        this.unityApi = {
+            UTF8ToString,
+            _malloc,
+            _memcpy,
+            _free,
+            stringToUTF8,
             lengthBytesUTF8,
 
             dynCall_iiiii: unityInstance.dynCall_iiiii.bind(unityInstance),
@@ -502,22 +546,22 @@ export class PuertsJSEngine {
             HEAPF64: null
         };
         Object.defineProperty(this.unityApi, 'HEAP32', {
-            get: function() {
+            get: function () {
                 return unityInstance.HEAP32
             }
         })
         Object.defineProperty(this.unityApi, 'HEAPF32', {
-            get: function() {
+            get: function () {
                 return unityInstance.HEAPF32
             }
         })
         Object.defineProperty(this.unityApi, 'HEAPF64', {
-            get: function() {
+            get: function () {
                 return unityInstance.HEAPF64
             }
         })
         Object.defineProperty(this.unityApi, 'HEAP8', {
-            get: function() {
+            get: function () {
                 return unityInstance.HEAP8
             }
         });
@@ -563,8 +607,8 @@ export class PuertsJSEngine {
                 );
 
                 return engine.functionCallbackInfoPtrManager.GetReturnValueAndRecycle(callbackInfoPtr);
-                
-            } catch(e) {
+
+            } catch (e) {
                 engine.functionCallbackInfoPtrManager.ReleaseByMockIntPtr(callbackInfoPtr,);
                 throw e;
             }
