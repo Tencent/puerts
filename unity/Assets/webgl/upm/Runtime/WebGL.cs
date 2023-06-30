@@ -60,7 +60,6 @@ namespace Puerts
                 CallV8Constructor callV8Constructor,
                 CallV8Destructor callV8Destructor
             );
-#endif
 
             internal delegate void CallV8Function(int functionCallback, int info, int self, int paramLen, int data);
             internal delegate int CallV8Constructor(int constructorCallback, int info, int paramLen, int data);
@@ -115,6 +114,7 @@ namespace Puerts
                 }
                 callback.Invoke(new IntPtr(self), Utils.TwoIntToLong(0, callbackIdx));
             }
+#endif
         }
     }
 }
