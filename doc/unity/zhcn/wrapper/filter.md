@@ -34,13 +34,13 @@ public class ExamplesCfg
 
 首先，如果你想禁用某个类的某一些接口，不允许它在JS侧被调用，可以如下编写Filter
 ```C#
-static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
+static Puerts.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
     if (memberInfo.DeclaringType.ToString() == "System.Threading.Tasks.Task" && memberInfo.Name == "IsCompletedSuccessfully")
     {
-        return Puerts.Editor.Generator.BindingMode.DontBinding; // 不生成StaticWrapper，且JS调用时获取对应字段会得到undefined。
+        return Puerts.BindingMode.DontBinding; // 不生成StaticWrapper，且JS调用时获取对应字段会得到undefined。
     }
-    return Puerts.Editor.Generator.BindingMode.FastBinding; // 等同于前面return false的情况
+    return Puerts.BindingMode.FastBinding; // 等同于前面return false的情况
 }
 ```
 
@@ -56,13 +56,13 @@ env.SetDefaultBindingMode(BindingMode.DontBinding)
 ```
 再为需要通过的属性在Filter里返回可用即可：
 ```C#
-static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
+static Puerts.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
     if (memberInfo.DeclaringType == typeof(UnityEngine.Vector3)) // 使vector3可用
     {
-        return Puerts.Editor.Generator.BindingMode.FastBinding;
+        return Puerts.BindingMode.FastBinding;
     }
-    return Puerts.Editor.Generator.BindingMode.DontBinding;
+    return Puerts.BindingMode.DontBinding;
 }
 ```
 

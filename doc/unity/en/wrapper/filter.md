@@ -34,13 +34,13 @@ public class ExamplesCfg
 
 First, If you want to disable some C# feature, disallowing to use them in Javascript, you can write filter like this:
 ```C#
-static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
+static Puerts.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
     if (memberInfo.DeclaringType.ToString() == "System.Threading.Tasks.Task" && memberInfo.Name == "IsCompletedSuccessfully")
     {
-        return Puerts.Editor.Generator.BindingMode.DontBinding; // 不生成StaticWrapper，且JS调用时获取对应字段会得到undefined。
+        return Puerts.BindingMode.DontBinding; // 不生成StaticWrapper，且JS调用时获取对应字段会得到undefined。
     }
-    return Puerts.Editor.Generator.BindingMode.FastBinding; // 等同于前面return false的情况
+    return Puerts.BindingMode.FastBinding; // 等同于前面return false的情况
 }
 ```
 In the above situation, PuerTS will record information about these properties in the Wrapper, so when registering these properties, they will be prevented from being called.
@@ -55,13 +55,13 @@ env.SetDefaultBindingMode(BindingMode.DontBinding)
 ```
 Then return `BindingMode.FastBinding` or `BindingMode.SlowBinding` to allow them to be invoked.
 ```C#
-static Puerts.Editor.Generator.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
+static Puerts.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
     if (memberInfo.DeclaringType == typeof(UnityEngine.Vector3)) // 使vector3可用
     {
-        return Puerts.Editor.Generator.BindingMode.FastBinding;
+        return Puerts.BindingMode.FastBinding;
     }
-    return Puerts.Editor.Generator.BindingMode.DontBinding;
+    return Puerts.BindingMode.DontBinding;
 }
 ```
 
