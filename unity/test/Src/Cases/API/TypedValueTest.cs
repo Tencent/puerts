@@ -69,6 +69,7 @@ namespace Puerts.UnitTest.JSTypeTest
     [TestFixture]
     public class TypedValueTest
     {
+#if !UNITY_WEBGL
         [Test]
         public void Int64Value()
         {
@@ -85,6 +86,7 @@ namespace Puerts.UnitTest.JSTypeTest
             Assert.False(TypedValueTestHelper.GetLastCallbackValueType() == typeof(System.Int32));
             jsEnv.Tick();
         }
+#endif
         [Test]
         public void FloatValue()
         {

@@ -553,7 +553,8 @@ namespace Puerts
                     genericArguments[i - 2] = TypeManager.GetType(argTypeId);
                 }
 
-                PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke));
+                var callbackID = AddCallback(new GenericMethodWrap(methodName, this, type, genericArguments).Invoke);
+                PuertsDLL.ReturnCSharpFunctionCallback(isolate, info, StaticCallbacks.JsEnvCallbackWrap, callbackID);
             }
             catch(Exception e)
             {

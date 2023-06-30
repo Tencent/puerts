@@ -81,6 +81,7 @@ puer.__$NamespaceType = Namespace;
 function createTypeProxy(namespace) {
     return new Proxy(new Namespace, {
         get: function(cache, name) {
+            if (name == '__p_innerType') return void 0;
             if (!(name in cache)) {
                 let fullName = namespace ? (namespace + '.' + name) : name;
                 if (/\$\d+$/.test(name)) {

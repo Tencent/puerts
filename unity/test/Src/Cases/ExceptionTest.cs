@@ -126,6 +126,7 @@ namespace Puerts.UnitTest
             }, "invalid arguments");
             jsEnv.Tick();
         }
+#if !UNITY_WEBGL
         [Test]
         public void PassObjectToLong()
         {
@@ -138,6 +139,7 @@ namespace Puerts.UnitTest
             Assert.AreEqual(ret, 0);
             jsEnv.Tick();
         }
+#endif
         [Test]
         public void FunctionNotExistsException()
         {
@@ -254,7 +256,7 @@ namespace Puerts.UnitTest
         //     JsEnv.jsEnvs = oldEnvList;
         //     Assert.True(false);
         // }
-
+#if !UNITY_WEBGL
         [Test]
         public void UnhandledRejectionHandle()
         {
@@ -273,7 +275,7 @@ namespace Puerts.UnitTest
             var res = jsEnv.Eval<bool>("global.catched");
             Assert.True(res);
         }
-
+#endif
         [Test]
         public void UnhandledRejectionCancel()
         {

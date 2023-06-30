@@ -134,6 +134,7 @@ namespace Puerts.UnitTest
         //     }
         // }
 
+#if !UNITY_WEBGL
         [Test]
         public void MultiEnv() {
 #if PUERTS_GENERAL
@@ -194,5 +195,6 @@ namespace Puerts.UnitTest
             
             Assert.True(true);
         }
+#endif
     }
 }

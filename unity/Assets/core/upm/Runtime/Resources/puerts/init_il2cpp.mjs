@@ -56,7 +56,7 @@ let GENERIC_INVOKE_ERR_ARG_CHECK_FAILED = {}
 let ARG_FLAG_OUT = 0x01
 let ARG_FLAG_REF = 0x02
 puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
-    if (typeof csType.GetMember != 'function') {
+    if (!csType || (typeof csType.GetMember != 'function')) {
         throw new Error('the class must be a constructor');
     }
     let members = csType.GetMember(methodName, MemberTypes_Method, GET_MEMBER_FLAGS);

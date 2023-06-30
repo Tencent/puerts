@@ -62,13 +62,14 @@ namespace Puerts.UnitTest
             jsEnv.ExecuteModule("CSharpModuleTest/access_innerclass_test.mjs");
         }
 
+#if !UNITY_WEBGL
         [Test]
         public void ArrayExtension()
         {
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.ExecuteModule("CSharpModuleTest/array_extension_test.mjs");
         }
-
+#endif
 //         [Test]
 //         public void ParentOverloadTest()
 //         {

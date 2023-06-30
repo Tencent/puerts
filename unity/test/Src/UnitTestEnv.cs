@@ -24,8 +24,12 @@ namespace Puerts.UnitTest
             {
                 // loader = new UnitTestLoader();
                 loader2 = new UnitTestLoader2();
+#if !UNITY_WEBGL || UNITY_EDITOR
                 env = new JsEnv(loader2);
                 CommonJS.InjectSupportForCJS(env);
+#else 
+                env = Puerts.WebGL.MainEnv.Get(loader2);
+#endif
             }
         }
 

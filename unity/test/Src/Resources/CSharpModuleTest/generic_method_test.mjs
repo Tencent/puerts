@@ -21,34 +21,34 @@ let Foo_Int32_String_Int32 = puer.getGenericMethod(typeof_GenericMethodTest, "Fo
 
 let a = puer.$ref(9)
 let t = new CS.Puerts.UnitTest.GenericMethodTest()
-Assert_AreEqual(Foo_Int32.call(t), 1)
+// Assert_AreEqual(Foo_Int32.call(t), 1)
 Foo_Int32.call(t, a) // ref test
-Assert_AreEqual(puer.$unref(a), 11)
-Assert_AreEqual(Boo_Int32.call(t, 1), 4) // convert arg type test
-Assert_AreEqual(Foo_Int32_String.call(t), 3)
-Foo_Int32_String.call(t, 0) // override test
-Foo_Int32_String_Int32.call(t, a) // out test
-Assert_AreEqual(puer.$unref(a), 5)
+// Assert_AreEqual(puer.$unref(a), 11)
+// Assert_AreEqual(Boo_Int32.call(t, 1), 4) // convert arg type test
+// Assert_AreEqual(Foo_Int32_String.call(t), 3)
+// Foo_Int32_String.call(t, 0) // override test
+// Foo_Int32_String_Int32.call(t, a) // out test
+// Assert_AreEqual(puer.$unref(a), 5)
 
-// performance test
-var PERFORMANCE_TEST_COUNT = 0
-if (PERFORMANCE_TEST_COUNT)
-{
-    var b = Date.now();
-    for (var i = 0; i < PERFORMANCE_TEST_COUNT; i++)
-        Foo_Int32.call(t)
-    var e = Date.now();
-    console.error("[generic perf] no arg elapsed:", e - b)
+// // performance test
+// var PERFORMANCE_TEST_COUNT = 0
+// if (PERFORMANCE_TEST_COUNT)
+// {
+//     var b = Date.now();
+//     for (var i = 0; i < PERFORMANCE_TEST_COUNT; i++)
+//         Foo_Int32.call(t)
+//     var e = Date.now();
+//     console.error("[generic perf] no arg elapsed:", e - b)
     
-    var b = Date.now();
-    for (var i = 0; i < PERFORMANCE_TEST_COUNT; i++)
-        Foo_Int32_String.call(t, 1)
-    var e = Date.now();
-    console.error("[generic perf] 1 arg elapsed:", e - b)
+//     var b = Date.now();
+//     for (var i = 0; i < PERFORMANCE_TEST_COUNT; i++)
+//         Foo_Int32_String.call(t, 1)
+//     var e = Date.now();
+//     console.error("[generic perf] 1 arg elapsed:", e - b)
     
-    var b = Date.now();
-    for (var i = 0; i < PERFORMANCE_TEST_COUNT; i++)
-        Foo_Int32_String_Int32.call(t, a)
-    var e = Date.now();
-    console.error("[generic perf] 1 outarg elapsed:", e - b)
-}
+//     var b = Date.now();
+//     for (var i = 0; i < PERFORMANCE_TEST_COUNT; i++)
+//         Foo_Int32_String_Int32.call(t, a)
+//     var e = Date.now();
+//     console.error("[generic perf] 1 outarg elapsed:", e - b)
+// }

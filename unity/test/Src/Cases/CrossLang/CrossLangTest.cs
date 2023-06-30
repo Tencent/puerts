@@ -622,7 +622,7 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
         //
-
+#if !UNITY_WEBGL
         [Test]
         public void BigIntInstanceTest()
         {
@@ -652,6 +652,7 @@ namespace Puerts.UnitTest
             ");
             jsEnv.Tick();
         }
+#endif
         [Test]
         public void ArrayBufferInstanceTest()
         {

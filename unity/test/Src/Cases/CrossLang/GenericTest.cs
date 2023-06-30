@@ -95,13 +95,15 @@ namespace Puerts.UnitTest
                         return func();
                     })();
                 ");
-                Assert.True(false);
             }
             catch (Exception e)
             {
-                Assert.True(e.Message.Contains("the class must be a constructor"));
+                StringAssert.Contains("the class must be a constructor", e.Message);
+                jsEnv.Tick();
+                return;
             }
             jsEnv.Tick();
+            throw new Exception("unexpected reach here");
             
         }
 

@@ -8,6 +8,7 @@
 var global = global || globalThis || (function () { return this; }());
 
 function pathNormalize(path) {
+    console.log("pathNormalize", path)
     let reversePathFrags = path.split('/').reverse();
     let newPathFrags = [];
     while (reversePathFrags.length > 0) {
@@ -20,11 +21,11 @@ function pathNormalize(path) {
             }
         }
     }
-    return newPathFrags.join("/");
+    return (path.startsWith('/') ? '/' : '') + newPathFrags.join("/");
 }
 
 function searchModuleInDirWithExt(dir, requiredModule) {
-    var searchPath = pathNormalize(dir + '/' + requiredModule);
+    var searchPath = pathNormalize((dir ? dir + '/' : '') + requiredModule);
     if (puer.fileExists(searchPath)) {
         return searchPath;
     }

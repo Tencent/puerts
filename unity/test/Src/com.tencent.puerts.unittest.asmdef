@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "com.tencent.puerts.core",
+        "com.tencent.puerts.webgl",
         "com.tencent.puerts.commonjs"
     ],
     "includePlatforms": [],

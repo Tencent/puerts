@@ -39,6 +39,7 @@ namespace Puerts.UnitTest
             throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void ESModuleCompileError()
         {
@@ -56,11 +57,12 @@ namespace Puerts.UnitTest
             }
             throw new Exception("unexpected to reach here");
         }
+#endif
         [Test]
         public void ESModuleEvaluateError()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("eval-error/whatever.mjs", @"var obj = {}; obj.func();");
+            // loader.AddMockFileContent("eval-error/whatever.mjs", @"var obj = {}; obj.func();");
             var jsEnv = UnitTestEnv.GetEnv();
             try 
             {
@@ -78,7 +80,7 @@ namespace Puerts.UnitTest
         public void ESModuleImportNotFound()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("notfound/entry.mjs", @"import './whatever.mjs'");
+            // loader.AddMockFileContent("notfound/entry.mjs", @"import './whatever.mjs'");
             var jsEnv = UnitTestEnv.GetEnv();
             try 
             {
@@ -92,6 +94,7 @@ namespace Puerts.UnitTest
             throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void ESModuleImportCompileError()
         {
@@ -111,12 +114,13 @@ namespace Puerts.UnitTest
             throw new Exception("unexpected to reach here");
             jsEnv.Tick();
         }
+#endif
         [Test]
         public void ESModuleImportEvaluateError()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("import-eval-error/whatever.mjs", @"var obj = {}; obj.func();");
-            loader.AddMockFileContent("import-eval-error/entry.mjs", @"import './whatever.mjs'");
+            // loader.AddMockFileContent("import-eval-error/whatever.mjs", @"var obj = {}; obj.func();");
+            // loader.AddMockFileContent("import-eval-error/entry.mjs", @"import './whatever.mjs'");
             var jsEnv = UnitTestEnv.GetEnv();
             try 
             {
@@ -151,11 +155,11 @@ namespace Puerts.UnitTest
         public void ESModuleImportRelative()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("import-relative/a/entry.mjs", @"
-                import { str } from '../b/whatever.mjs'; 
-                export { str };
-            ");
-            loader.AddMockFileContent("import-relative/b/whatever.mjs", @"export const str = 'hello'");
+            // loader.AddMockFileContent("import-relative/a/entry.mjs", @"
+            //     import { str } from '../b/whatever.mjs'; 
+            //     export { str };
+            // ");
+            // loader.AddMockFileContent("import-relative/b/whatever.mjs", @"export const str = 'hello'");
             var jsEnv = UnitTestEnv.GetEnv();
             string ret = jsEnv.ExecuteModule<string>("import-relative/a/entry.mjs", "str");
 
@@ -166,46 +170,46 @@ namespace Puerts.UnitTest
         public void ESModuleImportCircular()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("import-circular/module1.mjs", @"
-                import module2 from './module2.mjs';
-                // CS.System.Console.WriteLine('module1 loading');
+            // loader.AddMockFileContent("import-circular/module1.mjs", @"
+            //     import module2 from './module2.mjs';
+            //     // CS.System.Console.WriteLine('module1 loading');
 
-                function callMe(msg)
-                {
-                    module2.callMe('module 2');
-                    // CS.System.Console.WriteLine('callMe called', msg);
-                }
+            //     function callMe(msg)
+            //     {
+            //         module2.callMe('module 2');
+            //         // CS.System.Console.WriteLine('callMe called', msg);
+            //     }
 
-                class M1
-                {
-                    constructor()
-                    {
-                        // CS.System.Console.WriteLine('M1');
-                    }
-                }
+            //     class M1
+            //     {
+            //         constructor()
+            //         {
+            //             // CS.System.Console.WriteLine('M1');
+            //         }
+            //     }
 
-                export default { callMe, M1 };
-            ");
-            loader.AddMockFileContent("import-circular/module2.mjs", @"
-                import module1 from './module1.mjs';
-                // CS.System.Console.WriteLine('module2 loading');
+            //     export default { callMe, M1 };
+            // ");
+            // loader.AddMockFileContent("import-circular/module2.mjs", @"
+            //     import module1 from './module1.mjs';
+            //     // CS.System.Console.WriteLine('module2 loading');
 
-                function callMe(msg)
-                {
-                    new module1.M1();
-                    // CS.System.Console.WriteLine('callMe called', msg);
-                }
+            //     function callMe(msg)
+            //     {
+            //         new module1.M1();
+            //         // CS.System.Console.WriteLine('callMe called', msg);
+            //     }
 
 
-                export default { callMe };
-            ");
-            loader.AddMockFileContent("import-circular/main.mjs", @"
-                import module1 from './module1.mjs';
-                import module2 from './module2.mjs';
+            //     export default { callMe };
+            // ");
+            // loader.AddMockFileContent("import-circular/main.mjs", @"
+            //     import module1 from './module1.mjs';
+            //     import module2 from './module2.mjs';
 
-                module1.callMe('from john');
-                module2.callMe('from bob');
-            ");
+            //     module1.callMe('from john');
+            //     module2.callMe('from bob');
+            // ");
             var jsEnv = UnitTestEnv.GetEnv();
 
             jsEnv.ExecuteModule("import-circular/main.mjs");
@@ -215,28 +219,29 @@ namespace Puerts.UnitTest
         public void ESModuleImportNotRelative()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("import-not-relative/lib/test.mjs", @"
-                import { M2 } from 'import-not-relative/module2.mjs';
-                const Test = 'Test ' + M2
+            // loader.AddMockFileContent("import-not-relative/lib/test.mjs", @"
+            //     import { M2 } from 'import-not-relative/module2.mjs';
+            //     const Test = 'Test ' + M2
 
-                export { Test };
-            ");
-            loader.AddMockFileContent("import-not-relative/module2.mjs", @"
-                const M2 = 'M2';
-                export { M2 };
-            ");
-            loader.AddMockFileContent("import-not-relative/main.mjs", @"
-                import { M2 } from 'import-not-relative/module2.mjs'
-                import { Test } from './lib/test.mjs';
+            //     export { Test };
+            // ");
+            // loader.AddMockFileContent("import-not-relative/module2.mjs", @"
+            //     const M2 = 'M2';
+            //     export { M2 };
+            // ");
+            // loader.AddMockFileContent("import-not-relative/main.mjs", @"
+            //     import { M2 } from 'import-not-relative/module2.mjs'
+            //     import { Test } from './lib/test.mjs';
 
-                export default M2 + Test;
-            ");
+            //     export default M2 + Test;
+            // ");
             var jsEnv = UnitTestEnv.GetEnv();
 
             string res = jsEnv.ExecuteModule<string>("import-not-relative/main.mjs", "default");
             Assert.AreEqual(res, "M2Test M2");
             jsEnv.Tick();
         }
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void ESModuleImportMeta()
         {
@@ -250,17 +255,18 @@ namespace Puerts.UnitTest
             Assert.AreEqual(res, "puer:import-meta/entry.mjs");
             jsEnv.Tick();
         }
+#endif
         [Test]
         public void ESModuleImportPackageTest()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("import-package/index.js", @"
-                import str from './lib.js'
-                export default str
-            ");
-            loader.AddMockFileContent("import-package/lib.js", @"
-                export default 'lib in package'
-            ");
+            // loader.AddMockFileContent("import-package/index.js", @"
+            //     import str from './lib.js'
+            //     export default str
+            // ");
+            // loader.AddMockFileContent("import-package/lib.js", @"
+            //     export default 'lib in package'
+            // ");
             var jsEnv = UnitTestEnv.GetEnv();
 
             string res = jsEnv.ExecuteModule<string>("import-package", "default");
@@ -271,16 +277,16 @@ namespace Puerts.UnitTest
         public void ESModuleExecuteCJS()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("whatever.cjs", @"
-                module.exports = 'hello world';
-            ");
-            loader.AddMockFileContent("whatever.mjs", @"
-                import str from 'whatever.cjs';
+            // loader.AddMockFileContent("whatever.cjs", @"
+            //     module.exports = 'hello world';
+            // ");
+            // loader.AddMockFileContent("whatever.mjs", @"
+            //     import str from 'whatever.cjs';
                 
-                export default str;
-            ");
+            //     export default str;
+            // ");
             var jsEnv = UnitTestEnv.GetEnv();
-            string str = jsEnv.ExecuteModule<string>("whatever.mjs", "default");
+            string str = jsEnv.ExecuteModule<string>("a_mjs.mjs", "default");
 
             Assert.True(str == "hello world");
             jsEnv.Tick();
@@ -290,14 +296,14 @@ namespace Puerts.UnitTest
         public void ESModuleExecuteCJSRelative()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("cjs/whatever.cjs", @"
-                module.exports = 'hello world';
-            ");
-            loader.AddMockFileContent("mjs/whatever.mjs", @"
-                import str from '../cjs/whatever.cjs';
+            // loader.AddMockFileContent("cjs/whatever.cjs", @"
+            //     module.exports = 'hello world';
+            // ");
+            // loader.AddMockFileContent("mjs/whatever.mjs", @"
+            //     import str from '../cjs/whatever.cjs';
                 
-                export default str;
-            ");
+            //     export default str;
+            // ");
             var jsEnv = UnitTestEnv.GetEnv();
             string str = jsEnv.ExecuteModule<string>("mjs/whatever.mjs", "default");
 

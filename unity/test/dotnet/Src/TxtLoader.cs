@@ -27,16 +27,12 @@ public class TxtLoader : IResolvableLoader,  ILoader, IModuleChecker
 
     public bool FileExists(string specifier)
     {
-        return !System.String.IsNullOrEmpty(Resolve(specifier, "."));
+        var res = !System.String.IsNullOrEmpty(Resolve(specifier, "."));
+        return res;
     }
 
-    public string Resolve(string specifier, string referrer)
+    private string TryResolve(string specifier)
     {
-        if (PathHelper.IsRelative(specifier))
-        {
-            specifier = PathHelper.normalize(PathHelper.Dirname(referrer) + "/" + specifier);
-        }
-
         string path = Path.Combine(root, specifier);
         if (System.IO.File.Exists(path)) 
         {
@@ -58,14 +54,25 @@ public class TxtLoader : IResolvableLoader,  ILoader, IModuleChecker
         {
             return path;
         }
+
         else if (mockFileContent.ContainsKey(specifier)) 
         {
             return specifier;
         } 
-        else if (mockFileContent.ContainsKey(specifier + "/index.js")) 
+        return null;
+    }
+
+    public string Resolve(string specifier, string referrer)
+    {
+        if (PathHelper.IsRelative(specifier))
         {
-            return specifier + "/index.js";
+            specifier = PathHelper.normalize(PathHelper.Dirname(referrer) + "/" + specifier);
         }
+
+        var specifier1 = TryResolve(specifier);
+        if (specifier1 == null) specifier1 = TryResolve(specifier + ".txt");
+        if (specifier1 == null) specifier1 = TryResolve(specifier + "/index.js.txt");
+        if (specifier1 != null) return specifier1;
         return null;
     }
 
