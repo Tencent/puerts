@@ -45,7 +45,7 @@ namespace PuertsStaticWrap
         public static void AddRegisterInfoGetterIntoJsEnv(JsEnv jsEnv)
         {
             ${FOR(typeRegisterInfos, item => `
-            jsEnv.AddRegisterInfoGetter(typeof(${item.Type.GetFriendlyName()}), GetRegisterInfo_${item.WrapperName});
+            jsEnv.AddRegisterInfoGetter(typeof(${CS.Puerts.TypeExtensions.GetFriendlyName(item.Type)}), GetRegisterInfo_${item.WrapperName});
             `)}
         }
     }
