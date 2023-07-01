@@ -25,9 +25,6 @@ namespace PuertsStaticWrap
         {
             return new RegisterInfo 
             {
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
-                BlittableCopy = ${item.BlittableCopy},
-#endif
                 Members = new System.Collections.Generic.Dictionary<string, MemberRegisterInfo>
                 {
                     ${FOR(listToJsArray(item.Members), member=> `
@@ -46,6 +43,7 @@ namespace PuertsStaticWrap
         {
             ${FOR(typeRegisterInfos, item => `
             jsEnv.AddRegisterInfoGetter(typeof(${CS.Puerts.TypeExtensions.GetFriendlyName(item.Type)}), GetRegisterInfo_${item.WrapperName});
+            ${item.BlittableCopy ? item.WrapperName + ".InitBlittableCopy(jsEnv);": ""}
             `)}
         }
     }

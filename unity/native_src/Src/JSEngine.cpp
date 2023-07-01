@@ -446,8 +446,7 @@ namespace puerts
             {
                 if (LifeCycleInfo->Constructor) Ptr = LifeCycleInfo->Constructor(Isolate, Info, Info.Length(), LifeCycleInfo->Data);
             }
-            if (Ptr != nullptr)
-                FV8Utils::IsolateData<JSEngine>(Isolate)->BindObject(LifeCycleInfo, Ptr, Self);
+            FV8Utils::IsolateData<JSEngine>(Isolate)->BindObject(LifeCycleInfo, Ptr, Self);
         }
         else
         {
@@ -622,6 +621,7 @@ namespace puerts
         {
             JSObject->SetAlignedPointerInInternalField(0, Ptr);
         }
+        if (Ptr == nullptr) return;
         
         JSObject->SetAlignedPointerInInternalField(1, LifeCycleInfo);
         JSObject->SetAlignedPointerInInternalField(2, reinterpret_cast<void *>(OBJECT_MAGIC));

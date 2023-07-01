@@ -67,7 +67,7 @@ namespace Puerts.Editor
                 }
             }
 
-            public static List<RegisterInfoForGenerate> GetRegisterInfos(List<Type> genTypes)
+            public static List<RegisterInfoForGenerate> GetRegisterInfos(List<Type> genTypes, HashSet<Type> blittableCopyTypes)
             {
                 BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 
@@ -254,6 +254,8 @@ namespace Puerts.Editor
                         return new RegisterInfoForGenerate
                         {
                             WrapperName = Utils.GetWrapTypeName(type),
+
+                            BlittableCopy = blittableCopyTypes.Contains(type),
 
                             Type = type,
 

@@ -155,6 +155,7 @@ namespace Puerts.Editor
             {
                 var configure = Puerts.Configure.GetConfigureByTags(new List<string>() {
                         "Puerts.BindingAttribute",
+                        "Puerts.BlittableCopyAttribute",
                     });
                 var genTypes = configure["Puerts.BindingAttribute"].Select(kv => kv.Key)
                     .Where(o => o is Type)
@@ -163,12 +164,18 @@ namespace Puerts.Editor
                     .Distinct()
                     .ToList();
 
+                var blittableCopyTypes = new HashSet<Type>(configure["Puerts.BlittableCopyAttribute"].Select(kv => kv.Key)
+                    .Where(o => o is Type)
+                    .Cast<Type>()
+                    .Where(t => !t.IsPrimitive && Utils.isBlittableType(t))
+                    .Distinct());
+
                 if (!Utils.HasFilter)
                 {
                     Utils.SetFilters(Configure.GetFilters());
                 }
                 
-                var RegisterInfos = RegisterInfoGenerator.GetRegisterInfos(genTypes);
+                var RegisterInfos = RegisterInfoGenerator.GetRegisterInfos(genTypes, blittableCopyTypes);
 
                 if (loader == null)
                 {
