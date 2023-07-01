@@ -10,6 +10,7 @@ you can get the english version change log at [Github Release](https://github.co
 1. 修复：xil2cpp模式下结构体默认无参构造函数不可用的问题 #1301
 2. 修复：运算符重载不可用的问题 #1399
 3. 修复：已生成wrapper时点击生成报GetFriendlyName不存在的问题
+3. 修复：BlittableCopy类构造函数不生效的问题
 4. 优化：isESM检测优化 #1391
 
 ## [2.0.0-pre.5] - 2023-06-15

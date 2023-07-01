@@ -10,7 +10,8 @@ you can get the english version change log at [Github Release](https://github.co
 1. Fix: struct's paramless default ctor was unable to use #1301
 2. Fix: op_xxxx method was unable to use after generated #1399
 3. Fix: `GetFriendlyName` was not defined after generated
-4. Optimization: isESM check optimize #1391
+4. Fix: the Constructor of BlittableCopy Type didn't invoked
+5. Optimization: isESM check optimize #1391
 
 ## [2.0.0-pre.5] - 2023-06-15
 1. Fix: Error occurs when generating classes with `op_explicit` #1363.
