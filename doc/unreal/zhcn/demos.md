@@ -8,7 +8,7 @@
 
 ### 继承引擎类功能
 
-* [FPS demo](https://github.com/chexiongsheng/BlockBreakerStarter) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](manual.md)
+* [FPS demo](https://github.com/chexiongsheng/BlockBreakerStarter) ： 以一个FPS游戏例子演示如何使用Puerts的“继承引擎类功能”，该功能的介绍见[unreal手册](./manual.md)
 
 继承引擎类功能开启后，系统会启动一个（默认）虚拟机作为继承了引擎类的TypeScript的运行环境，要注意的是如果你还另外启动了虚拟机，这些虚拟机间是相互隔离的。
 
