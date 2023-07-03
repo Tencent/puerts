@@ -2,7 +2,7 @@
 
 ### 自行构造虚拟机
 
-* [构造虚拟机例子](https://github.com/chexiongsheng/puerts_unreal_demo):
+* [构造虚拟机例子](https://github.com/chexiongsheng/puerts_unreal_demo): 用户可以自己构造（一个或多个）虚拟机。
 
   - [TsGameInstance.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Source/puerts_unreal_demo/TsGameInstance.cpp)：演示在GameInstance（也可以根据需要在别的地方构造）构造虚拟机。
 
