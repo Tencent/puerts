@@ -40,3 +40,16 @@
   
   
 运行方式，将[TsGameInstance.cpp](https://github.com/chexiongsheng/puerts_unreal_demo/blob/master/Source/puerts_unreal_demo/TsGameInstance.cpp)的入口修改为对应的TypeScript名字（不含后缀，例子现默认为QuickStart）。
+
+### 编辑器扩展
+
+puerts还可以用来写编辑器扩展，如果使用puerts的nodejs版本，大量的npm库有助于编辑器的快速开发。
+
+
+[实例工程链接](https://github.com/puerts/EasyEditorPluginDemo)
+
+* [Main.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/Main.ts) ： 演示了菜单、工具栏、工具链下拉按钮、右键菜单、命令行扩展
+
+* [DemoWindow.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/DemoWindow.ts) ： 演示了IMGUI（可选）的使用
+
+* [NodejsDemo.ts](https://github.com/puerts/EasyEditorPluginDemo/blob/master/EasyEditorDemo/src/NodejsDemo.ts) ： 演示了Nodejs api的使用
