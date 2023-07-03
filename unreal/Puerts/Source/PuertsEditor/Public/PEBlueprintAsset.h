@@ -139,6 +139,11 @@ public:
 
     void RemoveComponent(FName ComponentName);
 
+    void SetupAttachment(FName InComponentName, FName InParentComponentName);
+
+    UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
+    void SetupAttachments(TMap<FName, FName> InAttachments);
+
     UFUNCTION(BlueprintCallable, Category = "PEBlueprintAsset")
     void AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType, int32 InLFlags,
         int32 InHFlags, int32 InLifetimeCondition);

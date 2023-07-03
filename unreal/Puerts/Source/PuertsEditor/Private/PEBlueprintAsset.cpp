@@ -40,6 +40,7 @@
 #include "PuertsModule.h"
 #include "Engine/SimpleConstructionScript.h"
 #include "Engine/SCS_Node.h"
+#include "Kismet2/ComponentEditorUtils.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 
@@ -966,6 +967,85 @@ void UPEBlueprintAsset::RemoveComponent(FName ComponentName)
     }
 }
 
+void UPEBlueprintAsset::SetupAttachment(FName InComponentName, FName InParentComponentName)
+{
+    if (Blueprint->SimpleConstructionScript)
+    {
+        auto SCS_Node = Blueprint->SimpleConstructionScript->FindSCSNode(InComponentName);
+        if (!SCS_Node)
+        {
+            UE_LOG(LogTemp, Error, TEXT("SetupAttachment: can not find %s"), *InComponentName.ToString());
+            return;
+        }
+        if (!SCS_Node->ComponentClass || !SCS_Node->ComponentClass->IsChildOf<UActorComponent>())
+        {
+            UE_LOG(LogTemp, Error, TEXT("SetupAttachment: %s not a UActorComponent"), *InComponentName.ToString());
+            return;
+        }
+        auto Parent_SCS_Node = Blueprint->SimpleConstructionScript->FindSCSNode(InParentComponentName);
+        if (!Parent_SCS_Node)
+        {
+            UE_LOG(LogTemp, Error, TEXT("SetupAttachment: can not find parent %s"), *InParentComponentName.ToString());
+            return;
+        }
+        if (!Parent_SCS_Node->ComponentClass || !Parent_SCS_Node->ComponentClass->IsChildOf<UActorComponent>())
+        {
+            UE_LOG(LogTemp, Error, TEXT("SetupAttachment: %s not a UActorComponent"), *InParentComponentName.ToString());
+            return;
+        }
+
+        if (!Parent_SCS_Node->ChildNodes.Contains(SCS_Node))
+        {
+            NeedSave = true;
+            Blueprint->SimpleConstructionScript->RemoveNode(SCS_Node);
+            USceneComponent* SceneComponentTemplate = Cast<USceneComponent>(SCS_Node->ComponentClass);
+            if (SceneComponentTemplate)
+            {
+                // Save current state
+                SceneComponentTemplate->Modify();
+
+                // Reset the attach socket name
+                SceneComponentTemplate->SetupAttachment(SceneComponentTemplate->GetAttachParent(), NAME_None);
+                SCS_Node->Modify();
+                SCS_Node->AttachToName = NAME_None;
+            }
+            Parent_SCS_Node->AddChildNode(SCS_Node);
+        }
+    }
+}
+
+void UPEBlueprintAsset::SetupAttachments(TMap<FName, FName> InAttachments)
+{
+    if (Blueprint->SimpleConstructionScript)
+    {
+        for (auto& KV : InAttachments)
+        {
+            SetupAttachment(KV.Key, KV.Value);
+        }
+
+        for (auto& Component : ComponentsAdded)
+        {
+            auto SCS_Node = Blueprint->SimpleConstructionScript->FindSCSNode(Component);
+            if (SCS_Node)
+            {
+                for (int32 ChildIdx = 0; ChildIdx < SCS_Node->ChildNodes.Num(); ChildIdx++)
+                {
+                    USCS_Node* ChildNode = SCS_Node->ChildNodes[ChildIdx];
+                    check(ChildNode != NULL);
+                    if (!InAttachments.Contains(ChildNode->GetVariableName()) ||
+                        InAttachments[ChildNode->GetVariableName()] != Component)
+                    {
+                        SCS_Node->RemoveChildNode(ChildNode);
+                        Blueprint->SimpleConstructionScript->AddNode(ChildNode);
+                        SCS_Node->Modify();
+                        NeedSave = true;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGraphPinType, FPEGraphTerminalType InPinValueType,
     int32 InLFlags, int32 InHFlags, int32 InLifetimeCondition)
 {
@@ -1125,7 +1205,7 @@ void UPEBlueprintAsset::RemoveNotExistedComponent()
             RemoveComponent(Name);
         }
     }
-    ComponentsAdded.Empty();
+    // ComponentsAdded.Empty();
 }
 
 void UPEBlueprintAsset::RemoveNotExistedMemberVariable()

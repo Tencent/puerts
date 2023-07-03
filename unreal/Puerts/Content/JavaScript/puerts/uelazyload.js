@@ -783,6 +783,7 @@ var global = global || (function () { return this; }());
         "BitmaskEnum": MetaDataInst,
         //  decorator
         "umeta": dummyDecorator,
+        "attach": dummyDecorator
     }
 
     cache.uparam =

@@ -960,7 +960,8 @@ function watch(configFilePath:string) {
                         }
                         properties.push(checker.getSymbolAtLocation(x.name));
                     }
-                })
+                });
+                let attachments = UE.NewMap(UE.BuiltinName, UE.BuiltinName);
                 properties
                         .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                         .forEach((symbol) => {
@@ -1040,6 +1041,16 @@ function watch(configFilePath:string) {
                                             flags = flags | BigInt(PropertyFlags.CPF_Net);
                                         }
                                         flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
+                                        symbol.valueDeclaration.decorators.forEach((decorator) => {
+                                            let expression = decorator.expression;
+                                            if (ts.isCallExpression(expression)) {
+                                                if(expression.expression.getFullText().endsWith("uproperty.attach")) {
+                                                    expression.arguments.forEach((value) => {
+                                                        attachments.Add(symbol.getName(), value.getFullText().slice(1, -1));
+                                                    });
+                                                }
+                                            }
+                                        });
                                     }
                                     if (!hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
                                         flags = flags | BigInt(PropertyFlags.CPF_DisableEditOnInstance);
@@ -1053,6 +1064,7 @@ function watch(configFilePath:string) {
                 bp.RemoveNotExistedComponent();
                 bp.RemoveNotExistedMemberVariable();
                 bp.RemoveNotExistedFunction();
+                bp.SetupAttachments(attachments);
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
             }

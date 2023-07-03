@@ -33,10 +33,10 @@ function getCustomSystem() {
         console.log(s);
     }
     function readFile(path, encoding) {
-        let data = puerts_1.$ref(undefined);
+        let data = (0, puerts_1.$ref)(undefined);
         const res = UE.FileSystemOperation.ReadFile(path, data);
         if (res) {
-            return puerts_1.$unref(data);
+            return (0, puerts_1.$unref)(data);
         }
         else {
             console.warn("readFile: read file fail! path=" + path + ", stack:" + new Error().stack);
@@ -206,7 +206,7 @@ const PropertyFlags = {
     CPF_NativeAccessSpecifierPublic: 0x0010000000000000,
     CPF_NativeAccessSpecifierProtected: 0x0020000000000000,
     CPF_NativeAccessSpecifierPrivate: 0x0040000000000000,
-    CPF_SkipSerialization: 0x0080000000000000,
+    CPF_SkipSerialization: 0x0080000000000000, ///< Property shouldn't be serialized, can still be exported to text
 };
 const ELifetimeCondition = {
     "COND_InitialOnly": 1,
@@ -222,7 +222,7 @@ const ELifetimeCondition = {
     "COND_SimulatedOnlyNoReplay": 11,
     "COND_SimulatedOrPhysicsNoReplay": 12,
     "COND_SkipReplay": 13,
-    "COND_Never": 15,
+    "COND_Never": 15, // This property will never be replicated						
 };
 function readAndParseConfigFile(configFilePath) {
     let readResult = ts.readConfigFile(configFilePath, customSystem.readFile);
@@ -903,6 +903,7 @@ function watch(configFilePath) {
                         properties.push(checker.getSymbolAtLocation(x.name));
                     }
                 });
+                let attachments = UE.NewMap(UE.BuiltinName, UE.BuiltinName);
                 properties
                     .filter(x => ts.isClassDeclaration(x.valueDeclaration.parent) && checker.getSymbolAtLocation(x.valueDeclaration.parent.name) == type.symbol)
                     .forEach((symbol) => {
@@ -979,6 +980,16 @@ function watch(configFilePath) {
                                     flags = flags | BigInt(PropertyFlags.CPF_Net);
                                 }
                                 flags = flags | getDecoratorFlagsValue(symbol.valueDeclaration, "flags", PropertyFlags);
+                                symbol.valueDeclaration.decorators.forEach((decorator) => {
+                                    let expression = decorator.expression;
+                                    if (ts.isCallExpression(expression)) {
+                                        if (expression.expression.getFullText().endsWith("uproperty.attach")) {
+                                            expression.arguments.forEach((value) => {
+                                                attachments.Add(symbol.getName(), value.getFullText().slice(1, -1));
+                                            });
+                                        }
+                                    }
+                                });
                             }
                             if (!hasDecorator(symbol.valueDeclaration, "edit_on_instance")) {
                                 flags = flags | BigInt(PropertyFlags.CPF_DisableEditOnInstance);
@@ -991,6 +1002,7 @@ function watch(configFilePath) {
                 bp.RemoveNotExistedComponent();
                 bp.RemoveNotExistedMemberVariable();
                 bp.RemoveNotExistedFunction();
+                bp.SetupAttachments(attachments);
                 bp.HasConstructor = hasConstructor;
                 bp.Save();
             }

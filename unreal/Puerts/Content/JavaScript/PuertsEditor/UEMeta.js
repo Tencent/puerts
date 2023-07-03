@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.compilePropertyMetaData = exports.compileParamMetaData = exports.compileFunctionMetaData = exports.compileClassMetaData = void 0;
 const UE = require("ue");
 const ts = require("typescript");
 /**
@@ -7,16 +8,20 @@ const ts = require("typescript");
  */
 class MetaSpecifier {
     /**
+     * the identity of the specifier
+     */
+    Specifier = "";
+    /**
+     * the value
+     */
+    Values;
+    /**
      * the constructor
      * @param specifier
      * @param values
      * @returns
      */
     constructor(specifier, values) {
-        /**
-         * the identity of the specifier
-         */
-        this.Specifier = "";
         this.Specifier = specifier;
         this.Values = values;
     }
@@ -72,107 +77,107 @@ class MetaSpecifier {
     IsMetaKeyValues() {
         return this.Values != null;
     }
+    /**
+     * the common meta data, the behavior is sync with unreal engine 5.0 early preview
+     */
+    static CommonMetaData = new Map([
+        ["DisplayName", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("DisplayName", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }],
+        ["FriendlyName", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("FriendlyName", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }],
+        ["BlueprintInternalUseOnly", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("BlueprintInternalUseOnly", 'true');
+                    metaData.set("BlueprintType", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["BlueprintType", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("BlueprintType", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["NotBlueprintType", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("NotBlueprintType", 'true');
+                    metaData.delete('BlueprintType');
+                    return true;
+                }
+                return false;
+            }],
+        ["Blueprintable", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("IsBlueprintBase", 'true');
+                    metaData.set("BlueprintType", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["CallInEditor", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("CallInEditor", 'true');
+                    return true;
+                }
+                return false;
+            }],
+        ["NotBlueprintable", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("IsBlueprintBase", 'false');
+                    metaData.delete("BlueprintType");
+                    return true;
+                }
+                return false;
+            }],
+        ["Category", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("Category", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }],
+        ["Experimental", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("DevelopmentStatus", "Experimental");
+                    return true;
+                }
+                return false;
+            }],
+        ["EarlyAccessPreview", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("DevelopmentStatus", "EarlyAccessPreview");
+                    return true;
+                }
+                return false;
+            }],
+        ["DocumentationPolicy", (specifier, metaData) => {
+                if (specifier.IsMetaKey()) {
+                    metaData.set("DocumentationPolicy", 'Strict');
+                    return true;
+                }
+                return false;
+            }],
+        ["SparseClassDataType", (specifier, metaData) => {
+                if (specifier.IsMetaKeyValue()) {
+                    metaData.set("SparseClassDataType", specifier.Values[0]);
+                    return true;
+                }
+                return false;
+            }]
+    ]);
 }
-/**
- * the common meta data, the behavior is sync with unreal engine 5.0 early preview
- */
-MetaSpecifier.CommonMetaData = new Map([
-    ["DisplayName", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("DisplayName", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }],
-    ["FriendlyName", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("FriendlyName", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }],
-    ["BlueprintInternalUseOnly", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("BlueprintInternalUseOnly", 'true');
-                metaData.set("BlueprintType", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["BlueprintType", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("BlueprintType", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["NotBlueprintType", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("NotBlueprintType", 'true');
-                metaData.delete('BlueprintType');
-                return true;
-            }
-            return false;
-        }],
-    ["Blueprintable", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("IsBlueprintBase", 'true');
-                metaData.set("BlueprintType", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["CallInEditor", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("CallInEditor", 'true');
-                return true;
-            }
-            return false;
-        }],
-    ["NotBlueprintable", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("IsBlueprintBase", 'false');
-                metaData.delete("BlueprintType");
-                return true;
-            }
-            return false;
-        }],
-    ["Category", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("Category", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }],
-    ["Experimental", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("DevelopmentStatus", "Experimental");
-                return true;
-            }
-            return false;
-        }],
-    ["EarlyAccessPreview", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("DevelopmentStatus", "EarlyAccessPreview");
-                return true;
-            }
-            return false;
-        }],
-    ["DocumentationPolicy", (specifier, metaData) => {
-            if (specifier.IsMetaKey()) {
-                metaData.set("DocumentationPolicy", 'Strict');
-                return true;
-            }
-            return false;
-        }],
-    ["SparseClassDataType", (specifier, metaData) => {
-            if (specifier.IsMetaKeyValue()) {
-                metaData.set("SparseClassDataType", specifier.Values[0]);
-                return true;
-            }
-            return false;
-        }]
-]);
 ;
 /**
  * a helper function used to extract the meta key from an expression
@@ -688,7 +693,7 @@ function processFunctionMetaData(specifiers, metaData) {
                     return markInvalidSince(`Invalid format for net service identifers: ${value}`);
                 }
                 let Argument = parseInt(TagAndArgument[1]);
-                if (Argument == NaN || Argument < 0 || Argument > (1 << 16)) {
+                if (Number.isNaN(Argument) || Argument < 0 || Argument > (1 << 16)) {
                     return markInvalidSince(`Invalid network identifier ${value} for function`);
                 }
                 if (TagAndArgument[0] == IdTag) {
