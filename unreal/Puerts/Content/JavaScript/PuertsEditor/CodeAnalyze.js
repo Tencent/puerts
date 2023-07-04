@@ -33,10 +33,10 @@ function getCustomSystem() {
         console.log(s);
     }
     function readFile(path, encoding) {
-        let data = (0, puerts_1.$ref)(undefined);
+        let data = puerts_1.$ref(undefined);
         const res = UE.FileSystemOperation.ReadFile(path, data);
         if (res) {
-            return (0, puerts_1.$unref)(data);
+            return puerts_1.$unref(data);
         }
         else {
             console.warn("readFile: read file fail! path=" + path + ", stack:" + new Error().stack);
@@ -206,7 +206,7 @@ const PropertyFlags = {
     CPF_NativeAccessSpecifierPublic: 0x0010000000000000,
     CPF_NativeAccessSpecifierProtected: 0x0020000000000000,
     CPF_NativeAccessSpecifierPrivate: 0x0040000000000000,
-    CPF_SkipSerialization: 0x0080000000000000, ///< Property shouldn't be serialized, can still be exported to text
+    CPF_SkipSerialization: 0x0080000000000000,
 };
 const ELifetimeCondition = {
     "COND_InitialOnly": 1,
@@ -222,7 +222,7 @@ const ELifetimeCondition = {
     "COND_SimulatedOnlyNoReplay": 11,
     "COND_SimulatedOrPhysicsNoReplay": 12,
     "COND_SkipReplay": 13,
-    "COND_Never": 15, // This property will never be replicated						
+    "COND_Never": 15,
 };
 function readAndParseConfigFile(configFilePath) {
     let readResult = ts.readConfigFile(configFilePath, customSystem.readFile);
@@ -620,7 +620,7 @@ function watch(configFilePath) {
                     }
                     else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Field.Load(classPath);
+                        return UE.Field.Load(classPath, true);
                     }
                 }
                 else if (type.symbol && type.symbol.valueDeclaration) {

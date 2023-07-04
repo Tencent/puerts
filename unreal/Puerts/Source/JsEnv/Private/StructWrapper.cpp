@@ -9,6 +9,7 @@
 #include "StructWrapper.h"
 #include "V8Utils.h"
 #include "ObjectMapper.h"
+#include "PathEscape.h"
 
 namespace puerts
 {
@@ -469,9 +470,16 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     UClass* Class = Cast<UClass>(This->Struct);
 
-    if (Class && Info.Length() == 1 && Info[0]->IsString())
+    if (Class && Info.Length() > 0 && Info[0]->IsString())
     {
-        auto Object = StaticLoadObject(Class, nullptr, *FV8Utils::ToFString(Isolate, Info[0]), nullptr, LOAD_NoWarn);
+        bool UnEscape = false;
+        if (Info.Length() > 1)
+        {
+            UnEscape = Info[1]->BooleanValue(Isolate);
+        }
+        auto Path = FV8Utils::ToFString(Isolate, Info[0]);
+        auto Object = StaticLoadObject(
+            Class, nullptr, UnEscape ? *puerts::TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
         if (Object)
         {
             auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);

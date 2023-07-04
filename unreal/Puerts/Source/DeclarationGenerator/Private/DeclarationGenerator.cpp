@@ -44,6 +44,7 @@
 #ifdef PUERTS_WITH_SOURCE_CONTROL
 #include "FileSystemOperation.h"
 #endif
+#include "PathEscape.h"
 
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
@@ -432,11 +433,7 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
             Pkg->GetName().ParseIntoArray(PathFrags, TEXT("/"));
             for (int i = 0; i < PathFrags.Num(); i++)
             {
-                auto FirstChar = PathFrags[i][0];
-                if ((FirstChar >= (TCHAR) '0' && FirstChar <= (TCHAR) '9') || FirstChar == (TCHAR) '$')
-                {
-                    PathFrags[i] = TEXT("$") + PathFrags[i];
-                }
+                PathFrags[i] = puerts::FilenameToTypeScriptVariableName(PathFrags[i]);
             }
             NamespaceMap[Obj] = FString::Join(PathFrags, TEXT("."));
         }
@@ -449,27 +446,13 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
     return Iter->second;
 }
 
-bool FTypeScriptDeclarationGenerator::PathIsValid(UObject* Obj)
-{
-    if (Obj->IsNative())
-    {
-        return true;
-    }
-    auto Iter = PathIsValidMap.find(Obj);
-    if (Iter == PathIsValidMap.end())
-    {
-        PathIsValidMap[Obj] = SafeName(Obj->GetName()) == Obj->GetName() && SafeName(GetNamespace(Obj)) == GetNamespace(Obj);
-        Iter = PathIsValidMap.find(Obj);
-    }
-    return Iter->second;
-}
-
 FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
 {
 #if !defined(WITHOUT_BP_NAMESPACE)
     if (!Obj->IsNative())
     {
-        return (RefFromOuter ? TEXT("") : TEXT("UE.")) + GetNamespace(Obj) + TEXT(".") + SafeName(Obj->GetName());
+        return (RefFromOuter ? TEXT("") : TEXT("UE.")) + GetNamespace(Obj) + TEXT(".") +
+               puerts::FilenameToTypeScriptVariableName(Obj->GetName());
     }
     return (RefFromOuter ? TEXT("") : TEXT("UE.")) + SafeName(Obj->GetName());
 #else
@@ -649,16 +632,11 @@ void FTypeScriptDeclarationGenerator::Gen(UObject* ToGen)
         return;
     }
 #endif
-    if (!PathIsValid(ToGen))
-    {
-        UE_LOG(LogTemp, Warning, TEXT("invalid path found in ue.d.ts generate: %s.%s"), *GetNamespace(ToGen), *ToGen->GetName());
-        return;
-    }
     if (Processed.Contains(ToGen))
         return;
     if (ToGen->IsNative() && ProcessedByName.Contains(SafeName(ToGen->GetName())))
     {
-        UE_LOG(LogTemp, Warning, TEXT("duplicate name found in ue.d.ts generate: %s"), *SafeName(ToGen->GetName()));
+        UE_LOG(LogTemp, Warning, TEXT("duplicate name found in ue.d.ts generate: %s"), *ToGen->GetName());
         return;
     }
     Processed.Add(ToGen);
@@ -761,10 +739,6 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
             {
                 return false;
             }
-            if (!PathIsValid(StructProperty->Struct))
-            {
-                return false;
-            }
             AddToGen.Add(StructProperty->Struct);
         }
         if (StructProperty->Struct->GetName() == TEXT("JsObject"))
@@ -817,10 +791,6 @@ bool FTypeScriptDeclarationGenerator::GenTypeDecl(FStringBuffer& StringBuffer, P
         const FString& Name = GetNameWithNamespace(ObjectProperty->PropertyClass);
         const TArray<FString>& IgnoreClassListOnDTS = IPuertsModule::Get().GetIgnoreClassListOnDTS();
         if (IgnoreClassListOnDTS.Contains(Name))
-        {
-            return false;
-        }
-        if (!PathIsValid(ObjectProperty->PropertyClass))
         {
             return false;
         }
@@ -1156,14 +1126,11 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
     if (Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
         return;
     FStringBuffer StringBuffer{"", ""};
-    StringBuffer << "class " << SafeName(Class->GetName());
+    const FString SafeClassName =
+        Class->IsNative() ? SafeName(Class->GetName()) : puerts::FilenameToTypeScriptVariableName(Class->GetName());
+    StringBuffer << "class " << SafeClassName;
 
     auto Super = Class->GetSuperStruct();
-
-    while (Super && !PathIsValid(Super))
-    {
-        Super = Super->GetSuperStruct();
-    }
 
     if (Super)
     {
@@ -1209,10 +1176,9 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
     GenResolvedFunctions(Class, StringBuffer);
 
     StringBuffer << "    static StaticClass(): Class;\n";
-    StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeName(Class->GetName()) << ";\n";
-    StringBuffer << "    static Load(InName: string): " << SafeName(Class->GetName()) << ";\n\n";
-    StringBuffer << FString::Printf(
-        TEXT("    __tid_%s_%d__: boolean;\n"), *SafeName(Class->GetName()), GetSameNameSuperCount(Class));
+    StringBuffer << "    static Find(OrigInName: string, Outer?: Object): " << SafeClassName << ";\n";
+    StringBuffer << "    static Load(InName: string): " << SafeClassName << ";\n\n";
+    StringBuffer << FString::Printf(TEXT("    __tid_%s_%d__: boolean;\n"), *SafeClassName, GetSameNameSuperCount(Class));
 
     StringBuffer << "}\n\n";
 
@@ -1222,6 +1188,9 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
 {
     FStringBuffer StringBuffer{"", ""};
+
+    const FString SafeEnumName =
+        Enum->IsNative() ? SafeName(Enum->GetName()) : puerts::FilenameToTypeScriptVariableName(Enum->GetName());
 
     TArray<FString> EnumListerrals;
     for (int i = 0; i < Enum->NumEnums(); ++i)
@@ -1243,7 +1212,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
     }
     EnumListerrals.Add(TEXT("__typeKeyDoNoAccess"));
 
-    StringBuffer << "enum " << SafeName(Enum->GetName()) << " { " << FString::Join(EnumListerrals, TEXT(", "));
+    StringBuffer << "enum " << SafeEnumName << " { " << FString::Join(EnumListerrals, TEXT(", "));
 
     if (Enum == StaticEnum<EObjectTypeQuery>())
     {
@@ -1293,7 +1262,9 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 {
 #include "ExcludeStructs.h"
     FStringBuffer StringBuffer{"", ""};
-    StringBuffer << "class " << SafeName(Struct->GetName());
+    const FString SafeStructName =
+        Struct->IsNative() ? SafeName(Struct->GetName()) : puerts::FilenameToTypeScriptVariableName(Struct->GetName());
+    StringBuffer << "class " << SafeStructName;
 
     auto Super = Struct->GetSuperStruct();
 
@@ -1391,8 +1362,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
     StringBuffer << "    static StaticStruct(): ScriptStruct;\n";
     // https://github.com/Tencent/puerts/commit/1f6be35dbfa73572a0ffb221f788137580871c4e
     // remove private for UClass
-    StringBuffer << FString::Printf(
-        TEXT("    __tid_%s_%d__: boolean;\n"), *SafeName(Struct->GetName()), GetSameNameSuperCount(Struct));
+    StringBuffer << FString::Printf(TEXT("    __tid_%s_%d__: boolean;\n"), *SafeStructName, GetSameNameSuperCount(Struct));
     StringBuffer << "}\n\n";
 
     WriteOutput(Struct, StringBuffer);

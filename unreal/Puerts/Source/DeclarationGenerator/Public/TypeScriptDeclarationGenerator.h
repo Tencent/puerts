@@ -77,8 +77,6 @@ struct DECLARATIONGENERATOR_API FTypeScriptDeclarationGenerator
 
     const FString& GetNamespace(UObject* Obj);
 
-    bool PathIsValid(UObject* Obj);
-
     FString GetNameWithNamespace(UObject* Obj);
 
     void NamespaceBegin(UObject* Obj, FStringBuffer& Buff);

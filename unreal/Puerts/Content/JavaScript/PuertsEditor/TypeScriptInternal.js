@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSourceFilePathInNewDir = exports.removeExtension = exports.removeFileExtension = exports.matchFiles = exports.getDirectoryPath = exports.getBaseFileName = exports.normalizePath = exports.getAccessibleFileSystemEntries = exports.realpath = exports.createDirectory = exports.directoryExists = exports.resolvePath = exports.combinePaths = void 0;
 const UE = require("ue");
 function some(array, predicate) {
     if (array) {
@@ -28,16 +27,16 @@ function normalizeSlashes(path) {
     return path.replace(backslashRegExp, directorySeparator);
 }
 function isVolumeCharacter(charCode) {
-    return (charCode >= 97 /* CharacterCodes.a */ && charCode <= 122 /* CharacterCodes.z */) ||
-        (charCode >= 65 /* CharacterCodes.A */ && charCode <= 90 /* CharacterCodes.Z */);
+    return (charCode >= 97 /* a */ && charCode <= 122 /* z */) ||
+        (charCode >= 65 /* A */ && charCode <= 90 /* Z */);
 }
 function getFileUrlVolumeSeparatorEnd(url, start) {
     const ch0 = url.charCodeAt(start);
-    if (ch0 === 58 /* CharacterCodes.colon */)
+    if (ch0 === 58 /* colon */)
         return start + 1;
-    if (ch0 === 37 /* CharacterCodes.percent */ && url.charCodeAt(start + 1) === 51 /* CharacterCodes._3 */) {
+    if (ch0 === 37 /* percent */ && url.charCodeAt(start + 1) === 51 /* _3 */) {
         const ch2 = url.charCodeAt(start + 2);
-        if (ch2 === 97 /* CharacterCodes.a */ || ch2 === 65 /* CharacterCodes.A */)
+        if (ch2 === 97 /* a */ || ch2 === 65 /* A */)
             return start + 3;
     }
     return -1;
@@ -47,18 +46,18 @@ function getEncodedRootLength(path) {
         return 0;
     const ch0 = path.charCodeAt(0);
     // POSIX or UNC
-    if (ch0 === 47 /* CharacterCodes.slash */ || ch0 === 92 /* CharacterCodes.backslash */) {
+    if (ch0 === 47 /* slash */ || ch0 === 92 /* backslash */) {
         if (path.charCodeAt(1) !== ch0)
             return 1; // POSIX: "/" (or non-normalized "\")
-        const p1 = path.indexOf(ch0 === 47 /* CharacterCodes.slash */ ? directorySeparator : altDirectorySeparator, 2);
+        const p1 = path.indexOf(ch0 === 47 /* slash */ ? directorySeparator : altDirectorySeparator, 2);
         if (p1 < 0)
             return path.length; // UNC: "//server" or "\\server"
         return p1 + 1; // UNC: "//server/" or "\\server\"
     }
     // DOS
-    if (isVolumeCharacter(ch0) && path.charCodeAt(1) === 58 /* CharacterCodes.colon */) {
+    if (isVolumeCharacter(ch0) && path.charCodeAt(1) === 58 /* colon */) {
         const ch2 = path.charCodeAt(2);
-        if (ch2 === 47 /* CharacterCodes.slash */ || ch2 === 92 /* CharacterCodes.backslash */)
+        if (ch2 === 47 /* slash */ || ch2 === 92 /* backslash */)
             return 3; // DOS: "c:/" or "c:\"
         if (path.length === 2)
             return 2; // DOS: "c:" (but not "c:d")
@@ -78,7 +77,7 @@ function getEncodedRootLength(path) {
                 isVolumeCharacter(path.charCodeAt(authorityEnd + 1))) {
                 const volumeSeparatorEnd = getFileUrlVolumeSeparatorEnd(path, authorityEnd + 2);
                 if (volumeSeparatorEnd !== -1) {
-                    if (path.charCodeAt(volumeSeparatorEnd) === 47 /* CharacterCodes.slash */) {
+                    if (path.charCodeAt(volumeSeparatorEnd) === 47 /* slash */) {
                         // URL: "file:///c:/", "file://localhost/c:/", "file:///c%3a/", "file://localhost/c%3a/"
                         return ~(volumeSeparatorEnd + 1);
                     }
@@ -104,7 +103,7 @@ function hasTrailingDirectorySeparator(path) {
     if (path.length === 0)
         return false;
     const ch = path.charCodeAt(path.length - 1);
-    return ch === 47 /* CharacterCodes.slash */ || ch === 92 /* CharacterCodes.backslash */;
+    return ch === 47 /* slash */ || ch === 92 /* backslash */;
 }
 function ensureTrailingDirectorySeparator(path) {
     if (!hasTrailingDirectorySeparator(path)) {
@@ -323,11 +322,11 @@ function getSubPatternFromSpec(spec, basePath, usage, { singleAsteriskRegexFragm
                 // The * and ? wildcards should not match directories or files that start with . if they
                 // appear first in a component. Dotted directories and files can be included explicitly
                 // like so: **/.*/.*
-                if (component.charCodeAt(0) === 42 /* CharacterCodes.asterisk */) {
+                if (component.charCodeAt(0) === 42 /* asterisk */) {
                     componentPattern += "([^./]" + singleAsteriskRegexFragment + ")?";
                     component = component.substr(1);
                 }
-                else if (component.charCodeAt(0) === 63 /* CharacterCodes.question */) {
+                else if (component.charCodeAt(0) === 63 /* question */) {
                     componentPattern += "[^./]";
                     component = component.substr(1);
                 }
@@ -495,7 +494,7 @@ function indexOfAnyCharCode(text, charCodes, start) {
     }
     return -1;
 }
-const wildcardCharCodes = [42 /* CharacterCodes.asterisk */, 63 /* CharacterCodes.question */];
+const wildcardCharCodes = [42 /* asterisk */, 63 /* question */];
 function getDirectoryPath(path) {
     path = normalizeSlashes(path);
     // If the path provided is itself the root, then return it.
@@ -519,22 +518,22 @@ function getIncludeBasePath(absolute) {
     return absolute.substring(0, absolute.lastIndexOf(directorySeparator, wildcardOffset));
 }
 function compareComparableValues(a, b) {
-    return a === b ? 0 /* Comparison.EqualTo */ :
-        a === undefined ? -1 /* Comparison.LessThan */ :
-            b === undefined ? 1 /* Comparison.GreaterThan */ :
-                a < b ? -1 /* Comparison.LessThan */ :
-                    1 /* Comparison.GreaterThan */;
+    return a === b ? 0 /* EqualTo */ :
+        a === undefined ? -1 /* LessThan */ :
+            b === undefined ? 1 /* GreaterThan */ :
+                a < b ? -1 /* LessThan */ :
+                    1 /* GreaterThan */;
 }
 function compareStringsCaseInsensitive(a, b) {
     if (a === b)
-        return 0 /* Comparison.EqualTo */;
+        return 0 /* EqualTo */;
     if (a === undefined)
-        return -1 /* Comparison.LessThan */;
+        return -1 /* LessThan */;
     if (b === undefined)
-        return 1 /* Comparison.GreaterThan */;
+        return 1 /* GreaterThan */;
     a = a.toUpperCase();
     b = b.toUpperCase();
-    return a < b ? -1 /* Comparison.LessThan */ : a > b ? 1 /* Comparison.GreaterThan */ : 0 /* Comparison.EqualTo */;
+    return a < b ? -1 /* LessThan */ : a > b ? 1 /* GreaterThan */ : 0 /* EqualTo */;
 }
 function compareStringsCaseSensitive(a, b) {
     return compareComparableValues(a, b);
@@ -722,7 +721,7 @@ function matchFiles(path, extensions, excludes, includes, useCaseSensitiveFileNa
     }
 }
 exports.matchFiles = matchFiles;
-const extensionsToRemove = [".d.ts" /* Extension.Dts */, ".ts" /* Extension.Ts */, ".js" /* Extension.Js */, ".tsx" /* Extension.Tsx */, ".jsx" /* Extension.Jsx */, ".json" /* Extension.Json */];
+const extensionsToRemove = [".d.ts" /* Dts */, ".ts" /* Ts */, ".js" /* Js */, ".tsx" /* Tsx */, ".jsx" /* Jsx */, ".json" /* Json */];
 function removeFileExtension(path) {
     for (const ext of extensionsToRemove) {
         const extensionless = tryRemoveExtension(path, ext);

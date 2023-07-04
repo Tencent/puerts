@@ -50,7 +50,7 @@ var global = global || (function () { return this; }());
                                 path = `/${c.__path}${path}`
                                 c = c.__parent;
                             }
-                            const obj = UE.Object.Load(path);
+                            const obj = UE.Object.Load(path, true);
                             if (obj) {
                                 const typeName = obj.GetClass().GetName();
                                 if (typeName === 'UserDefinedEnum') {
@@ -154,7 +154,7 @@ var global = global || (function () { return this; }());
     
     function blueprint(path) {
         console.warn('deprecated! use blueprint.tojs instead');
-        let ufield = UE.Field.Load(path);
+        let ufield = UE.Field.Load(path, true);
         if (ufield) {
             let jsclass = UEClassToJSClass(ufield);
             jsclass.__puerts_ufield = ufield;
@@ -217,7 +217,7 @@ var global = global || (function () { return this; }());
                 path = `/${c.__path}${path}`
                 c = c.__parent;
             }
-            let ufield = UE.Field.Load(path);
+            let ufield = UE.Field.Load(path, true);
             if (!ufield) {
                 throw new Error(`load ${path} fail!`);
             }

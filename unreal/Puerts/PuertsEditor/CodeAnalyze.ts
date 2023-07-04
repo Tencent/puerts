@@ -671,7 +671,7 @@ function watch(configFilePath:string) {
                         }
                     } else if (moduleNames.length == 2) {
                         let classPath = '/' + moduleNames[1] + '.' + type.symbol.getName();
-                        return UE.Field.Load(classPath);
+                        return (UE.Field.Load as any)(classPath, true);
                     }
                 } else if ( type.symbol &&  type.symbol.valueDeclaration) {
                     //eturn undefined;
