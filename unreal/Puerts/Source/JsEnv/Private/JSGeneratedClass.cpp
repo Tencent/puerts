@@ -11,7 +11,6 @@
 #include "JSGeneratedFunction.h"
 #include "JSWidgetGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
-#include "FunctionParametersDuplicate.h"
 #include "JSLogger.h"
 
 #define OLD_METHOD_PREFIX "__puerts_old__"
