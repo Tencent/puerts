@@ -21,12 +21,17 @@ FORCEINLINE FString FilenameToTypeScriptVariableName(const FString& Filename)
     {
         if (FChar::IsAlnum(c) || c == '_' || c == '$' || FChar::IsAlpha(c))
         {
+            if (c == '$')
+            {
+                TypeScriptVariable.AppendChar('$');
+            }
             TypeScriptVariable.AppendChar(c);
         }
         else
         {
             TypeScriptVariable.AppendChar('$');
             TypeScriptVariable.Append(FString::Printf(TEXT("%d"), (int) c));
+            TypeScriptVariable.AppendChar('$');
         }
     }
     return TypeScriptVariable;
@@ -61,6 +66,10 @@ FORCEINLINE FString TypeScriptVariableNameToFilename(const FString& TypeScriptVa
                 while (i < TypeScriptVariable.Len() && FChar::IsDigit(TypeScriptVariable[i]))
                 {
                     ascii_str.AppendChar(TypeScriptVariable[i]);
+                    ++i;
+                }
+                if (i < TypeScriptVariable.Len() && TypeScriptVariable[i] == '$')
+                {
                     ++i;
                 }
                 TCHAR original_char = static_cast<TCHAR>(FCString::Atoi(*ascii_str));
