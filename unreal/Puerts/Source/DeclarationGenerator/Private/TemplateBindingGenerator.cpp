@@ -198,7 +198,7 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
     Gen.End();
 
-    const FString FilePath = IPluginManager::Get().FindPlugin("Puerts")->GetBaseDir() / TEXT("Typing/cpp/index.d.ts");
+    const FString FilePath = FPaths::ProjectDir() / TEXT("Typing/cpp/index.d.ts");
 
 #ifdef PUERTS_WITH_SOURCE_CONTROL
     PuertsSourceControlUtils::MakeSourceControlFileWritable(FilePath);

@@ -150,8 +150,7 @@ void FReactDeclarationGenerator::GenReactDeclaration()
 }    
     )";
 
-    FFileHelper::SaveStringToFile(ToString(),
-        *(IPluginManager::Get().FindPlugin("ReactUMG")->GetBaseDir() / TEXT("Typing/react-umg/index.d.ts")),
+    FFileHelper::SaveStringToFile(ToString(), *(FPaths::ProjectDir() / TEXT("Typing/react-umg/index.d.ts")),
         FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
     FFileHelper::SaveStringToFile(Components, *(FPaths::ProjectContentDir() / TEXT("JavaScript/react-umg/components.js")),
         FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
