@@ -53,6 +53,18 @@
 #define TYPE_DECL_END "// __TYPE_DECL_END"
 #define TYPE_ASSOCIATION "ASSOCIATION"
 
+bool IsTypeScriptKeyword(const FString& InputString)
+{
+    static TArray<FString> TypeScriptKeywords = {TEXT("break"), TEXT("as"), TEXT("any"), TEXT("switch"), TEXT("case"), TEXT("if"),
+        TEXT("throw"), TEXT("else"), TEXT("var"), TEXT("new"), TEXT("function"), TEXT("return"), TEXT("void"), TEXT("enum"),
+        TEXT("while"), TEXT("do"), TEXT("continue"), TEXT("for"), TEXT("interface"), TEXT("implements"), TEXT("let"),
+        TEXT("instanceof"), TEXT("typeof"), TEXT("public"), TEXT("private"), TEXT("protected"), TEXT("export"), TEXT("import"),
+        TEXT("class"), TEXT("super"), TEXT("this"), TEXT("yield"), TEXT("in"), TEXT("finally"), TEXT("static"), TEXT("try"),
+        TEXT("catch")};
+
+    return TypeScriptKeywords.Contains(InputString);
+}
+
 static FString SafeName(const FString& Name)
 {
     auto Ret = Name.Replace(TEXT(" "), TEXT(""))
@@ -73,6 +85,12 @@ static FString SafeName(const FString& Name)
         }
     }
     return Ret;
+}
+
+static FString SafeParamName(const FString& Name)
+{
+    auto Ret = SafeName(Name);
+    return IsTypeScriptKeyword(Ret) ? (TEXT("_") + Ret) : Ret;
 }
 
 static FString SafeFieldName(const FString& Name, bool WithBracket = true)
@@ -907,7 +925,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
                     DefaultValuePtr = MetaMap->Find(MetadataCppDefaultValueKey);
                 }
 
-                TmpBuf << SafeName(Property->GetName());
+                TmpBuf << SafeParamName(Property->GetName());
                 if (DefaultValuePtr)
                 {
                     TmpBuf << "?";
