@@ -5,7 +5,7 @@
     "jsx": "react",
     "sourceMap": true,
     "typeRoots": [
-      "../Typing",
+      "../../../Typing",
     ],
     "outDir": "../Content/Javascript/PuertsEditor"
   },
