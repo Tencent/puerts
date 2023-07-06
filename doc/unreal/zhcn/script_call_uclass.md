@@ -1,4 +1,4 @@
-# UE下脚本和引擎交互
+# 脚本调用引擎API
 
 所有（C++/蓝图）的UCLASS，UPPROPERTY，UFUNCTION，USTRUCT，UENUM，都可以直接访问
 
@@ -174,73 +174,4 @@ obj.ArrayBufferTest(arr);
 
 ## 回调
 
-引擎侧可以通过DYNAMIC_DELEGATE，DYNAMIC_MULTICAST_DELEGATE来主动调用TypeScript
-
-* UI的用户操作、网络消息可以通过这个通知到TypeScript
-
-* 如果希望导出个TypeScript函数给C++调用，也可以用这个
-
-C++定义
-
-~~~c++
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNotifyWithInt, int32, A);
-DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(FString, FNotifyWithStringRet, FString, A);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FNotifyWithRefString, FString&, A);
-
-UCLASS()
-class PUERTS_UNREAL_DEMO_API AMyActor : public AActor
-{
-	GENERATED_BODY()
-
-public:
-    UPROPERTY()
-    FNotifyWithInt NotifyWithInt;
-
-    UPROPERTY()
-    FNotifyWithRefString NotifyWithRefString;
-
-    UPROPERTY()
-    FNotifyWithStringRet NotifyWithStringRet;
-    //...
-};
-
-~~~
-
-TypeScript绑定
-
-~~~typescript
-function MutiCast1(i) {
-    console.warn("MutiCast1<<<", i);
-}
-
-function MutiCast2(i) {
-    console.warn("MutiCast2>>>", i);
-}
-
-actor.NotifyWithInt.Add(MutiCast1)
-actor.NotifyWithInt.Add(MutiCast2)
-
-actor.NotifyWithRefString.Bind((strRef) => {
-    console.log("NotifyWithRefString", $unref(strRef));
-    $set(strRef, "out to NotifyWithRefString");//引用参数输出
-});
-
-actor.NotifyWithStringRet.Bind((inStr) => {
-    return "////" + inStr;
-});
-~~~
-
-C++触发
-
-~~~c++
-NotifyWithInt.Broadcast(0);
-NotifyWithStringRet.ExecuteIfBound("hi...");
-if (NotifyWithRefString.IsBound())
-{
-    FString Str = TEXT("hello john che ");
-
-    NotifyWithRefString.Execute(Str);
-    UE_LOG(LogTemp, Warning, TEXT("NotifyWithRefString out ? %s"), *Str);
-}
-~~~
-
+见[引擎(或纯C++)调用脚本](engine_call_script.md)。
