@@ -68,8 +68,8 @@ public:
     explicit FJsEnv(const FString& ScriptRoot = TEXT("JavaScript"));
 
     FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-        std::function<void(const FString&)> InOnSourceLoadedCallback = nullptr, void* InExternalRuntime = nullptr,
-        void* InExternalContext = nullptr);
+        std::function<void(const FString&)> InOnSourceLoadedCallback = nullptr, const FString InFlags = FString(),
+        void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
     void Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments = TArray<TPair<FString, UObject*>>(),
         bool IsScript = false);

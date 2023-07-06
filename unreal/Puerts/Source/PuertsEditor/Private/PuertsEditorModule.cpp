@@ -134,15 +134,16 @@ void FPuertsEditorModule::OnPostEngineInit()
                     }
                 }
             });
-        JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")),
-            std::make_shared<puerts::FDefaultLogger>(), -1,
+        JsEnv = MakeShared<puerts::FJsEnv>(
+            std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), -1,
             [this](const FString& InPath)
             {
                 if (SourceFileWatcher.IsValid())
                 {
                     SourceFileWatcher->OnSourceLoaded(InPath);
                 }
-            });
+            },
+            TEXT("--max-old-space-size=2048"));
 
         JsEnv->Start("PuertsEditor/CodeAnalyze");
     }

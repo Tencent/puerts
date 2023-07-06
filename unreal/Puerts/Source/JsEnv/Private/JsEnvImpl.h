@@ -75,8 +75,8 @@ public:
     explicit FJsEnvImpl(const FString& ScriptRoot);
 
     FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InPort,
-        std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime = nullptr,
-        void* InExternalContext = nullptr);
+        std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
+        void* InExternalContext);
 
     virtual ~FJsEnvImpl() override;
 

@@ -21,8 +21,8 @@ public:
     explicit FJsEnvGroup(int Size, const FString& ScriptRoot = TEXT("JavaScript"));
 
     FJsEnvGroup(int Size, std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugStartPort,
-        std::function<void(const FString&)> InOnSourceLoadedCallback = nullptr, void* InExternalRuntime = nullptr,
-        void* InExternalContext = nullptr);
+        std::function<void(const FString&)> InOnSourceLoadedCallback = nullptr, const FString InFlags = FString(),
+        void* InExternalRuntime = nullptr, void* InExternalContext = nullptr);
 
     ~FJsEnvGroup();
 

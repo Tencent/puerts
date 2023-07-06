@@ -17,10 +17,11 @@ FJsEnv::FJsEnv(const FString& ScriptRoot)
 }
 
 FJsEnv::FJsEnv(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-    std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime, void* InExternalContext)
+    std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
+    void* InExternalContext)
 {
     GameScript = std::make_unique<FJsEnvImpl>(
-        std::move(InModuleLoader), InLogger, InDebugPort, InOnSourceLoadedCallback, InExternalRuntime, InExternalContext);
+        std::move(InModuleLoader), InLogger, InDebugPort, InOnSourceLoadedCallback, InFlags, InExternalRuntime, InExternalContext);
 }
 
 void FJsEnv::Start(const FString& ModuleName, const TArray<TPair<FString, UObject*>>& Arguments, bool IsScript)

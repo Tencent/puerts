@@ -109,8 +109,8 @@
 namespace puerts
 {
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
-    : FJsEnvImpl(
-          std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, nullptr, nullptr)
+    : FJsEnvImpl(std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, FString(),
+          nullptr, nullptr)
 {
 }
 
@@ -357,7 +357,8 @@ void FJsEnvImpl::StopPolling()
 #endif
 
 FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::shared_ptr<ILogger> InLogger, int InDebugPort,
-    std::function<void(const FString&)> InOnSourceLoadedCallback, void* InExternalRuntime, void* InExternalContext)
+    std::function<void(const FString&)> InOnSourceLoadedCallback, const FString InFlags, void* InExternalRuntime,
+    void* InExternalContext)
 {
     GUObjectArray.AddUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
@@ -373,6 +374,25 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     // char GCFlags[] = "--expose-gc";
     // v8::V8::SetFlagsFromString(GCFlags, sizeof(GCFlags));
+
+    if (!InFlags.IsEmpty())
+    {
+#if !defined(WITH_NODEJS)
+        TArray<FString> Flags;
+        InFlags.ParseIntoArray(Flags, TEXT(" "));
+        for (auto& Flag : Flags)
+        {
+            static FString Max_Old_Space_Size_Name(TEXT("--max-old-space-size="));
+            if (Flag.StartsWith(Max_Old_Space_Size_Name))
+            {
+                size_t Val = FCString::Atoi(*Flag.Mid(Max_Old_Space_Size_Name.Len()));
+                CreateParams.constraints.set_max_old_generation_size_in_bytes(Val * 1024 * 1024);
+            }
+        }
+#else
+        v8::V8::SetFlagsFromString(TCHAR_TO_UTF8(*InFlags));
+#endif
+    }
 
     Started = false;
     Inspector = nullptr;
@@ -4215,25 +4235,23 @@ void FJsEnvImpl::DumpStatisticsLog(const v8::FunctionCallbackInfo<v8::Value>& In
 
     FString StatisticsLog = FString::Printf(TEXT("------------------------\n"
                                                  "Dump Statistics of V8:\n"
-                                                 "total_heap_size: %u\n"
-                                                 "total_heap_size_executable: %u\n"
-                                                 "total_physical_size: %u\n"
-                                                 "total_available_size: %u\n"
-                                                 "used_heap_size: %u\n"
-                                                 "heap_size_limit: %u\n"
-                                                 "malloced_memory: %u\n"
-                                                 "external_memory: %u\n"
-                                                 "peak_malloced_memory: %u\n"
-                                                 "number_of_native_contexts: %u\n"
-                                                 "number_of_detached_contexts: %u\n"
-                                                 "does_zap_garbage: %u\n"
+                                                 "total_heap_size: %llu\n"
+                                                 "total_heap_size_executable: %llu\n"
+                                                 "total_physical_size: %llu\n"
+                                                 "total_available_size: %llu\n"
+                                                 "used_heap_size: %llu\n"
+                                                 "heap_size_limit: %llu\n"
+                                                 "malloced_memory: %llu\n"
+                                                 "external_memory: %llu\n"
+                                                 "peak_malloced_memory: %llu\n"
+                                                 "number_of_native_contexts: %llu\n"
+                                                 "number_of_detached_contexts: %llu\n"
+                                                 "does_zap_garbage: %llu\n"
                                                  "------------------------\n"),
-        static_cast<uint32_t>(Statistics.total_heap_size()), static_cast<uint32_t>(Statistics.total_heap_size_executable()),
-        static_cast<uint32_t>(Statistics.total_physical_size()), static_cast<uint32_t>(Statistics.total_available_size()),
-        static_cast<uint32_t>(Statistics.used_heap_size()), static_cast<uint32_t>(Statistics.heap_size_limit()),
-        static_cast<uint32_t>(Statistics.malloced_memory()), static_cast<uint32_t>(Statistics.external_memory()),
-        static_cast<uint32_t>(Statistics.peak_malloced_memory()), static_cast<uint32_t>(Statistics.number_of_native_contexts()),
-        static_cast<uint32_t>(Statistics.number_of_detached_contexts()), static_cast<uint32_t>(Statistics.does_zap_garbage()));
+        Statistics.total_heap_size(), Statistics.total_heap_size_executable(), Statistics.total_physical_size(),
+        Statistics.total_available_size(), Statistics.used_heap_size(), Statistics.heap_size_limit(), Statistics.malloced_memory(),
+        Statistics.external_memory(), Statistics.peak_malloced_memory(), Statistics.number_of_native_contexts(),
+        Statistics.number_of_detached_contexts(), Statistics.does_zap_garbage());
 
     Logger->Info(StatisticsLog);
 #endif    // !WITH_QUICKJS
