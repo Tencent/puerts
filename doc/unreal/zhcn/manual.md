@@ -89,7 +89,7 @@ UE里头，支持反射的API（标注了UCLASS，UPPROPERTY，UFUNCTION，USTRU
 
 要注意的是，在TypeScript里的类名是的UE类型ScriptName，相比C++类，都是去了前缀的，比如FVector在TypeScript里头是Vector，AActor是Actor。
 
-反射api的使用文档在[这](interact_with_uclass.md)。
+反射api的使用文档：[script_call_uclass](script_call_uclass.md)。
 
 如果非反射C++ API呢？比如UE部分C++ API，比如第三方C++库。
 
