@@ -12,7 +12,7 @@
 
 void FGenDTSCommands::RegisterCommands()
 {
-    UI_COMMAND(PluginAction, "ue.d.ts", "Execute GenDTS action", EUserInterfaceActionType::Button, FInputChord());
+    UI_COMMAND(PluginAction, "puerts", "Generate *.d.ts and copy some js builtin libs", EUserInterfaceActionType::Button, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE
