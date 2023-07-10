@@ -519,7 +519,7 @@ void FTypeScriptDeclarationGenerator::WriteOutput(UObject* Obj, const FStringBuf
         BlueprintTypeDeclInfoCache[Pkg->GetFName()].NameToDecl.Add(Obj->GetFName(), Temp.Buffer);
         BlueprintTypeDeclInfoCache[Pkg->GetFName()].IsExist = true;
     }
-    else
+    else if (Obj->IsNative())
     {
         NamespaceBegin(Obj, Output);
         Output << Buff;
