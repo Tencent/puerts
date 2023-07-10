@@ -134,3 +134,10 @@ sudo xattr -r -d com.apple.quarantine *.dylib
 
 * 可以尝试在命令行单独编译该ts文件，输入编译命令`puerts compile e9050088932a23f720713a9a5073986e`触发该文件的编译（其中e9050088932a23f720713a9a5073986e是`puerts ls TsTestActor`返回的id），如果有编译错误就解决，没有编译错误正常能生成相应的代理蓝图。
 
+## 生成的ue_bp.d.ts报语法错误
+
+这一般是蓝图的路径，字段，参数名等含ts不支持的字符所致，解决办法：
+
+* 如果这种蓝图的量比较小，可以加入到黑名单（项目配置->Puerts）。
+
+* 如果这种蓝图数量比较大，可以把需要在代码访问的、合法的蓝图放入一个目录，然后在编辑器控制台下输入命令来生成，这种方式可以指定蓝图搜索的路径，比如 ·Puerts.Gen PATH=/Game/StarterContent· 只会搜索"Content\StarterContent"目录。
