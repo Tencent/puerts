@@ -41,10 +41,17 @@ namespace PuertsStaticWrap
 
         public static void AddRegisterInfoGetterIntoJsEnv(JsEnv jsEnv)
         {
-            ${FOR(typeRegisterInfos, item => `
-            jsEnv.AddRegisterInfoGetter(typeof(${CS.Puerts.TypeExtensions.GetFriendlyName(item.Type)}), GetRegisterInfo_${item.WrapperName});
-            ${item.BlittableCopy ? item.WrapperName + ".InitBlittableCopy(jsEnv);": ""}
-            `)}
+            ${FOR(typeRegisterInfos, item => {
+                let ret = `
+                jsEnv.AddRegisterInfoGetter(typeof(${CS.Puerts.TypeExtensions.GetFriendlyName(item.Type)}), GetRegisterInfo_${item.WrapperName});`
+                if (item.BlittableCopy) {
+                    ret += `
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+                ${item.BlittableCopy ? item.WrapperName + ".InitBlittableCopy(jsEnv);": ""}                    
+#endif`
+                }
+                return ret;
+            })}
         }
     }
 }`.trim();

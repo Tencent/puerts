@@ -12,6 +12,10 @@ public class TestBuilder
     {
         Puerts.Editor.Generator.UnityMenu.GenerateCode();
     }
+    [MenuItem("PuerTS/Tester/BuildV1")]
+    public static void BuildWindowsV1() { BuildWindows(false); }
+
+#if EXPERIMENTAL_IL2CPP_PUERTS
     public static void GenV2() 
     {
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppWrappers();
@@ -20,11 +24,9 @@ public class TestBuilder
         PuertsIl2cpp.Editor.Generator.UnityMenu.GenerateCppPlugin();
         Puerts.Editor.Generator.UnityMenu.GenRegisterInfo();
     }
-
-    [MenuItem("PuerTS/Tester/BuildV1")]
-    public static void BuildWindowsV1() { BuildWindows(false); }
     [MenuItem("PuerTS/Tester/BuildV2")]
     public static void BuildWindowsV2() { BuildWindows(true); }
+#endif
 
     public static void BuildWindows(bool withV2) 
     {

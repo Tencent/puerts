@@ -13,7 +13,7 @@ using UnityEditor;
 using UnityEngine;
 #endif
 
-#if !PUERTS_GENERAL && !UNITY_WEBGL
+#if !PUERTS_GENERAL && !UNITY_WEBGL && EXPERIMENTAL_IL2CPP_PUERTS
 namespace PuertsIl2cpp.Editor
 {
     namespace Generator {
