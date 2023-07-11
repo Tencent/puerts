@@ -80,6 +80,7 @@ if (NotifyWithRefString.IsBound())
 
 #### 如果不是UClass下的DYNAMIC_DELEGATE字段
 
+C++代码
 ~~~c++
 void UMainObject::PassJsFunctionAsDelegate(FCallback Callback) const
 {
@@ -91,16 +92,41 @@ void UMainObject::PassJsFunctionAsDelegate(FCallback Callback) const
 }
 ~~~
 
-得手动管理传过去函数的生命周期
+
+方式一：toDelegate(owner: UE.Object, func: Function)
 
 ~~~typescript
+import {toDelegate} from 'puerts';
+
+function IsJohn(str:string) : boolean {
+    return str == "John";
+}
+//owner是一个UObject，owner释放后自动释放IsJohn
+obj.PassJsFunctionAsDelegate(toDelegate(owner, IsJohn));
+~~~
+
+方式二：toManualReleaseDelegate(func:Function)
+
+~~~typescript
+import {toManualReleaseDelegate, releaseManualReleaseDelegate} from 'puerts';
+
 function IsJohn(str:string) : boolean {
     return str == "John";
 }
 obj.PassJsFunctionAsDelegate(toManualReleaseDelegate(IsJohn));
-//release after using
+//用完需要手动释放，否则有内存泄露
 releaseManualReleaseDelegate(IsJohn);
 ~~~
+
+方式三：toDelegate(obj: UE.Object, funcName: string)
+
+~~~typescript
+import {toDelegate} from 'puerts';
+
+//obj是一个UObject，IsJohn是这个UObject上的UFunction
+obj.PassJsFunctionAsDelegate(toDelegate(obj, "IsJohn"));
+~~~
+
 
 ### std::function
 
@@ -128,7 +154,7 @@ obj2.StdFunctionTest((x:number, y:number) => {
 
 ### DYNAMIC_DELEGATE
 
-DYNAMIC_DELEGATE也是可用的
+C++章节介绍的DYNAMIC_DELEGATE也是可用的
 
 ### 静态脚本方法
 

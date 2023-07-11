@@ -89,7 +89,7 @@ public:
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) = 0;
 
-    virtual FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    virtual FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
         v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) = 0;
 
     virtual bool RemoveFromDelegate(

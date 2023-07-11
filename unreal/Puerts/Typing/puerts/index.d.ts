@@ -71,6 +71,8 @@ declare module "puerts" {
     function releaseManualReleaseDelegate<T extends (...args: any) => any>(func: T): void;
     
     function toDelegate<T extends Object, K extends keyof T>(obj: T, key: T[K] extends (...args: any) => any ? K : never) : $Delegate<T[K] extends (...args: any) => any ? T[K] : never>;
+    
+    function toDelegate<T extends (...args: any) => any>(owner: Object, callback: T): $Delegate<T>;
 
     /*function getProperties(obj: Object, ...propNames:string[]): any;
     function getPropertiesAsync(obj: Object, ...propNames:string[]): Promise<any>;

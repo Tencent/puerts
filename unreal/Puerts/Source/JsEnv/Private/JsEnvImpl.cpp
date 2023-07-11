@@ -2022,25 +2022,26 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     TryReleaseType((UStruct*) ObjectBase);
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
-    UTypeScriptGeneratedClass* GeneratedClass = (UTypeScriptGeneratedClass*) ObjectBase;
-    auto BindInfoPtr = BindInfoMap.Find(GeneratedClass);
-    if (BindInfoPtr)
-    {
-        BindInfoMap.Remove(GeneratedClass);
-    }
+    BindInfoMap.Remove((UTypeScriptGeneratedClass*) ObjectBase);
 #endif
 
     UnBind(nullptr, (UObject*) ObjectBase, true);
 
-    UClass* Class = (UClass*) ObjectBase;
-    if (GeneratedClasses.Contains(Class))
-    {
-        GeneratedClasses.Remove(Class);
-    }
+    GeneratedClasses.Remove((UClass*) ObjectBase);
 
     TsFunctionMap.Remove((UFunction*) ObjectBase);
     MixinFunctionMap.Remove((UFunction*) ObjectBase);
     ContainerMeta.NotifyElementTypeDeleted((UField*) ObjectBase);
+
+    auto CallbacksPtr = AutoReleaseCallbacksMap.Find((UObject*) ObjectBase);
+    if (CallbacksPtr)
+    {
+        for (auto Callback : *CallbacksPtr)
+        {
+            SysObjectRetainer.Release(Callback);
+        }
+        AutoReleaseCallbacksMap.Remove((UObject*) ObjectBase);
+    }
 }
 
 void FJsEnvImpl::TryReleaseType(UStruct* Struct)
@@ -2391,34 +2392,53 @@ PropertyMacro* FJsEnvImpl::FindDelegateProperty(void* DelegatePtr)
                                          : (PropertyMacro*) Iter->second.MulticastDelegateProperty;
 }
 
-FScriptDelegate FJsEnvImpl::NewManualReleaseDelegate(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction)
+FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
+    v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction)
 {
-    auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
-    auto MaybeProxy = CallbacksMap->Get(Context, JsFunction);
     UDynamicDelegateProxy* DelegateProxy = nullptr;
-    if (MaybeProxy.IsEmpty() || !MaybeProxy.ToLocalChecked()->IsExternal())
+    if (Owner)
     {
+        TArray<UDynamicDelegateProxy*>& Callbacks = AutoReleaseCallbacksMap.FindOrAdd(Owner);
+
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
 #ifdef THREAD_SAFE
         DelegateProxy->Isolate = Isolate;
 #endif
-        DelegateProxy->Owner = DelegateProxy;
+        DelegateProxy->Owner = Owner;
         DelegateProxy->SignatureFunction = SignatureFunction;
         DelegateProxy->DynamicInvoker = DynamicInvoker;
         DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
 
         SysObjectRetainer.Retain(DelegateProxy);
-        __USE(CallbacksMap->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy)));
-
-        ManualReleaseCallbackList.push_back(DelegateProxy);
+        Callbacks.Add(DelegateProxy);
     }
     else
     {
-        DelegateProxy =
-            Cast<UDynamicDelegateProxy>(static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
-    }
+        auto CallbacksMap = ManualReleaseCallbackMap.Get(Isolate);
+        auto MaybeProxy = CallbacksMap->Get(Context, JsFunction);
 
+        if (MaybeProxy.IsEmpty() || !MaybeProxy.ToLocalChecked()->IsExternal())
+        {
+            DelegateProxy = NewObject<UDynamicDelegateProxy>();
+#ifdef THREAD_SAFE
+            DelegateProxy->Isolate = Isolate;
+#endif
+            DelegateProxy->Owner = DelegateProxy;
+            DelegateProxy->SignatureFunction = SignatureFunction;
+            DelegateProxy->DynamicInvoker = DynamicInvoker;
+            DelegateProxy->JsFunction = v8::UniquePersistent<v8::Function>(Isolate, JsFunction);
+
+            SysObjectRetainer.Retain(DelegateProxy);
+            __USE(CallbacksMap->Set(Context, JsFunction, v8::External::New(Context->GetIsolate(), DelegateProxy)));
+
+            ManualReleaseCallbackList.push_back(DelegateProxy);
+        }
+        else
+        {
+            DelegateProxy = Cast<UDynamicDelegateProxy>(
+                static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
+        }
+    }
     FScriptDelegate Delegate;
     Delegate.BindUFunction(DelegateProxy, NAME_Fire);
     return Delegate;

@@ -189,7 +189,7 @@ public:
 
     virtual PropertyMacro* FindDelegateProperty(void* DelegatePtr) override;
 
-    virtual FScriptDelegate NewManualReleaseDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
+    virtual FScriptDelegate NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, UObject* Owner,
         v8::Local<v8::Function> JsFunction, UFunction* SignatureFunction) override;
 
     void ReleaseManualReleaseDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info);
@@ -688,6 +688,8 @@ private:
     v8::Global<v8::Map> ManualReleaseCallbackMap;
 
     std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
+
+    TMap<UObject*, TArray<UDynamicDelegateProxy*>> AutoReleaseCallbacksMap;
 
 #ifndef WITH_QUICKJS
     TMap<FString, v8::Global<v8::Module>> PathToModule;

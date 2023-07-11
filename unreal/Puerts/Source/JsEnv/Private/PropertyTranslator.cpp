@@ -1118,8 +1118,8 @@ public:
         FScriptDelegate* Des = DelegateProperty->GetPropertyValuePtr(ValuePtr);
         if (Value->IsFunction())
         {
-            *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewManualReleaseDelegate(
-                Isolate, Context, Value.As<v8::Function>(), DelegateProperty->SignatureFunction);
+            *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewDelegate(
+                Isolate, Context, nullptr, Value.As<v8::Function>(), DelegateProperty->SignatureFunction);
         }
         else
         {
@@ -1140,12 +1140,17 @@ public:
                         return false;
                     }
 
-                    auto FuncName = Array->Get(Context, 1).ToLocalChecked();
-                    if (FuncName->IsString())
+                    auto Func = Array->Get(Context, 1).ToLocalChecked();
+                    if (Func->IsString())
                     {
                         FScriptDelegate Delegate;
-                        Delegate.BindUFunction(Obj, *FV8Utils::ToFString(Isolate, FuncName));
+                        Delegate.BindUFunction(Obj, *FV8Utils::ToFString(Isolate, Func));
                         *Des = Delegate;
+                    }
+                    else if (Func->IsFunction())
+                    {
+                        *Des = FV8Utils::IsolateData<IObjectMapper>(Isolate)->NewDelegate(
+                            Isolate, Context, Obj, Func.As<v8::Function>(), DelegateProperty->SignatureFunction);
                     }
                 }
             }
