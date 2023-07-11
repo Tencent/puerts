@@ -8,7 +8,9 @@ public class PuerCfg {
     public static List<Type> binding {
         get {
             return new List<Type>{
+#if !PUERTS_GENERAL
                 typeof(UnityEngine.Color),
+#endif
                 typeof(Dictionary<int, int>),
                 typeof(Dictionary<int, int>.Enumerator),
                 typeof(List<int>.Enumerator),
@@ -20,6 +22,7 @@ public class PuerCfg {
             };
         }
     }
+#if !PUERTS_GENERAL
     [BlittableCopy]
     static IEnumerable<Type> Blittables
     {
@@ -32,4 +35,5 @@ public class PuerCfg {
             };
         }
     }
+#endif
 }

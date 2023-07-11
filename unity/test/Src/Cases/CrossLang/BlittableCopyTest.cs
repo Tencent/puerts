@@ -4,6 +4,7 @@ using NUnit.Framework;
 
 namespace Puerts.UnitTest 
 {
+#if !PUERTS_GENERAL
     [TestFixture]
     public class BlittableCopyTest
     {
@@ -41,4 +42,5 @@ namespace Puerts.UnitTest
             jsEnv.Tick();
         }
     }
+#endif
 }
