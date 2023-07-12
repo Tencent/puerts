@@ -404,7 +404,12 @@ namespace Puerts.Editor
                         }
                         else if (valueType.IsEnum)
                         {
-                            return valueType.FullName.Replace("+", ".") + "." + value.ToString();
+                            // if the default value is 'default' but the enum does not has item equals to 0
+                            // we should translate it into default(TypeName)
+                            var enumName = valueType.FullName.Replace("+", ".");
+                            var valueName = value.ToString();
+                            if (valueName == "0") return "default(" + enumName + ")";
+                            else return enumName + "." + valueName;
                         } 
                         else if (valueType.IsPrimitive)
                         {
