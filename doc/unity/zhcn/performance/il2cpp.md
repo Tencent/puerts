@@ -31,4 +31,6 @@ xIl2cpp模式在使用方式上会有较大的变化，比如需要自己编译P
 
 ### FAQ
 1. ios构建时报hash_map头找不到。
-    Unity构建时，一部分头文件不会自动打包到产物xcode项目里。你可以在`你的Unity.app/Contents/il2cpp/external/`下找到缺失的内容，复制到`iosbuild目录/Libraries/external/`即可
+    Unity构建时，一部分头文件不会自动打包到产物xcode项目里(在2021及以下版本常见)。你可以在`你的Unity.app/Contents/il2cpp/external/`下找到缺失的内容，复制到`iosbuild目录/Libraries/external/`即可
+2. ios构建时报 `ReentrantLock is ambigious`
+    在2022常见。解决办法参见https://github.com/Tencent/puerts/issues/1428

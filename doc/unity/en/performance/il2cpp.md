@@ -30,5 +30,7 @@ Then, you need to first understand the content of the [compilation guide](../oth
 * The `PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM` in the installation steps is to allow FunctionBridge.h to be generated directly to the native_src_il2cpp directory and Puerts_il2cpp.cpp to be generated to the Plugins directory. If you are not using the upm method to install puerts, you can omit this def and copy these files to the correct location yourself.
 
 ### FAQ
-1. The header file hash_map cannot be found when building ios.
+1. The header file hash_map cannot be found when building iOS.
     When Unity is built, some header files will not be automatically packaged into the xcode project. You can find the missing content in `your Unity.app/Contents/il2cpp/external/` and copy it to `iosbuild directory/Libraries/external/`.
+2. `ReentrantLock is ambigious` in iOS build
+    Common found in Unity2022+. See https://github.com/Tencent/puerts/issues/1428
