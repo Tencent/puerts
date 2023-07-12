@@ -689,7 +689,7 @@ private:
 
     std::vector<TWeakObjectPtr<UDynamicDelegateProxy>> ManualReleaseCallbackList;
 
-    TMap<UObject*, TArray<UDynamicDelegateProxy*>> AutoReleaseCallbacksMap;
+    TMap<UObject*, TArray<TWeakObjectPtr<UDynamicDelegateProxy>>> AutoReleaseCallbacksMap;
 
 #ifndef WITH_QUICKJS
     TMap<FString, v8::Global<v8::Module>> PathToModule;

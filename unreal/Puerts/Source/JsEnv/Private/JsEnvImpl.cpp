@@ -760,6 +760,17 @@ FJsEnvImpl::~FJsEnvImpl()
             }
         }
 
+        for (auto& KV : AutoReleaseCallbacksMap)
+        {
+            for (auto& Callback : KV.Value)
+            {
+                if (Callback.IsValid())
+                {
+                    Callback->JsFunction.Reset();
+                }
+            }
+        }
+
         TsFunctionMap.Empty();
         MixinFunctionMap.Empty();
 
@@ -2038,7 +2049,7 @@ void FJsEnvImpl::NotifyUObjectDeleted(const class UObjectBase* ObjectBase, int32
     {
         for (auto Callback : *CallbacksPtr)
         {
-            SysObjectRetainer.Release(Callback);
+            SysObjectRetainer.Release(Callback.Get());
         }
         AutoReleaseCallbacksMap.Remove((UObject*) ObjectBase);
     }
@@ -2398,7 +2409,7 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
     UDynamicDelegateProxy* DelegateProxy = nullptr;
     if (Owner)
     {
-        TArray<UDynamicDelegateProxy*>& Callbacks = AutoReleaseCallbacksMap.FindOrAdd(Owner);
+        TArray<TWeakObjectPtr<UDynamicDelegateProxy>>& Callbacks = AutoReleaseCallbacksMap.FindOrAdd(Owner);
 
         DelegateProxy = NewObject<UDynamicDelegateProxy>();
 #ifdef THREAD_SAFE
