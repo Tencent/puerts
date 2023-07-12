@@ -10,5 +10,5 @@
 #if defined(BUILDING_PES_EXTENSION)
 #include "PesapiConverter.hpp"
 #else
-#include "V8Converter.hpp"
+#include "V8Backend.hpp"
 #endif

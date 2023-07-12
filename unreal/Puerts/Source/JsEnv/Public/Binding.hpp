@@ -28,7 +28,7 @@ struct ArgumentBufferType
 };
 }    // namespace puerts
 
-#include "Converter.hpp"
+#include "ScriptBackend.hpp"
 
 #define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
 #define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
