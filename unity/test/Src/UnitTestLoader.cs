@@ -57,8 +57,6 @@ namespace Puerts.UnitTest
         [UnityEngine.Scripting.Preserve]
         public bool FileExists(string specifier)
         {
-            UnityEngine.Debug.Log("FileExists:" + specifier);
-            UnityEngine.Debug.Log(!System.String.IsNullOrEmpty(Resolve(specifier, ".")));
             return !System.String.IsNullOrEmpty(Resolve(specifier, "."));
         }
 

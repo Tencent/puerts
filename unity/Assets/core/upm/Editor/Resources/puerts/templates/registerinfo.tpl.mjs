@@ -25,6 +25,10 @@ namespace PuertsStaticWrap
         {
             return new RegisterInfo 
             {
+#if !EXPERIMENTAL_IL2CPP_PUERTS
+                BlittableCopy = ${item.BlittableCopy},
+#endif
+
                 Members = new System.Collections.Generic.Dictionary<string, MemberRegisterInfo>
                 {
                     ${FOR(listToJsArray(item.Members), member=> `

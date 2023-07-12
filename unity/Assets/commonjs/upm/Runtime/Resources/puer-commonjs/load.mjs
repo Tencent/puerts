@@ -8,7 +8,6 @@
 var global = global || globalThis || (function () { return this; }());
 
 function pathNormalize(path) {
-    console.log("pathNormalize", path)
     let reversePathFrags = path.split('/').reverse();
     let newPathFrags = [];
     while (reversePathFrags.length > 0) {
