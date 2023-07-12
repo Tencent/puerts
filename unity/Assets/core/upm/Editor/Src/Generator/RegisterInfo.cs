@@ -217,7 +217,7 @@ namespace Puerts.Editor
                                     }, false);
                                 }
                             }
-                            else if (m.GetIndexParameters().GetLength(0) != 1 && !m.IsSpecialName)
+                            else if (m.GetIndexParameters().GetLength(0) == 0 && !m.IsSpecialName)
                             {
 
                                 Collector.Add(m.Name, new MemberRegisterInfoForGenerate
