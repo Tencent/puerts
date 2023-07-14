@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-rc.1] - 2023-07-14
+1. Fix: BlitableCopy was broken issue #1427
+2. Fix: two wrapper generation issue #1433 #1432
+
 ## [2.0.0-rc.0] - 2023-06-30
 1. Fix: struct's paramless default ctor was unable to use #1301
 2. Fix: op_xxxx method was unable to use after generated #1399

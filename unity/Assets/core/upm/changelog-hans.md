@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0-rc.1] - 2023-07-14
+1. 修复: BlittableCopy不可用的问题 #1427
+2. 修复: 两个wrapper生成的问题 #1433 #1432
+
 ## [2.0.0-rc.0] - 2023-06-30
 1. 修复：xil2cpp模式下结构体默认无参构造函数不可用的问题 #1301
 2. 修复：运算符重载不可用的问题 #1399
