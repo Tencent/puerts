@@ -18,7 +18,7 @@ import WebGLBackendSetToJSOutArgumentAPI from "./mixins/setToJSOutArgument";
 
 declare const PUERTS_JS_RESOURCES: any;
 declare const wxRequire: any;
-declare const CS :any;
+declare const CS: any;
 
 global.wxRequire = global.require;
 global.PuertsWebGL = {
@@ -47,9 +47,9 @@ global.PuertsWebGL = {
             WebGLBackendRegisterAPI(engine),
             {
                 // bridgeLog: true,
-                SetCallV8: function(
-                    callV8Function: MockIntPtr, 
-                    callV8Constructor: MockIntPtr, 
+                SetCallV8: function (
+                    callV8Function: MockIntPtr,
+                    callV8Constructor: MockIntPtr,
                     callV8Destructor: MockIntPtr
                 ) {
                     engine.callV8Function = callV8Function;
@@ -77,27 +77,26 @@ global.PuertsWebGL = {
                 GetLastExceptionInfo: function (isolate: IntPtr,/* out int */strlen: any) {
                     return engine.JSStringToCSString(engine.lastException.stack, strlen);
                 },
-                LowMemoryNotification: function (isolate: IntPtr) {},
-                IdleNotificationDeadline: function (isolate: IntPtr) {},
-                RequestMinorGarbageCollectionForTesting: function (isolate: IntPtr) {},
-                RequestFullGarbageCollectionForTesting: function (isolate: IntPtr) {},
+                LowMemoryNotification: function (isolate: IntPtr) { },
+                IdleNotificationDeadline: function (isolate: IntPtr) { },
+                RequestMinorGarbageCollectionForTesting: function (isolate: IntPtr) { },
+                RequestFullGarbageCollectionForTesting: function (isolate: IntPtr) { },
                 SetGeneralDestructor: function (isolate: IntPtr, _generalDestructor: IntPtr) {
                     engine.generalDestructor = _generalDestructor
                 },
-                GetModuleExecutor: function() {
-                    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function(fileName: string) {
-                        if (['puerts/log.mjs', 'puerts/timer.mjs'].indexOf(fileName) != -1) { 
+                GetModuleExecutor: function () {
+                    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function (fileName: string) {
+                        if (['puerts/log.mjs', 'puerts/timer.mjs'].indexOf(fileName) != -1) {
                             return {};
                         }
                         if (typeof wx != 'undefined') {
                             const result = wxRequire('puerts_minigame_js_resources/' + (fileName.endsWith('.js') ? fileName : fileName + ".js"));
                             return result
-    
+
                         } else {
                             function normalize(name: string, to: string) {
                                 if (typeof CS != void 0) {
-                                    if (CS.Puerts.PathHelper.IsRelative(to))
-                                    {
+                                    if (CS.Puerts.PathHelper.IsRelative(to)) {
                                         const ret = CS.Puerts.PathHelper.normalize(CS.Puerts.PathHelper.Dirname(name) + "/" + to);
                                         return ret;
                                     }
@@ -109,20 +108,20 @@ global.PuertsWebGL = {
                                 const foundCacheSpecifier = tryFindAndGetFindedSpecifier(specifier, executeModuleCache);
                                 if (foundCacheSpecifier) {
                                     result.exports = executeModuleCache[foundCacheSpecifier];
-    
+
                                 } else {
                                     const foundSpecifier = tryFindAndGetFindedSpecifier(specifier, PUERTS_JS_RESOURCES);
                                     if (!foundSpecifier) {
                                         throw new Error('module not found: ' + specifier);
                                     }
                                     specifier = foundSpecifier;
-                                    
+
                                     executeModuleCache[specifier] = -1;
                                     try {
                                         PUERTS_JS_RESOURCES[specifier](result.exports, function mRequire(specifierTo: string) {
                                             return mockRequire(normalize(specifier, specifierTo));
                                         }, result);
-                                    } catch(e) {
+                                    } catch (e) {
                                         delete executeModuleCache[specifier];
                                         throw e
                                     }
@@ -134,7 +133,7 @@ global.PuertsWebGL = {
                                     let tryFindName = [specifier];
                                     if (specifier.indexOf('.') == -1)
                                         tryFindName = tryFindName.concat([specifier + '.js', specifier + '.ts', specifier + '.mjs', specifier + '.mts']);
-    
+
                                     let finded: number | false = tryFindName.reduce((ret, name, index) => {
                                         if (ret !== false) return ret;
                                         if (name in obj) {
@@ -158,8 +157,8 @@ global.PuertsWebGL = {
                     });
                     return jsfunc.id;
                 },
-                GetJSObjectValueGetter: function() {
-                    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function(obj: any, key: string) {
+                GetJSObjectValueGetter: function () {
+                    var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function (obj: any, key: string) {
                         return obj[key]
                     });
                     return jsfunc.id;
@@ -173,14 +172,14 @@ global.PuertsWebGL = {
                         const result = global.eval(code);
                         // return getIntPtrManager().GetPointerForJSValue(result);
                         engine.lastReturnCSResult = result;
-                        
+
                         return /*FResultInfo */1024;
-                    } catch(e) {
+                    } catch (e) {
                         engine.lastException = e;
                     }
                 },
 
-                SetPushJSFunctionArgumentsCallback: function(isolate: IntPtr, callback: IntPtr, jsEnvIdx: number) {
+                SetPushJSFunctionArgumentsCallback: function (isolate: IntPtr, callback: IntPtr, jsEnvIdx: number) {
                     engine.GetJSArgumentsCallback = callback;
                 },
                 ThrowException: function (isolate: IntPtr, /*byte[] */messageString: CSString) {
@@ -224,7 +223,7 @@ global.PuertsWebGL = {
                 ResetResult: function (resultInfo: IntPtr) {
                     engine.lastReturnCSResult = null;
                 },
-                ClearModuleCache: function() {},
+                ClearModuleCache: function () { },
                 CreateInspector: function (isolate: IntPtr, port: int) { },
                 DestroyInspector: function (isolate: IntPtr) { },
                 InspectorTick: function (isolate: IntPtr) { },
