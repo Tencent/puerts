@@ -19,8 +19,10 @@ import WebGLBackendSetToJSOutArgumentAPI from "./mixins/setToJSOutArgument";
 declare const PUERTS_JS_RESOURCES: any;
 declare const wxRequire: any;
 declare const CS: any;
+declare const __tgjsGetLoader: any;
 
 global.wxRequire = global.require;
+
 global.PuertsWebGL = {
     inited: false,
     debug: false,
@@ -35,6 +37,7 @@ global.PuertsWebGL = {
         const executeModuleCache: { [filename: string]: any } = {};
 
         let jsEngineReturned = false;
+        let loader: any;
 
         // PuertsDLL的所有接口实现
         global.PuertsWebGL = Object.assign(
@@ -86,9 +89,14 @@ global.PuertsWebGL = {
                     engine.generalDestructor = _generalDestructor
                 },
                 GetModuleExecutor: function () {
+                    loader = typeof __tgjsGetLoader != 'undefined' ? __tgjsGetLoader() : null;
+
                     var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function (fileName: string) {
                         if (['puerts/log.mjs', 'puerts/timer.mjs'].indexOf(fileName) != -1) {
                             return {};
+                        }
+                        if (loader.Resolve) {
+                            fileName = loader.Resolve(fileName, "");
                         }
                         if (typeof wx != 'undefined') {
                             const result = wxRequire('puerts_minigame_js_resources/' + (fileName.endsWith('.js') ? fileName : fileName + ".js"));
@@ -120,7 +128,7 @@ global.PuertsWebGL = {
                                     executeModuleCache[specifier] = -1;
                                     try {
                                         PUERTS_JS_RESOURCES[specifier](result.exports, function mRequire(specifierTo: string) {
-                                            return mockRequire(normalize(specifier, specifierTo));
+                                            return mockRequire(loader.Resolve ? loader.Resolve(specifierTo, specifier) : normalize(specifier, specifierTo));
                                         }, result);
                                     } catch (e) {
                                         delete executeModuleCache[specifier];
@@ -207,7 +215,8 @@ global.PuertsWebGL = {
                 GetFunctionLastExceptionInfo: function (_function: JSFunctionPtr, /*out int */length: number) {
                     const func = jsFunctionOrObjectFactory.getJSFunctionById(_function);
                     if (func instanceof JSFunction) {
-                        return engine.JSStringToCSString(func.lastException.message || '', length);
+                        return engine.JSStringToCSString(func.lastException.stack || func.lastException.message || '', length);
+                        
                     } else {
                         throw new Error('ptr is not a jsfunc');
                     }
