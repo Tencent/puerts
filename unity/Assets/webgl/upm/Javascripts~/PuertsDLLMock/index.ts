@@ -39,6 +39,7 @@ global.PuertsWebGL = {
         // PuertsDLL的所有接口实现
         global.PuertsWebGL = Object.assign(
             global.PuertsWebGL,
+            { unityInstance },
             WebGLBackendGetFromJSArgumentAPI(engine),
             WebGLBackendGetFromJSReturnAPI(engine),
             WebGLBackendSetToInvokeJSArgumentApi(engine),
