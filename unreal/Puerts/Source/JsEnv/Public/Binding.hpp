@@ -30,67 +30,6 @@ struct ArgumentBufferType
 
 #include "ScriptBackend.hpp"
 
-#define MakeConstructor(T, ...) ::puerts::template ConstructorWrapper<T, ##__VA_ARGS__>
-#define MakeGetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::getter)
-#define MakeSetter(M) &(::puerts::PropertyWrapper<decltype(M), M>::setter)
-#define MakeProperty(M)                                                                                         \
-    &(::puerts::PropertyWrapper<decltype(M), M>::getter), &(::puerts::PropertyWrapper<decltype(M), M>::setter), \
-        ::puerts::PropertyWrapper<decltype(M), M>::info()
-#define MakeReadonlyProperty(M) \
-    &(::puerts::PropertyWrapper<decltype(M), M>::getter), nullptr, ::puerts::PropertyWrapper<decltype(M), M>::info()
-#define MakeVariable(M) MakeProperty(M)
-#define MakeReadonlyVariable(M) MakeReadonlyProperty(M)
-#define MakeFunction(M, ...)                                                                    \
-    [](::puerts::CallbackInfoType info)                                                         \
-    { ::puerts::FuncCallWrapper<decltype(M), M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
-        ::puerts::FuncCallWrapper<decltype(M), M>::info(puerts::Count(__VA_ARGS__))
-#define MakeExtension(M, ...)                                                                            \
-    [](::puerts::CallbackInfoType info)                                                                  \
-    { ::puerts::FuncCallWrapper<decltype(M), M>::callExtensionWithDefaultValues(info, ##__VA_ARGS__); }, \
-        ::puerts::FuncCallWrapper<decltype(M), M>::extensionInfo(puerts::Count(__VA_ARGS__))
-#define SelectFunction(SIGNATURE, M, ...)                                                                                         \
-    [](::puerts::CallbackInfoType info) { ::puerts::FuncCallWrapper<SIGNATURE, M>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
-        ::puerts::FuncCallWrapper<SIGNATURE, M>::info(puerts::Count(__VA_ARGS__))
-#define SelectFunction_PtrRet(SIGNATURE, M, ...)                                                    \
-    [](::puerts::CallbackInfoType info)                                                             \
-    { ::puerts::FuncCallWrapper<SIGNATURE, M, true>::callWithDefaultValues(info, ##__VA_ARGS__); }, \
-        ::puerts::FuncCallWrapper<SIGNATURE, M, true>::info(puerts::Count(__VA_ARGS__))
-#define MakeCheckFunction(M) \
-    &(::puerts::FuncCallWrapper<decltype(M), M>::checkedCall), ::puerts::FuncCallWrapper<decltype(M), M>::info()
-#define MakeOverload(SIGNATURE, M) puerts::FuncCallWrapper<SIGNATURE, M>
-#define CombineOverloads(...)                                                                          \
-    &::puerts::OverloadsCombiner<__VA_ARGS__>::call, ::puerts::OverloadsCombiner<__VA_ARGS__>::length, \
-        ::puerts::OverloadsCombiner<__VA_ARGS__>::infos()
-#define CombineConstructors(...)                                                                             \
-    &::puerts::ConstructorsCombiner<__VA_ARGS__>::call, ::puerts::ConstructorsCombiner<__VA_ARGS__>::length, \
-        ::puerts::ConstructorsCombiner<__VA_ARGS__>::infos()
-
-#define DeclOverloads(Name)      \
-    template <typename T>        \
-    struct Name##PuertsOverloads \
-    {                            \
-    };
-
-#define DeclOverload(Name, SIGNATURE, M, ...)                                                                         \
-    template <>                                                                                                       \
-    struct Name##PuertsOverloads<SIGNATURE>                                                                           \
-    {                                                                                                                 \
-        static bool overloadCall(::puerts::CallbackInfoType info)                                                     \
-        {                                                                                                             \
-            return ::puerts::FuncCallWrapper<SIGNATURE, M, true>::overloadCallWithDefaultValues(info, ##__VA_ARGS__); \
-        }                                                                                                             \
-        static const ::puerts::CFunctionInfo* info()                                                                  \
-        {                                                                                                             \
-            return ::puerts::FuncCallWrapper<SIGNATURE, M>::info(puerts::Count(__VA_ARGS__));                         \
-        }                                                                                                             \
-    };
-
-#define SelectOverload(Name, SIGNATURE) Name##PuertsOverloads<SIGNATURE>
-
-#define UsingNamedCppType(CLS, NAME) __DefScriptTTypeName(NAME, CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS)
-
-#define UsingCppType(CLS) UsingNamedCppType(CLS, CLS)
-
 namespace puerts
 {
 template <class... Args>
@@ -278,72 +217,72 @@ struct IsArgsConvertibleHelper<std::tuple<Args...>, typename std::enable_if<Conj
 template <typename T>
 constexpr bool isArgsConvertible = IsArgsConvertibleHelper<T>::value;
 
-template <std::size_t, std::size_t, typename...>
-struct ArgumentChecker
-{
-    static bool Check(CallbackInfoType Info, ContextType Context)
-    {
-        return true;
-    }
-};
-
-template <std::size_t Pos, std::size_t StopPos, typename ArgType, typename... Rest>
-struct ArgumentChecker<Pos, StopPos, ArgType, Rest...>
-{
-    static constexpr int NextPos = Pos + 1;
-
-    static bool Check(CallbackInfoType Info, ContextType Context)
-    {
-        if (Pos >= StopPos)
-            return true;
-        if (!TypeConverter<ArgType>::accept(Context, GetArg(Info, Pos)))
-        {
-            return false;
-        }
-        return ArgumentChecker<NextPos, StopPos, Rest...>::Check(Info, Context);
-    }
-};
-
-template <bool Enable, std::size_t ND, typename... Args>
-struct ArgumentsChecker;
-
-template <std::size_t ND, typename... Args>
-struct ArgumentsChecker<true, ND, Args...>
-{
-    static constexpr auto ArgsLength = sizeof...(Args);
-
-    static bool Check(ContextType context, CallbackInfoType info)
-    {
-        if (ND == 0 ? GetArgsLen(info) != ArgsLength : GetArgsLen(info) < (ArgsLength - ND))
-            return false;
-
-        if (!ArgumentChecker<0, ArgsLength - ND, Args...>::Check(info, context))
-            return false;
-
-        return true;
-    }
-};
-
-template <std::size_t ND, typename... Args>
-struct ArgumentsChecker<false, ND, Args...>
-{
-    static constexpr auto ArgsLength = sizeof...(Args);
-
-    static bool Check(ContextType context, CallbackInfoType info)
-    {
-        return true;
-    }
-};
-
-template <typename, bool CheckArguments, bool, bool>
+template <typename, typename, bool CheckArguments, bool, bool>
 struct FuncCallHelper
 {
 };
 
-template <typename Ret, typename... Args, bool CheckArguments, bool ReturnByPointer, bool ScriptTypePtrAsRef>
-struct FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, CheckArguments, ReturnByPointer, ScriptTypePtrAsRef>
+template <typename API, std::size_t, std::size_t, typename...>
+struct ArgumentChecker
+{
+    static bool Check(typename API::CallbackInfoType Info, typename API::ContextType Context)
+    {
+        return true;
+    }
+};
+
+template <typename API, std::size_t Pos, std::size_t StopPos, typename ArgType, typename... Rest>
+struct ArgumentChecker<API, Pos, StopPos, ArgType, Rest...>
+{
+    static constexpr int NextPos = Pos + 1;
+
+    static bool Check(typename API::CallbackInfoType Info, typename API::ContextType Context)
+    {
+        if (Pos >= StopPos)
+            return true;
+        if (!TypeConverter<ArgType>::accept(Context, API::GetArg(Info, Pos)))
+        {
+            return false;
+        }
+        return ArgumentChecker<API, NextPos, StopPos, Rest...>::Check(Info, Context);
+    }
+};
+
+template <typename API, typename Ret, typename... Args, bool CheckArguments, bool ReturnByPointer, bool ScriptTypePtrAsRef>
+struct FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, CheckArguments, ReturnByPointer, ScriptTypePtrAsRef>
 {
 private:
+    template <bool Enable, std::size_t ND, typename... CArgs>
+    struct ArgumentsChecker;
+
+    template <std::size_t ND, typename... CArgs>
+    struct ArgumentsChecker<true, ND, CArgs...>
+    {
+        static constexpr auto ArgsLength = sizeof...(CArgs);
+
+        static bool Check(typename API::ContextType context, typename API::CallbackInfoType info)
+        {
+            if (ND == 0 ? API::GetArgsLen(info) != ArgsLength : API::GetArgsLen(info) < (ArgsLength - ND))
+                return false;
+
+            if (!ArgumentChecker<API, 0, ArgsLength - ND, CArgs...>::Check(info, context))
+                return false;
+
+            return true;
+        }
+    };
+
+    template <std::size_t ND, typename... CArgs>
+    struct ArgumentsChecker<false, ND, CArgs...>
+    {
+        static constexpr auto ArgsLength = sizeof...(CArgs);
+
+        static bool Check(typename API::ContextType context, typename API::CallbackInfoType info)
+        {
+            return true;
+        }
+    };
+
     template <typename T, typename = void>
     struct ArgumentType
     {
@@ -363,7 +302,7 @@ private:
     template <typename T, typename Enable = void>
     struct ReturnConverter
     {
-        static ValueType Convert(ContextType context, T ret)
+        static typename API::ValueType Convert(typename API::ContextType context, T ret)
         {
             return TypeConverter<typename std::remove_reference<T>::type>::toScript(
                 context, std::forward<typename std::remove_reference<T>::type>(ret));
@@ -376,7 +315,7 @@ private:
                                 (is_objecttype<typename std::decay<T>::type>::value ||
                                     is_uetype<typename std::decay<T>::type>::value)>::type>
     {
-        static ValueType Convert(ContextType context, T ret)
+        static typename API::ValueType Convert(typename API::ContextType context, T ret)
         {
             return TypeConverter<typename std::decay<T>::type*>::toScript(context, &ret);
         }
@@ -389,7 +328,7 @@ private:
 
         using ArgumentDecayType = typename std::decay<T>::type;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Arg(TypeConverter<ArgumentDecayType>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
@@ -399,7 +338,7 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
     };
@@ -416,7 +355,7 @@ private:
         typename ArgumentType<T>::type Arg;
         typename ArgumentBufferType<T>::type Buf;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Arg(*TypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
             if (&(Arg.get()) == nullptr)
@@ -438,14 +377,14 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
             if (&Buf != &(Arg.get()))
             {
                 return;
             }
             // new object and set
-            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Arg.get()));
+            API::UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Arg.get()));
         }
     };
 
@@ -461,7 +400,7 @@ private:
         typename ArgumentType<T>::type Arg;
 
         // there may be nullptr ref
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Arg(*TypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
@@ -471,7 +410,7 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
     };
@@ -485,7 +424,7 @@ private:
         typename ArgumentType<T>::type Arg;
 
         // there may be nullptr ref
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Arg(*TypeConverter<typename std::decay<T>::type*>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
@@ -495,7 +434,7 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
     };
@@ -510,7 +449,7 @@ private:
 
         using ArgumentDecayType = typename std::decay<T>::type;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Arg(TypeConverter<std::reference_wrapper<ArgumentDecayType>>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
@@ -520,9 +459,9 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
-            UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Arg));
+            API::UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Arg));
         }
     };
 
@@ -535,7 +474,7 @@ private:
         using BuffType = typename std::remove_pointer<T>::type;
         BuffType Buf;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info)
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Buf(TypeConverter<std::reference_wrapper<BuffType>>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
@@ -545,9 +484,9 @@ private:
             return Arg ? Arg : &Buf;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
-            UpdateRefValue(context, holder, converter::Converter<BuffType>::toScript(context, Buf));
+            API::UpdateRefValue(context, holder, converter::Converter<BuffType>::toScript(context, Buf));
         }
     };
 
@@ -558,7 +497,8 @@ private:
     {
         T Arg = nullptr;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info) : Arg(TypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
+            : Arg(TypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -567,7 +507,7 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
     };
@@ -579,7 +519,8 @@ private:
 
         typename ArgumentBufferType<T>::type Buf;
 
-        ArgumentHolder(std::tuple<ContextType, ValueType> info) : Buf(std::get<0>(info), std::get<1>(info))
+        ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
+            : Buf(std::get<0>(info), std::get<1>(info))
         {
             Arg = Buf.Data();
         }
@@ -589,7 +530,7 @@ private:
             return Arg;
         }
 
-        void SetRef(ContextType context, ValueType holder)
+        void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
         }
     };
@@ -599,7 +540,7 @@ private:
     template <int, typename...>
     struct RefValuesSync
     {
-        static void Sync(ContextType context, CallbackInfoType info, ArgumentsHolder& cppArgHolders)
+        static void Sync(typename API::ContextType context, typename API::CallbackInfoType info, ArgumentsHolder& cppArgHolders)
         {
         }
     };
@@ -607,9 +548,9 @@ private:
     template <int Pos, typename T, typename... Rest>
     struct RefValuesSync<Pos, T, Rest...>
     {
-        static void Sync(ContextType context, CallbackInfoType info, ArgumentsHolder& cppArgHolders)
+        static void Sync(typename API::ContextType context, typename API::CallbackInfoType info, ArgumentsHolder& cppArgHolders)
         {
-            std::get<Pos>(cppArgHolders).SetRef(context, GetArg(info, Pos));
+            std::get<Pos>(cppArgHolders).SetRef(context, API::GetArg(info, Pos));
             RefValuesSync<Pos + 1, Rest...>::Sync(context, info, cppArgHolders);
         }
     };
@@ -647,17 +588,18 @@ private:
     template <typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        call(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+        call(Func& func, typename API::CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
         if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
             return false;
 
-        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+        ArgumentsHolder cppArgHolders(
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, API::GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
-            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+            cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...);
 
@@ -669,20 +611,21 @@ private:
     template <typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        call(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+        call(Func& func, typename API::CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
         if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
             return false;
 
-        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+        ArgumentsHolder cppArgHolders(
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, API::GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
-            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+            cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
-        SetReturn(info, ReturnConverter<Ret>::Convert(
-                            context, std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+        API::SetReturn(info, ReturnConverter<Ret>::Convert(context,
+                                 std::forward<Ret>(func(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
 
@@ -692,25 +635,27 @@ private:
     template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+        callMethod(
+            Func& func, typename API::CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
+        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return true;
         }
 
         if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
             return false;
 
-        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+        ArgumentsHolder cppArgHolders(
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, API::GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
-            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+            cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         (self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...);
 
@@ -722,28 +667,31 @@ private:
     template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        callMethod(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+        callMethod(
+            Func& func, typename API::CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
+        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return true;
         }
 
         if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
             return false;
 
-        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+        ArgumentsHolder cppArgHolders(
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, API::GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
-            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+            cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
-        SetReturn(info, ReturnConverter<Ret>::Convert(context,
-                            std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+        API::SetReturn(
+            info, ReturnConverter<Ret>::Convert(context,
+                      std::forward<Ret>((self->*func)(std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
 
@@ -753,25 +701,27 @@ private:
     template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        callExtension(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+        callExtension(
+            Func& func, typename API::CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
+        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return true;
         }
 
         if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
             return false;
 
-        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+        ArgumentsHolder cppArgHolders(
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
-            cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
+            cppArgHolders, API::GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
         func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...);
 
@@ -783,28 +733,31 @@ private:
     template <typename Ins, typename Func, size_t... index, class... DefaultArguments>
     static
         typename std::enable_if<!std::is_same<typename internal::traits::FunctionTrait<Func>::ReturnType, void>::value, bool>::type
-        callExtension(Func& func, CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
+        callExtension(
+            Func& func, typename API::CallbackInfoType info, std::index_sequence<index...>, DefaultArguments&&... defaultValues)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, GetHolder(info));
+        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return true;
         }
 
         if (!ArgumentsChecker<CheckArguments, sizeof...(DefaultArguments), Args...>::Check(context, info))
             return false;
 
-        ArgumentsHolder cppArgHolders(std::tuple<ContextType, ValueType>{context, GetArg(info, index)}...);
+        ArgumentsHolder cppArgHolders(
+            std::tuple<typename API::ContextType, typename API::ValueType>{context, GetArg(info, index)}...);
 
         DefaultValueSetter<sizeof...(Args) - sizeof...(DefaultArguments), 0, typename std::decay<Args>::type...>::Set(
             cppArgHolders, GetArgsLen(info), std::forward<DefaultArguments>(defaultValues)...);
 
-        SetReturn(info, ReturnConverter<Ret>::Convert(context,
-                            std::forward<Ret>(func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
+        API::SetReturn(
+            info, ReturnConverter<Ret>::Convert(context,
+                      std::forward<Ret>(func(*self, std::forward<Args>(std::get<index>(cppArgHolders).GetArgument())...))));
 
         RefValuesSync<0, Args...>::Sync(context, info, cppArgHolders);
 
@@ -813,14 +766,14 @@ private:
 
 public:
     template <typename Func, class... DefaultArguments>
-    static bool call(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool call(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
         return call(func, info, std::make_index_sequence<ArgsLength>(), std::forward<DefaultArguments>(defaultValues)...);
     }
 
     template <typename Ins, typename Func, class... DefaultArguments>
-    static bool callMethod(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool callMethod(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
         return callMethod<Ins>(
@@ -828,7 +781,7 @@ public:
     }
 
     template <typename Ins, typename Func, class... DefaultArguments>
-    static bool callExtension(Func&& func, CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool callExtension(Func&& func, typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         static_assert(sizeof...(Args) >= sizeof...(DefaultArguments), "too many default arguments");
         return callExtension<Ins>(
@@ -838,41 +791,46 @@ public:
 
 }    // namespace internal
 
-template <typename T, T, bool ReturnByPointer = false, bool ScriptTypePtrAsRef = true>
+template <typename API, typename T, T, bool ReturnByPointer = false, bool ScriptTypePtrAsRef = true>
 struct FuncCallWrapper;
 
-template <typename Ret, typename... Args, Ret (*func)(Args...), bool ReturnByPointer, bool ScriptTypePtrAsRef>
-struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsRef>
+template <typename API, typename Ret, typename... Args, Ret (*func)(Args...), bool ReturnByPointer, bool ScriptTypePtrAsRef>
+struct FuncCallWrapper<API, Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsRef>
 {
-    static void call(CallbackInfoType info)
+    static void call(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::call(func, info);
     }
 
-    static bool overloadCall(CallbackInfoType info)
+    static bool overloadCall(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::call(func, info);
     }
-    static void checkedCall(CallbackInfoType info)
+    static void checkedCall(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         if (!Helper::call(func, info))
         {
-            ThrowException(info, "invalid parameter!");
+            API::ThrowException(info, "invalid parameter!");
         }
     }
     template <class... DefaultArguments>
-    static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::call(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     template <class... DefaultArguments>
-    static bool overloadCallWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool overloadCallWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::call(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
@@ -883,16 +841,16 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsR
     struct ExtensionCallHelper
     {
         template <class... DefaultArguments>
-        static void call(CallbackInfoType info, DefaultArguments&&... defaultValues)
+        static void call(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
         {
             using FirstDecayType = typename std::decay<FirstType>::type;
             using Helper =
-                internal::FuncCallHelper<std::pair<Ret, std::tuple<RestTypes...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+                internal::FuncCallHelper<API, std::pair<Ret, std::tuple<RestTypes...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
             Helper::template callExtension<FirstDecayType>(func, info, std::forward<DefaultArguments>(defaultValues)...);
         }
     };
     template <class... DefaultArguments>
-    static void callExtensionWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callExtensionWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
         ExtensionCallHelper<Args...>::call(info, std::forward<DefaultArguments>(defaultValues)...);
     }
@@ -902,38 +860,44 @@ struct FuncCallWrapper<Ret (*)(Args...), func, ReturnByPointer, ScriptTypePtrAsR
     }
 };
 
-template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ReturnByPointer, bool ScriptTypePtrAsRef>
-struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer, ScriptTypePtrAsRef>
+template <typename API, typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...), bool ReturnByPointer,
+    bool ScriptTypePtrAsRef>
+struct FuncCallWrapper<API, Ret (Inc::*)(Args...), func, ReturnByPointer, ScriptTypePtrAsRef>
 {
-    static void call(CallbackInfoType info)
+    static void call(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info);
     }
 
-    static bool overloadCall(CallbackInfoType info)
+    static bool overloadCall(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::template callMethod<Inc, decltype(func)>(func, info);
     }
-    static void checkedCall(CallbackInfoType info)
+    static void checkedCall(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         if (!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
-            ThrowException(info, "invalid parameter!");
+            API::ThrowException(info, "invalid parameter!");
         }
     }
     template <class... DefaultArguments>
-    static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     template <class... DefaultArguments>
-    static bool overloadCallWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool overloadCallWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
@@ -943,39 +907,44 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...), func, ReturnByPointer, ScriptTypeP
 };
 
 // TODO: Similar logic...
-template <typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ReturnByPointer,
+template <typename API, typename Inc, typename Ret, typename... Args, Ret (Inc::*func)(Args...) const, bool ReturnByPointer,
     bool ScriptTypePtrAsRef>
-struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer, ScriptTypePtrAsRef>
+struct FuncCallWrapper<API, Ret (Inc::*)(Args...) const, func, ReturnByPointer, ScriptTypePtrAsRef>
 {
-    static void call(CallbackInfoType info)
+    static void call(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info);
     }
 
-    static bool overloadCall(CallbackInfoType info)
+    static bool overloadCall(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::template callMethod<Inc, decltype(func)>(func, info);
     }
-    static void checkedCall(CallbackInfoType info)
+    static void checkedCall(typename API::CallbackInfoType info)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         if (!Helper::template callMethod<Inc, decltype(func)>(func, info))
         {
-            ThrowException(info, "invalid parameter!");
+            API::ThrowException(info, "invalid parameter!");
         }
     }
     template <class... DefaultArguments>
-    static void callWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static void callWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, false, ReturnByPointer, ScriptTypePtrAsRef>;
         Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     template <class... DefaultArguments>
-    static bool overloadCallWithDefaultValues(CallbackInfoType info, DefaultArguments&&... defaultValues)
+    static bool overloadCallWithDefaultValues(typename API::CallbackInfoType info, DefaultArguments&&... defaultValues)
     {
-        using Helper = internal::FuncCallHelper<std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
+        using Helper =
+            internal::FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, true, ReturnByPointer, ScriptTypePtrAsRef>;
         return Helper::template callMethod<Inc>(func, info, std::forward<DefaultArguments>(defaultValues)...);
     }
     static const CFunctionInfo* info(unsigned int defaultCount = 0)
@@ -984,41 +953,41 @@ struct FuncCallWrapper<Ret (Inc::*)(Args...) const, func, ReturnByPointer, Scrip
     }
 };
 
-template <typename T, typename... Args>
+template <typename API, typename T, typename... Args>
 struct ConstructorWrapper
 {
 private:
     static constexpr auto ArgsLength = sizeof...(Args);
 
     template <size_t... index>
-    static void* call(CallbackInfoType info, std::index_sequence<index...>)
+    static void* call(typename API::CallbackInfoType info, std::index_sequence<index...>)
     {
-        auto context = GetContext(info);
+        auto context = API::GetContext(info);
 
-        if (GetArgsLen(info) != ArgsLength)
+        if (API::GetArgsLen(info) != ArgsLength)
         {
             return nullptr;
         }
 
-        if (!internal::ArgumentChecker<0, ArgsLength, Args...>::Check(info, context))
+        if (!internal::ArgumentChecker<API, 0, ArgsLength, Args...>::Check(info, context))
         {
             return nullptr;
         }
 
-        return new T(internal::TypeConverter<Args>::toCpp(context, GetArg(info, index))...);
+        return new T(internal::TypeConverter<Args>::toCpp(context, API::GetArg(info, index))...);
     }
 
 public:
-    static void* call(CallbackInfoType info)
+    static void* call(typename API::CallbackInfoType info)
     {
         return call(info, std::make_index_sequence<ArgsLength>());
     }
-    static void* checkedCall(CallbackInfoType info)
+    static void* checkedCall(typename API::CallbackInfoType info)
     {
         auto ret = call(info);
         if (!ret)
         {
-            ThrowException(info, "invalid parameter!");
+            API::ThrowException(info, "invalid parameter!");
         }
         return ret;
     }
@@ -1028,43 +997,44 @@ public:
     }
 };
 
-typedef bool (*V8FunctionCallbackWithBoolRet)(CallbackInfoType info);
-
-template <V8FunctionCallbackWithBoolRet Func, V8FunctionCallbackWithBoolRet... Rest>
-struct OverloadsRecursion
+template <typename API, typename... OverloadWraps>
+struct ConstructorsCombiner
 {
-    static bool _call(CallbackInfoType info)
+    template <typename API::InitializeFuncType Func, typename API::InitializeFuncType... Rest>
+    struct ConstructorRecursion
     {
-        if (Func(info))
-            return true;
-        else
-            return OverloadsRecursion<Rest...>::_call(info);
-    }
-
-    static void call(CallbackInfoType info)
-    {
-        if (!_call(info))
+        static void* _call(typename API::CallbackInfoType info)
         {
-            ThrowException(info, "invalid parameter!");
+            auto Ret = Func(info);
+            if (Ret)
+                return Ret;
+            else
+                return ConstructorRecursion<Rest...>::_call(info);
         }
-    }
-};
 
-template <V8FunctionCallbackWithBoolRet Func>
-struct OverloadsRecursion<Func>
-{
-    static bool _call(CallbackInfoType info)
-    {
-        return Func(info);
-    }
-};
+        static void* call(typename API::CallbackInfoType info)
+        {
+            auto Ret = _call(info);
+            if (!Ret)
+            {
+                API::ThrowException(info, "invalid parameter!");
+            }
+            return Ret;
+        }
+    };
 
-template <typename... OverloadWraps>
-struct OverloadsCombiner
-{
-    static void call(CallbackInfoType info)
+    template <typename API::InitializeFuncType Func>
+    struct ConstructorRecursion<Func>
     {
-        OverloadsRecursion<(&OverloadWraps::overloadCall)...>::call(info);
+        static void* _call(typename API::CallbackInfoType info)
+        {
+            return Func(info);
+        }
+    };
+
+    static void* call(typename API::CallbackInfoType info)
+    {
+        return ConstructorRecursion<(&OverloadWraps::call)...>::call(info);
     }
 
     static constexpr int length = sizeof...(OverloadWraps);
@@ -1076,44 +1046,43 @@ struct OverloadsCombiner
     }
 };
 
-template <InitializeFuncType Func, InitializeFuncType... Rest>
-struct ConstructorRecursion
+template <typename API, typename... OverloadWraps>
+struct OverloadsCombiner
 {
-    static void* _call(CallbackInfoType info)
-    {
-        auto Ret = Func(info);
-        if (Ret)
-            return Ret;
-        else
-            return ConstructorRecursion<Rest...>::_call(info);
-    }
+    typedef bool (*V8FunctionCallbackWithBoolRet)(typename API::CallbackInfoType info);
 
-    static void* call(CallbackInfoType info)
+    template <V8FunctionCallbackWithBoolRet Func, V8FunctionCallbackWithBoolRet... Rest>
+    struct OverloadsRecursion
     {
-        auto Ret = _call(info);
-        if (!Ret)
+        static bool _call(typename API::CallbackInfoType info)
         {
-            ThrowException(info, "invalid parameter!");
+            if (Func(info))
+                return true;
+            else
+                return OverloadsRecursion<Rest...>::_call(info);
         }
-        return Ret;
-    }
-};
 
-template <InitializeFuncType Func>
-struct ConstructorRecursion<Func>
-{
-    static void* _call(CallbackInfoType info)
-    {
-        return Func(info);
-    }
-};
+        static void call(typename API::CallbackInfoType info)
+        {
+            if (!_call(info))
+            {
+                API::ThrowException(info, "invalid parameter!");
+            }
+        }
+    };
 
-template <typename... OverloadWraps>
-struct ConstructorsCombiner
-{
-    static void* call(CallbackInfoType info)
+    template <V8FunctionCallbackWithBoolRet Func>
+    struct OverloadsRecursion<Func>
     {
-        return ConstructorRecursion<(&OverloadWraps::call)...>::call(info);
+        static bool _call(typename API::CallbackInfoType info)
+        {
+            return Func(info);
+        }
+    };
+
+    static void call(typename API::CallbackInfoType info)
+    {
+        OverloadsRecursion<(&OverloadWraps::overloadCall)...>::call(info);
     }
 
     static constexpr int length = sizeof...(OverloadWraps);
@@ -1135,35 +1104,35 @@ struct IsBoundedArray<T[N]> : std::true_type
 {
 };
 
-template <typename T, T, typename Enable = void>
+template <typename API, typename T, T, typename Enable = void>
 struct PropertyWrapper;
 
-template <class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<Ret Ins::*, member,
+template <typename API, class Ins, class Ret, Ret Ins::*member>
+struct PropertyWrapper<API, Ret Ins::*, member,
     typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && !IsBoundedArray<Ret>::value>::type>
 {
-    static void getter(CallbackInfoType info)
+    static void getter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        auto context = API::GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return;
         }
-        SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
+        API::SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
     }
 
-    static void setter(CallbackInfoType info)
+    static void setter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        auto context = API::GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return;
         }
-        self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+        self->*member = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1172,39 +1141,39 @@ struct PropertyWrapper<Ret Ins::*, member,
     }
 };
 
-template <class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<Ret Ins::*, member,
+template <typename API, class Ins, class Ret, Ret Ins::*member>
+struct PropertyWrapper<API, Ret Ins::*, member,
     typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && IsBoundedArray<Ret>::value>::type>
 {
-    static void getter(CallbackInfoType info)
+    static void getter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        auto context = API::GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return;
         }
 
-        SetReturn(info, converter::Converter<Ret>::toScript(context, self->*member));
+        API::SetReturn(info, converter::Converter<Ret>::toScript(context, self->*member));
     }
 
-    static void setter(CallbackInfoType info)
+    static void setter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        auto context = API::GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return;
         }
 
         if (!converter::Converter<Ret>::accept(context, GetArg(info, 0)))
         {
-            ThrowException(info, "invalid value for property");
+            API::ThrowException(info, "invalid value for property");
             return;
         }
-        auto Src = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+        auto Src = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
         if (self->*member == Src)
         {
             return;
@@ -1218,33 +1187,33 @@ struct PropertyWrapper<Ret Ins::*, member,
     }
 };
 
-template <class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
+template <typename API, class Ins, class Ret, Ret Ins::*member>
+struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
 {
-    static void getter(CallbackInfoType info)
+    static void getter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        auto context = API::GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return;
         }
         auto ret = internal::TypeConverter<Ret*>::toScript(context, &(self->*member));
-        LinkOuter<Ins, Ret>(context, GetThis(info), ret);
-        SetReturn(info, ret);
+        API::template LinkOuter<Ins, Ret>(context, API::GetThis(info), ret);
+        API::SetReturn(info, ret);
     }
 
-    static void setter(CallbackInfoType info)
+    static void setter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, GetThis(info));
+        auto context = API::GetContext(info);
+        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
-            ThrowException(info, "access a null object");
+            API::ThrowException(info, "access a null object");
             return;
         }
-        self->*member = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+        self->*member = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1253,19 +1222,19 @@ struct PropertyWrapper<Ret Ins::*, member, typename std::enable_if<is_objecttype
     }
 };
 
-template <typename Ret, Ret* Variable>
-struct PropertyWrapper<Ret*, Variable>
+template <typename API, typename Ret, Ret* Variable>
+struct PropertyWrapper<API, Ret*, Variable>
 {
-    static void getter(CallbackInfoType info)
+    static void getter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        SetReturn(info, internal::TypeConverter<Ret>::toScript(context, *Variable));
+        auto context = API::GetContext(info);
+        API::SetReturn(info, internal::TypeConverter<Ret>::toScript(context, *Variable));
     }
 
-    static void setter(CallbackInfoType info)
+    static void setter(typename API::CallbackInfoType info)
     {
-        auto context = GetContext(info);
-        *Variable = internal::TypeConverter<Ret>::toCpp(context, GetArg(info, 0));
+        auto context = API::GetContext(info);
+        *Variable = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1274,31 +1243,31 @@ struct PropertyWrapper<Ret*, Variable>
     }
 };
 
-template <typename T>
+template <typename T, typename API>
 class ClassDefineBuilder
 {
     template <typename...>
-    using sfina = ClassDefineBuilder<T>&;
+    using sfina = ClassDefineBuilder<T, API>&;
 
     const char* className_ = nullptr;
 
     const void* superTypeId_ = nullptr;
 
-    std::vector<GeneralFunctionInfo> functions_{};
+    std::vector<typename API::GeneralFunctionInfo> functions_{};
 
-    std::vector<GeneralFunctionInfo> methods_{};
+    std::vector<typename API::GeneralFunctionInfo> methods_{};
 
-    std::vector<GeneralPropertyInfo> properties_{};
+    std::vector<typename API::GeneralPropertyInfo> properties_{};
 
-    std::vector<GeneralPropertyInfo> variables_{};
+    std::vector<typename API::GeneralPropertyInfo> variables_{};
 
-    InitializeFuncType constructor_{};
+    typename API::InitializeFuncType constructor_{};
 
-    std::vector<GeneralFunctionReflectionInfo> constructorInfos_{};
-    std::vector<GeneralFunctionReflectionInfo> methodInfos_{};
-    std::vector<GeneralFunctionReflectionInfo> functionInfos_{};
-    std::vector<GeneralPropertyReflectionInfo> propertyInfos_{};
-    std::vector<GeneralPropertyReflectionInfo> variableInfos_{};
+    std::vector<typename API::GeneralFunctionReflectionInfo> constructorInfos_{};
+    std::vector<typename API::GeneralFunctionReflectionInfo> methodInfos_{};
+    std::vector<typename API::GeneralFunctionReflectionInfo> functionInfos_{};
+    std::vector<typename API::GeneralPropertyReflectionInfo> propertyInfos_{};
+    std::vector<typename API::GeneralPropertyReflectionInfo> variableInfos_{};
 
 public:
     explicit ClassDefineBuilder(const char* className) : className_(className)
@@ -1306,90 +1275,93 @@ public:
     }
 
     template <typename S>
-    ClassDefineBuilder<T>& Extends()
+    ClassDefineBuilder<T, API>& Extends()
     {
         superTypeId_ = StaticTypeId<S>::get();
         return *this;
     }
 
     template <typename... Args>
-    std::enable_if_t<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T>&> Constructor()
+    std::enable_if_t<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T, API>&> Constructor()
     {
-        InitializeFuncType constructor = ConstructorWrapper<T, Args...>::checkedCall;
+        typename API::InitializeFuncType constructor = ConstructorWrapper<API, T, Args...>::checkedCall;
         constructor_ = constructor;
-        constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", ConstructorWrapper<T, Args...>::info()});
+        constructorInfos_.push_back(
+            typename API::GeneralFunctionReflectionInfo{"constructor", ConstructorWrapper<API, T, Args...>::info()});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Constructor(InitializeFuncType constructor, int length, const CFunctionInfo** infos)
+    ClassDefineBuilder<T, API>& Constructor(typename API::InitializeFuncType constructor, int length, const CFunctionInfo** infos)
     {
         for (int i = 0; i < length; i++)
         {
-            constructorInfos_.push_back(GeneralFunctionReflectionInfo{"constructor", infos[i]});
+            constructorInfos_.push_back(typename API::GeneralFunctionReflectionInfo{"constructor", infos[i]});
         }
         constructor_ = constructor;
         return *this;
     }
 
-    ClassDefineBuilder<T>& Function(const char* name, FunctionCallbackType func, const CFunctionInfo* info)
+    ClassDefineBuilder<T, API>& Function(const char* name, typename API::FunctionCallbackType func, const CFunctionInfo* info)
     {
         if (info)
         {
-            functionInfos_.push_back(GeneralFunctionReflectionInfo{name, info});
+            functionInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, info});
         }
-        functions_.push_back(GeneralFunctionInfo{name, func, nullptr, info});
+        functions_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, info});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Function(const char* name, FunctionCallbackType func, int length, const CFunctionInfo** infos)
+    ClassDefineBuilder<T, API>& Function(
+        const char* name, typename API::FunctionCallbackType func, int length, const CFunctionInfo** infos)
     {
         for (int i = 0; i < length; i++)
         {
-            functionInfos_.push_back(GeneralFunctionReflectionInfo{name, infos[i]});
+            functionInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, infos[i]});
         }
-        functions_.push_back(GeneralFunctionInfo{name, func, nullptr, nullptr});
+        functions_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, nullptr});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Method(const char* name, FunctionCallbackType func, const CFunctionInfo* info)
+    ClassDefineBuilder<T, API>& Method(const char* name, typename API::FunctionCallbackType func, const CFunctionInfo* info)
     {
         if (info)
         {
-            methodInfos_.push_back(GeneralFunctionReflectionInfo{name, info});
+            methodInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, info});
         }
-        methods_.push_back(GeneralFunctionInfo{name, func, nullptr, info});
+        methods_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, info});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Method(const char* name, FunctionCallbackType func, int length, const CFunctionInfo** infos)
+    ClassDefineBuilder<T, API>& Method(
+        const char* name, typename API::FunctionCallbackType func, int length, const CFunctionInfo** infos)
     {
         for (int i = 0; i < length; i++)
         {
-            methodInfos_.push_back(GeneralFunctionReflectionInfo{name, infos[i]});
+            methodInfos_.push_back(typename API::GeneralFunctionReflectionInfo{name, infos[i]});
         }
-        methods_.push_back(GeneralFunctionInfo{name, func, nullptr, nullptr});
+        methods_.push_back(typename API::GeneralFunctionInfo{name, func, nullptr, nullptr});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Property(
-        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
+    ClassDefineBuilder<T, API>& Property(const char* name, typename API::FunctionCallbackType getter,
+        typename API::FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
         if (type)
         {
-            propertyInfos_.push_back(GeneralPropertyReflectionInfo{name, type});
+            propertyInfos_.push_back(typename API::GeneralPropertyReflectionInfo{name, type});
         }
-        properties_.push_back(GeneralPropertyInfo{name, getter, setter, nullptr});
+        properties_.push_back(typename API::GeneralPropertyInfo{name, getter, setter, nullptr});
         return *this;
     }
 
-    ClassDefineBuilder<T>& Variable(
-        const char* name, FunctionCallbackType getter, FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
+    ClassDefineBuilder<T, API>& Variable(const char* name, typename API::FunctionCallbackType getter,
+        typename API::FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
         if (type)
         {
-            variableInfos_.push_back(GeneralPropertyReflectionInfo{name, type});
+            variableInfos_.push_back(typename API::GeneralPropertyReflectionInfo{name, type});
         }
-        variables_.push_back(GeneralPropertyInfo{name, getter, setter, nullptr});
+        variables_.push_back(typename API::GeneralPropertyInfo{name, getter, setter, nullptr});
         return *this;
     }
 
@@ -1518,12 +1490,5 @@ public:
     }
 #endif
 };
-
-template <typename T>
-inline ClassDefineBuilder<T> DefineClass()
-{
-    static auto NameLiteral = ScriptTypeName<T>::value();
-    return ClassDefineBuilder<T>(NameLiteral.Data());
-}
 
 }    // namespace puerts

@@ -51,83 +51,88 @@
 
 namespace puerts
 {
-typedef const v8::FunctionCallbackInfo<v8::Value>& CallbackInfoType;
-typedef v8::Local<v8::Context> ContextType;
-typedef v8::Local<v8::Value> ValueType;
-typedef v8::FunctionCallback FunctionCallbackType;
-typedef InitializeFunc InitializeFuncType;
-typedef JSFunctionInfo GeneralFunctionInfo;
-typedef JSPropertyInfo GeneralPropertyInfo;
-typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
-typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
+namespace v8_impl
+{
+struct API
+{
+    typedef const v8::FunctionCallbackInfo<v8::Value>& CallbackInfoType;
+    typedef v8::Local<v8::Context> ContextType;
+    typedef v8::Local<v8::Value> ValueType;
+    typedef v8::FunctionCallback FunctionCallbackType;
+    typedef InitializeFunc InitializeFuncType;
+    typedef JSFunctionInfo GeneralFunctionInfo;
+    typedef JSPropertyInfo GeneralPropertyInfo;
+    typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
+    typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
 
-V8_INLINE int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.Length();
-}
-
-V8_INLINE v8::Local<v8::Value> GetArg(const v8::FunctionCallbackInfo<v8::Value>& info, int index)
-{
-    return info[index];
-}
-
-V8_INLINE v8::Local<v8::Context> GetContext(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.GetIsolate()->GetCurrentContext();
-}
-V8_INLINE v8::Local<v8::Object> GetThis(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.This();
-}
-
-V8_INLINE v8::Local<v8::Object> GetHolder(const v8::FunctionCallbackInfo<v8::Value>& info)
-{
-    return info.Holder();
-}
-
-V8_INLINE void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
-{
-    v8::Isolate* isolate = info.GetIsolate();
-    isolate->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
-}
-
-V8_INLINE void SetReturn(const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value)
-{
-    info.GetReturnValue().Set(value);
-}
-
-template <typename T1, typename T2>
-V8_INLINE void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
-{
-    LinkOuterImpl(Context, Outer, Inner);
-}
-
-V8_INLINE void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, v8::Local<v8::Value> value)
-{
-    if (holder->IsObject())
+    V8_INLINE static int GetArgsLen(const v8::FunctionCallbackInfo<v8::Value>& info)
     {
-        auto outer = holder->ToObject(context).ToLocalChecked();
-        auto _unused = outer->Set(context, 0, value);
+        return info.Length();
     }
-}
 
-template <typename T>
-V8_INLINE T* FastGetNativeObjectPointer(v8::Local<v8::Context> context, v8::Local<v8::Object> Object)
-{
-    return DataTransfer::GetPointerFast<T>(Object);
-}
+    V8_INLINE static v8::Local<v8::Value> GetArg(const v8::FunctionCallbackInfo<v8::Value>& info, int index)
+    {
+        return info[index];
+    }
 
-V8_INLINE v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
-{
-    return v8::Undefined(context->GetIsolate());
-}
+    V8_INLINE static v8::Local<v8::Context> GetContext(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return info.GetIsolate()->GetCurrentContext();
+    }
+    V8_INLINE static v8::Local<v8::Object> GetThis(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return info.This();
+    }
 
-V8_INLINE bool IsNullOrUndefined(v8::Local<v8::Context> context, v8::Local<v8::Value> val)
-{
-    return val->IsNullOrUndefined();
-}
+    V8_INLINE static v8::Local<v8::Object> GetHolder(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return info.Holder();
+    }
 
+    V8_INLINE static void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
+    {
+        v8::Isolate* isolate = info.GetIsolate();
+        isolate->ThrowException(
+            v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
+    }
+
+    V8_INLINE static void SetReturn(const v8::FunctionCallbackInfo<v8::Value>& info, v8::Local<v8::Value> value)
+    {
+        info.GetReturnValue().Set(value);
+    }
+
+    template <typename T1, typename T2>
+    V8_INLINE static void LinkOuter(v8::Local<v8::Context> Context, v8::Local<v8::Value> Outer, v8::Local<v8::Value> Inner)
+    {
+        LinkOuterImpl(Context, Outer, Inner);
+    }
+
+    V8_INLINE static void UpdateRefValue(v8::Local<v8::Context> context, v8::Local<v8::Value> holder, v8::Local<v8::Value> value)
+    {
+        if (holder->IsObject())
+        {
+            auto outer = holder->ToObject(context).ToLocalChecked();
+            auto _unused = outer->Set(context, 0, value);
+        }
+    }
+
+    template <typename T>
+    V8_INLINE static T* FastGetNativeObjectPointer(v8::Local<v8::Context> context, v8::Local<v8::Object> Object)
+    {
+        return DataTransfer::GetPointerFast<T>(Object);
+    }
+
+    V8_INLINE static v8::Local<v8::Value> GetUndefined(v8::Local<v8::Context> context)
+    {
+        return v8::Undefined(context->GetIsolate());
+    }
+
+    V8_INLINE static bool IsNullOrUndefined(v8::Local<v8::Context> context, v8::Local<v8::Value> val)
+    {
+        return val->IsNullOrUndefined();
+    }
+};
+}    // namespace v8_impl
 }    // namespace puerts
 
 namespace puerts

@@ -88,44 +88,48 @@ namespace converter
 template <typename R, typename... Args>
 struct Converter<std::function<R(Args...)>>
 {
-    static ValueType toScript(ContextType context, std::function<R(Args...)> value)
+    static PUERTS_BINDING_IMPL::API::ValueType toScript(
+        PUERTS_BINDING_IMPL::API::ContextType context, std::function<R(Args...)> value)
     {
-        return GetUndefined(context);
+        return PUERTS_BINDING_IMPL::API::GetUndefined(context);
     }
 
-    static std::function<R(Args...)> toCpp(ContextType context, const ValueType value)
+    static std::function<R(Args...)> toCpp(
+        PUERTS_BINDING_IMPL::API::ContextType context, const PUERTS_BINDING_IMPL::API::ValueType value)
     {
-        if (IsNullOrUndefined(context, value))
+        if (PUERTS_BINDING_IMPL::API::IsNullOrUndefined(context, value))
             return nullptr;
         Function PF(context, value);
         return [=](Args... cppArgs) -> R { return PF.Func<R>(cppArgs...); };
     }
 
-    static bool accept(ContextType context, const ValueType value)
+    static bool accept(PUERTS_BINDING_IMPL::API::ContextType context, const PUERTS_BINDING_IMPL::API::ValueType value)
     {
-        return IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
+        return PUERTS_BINDING_IMPL::API::IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
     }
 };
 
 template <typename... Args>
 struct Converter<std::function<void(Args...)>>
 {
-    static ValueType toScript(ContextType context, std::function<void(Args...)> value)
+    static PUERTS_BINDING_IMPL::API::ValueType toScript(
+        PUERTS_BINDING_IMPL::API::ContextType context, std::function<void(Args...)> value)
     {
-        return GetUndefined(context);
+        return PUERTS_BINDING_IMPL::API::GetUndefined(context);
     }
 
-    static std::function<void(Args...)> toCpp(ContextType context, const ValueType value)
+    static std::function<void(Args...)> toCpp(
+        PUERTS_BINDING_IMPL::API::ContextType context, const PUERTS_BINDING_IMPL::API::ValueType value)
     {
-        if (IsNullOrUndefined(context, value))
+        if (PUERTS_BINDING_IMPL::API::IsNullOrUndefined(context, value))
             return nullptr;
         Function PF(context, value);
         return [=](Args... cppArgs) -> void { PF.Action(cppArgs...); };
     }
 
-    static bool accept(ContextType context, const ValueType value)
+    static bool accept(PUERTS_BINDING_IMPL::API::ContextType context, const PUERTS_BINDING_IMPL::API::ValueType value)
     {
-        return IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
+        return PUERTS_BINDING_IMPL::API::IsNullOrUndefined(context, value) || Converter<Function>::accept(context, value);
     }
 };
 }    // namespace converter

@@ -53,102 +53,108 @@
 
 namespace puerts
 {
-typedef pesapi_callback_info CallbackInfoType;
-typedef pesapi_env ContextType;
-typedef pesapi_value ValueType;
-typedef void (*FunctionCallbackType)(pesapi_callback_info info);
-typedef void* (*InitializeFuncType)(pesapi_callback_info Info);
-struct GeneralFunctionInfo
+namespace pesapi_impl
 {
-    const char* Name;
-    FunctionCallbackType Callback;
-    void* Data = nullptr;
-};
-
-struct GeneralPropertyInfo
+struct API
 {
-    const char* Name;
-    FunctionCallbackType Getter;
-    FunctionCallbackType Setter;
-    void* Data = nullptr;
-};
-
-struct GeneralFunctionReflectionInfo
-{
-    const char* Name;
-    const CFunctionInfo* Type;
-};
-
-struct GeneralPropertyReflectionInfo
-{
-    const char* Name;
-    const CTypeInfo* Type;
-};
-
-inline int GetArgsLen(pesapi_callback_info info)
-{
-    return pesapi_get_args_len(info);
-}
-
-inline pesapi_value GetArg(pesapi_callback_info info, int index)
-{
-    return pesapi_get_arg(info, index);
-}
-
-inline pesapi_env GetContext(pesapi_callback_info info)
-{
-    return pesapi_get_env(info);
-}
-inline pesapi_value GetThis(pesapi_callback_info info)
-{
-    return pesapi_get_this(info);
-}
-
-inline pesapi_value GetHolder(pesapi_callback_info info)
-{
-    return pesapi_get_holder(info);
-}
-
-inline void ThrowException(pesapi_callback_info info, const char* msg)
-{
-    pesapi_throw_by_string(info, msg);
-}
-
-inline void SetReturn(pesapi_callback_info info, pesapi_value value)
-{
-    pesapi_add_return(info, value);
-}
-
-template <typename T1, typename T2>
-inline void LinkOuter(pesapi_env env, pesapi_value outer, pesapi_value inner)
-{
-    pesapi_set_property_uint32(env, inner, 0, outer);
-}
-
-inline void UpdateRefValue(pesapi_env env, pesapi_value holder, pesapi_value value)
-{
-    if (pesapi_is_object(env, holder))
+    typedef pesapi_callback_info CallbackInfoType;
+    typedef pesapi_env ContextType;
+    typedef pesapi_value ValueType;
+    typedef void (*FunctionCallbackType)(pesapi_callback_info info);
+    typedef void* (*InitializeFuncType)(pesapi_callback_info Info);
+    struct GeneralFunctionInfo
     {
-        pesapi_update_value_ref(env, holder, value);
+        const char* Name;
+        FunctionCallbackType Callback;
+        void* Data = nullptr;
+        const CFunctionInfo* ReflectionInfo = nullptr;
+    };
+
+    struct GeneralPropertyInfo
+    {
+        const char* Name;
+        FunctionCallbackType Getter;
+        FunctionCallbackType Setter;
+        void* Data = nullptr;
+    };
+
+    struct GeneralFunctionReflectionInfo
+    {
+        const char* Name;
+        const CFunctionInfo* Type;
+    };
+
+    struct GeneralPropertyReflectionInfo
+    {
+        const char* Name;
+        const CTypeInfo* Type;
+    };
+
+    inline static int GetArgsLen(pesapi_callback_info info)
+    {
+        return pesapi_get_args_len(info);
     }
-}
 
-template <typename T>
-inline T* FastGetNativeObjectPointer(pesapi_env env, pesapi_value value)
-{
-    return static_cast<T*>(pesapi_get_native_object_ptr(env, value));
-}
+    inline static pesapi_value GetArg(pesapi_callback_info info, int index)
+    {
+        return pesapi_get_arg(info, index);
+    }
 
-inline pesapi_value GetUndefined(pesapi_env env)
-{
-    return pesapi_create_undefined(env);
-}
+    inline static pesapi_env GetContext(pesapi_callback_info info)
+    {
+        return pesapi_get_env(info);
+    }
+    inline static pesapi_value GetThis(pesapi_callback_info info)
+    {
+        return pesapi_get_this(info);
+    }
 
-inline bool IsNullOrUndefined(pesapi_env env, pesapi_value val)
-{
-    return pesapi_is_null(env, val) || pesapi_is_undefined(env, val);
-}
+    inline static pesapi_value GetHolder(pesapi_callback_info info)
+    {
+        return pesapi_get_holder(info);
+    }
 
+    inline static void ThrowException(pesapi_callback_info info, const char* msg)
+    {
+        pesapi_throw_by_string(info, msg);
+    }
+
+    inline static void SetReturn(pesapi_callback_info info, pesapi_value value)
+    {
+        pesapi_add_return(info, value);
+    }
+
+    template <typename T1, typename T2>
+    inline static void LinkOuter(pesapi_env env, pesapi_value outer, pesapi_value inner)
+    {
+        pesapi_set_property_uint32(env, inner, 0, outer);
+    }
+
+    inline static void UpdateRefValue(pesapi_env env, pesapi_value holder, pesapi_value value)
+    {
+        if (pesapi_is_object(env, holder))
+        {
+            pesapi_update_value_ref(env, holder, value);
+        }
+    }
+
+    template <typename T>
+    inline static T* FastGetNativeObjectPointer(pesapi_env env, pesapi_value value)
+    {
+        return static_cast<T*>(pesapi_get_native_object_ptr(env, value));
+    }
+
+    inline static pesapi_value GetUndefined(pesapi_env env)
+    {
+        return pesapi_create_undefined(env);
+    }
+
+    inline static bool IsNullOrUndefined(pesapi_env env, pesapi_value val)
+    {
+        return pesapi_is_null(env, val) || pesapi_is_undefined(env, val);
+    }
+};
+}    // namespace pesapi_impl
 }    // namespace puerts
 
 namespace puerts
