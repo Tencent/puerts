@@ -138,5 +138,13 @@ public static bool IsNull(this UnityEngine.Object o)
 
 #### source-map-support支持
 1. 正常情况下，你可以直接使用TSLoader，其内置了source-map支持
-2. 如果你的项目不适用TSLoader，可以直接将TSLoader的[这个脚本文件](https://github.com/zombieyang/puerts-ts-loader/blob/main/upm/Editor/ConsoleRedirect/Typescripts/source-map-support.gen.mjs)放到你的项目，在JsEnv启动后执行即可。
-
+2. 如果你的项目不适用TSLoader，可以直接将TSLoader的[这个脚本文件](https://github.com/zombieyang/puerts-ts-loader/blob/main/upm/Editor/ConsoleRedirect/Typescripts/source-map-support.gen.mjs)放到你的项目，在JsEnv启动后执行下面代码即可。
+```
+import sm from 'source-map-support.gen.mjs'
+sm.install({
+    retrieveFile: (path) => {
+        // 如果你用的不是inline的source-map，这里还得处理sourcemap的加载
+        return puer.loadFile(path).content
+    }
+});
+```
