@@ -141,6 +141,76 @@ struct API
         return val->IsNullOrUndefined();
     }
 
+    template <typename T, typename CDB>
+    static void Register(FinalizeFunc Finalize, const CDB& Cdb)
+    {
+        const bool isUEType = puerts::is_uetype<T>::value;
+        static std::vector<JSFunctionInfo> s_functions_{};
+        static std::vector<JSFunctionInfo> s_methods_{};
+        static std::vector<JSPropertyInfo> s_properties_{};
+        static std::vector<JSPropertyInfo> s_variables_{};
+
+        static std::vector<NamedFunctionInfo> s_constructorInfos_{};
+        static std::vector<NamedFunctionInfo> s_methodInfos_{};
+        static std::vector<NamedFunctionInfo> s_functionInfos_{};
+        static std::vector<NamedPropertyInfo> s_propertyInfos_{};
+        static std::vector<NamedPropertyInfo> s_variableInfos_{};
+
+        puerts::JSClassDefinition ClassDef = JSClassEmptyDefinition;
+
+        if (isUEType)
+        {
+            ClassDef.UETypeName = Cdb.className_;
+        }
+        else
+        {
+            ClassDef.ScriptName = Cdb.className_;
+            ClassDef.TypeId = StaticTypeId<T>::get();
+            ClassDef.SuperTypeId = Cdb.superTypeId_;
+        }
+
+        ClassDef.Initialize = Cdb.constructor_;
+        ClassDef.Finalize = Finalize;
+
+        s_functions_ = std::move(Cdb.functions_);
+        s_functions_.push_back({nullptr, nullptr, nullptr});
+        ClassDef.Functions = s_functions_.data();
+
+        s_methods_ = std::move(Cdb.methods_);
+        s_methods_.push_back({nullptr, nullptr, nullptr});
+        ClassDef.Methods = s_methods_.data();
+
+        s_properties_ = std::move(Cdb.properties_);
+        s_properties_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        ClassDef.Properties = s_properties_.data();
+
+        s_variables_ = std::move(Cdb.variables_);
+        s_variables_.push_back(JSPropertyInfo{nullptr, nullptr, nullptr, nullptr});
+        ClassDef.Variables = s_variables_.data();
+
+        s_constructorInfos_ = std::move(Cdb.constructorInfos_);
+        s_constructorInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+        ClassDef.ConstructorInfos = s_constructorInfos_.data();
+
+        s_methodInfos_ = std::move(Cdb.methodInfos_);
+        s_methodInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+        ClassDef.MethodInfos = s_methodInfos_.data();
+
+        s_functionInfos_ = std::move(Cdb.functionInfos_);
+        s_functionInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+        ClassDef.FunctionInfos = s_functionInfos_.data();
+
+        s_propertyInfos_ = std::move(Cdb.propertyInfos_);
+        s_propertyInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+        ClassDef.PropertyInfos = s_propertyInfos_.data();
+
+        s_variableInfos_ = std::move(Cdb.variableInfos_);
+        s_variableInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+        ClassDef.VariableInfos = s_variableInfos_.data();
+
+        puerts::RegisterJSClass(ClassDef);
+    }
+
     template <typename T>
     using Converter = Converter<T>;
 

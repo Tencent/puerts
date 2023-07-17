@@ -8,13 +8,6 @@
 
 #pragma once
 
-#include <sstream>
-#include <tuple>
-#include <type_traits>
-#if BUILDING_PES_EXTENSION
-#include "pesapi.h"
-#else
-#include "JSClassRegister.h"
-#endif
 #include "StaticCall.hpp"
 #include "ScriptBackend.hpp"
+#include "Object.hpp"

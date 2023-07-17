@@ -163,6 +163,39 @@ struct API
         return pesapi_is_null(env, val) || pesapi_is_undefined(env, val);
     }
 
+    typedef void (*FinalizeFuncType)(void* Ptr);
+
+    template <typename T, typename CDB>
+    void Register(FinalizeFuncType Finalize, const CDB& Cdb)
+    {
+        size_t properties_count = Cdb.functions_.size() + Cdb.methods_.size() + Cdb.properties_.size() + Cdb.variables_.size();
+        auto properties = pesapi_alloc_property_descriptors(properties_count);
+        size_t pos = 0;
+        for (const auto& func : Cdb.functions_)
+        {
+            pesapi_set_method_info(properties, pos++, func.Name, true, func.Callback, nullptr, nullptr);
+        }
+
+        for (const auto& method : Cdb.methods_)
+        {
+            pesapi_set_method_info(properties, pos++, method.Name, false, method.Callback, nullptr, nullptr);
+        }
+
+        for (const auto& prop : Cdb.properties_)
+        {
+            pesapi_set_property_info(properties, pos++, prop.Name, false, prop.Getter, prop.Setter, nullptr, nullptr);
+        }
+
+        for (const auto& prop : Cdb.variables_)
+        {
+            pesapi_set_property_info(properties, pos++, prop.Name, true, prop.Getter, prop.Setter, nullptr, nullptr);
+        }
+
+        pesapi_finalize finalize = Finalize;
+        pesapi_define_class(
+            StaticTypeId<T>::get(), Cdb.superTypeId_, Cdb.className_, Cdb.constructor_, finalize, properties_count, properties);
+    }
+
     template <typename T>
     using Converter = Converter<T>;
 
