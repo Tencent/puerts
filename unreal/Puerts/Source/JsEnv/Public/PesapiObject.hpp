@@ -35,7 +35,8 @@ public:
     pesapi_scope scope;
 };
 }    // namespace internal
-
+namespace pesapi_impl
+{
 class Object
 {
 public:
@@ -168,8 +169,10 @@ private:
     friend struct puerts::pesapi_impl::Converter<Function>;
 };
 
+}    // namespace pesapi_impl
+
 template <>
-struct ScriptTypeName<Object>
+struct ScriptTypeName<pesapi_impl::Object>
 {
     static constexpr auto value()
     {
@@ -178,7 +181,7 @@ struct ScriptTypeName<Object>
 };
 
 template <>
-struct ScriptTypeName<::puerts::Function>
+struct ScriptTypeName<pesapi_impl::Function>
 {
     static constexpr auto value()
     {
@@ -189,16 +192,16 @@ struct ScriptTypeName<::puerts::Function>
 namespace pesapi_impl
 {
 template <>
-struct Converter<::puerts::Object>
+struct Converter<Object>
 {
-    static pesapi_value toScript(pesapi_env env, ::puerts::Object value)
+    static pesapi_value toScript(pesapi_env env, Object value)
     {
         return pesapi_get_value_from_holder(env, value.value_holder);
     }
 
-    static ::puerts::Object toCpp(pesapi_env env, pesapi_value value)
+    static Object toCpp(pesapi_env env, pesapi_value value)
     {
-        return ::puerts::Object(env, value);
+        return Object(env, value);
     }
 
     static bool accept(pesapi_env env, pesapi_value value)
@@ -208,16 +211,16 @@ struct Converter<::puerts::Object>
 };
 
 template <>
-struct Converter<::puerts::Function>
+struct Converter<Function>
 {
-    static pesapi_value toScript(pesapi_env env, ::puerts::Function value)
+    static pesapi_value toScript(pesapi_env env, Function value)
     {
         return pesapi_get_value_from_holder(env, value.value_holder);
     }
 
-    static ::puerts::Function toCpp(pesapi_env env, pesapi_value value)
+    static Function toCpp(pesapi_env env, pesapi_value value)
     {
-        return ::puerts::Function(env, value);
+        return Function(env, value);
     }
 
     static bool accept(pesapi_env env, pesapi_value value)

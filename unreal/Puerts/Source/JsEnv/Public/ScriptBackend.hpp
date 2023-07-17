@@ -12,6 +12,7 @@
 #else
 #include "V8Backend.hpp"
 #endif
+#include "Object.hpp"
 
 #ifndef PUERTS_BINDING_IMPL
 #if defined(BUILDING_PES_EXTENSION)
@@ -99,9 +100,13 @@ template <typename T, typename API>
 class ClassDefineBuilder;
 
 template <typename T>
-inline ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API> DefineClass()
+ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API> DefineClass()
 {
     static auto NameLiteral = ScriptTypeName<T>::value();
     return ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API>(NameLiteral.Data());
 }
+
+using Object = PUERTS_BINDING_IMPL::Object;
+
+using Function = PUERTS_BINDING_IMPL::Function;
 }    // namespace puerts

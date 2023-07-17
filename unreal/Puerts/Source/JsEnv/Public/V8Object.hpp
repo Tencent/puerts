@@ -24,6 +24,8 @@
 
 namespace puerts
 {
+namespace v8_impl
+{
 class Object
 {
 public:
@@ -222,8 +224,10 @@ private:
     friend struct puerts::v8_impl::Converter<Function>;
 };
 
+}    // namespace v8_impl
+
 template <>
-struct ScriptTypeName<::puerts::Object>
+struct ScriptTypeName<v8_impl::Object>
 {
     static constexpr auto value()
     {
@@ -232,7 +236,7 @@ struct ScriptTypeName<::puerts::Object>
 };
 
 template <>
-struct ScriptTypeName<::puerts::Function>
+struct ScriptTypeName<v8_impl::Function>
 {
     static constexpr auto value()
     {
@@ -243,16 +247,16 @@ struct ScriptTypeName<::puerts::Function>
 namespace v8_impl
 {
 template <>
-struct Converter<::puerts::Object>
+struct Converter<Object>
 {
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, ::puerts::Object value)
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, Object value)
     {
         return value.GObject.Get(context->GetIsolate());
     }
 
-    static ::puerts::Object toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    static Object toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::Object(context, value.As<v8::Object>());
+        return Object(context, value.As<v8::Object>());
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -262,16 +266,16 @@ struct Converter<::puerts::Object>
 };
 
 template <>
-struct Converter<::puerts::Function>
+struct Converter<Function>
 {
-    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, ::puerts::Function value)
+    static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, Function value)
     {
         return value.GObject.Get(context->GetIsolate());
     }
 
-    static ::puerts::Function toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
+    static Function toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
     {
-        return ::puerts::Function(context, value.As<v8::Object>());
+        return Function(context, value.As<v8::Object>());
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
