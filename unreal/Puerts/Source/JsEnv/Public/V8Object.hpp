@@ -82,11 +82,11 @@ public:
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
 
-        auto MaybeValue = Object->Get(Context, puerts::converter::Converter<const char*>::toScript(Context, key));
+        auto MaybeValue = Object->Get(Context, puerts::v8_impl::Converter<const char*>::toScript(Context, key));
         v8::Local<v8::Value> Val;
         if (MaybeValue.ToLocal(&Val))
         {
-            return puerts::converter::Converter<T>::toCpp(Context, Val);
+            return puerts::v8_impl::Converter<T>::toCpp(Context, Val);
         }
         return {};
     }
@@ -104,8 +104,8 @@ public:
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
 
-        auto _UnUsed = Object->Set(Context, puerts::converter::Converter<const char*>::toScript(Context, key),
-            puerts::converter::Converter<T>::toScript(Context, val));
+        auto _UnUsed = Object->Set(Context, puerts::v8_impl::Converter<const char*>::toScript(Context, key),
+            puerts::v8_impl::Converter<T>::toScript(Context, val));
     }
 
     bool IsValid() const
@@ -126,7 +126,7 @@ public:
 
     std::weak_ptr<int> JsEnvLifeCycleTracker;
 
-    friend struct puerts::converter::Converter<Object>;
+    friend struct puerts::v8_impl::Converter<Object>;
 };
 
 class Function : public Object
@@ -189,7 +189,7 @@ public:
 
         if (!MaybeRet.IsEmpty())
         {
-            return puerts::converter::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
+            return puerts::v8_impl::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
         }
         return {};
     }
@@ -210,7 +210,7 @@ private:
     template <typename... Args>
     auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
     {
-        v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
+        v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::v8_impl::Converter<Args>::toScript(Context, CppArgs)...};
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
     }
 
@@ -219,7 +219,7 @@ private:
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), 0, nullptr);
     }
 
-    friend struct puerts::converter::Converter<Function>;
+    friend struct puerts::v8_impl::Converter<Function>;
 };
 
 template <>
@@ -240,7 +240,7 @@ struct ScriptTypeName<::puerts::Function>
     }
 };
 
-namespace converter
+namespace v8_impl
 {
 template <>
 struct Converter<::puerts::Object>
@@ -279,6 +279,8 @@ struct Converter<::puerts::Function>
         return value->IsFunction();
     }
 };
-}    // namespace converter
+
+#include "StdFunctionConverter.hpp"
+}    // namespace v8_impl
 
 }    // namespace puerts

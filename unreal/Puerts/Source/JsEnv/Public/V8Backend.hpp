@@ -26,7 +26,7 @@
 #define __DefCDataPointerConverter(CLS)                                                               \
     namespace puerts                                                                                  \
     {                                                                                                 \
-    namespace converter                                                                               \
+    namespace v8_impl                                                                                 \
     {                                                                                                 \
     template <>                                                                                       \
     struct Converter<CLS*>                                                                            \
@@ -53,6 +53,15 @@ namespace puerts
 {
 namespace v8_impl
 {
+template <typename T, typename Enable = void>
+struct Converter;
+
+template <typename T, typename = void>
+struct CustomArgumentBufferType
+{
+    static constexpr bool enable = false;
+};
+
 struct API
 {
     typedef const v8::FunctionCallbackInfo<v8::Value>& CallbackInfoType;
@@ -131,12 +140,14 @@ struct API
     {
         return val->IsNullOrUndefined();
     }
-};
-}    // namespace v8_impl
-}    // namespace puerts
 
-namespace puerts
-{
+    template <typename T>
+    using Converter = Converter<T>;
+
+    template <typename T>
+    using CustomArgumentBufferType = CustomArgumentBufferType<T>;
+};
+
 class StringHolder
 {
 public:
@@ -202,16 +213,11 @@ private:
 };
 
 template <>
-struct ArgumentBufferType<const char*>
+struct CustomArgumentBufferType<const char*>
 {
     using type = StringHolder;
-    static constexpr bool is_custom = true;
+    static constexpr bool enable = true;
 };
-
-namespace converter
-{
-template <typename T, typename Enable = void>
-struct Converter;
 
 template <typename T>
 struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && std::is_signed<T>::value>::type>
@@ -596,7 +602,7 @@ struct Converter<const T*,
     }
 };
 
-}    // namespace converter
+}    // namespace v8_impl
 
 template <>
 struct is_script_type<std::string> : std::true_type

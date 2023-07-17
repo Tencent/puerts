@@ -24,7 +24,6 @@ template <typename T, typename = void>
 struct ArgumentBufferType
 {
     using type = typename std::decay<T>::type*;
-    static constexpr bool is_custom = false;
 };
 }    // namespace puerts
 
@@ -42,7 +41,6 @@ template <typename T>
 struct ArgumentBufferType<T*, typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
 {
     using type = typename std::decay<T>::type;
-    static constexpr bool is_custom = false;
 };
 
 template <typename T>
@@ -53,7 +51,6 @@ struct ArgumentBufferType<T,
                             std::is_destructible<typename std::decay<T>::type>::value>::type>
 {
     using type = typename std::decay<T>::type;
-    static constexpr bool is_custom = false;
 };
 
 namespace internal
@@ -70,9 +67,6 @@ struct ConverterDecay<T, typename std::enable_if<std::is_lvalue_reference<T>::va
 {
     using type = std::reference_wrapper<typename std::decay<T>::type>;
 };
-
-template <typename T>
-using DecayTypeConverter = puerts::converter::Converter<typename ConverterDecay<T>::type>;
 
 template <class...>
 using Void_t = void;
@@ -168,6 +162,9 @@ struct ArgumentChecker<API, Pos, StopPos, ArgType, Rest...>
 {
     static constexpr int NextPos = Pos + 1;
 
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename ConverterDecay<T>::type>;
+
     static bool Check(typename API::CallbackInfoType Info, typename API::ContextType Context)
     {
         if (Pos >= StopPos)
@@ -191,6 +188,9 @@ struct FuncCallHelper<API, std::pair<Ret, std::tuple<Args...>>, CheckArguments, 
 private:
     template <bool Enable, std::size_t ND, typename... CArgs>
     struct ArgumentsChecker;
+
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename ConverterDecay<T>::type>;
 
     template <std::size_t ND, typename... CArgs>
     struct ArgumentsChecker<true, ND, CArgs...>
@@ -321,7 +321,8 @@ private:
                 return;
             }
             // new object and set
-            API::UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Arg.get()));
+            API::UpdateRefValue(
+                context, holder, API::template Converter<typename std::decay<T>::type>::toScript(context, Arg.get()));
         }
     };
 
@@ -398,7 +399,7 @@ private:
 
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
-            API::UpdateRefValue(context, holder, converter::Converter<typename std::decay<T>::type>::toScript(context, Arg));
+            API::UpdateRefValue(context, holder, API::template Converter<typename std::decay<T>::type>::toScript(context, Arg));
         }
     };
 
@@ -423,7 +424,7 @@ private:
 
         void SetRef(typename API::ContextType context, typename API::ValueType holder)
         {
-            API::UpdateRefValue(context, holder, converter::Converter<BuffType>::toScript(context, Buf));
+            API::UpdateRefValue(context, holder, API::template Converter<BuffType>::toScript(context, Buf));
         }
     };
 
@@ -450,11 +451,11 @@ private:
     };
 
     template <typename T>
-    struct ArgumentHolder<T, typename std::enable_if<ArgumentBufferType<T>::is_custom>::type>
+    struct ArgumentHolder<T, typename std::enable_if<API::template CustomArgumentBufferType<T>::enable>::type>
     {
         typename ArgumentType<T>::type Arg;
 
-        typename ArgumentBufferType<T>::type Buf;
+        typename API::template CustomArgumentBufferType<T>::type Buf;
 
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
             : Buf(std::get<0>(info), std::get<1>(info))
@@ -894,6 +895,9 @@ template <typename API, typename T, typename... Args>
 struct ConstructorWrapper
 {
 private:
+    template <typename CT>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<CT>::type>;
+
     static constexpr auto ArgsLength = sizeof...(Args);
 
     template <size_t... index>
@@ -911,7 +915,7 @@ private:
             return nullptr;
         }
 
-        return new T(internal::DecayTypeConverter<Args>::toCpp(context, API::GetArg(info, index))...);
+        return new T(DecayTypeConverter<Args>::toCpp(context, API::GetArg(info, index))...);
     }
 
 public:
@@ -1048,28 +1052,31 @@ template <typename API, class Ins, class Ret, Ret Ins::*member>
 struct PropertyWrapper<API, Ret Ins::*, member,
     typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && !IsBoundedArray<Ret>::value>::type>
 {
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        API::SetReturn(info, internal::DecayTypeConverter<Ret>::toScript(context, self->*member));
+        API::SetReturn(info, DecayTypeConverter<Ret>::toScript(context, self->*member));
     }
 
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        self->*member = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        self->*member = DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1082,35 +1089,38 @@ template <typename API, class Ins, class Ret, Ret Ins::*member>
 struct PropertyWrapper<API, Ret Ins::*, member,
     typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && IsBoundedArray<Ret>::value>::type>
 {
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
 
-        API::SetReturn(info, converter::Converter<Ret>::toScript(context, self->*member));
+        API::SetReturn(info, API::template Converter<Ret>::toScript(context, self->*member));
     }
 
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
 
-        if (!converter::Converter<Ret>::accept(context, GetArg(info, 0)))
+        if (!API::template Converter<Ret>::accept(context, GetArg(info, 0)))
         {
             API::ThrowException(info, "invalid value for property");
             return;
         }
-        auto Src = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        auto Src = DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
         if (self->*member == Src)
         {
             return;
@@ -1127,16 +1137,19 @@ struct PropertyWrapper<API, Ret Ins::*, member,
 template <typename API, class Ins, class Ret, Ret Ins::*member>
 struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
 {
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        auto ret = internal::DecayTypeConverter<Ret*>::toScript(context, &(self->*member));
+        auto ret = DecayTypeConverter<Ret*>::toScript(context, &(self->*member));
         API::template LinkOuter<Ins, Ret>(context, API::GetThis(info), ret);
         API::SetReturn(info, ret);
     }
@@ -1144,13 +1157,13 @@ struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objec
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        self->*member = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        self->*member = DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1162,16 +1175,19 @@ struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objec
 template <typename API, typename Ret, Ret* Variable>
 struct PropertyWrapper<API, Ret*, Variable>
 {
+    template <typename T>
+    using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        API::SetReturn(info, internal::DecayTypeConverter<Ret>::toScript(context, *Variable));
+        API::SetReturn(info, DecayTypeConverter<Ret>::toScript(context, *Variable));
     }
 
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        *Variable = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        *Variable = DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()

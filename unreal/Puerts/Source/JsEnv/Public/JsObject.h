@@ -66,11 +66,11 @@ public:
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
 
-        auto MaybeValue = Object->Get(Context, puerts::converter::Converter<const char*>::toScript(Context, Key));
+        auto MaybeValue = Object->Get(Context, puerts::v8_impl::Converter<const char*>::toScript(Context, Key));
         v8::Local<v8::Value> Val;
         if (MaybeValue.ToLocal(&Val))
         {
-            return puerts::converter::Converter<T>::toCpp(Context, Val);
+            return puerts::v8_impl::Converter<T>::toCpp(Context, Val);
         }
         return {};
     }
@@ -89,8 +89,8 @@ public:
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
 
-        auto _UnUsed = Object->Set(Context, puerts::converter::Converter<const char*>::toScript(Context, Key),
-            puerts::converter::Converter<T>::toScript(Context, Val));
+        auto _UnUsed = Object->Set(Context, puerts::v8_impl::Converter<const char*>::toScript(Context, Key),
+            puerts::v8_impl::Converter<T>::toScript(Context, Val));
     }
 
     template <typename... Args>
@@ -156,7 +156,7 @@ public:
 
         if (!MaybeRet.IsEmpty())
         {
-            return puerts::converter::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
+            return puerts::v8_impl::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
         }
         return {};
     }
@@ -182,7 +182,7 @@ private:
     template <typename... Args>
     FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
     {
-        v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::converter::Converter<Args>::toScript(Context, CppArgs)...};
+        v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::v8_impl::Converter<Args>::toScript(Context, CppArgs)...};
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
     }
 
@@ -197,7 +197,7 @@ private:
     v8::Global<v8::Object> GObject;
     std::weak_ptr<int> JsEnvLifeCycleTracker;
 
-    friend struct puerts::converter::Converter<FJsObject>;
+    friend struct puerts::v8_impl::Converter<FJsObject>;
 };
 
 namespace puerts
@@ -211,7 +211,7 @@ struct ScriptTypeName<FJsObject>
     }
 };
 
-namespace converter
+namespace v8_impl
 {
 template <>
 struct Converter<FJsObject>
@@ -231,5 +231,5 @@ struct Converter<FJsObject>
         return value->IsObject();
     }
 };
-}    // namespace converter
+}    // namespace v8_impl
 }    // namespace puerts

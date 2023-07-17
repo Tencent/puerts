@@ -80,6 +80,8 @@ struct TSharedPtrExtension
 
 namespace puerts
 {
+namespace v8_impl
+{
 class TCharStringHolder
 {
 public:
@@ -102,14 +104,12 @@ private:
 };
 
 template <>
-struct ArgumentBufferType<const TCHAR*>
+struct CustomArgumentBufferType<const TCHAR*>
 {
     using type = TCharStringHolder;
-    static constexpr bool is_custom = true;
+    static constexpr bool enable = true;
 };
 
-namespace converter
-{
 template <>
 struct Converter<FString>
 {
@@ -354,7 +354,7 @@ struct Converter<T*, typename std::enable_if<!std::is_convertible<T*, const UObj
     }
 };
 
-}    // namespace converter
+}    // namespace v8_impl
 
 template <>
 struct ScriptTypeName<FString>
@@ -482,7 +482,7 @@ struct IsUStructHelper<T, Void_t<decltype(&TScriptStructTraits<T>::Get)>> : std:
 };
 }    // namespace internal
 
-namespace converter
+namespace v8_impl
 {
 template <typename T>
 struct Converter<T*,
@@ -524,6 +524,6 @@ struct Converter<T, typename std::enable_if<internal::IsUStructHelper<T>::value>
     }
 };
 
-}    // namespace converter
+}    // namespace v8_impl
 
 }    // namespace puerts

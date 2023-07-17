@@ -30,7 +30,7 @@
 #define __DefCDataPointerConverter(CLS)                                                                    \
     namespace puerts                                                                                       \
     {                                                                                                      \
-    namespace converter                                                                                    \
+    namespace pesapi_impl                                                                                  \
     {                                                                                                      \
     template <>                                                                                            \
     struct Converter<CLS*>                                                                                 \
@@ -55,6 +55,15 @@ namespace puerts
 {
 namespace pesapi_impl
 {
+template <typename T, typename Enable = void>
+struct Converter;
+
+template <typename T, typename = void>
+struct CustomArgumentBufferType
+{
+    static constexpr bool enable = false;
+};
+
 struct API
 {
     typedef pesapi_callback_info CallbackInfoType;
@@ -153,12 +162,14 @@ struct API
     {
         return pesapi_is_null(env, val) || pesapi_is_undefined(env, val);
     }
-};
-}    // namespace pesapi_impl
-}    // namespace puerts
 
-namespace puerts
-{
+    template <typename T>
+    using Converter = Converter<T>;
+
+    template <typename T>
+    using CustomArgumentBufferType = CustomArgumentBufferType<T>;
+};
+
 class StringHolder
 {
 public:
@@ -210,16 +221,11 @@ private:
 };
 
 template <>
-struct ArgumentBufferType<const char*>
+struct CustomArgumentBufferType<const char*>
 {
     using type = StringHolder;
-    static constexpr bool is_custom = true;
+    static constexpr bool enable = true;
 };
-
-namespace converter
-{
-template <typename T, typename Enable = void>
-struct Converter;
 
 template <typename T>
 struct Converter<T, typename std::enable_if<std::is_integral<T>::value && sizeof(T) == 8 && std::is_signed<T>::value>::type>
@@ -515,7 +521,7 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
     }
 };
 
-}    // namespace converter
+}    // namespace pesapi_impl
 
 template <>
 struct is_script_type<std::string> : std::true_type
