@@ -74,20 +74,8 @@ struct ConverterDecay<T, typename std::enable_if<std::is_lvalue_reference<T>::va
 template <typename T>
 using TypeConverter = puerts::converter::Converter<typename ConverterDecay<T>::type>;
 
-template <typename T, typename = void>
-struct IsConvertibleHelper : std::false_type
-{
-};
-
 template <class...>
 using Void_t = void;
-
-template <typename T>
-struct IsConvertibleHelper<T,
-    // test if it has a function toScript
-    Void_t<decltype(&TypeConverter<T>::toScript)>> : std::true_type
-{
-};
 
 namespace traits
 {
@@ -165,43 +153,6 @@ struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename 
 
 template <typename T>
 using FuncTrait = traits::FunctionTrait<T>;
-
-template <bool _First_value, class _First, class... _Rest>
-struct _Conjunction
-{    // handle false trait or last trait
-    using type = _First;
-};
-
-template <class _True, class _Next, class... _Rest>
-struct _Conjunction<true, _True, _Next, _Rest...>
-{    // the first trait is true, try the next one
-    using type = typename _Conjunction<_Next::value, _Next, _Rest...>::type;
-};
-
-template <class... _Traits>
-struct Conjunction : std::true_type
-{
-};    // If _Traits is empty, true_type
-
-template <class _First, class... _Rest>
-struct Conjunction<_First, _Rest...> : _Conjunction<_First::value, _First, _Rest...>::type
-{
-    // the first false trait in _Traits, or the last trait if none are false
-};
-
-template <typename T, typename = void>
-struct IsArgsConvertibleHelper : std::false_type
-{
-};
-
-template <typename... Args>
-struct IsArgsConvertibleHelper<std::tuple<Args...>, typename std::enable_if<Conjunction<IsConvertibleHelper<Args>...>::value>::type>
-    : std::true_type
-{
-};
-
-template <typename T>
-constexpr bool isArgsConvertible = IsArgsConvertibleHelper<T>::value;
 
 template <typename API, std::size_t, std::size_t, typename...>
 struct ArgumentChecker
@@ -1268,7 +1219,7 @@ public:
     }
 
     template <typename... Args>
-    typename std::enable_if<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T, API>&>::type Constructor()
+    ClassDefineBuilder<T, API>& Constructor()
     {
         typename API::InitializeFuncType constructor = ConstructorWrapper<API, T, Args...>::checkedCall;
         constructor_ = constructor;
