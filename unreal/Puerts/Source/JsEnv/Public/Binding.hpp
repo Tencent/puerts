@@ -72,7 +72,7 @@ struct ConverterDecay<T, typename std::enable_if<std::is_lvalue_reference<T>::va
 };
 
 template <typename T>
-using TypeConverter = puerts::converter::Converter<typename ConverterDecay<T>::type>;
+using DecayTypeConverter = puerts::converter::Converter<typename ConverterDecay<T>::type>;
 
 template <class...>
 using Void_t = void;
@@ -172,7 +172,7 @@ struct ArgumentChecker<API, Pos, StopPos, ArgType, Rest...>
     {
         if (Pos >= StopPos)
             return true;
-        if (!TypeConverter<ArgType>::accept(Context, API::GetArg(Info, Pos)))
+        if (!DecayTypeConverter<ArgType>::accept(Context, API::GetArg(Info, Pos)))
         {
             return false;
         }
@@ -241,7 +241,7 @@ private:
     {
         static typename API::ValueType Convert(typename API::ContextType context, T ret)
         {
-            return TypeConverter<typename std::remove_reference<T>::type>::toScript(
+            return DecayTypeConverter<typename std::remove_reference<T>::type>::toScript(
                 context, std::forward<typename std::remove_reference<T>::type>(ret));
         }
     };
@@ -254,7 +254,7 @@ private:
     {
         static typename API::ValueType Convert(typename API::ContextType context, T ret)
         {
-            return TypeConverter<typename std::decay<T>::type*>::toScript(context, &ret);
+            return DecayTypeConverter<typename std::decay<T>::type*>::toScript(context, &ret);
         }
     };
 
@@ -266,7 +266,7 @@ private:
         using ArgumentDecayType = typename std::decay<T>::type;
 
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Arg(TypeConverter<ArgumentDecayType>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Arg(DecayTypeConverter<ArgumentDecayType>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -293,7 +293,7 @@ private:
         typename ArgumentBufferType<T>::type Buf;
 
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Arg(*TypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Arg(*DecayTypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
             if (&(Arg.get()) == nullptr)
             {
@@ -338,7 +338,7 @@ private:
 
         // there may be nullptr ref
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Arg(*TypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Arg(*DecayTypeConverter<typename ArgumentType<T>::type>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -362,7 +362,7 @@ private:
 
         // there may be nullptr ref
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Arg(*TypeConverter<typename std::decay<T>::type*>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Arg(*DecayTypeConverter<typename std::decay<T>::type*>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -387,7 +387,7 @@ private:
         using ArgumentDecayType = typename std::decay<T>::type;
 
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Arg(TypeConverter<std::reference_wrapper<ArgumentDecayType>>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Arg(DecayTypeConverter<std::reference_wrapper<ArgumentDecayType>>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -412,7 +412,7 @@ private:
         BuffType Buf;
 
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Buf(TypeConverter<std::reference_wrapper<BuffType>>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Buf(DecayTypeConverter<std::reference_wrapper<BuffType>>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -435,7 +435,7 @@ private:
         T Arg = nullptr;
 
         ArgumentHolder(std::tuple<typename API::ContextType, typename API::ValueType> info)
-            : Arg(TypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
+            : Arg(DecayTypeConverter<T>::toCpp(std::get<0>(info), std::get<1>(info)))
         {
         }
 
@@ -577,7 +577,7 @@ private:
     {
         auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
@@ -609,7 +609,7 @@ private:
     {
         auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
@@ -643,7 +643,7 @@ private:
     {
         auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
@@ -675,7 +675,7 @@ private:
     {
         auto context = API::GetContext(info);
 
-        auto self = TypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
+        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetHolder(info));
 
         if (!self)
         {
@@ -911,7 +911,7 @@ private:
             return nullptr;
         }
 
-        return new T(internal::TypeConverter<Args>::toCpp(context, API::GetArg(info, index))...);
+        return new T(internal::DecayTypeConverter<Args>::toCpp(context, API::GetArg(info, index))...);
     }
 
 public:
@@ -1051,25 +1051,25 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        API::SetReturn(info, internal::TypeConverter<Ret>::toScript(context, self->*member));
+        API::SetReturn(info, internal::DecayTypeConverter<Ret>::toScript(context, self->*member));
     }
 
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        self->*member = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        self->*member = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1085,7 +1085,7 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1098,7 +1098,7 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1110,7 +1110,7 @@ struct PropertyWrapper<API, Ret Ins::*, member,
             API::ThrowException(info, "invalid value for property");
             return;
         }
-        auto Src = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        auto Src = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
         if (self->*member == Src)
         {
             return;
@@ -1130,13 +1130,13 @@ struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objec
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        auto ret = internal::TypeConverter<Ret*>::toScript(context, &(self->*member));
+        auto ret = internal::DecayTypeConverter<Ret*>::toScript(context, &(self->*member));
         API::template LinkOuter<Ins, Ret>(context, API::GetThis(info), ret);
         API::SetReturn(info, ret);
     }
@@ -1144,13 +1144,13 @@ struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objec
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = internal::TypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = internal::DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
             return;
         }
-        self->*member = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        self->*member = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
@@ -1165,13 +1165,13 @@ struct PropertyWrapper<API, Ret*, Variable>
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        API::SetReturn(info, internal::TypeConverter<Ret>::toScript(context, *Variable));
+        API::SetReturn(info, internal::DecayTypeConverter<Ret>::toScript(context, *Variable));
     }
 
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        *Variable = internal::TypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
+        *Variable = internal::DecayTypeConverter<Ret>::toCpp(context, API::GetArg(info, 0));
     }
 
     static const CTypeInfo* info()
