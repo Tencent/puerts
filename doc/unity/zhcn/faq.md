@@ -137,54 +137,6 @@ public static bool IsNull(this UnityEngine.Object o)
 ```
 
 #### source-map-support支持
-安装模块
-```
-npm install source-map-support --save-dev
-```
-然后执行如下代码:
-``` javascript
-puer.registerBuildinModule("path", {
-    dirname(path) {
-        return CS.System.IO.Path.GetDirectoryName(path);
-    },
-    resolve(dir, url) {
-        url = url.replace(/\\/g, "/");
-        while (url.startsWith("../")) {
-            dir = CS.System.IO.Path.GetDirectoryName(dir);
-            url = url.substr(3);
-        }
-        return CS.System.IO.Path.Combine(dir, url);
-    },
-});
-puer.registerBuildinModule("fs", {
-    existsSync(path) {
-        return CS.System.IO.File.Exists(path);
-    },
-    readFileSync(path) {
-        return CS.System.IO.File.ReadAllText(path);
-    },
-});
-(function () {
-    let global = this ?? globalThis;
-    global["Buffer"] = global["Buffer"] ?? {};
-    //使用inline-source-map模式, 需要额外安装buffer模块
-    //global["Buffer"] = global["Buffer"] ?? require("buffer").Buffer;
-})();
-require('source-map-support').install();
-```
-注: source-map-support是nodejs模块, 需要自定义path和fs模块.
-    
-####  webpack打包
-将自定义模块加入external module
-``` js
-module.exports = {
-    // other...
-    /** 忽略编辑的第三方库 */
-    externals: {
-        csharp: "commonjs2 csharp",
-        puerts: "commonjs2 puerts",
-        path: "commonjs2 path",
-        fs: "commonjs2 fs",
-    }
-};
-```
+1. 正常情况下，你可以直接使用TSLoader，其内置了source-map支持
+2. 如果你的项目不适用TSLoader，可以直接将TSLoader的[这个脚本文件](https://github.com/zombieyang/puerts-ts-loader/blob/main/upm/Editor/ConsoleRedirect/Typescripts/source-map-support.gen.mjs)放到你的项目，在JsEnv启动后执行即可。
+
