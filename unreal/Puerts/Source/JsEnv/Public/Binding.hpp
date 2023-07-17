@@ -89,20 +89,6 @@ struct IsConvertibleHelper<T,
 {
 };
 
-}    // namespace internal
-
-namespace converter
-{
-template <typename T>
-constexpr bool isConvertible = internal::IsConvertibleHelper<T>::value;
-
-}
-}    // namespace puerts
-
-namespace puerts
-{
-namespace internal
-{
 namespace traits
 {
 template <typename Args>
@@ -217,11 +203,6 @@ struct IsArgsConvertibleHelper<std::tuple<Args...>, typename std::enable_if<Conj
 template <typename T>
 constexpr bool isArgsConvertible = IsArgsConvertibleHelper<T>::value;
 
-template <typename, typename, bool CheckArguments, bool, bool>
-struct FuncCallHelper
-{
-};
-
 template <typename API, std::size_t, std::size_t, typename...>
 struct ArgumentChecker
 {
@@ -246,6 +227,11 @@ struct ArgumentChecker<API, Pos, StopPos, ArgType, Rest...>
         }
         return ArgumentChecker<API, NextPos, StopPos, Rest...>::Check(Info, Context);
     }
+};
+
+template <typename, typename, bool CheckArguments, bool, bool>
+struct FuncCallHelper
+{
 };
 
 template <typename API, typename Ret, typename... Args, bool CheckArguments, bool ReturnByPointer, bool ScriptTypePtrAsRef>
@@ -1282,7 +1268,7 @@ public:
     }
 
     template <typename... Args>
-    std::enable_if_t<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T, API>&> Constructor()
+    typename std::enable_if<internal::isArgsConvertible<std::tuple<Args...>>, ClassDefineBuilder<T, API>&>::type Constructor()
     {
         typename API::InitializeFuncType constructor = ConstructorWrapper<API, T, Args...>::checkedCall;
         constructor_ = constructor;
