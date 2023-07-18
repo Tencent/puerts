@@ -226,7 +226,7 @@ public:
     {
         int P1 = Index << 1;
         int P2 = P1 + 1;
-        if (LIKELY(Object->InternalFieldCount() > P2))
+        if (V8_LIKELY(Object->InternalFieldCount() > P2))
         {
             return static_cast<T*>(MakeAddressWithHighPartOfTwo(
                 Object->GetAlignedPointerFromInternalField(P1), Object->GetAlignedPointerFromInternalField(P2)));
@@ -237,7 +237,7 @@ public:
     template <typename T>
     FORCEINLINE static T* GetPointerFast(v8::Local<v8::Object> Object)
     {
-        if (LIKELY(Object->InternalFieldCount() > 1))
+        if (V8_LIKELY(Object->InternalFieldCount() > 1))
         {
             return static_cast<T*>(MakeAddressWithHighPartOfTwo(
                 Object->GetAlignedPointerFromInternalField(0), Object->GetAlignedPointerFromInternalField(1)));

@@ -166,7 +166,7 @@ struct API
     typedef void (*FinalizeFuncType)(void* Ptr);
 
     template <typename T, typename CDB>
-    void Register(FinalizeFuncType Finalize, const CDB& Cdb)
+    static void Register(FinalizeFuncType Finalize, const CDB& Cdb)
     {
         size_t properties_count = Cdb.functions_.size() + Cdb.methods_.size() + Cdb.properties_.size() + Cdb.variables_.size();
         auto properties = pesapi_alloc_property_descriptors(properties_count);
@@ -192,8 +192,8 @@ struct API
         }
 
         pesapi_finalize finalize = Finalize;
-        pesapi_define_class(
-            StaticTypeId<T>::get(), Cdb.superTypeId_, Cdb.className_, Cdb.constructor_, finalize, properties_count, properties);
+        pesapi_define_class(StaticTypeId<T>::get(), Cdb.superTypeId_, Cdb.className_, Cdb.constructor_, finalize, properties_count,
+            properties, nullptr);
     }
 
     template <typename T>

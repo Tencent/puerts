@@ -176,7 +176,7 @@ struct ScriptTypeName<pesapi_impl::Object>
 {
     static constexpr auto value()
     {
-        return Literal("object");
+        return internal::Literal("object");
     }
 };
 
@@ -185,7 +185,7 @@ struct ScriptTypeName<pesapi_impl::Function>
 {
     static constexpr auto value()
     {
-        return Literal("Function");
+        return internal::Literal("Function");
     }
 };
 
