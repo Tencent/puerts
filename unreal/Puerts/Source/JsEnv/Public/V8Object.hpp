@@ -14,18 +14,23 @@
 #ifdef USING_IN_UNREAL_ENGINE
 #include "JSLogger.h"
 #include "V8Utils.h"
-
-#define REPORT_EXCEPTION(TC) \
-    UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TC));
 #else
 #include <iostream>
-#define REPORT_EXCEPTION(TC) std::cout << "call function throw: " << *v8::String::Utf8Value(Isolate, TC.Exception()) << std::endl
 #endif
 
 namespace puerts
 {
 namespace v8_impl
 {
+static void REPORT_EXCEPTION(v8::Isolate* Isolate, v8::TryCatch* TC)
+{
+#ifdef USING_IN_UNREAL_ENGINE
+    UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, TC));
+#else
+    std::cout << "call function throw: " << *v8::String::Utf8Value(Isolate, TC->Exception()) << std::endl;
+#endif
+}
+
 class Object
 {
 public:
@@ -162,7 +167,7 @@ public:
 
         if (TryCatch.HasCaught())
         {
-            REPORT_EXCEPTION(TryCatch);
+            REPORT_EXCEPTION(Isolate, &TryCatch);
         }
     }
 
@@ -186,7 +191,7 @@ public:
 
         if (TryCatch.HasCaught())
         {
-            REPORT_EXCEPTION(TryCatch);
+            REPORT_EXCEPTION(Isolate, &TryCatch);
         }
 
         if (!MaybeRet.IsEmpty())
