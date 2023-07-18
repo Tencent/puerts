@@ -207,7 +207,7 @@ struct ScriptTypeName<FJsObject>
 {
     static constexpr auto value()
     {
-        return Literal("object");
+        return internal::Literal("object");
     }
 };
 

@@ -13,38 +13,38 @@
 #include "ArrayBuffer.h"
 #include "UECompatible.h"
 
-#define UsingUClass(CLS)                          \
-    namespace puerts                              \
-    {                                             \
-    template <>                                   \
-    struct ScriptTypeName<CLS>                    \
-    {                                             \
-        static constexpr auto value()             \
-        {                                         \
-            return Literal(#CLS).Sub<1>();        \
-        }                                         \
-    };                                            \
-    }                                             \
-    namespace puerts                              \
-    {                                             \
-    template <>                                   \
-    struct is_uetype<CLS> : public std::true_type \
-    {                                             \
-    };                                            \
+#define UsingUClass(CLS)                             \
+    namespace puerts                                 \
+    {                                                \
+    template <>                                      \
+    struct ScriptTypeName<CLS>                       \
+    {                                                \
+        static constexpr auto value()                \
+        {                                            \
+            return internal::Literal(#CLS).Sub<1>(); \
+        }                                            \
+    };                                               \
+    }                                                \
+    namespace puerts                                 \
+    {                                                \
+    template <>                                      \
+    struct is_uetype<CLS> : public std::true_type    \
+    {                                                \
+    };                                               \
     }
 
-#define UsingTArrayWithName(CLS, CLSNAME) \
-    namespace puerts                      \
-    {                                     \
-    template <>                           \
-    struct ScriptTypeName<TArray<CLS>>    \
-    {                                     \
-        static constexpr auto value()     \
-        {                                 \
-            return Literal(CLSNAME);      \
-        }                                 \
-    };                                    \
-    }                                     \
+#define UsingTArrayWithName(CLS, CLSNAME)      \
+    namespace puerts                           \
+    {                                          \
+    template <>                                \
+    struct ScriptTypeName<TArray<CLS>>         \
+    {                                          \
+        static constexpr auto value()          \
+        {                                      \
+            return internal::Literal(CLSNAME); \
+        }                                      \
+    };                                         \
+    }                                          \
     __DefObjectType(TArray<CLS>) __DefCDataPointerConverter(TArray<CLS>)
 
 #define RegisterTArray(CLS)                                                                              \
@@ -361,7 +361,7 @@ struct ScriptTypeName<FString>
 {
     static constexpr auto value()
     {
-        return Literal("string");
+        return internal::Literal("string");
     }
 };
 
@@ -370,7 +370,7 @@ struct ScriptTypeName<FName>
 {
     static constexpr auto value()
     {
-        return Literal("string");
+        return internal::Literal("string");
     }
 };
 
@@ -379,7 +379,7 @@ struct ScriptTypeName<const TCHAR*>
 {
     static constexpr auto value()
     {
-        return Literal("string");
+        return internal::Literal("string");
     }
 };
 
@@ -389,7 +389,7 @@ struct ScriptTypeName<FText>
 {
     static constexpr auto value()
     {
-        return Literal("string");
+        return internal::Literal("string");
     }
 };
 #endif
@@ -399,7 +399,7 @@ struct ScriptTypeName<FArrayBuffer>
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return internal::Literal("ArrayBuffer");
     }
 };
 
@@ -408,7 +408,7 @@ struct ScriptTypeName<FArrayBufferValue>
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return internal::Literal("ArrayBuffer");
     }
 };
 
@@ -418,7 +418,7 @@ struct ScriptTypeNameWithNamespace<T,
 {
     static constexpr auto value()
     {
-        return Literal("cpp.") + ScriptTypeName<T>::value();
+        return internal::Literal("cpp.") + ScriptTypeName<T>::value();
     }
 };
 
@@ -428,7 +428,7 @@ struct ScriptTypeNameWithNamespace<T,
 {
     static constexpr auto value()
     {
-        return Literal("UE.") + ScriptTypeName<T>::value();
+        return internal::Literal("UE.") + ScriptTypeName<T>::value();
     }
 };
 
@@ -437,7 +437,7 @@ struct ScriptTypeName<TSharedPtr<T>>
 {
     static constexpr auto value()
     {
-        return Literal("UE.TSharedPtr<") + ScriptTypeNameWithNamespace<T>::value() + Literal(">");
+        return internal::Literal("UE.TSharedPtr<") + ScriptTypeNameWithNamespace<T>::value() + internal::Literal(">");
     }
 };
 
@@ -446,7 +446,7 @@ struct ScriptTypeName<TArray<T>>
 {
     static constexpr auto value()
     {
-        return Literal("UE.TArray<") + ScriptTypeNameWithNamespace<T>::value() + Literal(">");
+        return internal::Literal("UE.TArray<") + ScriptTypeNameWithNamespace<T>::value() + internal::Literal(">");
     }
 };
 
@@ -455,7 +455,7 @@ struct ScriptTypeName<TSet<T>>
 {
     static constexpr auto value()
     {
-        return Literal("UE.TSet<") + ScriptTypeNameWithNamespace<T>::value() + Literal(">");
+        return internal::Literal("UE.TSet<") + ScriptTypeNameWithNamespace<T>::value() + internal::Literal(">");
     }
 };
 
@@ -464,8 +464,8 @@ struct ScriptTypeName<TMap<TKey, TValue>>
 {
     static constexpr auto value()
     {
-        return Literal("UE.TMap<") + ScriptTypeNameWithNamespace<TKey>::value() + Literal(", ") +
-               ScriptTypeNameWithNamespace<TValue>::value() + Literal(">");
+        return internal::Literal("UE.TMap<") + ScriptTypeNameWithNamespace<TKey>::value() + internal::Literal(", ") +
+               ScriptTypeNameWithNamespace<TValue>::value() + internal::Literal(">");
     }
 };
 

@@ -16,6 +16,8 @@
 
 namespace puerts
 {
+namespace internal
+{
 constexpr std::size_t NumDigits(std::size_t n)
 {
     return n < 10 ? 1 : NumDigits(n / 10) + 1;
@@ -74,12 +76,15 @@ struct ParamsDecl<N>
     }
 };
 
+}    // namespace internal
+
 template <typename R, typename... Args>
 struct ScriptTypeName<std::function<R(Args...)>>
 {
     static constexpr auto value()
     {
-        return Literal("(") + ParamsDecl<0, Args...>::Get() + Literal(") => ") + ScriptTypeNameWithNamespace<R>::value();
+        return internal::Literal("(") + internal::ParamsDecl<0, Args...>::Get() + internal::Literal(") => ") +
+               ScriptTypeNameWithNamespace<R>::value();
     }
 };
 

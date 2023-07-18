@@ -566,7 +566,7 @@ struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value 
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return internal::Literal("ArrayBuffer");
     }
 };
 
@@ -575,7 +575,7 @@ struct ScriptTypeName<void*>
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return internal::Literal("ArrayBuffer");
     }
 };
 
@@ -584,7 +584,7 @@ struct ScriptTypeName<const void*>
 {
     static constexpr auto value()
     {
-        return Literal("ArrayBuffer");
+        return internal::Literal("ArrayBuffer");
     }
 };
 

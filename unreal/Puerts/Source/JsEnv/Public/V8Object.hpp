@@ -231,7 +231,7 @@ struct ScriptTypeName<v8_impl::Object>
 {
     static constexpr auto value()
     {
-        return Literal("object");
+        return internal::Literal("object");
     }
 };
 
@@ -240,7 +240,7 @@ struct ScriptTypeName<v8_impl::Function>
 {
     static constexpr auto value()
     {
-        return Literal("()=>void");
+        return internal::Literal("()=>void");
     }
 };
 

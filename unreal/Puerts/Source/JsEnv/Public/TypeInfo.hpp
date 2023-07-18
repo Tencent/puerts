@@ -13,20 +13,22 @@
 #include "V8FastCall.hpp"
 #endif
 
-#define __DefScriptTTypeName(CLSNAME, CLS) \
-    namespace puerts                       \
-    {                                      \
-    template <>                            \
-    struct ScriptTypeName<CLS>             \
-    {                                      \
-        static constexpr auto value()      \
-        {                                  \
-            return Literal(#CLSNAME);      \
-        }                                  \
-    };                                     \
+#define __DefScriptTTypeName(CLSNAME, CLS)      \
+    namespace puerts                            \
+    {                                           \
+    template <>                                 \
+    struct ScriptTypeName<CLS>                  \
+    {                                           \
+        static constexpr auto value()           \
+        {                                       \
+            return internal::Literal(#CLSNAME); \
+        }                                       \
+    };                                          \
     }
 
 namespace puerts
+{
+namespace internal
 {
 template <std::size_t N>
 class StringLiteral
@@ -91,6 +93,8 @@ constexpr auto Literal(const char (&value)[N])
     return StringLiteral<N - 1>(value, typename std::make_index_sequence<N - 1>{});
 }
 
+}    // namespace internal
+
 template <typename T, typename Enable = void>
 struct ScriptTypeName
 {
@@ -137,7 +141,7 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_integral<T>::value && s
 {
     static constexpr auto value()
     {
-        return Literal("bigint");
+        return internal::Literal("bigint");
     }
 };
 
@@ -146,7 +150,7 @@ struct ScriptTypeName<T, typename std::enable_if<std::is_enum<T>::value>::type>
 {
     static constexpr auto value()
     {
-        return Literal("number");
+        return internal::Literal("number");
     }
 };
 
@@ -156,7 +160,7 @@ struct ScriptTypeName<T,
 {
     static constexpr auto value()
     {
-        return Literal("number");
+        return internal::Literal("number");
     }
 };
 
@@ -165,7 +169,7 @@ struct ScriptTypeName<std::string>
 {
     static constexpr auto value()
     {
-        return Literal("string");
+        return internal::Literal("string");
     }
 };
 
@@ -174,7 +178,7 @@ struct ScriptTypeName<const char*>
 {
     static constexpr auto value()
     {
-        return Literal("cstring");
+        return internal::Literal("cstring");
     }
 };
 
@@ -183,7 +187,7 @@ struct ScriptTypeName<bool>
 {
     static constexpr auto value()
     {
-        return Literal("boolean");
+        return internal::Literal("boolean");
     }
 };
 
@@ -192,7 +196,7 @@ struct ScriptTypeName<void>
 {
     static constexpr auto value()
     {
-        return Literal("void");
+        return internal::Literal("void");
     }
 };
 
