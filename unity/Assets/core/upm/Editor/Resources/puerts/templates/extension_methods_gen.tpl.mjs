@@ -48,8 +48,8 @@ function getExtendedTypeToExtensionTypeInfo(rawInfo) {
     let info = new Map()
     for (var i = 0; i < rawInfo.Count; i++) {
         let pair = rawInfo.get_Item(i)
-        let extendedType = pair.Key.GetFriendlyName();
-        info.set(extendedType, toJsArray(pair.Value).map(x => x.GetFriendlyName()))
+        let extendedType = CS.Puerts.TypeExtensions.GetFriendlyName(pair.Key);
+        info.set(extendedType, toJsArray(pair.Value).map(x => CS.Puerts.TypeExtensions.GetFriendlyName(x)))
     }
     return Array.from(info).map(([extendedType, extensionTypes]) => ({extendedType, extensionTypes}))
 }
