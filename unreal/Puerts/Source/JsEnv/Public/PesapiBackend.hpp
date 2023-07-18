@@ -8,8 +8,6 @@
 
 #pragma once
 
-#if defined(BUILDING_PES_EXTENSION)
-
 #include <type_traits>
 #include <string>
 #include <cstring>
@@ -18,7 +16,7 @@
 #include <pesapi.h>
 #include "TypeInfo.hpp"
 
-#define __DefObjectType(CLS)                          \
+#define __DefObjectType_pesapi_impl(CLS)              \
     namespace puerts                                  \
     {                                                 \
     template <>                                       \
@@ -27,7 +25,7 @@
     };                                                \
     }
 
-#define __DefCDataPointerConverter(CLS)                                                                    \
+#define __DefCDataPointerConverter_pesapi_impl(CLS)                                                        \
     namespace puerts                                                                                       \
     {                                                                                                      \
     namespace pesapi_impl                                                                                  \
@@ -555,39 +553,4 @@ struct Converter<T, typename std::enable_if<std::is_copy_constructible<T>::value
 };
 
 }    // namespace pesapi_impl
-
-template <>
-struct is_script_type<std::string> : std::true_type
-{
-};
-
-template <typename T, size_t Size>
-struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
-{
-    static constexpr auto value()
-    {
-        return internal::Literal("ArrayBuffer");
-    }
-};
-
-template <>
-struct ScriptTypeName<void*>
-{
-    static constexpr auto value()
-    {
-        return internal::Literal("ArrayBuffer");
-    }
-};
-
-template <>
-struct ScriptTypeName<const void*>
-{
-    static constexpr auto value()
-    {
-        return internal::Literal("ArrayBuffer");
-    }
-};
-
 }    // namespace puerts
-
-#endif

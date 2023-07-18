@@ -14,7 +14,7 @@
 #include "DataTransfer.h"
 #include "JSClassRegister.h"
 
-#define __DefObjectType(CLS)                          \
+#define __DefObjectType_v8_impl(CLS)                  \
     namespace puerts                                  \
     {                                                 \
     template <>                                       \
@@ -23,7 +23,7 @@
     };                                                \
     }
 
-#define __DefCDataPointerConverter(CLS)                                                               \
+#define __DefCDataPointerConverter_v8_impl(CLS)                                                       \
     namespace puerts                                                                                  \
     {                                                                                                 \
     namespace v8_impl                                                                                 \
@@ -673,37 +673,4 @@ struct Converter<const T*,
 };
 
 }    // namespace v8_impl
-
-template <>
-struct is_script_type<std::string> : std::true_type
-{
-};
-
-template <typename T, size_t Size>
-struct ScriptTypeName<T[Size], typename std::enable_if<is_script_type<T>::value && !std::is_const<T>::value>::type>
-{
-    static constexpr auto value()
-    {
-        return internal::Literal("ArrayBuffer");
-    }
-};
-
-template <>
-struct ScriptTypeName<void*>
-{
-    static constexpr auto value()
-    {
-        return internal::Literal("any");
-    }
-};
-
-template <>
-struct ScriptTypeName<const void*>
-{
-    static constexpr auto value()
-    {
-        return internal::Literal("any");
-    }
-};
-
 }    // namespace puerts

@@ -90,6 +90,12 @@
 
 #define SelectOverload(Name, SIGNATURE) Name##PuertsOverloads<SIGNATURE>
 
+#define __DefObjectType_HELPER1(CLS, Suffix) __DefObjectType_##Suffix(CLS)
+#define __DefObjectType_HELPER2(CLS, Suffix) __DefObjectType_HELPER1(CLS, Suffix)
+#define __DefCDataPointerConverter_HELPER1(CLS, Suffix) __DefCDataPointerConverter_##Suffix(CLS)
+#define __DefCDataPointerConverter_HELPER2(CLS, Suffix) __DefCDataPointerConverter_HELPER1(CLS, Suffix)
+#define __DefObjectType(CLS) __DefObjectType_HELPER2(CLS, PUERTS_BINDING_IMPL)
+#define __DefCDataPointerConverter(CLS) __DefCDataPointerConverter_HELPER2(CLS, PUERTS_BINDING_IMPL)
 #define UsingNamedCppType(CLS, NAME) __DefScriptTTypeName(NAME, CLS) __DefObjectType(CLS) __DefCDataPointerConverter(CLS)
 
 #define UsingCppType(CLS) UsingNamedCppType(CLS, CLS)
