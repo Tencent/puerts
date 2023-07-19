@@ -85,7 +85,7 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
 
     // create and link
     auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
+    v8::Local<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
     auto ClassDefinition = FindClassByID(TypeId);
     if (ClassDefinition)
     {
