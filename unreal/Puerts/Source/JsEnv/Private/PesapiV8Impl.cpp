@@ -761,6 +761,9 @@ static void free_property_descriptor(pesapi_property_descriptor properties, size
 #endif
 #endif
 
+// set module name here during loading, set nullptr after module loaded
+const char* GPesapiModuleName = nullptr;
+
 MSVC_PRAGMA(warning(push))
 MSVC_PRAGMA(warning(disable : 4191))
 void pesapi_define_class(const void* type_id, const void* super_type_id, const char* type_name, pesapi_constructor constructor,
@@ -769,7 +772,17 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     puerts::JSClassDefinition classDef = JSClassEmptyDefinition;
     classDef.TypeId = type_id;
     classDef.SuperTypeId = super_type_id;
-    classDef.ScriptName = type_name;
+    std::string ScriptNameWithModuleName = GPesapiModuleName == nullptr ? std::string() : GPesapiModuleName;
+    if (GPesapiModuleName)
+    {
+        ScriptNameWithModuleName += ".";
+        ScriptNameWithModuleName += type_name;
+        classDef.ScriptName = ScriptNameWithModuleName.c_str();
+    }
+    else
+    {
+        classDef.ScriptName = type_name;
+    }
     classDef.Data = userdata;
 
     classDef.Initialize = reinterpret_cast<puerts::InitializeFunc>(constructor);
