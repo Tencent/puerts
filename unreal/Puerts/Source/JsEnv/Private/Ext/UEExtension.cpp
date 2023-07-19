@@ -40,9 +40,9 @@ static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         Fmt = FTextFormat::FromString(puerts::FV8Utils::ToFString(Isolate, P0));
     }
-    else if (::puerts::converter::Converter<FText*>::accept(Context, P0))
+    else if (::puerts::v8_impl::Converter<FText*>::accept(Context, P0))
     {
-        Fmt = *::puerts::converter::Converter<FText*>::toCpp(Context, P0);
+        Fmt = *::puerts::v8_impl::Converter<FText*>::toCpp(Context, P0);
     }
     else
     {
@@ -64,9 +64,9 @@ static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             Args.Add(FFormatArgumentValue(FText::FromString(puerts::FV8Utils::ToFString(Isolate, Info[i]))));
         }
-        else if (Info[i]->IsObject() && ::puerts::converter::Converter<FText*>::accept(Context, Info[i]))
+        else if (Info[i]->IsObject() && ::puerts::v8_impl::Converter<FText*>::accept(Context, Info[i]))
         {
-            Args.Add(FFormatArgumentValue(*::puerts::converter::Converter<FText*>::toCpp(Context, Info[i])));
+            Args.Add(FFormatArgumentValue(*::puerts::v8_impl::Converter<FText*>::toCpp(Context, Info[i])));
         }
         else
         {
@@ -75,7 +75,7 @@ static void FText_Format(const v8::FunctionCallbackInfo<v8::Value>& Info)
         }
     }
 
-    Info.GetReturnValue().Set(::puerts::converter::Converter<FText>::toScript(Context, FText::Format(Fmt, Args)));
+    Info.GetReturnValue().Set(::puerts::v8_impl::Converter<FText>::toScript(Context, FText::Format(Fmt, Args)));
 }
 #endif
 
