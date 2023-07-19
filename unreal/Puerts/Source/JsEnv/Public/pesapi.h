@@ -89,8 +89,11 @@
     }                                                                                                      \
     PESAPI_MODULE_EXPORT const char* PESAPI_MODULE_INITIALIZER(dynamic)(pesapi_func_ptr * func_ptr_array)  \
     {                                                                                                      \
-        pesapi_init(func_ptr_array);                                                                       \
-        initfunc();                                                                                        \
+        if(func_ptr_array)                                                                                 \
+        {                                                                                                  \
+            pesapi_init(func_ptr_array);                                                                   \
+            initfunc();                                                                                    \
+        }                                                                                                  \
         return #modname;                                                                                   \
     }
 
