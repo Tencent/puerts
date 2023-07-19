@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 5
+#define PESAPI_VERSION 6
 
 #define PESAPI_EXTERN
 
@@ -77,14 +77,21 @@
 
 #else
 
-#define PESAPI_MODULE(modname, initfunc)                                                            \
-    EXTERN_C_START                                                                                  \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array); \
-    EXTERN_C_END                                                                                    \
-    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array)  \
-    {                                                                                               \
-        pesapi_init(func_ptr_array);                                                                \
-        initfunc();                                                                                 \
+#define PESAPI_MODULE(modname, initfunc)                                                                   \
+    EXTERN_C_START                                                                                         \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array);        \
+    PESAPI_MODULE_EXPORT const char* PESAPI_MODULE_INITIALIZER(dynamic)(pesapi_func_ptr * func_ptr_array); \
+    EXTERN_C_END                                                                                           \
+    PESAPI_MODULE_EXPORT void PESAPI_MODULE_INITIALIZER(modname)(pesapi_func_ptr * func_ptr_array)         \
+    {                                                                                                      \
+        pesapi_init(func_ptr_array);                                                                       \
+        initfunc();                                                                                        \
+    }                                                                                                      \
+    PESAPI_MODULE_EXPORT const char* PESAPI_MODULE_INITIALIZER(dynamic)(pesapi_func_ptr * func_ptr_array)  \
+    {                                                                                                      \
+        pesapi_init(func_ptr_array);                                                                       \
+        initfunc();                                                                                        \
+        return #modname;                                                                                   \
     }
 
 #endif
