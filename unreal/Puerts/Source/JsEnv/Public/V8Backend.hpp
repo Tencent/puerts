@@ -228,20 +228,12 @@ public:
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
         }
         else if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-            data = static_cast<char*>(Ab->GetContents().Data());
-#endif
+            data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
         }
         else
         {
@@ -441,11 +433,7 @@ struct Converter<void*>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, void* value)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
-#endif
+        return DataTransfer::NewArrayBuffer(context, value, 0);
     }
 
     static void* toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -454,20 +442,12 @@ struct Converter<void*>
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            return static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            return static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
         }
         if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return v8::ArrayBuffer_Get_Data(Ab);
-#else
-            return Ab->GetContents().Data();
-#endif
+            return DataTransfer::GetArrayBufferData(Ab);
         }
         if (value->IsObject())
         {
@@ -563,11 +543,7 @@ struct Converter<T,
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value, 0);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value, 0);
-#endif
+        return DataTransfer::NewArrayBuffer(context, value, 0);
     }
 
     static T toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -576,20 +552,12 @@ struct Converter<T,
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return reinterpret_cast<T>(static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset());
-#else
-            return reinterpret_cast<T>(static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset());
-#endif
+            return reinterpret_cast<T>(static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset());
         }
         if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            return static_cast<T>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-            return static_cast<T>(Ab->GetContents().Data());
-#endif
+            return static_cast<T>(DataTransfer::GetArrayBufferData(Ab));
         }
         return nullptr;
     }
@@ -605,11 +573,7 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, T value[Size])
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), &(value[0]), sizeof(T) * Size);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value, sizeof(T) * Size);
-#endif
+        return DataTransfer::NewArrayBuffer(context, &(value[0]), sizeof(T) * Size);
     }
 
     static bool accept(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -622,13 +586,9 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
         if (value->IsArrayBuffer())
         {
             auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
             size_t byteLength;
-            auto _UnUsed = v8::ArrayBuffer_Get_Data(ab, byteLength);
+            auto _UnUsed = DataTransfer::GetArrayBufferData(ab, byteLength);
             return byteLength >= sizeof(T) * Size;
-#else
-            return ab->GetContents().ByteLength() >= sizeof(T) * Size;
-#endif
         }
         return false;
     }

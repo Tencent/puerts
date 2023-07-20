@@ -143,19 +143,12 @@ struct Converter<FName>
         if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
             size_t ByteLength;
-            auto Data = v8::ArrayBuffer_Get_Data(Ab, ByteLength);
+            auto Data = DataTransfer::GetArrayBufferData(Ab, ByteLength);
             if (ByteLength == sizeof(FName))
             {
                 return *static_cast<FName*>(Data);
             }
-#else
-            if (Ab->GetContents().ByteLength() == sizeof(FName))
-            {
-                return *static_cast<FName*>(Ab->GetContents().Data());
-            }
-#endif
         }
         return UTF8_TO_TCHAR(*v8::String::Utf8Value(context->GetIsolate(), value));
     }
@@ -212,11 +205,7 @@ struct Converter<FArrayBuffer>
 {
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBuffer value)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), value.Data, value.Length);
-#else
-        return v8::ArrayBuffer::New(context->GetIsolate(), value.Data, value.Length);
-#endif
+        return DataTransfer::NewArrayBuffer(context, value.Data, value.Length);
     }
 
     static FArrayBuffer toCpp(v8::Local<v8::Context> context, const v8::Local<v8::Value>& value)
@@ -226,24 +215,15 @@ struct Converter<FArrayBuffer>
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            Ret.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            Ret.Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            Ret.Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
             Ret.Length = BuffView->ByteLength();
         }
         else if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
             size_t ByteLength;
-            Ret.Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab, ByteLength));
+            Ret.Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab, ByteLength));
             Ret.Length = ByteLength;
-#else
-            Ret.Data = Ab->GetContents().Data();
-            Ret.Length = Ab->GetContents().ByteLength();
-#endif
         }
         return Ret;
     }
@@ -260,11 +240,7 @@ struct Converter<FArrayBufferValue>
     static v8::Local<v8::Value> toScript(v8::Local<v8::Context> context, FArrayBufferValue& value)
     {
         v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(context->GetIsolate(), value.Data.Num());
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        void* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-        void* Buff = Ab->GetContents().Data();
-#endif
+        void* Buff = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
         ::memcpy(Buff, value.Data.GetData(), value.Data.Num());
         return Ab;
     }
@@ -278,22 +254,13 @@ struct Converter<FArrayBufferValue>
         {
             v8::Local<v8::ArrayBufferView> BuffView = value.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            Data = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            Data = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            Data = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
             Len = BuffView->ByteLength();
         }
         else if (value->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            Data = v8::ArrayBuffer_Get_Data(Ab, Len);
-#else
-            Data = Ab->GetContents().Data();
-            Len = Ab->GetContents().ByteLength();
-#endif
+            Data = DataTransfer::GetArrayBufferData(Ab, Len);
         }
         if (Len > 0 && Data)
         {

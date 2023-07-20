@@ -144,11 +144,7 @@ pesapi_value pesapi_create_string_utf8(pesapi_env env, const char* str, size_t l
 pesapi_value pesapi_create_binary(pesapi_env env, void* bin, size_t length)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    return v8impl::PesapiValueFromV8LocalValue(v8::ArrayBuffer_New_Without_Stl(context->GetIsolate(), bin, length));
-#else
-    return v8impl::PesapiValueFromV8LocalValue(v8::ArrayBuffer::New(context->GetIsolate(), bin, length));
-#endif
+    return v8impl::PesapiValueFromV8LocalValue(puerts::DataTransfer::NewArrayBuffer(context, bin, length));
 }
 
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
@@ -221,20 +217,12 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsi
         v8::Local<v8::ArrayBufferView> buffView = value.As<v8::ArrayBufferView>();
         *bufsize = buffView->ByteLength();
         auto Ab = buffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + buffView->ByteOffset();
-#else
-        return static_cast<char*>(Ab->GetContents().Data()) + buffView->ByteOffset();
-#endif
+        return static_cast<char*>(puerts::DataTransfer::GetArrayBufferData(Ab)) + buffView->ByteOffset();
     }
     if (value->IsArrayBuffer())
     {
         auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        return v8::ArrayBuffer_Get_Data(ab, *bufsize);
-#else
-        return ab->GetContents().Data();
-#endif
+        return puerts::DataTransfer::GetArrayBufferData(ab, *bufsize);
     }
     return nullptr;
 }

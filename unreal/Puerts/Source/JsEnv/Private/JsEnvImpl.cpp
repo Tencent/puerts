@@ -118,11 +118,7 @@ static void FNameToArrayBuffer(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     FName Name = FV8Utils::ToFName(Info.GetIsolate(), Info[0]);
     v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), sizeof(FName));
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    void* Buff = v8::ArrayBuffer_Get_Data(Ab);
-#else
-    void* Buff = Ab->GetContents().Data();
-#endif
+    void* Buff = DataTransfer::GetArrayBufferData(Ab);
     ::memcpy(Buff, &Name, sizeof(FName));
     Info.GetReturnValue().Set(Ab);
 }
@@ -140,11 +136,7 @@ static void ToCString(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     const size_t Length = Str->Utf8Length(Isolate);
     v8::Local<v8::ArrayBuffer> Ab = v8::ArrayBuffer::New(Info.GetIsolate(), Length + 1);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    char* Buff = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-    char* Buff = static_cast<char*>(Ab->GetContents().Data());
-#endif
+    char* Buff = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
     Str->WriteUtf8(Isolate, Buff);
     Buff[Length] = '\0';
     Info.GetReturnValue().Set(Ab);
@@ -155,11 +147,7 @@ static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
     const size_t Length = sizeof(void*) * Info.Length();
 
     v8::Local<v8::ArrayBuffer> Ret = v8::ArrayBuffer::New(Info.GetIsolate(), Length);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    void** Buff = static_cast<void**>(v8::ArrayBuffer_Get_Data(Ret));
-#else
-    void** Buff = static_cast<void**>(Ret->GetContents().Data());
-#endif
+    void** Buff = static_cast<void**>(DataTransfer::GetArrayBufferData(Ret));
 
     for (int i = 0; i < Info.Length(); i++)
     {
@@ -169,20 +157,12 @@ static void ToCPtrArray(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             v8::Local<v8::ArrayBufferView> BuffView = Val.As<v8::ArrayBufferView>();
             auto Ab = BuffView->Buffer();
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab)) + BuffView->ByteOffset();
-#else
-            Ptr = static_cast<char*>(Ab->GetContents().Data()) + BuffView->ByteOffset();
-#endif
+            Ptr = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab)) + BuffView->ByteOffset();
         }
         else if (Val->IsArrayBuffer())
         {
             auto Ab = v8::Local<v8::ArrayBuffer>::Cast(Val);
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-            Ptr = static_cast<char*>(v8::ArrayBuffer_Get_Data(Ab));
-#else
-            Ptr = static_cast<char*>(Ab->GetContents().Data());
-#endif
+            Ptr = static_cast<char*>(DataTransfer::GetArrayBufferData(Ab));
         }
         Buff[i] = Ptr;
     }
@@ -4352,11 +4332,7 @@ void FJsEnvImpl::Wasm_MemoryBuffer(const v8::FunctionCallbackInfo<v8::Value>& In
             uint8* Ptr = Runtime->GetBuffer(Length);
             if (Ptr)
             {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-                auto Buffer = v8::ArrayBuffer_New_Without_Stl(Isolate, Ptr, Length);
-#else
-                auto Buffer = v8::ArrayBuffer::New(Isolate, Ptr, Length, v8::ArrayBufferCreationMode::kExternalized);
-#endif
+                auto Buffer = DataTransfer::NewArrayBuffer(Context, Ptr, Length);
                 Info.GetReturnValue().Set(Buffer);
             }
             else
@@ -4505,11 +4481,7 @@ void FJsEnvImpl::Wasm_Instance(const v8::FunctionCallbackInfo<v8::Value>& Info)
         InArrayBuffer = Info[0].As<v8::TypedArray>()->Buffer();
     }
 
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    void* Buffer = static_cast<char*>(v8::ArrayBuffer_Get_Data(InArrayBuffer));
-#else
-    void* Buffer = InArrayBuffer->GetContents().Data();
-#endif
+    void* Buffer = static_cast<char*>(DataTransfer::GetArrayBufferData(InArrayBuffer));
     int BufferLength = InArrayBuffer->ByteLength();
 
     TArray<uint8> InData;

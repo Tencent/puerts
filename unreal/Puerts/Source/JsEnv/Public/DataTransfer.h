@@ -311,5 +311,41 @@ public:
     {
         TOuterLinker<T1, T2>::Link(Context, Outer, Inner);
     }
+
+    FORCEINLINE static v8::Local<v8::ArrayBuffer> NewArrayBuffer(v8::Local<v8::Context> Context, void* Data, size_t DataLength)
+    {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_New_Without_Stl(Context->GetIsolate(), Data, DataLength);
+#else
+#if USING_IN_UNREAL_ENGINE
+        return v8::ArrayBuffer::New(Context->GetIsolate(), Data, DataLength);
+#else
+        auto Backing = v8::ArrayBuffer::NewBackingStore(Data, DataLength, v8::BackingStore::EmptyDeleter, nullptr);
+        return v8::ArrayBuffer::New(Context->GetIsolate(), std::move(Backing));
+#endif
+#endif
+    }
+
+    FORCEINLINE static void* GetArrayBufferData(v8::Local<v8::ArrayBuffer> InArrayBuffer)
+    {
+        size_t DataLength;
+        return GetArrayBufferData(InArrayBuffer, DataLength);
+    }
+
+    FORCEINLINE static void* GetArrayBufferData(v8::Local<v8::ArrayBuffer> InArrayBuffer, size_t& DataLength)
+    {
+#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
+        return v8::ArrayBuffer_Get_Data(InArrayBuffer, DataLength);
+#else
+#if USING_IN_UNREAL_ENGINE
+        DataLength = InArrayBuffer->GetContents().ByteLength();
+        return InArrayBuffer->GetContents().Data();
+#else
+        auto BS = InArrayBuffer->GetBackingStore();
+        DataLength = BS->ByteLength();
+        return BS->Data();
+#endif
+#endif
+    }
 };
 }    // namespace puerts
