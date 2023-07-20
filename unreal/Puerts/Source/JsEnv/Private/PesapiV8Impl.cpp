@@ -779,14 +779,23 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     std::vector<puerts::JSFunctionInfo> p_methods;
     std::vector<puerts::JSFunctionInfo> p_functions;
     std::vector<puerts::JSPropertyInfo> p_properties;
+    std::vector<puerts::JSPropertyInfo> p_variables;
 
     for (int i = 0; i < property_count; i++)
     {
         pesapi_property_descriptor p = properties + i;
         if (p->getter != nullptr || p->setter != nullptr)
         {
-            p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
-                reinterpret_cast<v8::FunctionCallback>(p->setter), p->data});
+            if (p->is_static)
+            {
+                p_variables.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
+                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data});
+            }
+            else
+            {
+                p_properties.push_back({p->name, reinterpret_cast<v8::FunctionCallback>(p->getter),
+                    reinterpret_cast<v8::FunctionCallback>(p->setter), p->data});
+            }
         }
         else if (p->method != nullptr)
         {
@@ -807,10 +816,12 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
     p_methods.push_back({nullptr, nullptr, nullptr});
     p_functions.push_back({nullptr, nullptr, nullptr});
     p_properties.push_back({nullptr, nullptr, nullptr, nullptr});
+    p_variables.push_back({nullptr, nullptr, nullptr, nullptr});
 
     classDef.Methods = p_methods.data();
     classDef.Functions = p_functions.data();
     classDef.Properties = p_properties.data();
+    classDef.Variables = p_variables.data();
 
     puerts::RegisterJSClass(classDef);
 }
