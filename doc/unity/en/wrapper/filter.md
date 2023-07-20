@@ -1,7 +1,7 @@
 # the Filter of Generator
-当你生成wrapper时遇到以下问题时，就可以参考这段文档：
-1. 某些成员生成之后会引发编译错误，需要过滤掉不生成
-2. 权限控制。希望某些成员不允许JS访问。
+When you meet these issue in wrapper generating. You can refer to this document:
+1. There will be compilation error when some member is generated, those member should be ignore.
+2. Access control. Disallowing some member to be access in JS.
 
 ## What is Filter used for
 PuerTS provides a series of generation control capabilities, and by configuring a Filter function to perform a small amount of customization on the StaticWrapper, the above requirements can be achieved.
@@ -38,9 +38,9 @@ static Puerts.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
     if (memberInfo.DeclaringType.ToString() == "System.Threading.Tasks.Task" && memberInfo.Name == "IsCompletedSuccessfully")
     {
-        return Puerts.BindingMode.DontBinding; // 不生成StaticWrapper，且JS调用时获取对应字段会得到undefined。
+        return Puerts.BindingMode.DontBinding; // Do not gen StaticWrapper, and can not invoked in JS.
     }
-    return Puerts.BindingMode.FastBinding; // 等同于前面return false的情况
+    return Puerts.BindingMode.FastBinding; // equals to 'return false'
 }
 ```
 In the above situation, PuerTS will record information about these properties in the Wrapper, so when registering these properties, they will be prevented from being called.
@@ -57,7 +57,7 @@ Then return `BindingMode.FastBinding` or `BindingMode.SlowBinding` to allow them
 ```C#
 static Puerts.BindingMode FilterMethods(System.Reflection.MemberInfo mb)
 {
-    if (memberInfo.DeclaringType == typeof(UnityEngine.Vector3)) // 使vector3可用
+    if (memberInfo.DeclaringType == typeof(UnityEngine.Vector3)) // keep Vector3 available
     {
         return Puerts.BindingMode.FastBinding;
     }
