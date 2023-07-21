@@ -223,6 +223,9 @@ PESAPI_EXTERN void pesapi_define_class(const void* type_id, const void* super_ty
     pesapi_constructor constructor, pesapi_finalize finalize, size_t property_count, pesapi_property_descriptor properties,
     void* userdata);
 
+PESAPI_EXTERN void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info,
+    const void* methods_info, const void* functions_info, const void* properties_info, const void* variables_info);
+
 EXTERN_C_END
 
 #endif

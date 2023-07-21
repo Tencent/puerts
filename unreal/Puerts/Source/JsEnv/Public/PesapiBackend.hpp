@@ -192,6 +192,30 @@ struct API
         pesapi_finalize finalize = Finalize;
         pesapi_define_class(StaticTypeId<T>::get(), Cdb.superTypeId_, Cdb.className_, Cdb.constructor_, finalize, properties_count,
             properties, nullptr);
+
+        static std::vector<NamedFunctionInfo> s_constructorInfos_{};
+        static std::vector<NamedFunctionInfo> s_methodInfos_{};
+        static std::vector<NamedFunctionInfo> s_functionInfos_{};
+        static std::vector<NamedPropertyInfo> s_propertyInfos_{};
+        static std::vector<NamedPropertyInfo> s_variableInfos_{};
+
+        s_constructorInfos_ = std::move(Cdb.constructorInfos_);
+        s_constructorInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+
+        s_methodInfos_ = std::move(Cdb.methodInfos_);
+        s_methodInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+
+        s_functionInfos_ = std::move(Cdb.functionInfos_);
+        s_functionInfos_.push_back(NamedFunctionInfo{nullptr, nullptr});
+
+        s_propertyInfos_ = std::move(Cdb.propertyInfos_);
+        s_propertyInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+
+        s_variableInfos_ = std::move(Cdb.variableInfos_);
+        s_variableInfos_.push_back(NamedPropertyInfo{nullptr, nullptr});
+
+        pesapi_class_type_info(PUERTS_BINDING_PROTO_ID(), StaticTypeId<T>::get(), s_constructorInfos_.data(), s_methodInfos_.data(),
+            s_functionInfos_.data(), s_propertyInfos_.data(), s_variableInfos_.data());
     }
 
     template <typename T>

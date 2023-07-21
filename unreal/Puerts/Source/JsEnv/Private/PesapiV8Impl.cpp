@@ -827,6 +827,20 @@ void pesapi_define_class(const void* type_id, const void* super_type_id, const c
 }
 MSVC_PRAGMA(warning(pop))
 
+void pesapi_class_type_info(const char* proto_magic_id, const void* type_id, const void* constructor_info, const void* methods_info,
+    const void* functions_info, const void* properties_info, const void* variables_info)
+{
+    if (strcmp(proto_magic_id, PUERTS_BINDING_PROTO_ID()) != 0)
+    {
+        return;
+    }
+
+    puerts::SetClassTypeInfo(type_id, static_cast<const puerts::NamedFunctionInfo*>(constructor_info),
+        static_cast<const puerts::NamedFunctionInfo*>(methods_info), static_cast<const puerts::NamedFunctionInfo*>(functions_info),
+        static_cast<const puerts::NamedPropertyInfo*>(properties_info),
+        static_cast<const puerts::NamedPropertyInfo*>(variables_info));
+}
+
 EXTERN_C_END
 
 #endif

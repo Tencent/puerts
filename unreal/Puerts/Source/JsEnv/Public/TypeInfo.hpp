@@ -26,6 +26,8 @@
     };                                          \
     }
 
+#define PUERTS_BINDING_PROTO_ID() "fdq4falqlqcq"
+
 namespace puerts
 {
 namespace internal
@@ -501,6 +503,18 @@ public:
     {
         return _signature;
     }
+};
+
+struct NamedFunctionInfo
+{
+    const char* Name;
+    const CFunctionInfo* Type;
+};
+
+struct NamedPropertyInfo
+{
+    const char* Name;
+    const CTypeInfo* Type;
 };
 
 }    // namespace puerts

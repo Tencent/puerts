@@ -69,6 +69,9 @@ public:
 
     void RegisterClass(const JSClassDefinition& ClassDefinition);
 
+    void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+        const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
+
     void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
     const JSClassDefinition* FindClassByID(const void* TypeId);
@@ -137,6 +140,21 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
         StructNameToClassDefinition[SN] = JSClassDefinitionDuplicate(&ClassDefinition);
     }
 #endif
+}
+
+void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
+    const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
+    const NamedPropertyInfo* VariableInfos)
+{
+    auto ClassDef = const_cast<JSClassDefinition*>(FindClassByID(TypeId));
+    if (ClassDef)
+    {
+        ClassDef->ConstructorInfos = PropertyInfoDuplicate(const_cast<NamedFunctionInfo*>(ConstructorInfos));
+        ClassDef->MethodInfos = PropertyInfoDuplicate(const_cast<NamedFunctionInfo*>(MethodInfos));
+        ClassDef->FunctionInfos = PropertyInfoDuplicate(const_cast<NamedFunctionInfo*>(FunctionInfos));
+        ClassDef->PropertyInfos = PropertyInfoDuplicate(const_cast<NamedPropertyInfo*>(PropertyInfos));
+        ClassDef->VariableInfos = PropertyInfoDuplicate(const_cast<NamedPropertyInfo*>(VariableInfos));
+    }
 }
 
 const JSClassDefinition* JSClassRegister::FindClassByID(const void* TypeId)
@@ -221,6 +239,12 @@ JSClassRegister* GetJSClassRegister()
 void RegisterJSClass(const JSClassDefinition& ClassDefinition)
 {
     GetJSClassRegister()->RegisterClass(ClassDefinition);
+}
+
+void SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+    const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos)
+{
+    GetJSClassRegister()->SetClassTypeInfo(TypeId, ConstructorInfos, MethodInfos, FunctionInfos, PropertyInfos, VariableInfos);
 }
 
 void ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)> Callback)

@@ -48,18 +48,6 @@ typedef void (*FinalizeFunc)(void* Ptr);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
-struct NamedFunctionInfo
-{
-    const char* Name;
-    const CFunctionInfo* Type;
-};
-
-struct NamedPropertyInfo
-{
-    const char* Name;
-    const CTypeInfo* Type;
-};
-
 struct JSENV_API JSClassDefinition
 {
     const void* TypeId;
@@ -87,6 +75,9 @@ struct JSENV_API JSClassDefinition
     }
 
 void JSENV_API RegisterJSClass(const JSClassDefinition& ClassDefinition);
+
+void JSENV_API SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos, const NamedFunctionInfo* MethodInfos,
+    const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos, const NamedPropertyInfo* VariableInfos);
 
 void JSENV_API ForeachRegisterClass(std::function<void(const JSClassDefinition* ClassDefinition)>);
 
