@@ -85,17 +85,8 @@ struct API
         void* Data = nullptr;
     };
 
-    struct GeneralFunctionReflectionInfo
-    {
-        const char* Name;
-        const CFunctionInfo* Type;
-    };
-
-    struct GeneralPropertyReflectionInfo
-    {
-        const char* Name;
-        const CTypeInfo* Type;
-    };
+    typedef NamedFunctionInfo GeneralFunctionReflectionInfo;
+    typedef NamedPropertyInfo GeneralPropertyReflectionInfo;
 
     inline static int GetArgsLen(pesapi_callback_info info)
     {
