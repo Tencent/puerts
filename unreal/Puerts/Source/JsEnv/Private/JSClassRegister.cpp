@@ -126,7 +126,8 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
         }
         CDataIdToClassDefinition[ClassDefinition.TypeId] = JSClassDefinitionDuplicate(&ClassDefinition);
         std::string SN = ClassDefinition.ScriptName;
-        CDataNameToClassDefinition[SN] = CDataIdToClassDefinition[ClassDefinition.TypeId];
+        auto Ret = CDataNameToClassDefinition.insert_or_assign(SN, CDataIdToClassDefinition[ClassDefinition.TypeId]);
+        CDataIdToClassDefinition[ClassDefinition.TypeId]->ScriptName = Ret.first->first.c_str();
     }
 #if USING_IN_UNREAL_ENGINE
     else if (ClassDefinition.UETypeName)
