@@ -15,6 +15,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <cstring>
 
 #pragma warning(push, 0)
 #include "v8.h"
