@@ -5,6 +5,7 @@
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
 #include "BackendEnv.h"
+#include "Log.h"
 #include "PromiseRejectCallback.hpp"
 
 #pragma warning(push, 0)  
@@ -473,20 +474,36 @@ static v8::MaybeLocal<v8::Value> CallResolver(
 
     return maybeRet;
 }
+
 static v8::MaybeLocal<v8::Value> CallRead(
     v8::Isolate* Isolate,
     v8::Local<v8::Context> Context,
-    v8::Local<v8::Value> URL
+    v8::Local<v8::Value> URL,
+    std::string &pathForDebug
 )
 {
     std::vector< v8::Local<v8::Value>> V8Args;
 
-    v8::Local<v8::Function> ModuleResolveFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puer_resolve_module_content__").ToLocalChecked()).ToLocalChecked());
-    char* pathForDebug;
+    v8::Local<v8::Function> ModuleReadFunction = v8::Local<v8::Function>::Cast(Context->Global()->Get(Context, v8::String::NewFromUtf8(Isolate, "__puer_resolve_module_content__").ToLocalChecked()).ToLocalChecked());
 
     V8Args.push_back(URL);
-    v8::MaybeLocal<v8::Value>maybeRet = ModuleResolveFunction->Call(Context, Context->Global(), 1, V8Args.data());
+
+#if !WITH_QUICKJS
+    v8::Local<v8::Array> pathForDebugRef = v8::Array::New(Isolate, 0);
+    V8Args.push_back(pathForDebugRef);
+#endif
+
+    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 2, V8Args.data());
+    v8::Local<v8::Value> pathForDebugValue;
+
     V8Args.clear();
+#if !WITH_QUICKJS
+    if (pathForDebugRef->Length() == 1 && pathForDebugRef->Get(Context, 0).ToLocal(&pathForDebugValue))
+    {
+        v8::String::Utf8Value pathForDebug_utf8(Isolate, pathForDebugValue);
+        pathForDebug = std::string(*pathForDebug_utf8, pathForDebug_utf8.length());
+    }
+#endif
 
     return maybeRet;
 }
@@ -634,23 +651,27 @@ v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
         return v8::Local<v8::Module>::New(Isolate, cacheIter->second);
     }
     
-    maybeRet = CallRead(Isolate, Context, Specifier);
+    std::string pathForDebug;
+    maybeRet = CallRead(Isolate, Context, Specifier, pathForDebug);
     if (maybeRet.IsEmpty()) 
     {
         return v8::MaybeLocal<v8::Module> {};
     }
     v8::Local<v8::String> Code = v8::Local<v8::String>::Cast(maybeRet.ToLocalChecked());
 
-    v8::ScriptOrigin Origin(Specifier,
-                        v8::Integer::New(Isolate, 0),                      // line offset
-                        v8::Integer::New(Isolate, 0),                    // column offset
-                        v8::True(Isolate),                    // is cross origin
-                        v8::Local<v8::Integer>(),                 // script id
-                        v8::Local<v8::Value>(),                   // source map URL
-                        v8::False(Isolate),                   // is opaque (?)
-                        v8::False(Isolate),                   // is WASM
-                        v8::True(Isolate),                    // is ES Module
-                        v8::PrimitiveArray::New(Isolate, 10));
+    v8::ScriptOrigin Origin(pathForDebug.size() == 0 ? 
+        Specifier : 
+        v8::String::NewFromUtf8(Isolate, pathForDebug.c_str()).ToLocalChecked(),
+        v8::Integer::New(Isolate, 0),                      // line offset
+        v8::Integer::New(Isolate, 0),                    // column offset
+        v8::True(Isolate),                    // is cross origin
+        v8::Local<v8::Integer>(),                 // script id
+        v8::Local<v8::Value>(),                   // source map URL
+        v8::False(Isolate),                   // is opaque (?)
+        v8::False(Isolate),                   // is WASM
+        v8::True(Isolate),                    // is ES Module
+        v8::PrimitiveArray::New(Isolate, 10)
+    );
 
     v8::ScriptCompiler::CompileOptions options;
 
@@ -777,9 +798,10 @@ JSModuleDef* puerts::esmodule::js_module_loader(
         return Iter->second;
     }
 
+    std::string pathForDebug;
     v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
     v8::TryCatch TryCatch(Isolate);
-    v8::MaybeLocal<v8::Value> maybeRet = CallRead(Isolate, Context, Specifier);
+    v8::MaybeLocal<v8::Value> maybeRet = CallRead(Isolate, Context, Specifier, pathForDebug);
     v8::Local<v8::Value> ret;
     if (maybeRet.IsEmpty() || !((ret = maybeRet.ToLocalChecked())->IsString()))
     {
