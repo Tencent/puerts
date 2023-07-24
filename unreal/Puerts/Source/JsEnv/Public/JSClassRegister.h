@@ -85,13 +85,13 @@ JSENV_API const JSClassDefinition* FindClassByID(const void* TypeId);
 
 const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
+#if USING_IN_UNREAL_ENGINE
 typedef void (*AddonRegisterFunc)(v8::Local<v8::Context> Context, v8::Local<v8::Object> Exports);
 
 AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc);
 
-#if USING_IN_UNREAL_ENGINE
 JSENV_API const JSClassDefinition* FindClassByType(UStruct* Type);
 #endif
 

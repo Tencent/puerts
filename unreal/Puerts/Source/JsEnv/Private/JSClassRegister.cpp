@@ -11,6 +11,7 @@
 #include "UObject/Class.h"
 #endif
 #include <map>
+#include <cstring>
 
 namespace puerts
 {
@@ -78,19 +79,19 @@ public:
 
     const JSClassDefinition* FindCppTypeClassByName(const std::string& Name);
 
+#if USING_IN_UNREAL_ENGINE
     void RegisterAddon(const std::string& Name, AddonRegisterFunc RegisterFunc);
 
     AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name);
 
-#if USING_IN_UNREAL_ENGINE
     const JSClassDefinition* FindClassByType(UStruct* Type);
 #endif
 
 private:
     std::map<const void*, JSClassDefinition*> CDataIdToClassDefinition;
     std::map<std::string, JSClassDefinition*> CDataNameToClassDefinition;
-    std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
 #if USING_IN_UNREAL_ENGINE
+    std::map<std::string, AddonRegisterFunc> AddonRegisterInfos;
     std::map<FString, JSClassDefinition*> StructNameToClassDefinition;
 #endif
 };
@@ -184,6 +185,7 @@ const JSClassDefinition* JSClassRegister::FindCppTypeClassByName(const std::stri
     }
 }
 
+#if USING_IN_UNREAL_ENGINE
 void JSClassRegister::RegisterAddon(const std::string& Name, AddonRegisterFunc RegisterFunc)
 {
     AddonRegisterInfos[Name] = RegisterFunc;
@@ -202,7 +204,6 @@ AddonRegisterFunc JSClassRegister::FindAddonRegisterFunc(const std::string& Name
     }
 }
 
-#if USING_IN_UNREAL_ENGINE
 const JSClassDefinition* JSClassRegister::FindClassByType(UStruct* Type)
 {
     auto Iter = StructNameToClassDefinition.find(Type->GetName());
@@ -263,6 +264,7 @@ const JSClassDefinition* FindCppTypeClassByName(const std::string& Name)
     return GetJSClassRegister()->FindCppTypeClassByName(Name);
 }
 
+#if USING_IN_UNREAL_ENGINE
 void RegisterAddon(const char* Name, AddonRegisterFunc RegisterFunc)
 {
     GetJSClassRegister()->RegisterAddon(Name, RegisterFunc);
@@ -273,7 +275,6 @@ AddonRegisterFunc FindAddonRegisterFunc(const std::string& Name)
     return GetJSClassRegister()->FindAddonRegisterFunc(Name);
 }
 
-#if USING_IN_UNREAL_ENGINE
 const JSClassDefinition* FindClassByType(UStruct* Type)
 {
     return GetJSClassRegister()->FindClassByType(Type);
