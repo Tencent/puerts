@@ -3315,7 +3315,11 @@ void FJsEnvImpl::Start(const FString& ModuleNameOrScript, const TArray<TPair<FSt
 
     if (IsScript)
     {
+#if V8_MAJOR_VERSION > 8
+        v8::ScriptOrigin Origin(Isolate, FV8Utils::ToV8String(Isolate, "chunk"));
+#else
         v8::ScriptOrigin Origin(FV8Utils::ToV8String(Isolate, "chunk"));
+#endif
         v8::Local<v8::String> Source = FV8Utils::ToV8String(Isolate, ModuleNameOrScript);
         v8::TryCatch TryCatch(Isolate);
 
@@ -3491,9 +3495,14 @@ v8::MaybeLocal<v8::Module> FJsEnvImpl::FetchESModuleTree(v8::Local<v8::Context> 
     FString Script;
     FFileHelper::BufferToString(Script, Data.GetData(), Data.Num());
 
+#if V8_MAJOR_VERSION > 8
+    v8::ScriptOrigin Origin(
+        Isolate, FV8Utils::ToV8String(Isolate, FileName), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
+#else
     v8::ScriptOrigin Origin(FV8Utils::ToV8String(Isolate, FileName), v8::Local<v8::Integer>(), v8::Local<v8::Integer>(),
         v8::Local<v8::Boolean>(), v8::Local<v8::Integer>(), v8::Local<v8::Value>(), v8::Local<v8::Boolean>(),
         v8::Local<v8::Boolean>(), v8::True(Isolate));
+#endif
     v8::ScriptCompiler::Source Source(FV8Utils::ToV8String(Isolate, Script), Origin);
 
     v8::Local<v8::Module> Module;
@@ -3641,7 +3650,11 @@ void FJsEnvImpl::ExecuteModule(const FString& ModuleName, std::function<FString(
         FString FormattedScriptUrl = DebugPath;
 #endif
         v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
+#if V8_MAJOR_VERSION > 8
+        v8::ScriptOrigin Origin(Isolate, Name);
+#else
         v8::ScriptOrigin Origin(Name);
+#endif
         v8::TryCatch TryCatch(Isolate);
 
         auto CompiledScript = v8::Script::Compile(Context, Source, &Origin);
@@ -3706,7 +3719,11 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
     FString FormattedScriptUrl = ScriptUrl;
 #endif
     v8::Local<v8::String> Name = FV8Utils::ToV8String(Isolate, FormattedScriptUrl);
+#if V8_MAJOR_VERSION > 8
+    v8::ScriptOrigin Origin(Isolate, Name);
+#else
     v8::ScriptOrigin Origin(Name);
+#endif
     auto Script = v8::Script::Compile(Context, Source, &Origin);
     if (Script.IsEmpty())
     {
