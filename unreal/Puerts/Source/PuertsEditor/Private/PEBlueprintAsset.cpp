@@ -1051,25 +1051,28 @@ void UPEBlueprintAsset::AddMemberVariable(FName NewVarName, FPEGraphPinType InGr
     uint64 InFlags = (uint64) InHFlags << 32 | InLFlags;
     FEdGraphPinType PinType = ToFEdGraphPinType(InGraphPinType, InPinValueType);
 
-    if (auto ComponentClass = Cast<UClass>(PinType.PinSubCategoryObject))
+    if (PinType.ContainerType == EPinContainerType::None)
     {
-        if (Blueprint->GeneratedClass->IsChildOf<AActor>() && Blueprint->SimpleConstructionScript &&
-            PinType.PinCategory == UEdGraphSchema_K2::PC_Object &&
-            (ComponentClass == UActorComponent::StaticClass() || ComponentClass->IsChildOf<UActorComponent>()))
+        if (auto ComponentClass = Cast<UClass>(PinType.PinSubCategoryObject))
         {
-            auto SCSNode = Blueprint->SimpleConstructionScript->FindSCSNode(NewVarName);
-            if (!SCSNode || SCSNode->ComponentClass != ComponentClass)
+            if (Blueprint->GeneratedClass->IsChildOf<AActor>() && Blueprint->SimpleConstructionScript &&
+                PinType.PinCategory == UEdGraphSchema_K2::PC_Object &&
+                (ComponentClass == UActorComponent::StaticClass() || ComponentClass->IsChildOf<UActorComponent>()))
             {
-                if (SCSNode)
+                auto SCSNode = Blueprint->SimpleConstructionScript->FindSCSNode(NewVarName);
+                if (!SCSNode || SCSNode->ComponentClass != ComponentClass)
                 {
-                    RemoveComponent(NewVarName);
+                    if (SCSNode)
+                    {
+                        RemoveComponent(NewVarName);
+                    }
+                    USCS_Node* NewSCSNode = Blueprint->SimpleConstructionScript->CreateNode(ComponentClass, NewVarName);
+                    Blueprint->SimpleConstructionScript->AddNode(NewSCSNode);
+                    NeedSave = true;
                 }
-                USCS_Node* NewSCSNode = Blueprint->SimpleConstructionScript->CreateNode(ComponentClass, NewVarName);
-                Blueprint->SimpleConstructionScript->AddNode(NewSCSNode);
-                NeedSave = true;
+                ComponentsAdded.Add(NewVarName);
+                return;
             }
-            ComponentsAdded.Add(NewVarName);
-            return;
         }
     }
 
