@@ -504,7 +504,6 @@ function watch(configFilePath) {
                 ...program.getSemanticDiagnostics(sourceFile)
             ];
             let checker = program.getTypeChecker();
-            checker.getAliasedSymbol;
             if (diagnostics.length > 0) {
                 logErrors(diagnostics);
             }
