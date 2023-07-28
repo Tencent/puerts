@@ -544,12 +544,12 @@ namespace Puerts
                     if (PuertsDLL.GetJsValueType(isolate, value, false) != JsValueType.Function) 
                     {
                         throw new Exception("invalid Type for generic arguments " + (i - 2));
-                    };
+                    }
                     var argTypeId = PuertsDLL.GetTypeIdFromValue(isolate, value, false);
                     if (argTypeId == -1) 
                     {
                         throw new Exception("invalid Type for generic arguments " + (i - 2));
-                    };
+                    }
                     genericArguments[i - 2] = TypeManager.GetType(argTypeId);
                 }
 

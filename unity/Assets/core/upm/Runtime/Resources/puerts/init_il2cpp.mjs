@@ -59,7 +59,7 @@ puer.getGenericMethod = function(csType, methodName, ...genericArgs) {
     if (!csType || (typeof csType.GetMember != 'function')) {
         throw new Error('the class must be a constructor');
     }
-    let members = csType.GetMember(methodName, MemberTypes_Method, GET_MEMBER_FLAGS);
+    let members = CS.Puerts.Utils.GetMethodAndOverrideMethodByName(csType, methodName);
     let overloadFunctions = [];
     for (let i = 0; i < members.Length; i++) {
         let method = members.GetValue(i)

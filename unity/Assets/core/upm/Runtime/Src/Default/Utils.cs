@@ -4,16 +4,78 @@
 * Puerts is licensed under the BSD 3-Clause License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
 * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
 */
-
-#if !EXPERIMENTAL_IL2CPP_PUERTS || !ENABLE_IL2CPP
-
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if EXPERIMENTAL_IL2CPP_PUERTS && ENABLE_IL2CPP
 
+namespace Puerts
+{
+    [UnityEngine.Scripting.Preserve]
+    public static class Utils
+    {
+        private static bool IsVirtualMethod(MethodInfo memberInfo)
+        {
+            return memberInfo.IsAbstract || (memberInfo.Attributes & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
+        }
+        private static bool IsObsoleteError(MemberInfo memberInfo)
+        {
+            var obsolete = memberInfo.GetCustomAttributes(typeof(ObsoleteAttribute), true).FirstOrDefault() as ObsoleteAttribute;
+            return obsolete != null && obsolete.IsError;
+        }
+        private static bool IsMatchParameters(IEnumerable<Type[]> typeList, Type[] pTypes)
+        {
+            foreach (var types in typeList)
+            {
+                if (types.Length != pTypes.Length)
+                    continue;
+
+                bool exclude = true;
+                for (int i = 0; i < pTypes.Length && exclude; i++)
+                {
+                    if (pTypes[i] != types[i])
+                        exclude = false;
+                }
+                if (exclude)
+                    return true;
+            }
+            return false;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static MethodInfo[] GetMethodAndOverrideMethodByName(Type type, string name)
+        {
+            MethodInfo[] allMethods = type.GetMember(name).Select(m => (MethodInfo)m).ToArray();
+
+            Dictionary<string, IEnumerable<Type[]>> errorMethods = type.GetMethods()
+                .Where(m => m.DeclaringType != type && IsObsoleteError(m))
+                .GroupBy(m => m.Name)
+                .ToDictionary(i => i.Key, i => i.Cast<MethodInfo>().Select(m => m.GetParameters().Select(o => o.ParameterType).ToArray()));
+            IEnumerable<Type[]> matchTypes;
+
+            Type objType = typeof(Object);
+            while (type.BaseType != null && type.BaseType != objType)
+            {
+                type = type.BaseType;
+                MethodInfo[] methods = type.GetMember(name)
+                    .Select(m => (MethodInfo)m)
+                    .Where(m => !IsObsoleteError(m) && !IsVirtualMethod(m))
+                    .Where(m => !errorMethods.TryGetValue(m.Name, out matchTypes) || !IsMatchParameters(matchTypes, m.GetParameters().Select(o => o.ParameterType).ToArray()))  //filter override method
+                    .ToArray();
+                if (methods.Length > 0)
+                {
+                    allMethods = allMethods.Concat(methods).ToArray();
+                }
+            }
+
+            return allMethods;
+        }
+    }
+}
+#else
 namespace Puerts
 {
     public static class Utils
