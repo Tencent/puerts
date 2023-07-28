@@ -491,9 +491,11 @@ static v8::MaybeLocal<v8::Value> CallRead(
 #if !WITH_QUICKJS
     v8::Local<v8::Array> pathForDebugRef = v8::Array::New(Isolate, 0);
     V8Args.push_back(pathForDebugRef);
+    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 2, V8Args.data());
+#else
+    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 1, V8Args.data());
 #endif
 
-    v8::MaybeLocal<v8::Value> maybeRet = ModuleReadFunction->Call(Context, Context->Global(), 2, V8Args.data());
     v8::Local<v8::Value> pathForDebugValue;
 
     V8Args.clear();

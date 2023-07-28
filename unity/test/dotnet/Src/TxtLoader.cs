@@ -36,23 +36,23 @@ public class TxtLoader : IResolvableLoader,  ILoader, IModuleChecker
         string path = Path.Combine(root, specifier);
         if (System.IO.File.Exists(path)) 
         {
-            return path;
+            return path.Replace("\\", "/");
         }
         path = Path.Combine(commonjsRoot, specifier);
         if (System.IO.File.Exists(path)) 
         {
-            return path;
+            return path.Replace("\\", "/");
         }
         path = Path.Combine(editorRoot, specifier);
         if (System.IO.File.Exists(path)) 
         {
-            return path;
+            return path.Replace("\\", "/");
         }
 
         path = Path.Combine(unittestRoot, specifier);
         if (System.IO.File.Exists(path)) 
         {
-            return path;
+            return path.Replace("\\", "/");
         }
 
         else if (mockFileContent.ContainsKey(specifier)) 
