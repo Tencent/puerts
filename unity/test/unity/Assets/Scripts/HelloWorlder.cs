@@ -24,7 +24,8 @@ public class HelloWorlder : MonoBehaviour
     {
         if (env != null)
         {
-            if (ShouldDispose > 0) {
+            if (ShouldDispose > 0) 
+            {
                 env.Dispose();
                 return;
             }

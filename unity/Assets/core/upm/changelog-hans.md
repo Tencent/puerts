@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.0] - 2023-07-31
+1. 修复：debugpath失效并导致VSCode调试不可用的问题
+2. 修复：xil2cpp模式下`puer.$genericMethod`无法获取父类泛型函数的问题 #1417 @danij91
+3. 修复：生成代码时报GetFriendlyName is not a function的问题 #1437
+
+这个版本是2.0第一个正式版本。感谢所有参与过2.0内测的朋友。
+
+对升级有疑问的朋友可以参见[升级指南](https://puerts.github.io/docs/puerts/unity/other/upgrade)
+
 ## [2.0.0-rc.1] - 2023-07-14
 1. 修复: BlittableCopy不可用的问题 #1427
 2. 修复: 两个wrapper生成的问题 #1433 #1432
