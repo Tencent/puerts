@@ -90,13 +90,20 @@ global.PuertsWebGL = {
                 },
                 GetModuleExecutor: function () {
                     loader = typeof __tgjsGetLoader != 'undefined' ? __tgjsGetLoader() : null;
+                    const loaderResolve = loader.Resolve ? (function(fileName: string, to: string = "") {
+                        const resolvedName = loader.Resolve(fileName, to);
+                        if (!resolvedName) {
+                            throw new Error('module not found: ' + fileName);
+                        }
+                        return resolvedName;
+                    }) : null;
 
                     var jsfunc = jsFunctionOrObjectFactory.getOrCreateJSFunction(function (fileName: string) {
                         if (['puerts/log.mjs', 'puerts/timer.mjs'].indexOf(fileName) != -1) {
                             return {};
                         }
-                        if (loader.Resolve) {
-                            fileName = loader.Resolve(fileName, "");
+                        if (loaderResolve) {
+                            fileName = loaderResolve(fileName, "");
                         }
                         if (typeof wx != 'undefined') {
                             const result = wxRequire('puerts_minigame_js_resources/' + (fileName.endsWith('.js') ? fileName : fileName + ".js"));
@@ -128,7 +135,7 @@ global.PuertsWebGL = {
                                     executeModuleCache[specifier] = -1;
                                     try {
                                         PUERTS_JS_RESOURCES[specifier](result.exports, function mRequire(specifierTo: string) {
-                                            return mockRequire(loader.Resolve ? loader.Resolve(specifierTo, specifier) : normalize(specifier, specifierTo));
+                                            return mockRequire(loaderResolve ? loaderResolve(specifierTo, specifier) : normalize(specifier, specifierTo));
                                         }, result);
                                     } catch (e) {
                                         delete executeModuleCache[specifier];
