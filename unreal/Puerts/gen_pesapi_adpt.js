@@ -45,8 +45,8 @@ for(var i = 0; i < lines.length; i++) {
     }
 }
 
-var pesapi_adpt = '#define PESAPI_ADPT_C\n\n#include "pesapi.h"\n\n#if !IL2CPP_TARGET_IOS\n\nEXTERN_C_START\n\n' + apiImpl
-                  + '\n#endif\n\nvoid pesapi_init(pesapi_func_ptr* func_array){\n#if !IL2CPP_TARGET_IOS\n'
+var pesapi_adpt = '#define PESAPI_ADPT_C\n\n#include "pesapi.h"\n\n#if IL2CPP_TARGET_IOS\n#define WITHOUT_PESAPI_WRAPPER\n#endif\n\n#if !defined(WITHOUT_PESAPI_WRAPPER)\n\nEXTERN_C_START\n\n' + apiImpl
+                  + '\n#endif\n\nvoid pesapi_init(pesapi_func_ptr* func_array){\n#if !defined(WITHOUT_PESAPI_WRAPPER)\n'
                   + ptrSetter + '\n#endif\n}\n\nEXTERN_C_END\n';
                   
 fs.writeFileSync('pesapi_adpt.c', pesapi_adpt);
