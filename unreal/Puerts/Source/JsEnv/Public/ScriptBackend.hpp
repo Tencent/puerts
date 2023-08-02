@@ -9,13 +9,14 @@
 #pragma once
 #if defined(BUILDING_PES_EXTENSION)
 #include "PesapiBackend.hpp"
-#else
+#endif
+#if !defined(BUILDING_PES_EXTENSION) || defined(PES_EXTENSION_WITH_V8_API)
 #include "V8Backend.hpp"
 #endif
 #include "Object.hpp"
 
 #ifndef PUERTS_BINDING_IMPL
-#if defined(BUILDING_PES_EXTENSION)
+#if defined(BUILDING_PES_EXTENSION) && !defined(PES_EXTENSION_WITH_V8_API)
 #define PUERTS_BINDING_IMPL pesapi_impl
 #else
 #define PUERTS_BINDING_IMPL v8_impl
@@ -102,15 +103,24 @@
 
 namespace puerts
 {
-template <typename T, typename API>
+template <typename T, typename API, typename RegisterAPI>
 class ClassDefineBuilder;
 
+#if defined(BUILDING_PES_EXTENSION)
 template <typename T>
-ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API> DefineClass()
+ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, pesapi_impl::API> DefineClass()
 {
     static auto NameLiteral = ScriptTypeName<T>::value();
-    return ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API>(NameLiteral.Data());
+    return ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, pesapi_impl::API>(NameLiteral.Data());
 }
+#else
+template <typename T>
+ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, PUERTS_BINDING_IMPL::API> DefineClass()
+{
+    static auto NameLiteral = ScriptTypeName<T>::value();
+    return ClassDefineBuilder<T, PUERTS_BINDING_IMPL::API, PUERTS_BINDING_IMPL::API>(NameLiteral.Data());
+}
+#endif
 
 using Object = PUERTS_BINDING_IMPL::Object;
 

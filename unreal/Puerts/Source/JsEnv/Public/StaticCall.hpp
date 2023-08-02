@@ -1187,11 +1187,11 @@ struct PropertyWrapper<API, Ret*, Variable>
     }
 };
 
-template <typename T, typename API>
+template <typename T, typename API, typename RegisterAPI>
 class ClassDefineBuilder
 {
     template <typename...>
-    using sfina = ClassDefineBuilder<T, API>&;
+    using sfina = ClassDefineBuilder<T, API, RegisterAPI>&;
 
 public:
     const char* className_ = nullptr;
@@ -1219,14 +1219,14 @@ public:
     }
 
     template <typename S>
-    ClassDefineBuilder<T, API>& Extends()
+    ClassDefineBuilder<T, API, RegisterAPI>& Extends()
     {
         superTypeId_ = StaticTypeId<S>::get();
         return *this;
     }
 
     template <typename... Args>
-    ClassDefineBuilder<T, API>& Constructor()
+    ClassDefineBuilder<T, API, RegisterAPI>& Constructor()
     {
         typename API::InitializeFuncType constructor = ConstructorWrapper<API, T, Args...>::checkedCall;
         constructor_ = constructor;
@@ -1235,7 +1235,8 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Constructor(typename API::InitializeFuncType constructor, int length, const CFunctionInfo** infos)
+    ClassDefineBuilder<T, API, RegisterAPI>& Constructor(
+        typename API::InitializeFuncType constructor, int length, const CFunctionInfo** infos)
     {
         for (int i = 0; i < length; i++)
         {
@@ -1245,7 +1246,8 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Function(const char* name, typename API::FunctionCallbackType func, const CFunctionInfo* info)
+    ClassDefineBuilder<T, API, RegisterAPI>& Function(
+        const char* name, typename API::FunctionCallbackType func, const CFunctionInfo* info)
     {
         if (info)
         {
@@ -1255,7 +1257,7 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Function(
+    ClassDefineBuilder<T, API, RegisterAPI>& Function(
         const char* name, typename API::FunctionCallbackType func, int length, const CFunctionInfo** infos)
     {
         for (int i = 0; i < length; i++)
@@ -1266,7 +1268,8 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Method(const char* name, typename API::FunctionCallbackType func, const CFunctionInfo* info)
+    ClassDefineBuilder<T, API, RegisterAPI>& Method(
+        const char* name, typename API::FunctionCallbackType func, const CFunctionInfo* info)
     {
         if (info)
         {
@@ -1276,7 +1279,7 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Method(
+    ClassDefineBuilder<T, API, RegisterAPI>& Method(
         const char* name, typename API::FunctionCallbackType func, int length, const CFunctionInfo** infos)
     {
         for (int i = 0; i < length; i++)
@@ -1287,7 +1290,7 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Property(const char* name, typename API::FunctionCallbackType getter,
+    ClassDefineBuilder<T, API, RegisterAPI>& Property(const char* name, typename API::FunctionCallbackType getter,
         typename API::FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
         if (type)
@@ -1298,7 +1301,7 @@ public:
         return *this;
     }
 
-    ClassDefineBuilder<T, API>& Variable(const char* name, typename API::FunctionCallbackType getter,
+    ClassDefineBuilder<T, API, RegisterAPI>& Variable(const char* name, typename API::FunctionCallbackType getter,
         typename API::FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
         if (type)
@@ -1331,7 +1334,7 @@ public:
 
     void Register()
     {
-        API::template Register<T>(FinalizeBuilder<T>::Build(), *this);
+        RegisterAPI::template Register<T>(FinalizeBuilder<T>::Build(), *this);
     }
 };
 
