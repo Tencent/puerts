@@ -1,5 +1,5 @@
 # Performance of PuerTS
-From our test results, in the extreme case, that is, xLua (Lua53) uses wrapper, PuerTS (v8_9.4) uses [Il2cpp binding](./il2cpp.md) and generates wrapper at the same time:
+From our test results, in the extreme case, that is, xLua (Lua53) uses wrapper, PuerTS (v8_9.4) uses [xIl2cpp binding](./il2cpp.md) and generates wrapper at the same time:
 
 * Cross-language performance:
   * On Android, Puer's cross-language performance is about twice that of xlua
@@ -12,9 +12,9 @@ The benchmark project used in the test was modified by the community contributor
 
 ## Data display
 
-* `Puer W` represents the data when **not using** il2cpp binding and **generating** StaticWrapper
-* `Puer I R` represents the data when **using** il2cpp binding but **not generating** Il2cpp wrapper
-* `Puer I W` represents the data when **using** il2cpp binding and **generating** Il2cpp wrapper
+* `Puer S` represents the data when **not using** xIl2cpp mode and **with** StaticWrapper generated.
+* `Puer X R` represents the data when **using** xIl2cpp mode but **without** xIl2cpp StaticWrapper generated (by Reflection).
+* `Puer X S` represents the data when **using** xIl2cpp mode and **with** xIl2cpp StaticWrapper generated.
 * Time unit is ms
 
 > Due to environmental factors, there may be slight errors in the following data.
@@ -24,7 +24,7 @@ The benchmark project used in the test was modified by the community contributor
 > Since this page went online, the data has also changed. The reason: https://github.com/throw-out/PerformanceTesting/pull/2 , https://github.com/Tencent/xLua/commit/899175ef946bb8f9d3e70d425cb875d7510adc82
 
 ### android (Vivo Neo6SE)
-| Method                                                | Static  | Call      | csharp | xLua   | puer W | puer I R  | puer I W       
+| Method                                                | Static  | Call      | csharp | xLua   | puer S | puer X R  | puer X S       
 | :----:                                                | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:                  
 | void Payload();                                       | ×       | 200000    | 0.0    | 34.7   | 30.0   | 42.0      | 24.0       
 | void Payload();                                       | √       | 200000    | 0.0    | 21.3   | 23.0   | 20.0      | 9.0       
@@ -46,7 +46,7 @@ The benchmark project used in the test was modified by the community contributor
 | payload(): number // ScriptCallScript                 | √       | 200000000 | 245.3  | 9350.3 | 183.0  | 182.0     | 182.0       
 
 ### ios （iPhone XsMax）
-| Method                                                | Static  | Call      | csharp | xLua   | puer W | puer I R  | puer I W
+| Method                                                | Static  | Call      | csharp | xLua   | puer S | puer X R  | puer X S
 | :----:                                                | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | void Payload();                                       | ×       | 200000    | 0.0    | 10.2   | 28.0   | 27.0      | 24.0
 | void Payload();                                       | √       | 200000    | 0.0    | 25.8   | 34.0   | 34.0      | 26.0

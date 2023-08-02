@@ -1,5 +1,5 @@
 # PuerTS的性能表现
-从我们的测试结果上看，极限情况下，即xLua(Lua53)使用wrapper，PuerTS(v8_9.4)使用[Il2cpp绑定](./il2cpp.md)同时生成wrapper：
+从我们的测试结果上看，极限情况下，即xLua(Lua53)使用wrapper，PuerTS(v8_9.4)使用[xIl2cpp模式](./il2cpp.md)同时生成wrapper：
 
 * 跨语言性能：
     * 在安卓上，普洱的跨语言性能是xlua的2倍左右
@@ -12,9 +12,9 @@
 
 ## 数据展示
 
-* `Puer W` 代表**不使用**il2cpp绑定，且**生成了**StaticWrapper时的数据
-* `Puer I R` 代表**使用**il2cpp绑定，但**没有生成**Il2cpp wrapper时的数据
-* `Puer I W` 代表**使用**il2cpp绑定，且**生成了**Il2cpp wrapper时的数据
+* `Puer S` 代表**不使用**xIl2cpp模式，且**生成了**StaticWrapper时的数据
+* `Puer X R` 代表**使用**xIl2cpp模式，但**没有生成**xIl2cpp StaticWrapper时的数据
+* `Puer X S` 代表**使用**xIl2cpp模式，且**生成了**xIl2cpp Staticrapper时的数据
 * 时间单位是ms
 
 > 受环境影响以下数据可能会有略微误差。
@@ -24,7 +24,7 @@
 > 这个页面上线以来，数据也发生过变动，原因：https://github.com/throw-out/PerformanceTesting/pull/2 、 https://github.com/Tencent/xLua/commit/899175ef946bb8f9d3e70d425cb875d7510adc82
 
 ### 安卓所有数据 (Vivo Neo6SE)
-| Method                                                | Static  | Call      | csharp | xLua   | puer W | puer I R  | puer I W
+| Method                                                | Static  | Call      | csharp | xLua   | puer S | puer X R  | puer X S
 | :----:                                                | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | void Payload();                                       | ×       | 200000    | 0.0    | 34.7   | 30.0   | 42.0      | 24.0
 | void Payload();                                       | √       | 200000    | 0.0    | 21.3   | 23.0   | 20.0      | 9.0
@@ -46,7 +46,7 @@
 | payload(): number // ScriptCallScript                 | √       | 200000000 | 245.3  | 9350.3 | 183.0  | 182.0     | 182.0
 
 ### ios所有数据 （iPhone XsMax）
-| Method                                                | Static  | Call      | csharp | xLua   | puer W | puer I R  | puer I W
+| Method                                                | Static  | Call      | csharp | xLua   | puer S | puer X R  | puer X S
 | :----:                                                | :----:  | :----:    | :----: | :----: | :----: | :----:    | :----:           
 | void Payload();                                       | ×       | 200000    | 0.0    | 10.2   | 28.0   | 27.0      | 24.0
 | void Payload();                                       | √       | 200000    | 0.0    | 25.8   | 34.0   | 34.0      | 26.0
