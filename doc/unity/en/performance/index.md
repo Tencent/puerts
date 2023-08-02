@@ -2,11 +2,11 @@
 From our test results, in the extreme case, that is, xLua (Lua53) uses wrapper, PuerTS (v8_9.4) uses [xIl2cpp binding](./il2cpp.md) and generates wrapper at the same time:
 
 * Cross-language performance:
-  * On Android, Puer's cross-language performance is about twice that of xlua
-  * ios is on par with xlua (slightly slower when there are no parameters or parameters are basic data types, slightly faster when parameters are objects).
+  * On Android, Puer's interop performance is about twice that of xlua
+  * On iOS Puer is on par with xlua (slightly slower when there are no parameters or parameters are primitive types, slightly faster when parameters are objects).
 * Self-execution performance
-  * Since lua53 does not have JIT, PuerTS beats xLua in execution performance on Android. Even PuerTS is not much worse than C#.
-  * ios everyone does not have JIT, PuerTS and xLua are on par.
+  * Since lua53 does not support JIT, PuerTS is faster than xLua in execution on Android. PuerTS is even not much worse than C#.
+  * On ios both language does not support JIT, PuerTS and xLua are on same level.
 
 The benchmark project used in the test was modified by the community contributor [throw-out](https://github.com/throw-out), and can be found in [this fork](https://github.com/puerts/PerformanceTesting).
 
@@ -19,9 +19,7 @@ The benchmark project used in the test was modified by the community contributor
 
 > Due to environmental factors, there may be slight errors in the following data.
 
-> When paying attention to cross-language data, especially for struct cases, you can subtract C#'s time consumption (i.e. API itself consumption) to consider.
-
-> Since this page went online, the data has also changed. The reason: https://github.com/throw-out/PerformanceTesting/pull/2 , https://github.com/Tencent/xLua/commit/899175ef946bb8f9d3e70d425cb875d7510adc82
+> When paying attention to interop performance, especially for struct cases, consider subtracting the time consumption of C# (i.e. API itself consumption).
 
 ### android (Vivo Neo6SE)
 | Method                                                | Static  | Call      | csharp | xLua   | puer S | puer X R  | puer X S       
