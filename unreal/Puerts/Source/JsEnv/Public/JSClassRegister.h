@@ -23,11 +23,11 @@
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
-
 #include "TypeInfo.hpp"
 
 namespace puerts
 {
+class CFunctionInfo;
 struct JSENV_API JSFunctionInfo
 {
     const char* Name;
@@ -47,6 +47,9 @@ struct JSENV_API JSPropertyInfo
 typedef void (*FinalizeFunc)(void* Ptr);
 
 typedef void* (*InitializeFunc)(const v8::FunctionCallbackInfo<v8::Value>& Info);
+
+struct NamedFunctionInfo;
+struct NamedPropertyInfo;
 
 struct JSENV_API JSClassDefinition
 {

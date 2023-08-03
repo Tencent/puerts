@@ -144,6 +144,36 @@ void JSClassRegister::RegisterClass(const JSClassDefinition& ClassDefinition)
 #endif
 }
 
+void SetReflectoinInfo(JSFunctionInfo* Methods, const NamedFunctionInfo* MethodInfos)
+{
+    std::map<std::string, std::tuple<int, const NamedFunctionInfo*>> InfoMap;
+    const NamedFunctionInfo* MethodInfo = MethodInfos;
+    while (MethodInfo->Name)
+    {
+        auto Iter = InfoMap.find(MethodInfo->Name);
+        if (Iter == InfoMap.end())
+        {
+            InfoMap[MethodInfo->Name] = std::make_tuple(1, MethodInfo);
+        }
+        else
+        {
+            std::get<0>(Iter->second) = 2;
+        }
+        ++MethodInfo;
+    }
+
+    JSFunctionInfo* Method = Methods;
+    while (Method->Name)
+    {
+        auto Iter = InfoMap.find(Method->Name);
+        if (Iter != InfoMap.end() && std::get<0>(Iter->second) == 1)
+        {
+            Method->ReflectionInfo = std::get<1>(Iter->second)->Type;
+        }
+        ++Method;
+    }
+}
+
 void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionInfo* ConstructorInfos,
     const NamedFunctionInfo* MethodInfos, const NamedFunctionInfo* FunctionInfos, const NamedPropertyInfo* PropertyInfos,
     const NamedPropertyInfo* VariableInfos)
@@ -156,6 +186,8 @@ void JSClassRegister::SetClassTypeInfo(const void* TypeId, const NamedFunctionIn
         ClassDef->FunctionInfos = PropertyInfoDuplicate(const_cast<NamedFunctionInfo*>(FunctionInfos));
         ClassDef->PropertyInfos = PropertyInfoDuplicate(const_cast<NamedPropertyInfo*>(PropertyInfos));
         ClassDef->VariableInfos = PropertyInfoDuplicate(const_cast<NamedPropertyInfo*>(VariableInfos));
+        SetReflectoinInfo(ClassDef->Methods, ClassDef->MethodInfos);
+        SetReflectoinInfo(ClassDef->Functions, ClassDef->FunctionInfos);
     }
 }
 
