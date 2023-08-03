@@ -173,8 +173,12 @@ struct V8FastCall<Ret (*)(Args...), func,
 
     static const v8::CFunction* info()
     {
+#if defined(V8_STATIC_FUNCTION_FAST_CALL)
         static v8::CFunction _info = v8::CFunction::Make(Wrap);
         return &_info;
+#else
+        return nullptr;
+#endif
     }
 };
 
