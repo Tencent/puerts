@@ -192,6 +192,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         JSFunctionInfo* FunctionInfo = ClassDefinition->Methods;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
+#ifndef WITH_QUICKJS
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
             if (FastCallInfo)
             {
@@ -204,6 +205,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                         FastCallInfo));
             }
             else
+#endif
             {
                 Template->PrototypeTemplate()->Set(
                     v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
@@ -216,6 +218,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
         FunctionInfo = ClassDefinition->Functions;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Callback)
         {
+#ifndef WITH_QUICKJS
             auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
             if (FastCallInfo)
             {
@@ -227,6 +230,7 @@ v8::Local<v8::FunctionTemplate> FCppObjectMapper::GetTemplateOfClass(v8::Isolate
                         FastCallInfo));
             }
             else
+#endif
             {
                 Template->Set(v8::String::NewFromUtf8(Isolate, FunctionInfo->Name, v8::NewStringType::kNormal).ToLocalChecked(),
                     v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,

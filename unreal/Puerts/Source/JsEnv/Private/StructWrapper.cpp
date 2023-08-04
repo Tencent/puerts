@@ -175,6 +175,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             AddedMethods.Add(FunctionInfo->Name);
             if (!IsReuseTemplate)
             {
+#ifndef WITH_QUICKJS
                 auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
                 if (FastCallInfo)
                 {
@@ -186,6 +187,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                             FastCallInfo));
                 }
                 else
+#endif
                 {
                     Result->PrototypeTemplate()->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
                         v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,
@@ -201,6 +203,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
             AddedFunctions.Add(FunctionInfo->Name);
             if (!IsReuseTemplate)
             {
+#ifndef WITH_QUICKJS
                 auto FastCallInfo = FunctionInfo->ReflectionInfo ? FunctionInfo->ReflectionInfo->FastCallInfo() : nullptr;
                 if (FastCallInfo)
                 {
@@ -212,6 +215,7 @@ v8::Local<v8::FunctionTemplate> FStructWrapper::ToFunctionTemplate(v8::Isolate* 
                             FastCallInfo));
                 }
                 else
+#endif
                 {
                     Result->Set(FV8Utils::InternalString(Isolate, FunctionInfo->Name),
                         v8::FunctionTemplate::New(Isolate, FunctionInfo->Callback,

@@ -357,7 +357,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     if (!InFlags.IsEmpty())
     {
-#if !defined(WITH_NODEJS)
+#if !defined(WITH_NODEJS) && !defined(WITH_QUICKJS)
         TArray<FString> Flags;
         InFlags.ParseIntoArray(Flags, TEXT(" "));
         for (auto& Flag : Flags)
@@ -1706,6 +1706,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAdd(
     {
         bool Existed;
         auto TemplateInfoPtr = GetTemplateInfoOfType(Class, Existed);
+
         auto Result = TemplateInfoPtr->Template.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
         auto ClassWrapper = static_cast<FClassWrapper*>(TemplateInfoPtr->StructWrapper.get());
         Bind(ClassWrapper, UEObject, Result);
