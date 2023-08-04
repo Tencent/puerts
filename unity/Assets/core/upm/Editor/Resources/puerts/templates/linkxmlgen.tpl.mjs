@@ -45,8 +45,11 @@ function getAssemblyInfo(genTypes) {
         let assemblyName = type.Assembly.GetName(false).Name;
         !assemblyInfo.has(assemblyName) && assemblyInfo.set(assemblyName, [])
         let types = assemblyInfo.get(assemblyName)
+
         if (type.IsGenericType) {
             types.push(type.FullName.split('[')[0])
+        } else if (type.IsNested) {
+            types.push(type.FullName.replace('+', '/'))
         } else {
             types.push(type.FullName)
         }
