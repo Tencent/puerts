@@ -112,6 +112,7 @@ public class JsEnv : ModuleRules
         }
         else if (UseQuickjs)
         {
+            ForceStaticLibInEditor = true;
             ThirdPartyQJS(Target);
         }
         else if (UseNewV8)
