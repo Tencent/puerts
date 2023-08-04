@@ -5,39 +5,41 @@
 
 ## 1. 高级计划
 提供等同于普洱面向腾讯公司内部工作室的服务，至少包括：
-* 无限制的普洱的基础问答咨询服务。
-* JS生态相关知识与应用方法的教学。
-* 项目立项建议。
-* 协助分析项目性能，排查项目性能问题。
-* 过往版本支持：
-    1. PuerTS 1.3及以下版本。
-    2. Unity 2018及以下版本。
-* 未来无开源打算的技术服务使用权。功能包括但不限于：
-    1. v8 Snapshot 启动速度优化。
-    2. 字节码支持。
-    3. [指针压缩功能，减少内存消耗](#指针压缩功能)
-    4. [基于pixui的用HTML编写UI功能](#pixui)。
-* 以更高优先级提供普洱开源计划中但未实现/未开源的功能。功能包括但不限于：
-    1. [基于buffer读写的跨语言套件](#buffer读写套件webgl多线程组件)
-    2. [WebGL下的多线程组件](#buffer读写套件webgl多线程组件)
-    3. [fast-c-api call](#fast-c-api-call)
-    4. ts代码分析生成link.xml / d.ts。
-    5. Lua到TS的AI转写。
-    6. PlayStation/Switch等游戏机平台支持
-* 微信小游戏上线全链路技术服务 —— 普洱团队和微信小游戏团队有深度合作，团队成员也包含前微信小游戏员工。您遇到的问题普洱项目组可协助进行内部沟通与优先解决。
-* 普洱生态相关开源技术的服务 —— 若您期望使用普洱爱好者业余时间提供的库/框架，但担心稳定性和维护性问题，普洱团队可以代为提供技术协助。这部分服务的收入最终会根据工作量给予原作者分成，鼓励生态的成长。目前支持的库和框架：
-    1. [puerts-unity-kit](https://github.com/throw-out/puerts-unity-kit)
-    2. [puerts-starter-kit](https://github.com/Geequlim/puerts-starter-kit)
-    3. [puerts-cli](https://github.com/sbfkcel/puerts_cli)
-    4. [nice-ts](https://github.com/Justin-sky/Nice-TS)
+1. 无限制的普洱的基础问答咨询服务。
+2. JS生态相关知识与应用方法的教学。
+3. 项目立项建议。
+4. 协助分析项目性能，排查项目性能问题。
+5. 过往版本支持：
+    * PuerTS 1.3及以下版本。
+    * Unity 2018及以下版本。
+6. 未来无开源打算的技术服务使用权。功能包括但不限于：
+    * v8 Snapshot 启动速度优化。
+    * 字节码支持。
+    * [指针压缩功能，减少内存消耗](#指针压缩功能)
+    * [基于pixui的用HTML编写UI功能](#pixui)。
+7. 以更高优先级提供普洱开源计划中但未实现/未开源的功能。功能包括但不限于：
+    * [基于buffer读写的跨语言套件](#buffer读写套件webgl多线程组件)
+    * [WebGL下的多线程组件](#buffer读写套件webgl多线程组件)
+    * [fast-c-api call](#fast-c-api-call)
+    * ts代码分析生成link.xml / d.ts。
+    * Lua到TS的AI转写。
+    * PlayStation/Switch等游戏机平台支持
+8. 微信小游戏上线全链路技术服务 —— 普洱团队和微信小游戏团队有深度合作，团队成员也包含前微信小游戏员工。您遇到的问题普洱项目组可协助进行内部沟通与优先解决。
+9. 普洱生态相关开源技术的服务 —— 若您期望使用普洱爱好者业余时间提供的库/框架，但担心稳定性和维护性问题，普洱团队可以代为提供技术协助。这部分服务的收入最终会根据工作量给予原作者奖励，鼓励生态的成长。目前支持的库和框架：
+    * [puerts-unity-kit](https://github.com/throw-out/puerts-unity-kit)
+    * [puerts-starter-kit](https://github.com/Geequlim/puerts-starter-kit)
+    * [puerts-cli](https://github.com/sbfkcel/puerts_cli)
+    * [nice-ts](https://github.com/Justin-sky/Nice-TS)
 
-*按月结算*
+> 关于费用：
+> 接入方负责人力成本的0.2倍，其余成本由腾讯公司负担
+> 涉及开源的部分，接入方可额外签署排他协议，可以以游戏类型为维度，保证贵项目在发布后或是开始接入的一段时间内，没有竞品使用对应服务。
     
 ## 2. 特级计划
 提供包含在高级计划内的所有服务。同时接受贵项目内具体功能需求的开发（最好与普洱相关），可配合签署保密协议，并保证不会保存相关代码的副本。
    
-*费用约为高级计划的8倍，按天结算*
-
+> 关于费用：
+> 约为人力支出的2倍
 ------
 ## 功能备注
 
