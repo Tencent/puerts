@@ -273,6 +273,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
         ${CSName} = DataTransfer::GetPointer<${S}>(context, t${CSName});
     }
     if (!${CSName}) {
+        memset(&u${CSName}, 0, sizeof(${S}));
         ${CSName} = &u${CSName};
     }
         `
