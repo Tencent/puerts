@@ -56,6 +56,10 @@ static pesapi_func_ptr funcs[] = {(pesapi_func_ptr) &pesapi_create_null, (pesapi
     (pesapi_func_ptr) &pesapi_class_type_info};
 MSVC_PRAGMA(warning(pop))
 
+EXTERN_C_START
+extern const char* GPesapiModuleName;
+EXTERN_C_END
+
 static int LoadAddon(const char* path, const char* module_name)
 {
     if (GHandlers.find(path) != GHandlers.end())
@@ -67,17 +71,32 @@ static int LoadAddon(const char* path, const char* module_name)
     void* Handle = FPlatformProcess::GetDllHandle(UTF8_TO_TCHAR(path));
     if (Handle)
     {
-        FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(___magic_module_name_xx___)));
-        EntryName = EntryName.Replace(TEXT("___magic_module_name_xx___"), UTF8_TO_TCHAR(module_name));
+        FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(dynamic)));
 
-        auto Init = (void (*)(pesapi_func_ptr*))(uintptr_t) FPlatformProcess::GetDllExport(Handle, *EntryName);
+        auto Init = (const char* (*) (pesapi_func_ptr*) )(uintptr_t) FPlatformProcess::GetDllExport(Handle, *EntryName);
         if (Init)
         {
+            const char* mn = Init(nullptr);
+            GPesapiModuleName = mn;
             Init(funcs);
+            GPesapiModuleName = nullptr;
             GHandlers[path] = Handle;
             return 0;
         }
-        UE_LOG(LogTemp, Error, TEXT("Could not find entry for: %s"), UTF8_TO_TCHAR(path));
+        else
+        {
+            FString VersionEntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_VERSION()));
+            auto Ver = (int (*)())(uintptr_t) FPlatformProcess::GetDllExport(Handle, *VersionEntryName);
+            if (!Ver)
+            {
+                UE_LOG(LogTemp, Error, TEXT("Could not find entry for: %s"), UTF8_TO_TCHAR(path));
+            }
+            else
+            {
+                int PesapiVer = Ver();
+                UE_LOG(LogTemp, Error, TEXT("pesapi version mismatch, expect: %d, but got: %d"), PESAPI_VERSION, PesapiVer);
+            }
+        }
     }
     else
     {
