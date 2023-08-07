@@ -438,9 +438,9 @@ namespace Puerts
                 // extensionMethods
                 // 因为内存问题与crash问题移入宏中
 #if PUERTS_REFLECT_ALL_EXTENSION || UNITY_EDITOR
-#if UNITY_EDITOR && !PUERTS_REFLECT_ALL_EXTENSION && !EXPERIMENTAL_IL2CPP_PUERTS
-                if (!UnityEditor.EditorApplication.isPlaying) 
-#endif
+// #if UNITY_EDITOR && !PUERTS_REFLECT_ALL_EXTENSION && !EXPERIMENTAL_IL2CPP_PUERTS
+//                 if (!UnityEditor.EditorApplication.isPlaying) 
+// #endif
                 {
                     IEnumerable<MethodInfo> extensionMethods = Utils.GetExtensionMethodsOf(type);
                     if (extensionMethods != null)
