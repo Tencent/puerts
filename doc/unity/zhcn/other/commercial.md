@@ -24,8 +24,11 @@
     * ts代码分析生成link.xml / d.ts。
     * Lua到TS的AI转写。
     * PlayStation/Switch等游戏机平台支持
-8. 微信小游戏上线全链路技术服务 —— 普洱团队和微信小游戏团队有深度合作，团队成员也包含前微信小游戏员工。您遇到的问题普洱项目组可协助进行内部沟通与优先解决。
-9. 普洱生态相关开源技术的服务 —— 若您期望使用普洱爱好者业余时间提供的库/框架，但担心稳定性和维护性问题，普洱团队可以代为提供技术协助。这部分服务的收入最终会根据工作量给予原作者奖励，鼓励生态的成长。目前支持的库和框架：
+8. 小游戏上线全链路技术服务
+    * 基于QuickJS的JS热更支持（原理与xLua相同，无法直接调用wxapi，没有JIT）
+    * 小游戏加载速度优化服务
+    * 协助与官方沟通
+10. 普洱生态相关开源技术的服务 —— 若您期望使用普洱爱好者业余时间提供的库/框架，但担心稳定性和维护性问题，普洱团队可以代为提供技术协助。这部分服务的收入最终会根据工作量给予原作者奖励，鼓励生态的成长。目前支持的库和框架：
     * [puerts-unity-kit](https://github.com/throw-out/puerts-unity-kit)
     * [puerts-starter-kit](https://github.com/Geequlim/puerts-starter-kit)
     * [puerts-cli](https://github.com/sbfkcel/puerts_cli)
