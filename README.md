@@ -18,11 +18,11 @@
 
 ## WHY should I use PuerTS?
 
-* Facililates game building processes by combining JavaScript ecosystem with the rendering power of professional game engines
-* In contrast to lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
+* Facilitates game-building processes by combining JavaScript/Node.js ecosystem and professional game engines
+* In contrast to Lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
 * High efficiency: supports reflection call throughout the host - no extra steps needed for interop with C++/C#.
-* High performance：supports static wrapper generation - takes care of complex scenes with high performance demands.
-* Talented WebGL Support: huge advantage in performance and dev efficiency compare to Lua, even faster than pure C# in some case.
+* High performance: supports static wrapper generation - handles complex scenes with high-performance demands.
+* Talented WebGL Support: massive advantage in performance and dev efficiency compared to Lua, even faster than pure C# in some cases.
 
 ## HOW can I start to use PuerTS
 [Documentation](https://puerts.github.io/en)
