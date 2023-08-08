@@ -26,10 +26,10 @@ var global = global || (function () { return this; }());
     const moduleCache = {};
     
     function load(filepath) {
-        const iswin = filepath.indexOf('\\') != -1
+        const iswin = dll_ext === '.dll';
         const filename = pathBasename(filepath);
         if (filepath && typeof filepath === 'string' && filename.indexOf('.') === -1) {
-            const prefix = dll_ext === '.dll' ? '' : 'lib';
+            const prefix = iswin ? '' : 'lib';
             filepath = `${pathDirname(filepath)}${iswin? '\\' : '/'}${prefix}${filename}${dll_ext}`;
         }
         if (!(filepath in moduleCache)) {
