@@ -9,11 +9,9 @@ var global = global || (function () { return this; }());
 (function (global) {
     "use strict";
     
-    let loadUEType = global.__tgjsLoadUEType;
-    global.__tgjsLoadUEType = undefined;
+    let loadUEType = global.puerts.loadUEType;
     
-    let loadCDataType = global.__tgjsLoadCDataType;
-    global.__tgjsLoadCDataType = undefined;
+    let loadCPPType = global.puerts.loadCPPType;
     
     let cache = Object.create(null);
     
@@ -78,7 +76,7 @@ var global = global || (function () { return this; }());
     let CPP = new Proxy(cache, {
         get: function(classWrapers, name) {
             if (!(name in classWrapers)) {
-                classWrapers[name] = loadCDataType(name);
+                classWrapers[name] = loadCPPType(name);
             }
             return classWrapers[name];
         }

@@ -10,14 +10,16 @@
 
 #include "pesapi.h"
 #include "CoreMinimal.h"
+#include "V8Utils.h"
 
 #include <map>
 #include <string>
+#include <sstream>
 
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-static std::map<std::string, void*> GHandlers;
+static std::map<std::string, std::string> LoadedModules;
 
 #if PLATFORM_IOS
 int PesapiLoadFramework(std::string frameworkName, std::string entryClassName, pesapi_func_ptr* funcPtrArray);
@@ -60,9 +62,65 @@ EXTERN_C_START
 extern const char* GPesapiModuleName;
 EXTERN_C_END
 
+namespace puerts
+{
+void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info)
+{
+    if (!Info[0]->IsString())
+    {
+        FV8Utils::ThrowException(Info.GetIsolate(), "#0 argument expect a string");
+        return;
+    }
+    FString Path = FV8Utils::ToFString(Info.GetIsolate(), Info[0]);
+
+    auto Iter = LoadedModules.find(TCHAR_TO_UTF8(*Path));
+    if (Iter != LoadedModules.end())
+    {
+        Info.GetReturnValue().Set(FV8Utils::ToV8String(Info.GetIsolate(), Iter->second.c_str()));
+        return;
+    }
+
+    void* DllHandle = FPlatformProcess::GetDllHandle(*Path);
+    if (!DllHandle)
+    {
+        FV8Utils::ThrowException(Info.GetIsolate(), FString(TEXT("dlopen fail for ")) + Path);
+        return;
+    }
+
+    const FString EntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_INITIALIZER(dynamic)));
+    auto Init = (const char* (*) (pesapi_func_ptr*) )(uintptr_t) FPlatformProcess::GetDllExport(DllHandle, *EntryName);
+
+    if (Init)
+    {
+        const char* ModuleName = Init(nullptr);
+        GPesapiModuleName = ModuleName;
+        Init(funcs);
+        GPesapiModuleName = nullptr;
+        LoadedModules[TCHAR_TO_UTF8(*Path)] = ModuleName;
+        Info.GetReturnValue().Set(FV8Utils::ToV8String(Info.GetIsolate(), ModuleName));
+    }
+    else
+    {
+        const FString VersionEntryName = UTF8_TO_TCHAR(STRINGIFY(PESAPI_MODULE_VERSION()));
+        auto Ver = (int (*)())(uintptr_t) FPlatformProcess::GetDllExport(DllHandle, *VersionEntryName);
+        if (!Ver)
+        {
+            FV8Utils::ThrowException(Info.GetIsolate(), "can find entry");
+        }
+        else
+        {
+            int PesapiVersion = Ver();
+            FV8Utils::ThrowException(Info.GetIsolate(),
+                FString::Printf(TEXT("pesapi version mismatch, expect: %d, but got %d"), PESAPI_VERSION, PesapiVersion));
+        }
+        FPlatformProcess::FreeDllHandle(DllHandle);
+    }
+}
+}    // namespace puerts
+
 static int LoadAddon(const char* path, const char* module_name)
 {
-    if (GHandlers.find(path) != GHandlers.end())
+    if (LoadedModules.find(path) != LoadedModules.end())
     {
         // UE_LOG(LogTemp, Warning, TEXT("Try load addon already loaded: %s"), UTF8_TO_TCHAR(path));
         return 0;
@@ -76,11 +134,11 @@ static int LoadAddon(const char* path, const char* module_name)
         auto Init = (const char* (*) (pesapi_func_ptr*) )(uintptr_t) FPlatformProcess::GetDllExport(Handle, *EntryName);
         if (Init)
         {
-            const char* mn = Init(nullptr);
-            GPesapiModuleName = mn;
+            const char* ModuleName = Init(nullptr);
+            GPesapiModuleName = ModuleName;
             Init(funcs);
             GPesapiModuleName = nullptr;
-            GHandlers[path] = Handle;
+            LoadedModules[path] = ModuleName;
             return 0;
         }
         else
@@ -93,8 +151,8 @@ static int LoadAddon(const char* path, const char* module_name)
             }
             else
             {
-                int PesapiVer = Ver();
-                UE_LOG(LogTemp, Error, TEXT("pesapi version mismatch, expect: %d, but got: %d"), PESAPI_VERSION, PesapiVer);
+                int PesapiVersion = Ver();
+                UE_LOG(LogTemp, Error, TEXT("pesapi version mismatch, expect: %d, but got: %d"), PESAPI_VERSION, PesapiVersion);
             }
         }
     }
