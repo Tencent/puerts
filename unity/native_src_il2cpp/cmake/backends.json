@@ -200,17 +200,6 @@
                 "/Inc"
             ],
             "link-libraries": {
-                "android": {
-                    "armv7": [
-                        "/Lib/Android/armeabi-v7a/libwee8.a"
-                    ],
-                    "arm64": [
-                        "/Lib/Android/arm64-v8a/libwee8.a"
-                    ],
-                    "x64": [
-                        "/Lib/Android/x64/libwee8.a"
-                    ]
-                },
                 "win": {
                     "ia32": [
                         "/Lib/Win32/wee8.lib"
@@ -234,6 +223,17 @@
                 }
             },
             "copy-libraries": {
+                "android": {
+                    "armv7": [
+                        "/Lib/Android/armeabi-v7a/libwee8.a"
+                    ],
+                    "arm64": [
+                        "/Lib/Android/arm64-v8a/libwee8.a"
+                    ],
+                    "x64": [
+                        "/Lib/Android/x64/libwee8.a"
+                    ]
+                },
                 "ios": {
                     "arm64": [
                         "/Lib/iOS/arm64/libwee8.a"
