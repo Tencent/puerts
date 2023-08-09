@@ -34,7 +34,7 @@ public:
 }    // namespace internal
 namespace pesapi_impl
 {
-static void REPORT_EXCEPTION(const char* MSG)
+static inline void REPORT_EXCEPTION(const char* MSG)
 {
     std::cout << "call function throw: " << MSG << std::endl;
 }

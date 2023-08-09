@@ -121,7 +121,7 @@ struct API
         if (holder->IsObject())
         {
             auto outer = holder->ToObject(context).ToLocalChecked();
-            auto _unused = outer->Set(context, 0, value);
+            (void) (outer->Set(context, 0, value));
         }
     }
 
@@ -587,7 +587,7 @@ struct Converter<T[Size], typename std::enable_if<is_script_type<T>::value && !s
         {
             auto ab = v8::Local<v8::ArrayBuffer>::Cast(value);
             size_t byteLength;
-            auto _UnUsed = DataTransfer::GetArrayBufferData(ab, byteLength);
+            (void) (DataTransfer::GetArrayBufferData(ab, byteLength));
             return byteLength >= sizeof(T) * Size;
         }
         return false;

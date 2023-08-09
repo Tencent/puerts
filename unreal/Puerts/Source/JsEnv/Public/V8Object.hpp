@@ -22,7 +22,7 @@ namespace puerts
 {
 namespace v8_impl
 {
-static void REPORT_EXCEPTION(v8::Isolate* Isolate, v8::TryCatch* TC)
+static inline void REPORT_EXCEPTION(v8::Isolate* Isolate, v8::TryCatch* TC)
 {
 #ifdef USING_IN_UNREAL_ENGINE
     UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, TC));
