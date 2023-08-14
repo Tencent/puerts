@@ -150,6 +150,7 @@ PESAPI_EXTERN uint64_t pesapi_get_value_uint64(pesapi_env env, pesapi_value valu
 PESAPI_EXTERN double pesapi_get_value_double(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN const char* pesapi_get_value_string_utf8(pesapi_env env, pesapi_value value, char* buf, size_t* bufsize);
 PESAPI_EXTERN void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsize);
+PESAPI_EXTERN uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value value);
 
 PESAPI_EXTERN bool pesapi_is_null(pesapi_env env, pesapi_value value);
 PESAPI_EXTERN bool pesapi_is_undefined(pesapi_env env, pesapi_value value);

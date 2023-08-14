@@ -234,6 +234,17 @@ void* pesapi_get_value_binary(pesapi_env env, pesapi_value pvalue, size_t* bufsi
     return nullptr;
 }
 
+uint32_t pesapi_get_array_length(pesapi_env env, pesapi_value pvalue)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    if (value->IsArray())
+    {
+        return value.As<v8::Array>()->Length();
+    }
+    return 0;
+}
+
 bool pesapi_is_null(pesapi_env env, pesapi_value pvalue)
 {
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
