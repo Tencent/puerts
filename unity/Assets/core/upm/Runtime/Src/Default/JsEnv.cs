@@ -920,7 +920,7 @@ namespace Puerts
                 for (int i = 0, l = JSObjRefKeyList.Count; i < l; i++)
                 {
                     var k = JSObjRefKeyList[i];
-                    if (JSObjRefCount[k] <= 0) pendingRemovedList.Add(k);
+                    if (JSObjRefCount[k] <= 0) pendingRemovedJsObjList.Add(k);
                 }
                 for(int i = 0; i  < pendingRemovedJsObjList.Count; ++i)
                 {
