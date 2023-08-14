@@ -247,6 +247,7 @@ export class JSObject {
 
 export class jsFunctionOrObjectFactory {
     private static regularID: number = 1;
+    private static freeID: number[] = [];
     private static idMap = new WeakMap<Function | object, number>();
     private static jsFuncOrObjectKV: { [id: number]: JSFunction | JSObject } = {};
 
@@ -256,7 +257,12 @@ export class jsFunctionOrObjectFactory {
             return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSFunction;
         }
 
-        id = jsFunctionOrObjectFactory.regularID++;
+        if (this.freeID.length) {
+            id = this.freeID.pop();
+        } else {
+            id = jsFunctionOrObjectFactory.regularID++;
+        } 
+
         const func = new JSFunction(id, funcValue);
         jsFunctionOrObjectFactory.idMap.set(funcValue, id);
         jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] = func;
@@ -264,13 +270,18 @@ export class jsFunctionOrObjectFactory {
         return func;
     }
 
-    public static getOrCreateJSObject(obj: object) {
+    public static getOrCreateJSObject(obj: object): JSObject {
         let id = jsFunctionOrObjectFactory.idMap.get(obj);
         if (id) {
-            return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+            return jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSObject;
         }
 
-        id = jsFunctionOrObjectFactory.regularID++;
+        if (this.freeID.length) {
+            id = this.freeID.pop();
+        } else {
+            id = jsFunctionOrObjectFactory.regularID++;
+        } 
+
         const jsObject = new JSObject(id, obj);
         jsFunctionOrObjectFactory.idMap.set(obj, id);
         jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] = jsObject;
@@ -284,8 +295,10 @@ export class jsFunctionOrObjectFactory {
 
     public static removeJSObjectById(id: number): void {
         const jsObject = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSObject;
+        if (!jsObject) return console.warn('removeJSObjectById failed: id is invalid: ' + id);
         jsFunctionOrObjectFactory.idMap.delete(jsObject.getObject());
         delete jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+        this.freeID.push(id);
     }
 
     public static getJSFunctionById(id: number): JSFunction {
@@ -294,8 +307,10 @@ export class jsFunctionOrObjectFactory {
 
     public static removeJSFunctionById(id: number): void {
         const jsFunc = jsFunctionOrObjectFactory.jsFuncOrObjectKV[id] as JSFunction;
+        if (!jsFunc) return console.warn('removeJSFunctionById failed: id is invalid: ' + id);
         jsFunctionOrObjectFactory.idMap.delete(jsFunc._func);
         delete jsFunctionOrObjectFactory.jsFuncOrObjectKV[id];
+        this.freeID.push(id);
     }
 }
 
