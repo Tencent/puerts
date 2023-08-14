@@ -14,7 +14,7 @@
  
 `PuerTS` is a TypeScript programming solution in Unity/Unreal/DotNet.
 * provides a JavaScript Runtime.
-* allows TypeScript to access the host engine with TypeScript declarations generation.
+* allows TypeScript to access the host engine with the help of TypeScript declarations generation.
 
 ## WHY should I use PuerTS?
 
