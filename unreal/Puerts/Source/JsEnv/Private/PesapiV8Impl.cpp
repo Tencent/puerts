@@ -148,6 +148,12 @@ pesapi_value pesapi_create_binary(pesapi_env env, void* bin, size_t length)
     return v8impl::PesapiValueFromV8LocalValue(puerts::DataTransfer::NewArrayBuffer(context, bin, length));
 }
 
+pesapi_value pesapi_create_array(pesapi_env env)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    return v8impl::PesapiValueFromV8LocalValue(v8::Array::New(context->GetIsolate()));
+}
+
 bool pesapi_get_value_bool(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
@@ -298,6 +304,12 @@ bool pesapi_is_binary(pesapi_env env, pesapi_value pvalue)
 {
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
     return value->IsArrayBuffer() || value->IsArrayBufferView();
+}
+
+bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
+{
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
+    return value->IsArray();
 }
 
 pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
