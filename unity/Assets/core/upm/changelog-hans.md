@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.1] - 2023-08-16
+1. 修复：内部类型在link.xml中声明不正确的问题 #1460
+2. 修复：xil2cpp模式下使用结构体out参数可能导致crash的问题 #1460
+3. 修复：xil2cpp模式下扩展函数获取默认参数不正确的问题 #1456
+4. 修复：JSObject没有正确调用回收的问题
+
 ## [2.0.0] - 2023-07-31
 1. 修复：debugpath失效并导致VSCode调试不可用的问题
 2. 修复：xil2cpp模式下`puer.$genericMethod`无法获取父类泛型函数的问题 #1417 @danij91

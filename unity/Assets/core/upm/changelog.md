@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.1] - 2023-08-16
+1. Fix: NestedType was not declared correctly in `link.xml` #1460
+2. Fix: `out` parameters with ValueType might cause crash in xil2cpp mode. #1460
+3. Fix: default value of parameters in extension method was not correct in xil2cpp mode #1456
+4. Fix: JSObject was not recycle correctly
+
 ## [2.0.0] - 2023-07-31
 1. Fix: `debugpath` was not work and make VSCode debug not availabled
 2. Fix: `puer.$genericMethod` cannot get the genericMethod from super class in xil2cpp mode #1417 @danij91
