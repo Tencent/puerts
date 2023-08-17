@@ -12,6 +12,7 @@ on:
 env:
   V8: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
   Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427_wami.tgz"
+  QJS: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
 
 jobs:
   
@@ -77,3 +78,24 @@ jobs:
       shell: bash
       run: |
         Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
+        
+  window_qjs_ci:
+    name: Windows
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+    - name: Prepare
+      shell: msys2 {0}
+      run: |
+        wget -O qjslib.tgz -q  ${{env.QJS}} 
+        tar xvfz qjslib.tgz -C unreal/Puerts/ThirdParty
+        sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
+        wget -O temp.tgz -q  ${{env.Engine}} 
+        tar xvfz temp.tgz
+        mkdir output
+    - name: Build
+      run: |
+        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
+        
+   
