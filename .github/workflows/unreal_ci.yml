@@ -98,7 +98,31 @@ jobs:
       run: |
         Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
         
-   
+  android_qjs_ci:
+    name: Android QJS
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+    - name: Prepare
+      shell: msys2 {0}
+      run: |
+        wget -O qjslib.tgz -q  ${{env.QJS}} 
+        tar xvfz qjslib.tgz -C unreal/Puerts/ThirdParty
+        sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
+        wget -O temp.tgz -q  ${{env.Engine}} 
+        tar xvfz temp.tgz
+        ls Engine
+        mkdir output
+    - name: SetupAndroid
+      run: |
+        Engine\Extras\Android\SetupAndroid.bat
+        chcp 65001 #set code page to utf-8
+        echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
+    - name: Build
+      run: |
+        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android -VS2019
+  
   mac_ios_qjs_ci:
     name: Mac and IOS QJS
     runs-on: macos-11
