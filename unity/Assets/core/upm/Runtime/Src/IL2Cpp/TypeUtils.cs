@@ -80,6 +80,7 @@ namespace PuertsIl2cpp
             public static string Float = "r4";
             public static string IntPtr = "p";
             public static string String = "s";
+            public static string ArrayBuffer = "a";
             public static string SystemObject = "O";
             public static string RefOrPointerPrefix = "P";
             public static string Object = "o";
@@ -210,6 +211,10 @@ namespace PuertsIl2cpp
             else if (type == typeof(float))
             {
                 return TypeSignatures.Float;
+            }
+            else if (type == typeof(Puerts.ArrayBuffer))
+            {
+                return TypeSignatures.ArrayBuffer;
             }
             else if (type == typeof(IntPtr) || type == typeof(UIntPtr))
             {

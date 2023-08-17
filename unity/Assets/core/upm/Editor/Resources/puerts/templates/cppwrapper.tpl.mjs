@@ -143,6 +143,8 @@ struct ${valueTypeInfo.Signature}
             ret += `!info[${index}]->IsArrayBuffer()) return false;`
         } else if (signature[0] == 'P') {
             ret += `!info[${index}]->IsObject()) return false;`
+        } else if (signature == 'a') {
+            ret += `!info[${index}]->IsArrayBuffer() && !info[${index}]->IsTypedArray() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 's') {
             ret += `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
@@ -206,6 +208,8 @@ struct ${valueTypeInfo.Signature}
             return 'info.GetReturnValue().Set(CopyValueType(isolate, context, TIret, &ret, sizeof(ret)));';
         } else if (signature == 'o') { // classes except System.Object
             return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
+        } else if (signature == 'a') { // ArrayBuffer
+            return 'info.GetReturnValue().Set(CSRefToJsValue(isolate, context, ret));';
         } else if (signature == 'O') { // System.Object
             return 'info.GetReturnValue().Set(CSAnyToJsValue(isolate, context, ret));';
         } else if (signature == 's') { // string
@@ -241,11 +245,11 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
         u${CSName} = CStringToCSharpString(*t${CSName});
     }
         `
-        } else if (signature == 'o' || signature == 'O') { // object
+        } else if (signature == 'o' || signature == 'O' || signature == 'a') { // object
             return `    // JSValToCSVal o/O
     void* ${CSName} = JsValueToCSRef(context, ${JSName}, TI${CSName});`;
 
-        } else if (signature == 'Po' || signature == 'PO') {
+        } else if (signature == 'Po' || signature == 'PO' || signature == 'Pa') {
             return `    // JSValToCSVal Po/PO
     void* u${CSName} = nullptr; // object ref
     void** ${CSName} = &u${CSName};
@@ -302,7 +306,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
                 return `    // JSValToCSVal string params
     void* ${CSName} = RestArguments<void*>::PackString(context, info, TI${CSName}, ${start});
                 `
-            } else if (si == 'o' || si == 'O') {
+            } else if (si == 'o' || si == 'O' || si == 'a') {
                 return `    // JSValToCSVal ref params
     void* ${CSName} = RestArguments<void*>::PackRef(context, info, TI${CSName}, ${start});
                 `
@@ -326,7 +330,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
                 return `    // JSValToCSVal string  with default
     void* ${CSName} = OptionalParameter<void*>::GetString(context, info, method, wrapData->IsExtensionMethod ? ${start + 1} : ${start});
                 `
-            } else if (si == 'o' || si == 'O') {
+            } else if (si == 'o' || si == 'O' || si == 'a') {
                 return `    // JSValToCSVal ref  with default
     void* ${CSName} = OptionalParameter<void*>::GetRefType(context, info, method, wrapData->IsExtensionMethod ? ${start + 1} : ${start}, TI${CSName});
                 `
@@ -350,7 +354,7 @@ ${CODE_SNIPPETS.JSValToCSVal(signature, 'MaybeRet.ToLocalChecked()', 'ret')}
             return `converter::Converter<${PrimitiveSignatureCppTypeMap[signature]}>::toScript(context, ${CSName})`;
         } else if (signature == 's' || signature == 'O') {
             return `CSAnyToJsValue(isolate, context, ${CSName})`;
-        } else if (signature == 'o') {
+        } else if (signature == 'o' || signature == 'a') {
             return `CSRefToJsValue(isolate, context, ${CSName})`;
         } else if (signature.startsWith(sigs.NullableStructPrefix) && signature.endsWith('_')) {
             return `CopyNullableValueType(isolate, context, TI${CSName[0] == '*' ? CSName.substring(1) : CSName}, ${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`}, (${CSName[0] == '*' ? CSName.substring(1) : `&${CSName}`})->hasValue, sizeof(${CSName}))`
