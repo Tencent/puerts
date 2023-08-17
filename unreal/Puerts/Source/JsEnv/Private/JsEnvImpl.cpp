@@ -108,7 +108,9 @@
 
 namespace puerts
 {
+#if !defined(WITH_QUICKJS)
 void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info);
+#endif
 
 FJsEnvImpl::FJsEnvImpl(const FString& ScriptRoot)
     : FJsEnvImpl(std::make_shared<DefaultJSModuleLoader>(ScriptRoot), std::make_shared<FDefaultLogger>(), -1, nullptr, FString(),
@@ -585,10 +587,12 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
             v8::FunctionTemplate::New(Isolate, ToCPtrArray)->GetFunction(Context).ToLocalChecked())
         .Check();
 
+#if !defined(WITH_QUICKJS)
     PuertsObj
         ->Set(Context, FV8Utils::ToV8String(Isolate, "load"),
             v8::FunctionTemplate::New(Isolate, LoadPesapiDll)->GetFunction(Context).ToLocalChecked())
         .Check();
+#endif
 
     FString DllExt =
 #if PLATFORM_WINDOWS
