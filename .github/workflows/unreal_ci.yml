@@ -37,7 +37,7 @@ jobs:
         tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
         ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
-        tar xvfz temp.tgz
+        tar xfz temp.tgz
         mkdir output
     - name: Build
       run: |
@@ -66,7 +66,7 @@ jobs:
         tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
         ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
-        tar xvfz temp.tgz
+        tar xfz temp.tgz
         mkdir output
     - name: SetupAndroid
       run: |
@@ -96,9 +96,9 @@ jobs:
       run: |
         wget -O jslib.tgz -q  ${{ matrix.cmdinfo['jslib_path'] }}
         tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
-        wget -O temp.tgz -q  ${{env.Engine}} 
         ${{ matrix.cmdinfo['change_backend'] }}
-        tar xvfz temp.tgz
+        wget -O temp.tgz -q  ${{env.Engine}} 
+        tar xfz temp.tgz
         mkdir output
         sudo xcode-select -s /Applications/Xcode_12.5.1.app
     - name: Build
