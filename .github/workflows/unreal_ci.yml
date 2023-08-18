@@ -22,9 +22,9 @@ jobs:
     strategy:
       matrix:
         cmdinfo:
-          - js_path: env.V8
+          - js_path: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
             change_backend: ''
-          - js_path: env.QJS
+          - js_path: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
             change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
