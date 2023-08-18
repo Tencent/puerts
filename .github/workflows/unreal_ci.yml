@@ -22,9 +22,9 @@ jobs:
     strategy:
       matrix:
         cmdinfo:
-          - js_path: ${{env.V8}} 
+          - js_path: env.V8
             change_backend: ''
-          - js_path: ${{env.QJS}}
+          - js_path: env.QJS
             change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
