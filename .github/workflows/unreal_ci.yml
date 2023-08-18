@@ -33,11 +33,10 @@ jobs:
       shell: msys2 {0}
       run: |
         wget -O jslib.tgz -q  ${{ matrix.cmdinfo['js_path'] }}
-        tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
+        tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
         ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xvfz temp.tgz
-        ls Engine
         mkdir output
     - name: Build
       run: |
@@ -47,17 +46,24 @@ jobs:
   android_ci:
     name: Android
     runs-on: windows-2019
+    strategy:
+      matrix:
+        cmdinfo:
+          - js_path: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+            change_backend: ''
+          - js_path: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
+            change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
     - uses: msys2/setup-msys2@v2
     - name: Prepare
       shell: msys2 {0}
       run: |
-        wget -O v8lib.tgz -q  ${{env.V8}} 
-        tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
+        wget -O jslib.tgz -q  ${{ matrix.cmdinfo['js_path'] }}
+        tar xvfz jslib.tgz -C unreal/Puerts/ThirdParty
+        ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xvfz temp.tgz
-        ls Engine
         mkdir output
     - name: SetupAndroid
       run: |
@@ -71,6 +77,13 @@ jobs:
   mac_ios_ci:
     name: Mac and IOS
     runs-on: macos-11
+    strategy:
+      matrix:
+        cmdinfo:
+          - js_path: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+            change_backend: ''
+          - js_path: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
+            change_backend: "sed -i '' 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
     - name: Prepare
@@ -78,51 +91,6 @@ jobs:
       run: |
         wget -O v8lib.tgz -q  ${{env.V8}} 
         tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
-        wget -O temp.tgz -q  ${{env.Engine}} 
-        tar xvfz temp.tgz
-        mkdir output
-        sudo xcode-select -s /Applications/Xcode_12.5.1.app
-    - name: Build
-      shell: bash
-      run: |
-        Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
-        
-  android_qjs_ci:
-    name: Android QJS
-    runs-on: windows-2019
-    steps:
-    - uses: actions/checkout@v3
-    - uses: msys2/setup-msys2@v2
-    - name: Prepare
-      shell: msys2 {0}
-      run: |
-        wget -O qjslib.tgz -q  ${{env.QJS}} 
-        tar xvfz qjslib.tgz -C unreal/Puerts/ThirdParty
-        sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
-        wget -O temp.tgz -q  ${{env.Engine}} 
-        tar xvfz temp.tgz
-        ls Engine
-        mkdir output
-    - name: SetupAndroid
-      run: |
-        Engine\Extras\Android\SetupAndroid.bat
-        chcp 65001 #set code page to utf-8
-        echo "NDKROOT=C:\Android\android-sdk\ndk\21.4.7075529" >> $env:GITHUB_ENV
-    - name: Build
-      run: |
-        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android -VS2019
-  
-  mac_ios_qjs_ci:
-    name: Mac and IOS QJS
-    runs-on: macos-11
-    steps:
-    - uses: actions/checkout@v3
-    - name: Prepare
-      shell: bash
-      run: |
-        wget -O qjslib.tgz -q  ${{env.QJS}} 
-        tar xvfz qjslib.tgz -C unreal/Puerts/ThirdParty
-        sed -i '' 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xvfz temp.tgz
         mkdir output
