@@ -19,14 +19,22 @@ jobs:
   window_ci:
     name: Windows
     runs-on: windows-2019
+    strategy:
+      matrix:
+        cmdinfo:
+          - js_path: ${{env.V8}} 
+            change_backend: ''
+          - js_path: ${{env.QJS}}
+            change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
     - uses: msys2/setup-msys2@v2
     - name: Prepare
       shell: msys2 {0}
       run: |
-        wget -O v8lib.tgz -q  ${{env.V8}} 
+        wget -O jslib.tgz -q  ${{ matrix.cmdinfo['js_path'] }}
         tar xvfz v8lib.tgz -C unreal/Puerts/ThirdParty
+        ${{ matrix.cmdinfo['change_backend'] }}
         wget -O temp.tgz -q  ${{env.Engine}} 
         tar xvfz temp.tgz
         ls Engine
@@ -78,25 +86,6 @@ jobs:
       shell: bash
       run: |
         Engine/Build/BatchFiles/RunUAT.sh BuildPlugin -Plugin=unreal/Puerts/Puerts.uplugin -Package=output -Rocket -TargetPlatforms=Mac+IOS
-        
-  window_qjs_ci:
-    name: Windows QJS
-    runs-on: windows-2019
-    steps:
-    - uses: actions/checkout@v3
-    - uses: msys2/setup-msys2@v2
-    - name: Prepare
-      shell: msys2 {0}
-      run: |
-        wget -O qjslib.tgz -q  ${{env.QJS}} 
-        tar xvfz qjslib.tgz -C unreal/Puerts/ThirdParty
-        sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs
-        wget -O temp.tgz -q  ${{env.Engine}} 
-        tar xvfz temp.tgz
-        mkdir output
-    - name: Build
-      run: |
-        Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Win64 -VS2019
         
   android_qjs_ci:
     name: Android QJS
