@@ -52,6 +52,12 @@ namespace Puerts
 
         internal IntPtr isolate;
 
+        public IntPtr Isolate {
+            get {
+                return isolate;
+            }
+        }
+
         internal ObjectPool objectPool;
 
         private readonly ILoader loader;
