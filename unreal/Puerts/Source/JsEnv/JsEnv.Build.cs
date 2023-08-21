@@ -375,19 +375,23 @@ public class JsEnv : ModuleRules
             if (!Target.bBuildEditor || ForceStaticLibInEditor)
             {
                 LibraryPath = Path.Combine(LibraryPath, "macOS");
+#if UE_5_2_OR_LATER
                 if (Target.Architecture == UnrealArch.Arm64)
                 {
                     LibraryPath += "_arm64";
                 }
+#endif
                 PublicAdditionalLibraries.Add(Path.Combine(LibraryPath, "libwee8.a"));
             }
             else
             {
                 LibraryPath = Path.Combine(LibraryPath, "macOSdylib");
+#if UE_5_2_OR_LATER
                 if (Target.Architecture == UnrealArch.Arm64)
                 {
                     LibraryPath += "_arm64";
                 }
+#endif
                 MacDylib(LibraryPath);
             }
         }
