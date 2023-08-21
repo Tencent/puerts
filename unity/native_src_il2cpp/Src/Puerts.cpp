@@ -823,6 +823,11 @@ V8_EXPORT void SetLogCallback(puerts::LogCallback Log)
     puerts::GLogCallback = Log;
 }
 
+V8_EXPORT v8::Isolate* GetIsolate(puerts::JSEnv* jsEnv)
+{
+    return jsEnv->MainIsolate;
+}
+
 V8_EXPORT pesapi_env_holder GetPesapiEnvHolder(puerts::JSEnv* jsEnv)
 {
     v8::Isolate* Isolate = jsEnv->MainIsolate;
