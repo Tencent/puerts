@@ -12,20 +12,36 @@ on:
 
 env:
   Engine: "https://github.com/chexiongsheng/Mini427/releases/download/v1.0.0/Mini427_wami.tgz"
+  V8_URL: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+  QJS_URL: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
+  NODE_URL: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
 
 jobs:
-  
+  urls:
+    runs-on: ubuntu-latest
+    outputs:
+      v8: ${{ steps.set-matrix.outputs.v8 }}
+      qjs: ${{ steps.set-matrix.outputs.qjs }}
+      node: ${{ steps.set-matrix.outputs.node }}
+    steps:
+      - id: set-matrix
+        run: |
+           echo "v8=${{env.V8_URL}}" >> $GITHUB_OUTPUT
+           echo "qjs=${{env.QJS_URL}}" >> $GITHUB_OUTPUT
+           echo "node=${{env.NODE_URL}}" >> $GITHUB_OUTPUT
+        
   window_ci:
+    needs: urls
     name: Windows
     runs-on: windows-2019
     strategy:
       matrix:
         cmdinfo:
-          - jslib_path: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+          - jslib_path: ${{ needs.urls.outputs.v8 }}
             change_backend: ''
-          - jslib_path: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
+          - jslib_path: ${{ needs.urls.outputs.qjs }}
             change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
-          - jslib_path: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
+          - jslib_path: ${{ needs.urls.outputs.node }}
             change_backend: "sed -i 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
@@ -45,16 +61,17 @@ jobs:
         
         
   android_ci:
+    needs: urls
     name: Android
     runs-on: windows-2019
     strategy:
       matrix:
         cmdinfo:
-          - jslib_path: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+          - jslib_path: ${{ needs.urls.outputs.v8 }}
             change_backend: ''
-          - jslib_path: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
+          - jslib_path: ${{ needs.urls.outputs.qjs }}
             change_backend: "sed -i 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
-          - jslib_path: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
+          - jslib_path: ${{ needs.urls.outputs.node }}
             change_backend: "sed -i 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
@@ -78,16 +95,17 @@ jobs:
         Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -Plugin="unreal\Puerts\Puerts.uplugin" -Package="output" -Rocket -TargetPlatforms=Android -VS2019
 
   mac_ios_ci:
+    needs: urls
     name: Mac and IOS
     runs-on: macos-11
     strategy:
       matrix:
         cmdinfo:
-          - jslib_path: "https://github.com/puerts/backend-v8/releases/download/V8_8.4.371.19_0323/v8_bin_8.4.371.19.tgz"
+          - jslib_path: ${{ needs.urls.outputs.v8 }}
             change_backend: ''
-          - jslib_path: "https://github.com/puerts/backend-quickjs/releases/download/QJS_230804/qjs_v8_bin.tgz"
+          - jslib_path: ${{ needs.urls.outputs.qjs }}
             change_backend: "sed -i '' 's/UseQuickjs = false/UseQuickjs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
-          - jslib_path: "https://github.com/puerts/backend-nodejs/releases/download/NodeJS_16.16.0_221228/nodejs_bin_16.16.0.tgz"
+          - jslib_path: ${{ needs.urls.outputs.node }}
             change_backend: "sed -i '' 's/UseNodejs = false/UseNodejs = true/g' unreal/Puerts/Source/JsEnv/JsEnv.Build.cs"
     steps:
     - uses: actions/checkout@v3
