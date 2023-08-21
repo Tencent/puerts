@@ -8,7 +8,7 @@
 [![unity](https://img.shields.io/badge/unity(stable)-v2.0.0-blue.svg)](doc/unity/zhcn/install.md)
 ![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
 
-[跳转中文](##what---普洱ts是什么)
+[跳转中文](#what---普洱ts是什么)
 
 ## WHAT is PuerTS (PUER Typescript)?
  
