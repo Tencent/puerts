@@ -76,7 +76,11 @@
 #elif PLATFORM_ANDROID_ARM64
 #include "Blob/Android/arm64/SnapshotBlob.h"
 #elif PLATFORM_MAC
+#if defined(PLATFORM_MAC_ARM64) && PLATFORM_MAC_ARM64
+#include "Blob/macOS_arm64/SnapshotBlob.h"
+#else
 #include "Blob/macOS/SnapshotBlob.h"
+#endif
 #elif PLATFORM_IOS
 #include "Blob/iOS/arm64/SnapshotBlob.h"
 #elif PLATFORM_LINUX
