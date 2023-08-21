@@ -376,7 +376,7 @@ function genFuncWrapper(wrapperInfo) {
     return t`
 // ${wrapperInfo.CsName}
 static bool w_${wrapperInfo.Signature}(void* method, MethodPointer methodPointer, const v8::FunctionCallbackInfo<v8::Value>& info, bool checkJSArgument, WrapData* wrapData) {
-    // PLog(LogLevel::Log, "Running w_${wrapperInfo.Signature}");
+    PLog(LogLevel::Log, "Running w_${wrapperInfo.Signature}");
     
     ${CODE_SNIPPETS.declareTypeInfo(wrapperInfo)}
 
@@ -440,7 +440,7 @@ function genBridge(bridgeInfo) {
     let hasVarArgs = parameterSignatures.length > 0 && parameterSignatures[parameterSignatures.length -1][0] == 'V'
     return t`
 static ${CODE_SNIPPETS.SToCPPType(bridgeInfo.ReturnSignature)} b_${bridgeInfo.Signature}(void* target, ${parameterSignatures.map((S, i) => `${CODE_SNIPPETS.SToCPPType(S)} p${i}`).map(s => `${s}, `).join('')}void* method) {
-    // PLog(LogLevel::Log, "Running b_${bridgeInfo.Signature}");
+    PLog(LogLevel::Log, "Running b_${bridgeInfo.Signature}");
 
     ${IF(bridgeInfo.ReturnSignature && !(getSignatureWithoutRefAndPrefix(bridgeInfo.ReturnSignature) in PrimitiveSignatureCppTypeMap))}
     auto TIret = GetReturnType(method);
@@ -512,7 +512,7 @@ function genGetField(fieldWrapperInfo) {
 function genFieldWrapper(fieldWrapperInfo) {
     return t`
 static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIret) {
-    // PLog(LogLevel::Log, "Running ifg_${fieldWrapperInfo.Signature}");
+    PLog(LogLevel::Log, "Running ifg_${fieldWrapperInfo.Signature}");
 
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -525,7 +525,7 @@ static void ifg_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8:
 }
 
 static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8::Value>& info, void* fieldInfo, size_t offset, void* TIp) {
-    // PLog(LogLevel::Log, "Running ifs_${fieldWrapperInfo.Signature}");
+    PLog(LogLevel::Log, "Running ifs_${fieldWrapperInfo.Signature}");
     
     v8::Isolate* isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -535,7 +535,7 @@ static void ifs_${fieldWrapperInfo.Signature}(const v8::FunctionCallbackInfo<v8:
 
     ${ENDIF()}    
     ${CODE_SNIPPETS.JSValToCSVal(fieldWrapperInfo.ReturnSignature, "info[0]", "p")}
-    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
+    FieldSet(${needThis(fieldWrapperInfo) ? 'self, ': 'nullptr, '}fieldInfo, offset, ${['o', 's', 'p', 'a'].indexOf(fieldWrapperInfo.Signature) != -1 ? 'p' : '&p'});
 }`;
 }
 
