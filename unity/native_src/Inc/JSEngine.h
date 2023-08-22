@@ -27,6 +27,17 @@
 #include "node.h"
 #include "uv.h"
 #pragma warning(pop)
+
+#if PLATFORM_WINDOWS
+#include <windows.h>
+#elif PLATFORM_LINUX
+#include <sys/epoll.h>
+#elif PLATFORM_MAC
+#include <sys/select.h>
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#endif
 #else
 
 #if defined(PLATFORM_WINDOWS)
@@ -192,7 +203,7 @@ public:
     
 private:
 #if defined(WITH_NODEJS)
-    uv_loop_t* NodeUVLoop;
+    uv_loop_t NodeUVLoop;
 
     std::unique_ptr<node::ArrayBufferAllocator> NodeArrayBufferAllocator;
 
@@ -201,6 +212,33 @@ private:
     node::Environment* NodeEnv;
 
     const float UV_LOOP_DELAY = 0.1;
+
+    uv_thread_t PollingThread;
+
+    uv_sem_t PollingSem;
+
+    uv_async_t DummyUVHandle;
+
+    bool PollingClosed = false;
+
+    // FGraphEventRef LastJob;
+    bool hasPendingTask = false;
+
+#if PLATFORM_LINUX
+    int Epoll;
+#endif
+
+    void StartPolling();
+
+    void UvRunOnce();
+
+    void PollEvents();
+
+    static void OnWatcherQueueChanged(uv_loop_t* loop);
+
+    void WakeupPollingThread();
+
+    void StopPolling();
 #endif
     v8::Isolate::CreateParams* CreateParams;
 
