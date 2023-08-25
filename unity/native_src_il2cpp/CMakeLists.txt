@@ -114,7 +114,6 @@ if ( APPLE )
         )
     endif ()
 elseif ( ANDROID )
-    set(COMBINE_WEE8 on)
     add_library(puerts_il2cpp STATIC
         ${PUERTS_SRC} ${PUERTS_INC}
     )
@@ -180,6 +179,18 @@ elseif ( ANDROID )
     #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so" -o
     #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.stripped.so~"
     #         COMMENT "Strip debug symbols done on final binary.")
+    if (JS_ENGINE EQUAL "v8_9.4")
+        add_custom_command(TARGET puerts_il2cpp POST_BUILD
+            COMMAND cp ARGS ${BACKEND_LIB_NAMES} ./
+            COMMAND cp ARGS ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a ./libpuerts_il2cpp_tmp.a
+            COMMAND ${ANDROID_TOOLCHAIN_PREFIX}ar ARGS -x libpuerts_il2cpp_tmp.a
+            COMMAND ${ANDROID_TOOLCHAIN_PREFIX}ar ARGS -rs libwee8.a *.o
+            COMMAND mv ARGS libwee8.a ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a
+            COMMAND rm ARGS libpuerts_il2cpp_tmp.a
+            COMMAND rm ARGS -f *.o
+            COMMENT "combine wee8."
+        )
+    endif()
 elseif ( APPLE )
 
     if ( IOS )
@@ -221,17 +232,5 @@ if ( WIN32 AND NOT CYGWIN AND NOT ( CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" ) 
 	set_property(TARGET puerts_il2cpp PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
-
-if(COMBINE_WEE8)
-    add_custom_command(TARGET puerts_il2cpp POST_BUILD
-                   COMMAND cp ARGS ${BACKEND_LIB_NAMES} ./
-                   COMMAND cp ARGS ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a ./libpuerts_il2cpp_tmp.a
-                   COMMAND ar ARGS -x libpuerts_il2cpp_tmp.a
-                   COMMAND ar ARGS -rs libwee8.a *.o
-                   COMMAND mv ARGS libwee8.a ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a
-                   COMMAND rm ARGS libpuerts_il2cpp_tmp.a
-                   COMMAND rm ARGS -f *.o
-                   COMMENT "combine wee8.")
-endif()
 
 install(TARGETS puerts_il2cpp DESTINATION bin)
