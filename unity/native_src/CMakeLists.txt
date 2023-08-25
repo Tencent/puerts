@@ -68,6 +68,10 @@ if(DEFINED PUERTS_EXTRA_SRC)
     list(APPEND PUERTS_SRC ${PUERTS_EXTRA_SRC})
 endif()
 
+if(DEFINED PUERTS_EXTRA_INC)
+    include_directories(${PUERTS_EXTRA_INC})
+endif()
+
 macro(source_group_by_dir proj_dir source_files)
     if(MSVC OR APPLE)
         get_filename_component(sgbd_cur_dir ${proj_dir} ABSOLUTE)
