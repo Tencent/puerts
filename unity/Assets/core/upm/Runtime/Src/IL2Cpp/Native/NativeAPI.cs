@@ -53,6 +53,9 @@ namespace PuertsIl2cpp
         public static extern IntPtr GetPesapiEnvHolder(IntPtr jsEnv);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr GetIsolate(IntPtr jsEnv);
+
+        [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr CreateCSharpTypeInfo(string name, IntPtr type_id, IntPtr super_type_id, IntPtr klass, bool isValueType, bool isDelegate, string delegateSignature);
 
         [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]

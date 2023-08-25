@@ -64,6 +64,13 @@ set ( PUERTS_SRC
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
+if(DEFINED PUERTS_EXTRA_SRC)
+    list(APPEND PUERTS_SRC ${PUERTS_EXTRA_SRC})
+endif()
+
+if(DEFINED PUERTS_EXTRA_INC)
+    include_directories(${PUERTS_EXTRA_INC})
+endif()
 
 macro(source_group_by_dir proj_dir source_files)
     if(MSVC OR APPLE)
@@ -172,7 +179,18 @@ elseif ( ANDROID )
     #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.so" -o
     #         "${CMAKE_BINARY_DIR}/libpuerts_il2cpp.stripped.so~"
     #         COMMENT "Strip debug symbols done on final binary.")
-
+    if (JS_ENGINE EQUAL "v8_9.4")
+        add_custom_command(TARGET puerts_il2cpp POST_BUILD
+            COMMAND cp ARGS ${BACKEND_LIB_NAMES} ./
+            COMMAND cp ARGS ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a ./libpuerts_il2cpp_tmp.a
+            COMMAND ${ANDROID_TOOLCHAIN_PREFIX}ar ARGS -x libpuerts_il2cpp_tmp.a
+            COMMAND ${ANDROID_TOOLCHAIN_PREFIX}ar ARGS -rs libwee8.a *.o
+            COMMAND mv ARGS libwee8.a ${CMAKE_BINARY_DIR}/libpuerts_il2cpp.a
+            COMMAND rm ARGS libpuerts_il2cpp_tmp.a
+            COMMAND rm ARGS -f *.o
+            COMMENT "combine wee8."
+        )
+    endif()
 elseif ( APPLE )
 
     if ( IOS )
