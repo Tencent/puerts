@@ -37,3 +37,6 @@ runs:
       with:
         path: ./unity/Assets/core/upm/Plugins/**/*
         name: Unity_Plugins (${{ inputs.backend }}_${{ inputs.config }})
+    - name: Clean
+      shell: bash
+      run: rm -rf ./unity/Assets/core/upm/Plugins/**/*
