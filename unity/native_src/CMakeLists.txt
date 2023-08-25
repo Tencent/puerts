@@ -64,6 +64,10 @@ set ( PUERTS_SRC
     ${PROJECT_SOURCE_DIR}/../../unreal/Puerts/Source/JsEnv/Private/V8InspectorImpl.cpp
 )
 
+if(DEFINED PUERTS_EXTRA_SRC)
+    list(APPEND PUERTS_SRC ${PUERTS_EXTRA_SRC})
+endif()
+
 macro(source_group_by_dir proj_dir source_files)
     if(MSVC OR APPLE)
         get_filename_component(sgbd_cur_dir ${proj_dir} ABSOLUTE)
