@@ -418,13 +418,18 @@ namespace Puerts.Editor
                                 temp = temp.DeclaringType;
                             }
                             p.Reverse();
+                            string pstr = string.Join(".", p.ToArray());
+                            if (pstr.Length > 0 && result.BaseType.Name.StartsWith(pstr))
+                            {
+                                result.BaseType.Name = result.BaseType.Name.Substring(pstr.Length + 1);
+                            }
                             if (type.BaseType.Namespace != null)
                             {
-                                result.BaseType.Namespace = type.BaseType.Namespace + '.' + string.Join(".", p.ToArray());
+                                result.BaseType.Namespace = type.BaseType.Namespace + '.' + pstr;
                             }
                             else
                             {
-                                result.BaseType.Namespace = string.Join(".", p.ToArray());
+                                result.BaseType.Namespace = pstr;
                             }
                         }
                         if (type.BaseType.IsGenericType && type.BaseType.Namespace != null)
