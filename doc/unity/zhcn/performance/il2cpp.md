@@ -17,7 +17,7 @@ xIl2cpp模式在使用方式上会有较大的变化，比如需要自己编译P
 ## 使用步骤
 1. 按照上述步骤安装好PuerTS的upm包。
 2. 编译mono版本plugin：cd到`puer目录/unity/native_src/`，输入符合你平台的编译命令，比如`node ../cli make --backend v8_9.4 --platform win --arch x64 --config Debug`。（编译命令本身其实也会识别你的平台，所以你也可以只输入`node ../cli make --backend v8_9.4 --config Debug`）
-3. 进入Unity的`Player Settings`，添加两个Scripting Define Symbols: `PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM`, `EXPERIMENTAL_IL2CPP_PUERTS`。顺便可将script backend切换为`il2cpp`。等待脚本编译。
+3. 进入Unity的`Player Settings`，添加两个Scripting Define Symbols: `PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM;EXPERIMENTAL_IL2CPP_PUERTS`。顺便可将script backend切换为`il2cpp`。等待脚本编译。
 4. 生成编译所需的代码：点击Unity的`PuerTS/Generate for xIl2cpp mode(All in One)`。然后切出去cd到`puer目录/unity/native_src_il2cpp`，输入和步骤2相同的编译命令。
 
 ### 使用步骤里的一些详细解释
