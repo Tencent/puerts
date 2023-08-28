@@ -565,7 +565,11 @@ function watch(configFilePath) {
                                 }
                                 if (baseTypeUClass) {
                                     if (isSubclassOf(type, "Subsystem")) {
-                                        console.warn("do not support Subsystem " + checker.typeToString(type));
+                                        console.error("do not support Subsystem " + checker.typeToString(type));
+                                        return;
+                                    }
+                                    if (!baseTypeUClass.IsNative()) {
+                                        console.error(`${checker.typeToString(type)} extends a blueprint`);
                                         return;
                                     }
                                     foundType = type;
