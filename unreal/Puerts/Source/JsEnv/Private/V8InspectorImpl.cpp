@@ -111,7 +111,7 @@ void V8InspectorChannelImpl::SendMessage(v8_inspector::StringBuffer& MessageBuff
     else
     {
 #if PLATFORM_WINDOWS
-#pragma warning(disable:4996)
+#pragma warning(disable : 4996)
         std::wstring_convert<std::codecvt_utf8_utf16<uint16_t>, uint16_t> Conv;
         const uint16_t* Start = MessageView.characters16();
 #else
