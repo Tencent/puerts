@@ -8,8 +8,6 @@
 
 #include "TickerDelegateWrapper.h"
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
-
 FTickerDelegateWrapper::FTickerDelegateWrapper(bool Continue) : FunctionContinue(Continue), DelegateHandle(nullptr)
 {
     // No operation
@@ -87,5 +85,3 @@ void FTickerDelegateWrapper::SetDelegateHandle(FUETickDelegateHandle* Handle)
 {
     DelegateHandle = Handle;
 }
-
-#endif    // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX

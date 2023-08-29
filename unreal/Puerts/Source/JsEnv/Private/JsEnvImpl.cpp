@@ -67,7 +67,7 @@
 #include "Blob/Linux/SnapshotBlob.h"
 #endif
 
-#else
+#elif !defined(WITH_QUICKJS)
 
 #if PLATFORM_WINDOWS
 #include "Blob/Win64MD/SnapshotBlob.h"
@@ -400,6 +400,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     }
     v8::V8::SetNativesDataBlob(NativesBlob.get());
 #endif
+#if !defined(WITH_QUICKJS)
     std::unique_ptr<v8::StartupData> SnapshotBlob;
     if (!SnapshotBlob)
     {
@@ -410,7 +411,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
 
     // 初始化Isolate和DefaultContext
     v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
-
+#endif
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 #if WITH_QUICKJS
     MainIsolate = InExternalRuntime ? v8::Isolate::New(InExternalRuntime) : v8::Isolate::New(CreateParams);
