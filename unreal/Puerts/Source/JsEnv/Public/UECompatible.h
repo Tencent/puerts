@@ -8,7 +8,10 @@
 
 #pragma once
 
+#include "Runtime/Launch/Resources/Version.h"
 #include "CoreMinimal.h"
+#include "UObject/Object.h"
+#include "UObject/UObjectIterator.h"
 
 namespace puerts
 {

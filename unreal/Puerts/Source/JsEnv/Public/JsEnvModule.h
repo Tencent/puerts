@@ -42,7 +42,5 @@ public:
         return FModuleManager::Get().IsModuleLoaded("JsEnv");
     }
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
     virtual void* GetV8Platform() = 0;
-#endif
 };

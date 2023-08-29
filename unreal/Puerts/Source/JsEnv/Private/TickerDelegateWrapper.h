@@ -9,8 +9,6 @@
 #pragma once
 #include "UECompatible.h"
 
-#if PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
-
 #include "CoreMinimal.h"
 #include <functional>
 
@@ -66,5 +64,3 @@ private:
 
     FUETickDelegateHandle* DelegateHandle;
 };
-
-#endif    // PLATFORM_ANDROID || PLATFORM_WINDOWS || PLATFORM_IOS || PLATFORM_MAC || PLATFORM_LINUX
