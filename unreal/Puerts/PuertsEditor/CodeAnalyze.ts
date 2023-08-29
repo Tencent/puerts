@@ -620,8 +620,11 @@ function watch(configFilePath:string) {
                                         return;
                                     }
                                     if (!baseTypeUClass.IsNative()) {
-                                        console.error(`${checker.typeToString(type)} extends a blueprint`);
-                                        return;
+                                        let moduleNames = getModuleNames(baseTypes[0]);
+                                        if (moduleNames.length > 1 && moduleNames[0] == 'ue') {
+                                            console.error(`${checker.typeToString(type)} extends a blueprint`);
+                                            return;
+                                        }
                                     }
                                     
                                     foundType = type;
