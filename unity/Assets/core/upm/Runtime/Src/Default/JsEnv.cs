@@ -895,11 +895,10 @@ namespace Puerts
             lock (funcRefCount)
             {
                 pendingRemovedList.Clear();
-                var funcRefKeyList = funcRefCount.Keys.ToList();
-                for (int i = 0, l = funcRefKeyList.Count; i < l; i++)
+                var enumerator = funcRefCount.GetEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    var k = funcRefKeyList[i];
-                    if (funcRefCount[k] <= 0) pendingRemovedList.Add(k);
+                    if (enumerator.Current.Value <= 0) pendingRemovedList.Add(enumerator.Current.Key);
                 }
                 for(int i = 0; i  < pendingRemovedList.Count; ++i)
                 {
@@ -922,11 +921,10 @@ namespace Puerts
             lock (JSObjRefCount)
             {
                 pendingRemovedJsObjList.Clear();
-                var JSObjRefKeyList = JSObjRefCount.Keys.ToList();
-                for (int i = 0, l = JSObjRefKeyList.Count; i < l; i++)
+                var enumerator = JSObjRefCount.GetEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    var k = JSObjRefKeyList[i];
-                    if (JSObjRefCount[k] <= 0) pendingRemovedJsObjList.Add(k);
+                    if (enumerator.Current.Value <= 0) pendingRemovedJsObjList.Add(enumerator.Current.Key);
                 }
                 for(int i = 0; i  < pendingRemovedJsObjList.Count; ++i)
                 {
