@@ -625,7 +625,11 @@ v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
     BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
 
     v8::Local<v8::Value> ReferrerName;
+#if V8_94_OR_NEWER
     const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
+#else 
+    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->GetIdentityHash()); 
+#endif
     if (referIter != mm->ScriptIdToPathMap.end())
     {
         std::string referPath_std = referIter->second;
@@ -685,7 +689,11 @@ v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
     {
         return v8::MaybeLocal<v8::Module> {};
     }
+#if V8_94_OR_NEWER
     mm->ScriptIdToPathMap[Module->ScriptId()] = Specifier_std;
+#else 
+    mm->ScriptIdToPathMap[Module->GetIdentityHash()] = Specifier_std;
+#endif
     mm->PathToModuleMap[Specifier_std] = v8::UniquePersistent<v8::Module>(Isolate, Module);
     return Module;
 }
@@ -734,7 +742,11 @@ void puerts::esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Con
     v8::Isolate* Isolate = Context->GetIsolate();
     BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
 
+#if V8_94_OR_NEWER
     auto iter = mm->ScriptIdToPathMap.find(Module->ScriptId());
+#else 
+    auto iter = mm->ScriptIdToPathMap.find(Module->GetIdentityHash());
+#endif
     if (iter != mm->ScriptIdToPathMap.end()) 
     {
         meta->CreateDataProperty(
