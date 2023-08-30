@@ -85,8 +85,19 @@ bool DefaultJSModuleLoader::SearchModuleWithExtInDir(
            (!Dir.EndsWith(TEXT("node_modules")) && CheckExists(Dir / TEXT("node_modules") / RequiredModule, Path, AbsolutePath));
 }
 
-bool DefaultJSModuleLoader::Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath)
+bool DefaultJSModuleLoader::Search(
+    const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath, const bool IsRelativePath)
 {
+    //非relativepath,优先找根目录
+    if (!IsRelativePath)
+    {
+        if (SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath) ||
+            (ScriptRoot != TEXT("JavaScript") &&
+                SearchModuleInDir(FPaths::ProjectContentDir() / TEXT("JavaScript"), RequiredModule, Path, AbsolutePath)))
+        {
+            return true;
+        }
+    }
     if (SearchModuleInDir(RequiredDir, RequiredModule, Path, AbsolutePath))
     {
         return true;
@@ -110,10 +121,18 @@ bool DefaultJSModuleLoader::Search(const FString& RequiredDir, const FString& Re
             pathFrags.Pop();
         }
     }
+    // relative的path,最后还要找一遍根目录
+    if (IsRelativePath)
+    {
+        if (SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath) ||
+            (ScriptRoot != TEXT("JavaScript") &&
+                SearchModuleInDir(FPaths::ProjectContentDir() / TEXT("JavaScript"), RequiredModule, Path, AbsolutePath)))
+        {
+            return true;
+        }
+    }
 
-    return SearchModuleInDir(FPaths::ProjectContentDir() / ScriptRoot, RequiredModule, Path, AbsolutePath) ||
-           (ScriptRoot != TEXT("JavaScript") &&
-               SearchModuleInDir(FPaths::ProjectContentDir() / TEXT("JavaScript"), RequiredModule, Path, AbsolutePath));
+    return false;
 }
 
 bool DefaultJSModuleLoader::Load(const FString& Path, TArray<uint8>& Content)

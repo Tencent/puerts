@@ -15,7 +15,8 @@ namespace puerts
 class IJSModuleLoader
 {
 public:
-    virtual bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath) = 0;
+    virtual bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath,
+        const bool IsRelativePath = false) = 0;
 
     virtual bool Load(const FString& Path, TArray<uint8>& Content) = 0;
 
@@ -33,7 +34,8 @@ public:
     {
     }
 
-    virtual bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath) override;
+    virtual bool Search(const FString& RequiredDir, const FString& RequiredModule, FString& Path, FString& AbsolutePath,
+        const bool IsRelativePath = false) override;
 
     virtual bool Load(const FString& Path, TArray<uint8>& Content) override;
 

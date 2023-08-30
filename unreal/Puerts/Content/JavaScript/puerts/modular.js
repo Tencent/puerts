@@ -84,6 +84,7 @@ var global = global || (function () { return this; }());
                     return org_require(moduleName);
                 } catch (e) {}
             }
+            const isRelative = moduleName.startsWith('.')
             moduleName = normalize(moduleName);
             let forceReload = false;
             if ((moduleName in localModuleCache)) {
@@ -100,7 +101,7 @@ var global = global || (function () { return this; }());
                 buildinModule[moduleName] = nativeModule;
                 return nativeModule;
             }
-            let moduleInfo = searchModule(moduleName, requiringDir);
+            let moduleInfo = searchModule(moduleName, requiringDir, isRelative);
             if (!moduleInfo) {
                 throw new Error(`can not find ${moduleName} in ${requiringDir}`);
             }

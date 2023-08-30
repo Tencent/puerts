@@ -3811,13 +3811,14 @@ void FJsEnvImpl::SearchModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     CHECK_V8_ARGS(EArgString, EArgString);
-
+    check(Info[2]->IsBoolean());
     FString ModuleName = FV8Utils::ToFString(Isolate, Info[0]);
     FString RequiringDir = FV8Utils::ToFString(Isolate, Info[1]);
+    bool IsRelative = Info[2]->ToBoolean(Isolate)->BooleanValue(Isolate);
     FString OutPath;
     FString OutDebugPath;
 
-    if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath))
+    if (ModuleLoader->Search(RequiringDir, ModuleName, OutPath, OutDebugPath, IsRelative))
     {
         auto Result = v8::Array::New(Isolate);
         Result->Set(Context, 0, FV8Utils::ToV8String(Isolate, OutPath)).Check();
