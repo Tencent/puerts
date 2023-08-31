@@ -48,6 +48,11 @@ public:
 
     Object(const Object& InOther)
     {
+        if (InOther.JsEnvLifeCycleTracker.expired())
+        {
+            JsEnvLifeCycleTracker = InOther.JsEnvLifeCycleTracker;
+            return;
+        }
         Isolate = InOther.Isolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);
@@ -58,6 +63,11 @@ public:
 
     Object& operator=(const Object& InOther)
     {
+        if (InOther.JsEnvLifeCycleTracker.expired())
+        {
+            JsEnvLifeCycleTracker = InOther.JsEnvLifeCycleTracker;
+            return *this;
+        }
         Isolate = InOther.Isolate;
         v8::Isolate::Scope IsolateScope(Isolate);
         v8::HandleScope HandleScope(Isolate);

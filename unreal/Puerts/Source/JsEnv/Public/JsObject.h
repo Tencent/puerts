@@ -31,6 +31,11 @@ public:
 
     FJsObject(const FJsObject& InOther)
     {
+        if (InOther.JsEnvLifeCycleTracker.expired())
+        {
+            JsEnvLifeCycleTracker = InOther.JsEnvLifeCycleTracker;
+            return;
+        }
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
@@ -45,6 +50,11 @@ public:
 
     FJsObject& operator=(const FJsObject& InOther)
     {
+        if (InOther.JsEnvLifeCycleTracker.expired())
+        {
+            JsEnvLifeCycleTracker = InOther.JsEnvLifeCycleTracker;
+            return *this;
+        }
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
