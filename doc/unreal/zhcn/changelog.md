@@ -1,3 +1,78 @@
+### v1.0.5 2023年8月31日
+
+#### 新增特性
+
+* ios下，以及quickjs后端的wasm实现
+
+* FJsObject添加JsEnv生命周期监听，puerts.Object补上拷贝构造，赋值的JsEnv生命周期监听
+
+* 支持使用visual studio时，typescript的监听和自动蓝图，js生成
+
+* 支持通过@uproperty.attach设置Component层次
+
+* 对放置路径不符合ts标识符规范的蓝图
+
+* 支持单独设置某个虚拟机的max-old-space-size，并把增量分析编译虚拟机的内存增加到2G
+
+* 声明生成按钮改为puerts按钮，除了生成*.d.ts，也拷贝系统js文件
+
+* 添加自动管理生命周期的puerts.toDelegate方法
+
+* ue.d.ts新增ue api的注释
+
+* pesapi addon的支持
+
+* pesapi添加类型信息支持
+
+* pesapi addon支持通过WITHOUT_PESAPI_WRAPPER使用dll链接，而不是内部函数指针
+
+* pesapi addon支持直接使用V8 api
+
+* pesapi addon支持v8 fast api call
+
+* 添加pesapi_create_array, pesapi_is_array，pesapi_get_array_length
+
+* 添加macOS arm64的支持
+
+* quickjs版本支持html5打包
+
+
+#### 优化
+
+* minxin如果class是RootSet，Function也AddToRoot
+
+* 只有原生的才生成到ue.d.ts
+
+* 重构静态绑定：backend彻底分离而且可以共存
+
+* 尝试ts继承蓝图类时报错
+
+#### 变更
+
+* 配置类别更名 Engine Class Extends Mode -> Default JavaScript Environment
+
+* 不支持override GameInstance.ReceiveInit
+
+* Typing目录调整到Project下
+
+* quickjs编辑器下默认使用静态链接！影响比较大，如果用quickjs，就不能在JsEnv外使用静态绑定
+
+#### bug修复
+
+* 函数参数是ts关键字导致的语法非法
+
+* 解决重用外层esm标记导致的两次require间相互影响的问题
+
+* 静态绑定如果构造函数没重载时，参数错误构造函数不执行也不抛异常的问题
+
+* 解决元素为组件的容器识别为组件的问题
+
+* 解决v8 fast api call下静态函数性能慢的问题
+
+* 修复forceinject的时候可能重复setprototype导致的exception
+
+* ue5.2可能会生成重名的隐藏property，加个过滤
+
 ### v1.0.4 2023年6月19日
 
 #### 新增特性
