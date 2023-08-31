@@ -57,6 +57,8 @@
 
 * quickjs编辑器下默认使用静态链接！影响比较大，如果用quickjs，就不能在JsEnv外使用静态绑定
 
+* ReactUMG不再随Puerts发布，有需要自行下载：https://github.com/puerts/ReactUMG
+
 #### bug修复
 
 * 函数参数是ts关键字导致的语法非法

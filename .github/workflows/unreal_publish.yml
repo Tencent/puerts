@@ -27,7 +27,7 @@ jobs:
           wget -O v8_for_ue425.tgz -q  ${{env.V8_84}} 
           tar xvfz v8_for_ue425.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts_v8_84.tgz Puerts ReactUMG README.md LICENSE doc
+          tar cvfz puerts_v8_84.tgz Puerts README.md LICENSE doc
           mv puerts_v8_84.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
@@ -35,14 +35,14 @@ jobs:
           tar xvfz v8_94.tgz -C unreal/Puerts/ThirdParty
           mv unreal/Puerts/ThirdParty/v8_9.4 unreal/Puerts/ThirdParty/v8
           cd unreal
-          tar cvfz puerts_v8_94.tgz Puerts ReactUMG README.md LICENSE doc
+          tar cvfz puerts_v8_94.tgz Puerts README.md LICENSE doc
           mv puerts_v8_94.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8
           wget -O v8_for_ue424.tgz -q  ${{env.UE424_V8}} 
           tar xvfz v8_for_ue424.tgz -C unreal/Puerts/ThirdParty
           cd unreal
-          tar cvfz puerts_v8_for_ue424_or_below.tgz Puerts ReactUMG README.md LICENSE doc
+          tar cvfz puerts_v8_for_ue424_or_below.tgz Puerts README.md LICENSE doc
           mv puerts_v8_for_ue424_or_below.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/v8_for_ue424_or_below
@@ -50,7 +50,7 @@ jobs:
           tar xvfz quickjs.tgz -C unreal/Puerts/ThirdParty
           cd unreal
           sed -i 's/UseQuickjs = false/UseQuickjs = true/g' Puerts/Source/JsEnv/JsEnv.Build.cs
-          tar cvfz puerts_quickjs.tgz Puerts ReactUMG README.md LICENSE doc
+          tar cvfz puerts_quickjs.tgz Puerts README.md LICENSE doc
           mv puerts_quickjs.tgz ..
           cd ..
           rm -r unreal/Puerts/ThirdParty/quickjs
@@ -59,7 +59,7 @@ jobs:
           tar xvfz nodejs_bin.tgz -C unreal/Puerts/ThirdParty
           cd unreal
           sed -i 's/UseNodejs = false/UseNodejs = true/g' Puerts/Source/JsEnv/JsEnv.Build.cs
-          tar cvfz puerts_nodejs.tgz Puerts ReactUMG README.md LICENSE doc
+          tar cvfz puerts_nodejs.tgz Puerts README.md LICENSE doc
           mv puerts_nodejs.tgz ..
           
       - name: Create Release
