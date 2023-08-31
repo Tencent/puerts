@@ -67,26 +67,6 @@
 #include "Blob/Linux/SnapshotBlob.h"
 #endif
 
-#elif !defined(WITH_QUICKJS)
-
-#if PLATFORM_WINDOWS
-#include "Blob/Win64MD/SnapshotBlob.h"
-#elif PLATFORM_ANDROID_ARM
-#include "Blob/Android/armv7a/SnapshotBlob.h"
-#elif PLATFORM_ANDROID_ARM64
-#include "Blob/Android/arm64/SnapshotBlob.h"
-#elif PLATFORM_MAC
-#if defined(PLATFORM_MAC_ARM64) && PLATFORM_MAC_ARM64
-#include "Blob/macOS_arm64/SnapshotBlob.h"
-#else
-#include "Blob/macOS/SnapshotBlob.h"
-#endif
-#elif PLATFORM_IOS
-#include "Blob/iOS/arm64/SnapshotBlob.h"
-#elif PLATFORM_LINUX
-#include "Blob/Linux/SnapshotBlob.h"
-#endif
-
 #endif
 
 #else
@@ -400,18 +380,7 @@ FJsEnvImpl::FJsEnvImpl(std::shared_ptr<IJSModuleLoader> InModuleLoader, std::sha
     }
     v8::V8::SetNativesDataBlob(NativesBlob.get());
 #endif
-#if !defined(WITH_QUICKJS)
-    std::unique_ptr<v8::StartupData> SnapshotBlob;
-    if (!SnapshotBlob)
-    {
-        SnapshotBlob = std::make_unique<v8::StartupData>();
-        SnapshotBlob->data = (const char*) SnapshotBlobCode;
-        SnapshotBlob->raw_size = sizeof(SnapshotBlobCode);
-    }
 
-    // 初始化Isolate和DefaultContext
-    v8::V8::SetSnapshotDataBlob(SnapshotBlob.get());
-#endif
     CreateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 #if WITH_QUICKJS
     MainIsolate = InExternalRuntime ? v8::Isolate::New(InExternalRuntime) : v8::Isolate::New(CreateParams);
