@@ -57,7 +57,7 @@ namespace NUnit {
                     }
                     return;
                 }
-                throw new Exception($"expect an error but tbe code did not thrown any");
+                throw new Exception($"expect an error but the code did not thrown any");
             }
             // public static void Contains(object a, ICollection b)
             // {
