@@ -31,32 +31,6 @@
 #include <sys/types.h>
 #endif
 
-#else // !WITH_NODEJS
-
-#if defined(PLATFORM_WINDOWS)
-
-#if _WIN64
-#include "Blob/Win64/SnapshotBlob.h"
-#else
-#include "Blob/Win32/SnapshotBlob.h"
-#endif
-
-#elif defined(PLATFORM_ANDROID_ARM)
-#include "Blob/Android/armv7a/SnapshotBlob.h"
-#elif defined(PLATFORM_ANDROID_ARM64)
-#include "Blob/Android/arm64/SnapshotBlob.h"
-#elif defined(PLATFORM_ANDROID_x64)
-#include "Blob/Android/x64/SnapshotBlob.h"
-#elif defined(PLATFORM_MAC_ARM64)
-#include "Blob/macOS_arm64/SnapshotBlob.h"
-#elif defined(PLATFORM_MAC)
-#include "Blob/macOS/SnapshotBlob.h"
-#elif defined(PLATFORM_IOS)
-#include "Blob/iOS/arm64/SnapshotBlob.h"
-#elif defined(PLATFORM_LINUX)
-#include "Blob/Linux/SnapshotBlob.h"
-#endif // defined(PLATFORM_WINDOWS)
-
 #endif // WITH_NODEJS
 
 static std::unique_ptr<v8::Platform> GPlatform;
@@ -276,10 +250,6 @@ v8::Isolate* puerts::BackendEnv::CreateIsolate(void* external_quickjs_runtime)
 
     MainIsolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
 #else
-    v8::StartupData SnapshotBlob;
-    SnapshotBlob.data = (const char *)SnapshotBlobCode;
-    SnapshotBlob.raw_size = sizeof(SnapshotBlobCode);
-    v8::V8::SetSnapshotDataBlob(&SnapshotBlob);
 
     // 初始化Isolate和DefaultContext
     CreateParams = new v8::Isolate::CreateParams();
