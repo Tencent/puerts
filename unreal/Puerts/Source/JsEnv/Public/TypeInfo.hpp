@@ -504,6 +504,10 @@ public:
     {
         return _signature;
     }
+    virtual const class v8::CFunction* FastCallInfo() const override
+    {
+        return nullptr;
+    };
 };
 
 struct NamedFunctionInfo
