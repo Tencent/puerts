@@ -84,16 +84,12 @@ v8::Local<v8::Value> FCppObjectMapper::FindOrAddCppObject(
     }
 
     // create and link
-    auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-    v8::Local<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
     auto ClassDefinition = FindClassByID(TypeId);
     if (ClassDefinition)
     {
-        return GetTemplateOfClass(Isolate, ClassDefinition)
-            ->GetFunction(Context)
-            .ToLocalChecked()
-            ->NewInstance(Context, 2, Args)
-            .ToLocalChecked();
+        auto Result = GetTemplateOfClass(Isolate, ClassDefinition)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+        BindCppObject(Isolate, const_cast<JSClassDefinition*>(ClassDefinition), Ptr, Result, PassByPointer);
+        return Result;
     }
     else
     {
@@ -128,21 +124,13 @@ static void CDataNew(const v8::FunctionCallbackInfo<v8::Value>& Info)
         JSClassDefinition* ClassDefinition =
             reinterpret_cast<JSClassDefinition*>((v8::Local<v8::External>::Cast(Info.Data()))->Value());
         void* Ptr = nullptr;
-        bool PassByPointer = false;
 
-        if (Info.Length() == 2 && Info[0]->IsExternal())    // Call by Native
-        {
-            Ptr = v8::Local<v8::External>::Cast(Info[0])->Value();
-            PassByPointer = Info[1]->BooleanValue(Isolate);
-        }
-        else    // Call by js new
-        {
-            if (ClassDefinition->Initialize)
-                Ptr = ClassDefinition->Initialize(Info);
-            if (Ptr == nullptr)
-                return;
-        }
-        DataTransfer::IsolateData<ICppObjectMapper>(Isolate)->BindCppObject(Isolate, ClassDefinition, Ptr, Self, PassByPointer);
+        if (ClassDefinition->Initialize)
+            Ptr = ClassDefinition->Initialize(Info);
+        if (Ptr == nullptr)
+            return;
+
+        DataTransfer::IsolateData<ICppObjectMapper>(Isolate)->BindCppObject(Isolate, ClassDefinition, Ptr, Self, false);
     }
     else
     {

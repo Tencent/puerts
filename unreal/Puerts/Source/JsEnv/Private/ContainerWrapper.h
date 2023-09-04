@@ -253,28 +253,7 @@ public:
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         v8::Isolate* Isolate = Info.GetIsolate();
-        v8::HandleScope HandleScope(Isolate);
-        v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-
-        auto Self = Info.This();
-
-        if (Info.Length() == 2 && Info[0]->IsExternal())    // Call by Native
-        {
-            T* Ptr = reinterpret_cast<T*>(v8::Local<v8::External>::Cast(Info[0])->Value());
-            bool PassByPointer = Info[1]->BooleanValue(Isolate);
-            if (PassByPointer)
-            {
-                FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(Ptr, Self, OnGarbageCollected);
-            }
-            else
-            {
-                FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(Ptr, Self, OnGarbageCollectedWithFree);
-            }
-        }
-        else    // Call by js new
-        {
-            FV8Utils::ThrowException(Isolate, "Container Constructor no support yet");
-        }
+        FV8Utils::ThrowException(Isolate, "Container Constructor no support yet");
     }
 
     // TODO - 用doxygen注释

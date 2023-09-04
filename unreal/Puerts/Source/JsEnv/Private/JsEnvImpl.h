@@ -169,9 +169,6 @@ public:
 
     virtual void UnBindContainer(void* Ptr) override;
 
-    virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-        v8::Local<v8::Function> Constructor, PropertyMacro* Property1, PropertyMacro* Property2, void* Ptr, bool PassByPointer);
-
     virtual v8::Local<v8::Value> FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property,
         FScriptArray* Ptr, bool PassByPointer) override;
 

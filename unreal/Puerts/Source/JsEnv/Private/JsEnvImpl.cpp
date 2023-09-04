@@ -2668,8 +2668,8 @@ FPropertyTranslator* FJsEnvImpl::GetContainerPropertyTranslator(PropertyMacro* P
     }
 }
 
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
-    v8::Local<v8::Function> Constructor, PropertyMacro* Property1, PropertyMacro* Property2, void* Ptr, bool PassByPointer)
+v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
+    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer)
 {
     check(Ptr);    // must not null
 
@@ -2679,34 +2679,48 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
         return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
     }
 
-    auto BindTo = v8::External::New(Context->GetIsolate(), Ptr);
-    v8::Handle<v8::Value> Args[] = {BindTo, v8::Boolean::New(Isolate, PassByPointer)};
-    auto Result = Constructor->NewInstance(Context, 2, Args).ToLocalChecked();
-    DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property1), 1);
-    if (Property2)
-        DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property2), 2);
+    auto Result = ArrayTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+    FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(
+        Ptr, Result, PassByPointer ? FScriptArrayWrapper::OnGarbageCollected : FScriptArrayWrapper::OnGarbageCollectedWithFree);
+    DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property), 1);
     return Result;
-}
-
-v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
-    v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptArray* Ptr, bool PassByPointer)
-{
-    return FindOrAddContainer(
-        Isolate, Context, ArrayTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked(), Property, nullptr, Ptr, PassByPointer);
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
     v8::Isolate* Isolate, v8::Local<v8::Context>& Context, PropertyMacro* Property, FScriptSet* Ptr, bool PassByPointer)
 {
-    return FindOrAddContainer(
-        Isolate, Context, SetTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked(), Property, nullptr, Ptr, PassByPointer);
+    check(Ptr);    // must not null
+
+    auto PersistentValuePtr = ContainerCache.Find(Ptr);
+    if (PersistentValuePtr)
+    {
+        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+    }
+
+    auto Result = SetTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+    FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(
+        Ptr, Result, PassByPointer ? FScriptSetWrapper::OnGarbageCollected : FScriptSetWrapper::OnGarbageCollectedWithFree);
+    DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property), 1);
+    return Result;
 }
 
 v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Local<v8::Context>& Context,
     PropertyMacro* KeyProperty, PropertyMacro* ValueProperty, FScriptMap* Ptr, bool PassByPointer)
 {
-    return FindOrAddContainer(Isolate, Context, MapTemplate.Get(Isolate)->GetFunction(Context).ToLocalChecked(), KeyProperty,
-        ValueProperty, Ptr, PassByPointer);
+    check(Ptr);    // must not null
+
+    auto PersistentValuePtr = ContainerCache.Find(Ptr);
+    if (PersistentValuePtr)
+    {
+        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+    }
+
+    auto Result = MapTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
+    FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(
+        Ptr, Result, PassByPointer ? FScriptMapWrapper::OnGarbageCollected : FScriptMapWrapper::OnGarbageCollectedWithFree);
+    DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(KeyProperty), 1);
+    DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(ValueProperty), 2);
+    return Result;
 }
 
 void FJsEnvImpl::BindStruct(
