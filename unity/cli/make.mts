@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "fs";
-import { cd, cp, exec, mkdir, mv } from "@puerts/shell-util"
-import { join, normalize } from "path";
+import { cd, cp, exec, mkdir, mv, rm } from "@puerts/shell-util"
+import { basename, join, normalize } from "path";
 import assert from "assert";
 import downloadBackend from "./backend.mjs";
 import { createRequire } from "module";
@@ -29,9 +29,9 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`)) 
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
-                else 
+                else
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
             }
         },
@@ -46,9 +46,9 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`)) 
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
-                else 
+                else
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
             }
         },
@@ -63,9 +63,9 @@ const platformCompileConfig = {
                 assert.equal(0, exec(`cmake ${cmakeDArgs} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DJS_ENGINE=${options.backend} -DCMAKE_BUILD_TYPE=${options.config} -DANDROID_ABI=${ABI} -H. -B${CMAKE_BUILD_PATH} -DCMAKE_TOOLCHAIN_FILE=${NDK}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=${API} -DANDROID_TOOLCHAIN=clang -DANDROID_TOOLCHAIN_NAME=${TOOLCHAIN_NAME}`).code)
                 assert.equal(0, exec(`cmake --build ${CMAKE_BUILD_PATH} --config ${options.config}`).code)
 
-                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`)) 
+                if (existsSync(`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`))
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.a`]
-                else 
+                else
                     return [`${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.so`, `${CMAKE_BUILD_PATH}/lib${cmakeAddedLibraryName}.stripped.so~`]
             }
         }
@@ -171,9 +171,7 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
 
     const BuildConfig = (platformCompileConfig as any)[options.platform][options.arch];
     const CMAKE_BUILD_PATH = cwd + `/build_${options.platform}_${options.arch}_${options.backend}${options.config != "Release" ? "_debug" : ""}`
-    const OUTPUT_PATH = cmakeAddedLibraryName == "puerts_il2cpp" ?
-        cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath :
-        cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
+    const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/' + BuildConfig.outputPluginPath;
     const BackendConfig = JSON.parse(readFileSync(cwd + `/cmake/backends.json`, 'utf-8'))[options.backend]?.config;
 
     if (BackendConfig?.skip?.[options.platform]?.[options.arch]) {
@@ -215,5 +213,31 @@ async function runPuertsMake(cwd: string, options: BuildOptions) {
     return copyConfig;
 }
 
+async function makeOSXUniveralBinary(cwd: string, copyConfig: string[][]): Promise<void> {
+    const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/macOS';
+    const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
+
+    if (copyConfig.length != 2) throw new Error(`makeOSXUniveralBinary can only combine 2 archs(arm64, x64) now, but got ${copyConfig.length}`);
+
+    for (let i = 0; i < copyConfig[0].length; i++) {
+        for (let j = 0; j < copyConfig[1].length; j++) {
+            if (basename(copyConfig[0][i]) == basename(copyConfig[1][j])) {
+                assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, basename(copyConfig[0][i]))} ${copyConfig[0][i]} ${copyConfig[1][j]}`).code)
+                copyConfig[0].splice(i, 1); i--;
+                copyConfig[1].splice(j, 1); j--;
+                break;
+            }
+        }
+    }
+
+    if (copyConfig[0].length != 1 && copyConfig[1].length != 1) throw new Error(`makeOSXUniveralBinary error: too many binary still need to lipo: ${copyConfig}`)
+    assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${copyConfig[0][0]} ${copyConfig[1][0]}`).code)
+
+    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + "/*.dylib");
+    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + "/*.bundle");
+    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + "/*.dylib");
+    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + "/*.bundle");
+}
+
 export default runPuertsMake;
-export { platformCompileConfig }
+export { platformCompileConfig, makeOSXUniveralBinary }
