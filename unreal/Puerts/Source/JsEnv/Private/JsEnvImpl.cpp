@@ -3844,7 +3844,6 @@ void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& I
 
     int DelegateHandleId = TimerInfos.Add(FTimerInfo());
     TimerInfos[DelegateHandleId].Callback.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
-    UE_LOG(Puerts, Warning, TEXT("set timer %p %d %d"), this, DelegateHandleId, Continue);
 
     float Millisecond = Info[1]->NumberValue(Context).ToChecked();
     float Delay = Millisecond / 1000.f;
@@ -3892,7 +3891,6 @@ bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
 
     if (!Continue)
     {
-        UE_LOG(Puerts, Warning, TEXT("auto clear timer %p %d"), this, DelegateHandleId);
         RemoveFTickerDelegateHandle(DelegateHandleId);
     }
 
@@ -3907,7 +3905,6 @@ void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
     }
     FUETicker::GetCoreTicker().RemoveTicker(TimerInfos[DelegateHandleId].TickerHandle);
     TimerInfos.RemoveAt(DelegateHandleId);
-    UE_LOG(Puerts, Warning, TEXT("do clear timer %p %d"), this, DelegateHandleId);
 }
 
 void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
