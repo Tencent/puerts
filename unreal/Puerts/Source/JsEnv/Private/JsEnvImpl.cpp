@@ -37,7 +37,6 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include "NetworkMessage.h"
 #include "V8InspectorImpl.h"
 #if USE_WASM3
 #include "WasmModuleInstance.h"
