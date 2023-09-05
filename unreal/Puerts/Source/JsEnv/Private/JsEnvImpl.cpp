@@ -18,7 +18,6 @@
 #include "V8Utils.h"
 #include "ObjectMapper.h"
 #include "JSLogger.h"
-#include "TickerDelegateWrapper.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "JSGeneratedClass.h"
 #include "JSAnimGeneratedClass.h"
