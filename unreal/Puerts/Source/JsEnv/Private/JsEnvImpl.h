@@ -294,10 +294,9 @@ private:
 
     void SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info, bool Continue);
 
-    void ReportExecutionException(
-        v8::Isolate* Isolate, v8::TryCatch* TryCatch, std::function<void(const JSError*)> CompletionHandler);
+    bool TimerCallback(int DelegateHandleId, bool Continue);
 
-    void RemoveFTickerDelegateHandle(FUETickDelegateHandle* Handle);
+    void RemoveFTickerDelegateHandle(int HandleId);
 
     void SetInterval(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
@@ -670,7 +669,12 @@ private:
 
     bool ExtensionMethodsMapInited = false;
 
-    std::map<FUETickDelegateHandle*, FTickerDelegateWrapper*> TickerDelegateHandleMap;
+    struct FTimerInfo
+    {
+        v8::Global<v8::Function> Callback;
+        FUETickDelegateHandle TickerHandle;
+    };
+    TSparseArray<FTimerInfo> TimerInfos;
 
     FUETickDelegateHandle DelegateProxiesCheckerHandler;
 

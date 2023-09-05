@@ -38,6 +38,7 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "NetworkMessage.h"
 #include "V8InspectorImpl.h"
 #if USE_WASM3
 #include "WasmModuleInstance.h"
@@ -755,13 +756,12 @@ FJsEnvImpl::~FJsEnvImpl()
         BindInfoMap.Empty();
 #endif
 
-        for (auto& Pair : TickerDelegateHandleMap)
+        for (auto Iter = TimerInfos.CreateIterator(); Iter; ++Iter)
         {
-            FUETicker::GetCoreTicker().RemoveTicker(*(Pair.first));
-            delete Pair.first;
-            delete Pair.second;
+            Iter->Callback.Reset();
+            FUETicker::GetCoreTicker().RemoveTicker(Iter->TickerHandle);
         }
-        TickerDelegateHandleMap.clear();
+        TimerInfos.Empty();
 
 #if !defined(ENGINE_INDEPENDENT_JSENV)
         for (auto& GeneratedClass : GeneratedClasses)
@@ -3832,12 +3832,6 @@ void FJsEnvImpl::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
-    v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
-    v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
-
     CHECK_V8_ARGS(EArgFunction, EArgNumber);
 
     SetFTickerDelegate(Info, false);
@@ -3845,79 +3839,81 @@ void FJsEnvImpl::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
 void FJsEnvImpl::SetFTickerDelegate(const v8::FunctionCallbackInfo<v8::Value>& Info, bool Continue)
 {
-    using std::placeholders::_1;
-    using std::placeholders::_2;
-    std::function<void(const JSError*, std::shared_ptr<ILogger>&)> ExceptionLog =
-        [](const JSError* Exception, std::shared_ptr<ILogger>& InLogger)
-    {
-        FString Message = FString::Printf(TEXT("JS Execution Exception: %s"), *(Exception->Message));
-        InLogger->Warn(Message);
-    };
-    std::function<void(const JSError*)> ExceptionLogWrapper = std::bind(ExceptionLog, _1, Logger);
-    std::function<void(v8::Isolate*, v8::TryCatch*)> ExecutionExceptionHandler =
-        std::bind(&FJsEnvImpl::ReportExecutionException, this, _1, _2, ExceptionLogWrapper);
-    std::function<void(FUETickDelegateHandle*)> DelegateHandleCleaner =
-        std::bind(&FJsEnvImpl::RemoveFTickerDelegateHandle, this, _1);
-
-    FTickerDelegateWrapper* DelegateWrapper = new FTickerDelegateWrapper(Continue);
-    DelegateWrapper->Init(Info, ExecutionExceptionHandler, DelegateHandleCleaner);
-#ifdef SINGLE_THREAD_VERIFY
-    DelegateWrapper->BoundThreadId = BoundThreadId;
-#endif
-    FTickerDelegate Delegate = FTickerDelegate::CreateRaw(DelegateWrapper, &FTickerDelegateWrapper::CallFunction);
-
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
+
+    int DelegateHandleId = TimerInfos.Add(FTimerInfo());
+    TimerInfos[DelegateHandleId].Callback.Reset(Isolate, v8::Local<v8::Function>::Cast(Info[0]));
+    UE_LOG(Puerts, Warning, TEXT("set timer %p %d %d"), this, DelegateHandleId, Continue);
+
     float Millisecond = Info[1]->NumberValue(Context).ToChecked();
     float Delay = Millisecond / 1000.f;
 
-    // TODO - 如果实现多线程，这里应该加锁阻止定时回调的执行，直到DelegateWrapper设置好handle
-    FUETickDelegateHandle* DelegateHandle = new FUETickDelegateHandle(FUETicker::GetCoreTicker().AddTicker(Delegate, Delay));
-    DelegateWrapper->SetDelegateHandle(DelegateHandle);
-    TickerDelegateHandleMap[DelegateHandle] = DelegateWrapper;
+    TimerInfos[DelegateHandleId].TickerHandle =
+        FUETicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this, DelegateHandleId, Continue](float)
+                                                 { return this->TimerCallback(DelegateHandleId, Continue); }),
+            Delay);
 
-    Info.GetReturnValue().Set(v8::External::New(Info.GetIsolate(), DelegateHandle));
+    Info.GetReturnValue().Set(DelegateHandleId);
 }
 
-void FJsEnvImpl::ReportExecutionException(
-    v8::Isolate* Isolate, v8::TryCatch* TryCatch, std::function<void(const JSError*)> CompletionHandler)
+bool FJsEnvImpl::TimerCallback(int DelegateHandleId, bool Continue)
 {
-    const JSError Error(FV8Utils::TryCatchToString(Isolate, TryCatch));
-    if (CompletionHandler)
+    v8::Isolate* Isolate = MainIsolate;
+#ifdef SINGLE_THREAD_VERIFY
+    ensureMsgf(BoundThreadId == FPlatformTLS::GetCurrentThreadId(), TEXT("Access by illegal thread!"));
+#endif
+#ifdef THREAD_SAFE
+    v8::Locker Locker(MainIsolate);
+#endif
+
+    v8::Isolate::Scope Isolatescope(Isolate);
+    v8::HandleScope HandleScope(Isolate);
+    v8::Local<v8::Context> Context = DefaultContext.Get(Isolate);
+    v8::Context::Scope ContextScope(Context);
+
+    if (!TimerInfos.IsValidIndex(DelegateHandleId))
     {
-        CompletionHandler(&Error);
+        Logger->Warn(FString::Printf(TEXT("Try to callback a invalid timer: %d"), DelegateHandleId));
+        return false;
     }
+
+    v8::Local<v8::Function> Function = TimerInfos[DelegateHandleId].Callback.Get(Isolate);
+
+    v8::TryCatch TryCatch(Isolate);
+    (void) (Function->Call(Context, Context->Global(), 0, nullptr));
+
+    if (TryCatch.HasCaught())
+    {
+        FString Message =
+            FString::Printf(TEXT("Exception in Timer Callback: %s"), *(FV8Utils::TryCatchToString(Isolate, &TryCatch)));
+        Logger->Error(Message);
+    }
+
+    if (!Continue)
+    {
+        UE_LOG(Puerts, Warning, TEXT("auto clear timer %p %d"), this, DelegateHandleId);
+        RemoveFTickerDelegateHandle(DelegateHandleId);
+    }
+
+    return Continue && TimerInfos.IsAllocated(DelegateHandleId);
 }
 
-void FJsEnvImpl::RemoveFTickerDelegateHandle(FUETickDelegateHandle* Handle)
+void FJsEnvImpl::RemoveFTickerDelegateHandle(int DelegateHandleId)
 {
-    // TODO - 如果实现多线程，FTicker所在主线程和当前线程释放handle可能有竞争
-    auto Iterator = std::find_if(
-        TickerDelegateHandleMap.begin(), TickerDelegateHandleMap.end(), [&](auto& Pair) { return Pair.first == Handle; });
-    if (Iterator != TickerDelegateHandleMap.end())
+    if (!TimerInfos.IsValidIndex(DelegateHandleId))
     {
-        // call clearTimeout in setTimeout callback
-        if (Iterator->second->IsCalling)
-        {
-            Iterator->second->FunctionContinue = false;
-            return;
-        }
-        FUETicker::GetCoreTicker().RemoveTicker(*(Iterator->first));
-        delete Iterator->first;
-        delete Iterator->second;
-        TickerDelegateHandleMap.erase(Iterator);
+        return;
     }
+    FUETicker::GetCoreTicker().RemoveTicker(TimerInfos[DelegateHandleId].TickerHandle);
+    TimerInfos.RemoveAt(DelegateHandleId);
+    UE_LOG(Puerts, Warning, TEXT("do clear timer %p %d"), this, DelegateHandleId);
 }
 
 void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
     v8::Isolate* Isolate = Info.GetIsolate();
-    v8::Isolate::Scope IsolateScope(Isolate);
-    v8::HandleScope HandleScope(Isolate);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
-    v8::Context::Scope ContextScope(Context);
 
     // todo - mocha 7.0.1，当reporter为JSON，调用clearTimeout时，可能不传值，或传Null、Undefined过来。暂将其忽略
     if (Info.Length() == 0)
@@ -3931,10 +3927,9 @@ void FJsEnvImpl::ClearInterval(const v8::FunctionCallbackInfo<v8::Value>& Info)
     }
     else
     {
-        CHECK_V8_ARGS(EArgExternal);
-        v8::Local<v8::External> Arg = v8::Local<v8::External>::Cast(Info[0]);
-        FUETickDelegateHandle* Handle = static_cast<FUETickDelegateHandle*>(Arg->Value());
-        RemoveFTickerDelegateHandle(Handle);
+        CHECK_V8_ARGS(EArgInt32);
+        int HandleId = Info[0]->Int32Value(Context).ToChecked();
+        RemoveFTickerDelegateHandle(HandleId);
     }
 }
 
