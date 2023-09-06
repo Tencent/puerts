@@ -76,4 +76,4 @@ sm.install({
 After obtaining the Typescript stack trace in the console, there's still one issue that's a bit troublesome: you can't click on the file path in the console to jump to the specified location like you can with C# files. 
 
 1. In general, you can use TSLoader. console-redirect is builtin in it.
-2.If you don't want to use TSLoader, This is an example to integrate consoleredirect support. Refer to: https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect
+2. If you don't want to use TSLoader, This is an example to integrate consoleredirect support. Refer to: https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect
