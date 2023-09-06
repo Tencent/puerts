@@ -18,7 +18,7 @@ program
     .addOption(
         new Option("--platform <platform>", "the target platform")
             .default("")
-            .choices(["win", "osx", "linux", "android", "ios"])
+            .choices(["win", "osx", "linux", "android", "ios", "web"])
     )
     .addOption(
         new Option("--arch <arch>", "the target architecture")
