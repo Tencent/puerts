@@ -2,13 +2,14 @@
 
 这里推荐你使用vscode进行debug。但如果是手机debug的时候，推荐你参考[开发blog](https://zhuanlan.zhihu.com/p/359598262)
 
-* new JsEnv的时候，需要按如下示例输入端口及vscode工程的js输出目录，并且在合适的地方调用jsEnv的Tick函数
+* new JsEnv之后，需要传入debug端口。且在合适的地方调用jsEnv的Tick函数
 
 ```csharp
 //8080是连接的端口，和vscode工程目录下的.vscode\launch.json保持一致
 void Start()
 {
-    jsEnv = new JsEnv(new DefaultLoader("F:/puerts/unity/TsProj/output/"), 8080);
+    jsEnv = new JsEnv(new TSLoader(), 8080); // 推荐使用TSLoader，就不需要你手动指定JS输出目录
+    jsEnv = new JsEnv(new DefaultLoader("F:/puerts/unity/TsProj/output/"), 8080); // 使用DefaultLoader时需要手动指定你的JS输出目录。
 }
 
 void Update()
@@ -30,7 +31,7 @@ async void RunScript()
 {
     jsEnv = new JsEnv(new DefaultLoader("E:/puerts_unity_demo/TsProj/output/"), 8080);
     await jsEnv.WaitDebuggerAsync();
-    jsEnv.Eval("require('QuickStart')");
+    jsEnv.ExecuteModule("QuickStart.mjs");
 }
 
 void Start()
@@ -51,7 +52,7 @@ void Start()
 {
     jsEnv = new JsEnv(new DefaultLoader("E:/puerts_unity_demo/TsProj/output/"), 8080);
     jsEnv.WaitDebugger();
-    jsEnv.Eval("require('QuickStart')");
+    jsEnv.ExecuteModule("QuickStart.mjs");
 }
 
 void Update()
@@ -60,7 +61,7 @@ void Update()
 }
 ```
 
-* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”（高版本vscode没有该选项，可以不设置）
+* vscode下打开setting，搜索auto attach，将Debug>Node:Auto Attach设置为“on”（高版本vscode没有该选项，可以不设置）。或是自行创建vscode debug的launch.json，将其端口号配置改为你上面设置的端口号。
 
 
 * 打开“ProjectSetting/Player”页面，把“Run In Background”勾选上
