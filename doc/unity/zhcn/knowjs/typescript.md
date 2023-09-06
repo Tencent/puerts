@@ -31,7 +31,7 @@
 
 ### 使用 PuerTS.TSLoader
 
-PuerTS 提供了一个第三方模块 `puerts-ts-loader`，它基于 PuerTS 的 Loader 机制，专门处理 Typescript。安装后可在 C# 直接加载 Typescript。
+PuerTS 提供了一个扩展模块 `puerts-ts-loader`，它基于 PuerTS 的 Loader 机制，专门处理 Typescript。安装后可在 C# 直接加载 Typescript。
 
 它还内置了 debugpath、sourcemap、consoleredirect 等处理，非常方便。易于新手使用。
 
@@ -53,49 +53,24 @@ tsc -p tsconfig.json
 tsc -w -p tsconfig.json
 ```
 
-#### source-map
-
+#### source-map-support支持
 在 Unity 里执行 js 代码时，如果抛了错，你会发现控制台里打印的 JS 栈的行数和你的代码完全对不上。这是因为 PuerTS 执行的是编译出来的 Javascript，这个错误栈是你编译出来的 Javascript 的栈，而非 Typescript 源码的。所幸的是，我们可以通过 sourcemap 功能将 Javascript 的行数映射回 Typescript 的行数。
 
-首先你需要按照 Typescript 文档的相关内容将 sourcemap 文件编译出来，或者在产物 js 文件里植入 inline-sourcemap。参考文档：https://www.typescriptlang.org/tsconfig#sourceMap
-
-随后你需要执行如下代码：
-
-``` javascript
-puer.registerBuildinModule("path", {
-    dirname(path) {
-        return CS.System.IO.Path.GetDirectoryName(path);
-    },
-    resolve(dir, url) {
-        url = url.replace(/\\/g, "/");
-        while (url.startsWith("../")) {
-            dir = CS.System.IO.Path.GetDirectoryName(dir);
-            url = url.substr(3);
-        }
-        return CS.System.IO.Path.Combine(dir, url);
-    },
-});
-puer.registerBuildinModule("fs", {
-    existsSync(path) {
-        return CS.System.IO.File.Exists(path);
-    },
-    readFileSync(path) {
-        return CS.System.IO.File.ReadAllText(path);
-    },
-});
-(function () {
-    let global = this ?? globalThis;
-    global["Buffer"] = global["Buffer"] ?? {};
-    //使用inline-source-map模式, 需要额外安装buffer模块
-    //global["Buffer"] = global["Buffer"] ?? require("buffer").Buffer;
-}) ();
-require('source-map-support').install();
+1. 正常情况下，你可以直接使用TSLoader，其内置了source-map支持
+2. 如果你的项目不适用TSLoader，可以直接将TSLoader的[这个脚本文件](https://github.com/zombieyang/puerts-ts-loader/blob/main/upm/Editor/ConsoleRedirect/Typescripts/source-map-support.gen.mjs)放到你的项目，在JsEnv启动后执行下面代码即可。
 ```
-
-然后你就可以在控制台里得到 Typescript 的栈了。
+import sm from 'source-map-support.gen.mjs'
+sm.install({
+    retrieveFile: (path) => {
+        // 如果你用的不是inline的source-map，这里还得处理sourcemap的加载
+        return puer.loadFile(path).content
+    }
+});
+```
 
 #### console-redirect
 
 在控制台里得到 Typescript 栈之后，还有一点是比较麻烦的，就是你不能像 C# 文件一样直接点击控制台里的文件路径跳转到指定位置。这时候就要添加 consoleredirect 的支持。
 
-你可以参考这个项目：https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect。
+1. 正常情况下，你可以直接使用TSLoader，其内置了console-redirect支持
+2. 如果你的项目不适用TSLoader，你可以参考这个项目：https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect。
