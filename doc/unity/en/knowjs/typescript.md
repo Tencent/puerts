@@ -57,45 +57,23 @@ tsc -w -p tsconfig.json
 
 When executing js code in Unity, if an error is thrown, you may find that the line numbers in the JS stack trace printed in the console do not match your code at all. This is because Puerts executes the compiled javascript, and the error stack trace is that of the compiled javascript, not the Typescript source code.
 
-Fortunately, thanks to the powerful ecosystem of javascript, we can use the sourcemap feature to map the line numbers of javascript back to Typescript. First, you need to compile the sourcemap file according to the relevant content in the Typescript documentation, or embed the inline-sourcemap in the output js file. Refer to the documentation: https://www.typescriptlang.org/tsconfig#sourceMap
+Fortunately, thanks to the powerful ecosystem of javascript, we can use the sourcemap feature to map the line numbers of javascript back to Typescript.
 
-Then, you need to do the following:
-
-``` javascript
-puer.registerBuildinModule("path", {
-    dirname(path) {
-        return CS.System.IO.Path.GetDirectoryName(path);
-    },
-    resolve(dir, url) {
-        url = url.replace(/\\/g, "/");
-        while (url.startsWith("../")) {
-            dir = CS.System.IO.Path.GetDirectoryName(dir);
-            url = url.substr(3);
-        }
-        return CS.System.IO.Path.Combine(dir, url);
-    },
-});
-puer.registerBuildinModule("fs", {
-    existsSync(path) {
-        return CS.System.IO.File.Exists(path);
-    },
-    readFileSync(path) {
-        return CS.System.IO.File.ReadAllText(path);
-    },
-});
-(function () {
-    let global = this ?? globalThis;
-    global["Buffer"] = global["Buffer"] ?? {};
-    //Use inline-source-map mode, need to install buffer module separately
-    //global["Buffer"] = global["Buffer"] ?? require("buffer").Buffer;
-}) ();
-require('source-map-support').install();
+1. In general, you can use TSLoader. source-map-support is builtin in it.
+2. If you don't want to use TSLoader, put [this file](https://github.com/zombieyang/puerts-ts-loader/blob/main/upm/Editor/ConsoleRedirect/Typescripts/source-map-support.gen.mjs) into your project, and run these code after JsEnv is created.
 ```
-
-After that, you can get the Typescript stack trace in the console.
+import sm from 'source-map-support.gen.mjs'
+sm.install({
+    retrieveFile: (path) => {
+        // if you are not using inlined source-map, you should handle the source-map loading here.
+        return puer.loadFile(path).content
+    }
+});
+```
 
 #### Console-redirect
 
 After obtaining the Typescript stack trace in the console, there's still one issue that's a bit troublesome: you can't click on the file path in the console to jump to the specified location like you can with C# files. 
 
-This is where consoleredirect support comes in. Refer to: https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect
+1. In general, you can use TSLoader. console-redirect is builtin in it.
+2.If you don't want to use TSLoader, This is an example to integrate consoleredirect support. Refer to: https://github.com/chexiongsheng/puerts_unity_demo/tree/master/projects/1_Start_Template/Assets/Samples/Editor/03_ConsoleRedirect
