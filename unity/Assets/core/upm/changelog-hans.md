@@ -14,6 +14,7 @@ you can get the english version change log at [Github Release](https://github.co
 5. 优化：JsEnv现在会暴露Isolate字段，获得v8::Isolate的指针 @mingxxming
 6. 优化：去掉puerts自己的SnapshotBlob.h，直接使用v8内置的
 7. 优化：构建脚本现在可以运行在低版本node上 @xiezheng-XD #1495
+8. 优化：Linux平台自带inspector @geequlim
 
 ## [2.0.1] - 2023-08-16
 1. 修复：内部类型在link.xml中声明不正确的问题 #1460

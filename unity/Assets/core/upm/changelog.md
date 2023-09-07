@@ -14,6 +14,7 @@ you can get the english version change log at [Github Release](https://github.co
 5. optimize: `JsEnv` now have a public `Isolate` field to get the pointer of `v8::Isolate` @mingxxming
 6. optimize: remove our `SnapshotBlob.h`. Use v8's builtin snapshot instead. #1477
 7. optimize: The build script can now run with low version @xiezheng-XD #1495
+8. optimize: support inspector by default in Linux @geequlim
 
 ## [2.0.1] - 2023-08-16
 1. Fix: NestedType was not declared correctly in `link.xml` #1460
