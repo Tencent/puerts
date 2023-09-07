@@ -533,6 +533,10 @@ private:
     v8::Global<v8::Function> MergePrototype;
 #endif
 
+    v8::Global<v8::Function> RemoveListItem;
+
+    v8::Global<v8::Function> GenListApply;
+
     TMap<UStruct*, FTemplateInfo> TypeToTemplateInfoMap;
 
     TMap<FString, std::shared_ptr<FStructWrapper>> TypeReflectionMap;
@@ -586,8 +590,8 @@ private:
         MulticastDelegatePropertyMacro* MulticastDelegateProperty;
         UFunction* SignatureFunction;
         bool PassByPointer;
-        TWeakObjectPtr<UDynamicDelegateProxy> Proxy;           // for delegate
-        TSet<TWeakObjectPtr<UDynamicDelegateProxy>> Proxys;    // for MulticastDelegate
+        TWeakObjectPtr<UDynamicDelegateProxy> Proxy;
+        v8::UniquePersistent<v8::Array> JsCallbacks;
     };
 
     struct TsFunctionInfo

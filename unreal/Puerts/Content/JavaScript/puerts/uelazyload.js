@@ -896,4 +896,33 @@ var global = global || (function () { return this; }());
     }
     puerts.__mergePrototype = mergePrototype
     
+    function removeListItem(list, item) {
+        var found = false;
+        for (var i = 0; i < list.length; ++i) {
+            if (!found) {
+                found = (list[i] === item);
+            }
+            if (found) {
+                list[i] = list[i + 1]; // array[length + 1] === undefined
+            }
+        }
+        if (found) {
+            list.pop();
+        }
+    }
+    puerts.__removeListItem = removeListItem
+    
+    function genListApply(lst) {
+        return function(...args) {
+            const len = lst.length;
+            const list = lst.slice();
+            let ret
+            for (var i = 0; i < len; ++i) {
+                ret = Reflect.apply(list[i], this, args);
+            }
+            return ret;
+        }
+    }
+    puerts.__genListApply = genListApply
+    
 }(global));
