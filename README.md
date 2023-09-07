@@ -5,7 +5,7 @@
 
 [![unreal](https://img.shields.io/badge/unreal-v1.0.5-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.5)
 
-[![unity](https://img.shields.io/badge/unity(stable)-v2.0.0-blue.svg)](doc/unity/zhcn/install.md)
+[![unity](https://img.shields.io/badge/unity(stable)-v2.0.2-blue.svg)](doc/unity/zhcn/install.md)
 ![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
 
 [跳转中文](#what---普洱ts是什么)
