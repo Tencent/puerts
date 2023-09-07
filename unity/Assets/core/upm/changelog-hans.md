@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.2] - 2023-09-07
+1. 修复：静态wrapper里params参数获取到的默认值不正确的问题 @ctxdegithub
+2. 修复：使用v8_8.4版本build的问题。unity2020及以下xil2cpp模式armv7可能需要v8_8.4才能编通 #1469
+3. 优化：xi2cpp模式下安卓平台合并v8和puerts两个库
+4. 优化：mac下改为使用universal binary，不再区分两个平台（覆盖升级时请注意删除旧Plugin）@mikejurka
+5. 优化：JsEnv现在会暴露Isolate字段，获得v8::Isolate的指针 @mingxxming
+6. 优化：去掉puerts自己的SnapshotBlob.h，直接使用v8内置的
+7. 优化：构建脚本现在可以运行在低版本node上 @xiezheng-XD #1495
+
 ## [2.0.1] - 2023-08-16
 1. 修复：内部类型在link.xml中声明不正确的问题 #1460
 2. 修复：xil2cpp模式下使用结构体out参数可能导致crash的问题 #1460

@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 you can get the english version change log at [Github Release](https://github.com/Tencent/puerts/releases)
 
+## [2.0.2] - 2023-09-07
+1. fix: defaultParam's value is not as expected when StaticWrapper in generated @ctxdegithub
+2. fix: could not build puerts with v8_8.4. In Unity2020-, the xil2cpp mode binary with v8_9.4 of android armv7 may not work. #1469
+3. optimize: combine `libwee8.a` and `libpuerts.a` in android for xil2cpp mode @mingxxming
+4. optimize: use universal binary instead of two binary with different arch in OSX now. @mikejurka
+5. optimize: `JsEnv` now have a public `Isolate` field to get the pointer of `v8::Isolate` @mingxxming
+6. optimize: remove our `SnapshotBlob.h`. Use v8's builtin snapshot instead. #1477
+7. optimize: The build script can now run with low version @xiezheng-XD #1495
+
 ## [2.0.1] - 2023-08-16
 1. Fix: NestedType was not declared correctly in `link.xml` #1460
 2. Fix: `out` parameters with ValueType might cause crash in xil2cpp mode. #1460
