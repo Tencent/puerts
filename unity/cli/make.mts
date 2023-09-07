@@ -217,26 +217,12 @@ async function makeOSXUniveralBinary(cwd: string, copyConfig: string[][]): Promi
     const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/macOS';
     const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
 
-    if (copyConfig.length != 2) throw new Error(`makeOSXUniveralBinary can only combine 2 archs(arm64, x64) now, but got ${copyConfig.length}`);
+    const arm64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + "/libpuerts.dylib";
+    const x64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + "/puerts.bundle";
+    assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${arm64binary} ${x64binary}`).code)
 
-    for (let i = 0; i < copyConfig[0].length; i++) {
-        for (let j = 0; j < copyConfig[1].length; j++) {
-            if (basename(copyConfig[0][i]) == basename(copyConfig[1][j])) {
-                assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, basename(copyConfig[0][i]))} ${copyConfig[0][i]} ${copyConfig[1][j]}`).code)
-                copyConfig[0].splice(i, 1); i--;
-                copyConfig[1].splice(j, 1); j--;
-                break;
-            }
-        }
-    }
-
-    if (copyConfig[0].length != 1 && copyConfig[1].length != 1) throw new Error(`makeOSXUniveralBinary error: too many binary still need to lipo: ${copyConfig}`)
-    assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${copyConfig[0][0]} ${copyConfig[1][0]}`).code)
-
-    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + "/*.dylib");
-    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + "/*.bundle");
-    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + "/*.dylib");
-    rm('-rf', cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + "/*.bundle");
+    rm('-rf', arm64binary);
+    rm('-rf', x64binary);
 }
 
 export default runPuertsMake;

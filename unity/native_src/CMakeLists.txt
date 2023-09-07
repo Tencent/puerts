@@ -107,10 +107,13 @@ if ( APPLE )
             set(CMAKE_OSX_ARCHITECTURES arm64)
         endif ()
         
-        set(CMAKE_SKIP_RPATH FALSE)    
-        add_link_options(-rpath "@loader_path/")
         add_library(puerts SHARED
             ${PUERTS_SRC} ${PUERTS_INC}
+        )
+        target_link_options(
+            puerts 
+            PRIVATE "-Wl,-rpath,@loader_path/${CMAKE_OSX_ARCHITECTURES}/"
+            PRIVATE "-Wl,-rpath,@loader_path/"
         )
     endif ()
 else ()
