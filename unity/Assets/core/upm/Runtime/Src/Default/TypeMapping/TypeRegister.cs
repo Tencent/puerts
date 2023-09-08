@@ -23,6 +23,8 @@ namespace Puerts
     class SlowBindingRegister
     {
         public RegisterInfo registerInfo;
+
+        public RegisterInfoManager RegisterInfoManager;
         public Dictionary<MethodKey, List<MethodInfo>> slowBindingMethodGroup = new Dictionary<MethodKey, List<MethodInfo>>();
         public Dictionary<string, PropertyMethods> slowBindingProperties = new Dictionary<string, PropertyMethods>();
         public List<FieldInfo> slowBindingFields = new List<FieldInfo>();
@@ -37,6 +39,7 @@ namespace Puerts
 
         internal bool AddMethod(MethodKey methodKey, MethodInfo method)
         {
+            bool isNoRegisterInfoAndAllowSlowBinding = registerInfo == null && RegisterInfoManager.DefaultBindingMode != BindingMode.DontBinding;
             if (method.IsGenericMethodDefinition)
             {
                 if (!Utils.IsSupportedMethod(method))
@@ -55,7 +58,7 @@ namespace Puerts
             if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
             {
                 string propName = method.Name.Substring(4);
-                if (registerInfo == null || needFillSlowBindingProperty.Contains(propName))
+                if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingProperty.Contains(propName))
                 {
                     PropertyMethods properyMethods;
                     if (!slowBindingProperties.TryGetValue(propName, out properyMethods))
@@ -69,7 +72,7 @@ namespace Puerts
             else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
             {
                 string propName = method.Name.Substring(4);
-                if (registerInfo == null || needFillSlowBindingProperty.Contains(propName))
+                if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingProperty.Contains(propName))
                 {
                     PropertyMethods properyMethods;
                     if (!slowBindingProperties.TryGetValue(propName, out properyMethods))
@@ -82,7 +85,7 @@ namespace Puerts
             }
             else
             {
-                if (registerInfo == null || needFillSlowBindingMethod.Contains(methodKey.Name))
+                if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingMethod.Contains(methodKey.Name))
                 {
                     List<MethodInfo> overloads;
                     if (!slowBindingMethodGroup.TryGetValue(methodKey, out overloads))
@@ -374,6 +377,7 @@ namespace Puerts
             }
 
             SlowBindingRegister sbr = new SlowBindingRegister();
+            sbr.RegisterInfoManager = RegisterInfoManager;
             sbr.registerInfo = registerInfo;
 
             HashSet<string> readonlyStaticFields = new HashSet<string>();
