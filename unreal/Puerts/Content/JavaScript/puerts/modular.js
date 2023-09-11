@@ -122,36 +122,38 @@ var global = global || (function () { return this; }());
             let script = loadModule(fullPath);
             let isESM = outerIsESM === true || fullPath.endsWith(".mjs")
             if (fullPath.endsWith(".cjs")) isESM = false;
-            if (fullPath.endsWith(".json")) {
-                let packageConfigure = JSON.parse(script);
-                
-                if (fullPath.endsWith("package.json")) {
-                    isESM = packageConfigure.type === "module"
-                    let url = packageConfigure.main || "index.js";
-                    if (isESM) {
-                        let packageExports = packageConfigure.exports && packageConfigure.exports["."];
-                        if (packageExports)
-                            url =
-                                (packageExports["default"] && packageExports["default"]["require"]) ||
-                                (packageExports["require"] && packageExports["require"]["default"]) ||
-                                packageExports["require"];                        
-                        if (!url) {
-                            throw new Error("can not require a esm in cjs module!");
+            try {
+                if (fullPath.endsWith(".json")) {
+                    let packageConfigure = JSON.parse(script);
+                    
+                    if (fullPath.endsWith("package.json")) {
+                        isESM = packageConfigure.type === "module"
+                        let url = packageConfigure.main || "index.js";
+                        if (isESM) {
+                            let packageExports = packageConfigure.exports && packageConfigure.exports["."];
+                            if (packageExports)
+                                url =
+                                    (packageExports["default"] && packageExports["default"]["require"]) ||
+                                    (packageExports["require"] && packageExports["require"]["default"]) ||
+                                    packageExports["require"];                        
+                            if (!url) {
+                                throw new Error("can not require a esm in cjs module!");
+                            }
                         }
+                        let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
+                        let tmpRequire = genRequire(fullDirInJs, isESM);
+                        let r = tmpRequire(url);
+                        
+                        m.exports = r;
+                    } else {
+                        m.exports = packageConfigure;
                     }
-                    let fullDirInJs = (fullPath.indexOf('/') != -1) ? fullPath.substring(0, fullPath.lastIndexOf("/")) : fullPath.substring(0, fullPath.lastIndexOf("\\")).replace(/\\/g, '\\\\');
-                    let tmpRequire = genRequire(fullDirInJs, isESM);
-                    let r = tmpRequire(url);
-                    tmpModuleStorage[sid] = undefined;
-                    m.exports = r;
                 } else {
-                    tmpModuleStorage[sid] = undefined;
-                    m.exports = packageConfigure;
+                    executeModule(fullPath, script, debugPath, sid, isESM);
                 }
-            } else {
-                executeModule(fullPath, script, debugPath, sid, isESM);
+            } finally {
                 tmpModuleStorage[sid] = undefined;
-            }
+            }                
             return m.exports;
         }
 
