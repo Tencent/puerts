@@ -116,8 +116,7 @@ var global = global || (function () { return this; }());
                 return localModuleCache[moduleName].exports;
             }
             let m = {"exports":{}};
-            localModuleCache[moduleName] = m;
-            moduleCache[key] = m;
+            
             let sid = addModule(m);
             let script = loadModule(fullPath);
             let isESM = outerIsESM === true || fullPath.endsWith(".mjs")
@@ -151,6 +150,8 @@ var global = global || (function () { return this; }());
                 } else {
                     executeModule(fullPath, script, debugPath, sid, isESM);
                 }
+                localModuleCache[moduleName] = m;
+                moduleCache[key] = m;
             } finally {
                 tmpModuleStorage[sid] = undefined;
             }                
