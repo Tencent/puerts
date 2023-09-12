@@ -12,12 +12,9 @@ namespace Puerts.UnitTest
         {
             var env = UnitTestEnv.GetEnv();
             if (env.Backend is BackendNodeJS) {
-                string platform = env.Eval<string>("process.platform");
-#if PLATFORM_WINDOWS
-                Assert.AreEqual(platform, "win32");
-#else
-                Assert.AreEqual(platform, "darwin");
-#endif
+                string pid = env.Eval<string>("process.pid");
+                
+                Assert.AreEqual(pid, System.Diagnostics.Process.GetCurrentProcess().Id);
             }
         }
     }

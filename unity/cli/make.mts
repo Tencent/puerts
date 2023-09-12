@@ -217,8 +217,8 @@ async function makeOSXUniveralBinary(cwd: string, copyConfig: string[][]): Promi
     const OUTPUT_PATH = cwd + '/../Assets/core/upm/Plugins/macOS';
     const cmakeAddedLibraryName = readFileSync(`${cwd}/CMakeLists.txt`, 'utf-8').match(/add_library\((\w*)/)[1];
 
-    const arm64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + "/libpuerts.dylib";
-    const x64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + "/puerts.bundle";
+    const arm64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.arm64.outputPluginPath + `/lib${cmakeAddedLibraryName}.dylib`;
+    const x64binary = cwd + '/../Assets/core/upm/Plugins/' + platformCompileConfig.osx.x64.outputPluginPath + `/${cmakeAddedLibraryName}.bundle`;
     assert.equal(0, exec(`lipo -create -output ${join(OUTPUT_PATH, cmakeAddedLibraryName + '.bundle')} ${arm64binary} ${x64binary}`).code)
 
     rm('-rf', arm64binary);

@@ -46,6 +46,7 @@ namespace Puerts.TypeMapping
                 }
             }
             BindingMode bindingMode = GetBindingMode(registerInfo, name, isMethod ? ((MethodInfo)member).IsStatic : false);
+            UnityEngine.Debug.Log("bindingMode for " + name + " is " + bindingMode + ", def: " + RegisterInfoManager.DefaultBindingMode);
             IntPtr wrapper = IntPtr.Zero;
             if (bindingMode == BindingMode.FastBinding) 
             {
@@ -76,7 +77,7 @@ namespace Puerts.TypeMapping
             return wrapper;
         }
 
-        //call by native, do no throw!!
+        //call by native, do not throw!!
         public static void RegisterNoThrow(IntPtr typeId, bool includeNonPublic)
         {
             if (ReflectionWrapperFunc == IntPtr.Zero) ReflectionWrapperFunc = NativeAPI.FindWrapFunc(null);
@@ -234,9 +235,9 @@ namespace Puerts.TypeMapping
                             }
                             else
                             {
-#if WARNING_IF_MEMBERFAIL
+    #if WARNING_IF_MEMBERFAIL
                                 UnityEngine.Debug.LogWarning(string.Format("add method for {0}:{1} fail, signature:{2}", type, method, TypeUtils.GetMethodSignature(method, false, isExtensionMethod)));
-#endif
+    #endif
                                 return;
                             }
                         }
@@ -294,7 +295,7 @@ namespace Puerts.TypeMapping
                             if (wrapper == IntPtr.Zero)
                             {
                                 UnityEngine.Debug.LogWarning(string.Format("wrapper is null for {0}:{1}, signature:{2}", type, name, signature));
-                                return;
+                                continue;
                             }
 
                             if (!NativeAPI.AddField(
