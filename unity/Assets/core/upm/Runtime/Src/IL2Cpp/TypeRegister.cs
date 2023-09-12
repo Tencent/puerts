@@ -46,7 +46,6 @@ namespace Puerts.TypeMapping
                 }
             }
             BindingMode bindingMode = GetBindingMode(registerInfo, name, isMethod ? ((MethodInfo)member).IsStatic : false);
-            UnityEngine.Debug.Log("bindingMode for " + name + " is " + bindingMode + ", def: " + RegisterInfoManager.DefaultBindingMode);
             IntPtr wrapper = IntPtr.Zero;
             if (bindingMode == BindingMode.FastBinding) 
             {
