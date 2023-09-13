@@ -14,7 +14,6 @@
 #include "CoreUObject.h"
 #include "TypeScriptDeclarationGenerator.h"
 #include "Components/PanelSlot.h"
-#include "Components/Widget.h"
 #if WITH_EDITOR
 #if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
 #include "AssetRegistry/AssetRegistryModule.h"

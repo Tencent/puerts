@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "Runtime/Launch/Resources/Version.h"
+
 #if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
 #define PropertyMacro FProperty
 

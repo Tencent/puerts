@@ -15,9 +15,9 @@ public class WasmCore : ModuleRules
 	
 	public WasmCore(ReadOnlyTargetRules Target) : base(Target)
 	{
-		//PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        PCHUsage = PCHUsageMode.NoPCHs;
 
-		bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
+        bEnableUndefinedIdentifierWarnings = false; // 避免在VS 2017编译时出现C4668错误
 
 		if(bUObjectHasFastPointerSupport)
         {

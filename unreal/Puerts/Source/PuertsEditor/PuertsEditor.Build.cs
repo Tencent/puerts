@@ -13,6 +13,7 @@ public class PuertsEditor : ModuleRules
 {
     public PuertsEditor(ReadOnlyTargetRules Target) : base(Target) 
     {
+        PCHUsage = PCHUsageMode.NoPCHs;
         PublicDependencyModuleNames.AddRange(
             new string[]
             {

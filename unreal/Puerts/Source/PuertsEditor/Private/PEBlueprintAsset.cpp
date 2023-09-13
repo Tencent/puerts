@@ -40,6 +40,8 @@
 #include "Engine/SimpleConstructionScript.h"
 #include "Engine/SCS_Node.h"
 #include "Kismet2/ComponentEditorUtils.h"
+#include "Editor.h"
+#include "HAL/PlatformFileManager.h"
 
 #define LOCTEXT_NAMESPACE "UPEBlueprintAsset"
 

@@ -285,7 +285,13 @@ void UJSGeneratedClass::Restore(UClass* Class)
     OrphanedClass->ClassGeneratedBy = Class->ClassGeneratedBy;
 #endif
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+    UField** PP = nullptr;
+    UField* ChildrenPtr = Class->Children.Get();
+    PP = &ChildrenPtr;
+#else
     auto PP = &Class->Children;
+#endif
     while (*PP)
     {
         if (auto JGF = Cast<UJSGeneratedFunction>(*PP))    // to delete
@@ -312,7 +318,12 @@ void UJSGeneratedClass::Restore(UClass* Class)
             PP = &(*PP)->Next;
         }
     }
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+    ChildrenPtr = Class->Children.Get();
+    PP = &ChildrenPtr;
+#else
     PP = &Class->Children;
+#endif
     while (*PP)
     {
         if (auto Function = Cast<UFunction>(*PP))
