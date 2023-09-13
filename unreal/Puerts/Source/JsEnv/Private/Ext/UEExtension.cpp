@@ -12,9 +12,9 @@
 #include "V8Utils.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
 #include "Kismet/DataTableFunctionLibrary.h"
-#endif
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
+#endif
 
 UsingUClass(UObject);
 UsingUClass(UClass);
