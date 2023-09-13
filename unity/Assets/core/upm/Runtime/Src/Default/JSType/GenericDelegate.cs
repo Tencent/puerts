@@ -342,6 +342,7 @@ namespace Puerts
 
         ~GenericDelegate() 
         {
+            if (jsEnv == null) return;
 #if THREAD_SAFE
             lock(jsEnv) {
 #endif

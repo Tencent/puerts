@@ -127,11 +127,13 @@ struct ${valueTypeInfo.Signature}
     
     checkJSArg(signature, index) {
         let ret = ''
+        let TypeInfoIndex = index;
         if (signature[0] == "D") {
             ret += `if (length > ${index} && `
             signature = signature.substring(1);
         } else if (signature[0] == 'V') {
-            ret += `if (!info[${index}]->IsNullOrUndefined() && `
+            TypeInfoIndex = index + "_V"
+            ret += `auto TIp${index}_V = GetArrayElementTypeId(TIp${index}); if (!info[${index}]->IsNullOrUndefined() && `
             signature = signature.substring(1)
         } else {
             ret += `if (`
@@ -148,11 +150,11 @@ struct ${valueTypeInfo.Signature}
         } else if (signature == 's') {
             ret += `!info[${index}]->IsString() && !info[${index}]->IsNullOrUndefined()) return false;`
         } else if (signature == 'o') {
-            ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || (info[${index}]->IsFunction() ? !IsDelegate(TIp${index}) : !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>()))))) return false;`
+            ret += `!info[${index}]->IsNullOrUndefined() && (!info[${index}]->IsObject() || (info[${index}]->IsFunction() ? !IsDelegate(TIp${TypeInfoIndex}) : !IsAssignableFrom(TIp${TypeInfoIndex}, GetTypeId(info[${index}].As<v8::Object>()))))) return false;`
         } else if (signature == 'O') {
             return '';
         } else if ((signature.startsWith(sigs.StructPrefix) || signature.startsWith(sigs.NullableStructPrefix)) && signature.endsWith('_')) {
-            ret += `(!info[${index}]->IsObject() || !IsAssignableFrom(TIp${index}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
+            ret += `(!info[${index}]->IsObject() || !IsAssignableFrom(TIp${TypeInfoIndex}, GetTypeId(info[${index}].As<v8::Object>())))) return false;`
         } else { // TODO: 适配所有类型，根据!!true去查找没处理的
             ret += '!!true) return false;';
         }

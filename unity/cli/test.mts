@@ -146,17 +146,15 @@ export async function unityTest(cwd: string, unityPath: string) {
         rm("-rf", `${cwd}/Assets/Gen.meta`);
         console.log("[Puer] Building puerts v1");
         await runPuertsMake(join(cwd, '../../native_src'), {
-            backend: 'v8_9.4',
+            backend: 'nodejs_16',
             platform: 'win',
             config: 'Debug',
             arch: 'x64'
         });
 
         console.log("[Puer] Generating wrapper");
-        writeFileSync(`${cwd}/Assets/csc.rsp`, '-define:PUERTS_CPP_OUTPUT_TO_NATIVE_SRC_UPM;')
         execUnityEditor(`-executeMethod TestBuilder.GenV1`);
         rm("-rf", `${cwd}/Library/ScriptAssemblies`);
-        cp(`${cwd}/Assets/Gen/unityenv_for_puerts.h`, `${cwd}/../../Assets/core/upm/Plugins/puerts_il2cpp/`);
         
         console.log("[Puer] Building testplayer for v1");
         mkdir("-p", `${cwd}/build/v1`)
@@ -174,7 +172,7 @@ export async function unityTest(cwd: string, unityPath: string) {
         rm("-rf", `${cwd}/Library/ScriptAssemblies`);
     
         await runPuertsMake(join(cwd, '../../native_src_il2cpp'), {
-            backend: 'v8_9.4',
+            backend: 'nodejs_16',
             platform: 'win',
             config: 'Debug',
             arch: 'x64'

@@ -71,7 +71,7 @@ public class Tester : MonoBehaviour {
                     if (IsTesting && ca.GetType() == typeof(TestAttribute)) 
                     {
                         // if (method.Name != "DateTimeTest") continue;
-                        // if (!method.DeclaringType.Name.Contains("TimerTest")) continue;
+                        // if (!method.DeclaringType.Name.Contains("AccessControlTest")) continue;
                         UnityEngine.Debug.Log($"Started: TestCase {method.Name}\n");
                         try 
                         {

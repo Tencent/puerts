@@ -289,7 +289,11 @@ void* GetValueTypeFieldPtr(void *obj, FieldInfo *field, size_t offset)
 
         void* threadStaticData = NULL;
         if (field->offset == THREAD_STATIC_FIELD_OFFSET)
+#ifdef UNITY_2021_1_OR_NEWER
+            threadStaticData = Thread::GetThreadStaticDataForThread(field->parent->thread_static_fields_offset, il2cpp::vm::Thread::CurrentInternal());
+#else
             threadStaticData = Thread::GetThreadStaticDataForThread(field->parent->thread_static_fields_offset, il2cpp::vm::Thread::Current());
+#endif
         
         if (field->offset == THREAD_STATIC_FIELD_OFFSET)
         {
