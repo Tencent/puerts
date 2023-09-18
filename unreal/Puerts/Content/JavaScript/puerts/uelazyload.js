@@ -72,6 +72,7 @@ var global = global || (function () { return this; }());
     cache["Game"] = createNamespaceOrClass("Game", undefined, TNAMESPACE);
     
     puerts.registerBuildinModule('ue', UE);
+    global.UE = UE;
     
     let CPP = new Proxy(cache, {
         get: function(classWrapers, name) {
@@ -83,6 +84,7 @@ var global = global || (function () { return this; }());
     });
     
     puerts.registerBuildinModule('cpp', CPP);
+    global.CPP = CPP;
     
     function ref(x) {
         return [x];
