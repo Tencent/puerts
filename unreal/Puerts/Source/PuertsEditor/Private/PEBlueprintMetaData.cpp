@@ -338,7 +338,11 @@ void UPEClassMetaData::SyncClassToBlueprint(UClass* InClass, UBlueprint* InBluep
 
 void UPEClassMetaData::SetAndValidateWithinClass(UClass* InClass)
 {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 2
+    UClass* ExpectedWithinClass = InClass->GetSuperClass() ? InClass->GetSuperClass()->ClassWithin.Get() : UObject::StaticClass();
+#else
     UClass* ExpectedWithinClass = InClass->GetSuperClass() ? InClass->GetSuperClass()->ClassWithin : UObject::StaticClass();
+#endif
     if (ClassWithIn.IsEmpty() == false)
     {
         UClass* WithinClass = puerts::FindAnyType<UClass>(ClassWithIn);
