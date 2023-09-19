@@ -253,7 +253,7 @@ private:
     bool LoadFile(const FString& RequiringDir, const FString& ModuleName, FString& OutPath, FString& OutDebugPath,
         TArray<uint8>& Data, FString& ErrInfo);
 
-    void ExecuteModule(const FString& ModuleName, std::function<FString(const FString&, const FString&)> Preprocessor = nullptr);
+    void ExecuteModule(const FString& ModuleName);
 
     void EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
