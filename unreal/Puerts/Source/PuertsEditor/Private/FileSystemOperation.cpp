@@ -3,7 +3,12 @@
 #include "FileSystemOperation.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "Misc/EngineVersionComparison.h"
+#if UE_VERSION_OLDER_THAN(5, 0, 0)
 #include "HAL/PlatformFilemanager.h"
+#else
+#include "HAL/PlatformFileManager.h"
+#endif
 #include "PuertsModule.h"
 #include "Misc/SecureHash.h"
 #ifdef PUERTS_WITH_SOURCE_CONTROL
