@@ -27,8 +27,9 @@ bool UPEDirectoryWatcher::Watch(const FString& InDirectory)
                 for (auto Change : FileChanges)
                 {
                     //因为要算md5，所有过滤掉不关心的
-                    if (!Change.Filename.EndsWith(TEXT(".ts")) && !Change.Filename.EndsWith(TEXT(".tsx")) &&
-                        !Change.Filename.EndsWith(TEXT(".json")) && !Change.Filename.EndsWith(TEXT(".js")))
+                    if (!Change.Filename.EndsWith(TEXT(".ts")) && !Change.Filename.EndsWith(TEXT(".mts")) &&
+                        !Change.Filename.EndsWith(TEXT(".tsx")) && !Change.Filename.EndsWith(TEXT(".json")) &&
+                        !Change.Filename.EndsWith(TEXT(".js")))
                     {
                         continue;
                     }

@@ -523,12 +523,12 @@ function watch(configFilePath) {
                                 console.log(`write ${output.name} ...`);
                                 UE.FileSystemOperation.WriteFile(output.name, output.text);
                             }
-                            if (output.name.endsWith(".js")) {
+                            if (output.name.endsWith(".js") || output.name.endsWith(".mjs")) {
                                 jsSource = output.text;
                                 if (options.outDir && output.name.startsWith(options.outDir)) {
                                     moduleFileName = output.name.substr(options.outDir.length + 1);
                                     modulePath = tsi.getDirectoryPath(moduleFileName);
-                                    moduleFileName = tsi.removeExtension(moduleFileName, ".js");
+                                    moduleFileName = tsi.removeExtension(moduleFileName, output.name.endsWith(".js") ? ".js" : ".mjs");
                                 }
                             }
                         });

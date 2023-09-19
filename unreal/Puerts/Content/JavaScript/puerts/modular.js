@@ -148,7 +148,10 @@ var global = global || (function () { return this; }());
                         m.exports = packageConfigure;
                     }
                 } else {
-                    executeModule(fullPath, script, debugPath, sid, isESM);
+                    let r = executeModule(fullPath, script, debugPath, sid, isESM);
+                    if (isESM) {
+                        m.exports = r;
+                    }
                 }
                 localModuleCache[moduleName] = m;
                 moduleCache[key] = m;

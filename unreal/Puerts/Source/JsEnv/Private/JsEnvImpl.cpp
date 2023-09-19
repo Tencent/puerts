@@ -3702,10 +3702,26 @@ void FJsEnvImpl::EvalScript(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
         if (RootModule->InstantiateModule(Context, ResolveModuleCallback).FromMaybe(false))
         {
-            auto Result = RootModule->Evaluate(Context);
-            if (!Result.IsEmpty())
+            auto MaybeResult = RootModule->Evaluate(Context);
+            v8::Local<v8::Value> Result;
+            if (MaybeResult.ToLocal(&Result))
             {
-                Info.GetReturnValue().Set(Result.ToLocalChecked());
+                if (Result->IsPromise())
+                {
+                    v8::Local<v8::Promise> ResultPromise(Result.As<v8::Promise>());
+                    while (ResultPromise->State() == v8::Promise::kPending)
+                    {
+                        Isolate->PerformMicrotaskCheckpoint();
+                    }
+
+                    if (ResultPromise->State() == v8::Promise::kRejected)
+                    {
+                        ResultPromise->MarkAsHandled();
+                        Isolate->ThrowException(ResultPromise->Result());
+                        return;
+                    }
+                }
+                Info.GetReturnValue().Set(RootModule->GetModuleNamespace());
             }
         }
 

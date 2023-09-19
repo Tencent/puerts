@@ -23,7 +23,7 @@ class MetaSpecifier {
     /**
      * apply the specifier to the meta data, return if the specifier is consumed
      *      null indicate the specifier is invalid in call context
-     *      this function should called when parse the meta data defined via umeta
+     *      this function should be called when parse the meta data defined via umeta
      * @param metaData
      */
     ApplyInMeta(metaData) {
@@ -37,7 +37,7 @@ class MetaSpecifier {
     }
     /**
      * apply the specifier to the meta data, return if the specifier is consumed
-     *      this function should called when parse the meta data defined via prefix e.g uclass/ufunction
+     *      this function should be called when parse the meta data defined via prefix e.g uclass/ufunction
      * @param metaData
      */
     ApplyInIdentity(metaData) {
