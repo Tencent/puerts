@@ -112,6 +112,12 @@ struct API
         return pesapi_get_holder(info);
     }
 
+    // use where GetSelfFromData is true
+    inline static void* GetFunctionData(pesapi_callback_info info)
+    {
+        return pesapi_get_userdata(info);
+    }
+
     inline static void ThrowException(pesapi_callback_info info, const char* msg)
     {
         pesapi_throw_by_string(info, msg);

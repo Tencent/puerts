@@ -98,6 +98,12 @@ struct API
         return info.Holder();
     }
 
+    // use where GetSelfFromData is true
+    V8_INLINE static void* GetFunctionData(const v8::FunctionCallbackInfo<v8::Value>& info)
+    {
+        return v8::Local<v8::External>::Cast(info.Data())->Value();
+    }
+
     V8_INLINE static void ThrowException(const v8::FunctionCallbackInfo<v8::Value>& info, const char* msg)
     {
         v8::Isolate* isolate = info.GetIsolate();
