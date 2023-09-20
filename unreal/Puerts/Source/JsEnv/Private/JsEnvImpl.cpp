@@ -2431,10 +2431,18 @@ FScriptDelegate FJsEnvImpl::NewDelegate(v8::Isolate* Isolate, v8::Local<v8::Cont
         {
             DelegateProxy = Cast<UDynamicDelegateProxy>(
                 static_cast<UObject*>(v8::Local<v8::External>::Cast(MaybeProxy.ToLocalChecked())->Value()));
+            if (DelegateProxy->SignatureFunction.Get() != SignatureFunction)
+            {
+                Logger->Error(TEXT("aleady bind to another delegate pleace release first!"));
+                DelegateProxy = nullptr;
+            }
         }
     }
     FScriptDelegate Delegate;
-    Delegate.BindUFunction(DelegateProxy, NAME_Fire);
+    if (DelegateProxy)
+    {
+        Delegate.BindUFunction(DelegateProxy, NAME_Fire);
+    }
     return Delegate;
 }
 
