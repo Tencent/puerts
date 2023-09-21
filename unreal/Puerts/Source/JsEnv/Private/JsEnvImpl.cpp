@@ -2675,7 +2675,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
     }
 
     auto Result = ArrayTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(
+    BindContainer(
         Ptr, Result, PassByPointer ? FScriptArrayWrapper::OnGarbageCollected : FScriptArrayWrapper::OnGarbageCollectedWithFree);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property), 1);
     return Result;
@@ -2693,7 +2693,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
     }
 
     auto Result = SetTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(
+    BindContainer(
         Ptr, Result, PassByPointer ? FScriptSetWrapper::OnGarbageCollected : FScriptSetWrapper::OnGarbageCollectedWithFree);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property), 1);
     return Result;
@@ -2711,7 +2711,7 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
     }
 
     auto Result = MapTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    FV8Utils::IsolateData<IObjectMapper>(Isolate)->BindContainer(
+    BindContainer(
         Ptr, Result, PassByPointer ? FScriptMapWrapper::OnGarbageCollected : FScriptMapWrapper::OnGarbageCollectedWithFree);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(KeyProperty), 1);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(ValueProperty), 2);
