@@ -163,8 +163,15 @@ public:
     virtual void Merge(
         v8::Isolate* Isolate, v8::Local<v8::Context> Context, v8::Local<v8::Object> Src, UStruct* DesType, void* Des) override;
 
-    virtual void BindContainer(
-        void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data)) override;
+    enum ContainerType
+    {
+        EArray,
+        EMap,
+        ESet
+    };
+
+    void BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data),
+        bool PassByPointer, ContainerType Type);
 
     virtual void UnBindContainer(void* Ptr) override;
 
@@ -545,7 +552,14 @@ private:
 
     TMap<void*, FObjectCacheNode> StructCache;
 
-    TMap<void*, v8::UniquePersistent<v8::Value>> ContainerCache;
+    struct ContainerCacheItem
+    {
+        v8::UniquePersistent<v8::Value> Container;
+        bool NeedRelease;
+        ContainerType Type;
+    };
+
+    TMap<void*, ContainerCacheItem> ContainerCache;
 
     FCppObjectMapper CppObjectMapper;
 

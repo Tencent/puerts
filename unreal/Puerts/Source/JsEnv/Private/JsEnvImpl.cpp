@@ -718,6 +718,24 @@ FJsEnvImpl::~FJsEnvImpl()
 
         StructCache.Empty();
 
+        for (auto& KV : ContainerCache)
+        {
+            if (KV.Value.NeedRelease)
+            {
+                switch (KV.Value.Type)
+                {
+                    case EArray:
+                        delete static_cast<FScriptArrayEx*>(KV.Key);
+                        break;
+                    case EMap:
+                        delete static_cast<FScriptMapEx*>(KV.Key);
+                        break;
+                    case ESet:
+                        delete static_cast<FScriptSetEx*>(KV.Key);
+                        break;
+                }
+            }
+        }
         ContainerCache.Empty();
 
         for (auto Iter = DelegateMap.begin(); Iter != DelegateMap.end(); Iter++)
@@ -2671,12 +2689,13 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
     auto PersistentValuePtr = ContainerCache.Find(Ptr);
     if (PersistentValuePtr)
     {
-        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+        return PersistentValuePtr->Container.Get(Isolate);
     }
 
     auto Result = ArrayTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    BindContainer(
-        Ptr, Result, PassByPointer ? FScriptArrayWrapper::OnGarbageCollected : FScriptArrayWrapper::OnGarbageCollectedWithFree);
+    BindContainer(Ptr, Result,
+        PassByPointer ? FScriptArrayWrapper::OnGarbageCollected : FScriptArrayWrapper::OnGarbageCollectedWithFree, PassByPointer,
+        EArray);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property), 1);
     return Result;
 }
@@ -2689,12 +2708,12 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(
     auto PersistentValuePtr = ContainerCache.Find(Ptr);
     if (PersistentValuePtr)
     {
-        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+        return PersistentValuePtr->Container.Get(Isolate);
     }
 
     auto Result = SetTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    BindContainer(
-        Ptr, Result, PassByPointer ? FScriptSetWrapper::OnGarbageCollected : FScriptSetWrapper::OnGarbageCollectedWithFree);
+    BindContainer(Ptr, Result,
+        PassByPointer ? FScriptSetWrapper::OnGarbageCollected : FScriptSetWrapper::OnGarbageCollectedWithFree, PassByPointer, ESet);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(Property), 1);
     return Result;
 }
@@ -2707,12 +2726,12 @@ v8::Local<v8::Value> FJsEnvImpl::FindOrAddContainer(v8::Isolate* Isolate, v8::Lo
     auto PersistentValuePtr = ContainerCache.Find(Ptr);
     if (PersistentValuePtr)
     {
-        return v8::Local<v8::Value>::New(Isolate, *PersistentValuePtr);
+        return PersistentValuePtr->Container.Get(Isolate);
     }
 
     auto Result = MapTemplate.Get(Isolate)->InstanceTemplate()->NewInstance(Context).ToLocalChecked();
-    BindContainer(
-        Ptr, Result, PassByPointer ? FScriptMapWrapper::OnGarbageCollected : FScriptMapWrapper::OnGarbageCollectedWithFree);
+    BindContainer(Ptr, Result,
+        PassByPointer ? FScriptMapWrapper::OnGarbageCollected : FScriptMapWrapper::OnGarbageCollectedWithFree, PassByPointer, EMap);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(KeyProperty), 1);
     DataTransfer::SetPointer(Isolate, Result, GetContainerPropertyTranslator(ValueProperty), 2);
     return Result;
@@ -2810,11 +2829,13 @@ void FJsEnvImpl::UnBindCppObject(JSClassDefinition* ClassDefinition, void* Ptr)
     CppObjectMapper.UnBindCppObject(ClassDefinition, Ptr);
 }
 
-void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data))
+void FJsEnvImpl::BindContainer(void* Ptr, v8::Local<v8::Object> JSObject, void (*Callback)(const v8::WeakCallbackInfo<void>& data),
+    bool PassByPointer, ContainerType Type)
 {
     DataTransfer::SetPointer(MainIsolate, JSObject, Ptr, 0);
-    ContainerCache.Emplace(Ptr, v8::UniquePersistent<v8::Value>(MainIsolate, JSObject));
-    ContainerCache[Ptr].SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
+    ContainerCacheItem& Val =
+        ContainerCache.Add(Ptr, {v8::UniquePersistent<v8::Value>(MainIsolate, JSObject), !PassByPointer, Type});
+    Val.Container.SetWeak<void>(nullptr, Callback, v8::WeakCallbackType::kInternalFields);
 }
 
 void FJsEnvImpl::UnBindContainer(void* Ptr)
