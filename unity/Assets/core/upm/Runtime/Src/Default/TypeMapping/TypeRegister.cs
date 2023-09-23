@@ -55,9 +55,9 @@ namespace Puerts
                 method = method.MakeGenericMethod(constraintedArgumentTypes);
             }
 
-            if (method.IsSpecialName && method.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
+            if (method.IsSpecialName && methodKey.Name.StartsWith("get_") && method.GetParameters().Length != 1) // getter of property
             {
-                string propName = method.Name.Substring(4);
+                string propName = methodKey.Name.Substring(4);
                 if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingProperty.Contains(propName))
                 {
                     PropertyMethods properyMethods;
@@ -69,9 +69,9 @@ namespace Puerts
                     properyMethods.Getter = method;
                 }
             }
-            else if (method.IsSpecialName && method.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
+            else if (method.IsSpecialName && methodKey.Name.StartsWith("set_") && method.GetParameters().Length != 2) // setter of property
             {
-                string propName = method.Name.Substring(4);
+                string propName = methodKey.Name.Substring(4);
                 if (isNoRegisterInfoAndAllowSlowBinding || needFillSlowBindingProperty.Contains(propName))
                 {
                     PropertyMethods properyMethods;
@@ -529,7 +529,13 @@ namespace Puerts
                 {
                     MethodInfo method = methods[i];
 
-                    MethodKey methodKey = new MethodKey { Name = method.Name, IsStatic = method.IsStatic };
+                    // If declared using the following syntax, the method name s a long name
+                    // syntax:
+                    //      StyleEnum<Align> IStyle.alignContent {get;set;}
+                    // method.Name:
+                    //      "UnityEngine.UIElements.IStyle.get_alignContent"
+                    var shortName = method.Name.Split('.').Last();
+                    MethodKey methodKey = new MethodKey { Name = shortName, IsStatic = method.IsStatic };
 
                     if (!method.IsConstructor)
                     {
