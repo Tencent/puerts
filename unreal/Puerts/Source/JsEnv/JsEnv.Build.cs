@@ -73,7 +73,7 @@ public class JsEnv : ModuleRules
             }
         }
 
-        bool bForceAllUFunctionInCPP = true;
+        bool bForceAllUFunctionInCPP = false;
         if (bForceAllUFunctionInCPP)
         {
             PublicDefinitions.Add("PUERTS_FORCE_CPP_UFUNCTION=1");
