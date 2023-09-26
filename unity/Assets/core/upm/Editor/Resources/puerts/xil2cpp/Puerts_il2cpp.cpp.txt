@@ -1440,10 +1440,6 @@ handle_underlying:
     auto returnType = Class::FromIl2CppType(method->return_type);
     if (returnType != il2cpp_defaults.void_class)
     {
-        if (Class::IsNullable(returnType))
-        {
-            returnType = Class::GetNullableArgument(returnType);
-        }
         pesapi_add_return(info, CSRefToJsValue(env, returnType, ret));
     }
     
@@ -1501,23 +1497,27 @@ static void ReflectionGetFieldWrapper(pesapi_callback_info info, FieldInfo* fiel
         }
 
         Il2CppObject* obj = (Il2CppObject*) storage - 1;
-        if (Class::IsNullable(fieldType))
+        pesapi_value jsVal = TryTranslatePrimitiveWithClass(env, obj, expectType);
+    
+        if (!jsVal) 
         {
-#ifndef UNITY_2021_1_OR_NEWER
-            uint32_t valueSize = expectType->instance_size - sizeof(Il2CppObject);
-            bool* hasValue = (bool*)storage + valueSize;
-#else
-            bool* hasValue = (bool*)storage;
-            obj = (Il2CppObject*)((bool*)obj + 4);
-#endif
-            if (!(*hasValue))
+            if (isFieldPtr)
             {
-                pesapi_add_return(info, pesapi_create_null(env));
-                return;
+                jsVal = pesapi_create_native_object(env, expectType, storage, false);
+            }
+            else
+            {
+                auto valueSize = expectType->instance_size - sizeof(Il2CppObject);
+                auto buff = new uint8_t[valueSize];
+                memcpy(buff, storage, valueSize);
+                jsVal = pesapi_create_native_object(env, expectType, buff, true);
             }
         }
-
-        pesapi_add_return(info, CSRefToJsValue(env, fieldType, obj));
+        
+        if (jsVal)
+        {
+            pesapi_add_return(info, jsVal);
+        }
     }
     else
     {

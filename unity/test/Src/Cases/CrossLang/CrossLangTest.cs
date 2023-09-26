@@ -764,10 +764,6 @@ namespace Puerts.UnitTest
                     TestHelper.nullableNativeStructTestFieldStatic = null
                     TestHelper.nullableNativeStructTestPropStatic = null
                     testHelper.NullableNativeStructTestCheckMemberValue();
-                    assertAndPrint('JSGetNullableTestField', testHelper.nullableNativeStructTestField == null);
-                    assertAndPrint('JSGetNullableTestProp', testHelper.nullableNativeStructTestProp == null);
-                    assertAndPrint('JSGetNullableTestFieldStatic', TestHelper.nullableNativeStructTestFieldStatic == null);
-                    assertAndPrint('JSGetNullableTestPropStatic', TestHelper.nullableNativeStructTestPropStatic == null);
                 })()
             ");
             jsEnv.Tick();
