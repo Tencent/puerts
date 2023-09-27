@@ -350,7 +350,7 @@ namespace Puerts.Editor
                             if (!type.IsInterface && result.IsGenericTypeDefinition && interfaces[i].IsGenericType &&
                                 typeof(IEnumerable<>) == interfaces[i].GetGenericTypeDefinition())
                             {
-                                result.IteratorReturnName = Utils.GetTsTypeName(interfaces[i].GenericTypeArguments[0]);
+                                result.IteratorReturnName = Utils.GetTsTypeName(interfaces[i].GetGenericArguments()[0]);
                             }
                             if (interfaces[i].IsNested)
                             {
