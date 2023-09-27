@@ -151,7 +151,7 @@ void FMulticastDelegateWrapper::Add(const v8::FunctionCallbackInfo<v8::Value>& I
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
                 if (Property->IsA<MulticastSparseDelegatePropertyMacro>())
                 {
-                    Property->AddDelegate(MoveTemp(Delegate), Object, DelegatePtr);
+                    Property->AddDelegate(MoveTemp(Delegate), nullptr, DelegatePtr);
                 }
                 else
 #endif
