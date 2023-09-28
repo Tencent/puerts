@@ -681,8 +681,10 @@ namespace Puerts.Editor
                         }
                     }
 
-                    if (refTypes.Contains(rawType) || type.IsPointer || rawType.IsPointer) return;
-                    if (!rawType.IsGenericParameter)
+                    // if type == rawType, there is a chance that the type is already added to refTypes when it was a rawType.
+                    // so, when refTypes contains rawType but type == rawType, most of the remain logic is still needed to run. 
+                    if ((refTypes.Contains(rawType) && type != rawType) || type.IsPointer || rawType.IsPointer) return;
+                    if (!rawType.IsGenericParameter && !refTypes.Contains(rawType))
                     {
                         refTypes.Add(rawType);
                     }
