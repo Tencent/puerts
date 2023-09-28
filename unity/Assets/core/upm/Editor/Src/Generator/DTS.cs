@@ -685,8 +685,14 @@ namespace Puerts.Editor
                     if (!rawType.IsGenericParameter)
                     {
                         refTypes.Add(rawType);
+                        AddDependentRefType(workTypes, refTypes, rawType);
                     }
 
+                    AddDependentRefType(workTypes, refTypes, type);
+                }
+
+                private static void AddDependentRefType(HashSet<Type> workTypes, HashSet<Type> refTypes, Type type)
+                {
                     if (Utils.IsDelegate(type) && type != typeof(Delegate) && type != typeof(MulticastDelegate))
                     {
                         MethodInfo delegateMethod = type.GetMethod("Invoke");
@@ -697,13 +703,9 @@ namespace Puerts.Editor
                         }
                     }
 
-                    Type[] interfaces = type.GetInterfaces();
-                    if (interfaces != null && interfaces.Length > 0)
+                    foreach (var i in type.GetInterfaces())
                     {
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            AddRefType(workTypes, refTypes, interfaces[i]);
-                        }
+                        AddRefType(workTypes, refTypes, i);
                     }
                 }
 
