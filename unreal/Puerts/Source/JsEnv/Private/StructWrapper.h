@@ -113,6 +113,11 @@ public:
 
     static void Free(TWeakObjectPtr<UStruct> InStruct, FinalizeFunc InExternalFinalize, void* Ptr);
 
+    void Free(void* Ptr)
+    {
+        Free(Struct, ExternalFinalize, Ptr);
+    }
+
     static void New(const v8::FunctionCallbackInfo<v8::Value>& Info);
 
     void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);

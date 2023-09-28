@@ -17,18 +17,19 @@ namespace puerts
 class FObjectCacheNode
 {
 public:
-    V8_INLINE FObjectCacheNode(const void* TypeId_) : TypeId(TypeId_), Next(nullptr)
+    V8_INLINE FObjectCacheNode(const void* TypeId_) : TypeId(TypeId_), UserData(nullptr), Next(nullptr)
     {
     }
 
-    V8_INLINE FObjectCacheNode(const void* TypeId_, FObjectCacheNode* Next_) : TypeId(TypeId_), Next(Next_)
+    V8_INLINE FObjectCacheNode(const void* TypeId_, FObjectCacheNode* Next_) : TypeId(TypeId_), UserData(nullptr), Next(Next_)
     {
     }
 
     V8_INLINE FObjectCacheNode(FObjectCacheNode&& other) noexcept
-        : TypeId(other.TypeId), Next(other.Next), Value(std::move(other.Value))
+        : TypeId(other.TypeId), UserData(other.UserData), Next(other.Next), Value(std::move(other.Value))
     {
         other.TypeId = nullptr;
+        other.UserData = nullptr;
         other.Next = nullptr;
     }
 
@@ -103,6 +104,8 @@ public:
     }
 
     const void* TypeId;
+
+    const void* UserData;
 
     FObjectCacheNode* Next;
 

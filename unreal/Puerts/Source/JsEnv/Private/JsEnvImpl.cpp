@@ -716,7 +716,15 @@ FJsEnvImpl::~FJsEnvImpl()
 
         ObjectMap.Empty();
 
-        StructCache.Empty();
+        for (auto& KV : StructCache)
+        {
+            FObjectCacheNode* PNode = &KV.Value;
+            while (PNode)
+            {
+                PNode->Value.Reset();
+                PNode = PNode->Next;
+            }
+        }
 
         for (auto& KV : ContainerCache)
         {
@@ -870,12 +878,20 @@ FJsEnvImpl::~FJsEnvImpl()
     GUObjectArray.RemoveUObjectDeleteListener(static_cast<FUObjectArray::FUObjectDeleteListener*>(this));
 
     // quickjs will call UnBind in vm dispose, so cleanup move to here
-#if !WITH_BACKING_STORE_AUTO_FREE && !defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    for (auto& KV : ScriptStructFinalizeInfoMap)
+    for (auto& KV : StructCache)
     {
-        FScriptStructWrapper::Free(KV.Value.Struct, KV.Value.Finalize, KV.Key);
+        FObjectCacheNode* PNode = &KV.Value;
+        while (PNode)
+        {
+            if (PNode->UserData)
+            {
+                FScriptStructWrapper* ScriptStructWrapper = (FScriptStructWrapper*) (PNode->UserData);
+                ScriptStructWrapper->Free(KV.Key);
+            }
+            PNode = PNode->Next;
+        }
     }
-#endif
+    StructCache.Empty();
 }
 
 void FJsEnvImpl::InitExtensionMethodsMap()
@@ -2746,30 +2762,6 @@ void FJsEnvImpl::BindStruct(
 
     if (!PassByPointer)
     {
-#if defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-        auto MemoryHolder = v8::ArrayBuffer_New_Without_Stl(
-            MainIsolate, Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
-            [](void* Data, size_t Length, void* DeleterData)
-            {
-                // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
-                FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-                FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
-            },
-            ScriptStructWrapper);
-        __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
-#elif WITH_BACKING_STORE_AUTO_FREE
-        auto Backing = v8::ArrayBuffer::NewBackingStore(
-            Ptr, ScriptStructWrapper->Struct->GetStructureSize(),
-            [](void* Data, size_t Length, void* DeleterData)
-            {
-                // TFScriptStructWrapper存放在TypeReflectionMap中，Isolate先Dispose后，对象才跟着销毁
-                FScriptStructWrapper* StructInfo = static_cast<FScriptStructWrapper*>(DeleterData);
-                FScriptStructWrapper::Free(StructInfo->Struct, StructInfo->ExternalFinalize, Data);
-            },
-            ScriptStructWrapper);
-        auto MemoryHolder = v8::ArrayBuffer::New(MainIsolate, std::move(Backing));
-        __USE(JSObject->Set(MainIsolate->GetCurrentContext(), 0, MemoryHolder));
-#else
         auto CacheNodePtr = StructCache.Find(Ptr);
         if (CacheNodePtr)
         {
@@ -2780,10 +2772,9 @@ void FJsEnvImpl::BindStruct(
             CacheNodePtr = &StructCache.Emplace(Ptr, FObjectCacheNode(ScriptStructWrapper->Struct.Get()));
         }
         CacheNodePtr->Value.Reset(MainIsolate, JSObject);
-        ScriptStructFinalizeInfoMap.Add(Ptr, {ScriptStructWrapper->Struct, ScriptStructWrapper->ExternalFinalize});
+        CacheNodePtr->UserData = ScriptStructWrapper;
         CacheNodePtr->Value.SetWeak<FScriptStructWrapper>(
             ScriptStructWrapper, FScriptStructWrapper::OnGarbageCollectedWithFree, v8::WeakCallbackType::kInternalFields);
-#endif
     }
     else
     {
@@ -2810,9 +2801,6 @@ void FJsEnvImpl::BindCppObject(
 
 void FJsEnvImpl::UnBindStruct(FScriptStructWrapper* ScriptStructWrapper, void* Ptr)
 {
-#if !WITH_BACKING_STORE_AUTO_FREE && !defined(HAS_ARRAYBUFFER_NEW_WITHOUT_STL)
-    ScriptStructFinalizeInfoMap.Remove(Ptr);
-#endif
     auto CacheNodePtr = StructCache.Find(Ptr);
     if (CacheNodePtr)
     {
