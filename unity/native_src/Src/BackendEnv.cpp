@@ -341,7 +341,6 @@ void puerts::BackendEnv::InitInject(v8::Isolate* Isolate, v8::Local<v8::Context>
 
 #if !WITH_QUICKJS
     Isolate->SetHostInitializeImportMetaObjectCallback(&puerts::esmodule::HostInitializeImportMetaObject);
-    Isolate->SetHostImportModuleDynamicallyCallback(&puerts::esmodule::DynamicImport);
 #endif
 
     Context->Global()->Set(Context, v8::String::NewFromUtf8(Isolate, "__tgjsSetPromiseRejectCallback").ToLocalChecked(), v8::FunctionTemplate::New(Isolate, &SetPromiseRejectCallback<puerts::BackendEnv>)->GetFunction(Context).ToLocalChecked()).Check();
@@ -480,51 +479,6 @@ static v8::MaybeLocal<v8::Value> CallRead(
 
     return maybeRet;
 }
-#if !WITH_QUICKJS
-v8::MaybeLocal<v8::Promise> puerts::esmodule::DynamicImport(
-    v8::Local<v8::Context> Context, 
-    v8::Local<v8::ScriptOrModule> Referrer,
-    v8::Local<v8::String> Specifier
-) 
-{
-    bool isFromCache;
-    v8::Local<v8::Value> ReferrerName = Referrer->GetResourceName();
-    
-    v8::TryCatch TryCatch(Context->GetIsolate());
-    v8::MaybeLocal<v8::Module> mod = puerts::esmodule::_ResolveModule(Context, Specifier, ReferrerName, isFromCache);
-
-    v8::Local<v8::Promise::Resolver> resolver;
-    if (!v8::Promise::Resolver::New(Context).ToLocal(&resolver)) return;
-    
-    if (mod.IsEmpty())
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-    v8::Local<v8::Module> moduleChecked = mod.ToLocalChecked();
-    if (!puerts::esmodule::LinkModule(Context, moduleChecked))
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-    v8::Maybe<bool> ret = moduleChecked->InstantiateModule(Context, puerts::esmodule::ResolveModule);
-    if (ret.IsNothing() || !ret.ToChecked())
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-    v8::MaybeLocal<v8::Value> evalRet = moduleChecked->Evaluate(Context);
-    if (evalRet.IsEmpty())
-    {
-        resolver->Reject(Context, TryCatch.Exception());
-        return resolver->GetPromise();
-    }
-
-    resolver->Resolve(Context, moduleChecked->GetModuleNamespace());
-
-    return resolver->GetPromise();
-}
-#endif
 
 void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& info) 
 {
@@ -633,12 +587,28 @@ void puerts::esmodule::ExecuteModule(const v8::FunctionCallbackInfo<v8::Value>& 
 v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
     v8::Local<v8::Context> Context,
     v8::Local<v8::String> Specifier,
-    v8::Local<v8::Value> ReferrerName,
+    v8::Local<v8::Module> Referrer,
     bool& isFromCache
 )
 {
     v8::Isolate* Isolate = Context->GetIsolate();
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
+
+    v8::Local<v8::Value> ReferrerName;
+#if V8_94_OR_NEWER
+    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
+#else 
+    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->GetIdentityHash()); 
+#endif
+    if (referIter != mm->ScriptIdToPathMap.end())
+    {
+        std::string referPath_std = referIter->second;
+        ReferrerName = v8::String::NewFromUtf8(Isolate, referPath_std.c_str()).ToLocalChecked();
+    }
+    else
+    {
+        ReferrerName = v8::String::NewFromUtf8(Isolate, "").ToLocalChecked();
+    }
 
     v8::MaybeLocal<v8::Value> maybeRet = CallResolver(Isolate, Context, Specifier, ReferrerName);
     if (maybeRet.IsEmpty()) 
@@ -698,41 +668,14 @@ v8::MaybeLocal<v8::Module> puerts::esmodule::_ResolveModule(
     return Module;
 }
 
-v8::Local<v8::Value> GetModuleName(
-    v8::Isolate* Isolate,
-    v8::Local<v8::Module> Referrer
-) 
-{
-    puerts::BackendEnv* mm = puerts::BackendEnv::Get(Isolate);
-    v8::Local<v8::Value> ReferrerName;
-#if V8_94_OR_NEWER
-    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->ScriptId()); 
-#else 
-    const auto referIter = mm->ScriptIdToPathMap.find(Referrer->GetIdentityHash()); 
-#endif
-    if (referIter != mm->ScriptIdToPathMap.end())
-    {
-        std::string referPath_std = referIter->second;
-        ReferrerName = v8::String::NewFromUtf8(Isolate, referPath_std.c_str()).ToLocalChecked();
-    }
-    else
-    {
-        ReferrerName = v8::String::NewFromUtf8(Isolate, "").ToLocalChecked();
-    }
-    return ReferrerName;
-}
-
 v8::MaybeLocal<v8::Module> puerts::esmodule::ResolveModule(
     v8::Local<v8::Context> Context,
     v8::Local<v8::String> Specifier,
     v8::Local<v8::Module> Referrer
 )
 {
-    v8::Isolate* Isolate = Context->GetIsolate();
     bool isFromCache = false;
-    v8::Local<v8::Value> ReferrerName = GetModuleName(Isolate, Referrer);
-
-    return _ResolveModule(Context, Specifier, ReferrerName, isFromCache);
+    return _ResolveModule(Context, Specifier, Referrer, isFromCache);
 }
 
 bool puerts::esmodule::LinkModule(
@@ -747,7 +690,7 @@ bool puerts::esmodule::LinkModule(
         v8::Local<v8::String> Specifier_v8 = RefModule->GetModuleRequest(i);
 
         bool isFromCache = false;
-        v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, GetModuleName(Isolate, RefModule), isFromCache);
+        v8::MaybeLocal<v8::Module> MaybeModule = _ResolveModule(Context, Specifier_v8, RefModule, isFromCache);
         if (MaybeModule.IsEmpty())
         {
             return false;
@@ -767,7 +710,7 @@ bool puerts::esmodule::LinkModule(
 void puerts::esmodule::HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta)
 {
     v8::Isolate* Isolate = Context->GetIsolate();
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
 
 #if V8_94_OR_NEWER
     auto iter = mm->ScriptIdToPathMap.find(Module->ScriptId());
@@ -791,7 +734,7 @@ char* puerts::esmodule::js_module_resolver(
 {
     JSRuntime *rt = JS_GetRuntime(ctx);
     v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
     v8::Local<v8::Value> Specifier = v8::String::NewFromUtf8(Isolate, name).ToLocalChecked();
@@ -828,7 +771,7 @@ JSModuleDef* puerts::esmodule::js_module_loader(
 {
     JSRuntime *rt = JS_GetRuntime(ctx);
     v8::Isolate* Isolate = (v8::Isolate*)JS_GetRuntimeOpaque(rt);
-    BackendEnv* mm = BackendEnv::Get(Isolate);
+    BackendEnv* mm = (BackendEnv*)Isolate->GetData(1);
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     
     std::string name_std(name, strlen(name));

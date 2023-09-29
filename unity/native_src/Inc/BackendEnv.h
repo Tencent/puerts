@@ -140,15 +140,13 @@ namespace puerts
         v8::MaybeLocal<v8::Module> _ResolveModule(
             v8::Local<v8::Context> Context,
             v8::Local<v8::String> Specifier,
-            v8::Local<v8::Value> Referrer,
+            v8::Local<v8::Module> Referrer,
             bool& isFromCache
         );
 
         v8::MaybeLocal<v8::Module> ResolveModule( v8::Local<v8::Context> Context, v8::Local<v8::String> Specifier, v8::Local<v8::Module> Referrer);
 
         bool LinkModule(v8::Local<v8::Context> Context, v8::Local<v8::Module> RefModule);
-
-        v8::MaybeLocal<v8::Promise> DynamicImport(v8::Local<v8::Context> Context, v8::Local<v8::ScriptOrModule> Referrer, v8::Local<v8::String> Specifier); 
 
         void HostInitializeImportMetaObject(v8::Local<v8::Context> Context, v8::Local<v8::Module> Module, v8::Local<v8::Object> meta);
 #else 
