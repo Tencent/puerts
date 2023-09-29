@@ -331,10 +331,10 @@ namespace Puerts.UnitTest
         public void ESDynamicModuleCompileError()
         {
             var loader = UnitTestEnv.GetLoader();
-            loader.AddMockFileContent("compile-error/whatever2.mjs", @"export delete;");
+            loader.AddMockFileContent("compile-error/whatever.mjs", @"export delete;");
             var jsEnv = UnitTestEnv.GetEnv();
             jsEnv.Eval(@"
-                import('compile-error/whatever2.mjs')
+                import('compile-error/whatever.mjs')
                     .catch(e => {
                         global.error_ESDynamicModuleCompileError = e
                     })

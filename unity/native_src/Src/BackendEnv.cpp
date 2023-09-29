@@ -494,7 +494,7 @@ v8::MaybeLocal<v8::Promise> puerts::esmodule::DynamicImport(
     v8::MaybeLocal<v8::Module> mod = puerts::esmodule::_ResolveModule(Context, Specifier, ReferrerName, isFromCache);
 
     v8::Local<v8::Promise::Resolver> resolver;
-    if (!v8::Promise::Resolver::New(Context).ToLocal(&resolver)) return v8::MaybeLocal<v8::Promise> {};
+    if (!v8::Promise::Resolver::New(Context).ToLocal(&resolver)) return;
     
     if (mod.IsEmpty())
     {
