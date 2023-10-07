@@ -1,5 +1,4 @@
 #include "ExportDTSCommandlet.h"
-#include "Engine.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 int32 UExportDTSCommandlet::Main(const FString& Params)
