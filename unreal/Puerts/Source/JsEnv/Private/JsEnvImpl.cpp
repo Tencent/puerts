@@ -2612,7 +2612,7 @@ bool FJsEnvImpl::ClearDelegate(v8::Isolate* Isolate, v8::Local<v8::Context>& Con
     auto JsCallbacks = Iter->second.JsCallbacks.Get(Isolate);
     for (uint32_t i = 0; i < JsCallbacks->Length(); ++i)
     {
-        (void) (JsCallbacks->Set(Context, i, v8::Undefined(Isolate)));
+        (void) (JsCallbacks->Delete(Context, i));
     }
 
     return true;
