@@ -591,6 +591,16 @@ bool UPEPropertyMetaData::Apply(FBPVariableDescription& Element) const
 
     //	set meta data
     bool bMetaDataChanged = false;
+
+    for (int Index = Element.MetaDataArray.Num() - 1; Index >= 0; --Index)
+    {
+        if (!MetaData.Contains(Element.MetaDataArray[Index].DataKey))
+        {
+            bMetaDataChanged = true;
+            Element.MetaDataArray.RemoveAt(Index);
+        }
+    }
+
     for (const auto& Pair : MetaData)
     {
         if (const auto MetaDataEntryPtr = Element.MetaDataArray.FindByPredicate(
