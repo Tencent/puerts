@@ -97,22 +97,22 @@ struct FunctionTrait<Ret (*)(Args...)>
 };
 
 template <typename C, typename Ret, typename... Args>
-struct FunctionTrait<Ret (C::*)(Args...)> : FunctionTrait<Ret (*)(C*, Args...)>
+struct FunctionTrait<Ret (C::*)(Args...)> : FunctionTrait<Ret (*)(Args...)>
 {
 };
 
 template <typename C, typename Ret, typename... Args>
-struct FunctionTrait<Ret (C::*)(Args...) const> : FunctionTrait<Ret (*)(C*, Args...)>
+struct FunctionTrait<Ret (C::*)(Args...) const> : FunctionTrait<Ret (*)(Args...)>
 {
 };
 
 template <typename C, typename Ret, typename... Args>
-struct FunctionTrait<Ret (C::*)(Args...) volatile> : FunctionTrait<Ret (*)(C*, Args...)>
+struct FunctionTrait<Ret (C::*)(Args...) volatile> : FunctionTrait<Ret (*)(Args...)>
 {
 };
 
 template <typename C, typename Ret, typename... Args>
-struct FunctionTrait<Ret (C::*)(Args...) const volatile> : FunctionTrait<Ret (*)(C*, Args...)>
+struct FunctionTrait<Ret (C::*)(Args...) const volatile> : FunctionTrait<Ret (*)(Args...)>
 {
 };
 
@@ -135,9 +135,6 @@ struct FunctionTrait<Func, typename std::enable_if<!std::is_same<Func, typename 
 {
 };
 }    // namespace traits
-
-template <typename T>
-using FuncTrait = traits::FunctionTrait<T>;
 
 template <typename API, std::size_t, std::size_t, typename...>
 struct ArgumentChecker
@@ -1060,20 +1057,22 @@ struct IsBoundedArray<T[N]> : std::true_type
 {
 };
 
-template <typename API, typename T, T, typename Enable = void>
+template <typename API, typename T, T, typename IncPass = void, typename Enable = void>
 struct PropertyWrapper;
 
-template <typename API, class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<API, Ret Ins::*, member,
+template <typename API, class Ins, class Ret, Ret Ins::*member, typename IncPass>
+struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
     typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && !IsBoundedArray<Ret>::value>::type>
 {
     template <typename T>
     using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
 
+    using SelfType = typename std::conditional<std::is_same<IncPass, void>::value, Ins, IncPass>::type;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<SelfType*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1085,7 +1084,7 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<SelfType*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1100,17 +1099,19 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     }
 };
 
-template <typename API, class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<API, Ret Ins::*, member,
+template <typename API, class Ins, class Ret, Ret Ins::*member, typename IncPass>
+struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
     typename std::enable_if<!is_objecttype<Ret>::value && !is_uetype<Ret>::value && IsBoundedArray<Ret>::value>::type>
 {
     template <typename T>
     using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
 
+    using SelfType = typename std::conditional<std::is_same<IncPass, void>::value, Ins, IncPass>::type;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<SelfType*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1123,7 +1124,7 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<SelfType*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1149,16 +1150,19 @@ struct PropertyWrapper<API, Ret Ins::*, member,
     }
 };
 
-template <typename API, class Ins, class Ret, Ret Ins::*member>
-struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
+template <typename API, class Ins, class Ret, Ret Ins::*member, typename IncPass>
+struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
+    typename std::enable_if<is_objecttype<Ret>::value || is_uetype<Ret>::value>::type>
 {
     template <typename T>
     using DecayTypeConverter = typename API::template Converter<typename internal::ConverterDecay<T>::type>;
 
+    using SelfType = typename std::conditional<std::is_same<IncPass, void>::value, Ins, IncPass>::type;
+
     static void getter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<SelfType*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1172,7 +1176,7 @@ struct PropertyWrapper<API, Ret Ins::*, member, typename std::enable_if<is_objec
     static void setter(typename API::CallbackInfoType info)
     {
         auto context = API::GetContext(info);
-        auto self = DecayTypeConverter<Ins*>::toCpp(context, API::GetThis(info));
+        auto self = DecayTypeConverter<SelfType*>::toCpp(context, API::GetThis(info));
         if (!self)
         {
             API::ThrowException(info, "access a null object");
@@ -1314,6 +1318,22 @@ public:
         return *this;
     }
 
+    template <typename Func, Func func>
+    ClassDefineBuilder<T, API, RegisterAPI>& MethodProxy(const char* name)
+    {
+        methods_.push_back(typename API::GeneralFunctionInfo{name,
+            [](typename API::CallbackInfoType info) -> void
+            {
+                using Helper = internal::FuncCallHelper<API,
+                    std::pair<typename internal::traits::FunctionTrait<Func>::ReturnType,
+                        typename internal::traits::FunctionTrait<Func>::Arguments>,
+                    false, false, true, false>;
+                Helper::template callMethod<T>(func, info);
+            },
+            nullptr, nullptr});
+        return *this;
+    }
+
     ClassDefineBuilder<T, API, RegisterAPI>& Property(const char* name, typename API::FunctionCallbackType getter,
         typename API::FunctionCallbackType setter = nullptr, const CTypeInfo* type = nullptr)
     {
@@ -1322,6 +1342,14 @@ public:
             propertyInfos_.push_back(typename API::GeneralPropertyReflectionInfo{name, type});
         }
         properties_.push_back(typename API::GeneralPropertyInfo{name, getter, setter, nullptr});
+        return *this;
+    }
+
+    template <typename Prop, Prop prop>
+    ClassDefineBuilder<T, API, RegisterAPI>& PropertyProxy(const char* name)
+    {
+        properties_.push_back(typename API::GeneralPropertyInfo{
+            name, &PropertyWrapper<API, Prop, prop, T>::getter, &PropertyWrapper<API, Prop, prop, T>::setter, nullptr});
         return *this;
     }
 
