@@ -137,6 +137,34 @@ public:
         return !Object.IsEmpty() && Object->IsObject();
     }
 
+    // for performance considerations, a native can only hold one JavaScript object at a time (the last setting takes effect if set
+    // multiple times). If there is a need to hold more than one JavaScript object, it is recommended to first hold a JavaScript
+    // array and then add objects to the array.
+    template <typename T>
+    void SetWeakAndOwnBy(const T* Owner)
+    {
+        if (!Owner)
+            return;
+        if (JsEnvLifeCycleTracker.expired() || !Isolate || GContext.IsEmpty() || GObject.IsEmpty())
+            return;
+        v8::Isolate::Scope IsolateScope(Isolate);
+        v8::HandleScope HandleScope(Isolate);
+        auto Context = GContext.Get(Isolate);
+        v8::Context::Scope ContextScope(Context);
+
+        auto Val = DataTransfer::FindOrAddCData(Isolate, Context, StaticTypeId<T>::get(), Owner, true);
+        if (Val->IsObject())
+        {
+            auto JsObject = Val.template As<v8::Object>();
+#if V8_MAJOR_VERSION < 8
+            JsObject->Set(Context, v8::String::NewFromUtf8(Isolate, "_p_i_only_one_child").ToLocalChecked(), GObject.Get(Isolate));
+#else
+            JsObject->Set(Context, v8::String::NewFromUtf8Literal(Isolate, "_p_i_only_one_child"), GObject.Get(Isolate));
+#endif
+            GObject.SetWeak();
+        }
+    }
+
     v8::Isolate* Isolate;
     v8::Global<v8::Context> GContext;
     v8::Global<v8::Object> GObject;
