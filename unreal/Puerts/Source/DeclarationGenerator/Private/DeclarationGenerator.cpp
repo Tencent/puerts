@@ -31,7 +31,6 @@
 #include "Engine/UserDefinedStruct.h"
 #include "Engine/UserDefinedEnum.h"
 #include "Engine/Blueprint.h"
-#include "TypeScriptObject.h"
 #include "CodeGenerator.h"
 #include "JSClassRegister.h"
 #include "Engine/CollisionProfile.h"
@@ -1165,8 +1164,6 @@ static uint32_t GetSameNameSuperCount(UStruct* InStruct)
 
 void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 {
-    if (Class->ImplementsInterface(UTypeScriptObject::StaticClass()))
-        return;
     FStringBuffer StringBuffer{"", ""};
     const FString SafeClassName =
         Class->IsNative() ? SafeName(Class->GetName()) : puerts::FilenameToTypeScriptVariableName(Class->GetName());

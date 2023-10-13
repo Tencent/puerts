@@ -153,8 +153,6 @@ bool UPEBlueprintAsset::LoadOrCreate(
         ParentClass, Package, *InName, BlueprintType, BlueprintClass, BlueprintGeneratedClass, FName("PuertsAutoGen"));
     if (Blueprint)
     {
-        // static FName InterfaceClassName = FName(TEXT("TypeScriptObject"));
-        // FBlueprintEditorUtils::ImplementNewInterface(Blueprint, InterfaceClassName);
         // Notify the asset registry
         FAssetRegistryModule::AssetCreated(Blueprint);
 
