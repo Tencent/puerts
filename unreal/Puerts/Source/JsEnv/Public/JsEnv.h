@@ -8,16 +8,11 @@
 
 #pragma once
 
-#include <map>
 #include <string>
-#include <algorithm>
 #include <functional>
 #include <memory>
 
 #include "CoreMinimal.h"
-#include "UObject/GCObject.h"
-#include "Containers/Ticker.h"
-#include "ObjectRetainer.h"
 #include "JSLogger.h"
 #include "JSModuleLoader.h"
 #if !defined(ENGINE_INDEPENDENT_JSENV)
