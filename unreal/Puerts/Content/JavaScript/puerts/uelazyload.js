@@ -268,20 +268,59 @@ var global = global || (function () { return this; }());
     function NewArray(t1) {
         t1 = translateType(t1);
 
-        return newContainer(0, t1);
+        var ret = newContainer(0, t1);
+        if (!("[Symbol.iterator]" in ret)) {
+            ret.constructor.prototype[Symbol.iterator] = function*() {
+                let index = 0;
+                let num = this.Num();
+                while (index < num) {
+                yield this.Get(index);
+                index++;
+                }
+            }
+        }
+        return ret;
     }
     
     function NewSet(t1) {
         t1 = translateType(t1);
         
-        return newContainer(1, t1);
+        var ret = newContainer(1, t1);
+        if (!("[Symbol.iterator]" in ret)) {
+            ret.constructor.prototype[Symbol.iterator] = function*() {
+                let index = 0;
+                let maxIndex = this.GetMaxIndex();
+                while (index < maxIndex) {
+                    if (this.IsValidIndex(index)) {
+                        yield this.Get(index);
+                    }
+                    index++;
+                }
+            }
+        }
+        return ret;
     }
     
     function NewMap(t1, t2) {
         t1 = translateType(t1);
         t2 = translateType(t2);
-        
-        return newContainer(2, t1, t2);
+
+        var ret = newContainer(2, t1, t2);
+        if (!("[Symbol.iterator]" in ret)) {
+            ret.constructor.prototype[Symbol.iterator] = function*() {
+                let index = 0;
+                let maxIndex = this.GetMaxIndex();
+                while (index < maxIndex) {
+                    if (this.IsValidIndex(index)) {
+                        let key = this.GetKey(index);
+                        let value = this.Get(key);
+                        yield [key, value];
+                    }
+                    index++;
+                }
+            }
+        }
+        return ret;
     }
     
     cache.BuiltinBool = 0;
