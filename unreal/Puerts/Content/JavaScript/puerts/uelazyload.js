@@ -274,8 +274,8 @@ var global = global || (function () { return this; }());
                 let index = 0;
                 let num = this.Num();
                 while (index < num) {
-                yield this.Get(index);
-                index++;
+                    yield this.Get(index);
+                    index++;
                 }
             }
         }
