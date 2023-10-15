@@ -332,6 +332,11 @@ var global = global || (function () { return this; }());
     cache.BuiltinText = 6;
     cache.BuiltinName = 7;
     
+    // call once to inject iterators to constructor
+    NewArray(cache.BuiltinInt);
+    NewSet(cache.BuiltinInt);
+    NewMap(cache.BuiltinInt, cache.BuiltinInt);
+    
     cache.NewArray = NewArray;
     cache.NewSet = NewSet;
     cache.NewMap = NewMap;
