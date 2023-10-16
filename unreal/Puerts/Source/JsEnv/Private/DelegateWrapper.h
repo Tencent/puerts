@@ -20,6 +20,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "V8NamespaceDef.h"
+
 namespace puerts
 {
 class FDelegateWrapper

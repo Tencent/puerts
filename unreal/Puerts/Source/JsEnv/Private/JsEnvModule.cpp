@@ -142,6 +142,8 @@ public:
 #include "libplatform/libplatform.h"
 #pragma warning(pop)
 
+#include "V8NamespaceDef.h"
+
 DEFINE_LOG_CATEGORY_STATIC(JsEnvModule, Log, All);
 
 class FJsEnvModule : public IJsEnvModule

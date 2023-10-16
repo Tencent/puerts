@@ -20,6 +20,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "V8NamespaceDef.h"
+
 #if !defined(MAPPER_ISOLATE_DATA_POS)
 #define MAPPER_ISOLATE_DATA_POS 0
 #endif

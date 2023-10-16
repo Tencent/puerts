@@ -12,6 +12,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "V8NamespaceDef.h"
+
 #include <map>
 #include "JSClassRegister.h"
 #include "ObjectCacheNode.h"

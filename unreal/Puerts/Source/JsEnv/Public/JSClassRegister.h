@@ -23,6 +23,9 @@
 #pragma warning(push, 0)
 #include "v8.h"
 #pragma warning(pop)
+
+#include "V8NamespaceDef.h"
+
 #include "TypeInfo.hpp"
 
 namespace puerts

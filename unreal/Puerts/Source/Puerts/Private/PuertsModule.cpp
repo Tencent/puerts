@@ -364,27 +364,27 @@ void FPuertsModule::RegisterSettings()
     UPuertsSetting& Settings = *GetMutableDefault<UPuertsSetting>();
     const TCHAR* SectionName = TEXT("/Script/Puerts.PuertsSetting");
 #if (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1) || ENGINE_MAJOR_VERSION > 5
-    const FString PuertsConfigIniPath =
+    const FString V8NamespaceDefIniPath =
         FConfigCacheIni::NormalizeConfigIniPath(FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini")));
 #else
-    const FString PuertsConfigIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
+    const FString V8NamespaceDefIniPath = FPaths::SourceConfigDir().Append(TEXT("DefaultPuerts.ini"));
 #endif
-    if (GConfig->DoesSectionExist(SectionName, PuertsConfigIniPath))
+    if (GConfig->DoesSectionExist(SectionName, V8NamespaceDefIniPath))
     {
-        GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("AutoModeEnable"), Settings.AutoModeEnable, V8NamespaceDefIniPath);
         FString Text;
-        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, PuertsConfigIniPath);
-        GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, PuertsConfigIniPath);
-        GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, PuertsConfigIniPath);
-        if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, PuertsConfigIniPath))
+        GConfig->GetBool(SectionName, TEXT("DebugEnable"), Settings.DebugEnable, V8NamespaceDefIniPath);
+        GConfig->GetBool(SectionName, TEXT("WaitDebugger"), Settings.WaitDebugger, V8NamespaceDefIniPath);
+        GConfig->GetDouble(SectionName, TEXT("WaitDebuggerTimeout"), Settings.WaitDebuggerTimeout, V8NamespaceDefIniPath);
+        if (!GConfig->GetInt(SectionName, TEXT("DebugPort"), Settings.DebugPort, V8NamespaceDefIniPath))
         {
             Settings.DebugPort = 8080;
         }
-        if (!GConfig->GetInt(SectionName, TEXT("NumberOfJsEnv"), Settings.NumberOfJsEnv, PuertsConfigIniPath))
+        if (!GConfig->GetInt(SectionName, TEXT("NumberOfJsEnv"), Settings.NumberOfJsEnv, V8NamespaceDefIniPath))
         {
             Settings.NumberOfJsEnv = 1;
         }
-        GConfig->GetBool(SectionName, TEXT("WatchDisable"), Settings.WatchDisable, PuertsConfigIniPath);
+        GConfig->GetBool(SectionName, TEXT("WatchDisable"), Settings.WatchDisable, V8NamespaceDefIniPath);
     }
 
     DebuggerPortFromCommandLine = GetDebuggerPortFromCommandLine();

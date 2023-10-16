@@ -15,6 +15,9 @@
 #include "libplatform/libplatform.h"
 #include "v8.h"
 #pragma warning(pop)
+
+#include "V8NamespaceDef.h"
+
 #include "WasmFunction.h"
 
 #define M3_FUNCTION_KEY "__puerts_inner_m3_func"

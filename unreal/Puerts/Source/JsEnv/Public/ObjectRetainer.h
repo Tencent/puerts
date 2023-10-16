@@ -12,7 +12,11 @@
 #include "UObject/GCObject.h"
 
 #ifdef THREAD_SAFE
+#if defined(QJSV8NAMESPACE)
+namespace QJSV8NAMESPACE
+#else
 namespace v8
+#endif
 {
 class Isolate;
 }

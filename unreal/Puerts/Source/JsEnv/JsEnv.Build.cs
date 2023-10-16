@@ -24,6 +24,8 @@ public class JsEnv : ModuleRules
 
     private bool UseQuickjs = false;
 
+    private bool CustomNamespaceForQuickjsImpl = false;
+
     private bool WithFFI = false;
     
     private bool ForceStaticLibInEditor = false;
@@ -533,6 +535,11 @@ public class JsEnv : ModuleRules
     {
         PrivateDefinitions.Add("WITHOUT_INSPECTOR");
         PrivateDefinitions.Add("WITH_QUICKJS");
+        if (CustomNamespaceForQuickjsImpl)
+        {
+            PublicDefinitions.Add("QJSV8NAMESPACE=v8_qjs");
+        }
+
         PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "quickjs", "Inc") });
 
         string LibraryPath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "ThirdParty", "quickjs", "Lib"));

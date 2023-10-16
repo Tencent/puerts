@@ -12,6 +12,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "V8NamespaceDef.h"
+
 #include "Binding.hpp"
 #include "JSLogger.h"
 #include "V8Utils.h"

@@ -28,10 +28,19 @@
 
 #define PUERTS_BINDING_PROTO_ID() "fdq4falqlqcq"
 
+#if defined(QJSV8NAMESPACE)
+namespace QJSV8NAMESPACE
+{
+class CFunction;
+}
+
+namespace v8 = QJSV8NAMESPACE;
+#else
 namespace v8
 {
 class CFunction;
 }
+#endif
 
 namespace puerts
 {

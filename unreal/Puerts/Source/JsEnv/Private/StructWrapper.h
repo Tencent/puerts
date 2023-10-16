@@ -23,6 +23,8 @@
 #include "v8.h"
 #pragma warning(pop)
 
+#include "V8NamespaceDef.h"
+
 #define PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE 1
 
 namespace puerts
