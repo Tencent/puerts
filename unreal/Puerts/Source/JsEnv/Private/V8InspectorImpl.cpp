@@ -45,7 +45,7 @@
 DEFINE_LOG_CATEGORY_STATIC(LogV8Inspector, Log, All);
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class V8InspectorChannelImpl : public v8_inspector::V8Inspector::Channel, public V8InspectorChannel
 {
@@ -547,18 +547,18 @@ V8Inspector* CreateV8Inspector(int32_t Port, void* InContextPtr)
     v8::Local<v8::Context>* ContextPtr = static_cast<v8::Local<v8::Context>*>(InContextPtr);
     return new V8InspectorClientImpl(Port, *ContextPtr);
 }
-};    // namespace puerts
+};    // namespace PUERTS_NAMESPACE
 
 #else
 
 #include "V8InspectorImpl.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 V8Inspector* CreateV8Inspector(int32_t Port, void* InContextPtr)
 {
     return nullptr;
 }
-};    // namespace puerts
+};    // namespace PUERTS_NAMESPACE
 
 #endif    // WITH_EDITOR && (PLATFORM_WINDOWS || PLATFORM_MAC)

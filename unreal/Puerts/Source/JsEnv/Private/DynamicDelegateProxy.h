@@ -34,7 +34,7 @@ public:
 
     void ProcessEvent(UFunction*, void* Parms) override;
 
-    TWeakPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
+    TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
     TWeakObjectPtr<UFunction> SignatureFunction;
 

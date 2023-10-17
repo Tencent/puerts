@@ -23,7 +23,7 @@
 
 #include <memory>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class ICppObjectMapper
 {
@@ -109,4 +109,4 @@ public:
 };
 #endif
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

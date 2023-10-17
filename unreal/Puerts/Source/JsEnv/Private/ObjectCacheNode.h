@@ -14,7 +14,7 @@
 
 #include "NamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class FObjectCacheNode
 {
@@ -117,4 +117,4 @@ public:
     void operator=(const FObjectCacheNode&) = delete;
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

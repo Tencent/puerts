@@ -38,7 +38,9 @@ public class JsEnv : ModuleRules
     
     public JsEnv(ReadOnlyTargetRules Target) : base(Target)
     {
+#if UE_5_3_OR_LATER
         PCHUsage = PCHUsageMode.NoPCHs;
+#endif
         PublicDefinitions.Add("USING_IN_UNREAL_ENGINE");
         //PublicDefinitions.Add("WITH_V8_FAST_CALL");
         

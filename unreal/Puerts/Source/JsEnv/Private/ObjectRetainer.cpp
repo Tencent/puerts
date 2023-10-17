@@ -12,8 +12,9 @@
 #include "v8.h"
 #pragma warning(pop)
 #endif
+#include "PuertsNamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 void FObjectRetainer::Retain(UObject* Object)
 {
@@ -62,4 +63,4 @@ FObjectRetainer::~FObjectRetainer()
 {
     Clear();
 }
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

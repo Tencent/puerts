@@ -12,7 +12,7 @@
 #include "pesapi.h"
 #include <iostream>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 namespace internal
 {
@@ -70,7 +70,7 @@ public:
         auto value = pesapi_get_property(env, object, key);
         if (!pesapi_is_undefined(env, value))
         {
-            return puerts::pesapi_impl::Converter<T>::toCpp(env, value);
+            return pesapi_impl::Converter<T>::toCpp(env, value);
         }
         return {};
     }
@@ -82,7 +82,7 @@ public:
         auto env = pesapi_get_env_from_holder(env_holder);
         auto object = pesapi_get_value_from_holder(env, value_holder);
 
-        pesapi_set_property(env, object, key, puerts::pesapi_impl::Converter<T>::toScript(env, val));
+        pesapi_set_property(env, object, key, pesapi_impl::Converter<T>::toScript(env, val));
     }
 
     bool IsValid() const
@@ -102,7 +102,7 @@ public:
     pesapi_env_holder env_holder;
     pesapi_value_holder value_holder;
 
-    friend struct puerts::pesapi_impl::Converter<Object>;
+    friend struct pesapi_impl::Converter<Object>;
 };
 
 class Function : public Object
@@ -159,7 +159,7 @@ private:
     template <typename... Args>
     auto invokeHelper(pesapi_env env, pesapi_value func, Args... CppArgs) const
     {
-        pesapi_value argv[sizeof...(Args)]{puerts::pesapi_impl::Converter<Args>::toScript(env, CppArgs)...};
+        pesapi_value argv[sizeof...(Args)]{pesapi_impl::Converter<Args>::toScript(env, CppArgs)...};
         return pesapi_call_function(env, func, nullptr, sizeof...(Args), argv);
     }
 
@@ -168,7 +168,7 @@ private:
         return pesapi_call_function(env, func, nullptr, 0, nullptr);
     }
 
-    friend struct puerts::pesapi_impl::Converter<Function>;
+    friend struct pesapi_impl::Converter<Function>;
 };
 
 }    // namespace pesapi_impl
@@ -234,4 +234,4 @@ struct Converter<Function>
 #include "StdFunctionConverter.hpp"
 }    // namespace pesapi_impl
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

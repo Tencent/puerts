@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "PuertsNamespaceDef.h"
 #include "StaticCall.hpp"
 #include "ScriptBackend.hpp"
 #include "Object.hpp"

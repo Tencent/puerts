@@ -12,7 +12,15 @@
 #include <functional>
 #include <string>
 
-namespace puerts
+#if !defined(PUERTS_NAMESPACE)
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+#define PUERTS_NAMESPACE puerts_qjs
+#else
+#define PUERTS_NAMESPACE puerts
+#endif
+#endif
+
+namespace PUERTS_NAMESPACE
 {
 class V8InspectorChannel
 {
@@ -42,4 +50,4 @@ public:
 
 // 接受端口和v8::Local<v8::Context>指针，返回一个新的V8Inspector指针
 V8Inspector* CreateV8Inspector(int32_t Port, void* InContextPtr);
-};    // namespace puerts
+};    // namespace PUERTS_NAMESPACE

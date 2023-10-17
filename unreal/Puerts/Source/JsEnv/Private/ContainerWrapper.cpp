@@ -9,7 +9,7 @@
 #include "ContainerWrapper.h"
 #include "PropertyTranslator.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 v8::Local<v8::FunctionTemplate> FScriptArrayWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
@@ -847,4 +847,4 @@ void FFixSizeArrayWrapper::Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
 
     Inner->JsToUE(Isolate, Context, Info[1], Ptr, true);
 }
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

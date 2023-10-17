@@ -41,13 +41,13 @@ public:
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
-        JsEnvLifeCycleTracker = puerts::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
+        JsEnvLifeCycleTracker = PUERTS_NAMESPACE::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
     FJsObject(v8::Local<v8::Context> InContext, v8::Local<v8::Object> InObject)
         : Isolate(InContext->GetIsolate()), GContext(InContext->GetIsolate(), InContext), GObject(InContext->GetIsolate(), InObject)
     {
-        JsEnvLifeCycleTracker = puerts::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
+        JsEnvLifeCycleTracker = PUERTS_NAMESPACE::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
     }
 
     FJsObject& operator=(const FJsObject& InOther)
@@ -60,7 +60,7 @@ public:
         Isolate = InOther.Isolate;
         GContext.Reset(Isolate, InOther.GContext.Get(Isolate));
         GObject.Reset(Isolate, InOther.GObject.Get(Isolate));
-        JsEnvLifeCycleTracker = puerts::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
+        JsEnvLifeCycleTracker = PUERTS_NAMESPACE::DataTransfer::GetJsEnvLifeCycleTracker(Isolate);
         return *this;
     }
 
@@ -78,11 +78,11 @@ public:
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
 
-        auto MaybeValue = Object->Get(Context, puerts::v8_impl::Converter<const char*>::toScript(Context, Key));
+        auto MaybeValue = Object->Get(Context, PUERTS_NAMESPACE::v8_impl::Converter<const char*>::toScript(Context, Key));
         v8::Local<v8::Value> Val;
         if (MaybeValue.ToLocal(&Val))
         {
-            return puerts::v8_impl::Converter<T>::toCpp(Context, Val);
+            return PUERTS_NAMESPACE::v8_impl::Converter<T>::toCpp(Context, Val);
         }
         return {};
     }
@@ -101,8 +101,8 @@ public:
         v8::Context::Scope ContextScope(Context);
         auto Object = GObject.Get(Isolate);
 
-        auto _UnUsed = Object->Set(Context, puerts::v8_impl::Converter<const char*>::toScript(Context, Key),
-            puerts::v8_impl::Converter<T>::toScript(Context, Val));
+        auto _UnUsed = Object->Set(Context, PUERTS_NAMESPACE::v8_impl::Converter<const char*>::toScript(Context, Key),
+            PUERTS_NAMESPACE::v8_impl::Converter<T>::toScript(Context, Val));
     }
 
     template <typename... Args>
@@ -132,7 +132,8 @@ public:
 
         if (TryCatch.HasCaught())
         {
-            UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            UE_LOG(
+                Puerts, Error, TEXT("call function throw: %s"), *PUERTS_NAMESPACE::FV8Utils::TryCatchToString(Isolate, &TryCatch));
         }
     }
 
@@ -163,12 +164,13 @@ public:
 
         if (TryCatch.HasCaught())
         {
-            UE_LOG(Puerts, Error, TEXT("call function throw: %s"), *puerts::FV8Utils::TryCatchToString(Isolate, &TryCatch));
+            UE_LOG(
+                Puerts, Error, TEXT("call function throw: %s"), *PUERTS_NAMESPACE::FV8Utils::TryCatchToString(Isolate, &TryCatch));
         }
 
         if (!MaybeRet.IsEmpty())
         {
-            return puerts::v8_impl::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
+            return PUERTS_NAMESPACE::v8_impl::Converter<Ret>::toCpp(Context, MaybeRet.ToLocalChecked());
         }
         return {};
     }
@@ -194,7 +196,7 @@ private:
     template <typename... Args>
     FORCEINLINE auto InvokeHelper(v8::Local<v8::Context>& Context, v8::Local<v8::Object>& Object, Args... CppArgs) const
     {
-        v8::Local<v8::Value> Argv[sizeof...(Args)]{puerts::v8_impl::Converter<Args>::toScript(Context, CppArgs)...};
+        v8::Local<v8::Value> Argv[sizeof...(Args)]{PUERTS_NAMESPACE::v8_impl::Converter<Args>::toScript(Context, CppArgs)...};
         return Object.As<v8::Function>()->Call(Context, v8::Undefined(Isolate), sizeof...(Args), Argv);
     }
 
@@ -209,10 +211,10 @@ private:
     v8::Global<v8::Object> GObject;
     std::weak_ptr<int> JsEnvLifeCycleTracker;
 
-    friend struct puerts::v8_impl::Converter<FJsObject>;
+    friend struct PUERTS_NAMESPACE::v8_impl::Converter<FJsObject>;
 };
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <>
 struct ScriptTypeName<FJsObject>
@@ -244,4 +246,4 @@ struct Converter<FJsObject>
     }
 };
 }    // namespace v8_impl
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

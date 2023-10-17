@@ -19,7 +19,7 @@
 
 class UDynamicDelegateProxy;
 class UJSGeneratedFunction;
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class IDynamicInvoker
 {
@@ -36,4 +36,4 @@ public:
 #endif
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

@@ -9,7 +9,7 @@
 #include "JsEnv.h"
 #include "JsEnvImpl.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 FJsEnv::FJsEnv(const FString& ScriptRoot)
 {
@@ -91,4 +91,4 @@ void FJsEnv::OnSourceLoaded(std::function<void(const FString&)> Callback)
     GameScript->OnSourceLoaded(Callback);
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

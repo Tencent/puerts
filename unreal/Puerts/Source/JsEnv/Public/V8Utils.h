@@ -19,11 +19,10 @@
 #pragma warning(pop)
 
 #include "NamespaceDef.h"
-
 #include "DataTransfer.h"
 #include "UECompatible.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 enum ArgType
 {
@@ -317,7 +316,7 @@ public:
         return true;
     }
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE
 
 #define CHECK_V8_ARGS_LEN(Length)                     \
     if (!FV8Utils::CheckArgumentLength(Info, Length)) \

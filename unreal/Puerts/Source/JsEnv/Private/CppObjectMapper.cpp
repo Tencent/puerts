@@ -9,7 +9,7 @@
 #include "CppObjectMapper.h"
 #include "DataTransfer.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <typename T>
 inline void __USE(T&&)
@@ -321,4 +321,4 @@ void FCppObjectMapper::UnInitialize(v8::Isolate* InIsolate)
     PointerConstructor.Reset();
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

@@ -11,7 +11,7 @@
 #include "ObjectMapper.h"
 #include "PathEscape.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 void FStructWrapper::AddExtensionMethods(const std::vector<UFunction*>& InExtensionMethods)
 {
@@ -490,8 +490,8 @@ void FStructWrapper::Load(const v8::FunctionCallbackInfo<v8::Value>& Info)
             UnEscape = Info[1]->BooleanValue(Isolate);
         }
         auto Path = FV8Utils::ToFString(Isolate, Info[0]);
-        auto Object = StaticLoadObject(
-            Class, nullptr, UnEscape ? *puerts::TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
+        auto Object =
+            StaticLoadObject(Class, nullptr, UnEscape ? *TypeScriptVariableNameToFilename(Path) : *Path, nullptr, LOAD_NoWarn);
         if (Object)
         {
             auto Result = FV8Utils::IsolateData<IObjectMapper>(Isolate)->FindOrAdd(Isolate, Context, Object->GetClass(), Object);
@@ -649,4 +649,4 @@ void FClassWrapper::New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, c
         FV8Utils::ThrowException(Isolate, "only call as Construct is supported!");
     }
 }
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

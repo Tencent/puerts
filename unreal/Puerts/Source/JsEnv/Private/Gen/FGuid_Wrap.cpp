@@ -41,7 +41,7 @@ static void* _FGuidNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return Obj;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
     return nullptr;
 }
 
@@ -60,10 +60,11 @@ static void FGuidM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info[0]->IsNumber())
         {
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_set_Item] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FGuid::M_set_Item] Attempt to access a NULL self pointer");
                 return;
             }
             Self->operator[](Arg0);
@@ -71,7 +72,7 @@ static void FGuidM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -83,10 +84,11 @@ static void FGuidM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info[0]->IsNumber())
         {
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_get_Item] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FGuid::M_get_Item] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator[](Arg0);
@@ -96,7 +98,7 @@ static void FGuidM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidM_Invalidate(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -107,10 +109,11 @@ static void FGuidM_Invalidate(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_Invalidate] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FGuid::M_Invalidate] Attempt to access a NULL self pointer");
                 return;
             }
             Self->Invalidate();
@@ -118,7 +121,7 @@ static void FGuidM_Invalidate(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -129,10 +132,10 @@ static void FGuidM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_IsValid] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::M_IsValid] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->IsValid();
@@ -142,7 +145,7 @@ static void FGuidM_IsValid(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -153,10 +156,11 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_ToString] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FGuid::M_ToString] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToString();
@@ -172,10 +176,11 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info[0]->IsNumber())
         {
             EGuidFormats Arg0 = EGuidFormats(Info[0]->ToInt32(Context).ToLocalChecked()->Value());
-            auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FGuid::M_ToString] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FGuid::M_ToString] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToString(Arg0);
@@ -186,7 +191,7 @@ static void FGuidM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidS_NewGuid(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -200,14 +205,14 @@ static void FGuidS_NewGuid(const v8::FunctionCallbackInfo<v8::Value>& Info)
             auto MethodResult = FGuid::NewGuid();
             void* Ptr = new FGuid(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FGuid>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FGuid>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidS_Parse(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -216,14 +221,14 @@ static void FGuidS_Parse(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
-        if (Info[0]->IsString() && Info[1]->IsObject() && puerts::DataTransfer::UnRef(Isolate, Info[1])->IsObject() &&
+        if (Info[0]->IsString() && Info[1]->IsObject() && PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[1])->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FGuid>(
-                Isolate, puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FGuid>(
+                Isolate, PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked()))
         {
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            FGuid* Arg1 = puerts::DataTransfer::GetPointerFast<FGuid>(
-                puerts::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
+            FGuid* Arg1 = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(
+                PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[1])->ToObject(Context).ToLocalChecked());
             auto MethodResult = FGuid::Parse(Arg0, *Arg1);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -231,7 +236,7 @@ static void FGuidS_Parse(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FGuidS_ParseExact(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -241,15 +246,15 @@ static void FGuidS_ParseExact(const v8::FunctionCallbackInfo<v8::Value>& Info)
     if (Info.Length() == 3)
     {
         if (Info[0]->IsString() && Info[1]->IsNumber() && Info[2]->IsObject() &&
-            puerts::DataTransfer::UnRef(Isolate, Info[2])->IsObject() &&
+            PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[2])->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FGuid>(
-                Isolate, puerts::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FGuid>(
+                Isolate, PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked()))
         {
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
             EGuidFormats Arg1 = EGuidFormats(Info[1]->ToInt32(Context).ToLocalChecked()->Value());
-            FGuid* Arg2 = puerts::DataTransfer::GetPointerFast<FGuid>(
-                puerts::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked());
+            FGuid* Arg2 = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(
+                PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[2])->ToObject(Context).ToLocalChecked());
             auto MethodResult = FGuid::ParseExact(Arg0, Arg1, *Arg2);
             auto V8Result = v8::Boolean::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -257,7 +262,7 @@ static void FGuidS_ParseExact(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void _FGuidAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -265,16 +270,16 @@ static void _FGuidAGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::A] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::A] Attempt to access a NULL self pointer");
         return;
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->A);
-    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
+    PUERTS_NAMESPACE::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -282,10 +287,10 @@ static void _FGuidASet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::A] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::A] Attempt to access a NULL self pointer");
         return;
     }
     auto Value = Info[0];
@@ -297,16 +302,16 @@ static void _FGuidBGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::B] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::B] Attempt to access a NULL self pointer");
         return;
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->B);
-    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
+    PUERTS_NAMESPACE::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -314,10 +319,10 @@ static void _FGuidBSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::B] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::B] Attempt to access a NULL self pointer");
         return;
     }
     auto Value = Info[0];
@@ -329,16 +334,16 @@ static void _FGuidCGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::C] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::C] Attempt to access a NULL self pointer");
         return;
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->C);
-    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
+    PUERTS_NAMESPACE::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidCSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -346,10 +351,10 @@ static void _FGuidCSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::C] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::C] Attempt to access a NULL self pointer");
         return;
     }
     auto Value = Info[0];
@@ -361,16 +366,16 @@ static void _FGuidDGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
 
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::D] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::D] Attempt to access a NULL self pointer");
         return;
     }
 
     auto V8Result = v8::Integer::New(Isolate, Self->D);
-    puerts::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
+    PUERTS_NAMESPACE::DataTransfer::LinkOuter<FGuid, uint32>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FGuidDSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -378,10 +383,10 @@ static void _FGuidDSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FGuid>(Info.Holder());
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FGuid::D] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FGuid::D] Attempt to access a NULL self pointer");
         return;
     }
     auto Value = Info[0];
@@ -393,15 +398,15 @@ struct AutoRegisterForFGuid
 {
     AutoRegisterForFGuid()
     {
-        puerts::JSClassDefinition Def = JSClassEmptyDefinition;
+        PUERTS_NAMESPACE::JSClassDefinition Def = JSClassEmptyDefinition;
 
-        static puerts::JSPropertyInfo Properties[] = {{"A", _FGuidAGet_, _FGuidASet_}, {"B", _FGuidBGet_, _FGuidBSet_},
+        static PUERTS_NAMESPACE::JSPropertyInfo Properties[] = {{"A", _FGuidAGet_, _FGuidASet_}, {"B", _FGuidBGet_, _FGuidBSet_},
             {"C", _FGuidCGet_, _FGuidCSet_}, {"D", _FGuidDGet_, _FGuidDSet_}, {0, 0, 0}};
 
-        static puerts::JSFunctionInfo Methods[] = {{"set_Item", FGuidM_set_Item}, {"get_Item", FGuidM_get_Item},
+        static PUERTS_NAMESPACE::JSFunctionInfo Methods[] = {{"set_Item", FGuidM_set_Item}, {"get_Item", FGuidM_get_Item},
             {"Invalidate", FGuidM_Invalidate}, {"IsValid", FGuidM_IsValid}, {"ToString", FGuidM_ToString}, {0, 0}};
 
-        static puerts::JSFunctionInfo Functions[] = {
+        static PUERTS_NAMESPACE::JSFunctionInfo Functions[] = {
             {"NewGuid", FGuidS_NewGuid}, {"Parse", FGuidS_Parse}, {"ParseExact", FGuidS_ParseExact}, {0, 0}};
 
         Def.UETypeName = "Guid";
@@ -412,7 +417,7 @@ struct AutoRegisterForFGuid
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterJSClass(Def);
+        PUERTS_NAMESPACE::RegisterJSClass(Def);
     }
 };
 

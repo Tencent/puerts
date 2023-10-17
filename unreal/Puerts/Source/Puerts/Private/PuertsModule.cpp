@@ -195,13 +195,14 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv,
-                    std::make_shared<puerts::DefaultJSModuleLoader>(Settings.RootPath), std::make_shared<puerts::FDefaultLogger>(),
+                JsEnvGroup = MakeShared<PUERTS_NAMESPACE::FJsEnvGroup>(NumberOfJsEnv,
+                    std::make_shared<PUERTS_NAMESPACE::DefaultJSModuleLoader>(Settings.RootPath),
+                    std::make_shared<PUERTS_NAMESPACE::FDefaultLogger>(),
                     DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
-                JsEnvGroup = MakeShared<puerts::FJsEnvGroup>(NumberOfJsEnv, Settings.RootPath);
+                JsEnvGroup = MakeShared<PUERTS_NAMESPACE::FJsEnvGroup>(NumberOfJsEnv, Settings.RootPath);
             }
 
             if (Selector)
@@ -222,13 +223,14 @@ public:
         {
             if (Settings.DebugEnable)
             {
-                JsEnv = MakeShared<puerts::FJsEnv>(std::make_shared<puerts::DefaultJSModuleLoader>(Settings.RootPath),
-                    std::make_shared<puerts::FDefaultLogger>(),
+                JsEnv = MakeShared<PUERTS_NAMESPACE::FJsEnv>(
+                    std::make_shared<PUERTS_NAMESPACE::DefaultJSModuleLoader>(Settings.RootPath),
+                    std::make_shared<PUERTS_NAMESPACE::FDefaultLogger>(),
                     DebuggerPortFromCommandLine < 0 ? Settings.DebugPort : DebuggerPortFromCommandLine);
             }
             else
             {
-                JsEnv = MakeShared<puerts::FJsEnv>(Settings.RootPath);
+                JsEnv = MakeShared<PUERTS_NAMESPACE::FJsEnv>(Settings.RootPath);
             }
 
             if (Settings.WaitDebugger)
@@ -252,7 +254,7 @@ public:
     }
 
 private:
-    TSharedPtr<puerts::FJsEnv> JsEnv;
+    TSharedPtr<PUERTS_NAMESPACE::FJsEnv> JsEnv;
 
     bool Enabled = false;
 
@@ -260,7 +262,7 @@ private:
 
     int32 NumberOfJsEnv = 1;
 
-    TSharedPtr<puerts::FJsEnvGroup> JsEnvGroup;
+    TSharedPtr<PUERTS_NAMESPACE::FJsEnvGroup> JsEnvGroup;
 
     int32 DebuggerPortFromCommandLine = -1;
 };

@@ -13,7 +13,7 @@
 #include "CoreMinimal.h"
 #include "JsEnv.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class JSENV_API FJsEnvGroup
 {
@@ -44,4 +44,4 @@ private:
     void Init();
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

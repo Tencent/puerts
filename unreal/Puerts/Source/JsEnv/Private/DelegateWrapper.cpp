@@ -10,7 +10,7 @@
 #include "ObjectMapper.h"
 #include "V8Utils.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 v8::Local<v8::FunctionTemplate> FDelegateWrapper::ToFunctionTemplate(v8::Isolate* Isolate)
 {
@@ -208,4 +208,4 @@ void FMulticastDelegateWrapper::Broadcast(const v8::FunctionCallbackInfo<v8::Val
     auto DelegatePtr = FV8Utils::GetPointerFast<void>(Info.Holder(), 0);
     FV8Utils::IsolateData<IObjectMapper>(Isolate)->ExecuteDelegate(Isolate, Context, Info, DelegatePtr);
 }
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

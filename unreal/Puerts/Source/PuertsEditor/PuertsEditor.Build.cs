@@ -13,7 +13,9 @@ public class PuertsEditor : ModuleRules
 {
     public PuertsEditor(ReadOnlyTargetRules Target) : base(Target) 
     {
+#if UE_5_3_OR_LATER
         PCHUsage = PCHUsageMode.NoPCHs;
+#endif
         PublicDependencyModuleNames.AddRange(
             new string[]
             {

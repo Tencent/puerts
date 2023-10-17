@@ -13,7 +13,9 @@ public class DeclarationGenerator : ModuleRules
 {
     public DeclarationGenerator(ReadOnlyTargetRules Target) : base(Target) 
     {
+#if UE_5_3_OR_LATER
         PCHUsage = PCHUsageMode.NoPCHs;
+#endif
         PublicIncludePaths.AddRange(
             new string[] {
                 "Programs/UnrealHeaderTool/Public",

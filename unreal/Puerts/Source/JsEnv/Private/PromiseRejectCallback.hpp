@@ -1,7 +1,8 @@
 #pragma once
 #include <sstream>
+#include "PuertsNamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <typename T>
 inline void __USE(T&&)
@@ -101,4 +102,4 @@ std::string StackTraceToString(v8::Isolate* InIsolate, v8::Local<v8::StackTrace>
 }
 #endif
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

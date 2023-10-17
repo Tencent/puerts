@@ -16,7 +16,7 @@
 #include "HAL/PlatformFilemanager.h"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 static FString PathNormalize(const FString& PathIn)
 {
@@ -139,4 +139,4 @@ FString& DefaultJSModuleLoader::GetScriptRoot()
     return ScriptRoot;
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

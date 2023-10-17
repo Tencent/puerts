@@ -20,7 +20,7 @@
 #include "TypeInfo.hpp"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 void FPropertyTranslator::Getter(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
@@ -431,7 +431,7 @@ public:
 #ifndef PUERTS_FTEXT_AS_OBJECT
         return FV8Utils::ToV8String(Isolate, TextProperty->GetPropertyValue(ValuePtr));
 #else
-        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, puerts::StaticTypeId<FText>::get(),
+        return DataTransfer::FindOrAddCData(Context->GetIsolate(), Context, StaticTypeId<FText>::get(),
             PassByPointer ? ValuePtr : new FText(TextProperty->GetPropertyValue(ValuePtr)), PassByPointer);
 #endif
     }
@@ -1413,4 +1413,4 @@ void FPropertyTranslator::CreateOn(PropertyMacro* InProperty, FPropertyTranslato
     PropertyTranslatorCreator<PlacementNewCreator, FPropertyTranslator*>::Do(InProperty, true, InOldProperty);
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

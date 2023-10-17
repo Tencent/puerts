@@ -8,7 +8,9 @@
 
 #pragma once
 
-namespace puerts
+#include "PuertsNamespaceDef.h"
+
+namespace PUERTS_NAMESPACE
 {
 FORCEINLINE FString FilenameToTypeScriptVariableName(const FString& Filename)
 {
@@ -80,4 +82,4 @@ FORCEINLINE FString TypeScriptVariableNameToFilename(const FString& TypeScriptVa
     return Filename;
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

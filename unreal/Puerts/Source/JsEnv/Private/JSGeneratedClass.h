@@ -31,14 +31,14 @@ class UJSGeneratedClass : public UBlueprintGeneratedClass
 
 public:
     static UClass* Create(const FString& Name, UClass* Parent,
-        TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, v8::Isolate* Isolate,
+        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, v8::Isolate* Isolate,
         v8::Local<v8::Function> Constructor, v8::Local<v8::Object> Prototype);
 
     static void Override(v8::Isolate* Isolate, UClass* Class, UFunction* Super, v8::Local<v8::Function> JSImpl,
-        TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative);
+        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool IsNative);
 
     static UFunction* Mixin(v8::Isolate* Isolate, UClass* Class, UFunction* Super,
-        TSharedPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning);
+        TSharedPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker, bool TakeJsObjectRef, bool Warning);
 
     static void Restore(UClass* Class);
 
@@ -53,7 +53,7 @@ public:
 
     v8::UniquePersistent<v8::Object> Prototype;
 
-    TWeakPtr<puerts::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
+    TWeakPtr<PUERTS_NAMESPACE::IDynamicInvoker, ESPMode::ThreadSafe> DynamicInvoker;
 
 #ifdef THREAD_SAFE
     v8::Isolate* Isolate;

@@ -89,7 +89,7 @@
 #include "PuertsWasm/WasmJsFunctionParams.h"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 #if !defined(WITH_QUICKJS)
 void LoadPesapiDll(const v8::FunctionCallbackInfo<v8::Value>& Info);
@@ -1317,7 +1317,7 @@ void FJsEnvImpl::MakeSureInject(UTypeScriptGeneratedClass* TypeScriptGeneratedCl
                                         TsFunctionMap.Add(
                                             Function, {v8::UniquePersistent<v8::Function>(
                                                            Isolate, v8::Local<v8::Function>::Cast(MaybeValue.ToLocalChecked())),
-                                                          std::make_unique<puerts::FFunctionTranslator>(Function, false)});
+                                                          std::make_unique<FFunctionTranslator>(Function, false)});
                                     }
                                     else
                                     {
@@ -4536,4 +4536,4 @@ void FJsEnvImpl::Wasm_OverrideWebAssembly(const v8::FunctionCallbackInfo<v8::Val
 }
 
 #endif
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

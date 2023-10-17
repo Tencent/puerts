@@ -51,7 +51,7 @@ TMap<FName, FString>* GetParamDefaultMetaFor(UFunction* InFunction)
     return nullptr;
 }
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 static const int ARG_ARRAY_SIZE = 8;
 
@@ -737,4 +737,4 @@ void FExtensionMethodTranslator::CallExtension(
         }
     }
 }
-};    // namespace puerts
+};    // namespace PUERTS_NAMESPACE

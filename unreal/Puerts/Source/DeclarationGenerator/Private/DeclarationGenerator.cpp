@@ -240,17 +240,17 @@ bool HasUENamespace(const char* name)
     return strncmp(name, "UE.", 3) == 0;
 }
 
-FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+FString GetNamePrefix(const PUERTS_NAMESPACE::CTypeInfo* TypeInfo)
 {
     return TypeInfo->IsObjectType() && !HadNamespace(TypeInfo->Name()) ? "cpp." : "";
 }
 
-FString GetName(const puerts::CTypeInfo* TypeInfo)
+FString GetName(const PUERTS_NAMESPACE::CTypeInfo* TypeInfo)
 {
     return UTF8_TO_TCHAR(TypeInfo->Name());
 }
 
-void GenArgumentsForFunctionInfo(const puerts::CFunctionInfo* Type, FStringBuffer& Buff)
+void GenArgumentsForFunctionInfo(const PUERTS_NAMESPACE::CFunctionInfo* Type, FStringBuffer& Buff)
 {
     for (unsigned int i = 0; i < Type->ArgumentCount(); i++)
     {
@@ -455,7 +455,7 @@ const FString& FTypeScriptDeclarationGenerator::GetNamespace(UObject* Obj)
             Pkg->GetName().ParseIntoArray(PathFrags, TEXT("/"));
             for (int i = 0; i < PathFrags.Num(); i++)
             {
-                PathFrags[i] = puerts::FilenameToTypeScriptVariableName(PathFrags[i]);
+                PathFrags[i] = PUERTS_NAMESPACE::FilenameToTypeScriptVariableName(PathFrags[i]);
             }
             NamespaceMap[Obj] = FString::Join(PathFrags, TEXT("."));
         }
@@ -474,7 +474,7 @@ FString FTypeScriptDeclarationGenerator::GetNameWithNamespace(UObject* Obj)
     if (!Obj->IsNative())
     {
         return (RefFromOuter ? TEXT("") : TEXT("UE.")) + GetNamespace(Obj) + TEXT(".") +
-               puerts::FilenameToTypeScriptVariableName(Obj->GetName());
+               PUERTS_NAMESPACE::FilenameToTypeScriptVariableName(Obj->GetName());
     }
     return (RefFromOuter ? TEXT("") : TEXT("UE.")) + SafeName(Obj->GetName());
 #else
@@ -992,7 +992,7 @@ bool FTypeScriptDeclarationGenerator::GenFunction(
     return true;
 }
 
-static bool GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, puerts::NamedFunctionInfo* Func, bool IsStatic)
+static bool GenTemplateBindingFunction(FStringBuffer& OwnerBuffer, PUERTS_NAMESPACE::NamedFunctionInfo* Func, bool IsStatic)
 {
     if (IsStatic)
     {
@@ -1030,10 +1030,10 @@ void FTypeScriptDeclarationGenerator::TryToAddOverload(
 void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringBuffer& Buff)
 {
     FunctionOutputs& Outputs = GetFunctionOutputs(Struct);
-    auto ClassDefinition = puerts::FindClassByType(Struct);
+    auto ClassDefinition = PUERTS_NAMESPACE::FindClassByType(Struct);
     if (ClassDefinition)
     {
-        puerts::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
+        PUERTS_NAMESPACE::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Type)
         {
             FStringBuffer Tmp;
@@ -1042,7 +1042,7 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
             ++FunctionInfo;
         }
 
-        puerts::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
+        PUERTS_NAMESPACE::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
         while (MethodInfo && MethodInfo->Name && MethodInfo->Type)
         {
             FStringBuffer Tmp;
@@ -1051,7 +1051,7 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
             ++MethodInfo;
         }
 
-        puerts::NamedPropertyInfo* PropertyInfo = ClassDefinition->PropertyInfos;
+        PUERTS_NAMESPACE::NamedPropertyInfo* PropertyInfo = ClassDefinition->PropertyInfos;
         while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Type)
         {
             if (Struct->FindPropertyByName(UTF8_TO_TCHAR(PropertyInfo->Name)))
@@ -1061,7 +1061,7 @@ void FTypeScriptDeclarationGenerator::GatherExtensions(UStruct* Struct, FStringB
             ++PropertyInfo;
         }
 
-        puerts::NamedPropertyInfo* VariableInfo = ClassDefinition->VariableInfos;
+        PUERTS_NAMESPACE::NamedPropertyInfo* VariableInfo = ClassDefinition->VariableInfos;
         while (VariableInfo && VariableInfo->Name && VariableInfo->Type)
         {
             int Pos = VariableInfo - ClassDefinition->VariableInfos;
@@ -1166,7 +1166,7 @@ void FTypeScriptDeclarationGenerator::GenClass(UClass* Class)
 {
     FStringBuffer StringBuffer{"", ""};
     const FString SafeClassName =
-        Class->IsNative() ? SafeName(Class->GetName()) : puerts::FilenameToTypeScriptVariableName(Class->GetName());
+        Class->IsNative() ? SafeName(Class->GetName()) : PUERTS_NAMESPACE::FilenameToTypeScriptVariableName(Class->GetName());
     StringBuffer << "class " << SafeClassName;
 
     auto Super = Class->GetSuperStruct();
@@ -1237,7 +1237,7 @@ void FTypeScriptDeclarationGenerator::GenEnum(UEnum* Enum)
     FStringBuffer StringBuffer{"", ""};
 
     const FString SafeEnumName =
-        Enum->IsNative() ? SafeName(Enum->GetName()) : puerts::FilenameToTypeScriptVariableName(Enum->GetName());
+        Enum->IsNative() ? SafeName(Enum->GetName()) : PUERTS_NAMESPACE::FilenameToTypeScriptVariableName(Enum->GetName());
 
     TArray<FString> EnumListerrals;
     for (int i = 0; i < Enum->NumEnums(); ++i)
@@ -1310,7 +1310,7 @@ void FTypeScriptDeclarationGenerator::GenStruct(UStruct* Struct)
 #include "ExcludeStructs.h"
     FStringBuffer StringBuffer{"", ""};
     const FString SafeStructName =
-        Struct->IsNative() ? SafeName(Struct->GetName()) : puerts::FilenameToTypeScriptVariableName(Struct->GetName());
+        Struct->IsNative() ? SafeName(Struct->GetName()) : PUERTS_NAMESPACE::FilenameToTypeScriptVariableName(Struct->GetName());
     StringBuffer << "class " << SafeStructName;
 
     auto Super = Struct->GetSuperStruct();

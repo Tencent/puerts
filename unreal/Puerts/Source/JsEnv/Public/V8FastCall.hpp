@@ -13,7 +13,7 @@
 #pragma warning(pop)
 #include "DataTransfer.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <typename T, typename Enable = void>
 struct FastCallArgument
@@ -212,4 +212,4 @@ struct V8FastCall<Ret (Inc::*)(Args...) const, func,
     }
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

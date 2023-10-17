@@ -28,7 +28,7 @@
 
 #include "NamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class FPropertyTranslator
 {
@@ -180,4 +180,4 @@ public:
 
     void SetAccessor(v8::Isolate* Isolate, v8::Local<v8::FunctionTemplate> Template);
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

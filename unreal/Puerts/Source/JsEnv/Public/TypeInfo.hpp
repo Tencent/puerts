@@ -12,9 +12,10 @@
 #ifdef WITH_V8_FAST_CALL
 #include "V8FastCall.hpp"
 #endif
+#include "PuertsNamespaceDef.h"
 
 #define __DefScriptTTypeName(CLSNAME, CLS)      \
-    namespace puerts                            \
+    namespace PUERTS_NAMESPACE                  \
     {                                           \
     template <>                                 \
     struct ScriptTypeName<CLS>                  \
@@ -42,7 +43,7 @@ class CFunction;
 }
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 namespace internal
 {
@@ -531,4 +532,4 @@ struct NamedPropertyInfo
     const CTypeInfo* Type;
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

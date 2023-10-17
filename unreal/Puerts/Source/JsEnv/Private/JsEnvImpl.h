@@ -55,7 +55,7 @@
 #define WITH_BACKING_STORE_AUTO_FREE 1
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class JSError
 {
@@ -480,9 +480,9 @@ public:
     TSharedPtr<IDynamicInvoker, ESPMode::ThreadSafe> MixinInvoker;
 #endif
 private:
-    puerts::FObjectRetainer UserObjectRetainer;
+    FObjectRetainer UserObjectRetainer;
 
-    puerts::FObjectRetainer SysObjectRetainer;
+    FObjectRetainer SysObjectRetainer;
 
     std::shared_ptr<IJSModuleLoader> ModuleLoader;
 
@@ -606,7 +606,7 @@ private:
     {
         v8::UniquePersistent<v8::Function> JsFunction;
 
-        std::unique_ptr<puerts::FFunctionTranslator> FunctionTranslator;
+        std::unique_ptr<FFunctionTranslator> FunctionTranslator;
     };
 
     class DynamicInvokerImpl : public IDynamicInvoker
@@ -737,4 +737,4 @@ private:
     };
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

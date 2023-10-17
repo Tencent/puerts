@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "PuertsNamespaceDef.h"
 #include "CoreMinimal.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "PropertyMacros.h"
@@ -22,7 +23,7 @@ struct FPropertyMetaRoot
 {
 };
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 enum BuiltinType
 {
@@ -57,4 +58,4 @@ private:
     TMap<UField*, PropertyMacro*> ObjectPropertyMap;
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

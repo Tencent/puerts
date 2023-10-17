@@ -12,7 +12,7 @@
 #include "V8Utils.h"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 v8::Local<v8::Value> DataTransfer::FindOrAddCData(
     v8::Isolate* Isolate, v8::Local<v8::Context> Context, const void* TypeId, const void* Ptr, bool PassByPointer)
@@ -74,4 +74,4 @@ void DataTransfer::ThrowException(v8::Isolate* Isolate, const char* Message)
     FV8Utils::ThrowException(Isolate, Message);
 }
 #endif
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

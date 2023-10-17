@@ -12,12 +12,12 @@ struct FGenImp
 {
     FStringBuffer Output{"", ""};
 
-    FString GetNamePrefix(const puerts::CTypeInfo* TypeInfo)
+    FString GetNamePrefix(const PUERTS_NAMESPACE::CTypeInfo* TypeInfo)
     {
         return TypeInfo->IsUEType() && !HadNamespace(TypeInfo->Name()) ? "UE." : "";
     }
 
-    FString GetName(const puerts::CTypeInfo* TypeInfo)
+    FString GetName(const PUERTS_NAMESPACE::CTypeInfo* TypeInfo)
     {
         return UTF8_TO_TCHAR(TypeInfo->Name());
     }
@@ -30,7 +30,7 @@ struct FGenImp
         Output << "    import {$Ref, $Nullable, cstring} from \"puerts\"\n\n";
     }
 
-    void GenArguments(const puerts::CFunctionInfo* Type, FStringBuffer& Buff)
+    void GenArguments(const PUERTS_NAMESPACE::CFunctionInfo* Type, FStringBuffer& Buff)
     {
         for (unsigned int i = 0; i < Type->ArgumentCount(); i++)
         {
@@ -64,7 +64,7 @@ struct FGenImp
                     Buff << "$Ref<";
                 }
 
-                const puerts::CTypeInfo* TypeInfo = Type->Argument(i);
+                const PUERTS_NAMESPACE::CTypeInfo* TypeInfo = Type->Argument(i);
                 Buff << GetNamePrefix(TypeInfo) << GetName(TypeInfo);
 
                 if (IsNullable)
@@ -79,20 +79,20 @@ struct FGenImp
         }
     }
 
-    void GenClass(const puerts::JSClassDefinition* ClassDefinition)
+    void GenClass(const PUERTS_NAMESPACE::JSClassDefinition* ClassDefinition)
     {
         if (HasUENamespace(ClassDefinition->ScriptName))
             return;
         Output << "    class " << ClassDefinition->ScriptName;
         if (ClassDefinition->SuperTypeId)
         {
-            Output << " extends " << puerts::FindClassByID(ClassDefinition->SuperTypeId)->ScriptName;
+            Output << " extends " << PUERTS_NAMESPACE::FindClassByID(ClassDefinition->SuperTypeId)->ScriptName;
         }
         Output << " {\n";
 
         TSet<FString> AddedFunctions;
 
-        puerts::NamedFunctionInfo* ConstructorInfo = ClassDefinition->ConstructorInfos;
+        PUERTS_NAMESPACE::NamedFunctionInfo* ConstructorInfo = ClassDefinition->ConstructorInfos;
         while (ConstructorInfo && ConstructorInfo->Name && ConstructorInfo->Type)
         {
             FStringBuffer Tmp;
@@ -107,7 +107,7 @@ struct FGenImp
             ++ConstructorInfo;
         }
 
-        puerts::NamedPropertyInfo* PropertyInfo = ClassDefinition->PropertyInfos;
+        PUERTS_NAMESPACE::NamedPropertyInfo* PropertyInfo = ClassDefinition->PropertyInfos;
         while (PropertyInfo && PropertyInfo->Name && PropertyInfo->Type)
         {
             Output << "        " << PropertyInfo->Name << ": " << GetNamePrefix(PropertyInfo->Type) << PropertyInfo->Type->Name()
@@ -115,7 +115,7 @@ struct FGenImp
             ++PropertyInfo;
         }
 
-        puerts::NamedPropertyInfo* VariableInfo = ClassDefinition->VariableInfos;
+        PUERTS_NAMESPACE::NamedPropertyInfo* VariableInfo = ClassDefinition->VariableInfos;
         while (VariableInfo && VariableInfo->Name && VariableInfo->Type)
         {
             int Pos = VariableInfo - ClassDefinition->VariableInfos;
@@ -124,7 +124,7 @@ struct FGenImp
             ++VariableInfo;
         }
 
-        puerts::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
+        PUERTS_NAMESPACE::NamedFunctionInfo* FunctionInfo = ClassDefinition->FunctionInfos;
         while (FunctionInfo && FunctionInfo->Name && FunctionInfo->Type)
         {
             FStringBuffer Tmp;
@@ -133,7 +133,7 @@ struct FGenImp
             {
                 Tmp << "(";
                 GenArguments(FunctionInfo->Type, Tmp);
-                const puerts::CTypeInfo* ReturnType = FunctionInfo->Type->Return();
+                const PUERTS_NAMESPACE::CTypeInfo* ReturnType = FunctionInfo->Type->Return();
                 Tmp << ") :" << GetNamePrefix(ReturnType) << GetName(ReturnType) << ";\n";
             }
             else
@@ -148,7 +148,7 @@ struct FGenImp
             ++FunctionInfo;
         }
 
-        puerts::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
+        PUERTS_NAMESPACE::NamedFunctionInfo* MethodInfo = ClassDefinition->MethodInfos;
         while (MethodInfo && MethodInfo->Name && MethodInfo->Type)
         {
             FStringBuffer Tmp;
@@ -157,7 +157,7 @@ struct FGenImp
             {
                 Tmp << "(";
                 GenArguments(MethodInfo->Type, Tmp);
-                const puerts::CTypeInfo* ReturnType = MethodInfo->Type->Return();
+                const PUERTS_NAMESPACE::CTypeInfo* ReturnType = MethodInfo->Type->Return();
                 Tmp << ") :" << GetNamePrefix(ReturnType) << GetName(ReturnType) << ";\n";
             }
             else
@@ -187,8 +187,8 @@ void UTemplateBindingGenerator::Gen_Implementation() const
 
     Gen.Begin();
 
-    puerts::ForeachRegisterClass(
-        [&](const puerts::JSClassDefinition* ClassDefinition)
+    PUERTS_NAMESPACE::ForeachRegisterClass(
+        [&](const PUERTS_NAMESPACE::JSClassDefinition* ClassDefinition)
         {
             if (ClassDefinition->TypeId && ClassDefinition->ScriptName)
             {

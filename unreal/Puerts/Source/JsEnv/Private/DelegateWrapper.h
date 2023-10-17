@@ -22,7 +22,7 @@
 
 #include "NamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class FDelegateWrapper
 {
@@ -57,4 +57,4 @@ private:
 
     static void Broadcast(const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

@@ -14,7 +14,7 @@
 #include "TypeInfo.hpp"
 #include <type_traits>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <typename T, typename = void>
 struct ArgumentBufferType
@@ -1390,4 +1390,4 @@ public:
     }
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

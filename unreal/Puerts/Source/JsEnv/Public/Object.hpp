@@ -15,7 +15,7 @@
 #include "V8Object.hpp"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 namespace internal
 {
@@ -89,4 +89,4 @@ struct ScriptTypeName<std::function<R(Args...)>>
     }
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

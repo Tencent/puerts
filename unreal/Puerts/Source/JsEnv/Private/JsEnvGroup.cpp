@@ -11,8 +11,9 @@
 #include "JsEnvImpl.h"
 #include "TsDynamicInvoker.h"
 #include "DynamicInvoker.h"
+#include "PuertsNamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class FGroupDynamicInvoker : public ITsDynamicInvoker, public IDynamicInvoker
 {
@@ -181,5 +182,5 @@ void FJsEnvGroup::SetJsEnvSelector(std::function<int(UObject*, int)> InSelector)
     }
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE
 #endif

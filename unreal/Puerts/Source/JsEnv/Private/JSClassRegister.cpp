@@ -13,7 +13,7 @@
 #include <map>
 #include <cstring>
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 template <class T>
 static T* PropertyInfoDuplicate(T* Arr)
@@ -313,4 +313,4 @@ const JSClassDefinition* FindClassByType(UStruct* Type)
 }
 #endif
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

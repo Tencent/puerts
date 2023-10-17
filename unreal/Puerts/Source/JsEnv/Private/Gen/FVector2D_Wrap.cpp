@@ -73,9 +73,10 @@ static void* _FVector2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FIntPoint>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FIntPoint>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            FIntPoint* Arg0 = puerts::DataTransfer::GetPointerFast<FIntPoint>(Info[0]->ToObject(Context).ToLocalChecked());
+            FIntPoint* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FIntPoint>(Info[0]->ToObject(Context).ToLocalChecked());
             FVector2D* Obj = new FVector2D(*Arg0);
 
             // UE_LOG(LogTemp, Warning, TEXT("_FVector2DNew_:%p"), Obj);
@@ -108,9 +109,10 @@ static void* _FVector2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector* Arg0 = puerts::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector>(Info[0]->ToObject(Context).ToLocalChecked());
             FVector2D* Obj = new FVector2D(*Arg0);
 
             // UE_LOG(LogTemp, Warning, TEXT("_FVector2DNew_:%p"), Obj);
@@ -121,16 +123,17 @@ static void* _FVector2DNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector4>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector4>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector4* Arg0 = puerts::DataTransfer::GetPointerFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector4* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector4>(Info[0]->ToObject(Context).ToLocalChecked());
             FVector2D* Obj = new FVector2D(*Arg0);
 
             // UE_LOG(LogTemp, Warning, TEXT("_FVector2DNew_:%p"), Obj);
             return Obj;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
     return nullptr;
 }
 
@@ -148,19 +151,21 @@ static void FVector2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Addition] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Addition] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator+(*Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
@@ -172,23 +177,24 @@ static void FVector2DM_op_Addition(const v8::FunctionCallbackInfo<v8::Value>& In
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Addition] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Addition] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator+(Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -199,20 +205,21 @@ static void FVector2DM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>&
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_op_Subtraction] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator-(*Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
@@ -224,24 +231,24 @@ static void FVector2DM_op_Subtraction(const v8::FunctionCallbackInfo<v8::Value>&
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_op_Subtraction] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator-(Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -253,16 +260,17 @@ static void FVector2DM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& In
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Multiply] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Multiply] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator*(Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
@@ -273,26 +281,28 @@ static void FVector2DM_op_Multiply(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Multiply] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Multiply] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator*(*Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -304,16 +314,17 @@ static void FVector2DM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& In
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Division] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Division] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator/(Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
@@ -324,26 +335,28 @@ static void FVector2DM_op_Division(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Division] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Division] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator/(*Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -354,13 +367,15 @@ static void FVector2DM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& I
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_BitwiseOr] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_BitwiseOr] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator|(*Arg0);
@@ -370,7 +385,7 @@ static void FVector2DM_op_BitwiseOr(const v8::FunctionCallbackInfo<v8::Value>& I
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_ExclusiveOr(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -381,13 +396,14 @@ static void FVector2DM_op_ExclusiveOr(const v8::FunctionCallbackInfo<v8::Value>&
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_op_ExclusiveOr] Attempt to access a NULL self pointer");
                 return;
             }
@@ -398,7 +414,7 @@ static void FVector2DM_op_ExclusiveOr(const v8::FunctionCallbackInfo<v8::Value>&
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -409,13 +425,15 @@ static void FVector2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Equality] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Equality] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator==(*Arg0);
@@ -425,7 +443,7 @@ static void FVector2DM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& In
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -436,13 +454,15 @@ static void FVector2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& 
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_op_Inequality] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_op_Inequality] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator!=(*Arg0);
@@ -452,7 +472,7 @@ static void FVector2DM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_op_UnaryNegation(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -463,24 +483,24 @@ static void FVector2DM_op_UnaryNegation(const v8::FunctionCallbackInfo<v8::Value
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_op_UnaryNegation] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator-();
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -492,10 +512,11 @@ static void FVector2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info[0]->IsNumber())
         {
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_set_Item] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_set_Item] Attempt to access a NULL self pointer");
                 return;
             }
             Self->operator[](Arg0);
@@ -503,7 +524,7 @@ static void FVector2DM_set_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -515,10 +536,11 @@ static void FVector2DM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info[0]->IsNumber())
         {
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_get_Item] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_get_Item] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator[](Arg0);
@@ -528,7 +550,7 @@ static void FVector2DM_get_Item(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -540,10 +562,11 @@ static void FVector2DM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (Info[0]->IsNumber())
         {
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Component] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_Component] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->Component(Arg0);
@@ -558,10 +581,11 @@ static void FVector2DM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (Info[0]->IsNumber())
         {
             int32 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Component] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_Component] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->Component(Arg0);
@@ -571,7 +595,7 @@ static void FVector2DM_Component(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DS_DotProduct(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -582,13 +606,15 @@ static void FVector2DS_DotProduct(const v8::FunctionCallbackInfo<v8::Value>& Inf
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
             Info[1]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector2D* Arg1 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg1 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FVector2D::DotProduct(*Arg0, *Arg1);
             auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -596,7 +622,7 @@ static void FVector2DS_DotProduct(const v8::FunctionCallbackInfo<v8::Value>& Inf
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DS_DistSquared(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -607,13 +633,15 @@ static void FVector2DS_DistSquared(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
             Info[1]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector2D* Arg1 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg1 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FVector2D::DistSquared(*Arg0, *Arg1);
             auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -621,7 +649,7 @@ static void FVector2DS_DistSquared(const v8::FunctionCallbackInfo<v8::Value>& In
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DS_Distance(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -632,13 +660,15 @@ static void FVector2DS_Distance(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
             Info[1]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector2D* Arg1 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg1 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FVector2D::Distance(*Arg0, *Arg1);
             auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -646,7 +676,7 @@ static void FVector2DS_Distance(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DS_CrossProduct(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -657,13 +687,15 @@ static void FVector2DS_CrossProduct(const v8::FunctionCallbackInfo<v8::Value>& I
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
             Info[1]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[1]->ToObject(Context).ToLocalChecked()))
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
-            const FVector2D* Arg1 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg1 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[1]->ToObject(Context).ToLocalChecked());
             auto MethodResult = FVector2D::CrossProduct(*Arg0, *Arg1);
             auto V8Result = v8::Number::New(Isolate, MethodResult);
             Info.GetReturnValue().Set(V8Result);
@@ -671,7 +703,7 @@ static void FVector2DS_CrossProduct(const v8::FunctionCallbackInfo<v8::Value>& I
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -682,15 +714,17 @@ static void FVector2DM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()) &&
             Info[1]->IsNumber())
         {
-            const FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
+            const FVector2D* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info[0]->ToObject(Context).ToLocalChecked());
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Equals] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_Equals] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->Equals(*Arg0, Arg1);
@@ -700,7 +734,7 @@ static void FVector2DM_Equals(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -713,10 +747,10 @@ static void FVector2DM_Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Set] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Set] Attempt to access a NULL self pointer");
                 return;
             }
             Self->Set(Arg0, Arg1);
@@ -724,7 +758,7 @@ static void FVector2DM_Set(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -735,10 +769,11 @@ static void FVector2DM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetMax] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetMax] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetMax();
@@ -748,7 +783,7 @@ static void FVector2DM_GetMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetAbsMax(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -759,10 +794,11 @@ static void FVector2DM_GetAbsMax(const v8::FunctionCallbackInfo<v8::Value>& Info
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetAbsMax] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetAbsMax] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetAbsMax();
@@ -772,7 +808,7 @@ static void FVector2DM_GetAbsMax(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -783,10 +819,11 @@ static void FVector2DM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetMin] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetMin] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetMin();
@@ -796,7 +833,7 @@ static void FVector2DM_GetMin(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -807,10 +844,11 @@ static void FVector2DM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Size] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_Size] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->Size();
@@ -820,7 +858,7 @@ static void FVector2DM_Size(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -831,10 +869,11 @@ static void FVector2DM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_SizeSquared] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_SizeSquared] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->SizeSquared();
@@ -844,7 +883,7 @@ static void FVector2DM_SizeSquared(const v8::FunctionCallbackInfo<v8::Value>& In
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetRotated(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -856,23 +895,24 @@ static void FVector2DM_GetRotated(const v8::FunctionCallbackInfo<v8::Value>& Inf
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetRotated] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetRotated] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetRotated(Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetSafeNormal(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -884,23 +924,24 @@ static void FVector2DM_GetSafeNormal(const v8::FunctionCallbackInfo<v8::Value>& 
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetSafeNormal] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetSafeNormal] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetSafeNormal(Arg0);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -912,10 +953,11 @@ static void FVector2DM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_Normalize] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_Normalize] Attempt to access a NULL self pointer");
                 return;
             }
             Self->Normalize(Arg0);
@@ -923,7 +965,7 @@ static void FVector2DM_Normalize(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_IsNearlyZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -935,10 +977,11 @@ static void FVector2DM_IsNearlyZero(const v8::FunctionCallbackInfo<v8::Value>& I
         if (Info[0]->IsNumber())
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_IsNearlyZero] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_IsNearlyZero] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->IsNearlyZero(Arg0);
@@ -948,7 +991,7 @@ static void FVector2DM_IsNearlyZero(const v8::FunctionCallbackInfo<v8::Value>& I
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_ToDirectionAndLength(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -957,29 +1000,29 @@ static void FVector2DM_ToDirectionAndLength(const v8::FunctionCallbackInfo<v8::V
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
     if (Info.Length() == 2)
     {
-        if (Info[0]->IsObject() && puerts::DataTransfer::UnRef(Isolate, Info[0])->IsObject() &&
+        if (Info[0]->IsObject() && PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[0])->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FVector2D>(
-                Isolate, puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked()) &&
-            Info[1]->IsObject() && puerts::DataTransfer::UnRef(Isolate, Info[1])->IsNumber())
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FVector2D>(
+                Isolate, PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked()) &&
+            Info[1]->IsObject() && PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[1])->IsNumber())
         {
-            FVector2D* Arg0 = puerts::DataTransfer::GetPointerFast<FVector2D>(
-                puerts::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
-            float Arg1 = puerts::DataTransfer::UnRef(Isolate, Info[1])->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            FVector2D* Arg0 = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(
+                PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[0])->ToObject(Context).ToLocalChecked());
+            float Arg1 = PUERTS_NAMESPACE::DataTransfer::UnRef(Isolate, Info[1])->ToNumber(Context).ToLocalChecked()->Value();
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_ToDirectionAndLength] Attempt to access a NULL self pointer");
                 return;
             }
             Self->ToDirectionAndLength(*Arg0, Arg1);
 
-            puerts::DataTransfer::UpdateRef(Isolate, Info[1], v8::Number::New(Isolate, Arg1));
+            PUERTS_NAMESPACE::DataTransfer::UpdateRef(Isolate, Info[1], v8::Number::New(Isolate, Arg1));
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -990,10 +1033,11 @@ static void FVector2DM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_IsZero] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_IsZero] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->IsZero();
@@ -1003,7 +1047,7 @@ static void FVector2DM_IsZero(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_IntPoint(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1014,23 +1058,24 @@ static void FVector2DM_IntPoint(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_IntPoint] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_IntPoint] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->IntPoint();
             void* Ptr = new FIntPoint(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FIntPoint>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FIntPoint>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_RoundToVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1041,23 +1086,24 @@ static void FVector2DM_RoundToVector(const v8::FunctionCallbackInfo<v8::Value>& 
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_RoundToVector] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_RoundToVector] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->RoundToVector();
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_ClampAxes(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1070,23 +1116,24 @@ static void FVector2DM_ClampAxes(const v8::FunctionCallbackInfo<v8::Value>& Info
         {
             float Arg0 = Info[0]->ToNumber(Context).ToLocalChecked()->Value();
             float Arg1 = Info[1]->ToNumber(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_ClampAxes] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_ClampAxes] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ClampAxes(Arg0, Arg1);
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetSignVector(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1097,23 +1144,24 @@ static void FVector2DM_GetSignVector(const v8::FunctionCallbackInfo<v8::Value>& 
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetSignVector] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetSignVector] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetSignVector();
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_GetAbs(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1124,23 +1172,24 @@ static void FVector2DM_GetAbs(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_GetAbs] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_GetAbs] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->GetAbs();
             void* Ptr = new FVector2D(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector2D>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1151,10 +1200,11 @@ static void FVector2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_ToString] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_ToString] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToString();
@@ -1165,7 +1215,7 @@ static void FVector2DM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1177,10 +1227,10 @@ static void FVector2DM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>&
         if (Info[0]->IsString())
         {
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_InitFromString] Attempt to access a NULL self pointer");
                 return;
             }
@@ -1191,7 +1241,7 @@ static void FVector2DM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>&
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1202,10 +1252,10 @@ static void FVector2DM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Val
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_DiagnosticCheckNaN] Attempt to access a NULL self pointer");
                 return;
             }
@@ -1214,7 +1264,7 @@ static void FVector2DM_DiagnosticCheckNaN(const v8::FunctionCallbackInfo<v8::Val
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1225,10 +1275,11 @@ static void FVector2DM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& In
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::M_ContainsNaN] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FVector2D::M_ContainsNaN] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ContainsNaN();
@@ -1238,7 +1289,7 @@ static void FVector2DM_ContainsNaN(const v8::FunctionCallbackInfo<v8::Value>& In
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FVector2DM_SphericalToUnitCartesian(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1249,24 +1300,24 @@ static void FVector2DM_SphericalToUnitCartesian(const v8::FunctionCallbackInfo<v
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FVector2D::M_SphericalToUnitCartesian] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->SphericalToUnitCartesian();
             void* Ptr = new FVector(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FVector>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FVector>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void _FVector2DXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1274,16 +1325,16 @@ static void _FVector2DXGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
 
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::X] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FVector2D::X] Attempt to access a NULL self pointer");
         return;
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->X);
-    puerts::DataTransfer::LinkOuter<FVector2D, float>(Context, Info.Holder(), V8Result);
+    PUERTS_NAMESPACE::DataTransfer::LinkOuter<FVector2D, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FVector2DXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1291,10 +1342,10 @@ static void _FVector2DXSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::X] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FVector2D::X] Attempt to access a NULL self pointer");
         return;
     }
     auto Value = Info[0];
@@ -1306,16 +1357,16 @@ static void _FVector2DYGet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
 
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::Y] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FVector2D::Y] Attempt to access a NULL self pointer");
         return;
     }
 
     auto V8Result = v8::Number::New(Isolate, Self->Y);
-    puerts::DataTransfer::LinkOuter<FVector2D, float>(Context, Info.Holder(), V8Result);
+    PUERTS_NAMESPACE::DataTransfer::LinkOuter<FVector2D, float>(Context, Info.Holder(), V8Result);
     Info.GetReturnValue().Set(V8Result);
 }
 static void _FVector2DYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -1323,10 +1374,10 @@ static void _FVector2DYSet_(const v8::FunctionCallbackInfo<v8::Value>& Info)
     v8::Isolate* Isolate = Info.GetIsolate();
     v8::Local<v8::Context> Context = Isolate->GetCurrentContext();
 
-    auto Self = puerts::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
+    auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FVector2D>(Info.Holder());
     if (!Self)
     {
-        puerts::DataTransfer::ThrowException(Isolate, "[FVector2D::Y] Attempt to access a NULL self pointer");
+        PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FVector2D::Y] Attempt to access a NULL self pointer");
         return;
     }
     auto Value = Info[0];
@@ -1338,12 +1389,12 @@ struct AutoRegisterForFVector2D
 {
     AutoRegisterForFVector2D()
     {
-        puerts::JSClassDefinition Def = JSClassEmptyDefinition;
+        PUERTS_NAMESPACE::JSClassDefinition Def = JSClassEmptyDefinition;
 
-        static puerts::JSPropertyInfo Properties[] = {
+        static PUERTS_NAMESPACE::JSPropertyInfo Properties[] = {
             {"X", _FVector2DXGet_, _FVector2DXSet_}, {"Y", _FVector2DYGet_, _FVector2DYSet_}, {0, 0, 0}};
 
-        static puerts::JSFunctionInfo Methods[] = {{"op_Addition", FVector2DM_op_Addition},
+        static PUERTS_NAMESPACE::JSFunctionInfo Methods[] = {{"op_Addition", FVector2DM_op_Addition},
             {"op_Subtraction", FVector2DM_op_Subtraction}, {"op_Multiply", FVector2DM_op_Multiply},
             {"op_Division", FVector2DM_op_Division}, {"op_BitwiseOr", FVector2DM_op_BitwiseOr},
             {"op_ExclusiveOr", FVector2DM_op_ExclusiveOr}, {"op_Equality", FVector2DM_op_Equality},
@@ -1360,8 +1411,9 @@ struct AutoRegisterForFVector2D
             {"DiagnosticCheckNaN", FVector2DM_DiagnosticCheckNaN}, {"ContainsNaN", FVector2DM_ContainsNaN},
             {"SphericalToUnitCartesian", FVector2DM_SphericalToUnitCartesian}, {0, 0}};
 
-        static puerts::JSFunctionInfo Functions[] = {{"DotProduct", FVector2DS_DotProduct}, {"DistSquared", FVector2DS_DistSquared},
-            {"Distance", FVector2DS_Distance}, {"CrossProduct", FVector2DS_CrossProduct}, {0, 0}};
+        static PUERTS_NAMESPACE::JSFunctionInfo Functions[] = {{"DotProduct", FVector2DS_DotProduct},
+            {"DistSquared", FVector2DS_DistSquared}, {"Distance", FVector2DS_Distance}, {"CrossProduct", FVector2DS_CrossProduct},
+            {0, 0}};
 
         Def.UETypeName = "Vector2D";
 
@@ -1371,7 +1423,7 @@ struct AutoRegisterForFVector2D
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterJSClass(Def);
+        PUERTS_NAMESPACE::RegisterJSClass(Def);
     }
 };
 

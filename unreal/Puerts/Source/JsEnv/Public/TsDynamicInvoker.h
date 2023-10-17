@@ -11,10 +11,11 @@
 #include "UObject/Stack.h"
 #include "UObject/Object.h"
 #include "UObject/Class.h"
+#include "PuertsNamespaceDef.h"
 
 class UTypeScriptGeneratedClass;
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class ITsDynamicInvoker
 {
@@ -26,4 +27,4 @@ public:
     virtual void NotifyReBind(UTypeScriptGeneratedClass* Class) = 0;
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

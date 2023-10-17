@@ -45,9 +45,9 @@ private:
 
     void OnPostEngineInit();
 
-    TSharedPtr<puerts::FJsEnv> JsEnv;
+    TSharedPtr<PUERTS_NAMESPACE::FJsEnv> JsEnv;
 
-    TSharedPtr<puerts::FSourceFileWatcher> SourceFileWatcher;
+    TSharedPtr<PUERTS_NAMESPACE::FSourceFileWatcher> SourceFileWatcher;
 
     bool Enabled = false;
 
@@ -62,7 +62,7 @@ struct AutoRegisterForPEM
 {
     AutoRegisterForPEM()
     {
-        puerts::DefineClass<FPuertsEditorModule>()
+        PUERTS_NAMESPACE::DefineClass<FPuertsEditorModule>()
             .Function("SetCmdCallback", MakeFunction(&FPuertsEditorModule::SetCmdCallback))
             .Register();
     }
@@ -118,7 +118,7 @@ void FPuertsEditorModule::OnPostEngineInit()
     {
         FKismetCompilerContext::RegisterCompilerForBP(UTypeScriptBlueprint::StaticClass(), &MakeCompiler);
 
-        SourceFileWatcher = MakeShared<puerts::FSourceFileWatcher>(
+        SourceFileWatcher = MakeShared<PUERTS_NAMESPACE::FSourceFileWatcher>(
             [this](const FString& InPath)
             {
                 if (JsEnv.IsValid())
@@ -134,8 +134,9 @@ void FPuertsEditorModule::OnPostEngineInit()
                     }
                 }
             });
-        JsEnv = MakeShared<puerts::FJsEnv>(
-            std::make_shared<puerts::DefaultJSModuleLoader>(TEXT("JavaScript")), std::make_shared<puerts::FDefaultLogger>(), -1,
+        JsEnv = MakeShared<PUERTS_NAMESPACE::FJsEnv>(
+            std::make_shared<PUERTS_NAMESPACE::DefaultJSModuleLoader>(TEXT("JavaScript")),
+            std::make_shared<PUERTS_NAMESPACE::FDefaultLogger>(), -1,
             [this](const FString& InPath)
             {
                 if (SourceFileWatcher.IsValid())

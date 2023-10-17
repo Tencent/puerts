@@ -19,7 +19,7 @@
 #include "ExtensionMethods.h"
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class JSENV_API IJsEnv
 {
@@ -100,4 +100,4 @@ private:
     std::unique_ptr<IJsEnv> GameScript;
 };
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

@@ -10,7 +10,7 @@
 
 DEFINE_LOG_CATEGORY(Puerts);
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 void FDefaultLogger::Log(const FString& Message) const
 {
@@ -32,4 +32,4 @@ void FDefaultLogger::Error(const FString& Message) const
     UE_LOG(Puerts, Error, TEXT("(0x%p) %s"), this, *Message);
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

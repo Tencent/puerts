@@ -10,6 +10,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/GCObject.h"
+#include "PuertsNamespaceDef.h"
 
 #ifdef THREAD_SAFE
 #if defined(WITH_QJS_NAMESPACE_SUFFIX)
@@ -22,7 +23,7 @@ class Isolate;
 }
 #endif
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class JSENV_API FObjectRetainer : public FGCObject
 {
@@ -53,4 +54,4 @@ private:
 
     FString Name = TEXT("FObjectRetainer");
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

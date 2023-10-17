@@ -8,11 +8,13 @@
 
 #pragma once
 
+#include "PuertsNamespaceDef.h"
+
 #include "CoreMinimal.h"
 
 JSENV_API DECLARE_LOG_CATEGORY_EXTERN(Puerts, Log, All);
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class JSENV_API ILogger
 {
@@ -34,4 +36,4 @@ public:
     void Warn(const FString& Message) const override;
     void Error(const FString& Message) const override;
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

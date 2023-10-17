@@ -23,7 +23,7 @@
 
 #include "NamespaceDef.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class FFunctionTranslator
 {
@@ -146,4 +146,4 @@ private:
 
     bool IsUObject;
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

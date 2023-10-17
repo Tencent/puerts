@@ -27,7 +27,7 @@
 
 #define PUERTS_REUSE_STRUCTWRAPPER_FUNCTIONTEMPLATE 1
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 class FStructWrapper
 {
@@ -138,4 +138,4 @@ public:
 
     void New(v8::Isolate* Isolate, v8::Local<v8::Context>& Context, const v8::FunctionCallbackInfo<v8::Value>& Info);
 };
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE

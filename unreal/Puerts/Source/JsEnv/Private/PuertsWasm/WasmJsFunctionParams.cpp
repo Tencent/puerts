@@ -18,7 +18,7 @@
 #include "WasmModuleInstance.h"
 #include "GenericPlatform/GenericPlatformMemory.h"
 
-namespace puerts
+namespace PUERTS_NAMESPACE
 {
 static void NormalInstanceCall(const v8::FunctionCallbackInfo<v8::Value>& Info)
 {
@@ -333,5 +333,5 @@ WasmRuntime* NormalInstanceModule(v8::Isolate* Isolate, v8::Local<v8::Context>& 
     return UsedRuntime;
 }
 
-}    // namespace puerts
+}    // namespace PUERTS_NAMESPACE
 #endif

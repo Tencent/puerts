@@ -66,7 +66,7 @@ static void* _FColorNew_(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return Obj;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
     return nullptr;
 }
 
@@ -84,10 +84,11 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_DWColor] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_DWColor] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->DWColor();
@@ -101,10 +102,11 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_DWColor] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_DWColor] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->DWColor();
@@ -114,7 +116,7 @@ static void FColorM_DWColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -125,13 +127,15 @@ static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FColor>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FColor>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            const FColor* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_op_Equality] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_op_Equality] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator==(*Arg0);
@@ -141,7 +145,7 @@ static void FColorM_op_Equality(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -152,13 +156,15 @@ static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
     {
         if (Info[0]->IsObject() &&
 
-            puerts::DataTransfer::IsInstanceOf<FColor>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
+            PUERTS_NAMESPACE::DataTransfer::IsInstanceOf<FColor>(Isolate, Info[0]->ToObject(Context).ToLocalChecked()))
         {
-            const FColor* Arg0 = puerts::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            const FColor* Arg0 =
+                PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info[0]->ToObject(Context).ToLocalChecked());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_op_Inequality] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_op_Inequality] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->operator!=(*Arg0);
@@ -168,7 +174,7 @@ static void FColorM_op_Inequality(const v8::FunctionCallbackInfo<v8::Value>& Inf
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_FromRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -179,23 +185,24 @@ static void FColorM_FromRGBE(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_FromRGBE] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_FromRGBE] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->FromRGBE();
             void* Ptr = new FLinearColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorS_FromHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -210,14 +217,14 @@ static void FColorS_FromHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
             auto MethodResult = FColor::FromHex(Arg0);
             void* Ptr = new FColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -231,14 +238,14 @@ static void FColorS_MakeRandomColor(const v8::FunctionCallbackInfo<v8::Value>& I
             auto MethodResult = FColor::MakeRandomColor();
             void* Ptr = new FColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorS_MakeRedToGreenColorFromScalar(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -253,14 +260,14 @@ static void FColorS_MakeRedToGreenColorFromScalar(const v8::FunctionCallbackInfo
             auto MethodResult = FColor::MakeRedToGreenColorFromScalar(Arg0);
             void* Ptr = new FColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorS_MakeFromColorTemperature(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -275,14 +282,14 @@ static void FColorS_MakeFromColorTemperature(const v8::FunctionCallbackInfo<v8::
             auto MethodResult = FColor::MakeFromColorTemperature(Arg0);
             void* Ptr = new FColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_WithAlpha(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -294,23 +301,24 @@ static void FColorM_WithAlpha(const v8::FunctionCallbackInfo<v8::Value>& Info)
         if (Info[0]->IsNumber())
         {
             uint8 Arg0 = Info[0]->ToInteger(Context).ToLocalChecked()->Value();
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_WithAlpha] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_WithAlpha] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->WithAlpha(Arg0);
             void* Ptr = new FColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ReinterpretAsLinear(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -321,24 +329,24 @@ static void FColorM_ReinterpretAsLinear(const v8::FunctionCallbackInfo<v8::Value
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
                     Isolate, "[FColor::M_ReinterpretAsLinear] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ReinterpretAsLinear();
             void* Ptr = new FLinearColor(MethodResult);
 
-            auto V8Result = puerts::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
+            auto V8Result = PUERTS_NAMESPACE::DataTransfer::FindOrAddStruct<FLinearColor>(Isolate, Context, Ptr, false);
 
             Info.GetReturnValue().Set(V8Result);
 
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -349,10 +357,10 @@ static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToHex] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "[FColor::M_ToHex] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToHex();
@@ -363,7 +371,7 @@ static void FColorM_ToHex(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -374,10 +382,11 @@ static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToString] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_ToString] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToString();
@@ -388,7 +397,7 @@ static void FColorM_ToString(const v8::FunctionCallbackInfo<v8::Value>& Info)
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -400,10 +409,11 @@ static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& In
         if (Info[0]->IsString())
         {
             const FString Arg0 = UTF8_TO_TCHAR(*(v8::String::Utf8Value(Isolate, Info[0])));
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_InitFromString] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_InitFromString] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->InitFromString(Arg0);
@@ -413,7 +423,7 @@ static void FColorM_InitFromString(const v8::FunctionCallbackInfo<v8::Value>& In
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -424,10 +434,11 @@ static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedARGB] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_ToPackedARGB] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToPackedARGB();
@@ -437,7 +448,7 @@ static void FColorM_ToPackedARGB(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -448,10 +459,11 @@ static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedABGR] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_ToPackedABGR] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToPackedABGR();
@@ -461,7 +473,7 @@ static void FColorM_ToPackedABGR(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -472,10 +484,11 @@ static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedRGBA] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_ToPackedRGBA] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToPackedRGBA();
@@ -485,7 +498,7 @@ static void FColorM_ToPackedRGBA(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 static void FColorM_ToPackedBGRA(const v8::FunctionCallbackInfo<v8::Value>& Info)
@@ -496,10 +509,11 @@ static void FColorM_ToPackedBGRA(const v8::FunctionCallbackInfo<v8::Value>& Info
     {
         if (true)
         {
-            auto Self = puerts::DataTransfer::GetPointerFast<FColor>(Info.Holder());
+            auto Self = PUERTS_NAMESPACE::DataTransfer::GetPointerFast<FColor>(Info.Holder());
             if (!Self)
             {
-                puerts::DataTransfer::ThrowException(Isolate, "[FColor::M_ToPackedBGRA] Attempt to access a NULL self pointer");
+                PUERTS_NAMESPACE::DataTransfer::ThrowException(
+                    Isolate, "[FColor::M_ToPackedBGRA] Attempt to access a NULL self pointer");
                 return;
             }
             auto MethodResult = Self->ToPackedBGRA();
@@ -509,26 +523,26 @@ static void FColorM_ToPackedBGRA(const v8::FunctionCallbackInfo<v8::Value>& Info
             return;
         }
     }
-    puerts::DataTransfer::ThrowException(Isolate, "Invalid argument!");
+    PUERTS_NAMESPACE::DataTransfer::ThrowException(Isolate, "Invalid argument!");
 }
 
 struct AutoRegisterForFColor
 {
     AutoRegisterForFColor()
     {
-        puerts::JSClassDefinition Def = JSClassEmptyDefinition;
+        PUERTS_NAMESPACE::JSClassDefinition Def = JSClassEmptyDefinition;
 
-        static puerts::JSPropertyInfo Properties[] = {{0, 0, 0}};
+        static PUERTS_NAMESPACE::JSPropertyInfo Properties[] = {{0, 0, 0}};
 
-        static puerts::JSFunctionInfo Methods[] = {{"DWColor", FColorM_DWColor}, {"op_Equality", FColorM_op_Equality},
+        static PUERTS_NAMESPACE::JSFunctionInfo Methods[] = {{"DWColor", FColorM_DWColor}, {"op_Equality", FColorM_op_Equality},
             {"op_Inequality", FColorM_op_Inequality}, {"FromRGBE", FColorM_FromRGBE}, {"WithAlpha", FColorM_WithAlpha},
             {"ReinterpretAsLinear", FColorM_ReinterpretAsLinear}, {"ToHex", FColorM_ToHex}, {"ToString", FColorM_ToString},
             {"InitFromString", FColorM_InitFromString}, {"ToPackedARGB", FColorM_ToPackedARGB},
             {"ToPackedABGR", FColorM_ToPackedABGR}, {"ToPackedRGBA", FColorM_ToPackedRGBA}, {"ToPackedBGRA", FColorM_ToPackedBGRA},
             {0, 0}};
 
-        static puerts::JSFunctionInfo Functions[] = {{"FromHex", FColorS_FromHex}, {"MakeRandomColor", FColorS_MakeRandomColor},
-            {"MakeRedToGreenColorFromScalar", FColorS_MakeRedToGreenColorFromScalar},
+        static PUERTS_NAMESPACE::JSFunctionInfo Functions[] = {{"FromHex", FColorS_FromHex},
+            {"MakeRandomColor", FColorS_MakeRandomColor}, {"MakeRedToGreenColorFromScalar", FColorS_MakeRedToGreenColorFromScalar},
             {"MakeFromColorTemperature", FColorS_MakeFromColorTemperature}, {0, 0}};
 
         Def.UETypeName = "Color";
@@ -539,7 +553,7 @@ struct AutoRegisterForFColor
         Def.Methods = Methods;
         Def.Functions = Functions;
 
-        puerts::RegisterJSClass(Def);
+        PUERTS_NAMESPACE::RegisterJSClass(Def);
     }
 };
 
