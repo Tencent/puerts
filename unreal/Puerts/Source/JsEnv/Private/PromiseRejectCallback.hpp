@@ -1,6 +1,12 @@
 #pragma once
 #include <sstream>
-#include "PuertsNamespaceDef.h"
+#if !defined(PUERTS_NAMESPACE)
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+#define PUERTS_NAMESPACE puerts_qjs
+#else
+#define PUERTS_NAMESPACE puerts
+#endif
+#endif
 
 namespace PUERTS_NAMESPACE
 {
