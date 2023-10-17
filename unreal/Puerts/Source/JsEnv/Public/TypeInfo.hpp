@@ -28,13 +28,13 @@
 
 #define PUERTS_BINDING_PROTO_ID() "fdq4falqlqcq"
 
-#if defined(QJSV8NAMESPACE)
-namespace QJSV8NAMESPACE
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+namespace v8_qjs
 {
 class CFunction;
 }
 
-namespace v8 = QJSV8NAMESPACE;
+namespace v8 = v8_qjs;
 #else
 namespace v8
 {

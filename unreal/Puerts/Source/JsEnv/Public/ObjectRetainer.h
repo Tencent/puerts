@@ -12,8 +12,8 @@
 #include "UObject/GCObject.h"
 
 #ifdef THREAD_SAFE
-#if defined(QJSV8NAMESPACE)
-namespace QJSV8NAMESPACE
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+namespace v8_qjs
 #else
 namespace v8
 #endif

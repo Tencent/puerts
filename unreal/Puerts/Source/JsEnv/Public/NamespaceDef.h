@@ -8,6 +8,9 @@
 
 #pragma once
 
-#if defined(QJSV8NAMESPACE)
-namespace v8 = QJSV8NAMESPACE;
+#if defined(WITH_QJS_NAMESPACE_SUFFIX)
+#define PUERTS_NAMESPACE puerts_qjs
+namespace v8 = v8_qjs;
+#else
+#define PUERTS_NAMESPACE puerts
 #endif

@@ -24,7 +24,7 @@ public class JsEnv : ModuleRules
 
     private bool UseQuickjs = false;
 
-    private bool CustomNamespaceForQuickjsImpl = false;
+    private bool QjsNamespaceSuffix = false;
 
     private bool WithFFI = false;
     
@@ -535,8 +535,9 @@ public class JsEnv : ModuleRules
     {
         PrivateDefinitions.Add("WITHOUT_INSPECTOR");
         PrivateDefinitions.Add("WITH_QUICKJS");
-        if (CustomNamespaceForQuickjsImpl)
+        if (QjsNamespaceSuffix)
         {
+            PublicDefinitions.Add("WITH_QJS_NAMESPACE_SUFFIX=1");
             PublicDefinitions.Add("QJSV8NAMESPACE=v8_qjs");
         }
 

@@ -15,7 +15,7 @@
 #include "v8.h"
 #pragma warning(pop)
 
-#include "V8NamespaceDef.h"
+#include "NamespaceDef.h"
 
 #include "DynamicInvoker.h"
 #include "FunctionTranslator.h"
