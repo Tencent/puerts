@@ -1131,7 +1131,7 @@ struct PropertyWrapper<API, Ret Ins::*, member, IncPass,
             return;
         }
 
-        if (!API::template Converter<Ret>::accept(context, GetArg(info, 0)))
+        if (!API::template Converter<Ret>::accept(context, API::GetArg(info, 0)))
         {
             API::ThrowException(info, "invalid value for property");
             return;
