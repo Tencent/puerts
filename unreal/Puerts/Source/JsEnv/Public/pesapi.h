@@ -200,8 +200,8 @@ PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_va
 PESAPI_EXTERN pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_ref);
 PESAPI_EXTERN void pesapi_release_value_ref(pesapi_value_ref value_ref);
 PESAPI_EXTERN pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref value_ref);
-// Optional api: return false if can not fulfill
 PESAPI_EXTERN void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref value_ref);
+// Optional api: return false if can not fulfill
 PESAPI_EXTERN bool pesapi_set_owner(pesapi_env env, pesapi_value value, pesapi_value owner);
 
 PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
