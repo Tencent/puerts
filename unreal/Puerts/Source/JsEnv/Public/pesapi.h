@@ -15,7 +15,7 @@
 
 // Portable Embedded Scripting API
 
-#define PESAPI_VERSION 8
+#define PESAPI_VERSION 9
 
 #define PESAPI_EXTERN
 
@@ -200,6 +200,8 @@ PESAPI_EXTERN pesapi_value_holder pesapi_hold_value(pesapi_env env, pesapi_value
 PESAPI_EXTERN pesapi_value_holder pesapi_duplicate_value_holder(pesapi_value_holder value_holder);
 PESAPI_EXTERN void pesapi_release_value_holder(pesapi_value_holder value_holder);
 PESAPI_EXTERN pesapi_value pesapi_get_value_from_holder(pesapi_env env, pesapi_value_holder value_holder);
+// Optional api: return false if can not fulfill
+PESAPI_EXTERN bool pesapi_holder_set_weak_set_owner(pesapi_env env, pesapi_value_holder value_holder, pesapi_value owner);
 
 PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
 PESAPI_EXTERN void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);

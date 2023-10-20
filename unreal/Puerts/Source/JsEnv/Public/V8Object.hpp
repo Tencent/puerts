@@ -157,9 +157,10 @@ public:
         {
             auto JsObject = Val.template As<v8::Object>();
 #if V8_MAJOR_VERSION < 8
-            JsObject->Set(Context, v8::String::NewFromUtf8(Isolate, "_p_i_only_one_child").ToLocalChecked(), GObject.Get(Isolate));
+            JsObject->Set(Context, v8::String::NewFromUtf8(Isolate, "_p_i_only_one_child").ToLocalChecked(), GObject.Get(Isolate))
+                .Check();
 #else
-            JsObject->Set(Context, v8::String::NewFromUtf8Literal(Isolate, "_p_i_only_one_child"), GObject.Get(Isolate));
+            JsObject->Set(Context, v8::String::NewFromUtf8Literal(Isolate, "_p_i_only_one_child"), GObject.Get(Isolate)).Check();
 #endif
             GObject.SetWeak();
         }

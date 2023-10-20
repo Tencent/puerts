@@ -554,6 +554,25 @@ pesapi_value pesapi_get_value_from_holder(pesapi_env env, pesapi_value_holder va
     return v8impl::PesapiValueFromV8LocalValue(value_holder->value_persistent.Get(value_holder->isolate));
 }
 
+bool pesapi_holder_set_weak_set_owner(pesapi_env env, pesapi_value_holder value_holder, pesapi_value powner)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto owner = v8impl::V8LocalValueFromPesapiValue(powner);
+    if (owner->IsObject())
+    {
+        auto jsObj = owner.template As<v8::Object>();
+        auto val = value_holder->value_persistent.Get(context->GetIsolate());
+#if V8_MAJOR_VERSION < 8
+        jsObj->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "_p_i_only_one_child").ToLocalChecked(), val).Check();
+#else
+        jsObj->Set(context, v8::String::NewFromUtf8Literal(context->GetIsolate(), "_p_i_only_one_child"), val).Check();
+#endif
+        value_holder->value_persistent.SetWeak();
+        return true;
+    }
+    return false;
+}
+
 pesapi_value pesapi_get_property(pesapi_env env, pesapi_value pobject, const char* key)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);

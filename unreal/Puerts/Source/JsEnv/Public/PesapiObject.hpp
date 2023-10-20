@@ -155,6 +155,16 @@ public:
         return val && pesapi_is_function(env, val);
     }
 
+    template <typename T>
+    void SetWeakAndOwnBy(const T* Owner)
+    {
+        internal::AutoValueScope ValueScope(env_holder);
+        auto env = pesapi_get_env_from_holder(env_holder);
+
+        auto owner = pesapi_native_object_to_value(env, StaticTypeId<T>::get(), Owner, false);
+        pesapi_holder_set_weak_set_owner(env, value_holder, owner);
+    }
+
 private:
     template <typename... Args>
     auto invokeHelper(pesapi_env env, pesapi_value func, Args... CppArgs) const
