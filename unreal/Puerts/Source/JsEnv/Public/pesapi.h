@@ -109,9 +109,9 @@
 EXTERN_C_START
 
 typedef struct pesapi_env__* pesapi_env;
-typedef struct pesapi_env_holder__* pesapi_env_holder;
+typedef struct pesapi_env_ref__* pesapi_env_ref;
 typedef struct pesapi_value__* pesapi_value;
-typedef struct pesapi_value_holder__* pesapi_value_holder;
+typedef struct pesapi_value_ref__* pesapi_value_ref;
 typedef struct pesapi_callback_info__* pesapi_callback_info;
 typedef struct pesapi_scope__* pesapi_scope;
 typedef struct pesapi_type_info__* pesapi_type_info;
@@ -186,22 +186,22 @@ PESAPI_EXTERN void* pesapi_get_constructor_userdata(pesapi_callback_info info);
 PESAPI_EXTERN void pesapi_add_return(pesapi_callback_info info, pesapi_value value);
 PESAPI_EXTERN void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg);
 
-PESAPI_EXTERN pesapi_env_holder pesapi_hold_env(pesapi_env env);
-PESAPI_EXTERN pesapi_env pesapi_get_env_from_holder(pesapi_env_holder env_holder);
-PESAPI_EXTERN pesapi_env_holder pesapi_duplicate_env_holder(pesapi_env_holder env_holder);
-PESAPI_EXTERN void pesapi_release_env_holder(pesapi_env_holder env_holder);
+PESAPI_EXTERN pesapi_env_ref pesapi_create_env_ref(pesapi_env env);
+PESAPI_EXTERN pesapi_env pesapi_get_env_from_ref(pesapi_env_ref env_ref);
+PESAPI_EXTERN pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref env_ref);
+PESAPI_EXTERN void pesapi_release_env_ref(pesapi_env_ref env_ref);
 
-PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder);
+PESAPI_EXTERN pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref);
 PESAPI_EXTERN bool pesapi_has_caught(pesapi_scope scope);
 PESAPI_EXTERN const char* pesapi_get_exception_as_string(pesapi_scope scope, bool with_stack);
 PESAPI_EXTERN void pesapi_close_scope(pesapi_scope scope);
 
-PESAPI_EXTERN pesapi_value_holder pesapi_hold_value(pesapi_env env, pesapi_value value);
-PESAPI_EXTERN pesapi_value_holder pesapi_duplicate_value_holder(pesapi_value_holder value_holder);
-PESAPI_EXTERN void pesapi_release_value_holder(pesapi_value_holder value_holder);
-PESAPI_EXTERN pesapi_value pesapi_get_value_from_holder(pesapi_env env, pesapi_value_holder value_holder);
+PESAPI_EXTERN pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value value);
+PESAPI_EXTERN pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_holder);
+PESAPI_EXTERN void pesapi_release_value_ref(pesapi_value_ref value_holder);
+PESAPI_EXTERN pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref value_holder);
 // Optional api: return false if can not fulfill
-PESAPI_EXTERN bool pesapi_holder_set_weak_set_owner(pesapi_env env, pesapi_value_holder value_holder, pesapi_value owner);
+PESAPI_EXTERN bool pesapi_value_ref_set_weak_set_owner(pesapi_env env, pesapi_value_ref value_holder, pesapi_value owner);
 
 PESAPI_EXTERN pesapi_value pesapi_get_property(pesapi_env env, pesapi_value object, const char* key);
 PESAPI_EXTERN void pesapi_set_property(pesapi_env env, pesapi_value object, const char* key, pesapi_value value);

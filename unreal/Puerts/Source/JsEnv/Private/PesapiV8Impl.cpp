@@ -21,9 +21,9 @@
 #include "v8.h"
 #pragma warning(pop)
 
-struct pesapi_env_holder__
+struct pesapi_env_ref__
 {
-    explicit pesapi_env_holder__(v8::Local<v8::Context> context)
+    explicit pesapi_env_ref__(v8::Local<v8::Context> context)
         : isolate(context->GetIsolate()), context_persistent(isolate, context), ref_count(1)
     {
     }
@@ -32,9 +32,9 @@ struct pesapi_env_holder__
     int ref_count;
 };
 
-struct pesapi_value_holder__
+struct pesapi_value_ref__
 {
-    explicit pesapi_value_holder__(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
+    explicit pesapi_value_ref__(v8::Local<v8::Context> context, v8::Local<v8::Value> value)
         : isolate(context->GetIsolate()), value_persistent(isolate, value), ref_count(1)
     {
     }
@@ -453,36 +453,36 @@ void pesapi_throw_by_string(pesapi_callback_info pinfo, const char* msg)
         v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg, v8::NewStringType::kNormal).ToLocalChecked()));
 }
 
-pesapi_env_holder pesapi_hold_env(pesapi_env env)
+pesapi_env_ref pesapi_create_env_ref(pesapi_env env)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    return new pesapi_env_holder__(context);
+    return new pesapi_env_ref__(context);
 }
 
-pesapi_env pesapi_get_env_from_holder(pesapi_env_holder env_holder)
+pesapi_env pesapi_get_env_from_ref(pesapi_env_ref env_ref)
 {
-    return v8impl::PesapiEnvFromV8LocalContext(env_holder->context_persistent.Get(env_holder->isolate));
+    return v8impl::PesapiEnvFromV8LocalContext(env_ref->context_persistent.Get(env_ref->isolate));
 }
 
-pesapi_env_holder pesapi_duplicate_env_holder(pesapi_env_holder env_holder)
+pesapi_env_ref pesapi_duplicate_env_ref(pesapi_env_ref env_ref)
 {
-    ++env_holder->ref_count;
-    return env_holder;
+    ++env_ref->ref_count;
+    return env_ref;
 }
 
-void pesapi_release_env_holder(pesapi_env_holder env_holder)
+void pesapi_release_env_ref(pesapi_env_ref env_ref)
 {
-    if (--env_holder->ref_count == 0)
+    if (--env_ref->ref_count == 0)
     {
-        delete env_holder;
+        delete env_ref;
     }
 }
 
-pesapi_scope pesapi_open_scope(pesapi_env_holder env_holder)
+pesapi_scope pesapi_open_scope(pesapi_env_ref env_ref)
 {
-    env_holder->isolate->Enter();
-    auto scope = new pesapi_scope__(env_holder->isolate);
-    env_holder->context_persistent.Get(env_holder->isolate)->Enter();
+    env_ref->isolate->Enter();
+    auto scope = new pesapi_scope__(env_ref->isolate);
+    env_ref->context_persistent.Get(env_ref->isolate)->Enter();
     return scope;
 }
 
@@ -528,46 +528,46 @@ void pesapi_close_scope(pesapi_scope scope)
     isolate->Exit();
 }
 
-pesapi_value_holder pesapi_hold_value(pesapi_env env, pesapi_value pvalue)
+pesapi_value_ref pesapi_create_value_ref(pesapi_env env, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return new pesapi_value_holder__(context, value);
+    return new pesapi_value_ref__(context, value);
 }
 
-pesapi_value_holder pesapi_duplicate_value_holder(pesapi_value_holder value_holder)
+pesapi_value_ref pesapi_duplicate_value_ref(pesapi_value_ref value_ref)
 {
-    ++value_holder->ref_count;
-    return value_holder;
+    ++value_ref->ref_count;
+    return value_ref;
 }
 
-void pesapi_release_value_holder(pesapi_value_holder value_holder)
+void pesapi_release_value_ref(pesapi_value_ref value_ref)
 {
-    if (--value_holder->ref_count == 0)
+    if (--value_ref->ref_count == 0)
     {
-        delete value_holder;
+        delete value_ref;
     }
 }
 
-pesapi_value pesapi_get_value_from_holder(pesapi_env env, pesapi_value_holder value_holder)
+pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref value_ref)
 {
-    return v8impl::PesapiValueFromV8LocalValue(value_holder->value_persistent.Get(value_holder->isolate));
+    return v8impl::PesapiValueFromV8LocalValue(value_ref->value_persistent.Get(value_ref->isolate));
 }
 
-bool pesapi_holder_set_weak_set_owner(pesapi_env env, pesapi_value_holder value_holder, pesapi_value powner)
+bool pesapi_value_ref_set_weak_set_owner(pesapi_env env, pesapi_value_ref value_ref, pesapi_value powner)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto owner = v8impl::V8LocalValueFromPesapiValue(powner);
     if (owner->IsObject())
     {
         auto jsObj = owner.template As<v8::Object>();
-        auto val = value_holder->value_persistent.Get(context->GetIsolate());
+        auto val = value_ref->value_persistent.Get(context->GetIsolate());
 #if V8_MAJOR_VERSION < 8
         jsObj->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "_p_i_only_one_child").ToLocalChecked(), val).Check();
 #else
         jsObj->Set(context, v8::String::NewFromUtf8Literal(context->GetIsolate(), "_p_i_only_one_child"), val).Check();
 #endif
-        value_holder->value_persistent.SetWeak();
+        value_ref->value_persistent.SetWeak();
         return true;
     }
     return false;
