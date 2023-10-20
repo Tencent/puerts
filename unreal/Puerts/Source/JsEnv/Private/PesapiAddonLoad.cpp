@@ -39,7 +39,7 @@ static pesapi_func_ptr funcs[] = {(pesapi_func_ptr) &pesapi_create_null, (pesapi
     (pesapi_func_ptr) &pesapi_is_uint32, (pesapi_func_ptr) &pesapi_is_int64, (pesapi_func_ptr) &pesapi_is_uint64,
     (pesapi_func_ptr) &pesapi_is_double, (pesapi_func_ptr) &pesapi_is_string, (pesapi_func_ptr) &pesapi_is_object,
     (pesapi_func_ptr) &pesapi_is_function, (pesapi_func_ptr) &pesapi_is_binary, (pesapi_func_ptr) &pesapi_is_array,
-    (pesapi_func_ptr) &pesapi_create_native_object, (pesapi_func_ptr) &pesapi_get_native_object_ptr,
+    (pesapi_func_ptr) &pesapi_native_object_to_value, (pesapi_func_ptr) &pesapi_get_native_object_ptr,
     (pesapi_func_ptr) &pesapi_get_native_object_typeid, (pesapi_func_ptr) &pesapi_is_instance_of, (pesapi_func_ptr) &pesapi_boxing,
     (pesapi_func_ptr) &pesapi_unboxing, (pesapi_func_ptr) &pesapi_update_boxed_value, (pesapi_func_ptr) &pesapi_is_boxed_value,
     (pesapi_func_ptr) &pesapi_get_args_len, (pesapi_func_ptr) &pesapi_get_arg, (pesapi_func_ptr) &pesapi_get_env,

@@ -323,11 +323,11 @@ bool pesapi_is_array(pesapi_env env, pesapi_value pvalue)
     return value->IsArray();
 }
 
-pesapi_value pesapi_create_native_object(pesapi_env env, const void* class_id, void* object_ptr, bool copy)
+pesapi_value pesapi_native_object_to_value(pesapi_env env, const void* type_id, void* object_ptr, bool call_finalize)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     return v8impl::PesapiValueFromV8LocalValue(
-        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, class_id, object_ptr, !copy));
+        ::puerts::DataTransfer::FindOrAddCData(context->GetIsolate(), context, type_id, object_ptr, !call_finalize));
 }
 
 void* pesapi_get_native_object_ptr(pesapi_env env, pesapi_value pvalue)
@@ -348,11 +348,11 @@ const void* pesapi_get_native_object_typeid(pesapi_env env, pesapi_value pvalue)
     return puerts::DataTransfer::GetPointerFast<void>(value.As<v8::Object>(), 1);
 }
 
-bool pesapi_is_instance_of(pesapi_env env, const void* class_id, pesapi_value pvalue)
+bool pesapi_is_instance_of(pesapi_env env, const void* type_id, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
-    return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), static_cast<const char*>(class_id), value.As<v8::Object>());
+    return ::puerts::DataTransfer::IsInstanceOf(context->GetIsolate(), static_cast<const char*>(type_id), value.As<v8::Object>());
 }
 
 pesapi_value pesapi_boxing(pesapi_env env, pesapi_value pvalue)
@@ -375,10 +375,10 @@ pesapi_value pesapi_unboxing(pesapi_env env, pesapi_value pvalue)
     return v8impl::PesapiValueFromV8LocalValue(realvalue);
 }
 
-void pesapi_update_boxed_value(pesapi_env env, pesapi_value ref, pesapi_value pvalue)
+void pesapi_update_boxed_value(pesapi_env env, pesapi_value boxed_value, pesapi_value pvalue)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
-    auto holder = v8impl::V8LocalValueFromPesapiValue(ref);
+    auto holder = v8impl::V8LocalValueFromPesapiValue(boxed_value);
     auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
     if (holder->IsObject())
     {
