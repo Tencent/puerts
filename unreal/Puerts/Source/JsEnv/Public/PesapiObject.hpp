@@ -162,7 +162,11 @@ public:
         auto env = pesapi_get_env_from_ref(env_holder);
 
         auto owner = pesapi_native_object_to_value(env, StaticTypeId<T>::get(), Owner, false);
-        pesapi_value_ref_set_weak_set_owner(env, value_holder, owner);
+        auto val = pesapi_get_value_from_ref(env, value_holder);
+        if (pesapi_set_owner(env, val, owner))
+        {
+            pesapi_set_ref_weak(env, value_holder);
+        }
     }
 
 private:

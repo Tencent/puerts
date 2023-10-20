@@ -554,20 +554,26 @@ pesapi_value pesapi_get_value_from_ref(pesapi_env env, pesapi_value_ref value_re
     return v8impl::PesapiValueFromV8LocalValue(value_ref->value_persistent.Get(value_ref->isolate));
 }
 
-bool pesapi_value_ref_set_weak_set_owner(pesapi_env env, pesapi_value_ref value_ref, pesapi_value powner)
+void pesapi_set_ref_weak(pesapi_env env, pesapi_value_ref value_ref)
 {
     auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    value_ref->value_persistent.SetWeak();
+}
+
+bool pesapi_set_owner(pesapi_env env, pesapi_value pvalue, pesapi_value powner)
+{
+    auto context = v8impl::V8LocalContextFromPesapiEnv(env);
+    auto value = v8impl::V8LocalValueFromPesapiValue(pvalue);
     auto owner = v8impl::V8LocalValueFromPesapiValue(powner);
+
     if (owner->IsObject())
     {
         auto jsObj = owner.template As<v8::Object>();
-        auto val = value_ref->value_persistent.Get(context->GetIsolate());
 #if V8_MAJOR_VERSION < 8
-        jsObj->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "_p_i_only_one_child").ToLocalChecked(), val).Check();
+        jsObj->Set(context, v8::String::NewFromUtf8(context->GetIsolate(), "_p_i_only_one_child").ToLocalChecked(), value).Check();
 #else
-        jsObj->Set(context, v8::String::NewFromUtf8Literal(context->GetIsolate(), "_p_i_only_one_child"), val).Check();
+        jsObj->Set(context, v8::String::NewFromUtf8Literal(context->GetIsolate(), "_p_i_only_one_child"), value).Check();
 #endif
-        value_ref->value_persistent.SetWeak();
         return true;
     }
     return false;

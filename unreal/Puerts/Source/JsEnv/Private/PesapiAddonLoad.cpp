@@ -50,7 +50,7 @@ static pesapi_func_ptr funcs[] = {(pesapi_func_ptr) &pesapi_create_null, (pesapi
     (pesapi_func_ptr) &pesapi_has_caught, (pesapi_func_ptr) &pesapi_get_exception_as_string, (pesapi_func_ptr) &pesapi_close_scope,
     (pesapi_func_ptr) &pesapi_create_value_ref, (pesapi_func_ptr) &pesapi_duplicate_value_ref,
     (pesapi_func_ptr) &pesapi_release_value_ref, (pesapi_func_ptr) &pesapi_get_value_from_ref,
-    (pesapi_func_ptr) &pesapi_value_ref_set_weak_set_owner, (pesapi_func_ptr) &pesapi_get_property,
+    (pesapi_func_ptr) &pesapi_set_ref_weak, (pesapi_func_ptr) &pesapi_set_owner, (pesapi_func_ptr) &pesapi_get_property,
     (pesapi_func_ptr) &pesapi_set_property, (pesapi_func_ptr) &pesapi_get_property_uint32,
     (pesapi_func_ptr) &pesapi_set_property_uint32, (pesapi_func_ptr) &pesapi_call_function, (pesapi_func_ptr) &pesapi_eval,
     (pesapi_func_ptr) &pesapi_alloc_type_infos, (pesapi_func_ptr) &pesapi_set_type_info,
