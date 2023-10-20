@@ -433,8 +433,6 @@ namespace Puerts.Editor
                     return "string";
                 else if (type == typeof(void))
                     return "void";
-                else if (type == typeof(DateTime))
-                    return "Date";
                 else if (type == typeof(Puerts.ArrayBuffer))
                     return "ArrayBuffer";
                 else if (type == typeof(object))
